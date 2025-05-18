@@ -131,6 +131,7 @@ docker-compose -f ./deploy-compose.yml up -d
    - Integration with multiple AI providers through adapter pattern
    - MongoDB for data storage
    - WebSockets/SSE for streaming responses
+   - Integration with Sandpack code execution environment
 
 2. **Client Adapters**
    - Each AI provider has its own client adapter (`api/app/clients/`)

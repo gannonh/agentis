@@ -15,7 +15,8 @@ Development Environment
 │   ├── MongoDB
 │   ├── Meilisearch (for search functionality)
 │   ├── PGVector (for vector embeddings)
-│   └── RAG API (for retrieval-augmented generation)
+│   ├── RAG API (for retrieval-augmented generation)
+│   └── Sandpack (for code execution in chat)
 └── Local Node.js (with hot reloading)
     ├── Client (React frontend)
     └── API (Node.js backend)
@@ -26,55 +27,106 @@ Development Environment
 Create a `docker-compose.dev.yml` file:
 
 ```yaml
-version: '3'
+version: '3.8'
+
+# Docker network and volumes names start with the project directory name
+# To make them more identifiable, we specify a custom project name
+name: agentis
+
 services:
   mongodb:
     container_name: agentis-mongodb
-    image: mongo
-    restart: always
+    image: mongodb/mongodb-community-server:latest
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
     ports:
       - "27017:27017"
     volumes:
-      - ./data-node:/data/db
-    command: mongod --noauth
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    command: ["--bind_ip_all"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agentis_network
     
   meilisearch:
     container_name: agentis-meilisearch
     image: getmeili/meilisearch:v1.12.3
-    restart: always
+    restart: unless-stopped
     ports:
       - "7700:7700"
     environment:
       - MEILI_NO_ANALYTICS=true
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-masterKey}
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt}
     volumes:
-      - ./meili_data:/meili_data
+      - meili_data:/meili_data
+    networks:
+      - agentis_network
       
-  vectordb:
+  db:
     container_name: agentis-vectordb
     image: ankane/pgvector:latest
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: agentis
-      POSTGRES_USER: agentis
-      POSTGRES_PASSWORD: agentispassword
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - agentis_network
       
   rag_api:
     container_name: agentis-rag-api
     image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
     ports:
       - "8000:8000"
+    env_file:
+      - .env.docker
     environment:
-      - DB_HOST=vectordb
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+      - DB_NAME=mydatabase
       - RAG_PORT=8000
+      - EMBEDDINGS_PROVIDER=openai
+      - EMBEDDINGS_MODEL=text-embedding-3-small
     depends_on:
-      - vectordb
+      - db
+    networks:
+      - agentis_network
+      
+  sandpack:
+    container_name: agentis-sandpack
+    image: ghcr.io/librechat-ai/codesandbox-client/bundler:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - agentis_network
+
+networks:
+  agentis_network:
+    driver: bridge
 
 volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  meili_data:
+    driver: local
   pgdata:
+    driver: local
 ```
 
 Run with:
@@ -87,6 +139,7 @@ This allows you to:
 1. Run all supporting services in Docker
 2. Keep API and client running locally for fast development
 3. Connect local API to Docker services via localhost ports
+4. Enable code execution in chat via the Sandpack service
 
 ## 2. Production Environment
 
@@ -101,7 +154,8 @@ Production Environment (All Dockerized)
 ├── MongoDB Container
 ├── Meilisearch Container
 ├── PGVector Container
-└── RAG API Container
+├── RAG API Container
+└── Sandpack Container (Code Execution)
 ```
 
 #### Docker Compose for Production
@@ -125,9 +179,10 @@ services:
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
-      - MONGO_URI=mongodb://mongodb:27017/Agentis
+      - MONGO_URI=mongodb://mongodb:27017/Agentis?authSource=admin
       - MEILI_HOST=http://meilisearch:7700
       - RAG_API_URL=http://rag_api:8000
+      - SANDPACK_BUNDLER_URL=http://sandpack:80
     volumes:
       - ./uploads:/app/uploads
       - ./logs:/app/api/logs
@@ -161,6 +216,12 @@ services:
   rag_api:
     container_name: agentis-rag-api
     # ... (same as dev setup)
+    
+  sandpack:
+    container_name: agentis-sandpack
+    image: ghcr.io/librechat-ai/codesandbox-client/bundler:latest
+    restart: always
+    # Internal port 80 is exposed to the network for other containers
 ```
 
 ## 3. Docker Files
@@ -290,7 +351,31 @@ The included `nginx.conf` file configures Nginx to:
    - Adjust resource limits, restart policies, and other settings
    - Add health checks and monitoring
 
-## 6. Additional Considerations
+## 6. Sandpack Code Execution Service
+
+The Sandpack service provides an isolated environment for executing code snippets within the chat interface. This enables users to run and test code examples directly in the conversation flow.
+
+### Key Features
+- **Interactive Code Execution**: Run JavaScript, TypeScript, Python, and other language code snippets
+- **Secure Sandbox**: Code is executed in an isolated container environment
+- **Multiple Templates**: Support for various frameworks and libraries
+- **Real-time Feedback**: See code execution results instantly
+
+### Configuration
+
+The Sandpack service is configured via the `SANDPACK_BUNDLER_URL` environment variable:
+
+```
+# In .env file for local development
+SANDPACK_BUNDLER_URL=http://localhost:8080
+
+# In container environment variables for production
+SANDPACK_BUNDLER_URL=http://sandpack:80
+```
+
+This integration enhances the Agentis platform's capabilities by allowing users to experiment with code without leaving the chat interface.
+
+## 7. Additional Considerations
 
 - **Environment Variables**: Use `.env` files for local development and secrets management
 - **Persistent Volumes**: Ensure data is persisted correctly for databases

@@ -35,6 +35,7 @@ The docker-compose.dev.yml file includes the following services:
 2. **meilisearch** - Search engine for conversation search functionality 
 3. **vectordb** - Vector database powered by PGVector for RAG capabilities
 4. **rag_api** - Retrieval-Augmented Generation API for document processing
+5. **sandpack** - Code execution environment for running code snippets in the chat
 
 ### Examples
 
@@ -95,6 +96,9 @@ Restore from a backup:
 
 - **RAG API**
   - URL: http://localhost:8000
+  
+- **Sandpack**
+  - URL: http://localhost:8080
 
 ## Development Workflow
 

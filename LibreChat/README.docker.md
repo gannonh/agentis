@@ -14,6 +14,7 @@ The `docker-compose.dev.yml` file in the LibreChat directory defines the followi
 2. **Meilisearch** - Search engine for conversation search functionality
 3. **VectorDB** - PostgreSQL with pgvector extension for vector embeddings
 4. **RAG API** - Retrieval-Augmented Generation API for document processing
+5. **Sandpack** - Code execution environment for running code snippets in the chat
 
 ### Managing Docker Services
 
@@ -51,6 +52,9 @@ MEILI_MASTER_KEY=DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt
 
 # RAG API
 RAG_API_URL=http://localhost:8000
+
+# Sandpack (Code Execution)
+SANDPACK_BUNDLER_URL=http://localhost:8080
 ```
 
 2. **`.env.docker`** - Used by Docker services, particularly the RAG API which needs the OpenAI API key for embeddings:

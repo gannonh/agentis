@@ -75,6 +75,15 @@ services:
       - db
     networks:
       - agentis_network
+      
+  sandpack:
+    container_name: agentis-sandpack
+    image: ghcr.io/librechat-ai/codesandbox-client/bundler:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - agentis_network
 
 networks:
   agentis_network:

@@ -26,7 +26,7 @@ show_help() {
     echo "Usage: ./docker-cli.sh [command] [service]"
     echo ""
     echo "Commands:"
-    echo "  start       - Start all or specific service (mongodb, meilisearch, vectordb, rag_api)"
+    echo "  start       - Start all or specific service (mongodb, meilisearch, vectordb, rag_api, sandpack)"
     echo "  stop        - Stop all or specific service"
     echo "  restart     - Restart all or specific service"
     echo "  status      - Check status of all or specific service"
@@ -64,13 +64,16 @@ start_services() {
     
     # Print connection information
     if [ -z "$1" ] || [ "$1" = "mongodb" ]; then
-        echo -e "MongoDB connection: ${YELLOW}mongodb://admin:password@localhost:27017/${NC}"
+        echo -e "MongoDB connection: ${YELLOW}mongodb://admin:password@localhost:27017/Agentis?authSource=admin${NC}"
     fi
     if [ -z "$1" ] || [ "$1" = "meilisearch" ]; then
         echo -e "Meilisearch URL: ${YELLOW}http://localhost:7700/${NC}"
     fi
     if [ -z "$1" ] || [ "$1" = "rag_api" ]; then
         echo -e "RAG API URL: ${YELLOW}http://localhost:8000/${NC}"
+    fi
+    if [ -z "$1" ] || [ "$1" = "sandpack" ]; then
+        echo -e "Sandpack URL: ${YELLOW}http://localhost:8080/${NC}"
     fi
 }
 
