@@ -121,6 +121,64 @@ docker-compose -f ./deploy-compose.yml up -d
    - Data providers for backend communication
    - Real-time message streaming
 
+## Coding Conventions
+
+### Node.js API Server
+
+#### General Guidelines
+- Follow the [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)
+- Use "clean code" principles with small functions and modules
+- Prioritize readability and maintainability over brevity
+- Use CommonJS modules (require/exports) for Node.js modules
+- Apply proper modularization with separate files for different concerns
+
+#### API Design
+- Follow RESTful principles with appropriate HTTP methods
+- Use proper status codes (2xx success, 4xx client error, 5xx server error)
+- Implement consistent error handling with try-catch blocks
+- Use the logging system in `utils` directory for important events and errors
+- Use JWT-based, stateless authentication with `requireJWTAuth` middleware
+
+#### File Structure
+- **Routes**: Separate files for each resource using Express Router, prefixed with /api
+- **Controllers**: PascalCase files with "Controller" suffix (e.g., UserController.js)
+- **Services**: PascalCase files with "Service" suffix for business logic
+- **Models**: Singular PascalCase names for Mongoose models (e.g., User.js)
+
+#### Best Practices
+- Keep controllers thin by delegating complex operations to services
+- Encapsulate database queries within model methods or service functions
+- Add JSDoc-style comments to functions, classes, and modules
+- Write unit tests for endpoints, controllers, and services
+
+### React Client
+
+#### TypeScript Practices
+- Always use proper types for component props and state
+- Avoid using `any` type unless absolutely necessary
+- Define interfaces or types for data structures
+- Use TypeScript's utility types (Partial, Pick, Omit) when appropriate
+
+#### Component Structure
+- Use functional components with hooks instead of class components
+- Follow a component-based architecture
+- Keep components focused on a single responsibility
+- Minimize rendering logic by extracting complex logic into functions/hooks
+- Use lazy loading for code splitting to improve performance
+
+#### File Organization
+- Organize components by feature or domain
+- Group related files together in a single directory
+- Use PascalCase for component names and camelCase for functions/variables
+- Use index.ts files to export components to simplify imports
+
+#### State Management
+- Use React Context API and Recoil for state management
+- Keep state as close to where it's needed as possible
+- Use local component state for UI-specific state
+- Avoid prop drilling by using Context or Recoil for shared state
+- Use the useReducer hook for complex state logic
+
 ## Commit Message Guidelines
 
 Follow conventional commit format:
