@@ -12,6 +12,8 @@ cache: true
 
 # Custom interface configuration
 interface:
+  # disable Code Interpreter in the main chat UI
+  runCode: false
   customWelcome: "Welcome to Agentis."
   # Privacy policy settings
   privacyPolicy:
