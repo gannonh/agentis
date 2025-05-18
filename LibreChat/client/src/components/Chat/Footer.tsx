@@ -39,7 +39,7 @@ export default function Footer({ className }: { className?: string }) {
       ? config.customFooter
       : '[Agentis ' +
         Constants.VERSION +
-        '](https://librechat.ai) - ' +
+        '](https://agentis.ai) - ' +
         localize('com_ui_latest_footer')
   ).split('|');
 
