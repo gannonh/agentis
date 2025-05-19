@@ -83,7 +83,9 @@ Most of these toolkits use OAuth2 for authentication. The general flow is:
 
 ## Testing Authentication
 
-To test authentication for these providers:
+There are two ways to test authentication for these providers: using the Arcade CLI or using our custom test scripts.
+
+### Method 1: Using Arcade CLI
 
 1. Ensure you're in the virtual environment with the patched Arcade CLI:
    ```bash
@@ -100,6 +102,30 @@ To test authentication for these providers:
 4. The system will prompt for authentication if needed, showing a URL for OAuth flow
 
 5. After completing authentication, the tool should be able to access the requested resources
+
+### Method 2: Using Test Scripts
+
+We've developed custom scripts to test authentication directly without going through the chat interface:
+
+#### Google Authentication Testing
+
+1. Run the basic authentication test:
+   ```bash
+   npm run test:google-auth
+   ```
+   This will initiate the Google OAuth flow and open a browser window for sign-in.
+
+2. Test making API calls to Google services after authentication:
+   ```bash
+   npm run test:google-api
+   ```
+   This will authenticate with Google and then allow you to select which Google API to test (Gmail, Calendar, or Drive).
+
+See the [test-scripts/README.md](../test-scripts/README.md) file for more details on using these testing scripts.
+
+#### Detailed Google Auth Testing Guide
+
+For comprehensive information about testing Google authentication, see the [GOOGLE_AUTH_TESTING.md](./GOOGLE_AUTH_TESTING.md) document.
 
 ## Callback URL Requirements
 
