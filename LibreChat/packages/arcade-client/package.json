@@ -34,7 +34,16 @@
     "b:build": "bun run b:clean && bun run rollup -c --silent --bundleConfigAsCjs",
     "prepare": "cd ../.. && husky install .husky",
     "precommit": "lint-staged",
-    "postcommit": "git update-index --again"
+    "postcommit": "git update-index --again",
+    "arcade:login": "source ../../../.venv-arcade/bin/activate && arcade login",
+    "arcade:chat": "source ../../../.venv-arcade/bin/activate && arcade chat --model gpt-4o",
+    "arcade:list": "source ../../../.venv-arcade/bin/activate && arcade show",
+    "arcade:logs": "source ../../../.venv-arcade/bin/activate && arcade worker logs --follow",
+    "arcade:help": "source ../../../.venv-arcade/bin/activate && arcade --help",
+    "test:google-auth": "npx ts-node --esm --experimentalSpecifierResolution=node test-scripts/test-google-auth.ts",
+    "test:google-api": "npx ts-node --esm --experimentalSpecifierResolution=node test-scripts/test-google-api-call.ts",
+    "test:simple-auth": "node test-scripts/simple-google-auth.js",
+    "test:simple-api": "node test-scripts/simple-google-api.js"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -91,6 +100,7 @@
   },
   "dependencies": {
     "axios": "^1.6.7",
+    "dotenv": "^16.5.0",
     "zod": "^3.22.4"
   },
   "publishConfig": {
