@@ -2,6 +2,24 @@
 
 This folder contains utility scripts for managing Docker services and other development tools for the Agentis project.
 
+## Documentation Tools
+
+### generate-docs-index.js
+
+A utility script that scans the project directories for markdown files and generates a comprehensive index in `Docs/index.md`. This helps developers find and navigate documentation files more easily.
+
+```bash
+# Run with default depth (3 levels)
+node scripts/generate-docs-index.js
+
+# Run with custom depth
+node scripts/generate-docs-index.js 4
+```
+
+### md-symlinks.js
+
+Creates symbolic links to all Markdown files in the project, placing them in the `Docs/sym-links` directory for easy reference.
+
 ## Docker CLI Tool
 
 The `docker-cli.sh` script provides a simple command-line interface for managing all the Docker services required for Agentis development.

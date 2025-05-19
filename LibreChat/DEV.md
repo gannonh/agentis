@@ -1,5 +1,10 @@
 # DevOps Notes
 
+##
+Digital Ocean
+gannonW@astro-labs.app
+S3cr3t77!
+
 ## Development Setup
 
 1. Use Node.JS 20.x.
