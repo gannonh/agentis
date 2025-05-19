@@ -27,6 +27,9 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "npx http-server docs/api -o",
     "b:clean": "bun run rimraf dist",
     "b:build": "bun run b:clean && bun run rollup -c --silent --bundleConfigAsCjs",
     "prepare": "cd ../.. && husky install .husky",
@@ -82,11 +85,13 @@
     "rollup-plugin-typescript2": "^0.35.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.2",
+    "typedoc": "^0.25.13",
+    "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "zod": "^3.22.4",
-    "axios": "^1.6.7"
+    "axios": "^1.6.7",
+    "zod": "^3.22.4"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

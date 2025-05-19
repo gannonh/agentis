@@ -1,3 +1,5 @@
+Arcade Client API Documentation / [Exports](modules.md)
+
 # Arcade Client for Agentis
 
 A TypeScript client for interacting with the Arcade API, designed for integration with the Agentis platform.
