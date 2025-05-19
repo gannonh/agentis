@@ -46,38 +46,38 @@ export interface ToolkitSelector {
 
 /**
  * Create a toolkit selector
- * 
+ *
  * @param config - Toolkit selector configuration
  * @returns Toolkit selector
  */
 export function createToolkitSelector(config: ToolkitSelectorConfig): ToolkitSelector {
   const { toolkits, authStatus, onStartAuth, onCheckAuth } = config;
-  
+
   return {
     getAvailableToolkits(category?: string): ArcadeAgentisTool[] {
       if (!category) {
         return [...toolkits];
       }
-      
-      return toolkits.filter(toolkit => toolkit.category === category);
+
+      return toolkits.filter((toolkit) => toolkit.category === category);
     },
-    
+
     getAuthenticatedToolkits(): ArcadeAgentisTool[] {
-      return toolkits.filter(toolkit => 
-        authStatus[toolkit.arcadeToolkitId]?.isAuthenticated === true
+      return toolkits.filter(
+        (toolkit) => authStatus[toolkit.arcadeToolkitId]?.isAuthenticated === true
       );
     },
-    
+
     startAuthentication(toolkitId: string): void {
       onStartAuth(toolkitId);
     },
-    
+
     checkAuthenticationStatus(toolkitId: string): void {
       onCheckAuth(toolkitId);
     },
-    
+
     isAuthenticated(toolkitId: string): boolean {
       return authStatus[toolkitId]?.isAuthenticated === true;
-    }
+    },
   };
 }

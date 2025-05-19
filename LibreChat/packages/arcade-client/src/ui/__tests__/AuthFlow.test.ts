@@ -6,15 +6,19 @@ import { createAuthFlow, AuthFlowStatus } from '../AuthFlow';
 
 describe('Arcade Auth Flow', () => {
   // Mock window.open
-  const mockWindowOpen = jest.fn();
+  const mockWindowOpen = jest.fn() as jest.MockedFunction<typeof window.open>;
   global.open = mockWindowOpen;
 
   // Mock storage
   const mockStorage: Record<string, string> = {};
   const mockLocalStorage = {
     getItem: jest.fn((key: string) => mockStorage[key] || null),
-    setItem: jest.fn((key: string, value: string) => { mockStorage[key] = value; }),
-    removeItem: jest.fn((key: string) => { delete mockStorage[key]; }),
+    setItem: jest.fn((key: string, value: string) => {
+      mockStorage[key] = value;
+    }),
+    removeItem: jest.fn((key: string) => {
+      delete mockStorage[key];
+    }),
   };
   Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
 
@@ -26,7 +30,7 @@ describe('Arcade Auth Flow', () => {
   beforeEach(() => {
     // Clear all mocks and storage before each test
     jest.clearAllMocks();
-    Object.keys(mockStorage).forEach(key => delete mockStorage[key]);
+    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
   });
 
   it('should create an auth flow with proper methods', () => {
@@ -54,7 +58,7 @@ describe('Arcade Auth Flow', () => {
 
       const mockAuthResponse = {
         id: 'auth-123',
-        status: 'pending',
+        status: 'pending' as const,
         url: 'https://example.com/auth',
       };
 
@@ -90,7 +94,7 @@ describe('Arcade Auth Flow', () => {
 
       const mockAuthResponse = {
         id: 'auth-123',
-        status: 'pending',
+        status: 'pending' as const,
       };
 
       authFlow.startAuth('github', mockAuthResponse);
@@ -111,7 +115,7 @@ describe('Arcade Auth Flow', () => {
       // Start auth
       const mockAuthResponse = {
         id: 'auth-123',
-        status: 'pending',
+        status: 'pending' as const,
         url: 'https://example.com/auth',
       };
       authFlow.startAuth('github', mockAuthResponse);
@@ -119,7 +123,7 @@ describe('Arcade Auth Flow', () => {
       // Mock completed status
       const mockCompletedResponse = {
         id: 'auth-123',
-        status: 'completed',
+        status: 'completed' as const,
         provider_id: 'github',
         user_id: 'user-123',
       };
@@ -147,7 +151,7 @@ describe('Arcade Auth Flow', () => {
       // Start auth
       const mockAuthResponse = {
         id: 'auth-123',
-        status: 'pending',
+        status: 'pending' as const,
         url: 'https://example.com/auth',
       };
       authFlow.startAuth('github', mockAuthResponse);
@@ -155,7 +159,7 @@ describe('Arcade Auth Flow', () => {
       // Mock failed status
       const mockFailedResponse = {
         id: 'auth-123',
-        status: 'failed',
+        status: 'failed' as const,
       };
 
       // Check status
@@ -181,7 +185,7 @@ describe('Arcade Auth Flow', () => {
       // Start auth
       const mockAuthResponse = {
         id: 'auth-123',
-        status: 'pending',
+        status: 'pending' as const,
         url: 'https://example.com/auth',
       };
       authFlow.startAuth('github', mockAuthResponse);
@@ -189,7 +193,7 @@ describe('Arcade Auth Flow', () => {
       // Mock completed status with different ID
       const mockCompletedResponse = {
         id: 'auth-456',
-        status: 'completed',
+        status: 'completed' as const,
       };
 
       // Check status
@@ -216,7 +220,7 @@ describe('Arcade Auth Flow', () => {
       // Start auth
       const mockAuthResponse = {
         id: 'auth-123',
-        status: 'pending',
+        status: 'pending' as const,
         url: 'https://example.com/auth',
       };
       authFlow.startAuth('github', mockAuthResponse);

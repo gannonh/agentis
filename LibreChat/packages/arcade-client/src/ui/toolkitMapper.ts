@@ -2,12 +2,17 @@
  * Mapper functions for converting Arcade API responses to UI components
  */
 
-import type { ArcadeToolkitConfig, ArcadeToolResponse } from '../types';
-import type { ArcadeUIToolkitConfig, ArcadeAgentisTool, ArcadeUITool, ArcadeUIToolParameter } from './types';
+import type { ArcadeToolkitConfig, ArcadeToolResponse, ArcadeParameter } from '../types';
+import type {
+  ArcadeUIToolkitConfig,
+  ArcadeAgentisTool,
+  ArcadeUITool,
+  ArcadeUIToolParameter,
+} from './types';
 
 /**
  * Maps an Arcade toolkit configuration to a UI component configuration
- * 
+ *
  * @param toolkit - Arcade toolkit configuration
  * @returns UI component configuration
  */
@@ -28,7 +33,7 @@ export function mapToolkitToUIComponent(toolkit: ArcadeToolkitConfig): ArcadeUIT
 
 /**
  * Maps a value schema type to a simplified UI type
- * 
+ *
  * @param valType - Arcade value schema type
  * @returns Simplified type string
  */
@@ -49,29 +54,29 @@ function mapValueSchemaToType(valType: string): string {
 
 /**
  * Maps an Arcade tool parameter to a UI parameter
- * 
+ *
  * @param param - Arcade parameter definition
  * @returns UI parameter definition
  */
-function mapToolParameter(param: Record<string, unknown>): ArcadeUIToolParameter {
+function mapToolParameter(param: ArcadeParameter): ArcadeUIToolParameter {
   return {
-    name: param.name as string,
-    description: (param.description as string) || '',
+    name: param.name,
+    description: param.description || '',
     required: !!param.required,
-    type: mapValueSchemaToType((param.value_schema as Record<string, string>)?.val_type || 'string'),
-    enumValues: (param.value_schema as Record<string, string[]>)?.enum,
+    type: mapValueSchemaToType(param.value_schema?.val_type || 'string'),
+    enumValues: param.value_schema?.enum,
   };
 }
 
 /**
  * Maps an Arcade tool to a UI tool
- * 
+ *
  * @param tool - Arcade tool definition
  * @returns UI tool definition
  */
 function mapTool(tool: ArcadeToolResponse): ArcadeUITool {
-  const parameters = (tool.input?.parameters || []).map(mapToolParameter);
-  
+  const parameters = (tool.input?.parameters || []).map((param) => mapToolParameter(param));
+
   return {
     name: tool.name,
     fullyQualifiedName: tool.fully_qualified_name || `${tool.toolkit.name}.${tool.name}`,
@@ -84,7 +89,7 @@ function mapTool(tool: ArcadeToolResponse): ArcadeUITool {
 
 /**
  * Maps a toolkit and its tools to an Agentis tool configuration
- * 
+ *
  * @param toolkit - Arcade toolkit configuration
  * @param tools - List of tools in the toolkit
  * @returns Agentis tool configuration
@@ -95,7 +100,7 @@ export function mapToolkitsToAgentisTool(
 ): ArcadeAgentisTool {
   const uiConfig = mapToolkitToUIComponent(toolkit);
   const mappedTools = tools.map(mapTool);
-  
+
   return {
     ...uiConfig,
     tools: mappedTools,

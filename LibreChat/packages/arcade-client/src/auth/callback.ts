@@ -69,7 +69,7 @@ export interface AuthCallbackHandler {
 
 /**
  * Create an authentication callback handler
- * 
+ *
  * @param config - Authentication callback configuration
  * @returns Authentication callback handler
  */
@@ -83,7 +83,7 @@ export function createCallbackHandler(config: AuthCallbackConfig): AuthCallbackH
     // onCancel,
     resultPath = '/auth-result',
     pollInterval = 2000,
-    maxPollCount = 30,  // Default to 1 minute timeout with 2s interval
+    maxPollCount = 30, // Default to 1 minute timeout with 2s interval
   } = config;
 
   return {
@@ -92,18 +92,18 @@ export function createCallbackHandler(config: AuthCallbackConfig): AuthCallbackH
         // Extract auth ID and toolkit ID from URL parameters
         const authId = url.searchParams.get('auth_id');
         const toolkitId = url.searchParams.get('toolkit');
-        
+
         if (!authId) {
           throw new Error('Missing auth_id parameter in callback URL');
         }
-        
+
         // Redirect to result page to handle the auth result
         const resultUrl = new URL(window.location.origin + resultPath);
         resultUrl.searchParams.set('auth_id', authId);
         if (toolkitId) {
           resultUrl.searchParams.set('toolkit', toolkitId);
         }
-        
+
         // Redirect to result page
         window.location.href = resultUrl.toString();
       } catch (error) {
@@ -115,17 +115,17 @@ export function createCallbackHandler(config: AuthCallbackConfig): AuthCallbackH
         });
       }
     },
-    
+
     handleResultPage(url: URL): void {
       try {
         // Extract auth ID and toolkit ID from URL parameters
         const authId = url.searchParams.get('auth_id');
         const toolkitId = url.searchParams.get('toolkit');
-        
+
         if (!authId || !toolkitId) {
           throw new Error('Missing required parameters: auth_id and toolkit');
         }
-        
+
         // Begin polling for auth status
         this.pollAuthStatus(authId, toolkitId);
       } catch (error) {
@@ -137,10 +137,10 @@ export function createCallbackHandler(config: AuthCallbackConfig): AuthCallbackH
         });
       }
     },
-    
+
     async pollAuthStatus(authId: string, toolkitId: string): Promise<void> {
       let pollCount = 0;
-      
+
       const poll = async (): Promise<void> => {
         try {
           // Check if we've reached the maximum poll count
@@ -152,15 +152,15 @@ export function createCallbackHandler(config: AuthCallbackConfig): AuthCallbackH
             });
             return;
           }
-          
+
           pollCount++;
-          
+
           // Get auth status from Arcade
           const response = await client.getAuthStatus(authId);
-          
+
           // Update auth flow state
           authFlow.checkAuthStatus(response);
-          
+
           // Handle auth status
           if (response.status === 'completed') {
             // Success
@@ -191,7 +191,7 @@ export function createCallbackHandler(config: AuthCallbackConfig): AuthCallbackH
           });
         }
       };
-      
+
       // Start polling
       await poll();
     },

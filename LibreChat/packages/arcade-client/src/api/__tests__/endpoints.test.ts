@@ -27,7 +27,7 @@ describe('Arcade API Endpoints', () => {
     cancelAuth: jest.fn(),
     getAuthStatus: jest.fn(),
     getActiveAuthRequest: jest.fn(),
-  };
+  } as jest.Mocked<import('../../ui/AuthFlow').AuthFlow>;
 
   // Mock toolkit selector
   const mockToolkitSelector = {
@@ -36,7 +36,7 @@ describe('Arcade API Endpoints', () => {
     startAuthentication: jest.fn(),
     checkAuthenticationStatus: jest.fn(),
     isAuthenticated: jest.fn(),
-  };
+  } as jest.Mocked<import('../../ui/ToolkitSelector').ToolkitSelector>;
 
   beforeEach(() => {
     jest.clearAllMocks();

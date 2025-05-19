@@ -4,13 +4,13 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
 import { ArcadeClient, createArcadeClient } from './client';
-import type { 
-  ArcadeConfig, 
-  ArcadeHealthResponse, 
-  ArcadeToolsResponse, 
+import type {
+  ArcadeConfig,
+  ArcadeHealthResponse,
+  ArcadeToolsResponse,
   ArcadeExecuteToolResponse,
   ArcadeToolResponse,
-  ArcadeFormattedToolOptions
+  ArcadeFormattedToolOptions,
 } from '../types';
 
 // Mock axios
@@ -35,19 +35,23 @@ describe('ArcadeClient', () => {
 
   const userId = 'test-user-id';
   let client: ArcadeClient;
-  let mockGet: jest.MockedFunction<(url: string, config?: AxiosRequestConfig) => Promise<AxiosResponse>>;
-  let mockPost: jest.MockedFunction<(url: string, data?: unknown, config?: AxiosRequestConfig) => Promise<AxiosResponse>>;
+  let mockGet: jest.MockedFunction<
+    (url: string, config?: AxiosRequestConfig) => Promise<AxiosResponse>
+  >;
+  let mockPost: jest.MockedFunction<
+    (url: string, data?: unknown, config?: AxiosRequestConfig) => Promise<AxiosResponse>
+  >;
   let mockResponse: jest.Mock;
 
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Set up axios mock for create
     mockGet = jest.fn();
     mockPost = jest.fn();
     mockResponse = jest.fn();
-    
+
     // Mock axios.create to return an object with get and post methods
     (axios.create as jest.Mock).mockReturnValue({
       get: mockGet,
@@ -58,7 +62,7 @@ describe('ArcadeClient', () => {
         },
       },
     });
-    
+
     // Create client
     client = createArcadeClient(mockConfig, userId);
   });
@@ -81,7 +85,7 @@ describe('ArcadeClient', () => {
       expect(axios.create).toHaveBeenCalledWith({
         baseURL: 'https://api.arcade.dev/v1',
         headers: {
-          'Authorization': `Bearer ${mockConfig.api_key}`,
+          Authorization: `Bearer ${mockConfig.api_key}`,
           'Content-Type': 'application/json',
         },
         timeout: 30000,
@@ -94,10 +98,10 @@ describe('ArcadeClient', () => {
         hosting: 'self_hosted' as const,
         engine: { host: 'localhost', port: 8000 },
       };
-      
+
       jest.clearAllMocks();
       createArcadeClient(selfHostedConfig, userId);
-      
+
       expect(axios.create).toHaveBeenCalledWith(
         expect.objectContaining({
           baseURL: 'http://localhost:8000/v1',
@@ -146,7 +150,7 @@ describe('ArcadeClient', () => {
 
     it('should include query parameters when provided', async () => {
       mockGet.mockResolvedValueOnce({ data: {} } as AxiosResponse);
-      
+
       const options: ArcadeFormattedToolOptions = {
         toolkit: 'github',
         limit: 20,
@@ -177,14 +181,11 @@ describe('ArcadeClient', () => {
 
       const result = await client.executeTool(toolName, params);
 
-      expect(mockPost).toHaveBeenCalledWith(
-        '/tools/execute',
-        {
-          tool_name: toolName,
-          user_id: userId,
-          input: params,
-        }
-      );
+      expect(mockPost).toHaveBeenCalledWith('/tools/execute', {
+        tool_name: toolName,
+        user_id: userId,
+        input: params,
+      });
       expect(result).toEqual(mockResponse);
     });
 
@@ -200,16 +201,13 @@ describe('ArcadeClient', () => {
         }
       );
 
-      expect(mockPost).toHaveBeenCalledWith(
-        '/tools/execute',
-        {
-          tool_name: 'github.createIssue',
-          user_id: userId,
-          input: {},
-          tool_version: '1.0',
-          run_at: '2023-01-01T00:00:00Z',
-        }
-      );
+      expect(mockPost).toHaveBeenCalledWith('/tools/execute', {
+        tool_name: 'github.createIssue',
+        user_id: userId,
+        input: {},
+        tool_version: '1.0',
+        run_at: '2023-01-01T00:00:00Z',
+      });
     });
   });
 

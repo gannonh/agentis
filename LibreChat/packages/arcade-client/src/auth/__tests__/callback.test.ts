@@ -10,14 +10,16 @@ describe('Arcade Auth Callback Handler', () => {
   // Mock client
   const mockClient = {
     getAuthStatus: jest.fn(),
-  };
+  } as any;
 
   // Mock auth flow
   const mockAuthFlow = {
+    startAuth: jest.fn(),
     checkAuthStatus: jest.fn(),
-    getActiveAuthRequest: jest.fn(),
     cancelAuth: jest.fn(),
-  };
+    getAuthStatus: jest.fn(),
+    getActiveAuthRequest: jest.fn(),
+  } as jest.Mocked<import('../../ui/AuthFlow').AuthFlow>;
 
   // Mock callback handlers
   const mockOnSuccess = jest.fn();
@@ -30,8 +32,8 @@ describe('Arcade Auth Callback Handler', () => {
 
   it('should create a callback handler with correct methods', () => {
     const handler = createCallbackHandler({
-      client: mockClient as any,
-      authFlow: mockAuthFlow as any,
+      client: mockClient,
+      authFlow: mockAuthFlow,
       onSuccess: mockOnSuccess,
       onError: mockOnError,
       onCancel: mockOnCancel,
@@ -47,7 +49,7 @@ describe('Arcade Auth Callback Handler', () => {
       // Setup mocks
       const mockAuthResponse: ArcadeAuthResponse = {
         id: 'auth-123',
-        status: 'completed',
+        status: 'completed' as const,
         provider_id: 'github',
         user_id: 'user-123',
       };
@@ -56,8 +58,8 @@ describe('Arcade Auth Callback Handler', () => {
 
       // Create handler with shorter timeout for tests
       const handler = createCallbackHandler({
-        client: mockClient as any,
-        authFlow: mockAuthFlow as any,
+        client: mockClient,
+        authFlow: mockAuthFlow,
         onSuccess: mockOnSuccess,
         onError: mockOnError,
         onCancel: mockOnCancel,
@@ -86,15 +88,15 @@ describe('Arcade Auth Callback Handler', () => {
       // Setup mocks
       const mockAuthResponse: ArcadeAuthResponse = {
         id: 'auth-123',
-        status: 'failed',
+        status: 'failed' as const,
       };
 
       mockClient.getAuthStatus.mockResolvedValue(mockAuthResponse);
 
       // Create handler
       const handler = createCallbackHandler({
-        client: mockClient as any,
-        authFlow: mockAuthFlow as any,
+        client: mockClient,
+        authFlow: mockAuthFlow,
         onSuccess: mockOnSuccess,
         onError: mockOnError,
         onCancel: mockOnCancel,

@@ -60,7 +60,7 @@ export interface AuthFlow {
 
 /**
  * Create an authentication flow
- * 
+ *
  * @param config - Authentication flow configuration
  * @returns Authentication flow
  */
@@ -75,10 +75,10 @@ export function createAuthFlow(config: AuthFlowConfig): AuthFlow {
 
   // Track auth status for toolkits
   const authStatusMap = new Map<string, AuthFlowStatus>();
-  
+
   // Active auth request
   let activeAuthRequest: AuthRequest | null = null;
-  
+
   // Polling interval ID
   let pollingIntervalId: number | undefined;
 
@@ -104,7 +104,7 @@ export function createAuthFlow(config: AuthFlowConfig): AuthFlow {
     if (pollingIntervalId) {
       window.clearInterval(pollingIntervalId);
     }
-    
+
     // This is just a stub for the polling mechanism
     // In a real implementation, this would make API calls to check status
     pollingIntervalId = window.setInterval(() => {
@@ -131,10 +131,13 @@ export function createAuthFlow(config: AuthFlowConfig): AuthFlow {
    */
   const saveAuthRequest = () => {
     if (activeAuthRequest) {
-      localStorage.setItem(storageKey, JSON.stringify({
-        ...activeAuthRequest,
-        startedAt: activeAuthRequest.startedAt.toISOString(),
-      }));
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          ...activeAuthRequest,
+          startedAt: activeAuthRequest.startedAt.toISOString(),
+        })
+      );
     } else {
       localStorage.removeItem(storageKey);
     }
@@ -149,79 +152,79 @@ export function createAuthFlow(config: AuthFlowConfig): AuthFlow {
         status: AuthFlowStatus.PENDING,
         startedAt: new Date(),
       };
-      
+
       // Save to local storage
       saveAuthRequest();
-      
+
       // Update status map
       authStatusMap.set(toolkitId, AuthFlowStatus.PENDING);
-      
+
       // Call callback
       onAuthStart(toolkitId, response);
-      
+
       // Open auth URL if provided
       if (response.url) {
         window.open(response.url, '_blank');
       }
-      
+
       // Start polling
       startPolling();
     },
-    
+
     checkAuthStatus(response: ArcadeAuthResponse): void {
       // If no active request or ID doesn't match, ignore
       if (!activeAuthRequest || activeAuthRequest.id !== response.id) {
         return;
       }
-      
+
       // Extract toolkit ID from active request
       const { toolkitId } = activeAuthRequest;
-      
+
       // Handle status
       if (response.status === 'completed') {
         // Update status
         authStatusMap.set(toolkitId, AuthFlowStatus.COMPLETED);
         activeAuthRequest.status = AuthFlowStatus.COMPLETED;
-        
+
         // Call callback
         onAuthComplete(toolkitId, response);
-        
+
         // Clear active request
         activeAuthRequest = null;
         saveAuthRequest();
-        
+
         // Stop polling
         stopPolling();
       } else if (response.status === 'failed') {
         // Update status
         authStatusMap.set(toolkitId, AuthFlowStatus.FAILED);
         activeAuthRequest.status = AuthFlowStatus.FAILED;
-        
+
         // Call callback
         onAuthError(toolkitId, response);
-        
+
         // Clear active request
         activeAuthRequest = null;
         saveAuthRequest();
-        
+
         // Stop polling
         stopPolling();
       }
     },
-    
+
     cancelAuth(): void {
       // Clear active request
       activeAuthRequest = null;
       saveAuthRequest();
-      
+
       // Stop polling
       stopPolling();
     },
-    
+
     getAuthStatus(toolkitId: string): AuthFlowStatus | null {
       return authStatusMap.get(toolkitId) || null;
     },
-    
+
     getActiveAuthRequest(): AuthRequest | null {
       return activeAuthRequest;
     },
