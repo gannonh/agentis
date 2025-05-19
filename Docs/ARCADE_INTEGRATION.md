@@ -92,7 +92,10 @@ Based on the analysis and user interface considerations, **Option A (Curated Arc
 
 ## 4. Implementation Plan
 
-### Phase 0: Development Environment Modernization (2 weeks)
+### Phase 0: Development Environment Modernization (2 weeks) 
+
+[#1](https://github.com/gannonh/agentis/issues/1)
+
 1. **TypeScript Setup and Standards**
    - Update TypeScript configuration for strict mode
    - Establish consistent type standards across the codebase
@@ -124,6 +127,9 @@ Based on the analysis and user interface considerations, **Option A (Curated Arc
    - Set up automated documentation generation
 
 ### Phase 1: Environment Setup (1 week)
+
+[#2](https://github.com/gannonh/agentis/issues/2)
+
 1. **Arcade Hosting Decision**
    - Set up Arcade Cloud account (recommended for initial integration)
    - Determine long-term hosting strategy (Cloud, Hybrid, or Self-hosted)
@@ -140,6 +146,9 @@ Based on the analysis and user interface considerations, **Option A (Curated Arc
    - Document authentication requirements for each toolkit
 
 ### Phase 2: Foundation Implementation (3 weeks)
+
+[#3](https://github.com/gannonh/agentis/issues/3)
+
 1. **Configuration System**
    - Add Arcade configuration section to librechat.yaml
    - Create environment variables for Arcade connection in .env
@@ -165,6 +174,9 @@ Based on the analysis and user interface considerations, **Option A (Curated Arc
    - Measure and enforce test coverage thresholds
 
 ### Phase 3: Core Integration (3 weeks)
+
+[#4](https://github.com/gannonh/agentis/issues/4)
+
 1. **Tool Registration System**
    - Develop dynamic registration of selected Arcade toolkits as Agentis tools
    - Create proxy endpoints for toolkit execution
@@ -184,6 +196,9 @@ Based on the analysis and user interface considerations, **Option A (Curated Arc
    - Ensure proper TypeScript usage throughout
 
 ### Phase 4: Advanced Features (2 weeks)
+
+[#5](https://github.com/gannonh/agentis/issues/5)
+
 1. **Enhanced Integration**
    - Implement toolkit result caching
    - Add streaming support for long-running operations
@@ -203,6 +218,9 @@ Based on the analysis and user interface considerations, **Option A (Curated Arc
    - Update API documentation with new endpoints
 
 ### Phase 5: Production Readiness (1 week)
+
+[#6](https://github.com/gannonh/agentis/issues/6)
+
 1. **Security Review**
    - Audit authentication flows for each toolkit
    - Verify token storage security
