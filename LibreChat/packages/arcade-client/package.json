@@ -34,7 +34,12 @@
     "b:build": "bun run b:clean && bun run rollup -c --silent --bundleConfigAsCjs",
     "prepare": "cd ../.. && husky install .husky",
     "precommit": "lint-staged",
-    "postcommit": "git update-index --again"
+    "postcommit": "git update-index --again",
+    "arcade:login": "source ../../../.venv-arcade/bin/activate && arcade login",
+    "arcade:chat": "source ../../../.venv-arcade/bin/activate && arcade chat --model gpt-4o",
+    "arcade:list": "source ../../../.venv-arcade/bin/activate && arcade show",
+    "arcade:logs": "source ../../../.venv-arcade/bin/activate && arcade worker logs --follow",
+    "arcade:help": "source ../../../.venv-arcade/bin/activate && arcade --help"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
