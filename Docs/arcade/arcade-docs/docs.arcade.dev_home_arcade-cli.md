@@ -1,0 +1,325 @@
+---
+url: "https://docs.arcade.dev/home/arcade-cli"
+title: "Arcade Docs"
+---
+
+[Home](https://docs.arcade.dev/home "Home") Arcade CLI
+
+# The Arcade CLI
+
+The Arcade CLI is a command-line tool that allows you to manage your Arcade deployments, generate, test, and manage your toolkits, and more.
+
+This same package contains the SDK that you will use to [build your own toolkits](https://docs.arcade.dev/home/build-tools/create-a-toolkit).
+
+## Installation [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#installation)
+
+Like all python packages, the Arcade CLI needs to be installed within the python virtual environment you are using for your Arcade development environment.
+
+Standard PythonPython + CondaPython + uv
+
+```nextra-code
+python -m venv .venv
+source .venv/bin/activate
+```
+
+```nextra-code
+# install miniconda: https://www.anaconda.com/docs/getting-started/miniconda/install
+
+conda create --name arcade
+conda activate arcade
+```
+
+```nextra-code
+# install uv: https://docs.astral.sh/uv/getting-started/installation/
+
+uv venv --seed
+source .venv/bin/activate
+```
+
+Now that your python virtual environment is activated, you can install the Arcade CLI with the following command:
+
+```nextra-code
+pip install arcade-ai
+```
+
+## Usage [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#usage)
+
+```nextra-code
+ Usage: arcade [OPTIONS] COMMAND [ARGS]...
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ --version  -v        Print version and exit.                                        │
+│ --help               Show this message and exit.                                    │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+╭─ User ──────────────────────────────────────────────────────────────────────────────╮
+│ login      Log in to Arcade Cloud                                                   │
+│ logout     Log out of Arcade Cloud                                                  │
+│ dashboard  Open the Arcade Dashboard in a web browser                               │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Tool Development ──────────────────────────────────────────────────────────────────╮
+│ new    Create a new toolkit package directory                                       │
+│ show   Show the installed toolkits or details of a specific tool                    │
+│ chat   Start a chat with a model in the terminal to test tools                      │
+│ evals  Run tool calling evaluations                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Launch ────────────────────────────────────────────────────────────────────────────╮
+│ serve  Start tool server worker with locally installed tools                        │
+│ dev    Launch Arcade - requires 'arcade-engine'                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Deployment ────────────────────────────────────────────────────────────────────────╮
+│ deploy  Deploy toolkits to Arcade Cloud                                             │
+│ worker  Manage deployments of tool servers (logs, list, etc)                        │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+You can learn more about any of the commands by running `arcade <command> --help`, e.g. `arcade new --help`.
+
+## `arcade login` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-login)
+
+```nextra-code
+ Usage: arcade login [OPTIONS]
+
+ Log in to Arcade Cloud
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────╮
+│ --host  -h      TEXT     The Arcade Cloud host to log in to.                      │
+│                          [default: cloud.arcade.dev]                              │
+│ --port  -p      INTEGER  The port of the Arcade Cloud host (if running locally).  │
+│                          [default: None]                                          │
+│ --help                   Show this message and exit.                              │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade logout` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-logout)
+
+```nextra-code
+ Usage: arcade logout [OPTIONS]
+
+ Log out of Arcade Cloud
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                       │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade dashboard` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-dashboard)
+
+```nextra-code
+ Usage: arcade dashboard [OPTIONS]
+
+ Open the Arcade Dashboard in a web browser
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────╮
+│ --host    -h      TEXT     The Arcade Engine host that serves the dashboard.      │
+│                            [default: api.arcade.dev]                              │
+│ --port    -p      INTEGER  The port of the Arcade Engine.                         │
+│                            [default: None]                                        │
+│ --local   -l               Open the local dashboard instead of the default remote │
+│                            dashboard.                                             │
+│ --tls                      Whether to force TLS for the connection to the Arcade  │
+│                            Engine.                                                │
+│ --no-tls                   Whether to disable TLS for the connection to the       │
+│                            Arcade Engine.                                         │
+│ --help                     Show this message and exit.                            │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade new` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-new)
+
+```nextra-code
+ Usage: arcade new [OPTIONS]
+
+ Create a new toolkit package directory
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────╮
+│ --dir         TEXT  tools directory path                                          │
+│                     [default: current directory]                                  │
+│ --help              Show this message and exit.                                   │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade show` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-show)
+
+```nextra-code
+ Usage: arcade show [OPTIONS]
+
+ Show the installed toolkits or details of a specific tool
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────╮
+│ --toolkit  -T      TEXT     The toolkit to show the tools of                      │
+│                             [default: None]                                       │
+│ --tool     -t      TEXT     The specific tool to show details for                 │
+│                             [default: None]                                       │
+│ --host     -h      TEXT     The Arcade Engine address to show the tools/toolkits  │
+│                             of.                                                   │
+│                             [default: api.arcade.dev]                             │
+│ --local    -l               Show the local environment's catalog instead of an    │
+│                             Arcade Engine's catalog.                              │
+│ --port     -p      INTEGER  The port of the Arcade Engine.                        │
+│                             [default: None]                                       │
+│ --tls                       Whether to force TLS for the connection to the Arcade │
+│                             Engine. If not specified, the connection will use TLS │
+│                             if the engine URL uses a 'https' scheme.              │
+│ --no-tls                    Whether to disable TLS for the connection to the      │
+│                             Arcade Engine.                                        │
+│ --debug    -d               Show debug information                                │
+│ --help                      Show this message and exit.                           │
+╰───────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade chat` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-chat)
+
+```nextra-code
+ Usage: arcade chat [OPTIONS]
+
+ Start a chat with a model in the terminal to test tools
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ --model   -m      TEXT     The model to use for prediction.                         │
+│                            [default: gpt-4o]                                        │
+│ --stream  -s               Stream the tool output.                                  │
+│ --prompt          TEXT     The system prompt to use for the chat.                   │
+│                            [default: None]                                          │
+│ --debug   -d               Show debug information                                   │
+│ --host    -h      TEXT     The Arcade Engine address to send chat requests to.      │
+│                            [default: api.arcade.dev]                                │
+│ --port    -p      INTEGER  The port of the Arcade Engine.                           │
+│                            [default: None]                                          │
+│ --tls                      Whether to force TLS for the connection to the Arcade    │
+│                            Engine. If not specified, the connection will use TLS if │
+│                            the engine URL uses a 'https' scheme.                    │
+│ --no-tls                   Whether to disable TLS for the connection to the Arcade  │
+│                            Engine.                                                  │
+│ --help                     Show this message and exit.                              │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade evals` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-evals)
+
+```nextra-code
+ Run tool calling evaluations
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────╮
+│   directory      [DIRECTORY]  Directory containing evaluation files                 │
+│                               [default: .]                                          │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ --details         -d               Show detailed results                            │
+│ --max-concurrent  -c      INTEGER  Maximum number of concurrent evaluations         │
+│                                    (default: 1)                                     │
+│                                    [default: 1]                                     │
+│ --models          -m      TEXT     The models to use for evaluation (default:       │
+│                                    gpt-4o). Use commas to separate multiple models. │
+│                                    [default: gpt-4o]                                │
+│ --host            -h      TEXT     The Arcade Engine address to send chat requests  │
+│                                    to.                                              │
+│                                    [default: localhost]                             │
+│ --cloud                            Whether to run evaluations against the Arcade    │
+│                                    Cloud Engine. Overrides the 'host' option.       │
+│ --port            -p      INTEGER  The port of the Arcade Engine.                   │
+│                                    [default: None]                                  │
+│ --tls                              Whether to force TLS for the connection to the   │
+│                                    Arcade Engine. If not specified, the connection  │
+│                                    will use TLS if the engine URL uses a 'https'    │
+│                                    scheme.                                          │
+│ --no-tls                           Whether to disable TLS for the connection to the │
+│                                    Arcade Engine.                                   │
+│ --help                             Show this message and exit.                      │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade serve` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-serve)
+
+```nextra-code
+ Usage: arcade serve [OPTIONS]
+
+ Start tool server worker with locally installed tools
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ --host                 TEXT     Host for the app, from settings by default.         │
+│                                 [default: 127.0.0.1]                                │
+│ --port         -p      INTEGER  Port for the app, defaults to                       │
+│                                 [default: 8002]                                     │
+│ --no-auth                       Disable authentication for the worker. Not          │
+│                                 recommended for production.                         │
+│ --otel-enable                   Send logs to OpenTelemetry                          │
+│ --mcp                           Run as a local MCP server over stdio                │
+│ --debug        -d               Show debug information                              │
+│ --help                          Show this message and exit.                         │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade dev` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-dev)
+
+```nextra-code
+ Usage: arcade dev [OPTIONS]
+
+ Launch Arcade - requires 'arcade-engine'
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ --host              TEXT     Host for the toolkit server.                           │
+│                              [default: 127.0.0.1]                                   │
+│ --port      -p      INTEGER  Port for the toolkit server.                           │
+│                              [default: 8002]                                        │
+│ --config    -c      TEXT     Path to the engine configuration file.                 │
+│                              [default: None]                                        │
+│ --env-file  -e      TEXT     Path to the environment variables file.                │
+│                              [default: None]                                        │
+│ --debug     -d               Show debug information                                 │
+│ --help                       Show this message and exit.                            │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade deploy` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-deploy)
+
+```nextra-code
+ Usage: arcade deploy [OPTIONS]
+
+ Deploy toolkits to Arcade Cloud
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ --deployment-file  -d      TEXT     The deployment file to deploy.                  │
+│                                     [default: worker.toml]                          │
+│ --host             -h      TEXT     The Arcade Engine host to register the worker   │
+│                                     to.                                             │
+│                                     [default: api.arcade.dev]                       │
+│ --port             -p      INTEGER  The port of the Arcade Engine host.             │
+│                                     [default: None]                                 │
+│ --tls                               Whether to force TLS for the connection to the  │
+│                                     Arcade Engine. If not specified, the connection │
+│                                     will use TLS if the engine URL uses a 'https'   │
+│                                     scheme.                                         │
+│ --no-tls                            Whether to disable TLS for the connection to    │
+│                                     the Arcade Engine.                              │
+│ --help                              Show this message and exit.                     │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## `arcade worker` [Permalink for this section](https://docs.arcade.dev/home/arcade-cli\#arcade-worker)
+
+```nextra-code
+ Usage: arcade worker [OPTIONS] COMMAND [ARGS]...
+
+ Manage deployments of tool servers (logs, list, etc)
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ --host    -h      TEXT     The Arcade Engine host.                                  │
+│                            [default: api.arcade.dev]                                │
+│ --port    -p      INTEGER  The port of the Arcade Engine host.                      │
+│                            [default: None]                                          │
+│ --tls                      Whether to force TLS for the connection to the Arcade    │
+│                            Engine.                                                  │
+│ --no-tls                   Whether to disable TLS for the connection to the Arcade  │
+│                            Engine.                                                  │
+│ --help                     Show this message and exit.                              │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────╮
+│ list     List all workers                                                           │
+│ enable   Enable a worker                                                            │
+│ disable  Disable a worker                                                           │
+│ rm       Remove a worker                                                            │
+│ logs     Get logs for a worker                                                      │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+[Direct Third-Party API Call](https://docs.arcade.dev/home/auth/call-third-party-apis-directly "Direct Third-Party API Call") [Arcade Clients](https://docs.arcade.dev/home/arcade-clients "Arcade Clients")

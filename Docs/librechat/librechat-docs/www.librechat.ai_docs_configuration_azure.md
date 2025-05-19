@@ -1,0 +1,606 @@
+---
+url: "https://www.librechat.ai/docs/configuration/azure"
+title: "GitHub"
+---
+
+Docs
+
+⚙️ Configuration
+
+Azure OpenAI
+
+# Azure OpenAI
+
+**Azure OpenAI Integration for LibreChat**
+
+LibreChat boasts compatibility with Azure OpenAI API services, treating the endpoint as a first-class citizen. To properly utilize Azure OpenAI within LibreChat, it’s crucial to configure the [`librechat.yaml` file](https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/azure_openai) according to your specific needs. This document guides you through the essential setup process which allows seamless use of multiple deployments and models with as much flexibility as needed.
+
+## Example [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#example)
+
+Here’s a quick snapshot of what a comprehensive configuration might look like, including many of the options and features discussed below.
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+    # Endpoint-level configuration
+    titleModel: "llama-70b-chat"
+    plugins: true
+    assistants: true
+    groups:
+    # Group-level configuration
+    - group: "my-resource-westus"
+      apiKey: "${WESTUS_API_KEY}"
+      instanceName: "my-resource-westus"
+      version: "2024-03-01-preview"
+      # Model-level configuration
+      models:
+        gpt-4-vision-preview:
+          deploymentName: gpt-4-vision-preview
+          version: "2024-03-01-preview"
+        gpt-3.5-turbo:
+          deploymentName: gpt-35-turbo
+        gpt-4-1106-preview:
+          deploymentName: gpt-4-1106-preview
+    # Group-level configuration
+    - group: "mistral-inference"
+      apiKey: "${AZURE_MISTRAL_API_KEY}"
+      baseURL: "https://Mistral-large-vnpet-serverless.region.inference.ai.azure.com/v1/chat/completions"
+      serverless: true
+      # Model-level configuration
+      models:
+        mistral-large: true
+    # Group-level configuration
+    - group: "my-resource-sweden"
+      apiKey: "${SWEDEN_API_KEY}"
+      instanceName: "my-resource-sweden"
+      deploymentName: gpt-4-1106-preview
+      version: "2024-03-01-preview"
+      assistants: true
+      # Model-level configuration
+      models:
+        gpt-4-turbo: true
+```
+
+Here’s another working example configured according to the specifications of the [Azure OpenAI Endpoint Configuration Docs:](https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/azure_openai)
+
+Each level of configuration is extensively detailed in their respective sections:
+
+1. [Endpoint-level config](https://www.librechat.ai/docs/configuration/azure#endpoint-level-configuration)
+
+2. [Group-level config](https://www.librechat.ai/docs/configuration/azure#group-level-configuration)
+
+3. [Model-level config](https://www.librechat.ai/docs/configuration/azure#model-level-configuration)
+
+
+## Setup [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#setup)
+
+1. **Open `librechat.yaml` for Editing**: Use your preferred text editor or IDE to open and edit the `librechat.yaml` file.
+
+
+   - Optional: use a remote or custom file path with the following environment variable:
+
+.env
+
+```nextra-code
+CONFIG_PATH="/alternative/path/to/librechat.yaml"
+```
+
+2. **Configure Azure OpenAI Settings**: Follow the detailed structure outlined below to populate your Azure OpenAI settings appropriately. This includes specifying API keys, instance names, model groups, and other essential configurations.
+
+3. **Make sure to Remove Legacy Settings**: If you are using any of the [legacy configurations](https://www.librechat.ai/docs/configuration/azure#legacy-setup), be sure to remove. The LibreChat server will also detect these and remind you.
+
+4. **Save Your Changes**: After accurately inputting your settings, save the `librechat.yaml` file.
+
+5. **Restart LibreChat**: For the changes to take effect, restart your LibreChat application. This ensures that the updated configurations are loaded and utilized.
+
+
+## Required Fields [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#required-fields)
+
+To properly integrate Azure OpenAI with LibreChat, specific fields must be accurately configured in your `librechat.yaml` file. These fields are validated through a combination of custom and environmental variables to ensure the correct setup. Here are the detailed requirements based on the validation process:
+
+## Endpoint-Level Configuration [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#endpoint-level-configuration)
+
+Here’s the conversion of the provided settings into the new option table format:
+
+#### Global Azure Settings: [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#global-azure-settings)
+
+**Title and Conversation Settings:**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| titleModel | string | Specifies the model to use for generating conversation titles. If not provided, the default model is set as \`gpt-3.5-turbo\`, which will result in no titles if lacking this model. You can also set this to dynamically use the current model by setting it to \`current\_model\`. | titleModel: |
+| plugins | boolean | Enables the use of plugins through Azure. Set to \`true\` to activate Plugins endpoint support through your Azure config. Default: \`false\`. | plugins:false |
+| assistants | boolean | Enables the use of assistants through Azure. Set to \`true\` to activate Assistants endpoint through your Azure config. Default: \`false\`. Note: this requires an assistants-compatible region. | assistants:false |
+| summarize | boolean | Enables conversation summarization for all Azure models. Set to \`true\` to activate summarization. Default: \`false\`. | summarize:false |
+| summaryModel | string | Specifies the model to use for generating conversation summaries. If not provided, the default behavior is to use the first model in the \`default\` array of the first group. | summaryModel: |
+| titleConvo | boolean | Enables conversation title generation for all Azure models. Set to \`true\` to activate title generation. Default: \`false\`. | titleConvo:false |
+| titleMethod | string | Specifies the method to use for generating conversation titles. Valid options are \`"completion"\` and \`"functions"\`. If not provided, the default behavior is to use the \`"completion"\` method. | titleMethod:completion |
+
+**Group Configuration:**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| groups | array | Specifies the list of Azure OpenAI model groups. Each group represents a set of models with shared configurations. The groups field is an array of objects, where each object defines the settings for a specific group. This is a required field at the endpoint level, and at least one group must be defined. The group-level configurations are detailed in the Group-Level Configuration section. | \# groups:\[\] |
+
+**Custom Order (Optional):**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| customOrder | number | Allows you to specify a custom order for the Azure endpoint in the user interface. Higher numbers will appear lower in the list. If not provided, the default order is determined by the order in which the endpoints are defined in the \`librechat.yaml\` file. | customOrder: |
+
+Please note that the `customOrder` option is commented out, as it was mentioned as optional in the original text.
+
+Here’s an example of how you can configure these endpoint-level settings in your `librechat.yaml` file:
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+    titleModel: "gpt-3.5-turbo-1106"
+    plugins: true
+    assistants: true
+    summarize: true
+    summaryModel: "gpt-3.5-turbo-1106"
+    titleConvo: true
+    titleMethod: "functions"
+    groups:
+      # ... (group-level and model-level configurations)
+```
+
+## Group-Level Configuration [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#group-level-configuration)
+
+This is a breakdown of the fields configurable as defined for the Custom Config ( `librechat.yaml`) file. For more information on each field, see the [Azure OpenAI section in the Custom Config Docs](https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/azure_openai).
+
+Group-Level Configuration:
+Group Identification:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| group | string | Unique identifier name for a group of models. Duplicate group names are not allowed and will result in validation errors. | group: default |
+
+Authentication:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| apiKey | string | Must be a valid API key for Azure OpenAI services. It could be a direct key string or an environment variable reference (e.g., ${WESTUS\_API\_KEY}). | apiKey: ${AZURE\_API\_KEY} |
+
+Azure OpenAI Instance:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| instanceName | string | Name of the Azure OpenAI instance. This field can also support environment variable references. | instanceName: ${AZURE\_OPENAI\_INSTANCE} |
+
+Deployment Configuration:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| deploymentName | string | The deployment name at the group level is optional but required if any model within the group is set to true. | deploymentName: my-deployment |
+| version | string | The Azure OpenAI API version at the group level is optional but required if any model within the group is set to true. | version: 2023-03-15-preview |
+
+Advanced Settings:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| baseURL | string | Custom base URL for the Azure OpenAI API requests. Environment variable references are supported. This is optional and can be used for advanced routing scenarios. | baseURL: https://my-custom-base-url.com |
+| additionalHeaders | object | Specifies any extra headers for Azure OpenAI API requests as key-value pairs. Environment variable references can be included as values. | additionalHeaders: {Authorization: ${AUTH\_HEADER}} |
+| serverless | boolean | Specifies if the group is a serverless inference chat completions endpoint from Azure Model Catalog, for which only a model identifier, baseURL, and apiKey are needed. For more info, see serverless inference endpoints. | serverless: true |
+| addParams | object | Adds or overrides additional parameters for Azure OpenAI API requests. Useful for specifying API-specific options as key-value pairs. | addParams: {temperature: 0.7} |
+| dropParams | array | Allows for the exclusion of certain default parameters from Azure OpenAI API requests. Useful for APIs that do not accept or recognize specific parameters. This should be specified as a list of strings. | dropParams: \[top\_p, stop\] |
+| forcePrompt | boolean | Dictates whether to send a prompt parameter instead of messages in the request body. This option is useful when needing to format the request in a manner consistent with OpenAI API expectations, particularly for scenarios preferring a single text payload. | forcePrompt: true |
+
+Model Configuration:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| models | object | Specifies the mapping of model identifiers to their configurations within the group. The keys represent the model identifiers, which must match the corresponding OpenAI model names. The values can be either boolean (true) or objects containing model-specific settings. If a model is set to true, it inherits the group-level deploymentName and version. If a model is configured as an object, it can have its own deploymentName and version. This field is required, and at least one model must be defined within each group. More info here | models: {gpt-3.5-turbo: true, text-davinci-003: {}} |
+
+Here’s an example of a group-level configuration in the librechat.yaml file
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+    # ... (endpoint-level configurations)
+    groups:
+      - group: "my-resource-group"
+        apiKey: "${AZURE_API_KEY}"
+        instanceName: "my-instance"
+        deploymentName: "gpt-35-turbo"
+        version: "2023-03-15-preview"
+        baseURL: "https://my-instance.openai.azure.com/"
+        additionalHeaders:
+          CustomHeader: "HeaderValue"
+        addParams:
+          max_tokens: 2048
+          temperature: 0.7
+        dropParams:
+          - "frequency_penalty"
+          - "presence_penalty"
+        forcePrompt: false
+        models:
+        # ... (model-level configurations)
+```
+
+## Model-Level Configuration [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#model-level-configuration)
+
+Within each group, the `models` field contains a mapping of model identifiers to their configurations:
+
+Model Identification:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| Model Identifier | string | Must match the corresponding OpenAI model name. Can be a partial match. | gpt-3.5-turbo: true |
+
+Model Configuration:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| Model Configuration | boolean/object | Boolean true: Uses the group-level deploymentName and version. Object: Specifies model-specific deploymentName and version. If not provided, inherits from the group. | text-davinci-003: {deploymentName: my-model-deployment, version: 2023-03-15-preview} |
+| deploymentName | string | The deployment name for this specific model. | deploymentName: my-model-deployment |
+| version | string | The Azure OpenAI API version for this specific model. | version: 2023-03-15-preview |
+
+Serverless Inference Endpoints:
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| Serverless Inference Endpoints | note | For serverless models, set the model to true. | gpt-4: true |
+
+- The **model identifier must match its corresponding OpenAI model name** in order for it to properly reflect its known context limits and/or function in the case of vision. For example, if you intend to use gpt-4-vision, it must be configured like so:
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+    # ... (endpoint-level configurations)
+    groups:
+    # ... (group-level configurations)
+    - group: "example_group"
+    models:
+     # Model identifiers must match OpenAI Model name (can be a partial match)
+      gpt-4-vision-preview:
+      # Object setting: must include at least "deploymentName" and/or "version"
+        deploymentName: "arbitrary-deployment-name"
+        version: "2024-02-15-preview" # version can be any that supports vision
+      # Boolean setting, must be "true"
+      gpt-4-turbo: true
+```
+
+- See [Model Deployments](https://www.librechat.ai/docs/configuration/azure#model-deployments) for more examples.
+
+- If a model is set to `true`, it implies using the group-level `deploymentName` and `version` for this model. Both must be defined at the group level in this case.
+
+- If a model is configured as an object, it can specify its own `deploymentName` and `version`. If these are not provided, the model inherits the group’s `deploymentName` and `version`.
+
+- If the group represents a [serverless inference endpoint](https://www.librechat.ai/docs/configuration/azure#serverless-inference-endpoints), the singular model should be set to `true` to add it to the models list.
+
+
+### Special Considerations [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#special-considerations)
+
+1. **Unique Names**: Both model and group names must be unique across the entire configuration. Duplicate names lead to validation failures.
+
+2. **Missing Required Fields**: Lack of required `deploymentName` or `version` either at the group level (for boolean-flagged models) or within the models’ configurations (if not inheriting or explicitly specified) will result in validation errors, unless the group represents a [serverless inference endpoint](https://www.librechat.ai/docs/configuration/azure#serverless-inference-endpoints).
+
+3. **Environment Variable References**: The configuration supports environment variable references (e.g., `${VARIABLE_NAME}`). Ensure that all referenced variables are present in your environment to avoid runtime errors. The absence of defined environment variables referenced in the config will cause errors. `${INSTANCE_NAME}` and `${DEPLOYMENT_NAME}` are unique placeholders, and do not correspond to environment variables, but instead correspond to the instance and deployment name of the currently selected model. It is not recommended you use `INSTANCE_NAME` and `DEPLOYMENT_NAME` as environment variable names to avoid any potential conflicts.
+
+4. **Error Handling**: Any issues in the config, like duplicate names, undefined environment variables, or missing required fields, will invalidate the setup and generate descriptive error messages aiming for prompt resolution. You will not be allowed to run the server with an invalid configuration.
+
+5. **Model identifiers**: An unknown model (to the project) can be used as a model identifier, but it must match a known model to reflect its known context length, which is crucial for message/token handling; e.g., `gpt-7000` will be valid but default to a 4k token limit, whereas `gpt-4-turbo` will be recognized as having a 128k context limit.
+
+
+Applying these setup requirements thoughtfully will ensure a correct and efficient integration of Azure OpenAI services with LibreChat through the `librechat.yaml` configuration. Always validate your configuration against the latest schema definitions and guidelines to maintain compatibility and functionality.
+
+### Model Deployments [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#model-deployments)
+
+The list of models available to your users are determined by the model groupings specified in your [`azureOpenAI` endpoint config.](https://www.librechat.ai/docs/configuration/custom_config#models_1)
+
+For example:
+
+librechat.yaml
+
+```nextra-code
+# Example Azure OpenAI Object Structure
+endpoints:
+  azureOpenAI:
+    groups:
+      - group: "my-westus" # arbitrary name
+        apiKey: "${WESTUS_API_KEY}"
+        instanceName: "actual-instance-name" # name of the resource group or instance
+        version: "2023-12-01-preview"
+        models:
+          gpt-4-vision-preview:
+            deploymentName: gpt-4-vision-preview
+            version: "2024-02-15-preview"
+          gpt-3.5-turbo: true
+      - group: "my-eastus"
+        apiKey: "${EASTUS_API_KEY}"
+        instanceName: "actual-eastus-instance-name"
+        deploymentName: gpt-4-turbo
+        version: "2024-02-15-preview"
+        models:
+          gpt-4-turbo: true
+```
+
+The above configuration would enable `gpt-4-vision-preview`, `gpt-3.5-turbo` and `gpt-4-turbo` for your users in the order they were defined.
+
+### Using Assistants with Azure [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#using-assistants-with-azure)
+
+To enable use of Assistants with Azure OpenAI, there are 2 main steps.
+
+1. Set the `assistants` field, **under** the `azureOpenAI` endpoint, i.e, at the [Endpoint-level](https://www.librechat.ai/docs/configuration/azure#endpoint-level-configuration) to `true`, like so:
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+  # Enable use of Assistants with Azure
+    assistants: true
+```
+
+2. Add the `assistants` field to groups compatible with Azure’s Assistants API integration.
+
+- At least one of your group configurations must be compatible.
+- You can check the [compatible regions and models in the Azure docs here](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#assistants-preview).
+- The version must also be “2024-02-15-preview” or later, preferably later for access to the latest features.
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+    assistants: true
+    groups:
+      - group: "my-sweden-group"
+        apiKey: "${SWEDEN_API_KEY}"
+        instanceName: "actual-instance-name"
+      # Mark this group as assistants compatible
+        assistants: true
+      # version must be "2024-02-15-preview" or later
+        version: "2024-03-01-preview"
+        models:
+          # ... (model-level configuration)
+```
+
+**Notes:**
+
+- For credentials, rely on custom envrionment variables specified at each assistants-compatible group configuration.
+
+- If you mark multiple regions as assistants-compatible, assistants you create will be aggregated across regions to the main assistant selection list.
+
+- Files you upload to Azure OpenAI, whether at the message or assistant level, will only be available in the region the current assistant’s model is part of.
+  - For this reason, it’s recommended you use only one region or resource group for Azure OpenAI Assistants, or you will experience an error.
+  - Uploading to “OpenAI” is the default behavior for official `code_interpeter` and `retrieval` capabilities.
+- Downloading files that assistants generate will soon be supported.
+
+- As of May 19th 2024, retrieval and streaming are not yet supported through Azure OpenAI.
+
+
+  - To avoid any errors with retrieval while it’s not supported, it’s recommended to disable the capability altogether through the `azureAssistants` endpoint config:
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+    # ...rest
+
+  azureAssistants:
+  # "retrieval" omitted.
+    capabilities: ["code_interpreter", "actions", "tools"]
+```
+
+  - By default, all capabilities, except retrieval, are enabled.
+
+### Using Plugins with Azure [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#using-plugins-with-azure)
+
+To use the Plugins endpoint with Azure OpenAI, you need a deployment supporting **[function calling](https://techcommunity.microsoft.com/t5/azure-ai-services-blog/function-calling-is-now-available-in-azure-openai-service/ba-p/3879241)**. Otherwise, you need to set “Functions” off in the Agent settings. When you are not using “functions” mode, it’s recommend to have “skip completion” off as well, which is a review step of what the agent generated.
+
+To use Azure with the Plugins endpoint, make sure the field `plugins` is set to `true` in your Azure OpenAI endpoing config:
+
+librechat.yaml
+
+```nextra-code
+# Example Azure OpenAI Object Structure
+endpoints:
+  azureOpenAI:
+    plugins: true # <------- Set this
+    groups:
+    # omitted for brevity
+```
+
+Configuring the `plugins` field will configure Plugins to use Azure models.
+
+**NOTE**: The current configuration through `librechat.yaml` uses the primary model you select from the frontend for Plugin use, which is not usually how it works without Azure, where instead the “Agent” model is used. The Agent model setting can be ignored when using Plugins through Azure.
+
+### Using a Specified Base URL with Azure [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#using-a-specified-base-url-with-azure)
+
+The base URL for Azure OpenAI API requests can be dynamically configured. This is useful for proxying services such as [Cloudflare AI Gateway](https://developers.cloudflare.com/ai-gateway/providers/azureopenai/), or if you wish to explicitly override the baseURL handling of the app.
+
+LibreChat will use the baseURL field for your Azure model grouping, which can include placeholders for the Azure OpenAI API instance and deployment names.
+
+In the configuration, the base URL can be customized like so:
+
+librechat.yaml
+
+```nextra-code
+# librechat.yaml file, under an Azure group:
+endpoints:
+  azureOpenAI:
+    groups:
+      - group: "group-with-custom-base-url"
+      baseURL: "https://example.azure-api.net/${INSTANCE_NAME}/${DEPLOYMENT_NAME}"
+
+# OR
+      baseURL: "https://${INSTANCE_NAME}.openai.azure.com/openai/deployments/${DEPLOYMENT_NAME}"
+
+# Cloudflare example
+      baseURL: "https://gateway.ai.cloudflare.com/v1/ACCOUNT_TAG/GATEWAY/azure-openai/${INSTANCE_NAME}/${DEPLOYMENT_NAME}"
+```
+
+**NOTE**: `${INSTANCE_NAME}` and `${DEPLOYMENT_NAME}` are unique placeholders, and do not correspond to environment variables, but instead correspond to the instance and deployment name of the currently selected model. It is not recommended you use INSTANCE\_NAME and DEPLOYMENT\_NAME as environment variable names to avoid any potential conflicts.
+
+**You can also omit the placeholders completely and simply construct the baseURL with your credentials:**
+
+librechat.yaml
+
+```nextra-code
+      baseURL: "https://gateway.ai.cloudflare.com/v1/ACCOUNT_TAG/GATEWAY/azure-openai/my-secret-instance/my-deployment"
+```
+
+**Lastly, you can specify the entire baseURL through a custom environment variable**
+
+librechat.yaml
+
+```nextra-code
+      baseURL: "${MY_CUSTOM_BASEURL}"
+```
+
+### Enabling Auto-Generated Titles with Azure [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#enabling-auto-generated-titles-with-azure)
+
+To enable titling for Azure, set `titleConvo` to `true`.
+
+librechat.yaml
+
+```nextra-code
+# Example Azure OpenAI Object Structure
+endpoints:
+  azureOpenAI:
+    titleConvo: true # <------- Set this
+    groups:
+    # omitted for brevity
+```
+
+**You can also specify the model to use for titling, with `titleModel`** provided you have configured it in your group(s).
+
+titleModel
+
+```nextra-code
+    titleModel: "gpt-3.5-turbo"
+```
+
+**Note**: “gpt-3.5-turbo” is the default value, so you can omit it if you want to use this exact model and have it configured. If not configured and `titleConvo` is set to `true`, the titling process will result in an error and no title will be generated. You can also set this to dynamically use the current model by setting it to `current_model`.
+
+titleModel
+
+```nextra-code
+    titleModel: "current_model"
+```
+
+### Using GPT-4 Vision with Azure [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#using-gpt-4-vision-with-azure)
+
+To use Vision (image analysis) with Azure OpenAI, you need to make sure `gpt-4-vision-preview` is a specified model [in one of your groupings](https://www.librechat.ai/docs/configuration/azure#model-deployments)
+
+This will work seamlessly as it does with the [OpenAI endpoint](https://www.librechat.ai/docs/configuration/ai_setup#openai) (no need to select the vision model, it will be switched behind the scenes)
+
+### Generate images with Azure OpenAI Service (DALL-E) [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#generate-images-with-azure-openai-service-dall-e)
+
+| Model ID | Feature Availability | Max Request (characters) |
+| --- | --- | --- |
+| dalle2 | East US | 1000 |
+| dalle3 | Sweden Central | 4000 |
+
+- First you need to create an Azure resource that hosts DALL-E
+  - At the time of writing, dall-e-3 is available in the `SwedenCentral` region, dall-e-2 in the `EastUS` region.
+- Then, you need to deploy the image generation model in one of the above regions.
+  - Read the [Azure OpenAI Image Generation Quickstart Guide](https://learn.microsoft.com/en-us/azure/ai-services/openai/dall-e-quickstart) for further assistance
+- Configure your environment variables based on Azure credentials:
+
+Here’s the updated layout for the DALL-E configuration options:
+
+#### DALL-E: [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#dall-e)
+
+**API Keys:**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| DALLE\_API\_KEY | string | The OpenAI API key for DALL-E 2 and DALL-E 3 services. | \# DALLE\_API\_KEY= |
+
+**API Keys (Version Specific):**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| DALLE3\_API\_KEY | string | The OpenAI API key for DALL-E 3. | \# DALLE3\_API\_KEY= |
+| DALLE2\_API\_KEY | string | The OpenAI API key for DALL-E 2. | \# DALLE2\_API\_KEY= |
+
+**System Prompts:**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| DALLE3\_SYSTEM\_PROMPT | string | The system prompt for DALL-E 3. | \# DALLE3\_SYSTEM\_PROMPT="Your DALL-E-3 System Prompt here" |
+| DALLE2\_SYSTEM\_PROMPT | string | The system prompt for DALL-E 2. | \# DALLE2\_SYSTEM\_PROMPT="Your DALL-E-2 System Prompt here" |
+
+**Reverse Proxy Settings:**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| DALLE\_REVERSE\_PROXY | string | The reverse proxy URL for DALL-E API requests. | \# DALLE\_REVERSE\_PROXY= |
+
+**Base URLs:**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| DALLE3\_BASEURL | string | The base URL for DALL-E 3 API endpoints. | \# DALLE3\_BASEURL=https://<AZURE\_OPENAI\_API\_INSTANCE\_NAME>.openai.azure.com/openai/deployments/<DALLE3\_DEPLOYMENT\_NAME>/ |
+| DALLE2\_BASEURL | string | The base URL for DALL-E 2 API endpoints. | \# DALLE2\_BASEURL=https://<AZURE\_OPENAI\_API\_INSTANCE\_NAME>.openai.azure.com/openai/deployments/<DALLE2\_DEPLOYMENT\_NAME>/ |
+
+**Azure OpenAI Integration (Optional):**
+
+| Key | Type | Description | Example |
+| --- | --- | --- | --- |
+| DALLE3\_AZURE\_API\_VERSION | string | The API version for DALL-E 3 with Azure OpenAI service. | \# DALLE3\_AZURE\_API\_VERSION=the-api-version # e.g.: 2023-12-01-preview |
+| DALLE2\_AZURE\_API\_VERSION | string | The API version for DALL-E 2 with Azure OpenAI service. | \# DALLE2\_AZURE\_API\_VERSION=the-api-version # e.g.: 2023-12-01-preview |
+
+Remember to replace placeholder text with actual prompts or instructions and provide your actual API keys if you choose to include them directly in the file (though managing sensitive keys outside of the codebase is a best practice). Always review and respect OpenAI’s usage policies when embedding API keys in software.
+
+> Note: if you have PROXY set, it will be used for DALL-E calls also, which is universal for the app.
+
+### Serverless Inference Endpoints [Permalink for this section](https://www.librechat.ai/docs/configuration/azure\#serverless-inference-endpoints)
+
+Through the `librechat.yaml` file, you can configure Azure AI Studio serverless inference endpoints to access models from the [Azure AI Foundry.](https://ai.azure.com/explore) Only a model identifier, `baseURL`, and `apiKey` are needed along with the `serverless` field to indicate the special handling these endpoints need.
+
+- You will need to follow the instructions in the compatible model cards to set up **MaaS** (“Models as a Service”) access on Azure AI Studio.
+  - For reference, here are some known compatible model cards:
+
+  - [Mistral-large](https://aka.ms/aistudio/landing/mistral-large) \| [Meta-Llama-3.1-8B-Instruct](https://ai.azure.com/explore/models/Meta-Llama-3.1-8B-Instruct/version/4/) \| [Phi-3-medium-128k-instruct](https://ai.azure.com/explore/models/Phi-3-medium-128k-instruct/version/1/registry/azureml)
+- You can also review [the technical blog for the “Mistral-large” model release](https://techcommunity.microsoft.com/t5/ai-machine-learning-blog/mistral-large-mistral-ai-s-flagship-llm-debuts-on-azure-ai/ba-p/4066996) for more info.
+
+- Then, you will need to add them to your `azureOpenAI` config in the librechat.yaml file.
+
+- Here is an example configuration for `Meta-Llama-3.1-8B-Instruct`:
+
+
+librechat.yaml
+
+```nextra-code
+endpoints:
+  azureOpenAI:
+    groups:
+    - group: "serverless-example"
+      apiKey: "${LLAMA318B_API_KEY}"  # arbitrary env var name
+      baseURL: "https://example.services.ai.azure.com/models/"
+      version: "2024-05-01-preview" # Optional: specify API version
+      serverless: true
+      models:
+        # Must match the deployment name of the model
+        Meta-Llama-3.1-8B-Instruct: true
+```
+
+**Notes**:
+
+- Azure AI Foundry models now provision endpoints under `/models/chat/completions?api-version=version` for serverless inference.
+  - The `baseURL` field should be set to the root of the endpoint, without anything after `/models/`, i.e., the `/chat/completions` path.
+  - Example: `https://example.services.ai.azure.com/models/` for `https://example.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview`
+  - The `version` query parameter is optional and can be specified in the `baseURL` field.
+- The model name used in the `models` field must match the deployment name of the model in the Azure AI Foundry.
+- Compatibility with LibreChat relies on parity with OpenAI API specs, which at the time of writing, are typically **“Pay-as-you-go”** or “Models as a Service” (MaaS) deployments on Azure AI Studio, that are OpenAI-SDK-compatible with either `v1/completions` or `models/chat/completions` endpoint handling.
+- All models that offer serverless deployments (“Serverless APIs”) are compatible from the Azure model catalog. You can filter by “Serverless API” under Deployment options and “Chat completion” under inference tasks to see the full list; however, real time endpoint models have not been tested.
+- These serverless inference endpoint/models may or may not support function calling according to OpenAI API specs, which enables their use with Agents.
+- If using legacy “/v1/completions” (without “chat”), you need to set the `forcePrompt` field to `true` in your [group config.](https://www.librechat.ai/docs/configuration/azure#group-level-configuration)
+
+Last updated on April 27, 2025
+
+[Firebase](https://www.librechat.ai/docs/configuration/cdn/firebase "Firebase") [Docker Override](https://www.librechat.ai/docs/configuration/docker_override "Docker Override")

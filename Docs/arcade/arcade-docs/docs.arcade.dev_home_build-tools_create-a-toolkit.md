@@ -1,0 +1,373 @@
+---
+url: "https://docs.arcade.dev/home/build-tools/create-a-toolkit"
+title: "Arcade Docs"
+---
+
+[Home](https://docs.arcade.dev/home "Home") Build toolsCreate a toolkit
+
+# Creating a Toolkit
+
+This guide walks you through the complete process of creating a custom toolkit for Arcade - from initial setup to publishing on PyPI. You’ll build a simple arithmetic toolkit with operations like addition, subtraction, and multiplication. When creating or extending an Arcade toolkit, we make it easy to develop the tool alongside your agent, providing a pleasant local development experience. As your agent will be loading its available tools from the Arcade Gateway, you can mix existing tools and your locally developed tool by following this guide. You’ll be running your local worker with the Arcade CLI and registering it with the Gateway so that your agent can find and use your tool.
+
+## Prerequisites [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#prerequisites)
+
+Before starting, make sure you have:
+
+- An [Arcade account](https://api.arcade.dev/signup?utm_source=docs&utm_medium=page&utm_campaign=custom-tools)
+- An active virtual environment for your shell(s) (e.g. `uv venv --seed -p 3.13`)
+  - We recommend using [uv](https://docs.astral.sh/uv/pip/environments/) or [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main).
+  - Toolkits each have a poetry project with their own virtual environment, but toolkits are loaded into the top-level arcade environment based on the active “parent” virtual environment. **The local development commands will not work without an active virtual environment.**
+- `pip` installed within that virtual environment (verify with `pip --version`)
+- Arcade CLI installed within your python virtual environment: `pip install arcade-ai`
+- Poetry for package management (the generated Makefile uses Poetry): `pip install poetry`
+
+## Generate a toolkit template [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#generate-a-toolkit-template)
+
+Run the following command to start creating your toolkit:
+
+```nextra-code
+git init
+arcade new
+```
+
+Enter the required information when prompted:
+
+- **Toolkit name**: Choose a descriptive name (e.g., “arithmetic”)
+- **Description**: Provide a brief explanation of your toolkit
+- **Author name and email**: Your contact information
+
+After completion, a directory with your toolkit name will be created with the following structure:
+
+```nextra-code
+arithmetic/
+├── arcade_arithmetic/       # Core package directory
+│   ├── __init__.py          # Package initialization
+│   └── tools/               # Directory for your tools
+│       └── __init__.py
+├── tests/                   # Test directory
+├── pyproject.toml           # Poetry project configuration
+├── README.md                # Documentation
+└── Makefile                 # Helper commands
+```
+
+Navigate to your toolkit directory:
+
+```nextra-code
+cd <toolkit_name>
+```
+
+## Set up the development environment [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#set-up-the-development-environment)
+
+Install dependencies and pre-commit hooks:
+
+```nextra-code
+make install
+```
+
+This installs all dependencies specified in `pyproject.toml`, pre-commit hooks for code quality, and your toolkit in development mode.
+
+The Makefile provides several helpful commands:
+
+- `build` \- Build wheel file using poetry
+- `bump-version` \- Bump the version in pyproject.toml
+- `check` \- Run code quality tools
+- `clean-build` \- Clean build artifacts
+- `coverage` \- Generate coverage report
+- `install` \- Install the poetry environment and pre-commit hooks
+- `test` \- Test the code with pytest
+
+## Define your tools [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#define-your-tools)
+
+Create a Python file for your tools in the `arcade_<toolkit_name>/tools` directory.
+
+The following example shows a simple math toolkit with three tools: `add`, `subtract`, and `multiply`:
+
+```nextra-code
+# arcade_arithmetic/tools/operations.py
+from typing import Annotated
+
+from arcade.sdk import tool
+
+
+@tool
+def add(
+    a: Annotated[int, "The first number"],
+    b: Annotated[int, "The second number"]
+) -> Annotated[int, "The sum of the two numbers"]:
+    """
+    Add two numbers together
+
+    Examples:
+        add(3, 4) -> 7
+        add(-1, 5) -> 4
+    """
+    return a + b
+
+@tool
+def subtract(
+    a: Annotated[int, "The first number"],
+    b: Annotated[int, "The second number"]
+) -> Annotated[int, "The difference of the two numbers"]:
+    """
+    Subtract the second number from the first
+
+    Examples:
+        subtract(10, 4) -> 6
+        subtract(5, 7) -> -2
+    """
+    return a - b
+
+@tool
+def multiply(
+    a: Annotated[int, "The first number"],
+    b: Annotated[int, "The second number"]
+) -> Annotated[int, "The product of the two numbers"]:
+    """
+    Multiply two numbers together
+
+    Examples:
+        multiply(3, 4) -> 12
+        multiply(-2, 5) -> -10
+    """
+    return a * b
+```
+
+Update the package initialization files to expose your tools:
+
+```nextra-code
+# arcade_arithmetic/tools/__init__.py
+from .operations import add, multiply, subtract
+
+__all__ = ["add", "multiply", "subtract"]
+```
+
+```nextra-code
+# arcade_arithmetic/__init__.py
+from arcade_arithmetic.tools import add, multiply, subtract
+
+__all__ = ["add", "multiply", "subtract"]
+```
+
+## Test your toolkit [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#test-your-toolkit)
+
+Write tests for your tools in the `tests` directory:
+
+```nextra-code
+# tests/test_operations.py
+import pytest
+
+from arcade_arithmetic.tools.operations import add, multiply, subtract
+
+
+def test_add():
+    assert add(3, 4) == 7
+    assert add(-1, 5) == 4
+    assert add(0, 0) == 0
+
+def test_subtract():
+    assert subtract(10, 4) == 6
+    assert subtract(5, 7) == -2
+    assert subtract(0, 0) == 0
+
+def test_multiply():
+    assert multiply(3, 4) == 12
+    assert multiply(-2, 5) == -10
+    assert multiply(0, 5) == 0
+```
+
+Run the tests:
+
+```nextra-code
+make test
+```
+
+Check code quality:
+
+```nextra-code
+make check
+```
+
+Generate a coverage report (optional):
+
+```nextra-code
+make coverage
+```
+
+## Verify local installation [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#verify-local-installation)
+
+Your toolkit should already be installed locally from the `make install` command. Verify it’s properly registered:
+
+```nextra-code
+arcade show --local
+```
+
+You should see your toolkit listed in the output.
+
+## Test your tools locally [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#test-your-tools-locally)
+
+Serve your toolkit locally with the Arcade CLI:
+
+```nextra-code
+arcade serve
+```
+
+Visit [http://localhost:8002/worker/health](http://localhost:8002/worker/health) to see that your worker is running.
+
+## Connect your toolkit to the Arcade Gateway [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#connect-your-toolkit-to-the-arcade-gateway)
+
+In another terminal, use a service like [ngrok](https://ngrok.com/docs/), [tailscale](https://tailscale.com/kb/1223/funnel), or [cloudflare](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/local-management/create-local-tunnel/) to give your local worker a public URL.
+
+ngrokTailscaleCloudflare
+
+```nextra-code
+ngrok http 8002
+```
+
+```nextra-code
+tailscale funnel 8002
+```
+
+```nextra-code
+cloudflared tunnel --url http://localhost:8002
+```
+
+Then in your Arcade dashboard:
+
+1. Navigate to the [Workers](https://api.arcade.dev/dashboard/workers) page.
+2. Click **Add Worker**.
+3. Fill in the form with the following values:
+   - **ID**: `my-arithmetic-worker`
+   - **Worker Type**: `Arcade`
+   - **URL**: your public URL from ngrok, tailscale, or cloudflare
+   - **Secret**: `dev`
+   - **Timeout** and **Retry**: can be left at default values
+4. Click **Create**.
+
+Now, in the [Playground](https://api.arcade.dev/playground/execute), you can see your tools in action.
+
+## Deploy your toolkit to the Arcade Gateway [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#deploy-your-toolkit-to-the-arcade-gateway)
+
+Alternatively, you can deploy your toolkit to Arcade’s cloud instead of tunneling to it locally.
+
+Find the `worker.toml` file in your toolkit’s root directory (where you ran `arcade new`):
+
+```nextra-code
+[[worker]]
+
+[worker.config]
+id = "demo-worker"  # Choose a unique ID
+enabled = true
+timeout = 30
+retries = 3
+secret = "<your-secret>"  # This is randomly generated for you by `arcade new`
+[worker.local_source]
+packages = ["./arithmetic"]  # Path to your toolkit directory
+```
+
+From the root of your toolkit, deploy your toolkit to Arcade’s cloud with:
+
+```nextra-code
+arcade deploy
+```
+
+Verify the deployment:
+
+```nextra-code
+arcade worker list
+```
+
+## Package and publish to PyPI [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#package-and-publish-to-pypi)
+
+Clean any previous build artifacts:
+
+```nextra-code
+make clean-build
+```
+
+If you’re updating an existing package, bump the version:
+
+```nextra-code
+make bump-version
+```
+
+Update the project metadata in `pyproject.toml`:
+
+```nextra-code
+[tool.poetry]
+name = "arcade-arithmetic"
+version = "0.1.0"
+description = "Basic arithmetic operations toolkit for Arcade"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/yourusername/arcade-arithmetic"
+```
+
+Create a comprehensive README.md file that explains your toolkit’s purpose, installation, and usage.
+
+Build your package:
+
+```nextra-code
+make build
+```
+
+Configure Poetry with your PyPI token (recommended for security):
+
+```nextra-code
+poetry config pypi-token.pypi your-token-here
+```
+
+Publish to PyPI:
+
+```nextra-code
+poetry publish
+```
+
+Or build and publish in one step:
+
+```nextra-code
+poetry publish --build
+```
+
+## Using your published toolkit [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#using-your-published-toolkit)
+
+Now that your toolkit is published, you can use it in any Arcade application:
+
+```nextra-code
+from arcadepy import Arcade
+
+# Initialize the Arcade client
+client = Arcade(base_url="https://api.arcade.dev")
+
+# Use your Tools
+response = client.tools.execute(
+    tool_name="Arithmetic.Add",
+    input={
+        "a": 12,
+        "b": 34
+    },
+)
+
+print(response.output.value)
+```
+
+## Ongoing toolkit maintenance [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#ongoing-toolkit-maintenance)
+
+As you continue to develop your toolkit, use these Makefile commands to maintain it:
+
+- `make check` \- Run code quality checks before committing changes
+- `make test` \- Run tests to ensure your changes don’t break existing functionality
+- `make coverage` \- Monitor test coverage as you add new features
+- `make bump-version` \- Update the version when releasing new changes
+- `make build` \- Build new distribution packages
+- `make clean-build` \- Clean up build artifacts when needed
+
+## Next steps [Permalink for this section](https://docs.arcade.dev/home/build-tools/create-a-toolkit\#next-steps)
+
+- **Add more tools**: Expand your toolkit with more complex operations
+- **Add authentication**: [Learn how to create tools with authentication](https://docs.arcade.dev/home/build-tools/create-a-tool-with-auth)
+- **Add secrets**: [Learn how to create tools with secrets](https://docs.arcade.dev/home/build-tools/create-a-tool-with-secrets)
+- **Evaluate your tools**: [Explore how to evaluate tool performance](https://docs.arcade.dev/home/evaluate-tools/why-evaluate-tools)
+- **Set up CI/CD**: Automate testing and deployment with continuous integration
+
+[Get an API key](https://docs.arcade.dev/home/api-keys "Get an API key") [Tool Context](https://docs.arcade.dev/home/build-tools/tool-context "Tool Context")
