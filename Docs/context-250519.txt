@@ -78,7 +78,7 @@
        - Issue #7: Parent issue to track the overall Arcade Integration Project
      - Created a new branch called `feat/arcade-integration-phase0` for implementing Phase 0
 
-  7. Optional Next Step:
+  7. Next Step:
      The next step would be to begin implementing Phase 0: Development Environment Modernization as detailed in Issue #1. This would start with setting up TypeScript configuration 
   for strict mode and creating type definitions for existing structures.
 
@@ -94,4 +94,6 @@
         - Issue #6: Phase 5: Production Readiness
         - Issue #7: Parent issue to track the overall Arcade Integration Project
      3. Created a new branch called `feat/arcade-integration-phase0` for implementing Phase 0 (Development Environment Modernization)"
+
+     NOTE: some work was premautrly started here: LibreChat/packages/arcade-client
   </summary>.
