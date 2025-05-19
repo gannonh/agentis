@@ -1,0 +1,28 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.ts"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "name": "Arcade Client API Documentation",
+  "includeVersion": true,
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "categorizeByGroup": true,
+  "categoryOrder": ["Core", "API", "Auth", "Tools", "Types", "*"],
+  "sort": ["source-order"],
+  "plugin": ["typedoc-plugin-markdown"],
+  "readme": "README.md",
+  "theme": "default",
+  "tsconfig": "./tsconfig.json",
+  "searchInComments": true,
+  "gitRevision": "main",
+  "compilerOptions": {
+    "skipLibCheck": true
+  },
+  "validation": {
+    "invalidLink": true,
+    "notDocumented": true
+  }
+}

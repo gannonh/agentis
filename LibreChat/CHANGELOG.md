@@ -20,15 +20,15 @@ All notable changes to this project will be documented in this file.
 
 ### ⚙️ Other Changes
 
-- 📜 docs: CHANGELOG for release v0.7.8 by **@github-actions[bot]** in [#7290](https://github.com/danny-avila/LibreChat/pull/7290)
+- 📜 docs: CHANGELOG for release v0.1.0 by **@github-actions[bot]** in [#7290](https://github.com/danny-avila/LibreChat/pull/7290)
 - 📦 chore: Update API Package Dependencies by **@danny-avila** in [#7359](https://github.com/danny-avila/LibreChat/pull/7359)
 
 
 
 ---
-## [v0.7.8] - 
+## [v0.1.0] - 
 
-Changes from v0.7.8-rc1 to v0.7.8.
+Changes from v0.1.0-rc1 to v0.1.0.
 
 ### ✨ New Features
 
@@ -49,7 +49,7 @@ Changes from v0.7.8-rc1 to v0.7.8.
 
 ### ⚙️ Other Changes
 
-- 📜 docs: CHANGELOG for release v0.7.8-rc1 by **@github-actions[bot]** in [#7153](https://github.com/danny-avila/LibreChat/pull/7153)
+- 📜 docs: CHANGELOG for release v0.1.0-rc1 by **@github-actions[bot]** in [#7153](https://github.com/danny-avila/LibreChat/pull/7153)
 - 🔄 refactor: Artifact Visibility Management by **@danny-avila** in [#7181](https://github.com/danny-avila/LibreChat/pull/7181)
 - 📦 chore: Bump Package Security by **@danny-avila** in [#7183](https://github.com/danny-avila/LibreChat/pull/7183)
 - 🌿 refactor: Unmount Fork Popover on Hide for Better Performance by **@danny-avila** in [#7189](https://github.com/danny-avila/LibreChat/pull/7189)
@@ -61,15 +61,15 @@ Changes from v0.7.8-rc1 to v0.7.8.
 
 
 
-[See full release details][release-v0.7.8]
+[See full release details][release-v0.1.0]
 
-[release-v0.7.8]: https://github.com/danny-avila/LibreChat/releases/tag/v0.7.8
+[release-v0.1.0]: https://github.com/danny-avila/LibreChat/releases/tag/v0.1.0
 
 ---
-## [v0.7.8-rc1] - 
-## [v0.7.8-rc1] - 
+## [v0.1.0-rc1] - 
+## [v0.1.0-rc1] - 
 
-Changes from v0.7.7 to v0.7.8-rc1.
+Changes from v0.7.7 to v0.1.0-rc1.
 
 ### ✨ New Features
 
@@ -206,8 +206,8 @@ Changes from v0.7.7 to v0.7.8-rc1.
 
 
 
-[See full release details][release-v0.7.8-rc1]
+[See full release details][release-v0.1.0-rc1]
 
-[release-v0.7.8-rc1]: https://github.com/danny-avila/LibreChat/releases/tag/v0.7.8-rc1
+[release-v0.1.0-rc1]: https://github.com/danny-avila/LibreChat/releases/tag/v0.1.0-rc1
 
 ---

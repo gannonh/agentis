@@ -1,0 +1,351 @@
+---
+url: "https://docs.arcade.dev/home/langchain/user-auth-interrupts"
+title: "Arcade Docs"
+---
+
+[Home](https://docs.arcade.dev/home "Home") [LangChain](https://docs.arcade.dev/home/langchain/use-arcade-tools "LangChain") User authorization
+
+## User Authorization in LangGraph [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#user-authorization-in-langgraph)
+
+In this guide, you will create a LangGraph workflow that requires user authorization before running certain Arcade tools. When a tool needs authorization, the graph displays an authorization URL and waits for the user’s approval. This ensures that only the tools you explicitly authorize are available to the language model. For complete working examples, see our [Python](https://github.com/ArcadeAI/arcade-ai/blob/main/examples/langchain/langgraph_with_user_auth.py) and [JavaScript](https://github.com/ArcadeAI/arcade-ai/blob/main/examples/langchain-ts/langgraph-with-user-auth.ts) examples.
+
+### Prerequisites [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#prerequisites)
+
+- [Obtain an Arcade API key](https://docs.arcade.dev/home/api-keys)
+
+### Install the required packages [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#install-the-required-packages)
+
+Set up your environment with the following installations:
+
+PythonJavaScript
+
+```nextra-code
+pip install langchain-arcade langchain-openai langgraph
+```
+
+```nextra-code
+npm install @arcadeai/arcadejs @langchain/openai @langchain/core @langchain/langgraph
+```
+
+### Configure your Arcade environment [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#configure-your-arcade-environment)
+
+Make sure you have set your Arcade API key (and any other relevant keys) in the environment, or assign them directly in the code:
+
+> Need an Arcade API key? Visit the [Get an API key](https://docs.arcade.dev/home/api-keys) page to create one.
+
+PythonJavaScript
+
+```nextra-code
+import os
+
+# Import necessary classes and modules
+from langchain_arcade import ArcadeToolManager
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode
+
+arcade_api_key = os.environ["ARCADE_API_KEY"]
+
+# Initialize the tool manager and fetch tools compatible with langgraph
+tool_manager = ArcadeToolManager(api_key=arcade_api_key)
+tools = tool_manager.get_tools(toolkits=["Google"])
+tool_node = ToolNode(tools)
+
+# Create a language model instance and bind it with the tools
+model = ChatOpenAI(model="gpt-4o")
+model_with_tools = model.bind_tools(tools)
+```
+
+Here are the main code elements:
+
+- arcade\_api\_key is your Arcade key.
+- tool\_manager fetches your Arcade tools, for example the “Google” toolkit.
+- tool\_node encapsulates these tools for usage in LangGraph.
+- model\_with\_tools binds your tools to the “gpt-4o” language model, enabling tool calls.
+
+```nextra-code
+import { pathToFileURL } from "node:url";
+import { Arcade } from "@arcadeai/arcadejs";
+import { toZod } from "@arcadeai/arcadejs/lib";
+import type { AIMessage } from "@langchain/core/messages";
+import { tool } from "@langchain/core/tools";
+import { MessagesAnnotation, StateGraph } from "@langchain/langgraph";
+import { ToolNode } from "@langchain/langgraph/prebuilt";
+import { ChatOpenAI } from "@langchain/openai";
+
+// Initialize Arcade with API key from environment
+const arcade = new Arcade();
+
+// Replace with your application's user ID (e.g. email address, UUID, etc.)
+const USER_ID = "user@example.com";
+
+// Initialize tools from Google toolkit
+const googleToolkit = await arcade.tools.list({ toolkit: "google", limit: 30 });
+const arcadeTools = toZod({
+	tools: googleToolkit.items,
+	client: arcade,
+	userId: USER_ID,
+});
+
+// Convert Arcade tools to LangGraph tools
+const tools = arcadeTools.map(({ name, description, execute, parameters }) =>
+	tool(execute, {
+		name,
+		description,
+		schema: parameters,
+	}),
+);
+
+// Initialize the prebuilt tool node
+const toolNode = new ToolNode(tools);
+
+// Create a language model instance and bind it with the tools
+const model = new ChatOpenAI({
+	model: "gpt-4o",
+	apiKey: process.env.OPENAI_API_KEY,
+});
+const modelWithTools = model.bindTools(tools);
+```
+
+Here are the main code elements:
+
+- arcade.tools.list fetches your Arcade tools, for example the “Google” toolkit.
+- toZod converts Arcade tools to Zod schemas, which are required by LangGraph.
+- ToolNode encapsulates these tools for usage in LangGraph.
+- modelWithTools binds your tools to the “gpt-4o” language model, enabling tool calls.
+
+### Define the workflow steps [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#define-the-workflow-steps)
+
+You will create three primary functions to handle AI interaction, tool authorization, and flow control.
+
+PythonJavaScript
+
+```nextra-code
+# Function to invoke the model and get a response
+def call_agent(state: MessagesState):
+    messages = state["messages"]
+    response = model_with_tools.invoke(messages)
+    # Return the updated message history
+    return {"messages": [response]}
+
+
+# Function to determine the next step in the workflow based on the last message
+def should_continue(state: MessagesState):
+    if state["messages"][-1].tool_calls:
+        for tool_call in state["messages"][-1].tool_calls:
+            if tool_manager.requires_auth(tool_call["name"]):
+                return "authorization"
+        return "tools"  # Proceed to tool execution if no authorization is needed
+    return END  # End the workflow if no tool calls are present
+
+
+# Function to handle authorization for tools that require it
+def authorize(state: MessagesState, config: dict):
+    user_id = config["configurable"].get("user_id")
+    for tool_call in state["messages"][-1].tool_calls:
+        tool_name = tool_call["name"]
+        if not tool_manager.requires_auth(tool_name):
+            continue
+        auth_response = tool_manager.authorize(tool_name, user_id)
+        if auth_response.status != "completed":
+            # Prompt the user to visit the authorization URL
+            print(f"Visit the following URL to authorize: {auth_response.url}")
+
+            # Wait for the user to complete the authorization
+            # and then check the authorization status again
+            tool_manager.wait_for_auth(auth_response.id)
+            if not tool_manager.is_authorized(auth_response.id):
+                # This stops execution if authorization fails
+                raise ValueError("Authorization failed")
+
+    return {"messages": []}
+```
+
+Explanations for these functions:
+
+- call\_agent: Invokes the language model using the latest conversation state.
+- should\_continue: Checks the last AI message for any tool calls. If a tool requires authorization, the flow transitions to authorization. Otherwise, it goes straight to tool execution or ends if no tools are called.
+- authorize: Prompts the user to authorize any required tools, blocking until authorization is completed successfully or fails.
+
+```nextra-code
+// Function to check if a tool requires authorization
+async function requiresAuth(toolName: string): Promise<{
+	needsAuth: boolean;
+	id: string;
+	authUrl: string;
+}> {
+	const authResponse = await arcade.tools.authorize({
+		tool_name: toolName,
+		user_id: USER_ID,
+	});
+	return {
+		needsAuth: authResponse.status === "pending",
+		id: authResponse.id ?? "",
+		authUrl: authResponse.url ?? "",
+	};
+}
+
+// Function to invoke the model and get a response
+async function callAgent(
+	state: typeof MessagesAnnotation.State,
+): Promise<typeof MessagesAnnotation.Update> {
+	const messages = state.messages;
+	const response = await modelWithTools.invoke(messages);
+	return { messages: [response] };
+}
+
+// Function to determine the next step in the workflow based on the last message
+async function shouldContinue(
+	state: typeof MessagesAnnotation.State,
+): Promise<string> {
+	const lastMessage = state.messages[state.messages.length - 1] as AIMessage;
+	if (lastMessage.tool_calls?.length) {
+		for (const toolCall of lastMessage.tool_calls) {
+			const { needsAuth } = await requiresAuth(toolCall.name);
+			if (needsAuth) {
+				return "authorization";
+			}
+		}
+		return "tools"; // Proceed to tool execution if no authorization is needed
+	}
+	return "__end__"; // End the workflow if no tool calls are present
+}
+
+// Function to handle authorization for tools that require it
+async function authorize(
+	state: typeof MessagesAnnotation.State,
+): Promise<typeof MessagesAnnotation.Update> {
+	const lastMessage = state.messages[state.messages.length - 1] as AIMessage;
+	for (const toolCall of lastMessage.tool_calls || []) {
+		const toolName = toolCall.name;
+		const { needsAuth, id, authUrl } = await requiresAuth(toolName);
+		if (needsAuth) {
+			// Prompt the user to visit the authorization URL
+			console.log(`Visit the following URL to authorize: ${authUrl}`);
+
+			// Wait for the user to complete the authorization
+			const response = await arcade.auth.waitForCompletion(id);
+			if (response.status !== "completed") {
+				throw new Error("Authorization failed");
+			}
+		}
+	}
+
+	return { messages: [] };
+}
+```
+
+Explanations for these functions:
+
+- requiresAuth: Checks if a tool requires authorization.
+- callAgent: Invokes the language model using the latest conversation state.
+- shouldContinue: Checks the last AI message for any tool calls. If a tool requires authorization, the flow transitions to authorization. Otherwise, it goes straight to tool execution or ends if no tools are called.
+- authorize: Prompts the user to authorize any required tools, blocking until authorization is completed successfully or fails.
+
+### Build and compile your LangGraph workflow [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#build-and-compile-your-langgraph-workflow)
+
+Use StateGraph to assemble the nodes and edges, then compile the graph with a MemorySaver.
+
+PythonJavaScript
+
+```nextra-code
+if __name__ == "__main__":
+    # Build the workflow graph using StateGraph
+    workflow = StateGraph(MessagesState)
+
+    # Add nodes (steps) to the graph
+    workflow.add_node("agent", call_agent)
+    workflow.add_node("tools", tool_node)
+    workflow.add_node("authorization", authorize)
+
+    # Define the edges and control flow between nodes
+    workflow.add_edge(START, "agent")
+    workflow.add_conditional_edges("agent", should_continue, ["authorization", "tools", END])
+    workflow.add_edge("authorization", "tools")
+    workflow.add_edge("tools", "agent")
+
+    # Set up memory for checkpointing the state
+    memory = MemorySaver()
+
+    # Compile the graph with the checkpointer
+    graph = workflow.compile(checkpointer=memory)
+```
+
+```nextra-code
+// Build the workflow graph
+const workflow = new StateGraph(MessagesAnnotation)
+	.addNode("agent", callAgent)
+	.addNode("tools", toolNode)
+	.addNode("authorization", authorize)
+	.addEdge("__start__", "agent")
+	.addConditionalEdges("agent", shouldContinue, [\
+		"authorization",\
+		"tools",\
+		"__end__",\
+	])
+	.addEdge("authorization", "tools")
+	.addEdge("tools", "agent");
+
+// Compile the graph
+const graph = workflow.compile();
+```
+
+### Provide inputs and run the graph [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#provide-inputs-and-run-the-graph)
+
+Finally, define user-supplied messages, authorization config, and stream the outputs. The graph will pause for any required tool authorization.
+
+PythonJavaScript
+
+```nextra-code
+# Define the input messages from the user
+inputs = {
+    "messages": [\
+        {\
+            "role": "user",\
+            "content": "Check and see if I have any important emails in my inbox",\
+        }\
+    ],
+}
+
+# Configuration with thread and user IDs for authorization purposes
+config = {"configurable": {"thread_id": "4", "user_id": "user@example.com"}}
+
+# Run the graph and stream the outputs
+for chunk in graph.stream(inputs, config=config, stream_mode="values"):
+    # Pretty-print the last message in the chunk
+    chunk["messages"][-1].pretty_print()
+```
+
+```nextra-code
+const inputs = {
+    messages: [\
+        {\
+            role: "user",\
+            content: "Check and see if I have any important emails in my inbox",\
+        },\
+    ],
+};
+// Run the graph and stream the outputs
+const stream = await graph.stream(inputs, { streamMode: "values" });
+for await (const chunk of stream) {
+    // Print the last message in the chunk
+    console.log(chunk.messages[chunk.messages.length - 1].content);
+}
+```
+
+In this example:
+
+- The user prompts the agent to check emails.
+- The message triggers a potential need for the “Google” tools.
+- If authorization is required, the code prints a URL and waits until you permit the tool call.
+
+## Next steps [Permalink for this section](https://docs.arcade.dev/home/langchain/user-auth-interrupts\#next-steps)
+
+- Experiment with more Arcade toolkits for expanded capabilities.
+- Explore advanced authorization logic, such as multi-user or role-based checks.
+- Integrate additional nodes to handle more complex flows or multi-step tasks in your LangGraph.
+
+By combining Arcade’s authorization features with stateful management in LangGraph, you can build AI-driven workflows that respect user permissions at every step. Have fun exploring Arcade!
+
+[Using Arcade tools](https://docs.arcade.dev/home/langchain/use-arcade-tools "Using Arcade tools") [Authorizing existing tools](https://docs.arcade.dev/home/langchain/auth-langchain-tools "Authorizing existing tools")

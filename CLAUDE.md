@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LibreChat is an all-in-one AI conversations platform that integrates multiple AI models into a single chat interface. It's a free and open-source alternative to proprietary chat platforms like ChatGPT Plus, allowing users to integrate various AI models including:
+Agentis is an all-in-one AI conversations platform that integrates multiple AI models into a single chat interface. It's a branded fork of LibreChat with custom capabilities, allowing users to integrate various AI models including:
 - Anthropic (Claude)
 - OpenAI
 - Azure OpenAI
@@ -75,7 +75,23 @@ npm run lint:fix     # Fix linting issues automatically
 npm run format       # Format code with prettier
 ```
 
-## Docker Deployment
+## Docker Configuration
+
+### Development Setup
+
+For local development, use the dev configuration that runs only supporting services while keeping the API and client running on the host:
+
+```bash
+# Start supporting services for development
+docker-compose -f docker-compose.dev.yml up -d
+
+# Or use our CLI helper
+../scripts/docker-cli.sh start
+```
+
+### Full Deployment
+
+For full application deployment with Docker:
 
 ```bash
 # Start application with Docker
@@ -84,6 +100,27 @@ docker-compose up -d
 # With custom configuration
 docker-compose -f ./deploy-compose.yml up -d
 ```
+
+### Docker Best Practices
+
+1. **MongoDB Connection**:
+   - Always use `authSource=admin` in MongoDB connection strings when using Docker containers
+   - Specify the database name explicitly (e.g., `/Agentis`) to avoid using the default "test" database
+   - Example: `mongodb://admin:password@localhost:27017/Agentis?authSource=admin`
+
+2. **Environment Handling**:
+   - Use `.env.docker` for Docker-specific environment variables
+   - Add `.env.docker` to `.gitignore` to prevent committing API keys
+   - Use environment variables in docker-compose.yml with defaults for non-sensitive information
+
+3. **Volume Management**:
+   - When configuration changes cause issues, use `docker-compose down -v` to reset volumes
+   - Volumes are stored in Docker's managed area at `/var/lib/docker/volumes/[volume_name]/_data`
+
+4. **Debugging Docker Services**:
+   - Check logs with `docker logs [container_name]` 
+   - Use `docker exec -it [container_name] [command]` to run commands inside containers
+   - Use container names that include the project name for clarity (`agentis-mongodb` instead of just `mongodb`)
 
 ## Key Architecture Components
 
@@ -94,6 +131,7 @@ docker-compose -f ./deploy-compose.yml up -d
    - Integration with multiple AI providers through adapter pattern
    - MongoDB for data storage
    - WebSockets/SSE for streaming responses
+   - Integration with Sandpack code execution environment
 
 2. **Client Adapters**
    - Each AI provider has its own client adapter (`api/app/clients/`)
@@ -179,32 +217,4 @@ docker-compose -f ./deploy-compose.yml up -d
 - Avoid prop drilling by using Context or Recoil for shared state
 - Use the useReducer hook for complex state logic
 
-## Commit Message Guidelines
 
-Follow conventional commit format:
-- `feat`: New feature
-- `fix`: Bug fix
-- `perf`: Performance improvement
-- `test`: Adding/fixing tests
-- `docs`: Documentation changes
-- `refactor`: Code change (no new features)
-- `chore`: Routine tasks
-
-## Development Workflow
-
-1. Create/update feature branch from main
-2. Run tests and linting before committing
-3. Follow conventional commit messages
-4. Ensure test coverage meets requirements
-5. Submit pull request with clear description
-6. Address reviewer feedback
-7. Squash and merge to main when approved
-
-## Naming Conventions
-
-Apply the following naming conventions to branches, labels, and other Git-related entities:
-
-- **Branch names:** Descriptive and slash-based (e.g., `new/feature/x`).
-- **Labels:** Descriptive and kebab case (e.g., `bug-fix`).
-- **JS/TS:** Directories and file names: Descriptive and camelCase. First letter uppercased for React files (e.g., `helperFunction.ts, ReactComponent.tsx`).
-- **Docs:** Directories and file names: Descriptive and snake_case (e.g., `config_files.md`).

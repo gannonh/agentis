@@ -1,5 +1,10 @@
 # DevOps Notes
 
+##
+Digital Ocean
+gannonW@astro-labs.app
+S3cr3t77!
+
 ## Development Setup
 
 1. Use Node.JS 20.x.
@@ -29,6 +34,10 @@
     - Restart the ESLint server ("ESLint: Restart ESLint Server" in VS Code command bar) and your IDE after reinstalling or updating.
 4. Clear web app localStorage and cookies before and after changes.
 5. For frontend changes, compile typescript before and after changes to check for introduced errors: `cd client && npm run build`.
-6. Run backend unit tests: `npm run test:api`.
-7. Run frontend unit tests: `npm run test:client`.
-8. Run integration tests: `npm run e2e`.
+6. When updating the app version (in `packages/data-provider/src/config.ts`), you must rebuild the data provider:
+- Run `npm run build:data-provider` to rebuild the package
+- Then restart the frontend with `npm run frontend:dev` or rebuild with `npm run frontend`
+- The version in the main `package.json` and `packages/data-provider/package.json` should also be updated for consistency
+7. Run backend unit tests: `npm run test:api`.
+8. Run frontend unit tests: `npm run test:client`.
+9. Run integration tests: `npm run e2e`.
