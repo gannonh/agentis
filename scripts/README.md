@@ -20,6 +20,18 @@ node scripts/generate-docs-index.js 4
 
 Creates symbolic links to all Markdown files in the project, placing them in the `Docs/sym-links` directory for easy reference.
 
+### concat-md.js
+
+Concatenates all markdown files in a specified directory into a single comprehensive file. The output file is named `_FULL-[directory_name].md` and includes a table of contents.
+
+```bash
+# Concatenate all markdown files in a directory
+node scripts/concat-md.js /path/to/directory
+
+# Example
+node scripts/concat-md.js /Users/gannonhall/+DEV/agentis/Docs/arcade/arcade-docs
+```
+
 ## Docker CLI Tool
 
 The `docker-cli.sh` script provides a simple command-line interface for managing all the Docker services required for Agentis development.
