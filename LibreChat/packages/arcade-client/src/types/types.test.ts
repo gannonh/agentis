@@ -4,12 +4,7 @@
 import { describe, it, expect } from '@jest/globals';
 
 // Import specific types to test
-import { 
-  ArcadeConfig, 
-  ArcadeToolkitConfig, 
-  ArcadeHealthResponse,
-  ArcadeAuthResponse
-} from './index';
+import { ArcadeConfig, ArcadeHealthResponse, ArcadeAuthResponse } from './index';
 
 describe('Arcade Types', () => {
   it('should correctly define ArcadeConfig type', () => {
@@ -24,9 +19,9 @@ describe('Arcade Types', () => {
           id: 'github',
           name: 'GitHub',
           category: 'Developer Tools',
-          description: 'GitHub integration'
-        }
-      ]
+          description: 'GitHub integration',
+        },
+      ],
     };
 
     expect(mockConfig.enabled).toBe(true);
@@ -43,7 +38,7 @@ describe('Arcade Types', () => {
       api_key: 'key',
       callback_url: 'https://example.com',
       hosting: 'cloud',
-      toolkits: []
+      toolkits: [],
     };
     expect(cloudConfig.hosting).toBe('cloud');
 
@@ -57,8 +52,8 @@ describe('Arcade Types', () => {
       worker: {
         enabled: true,
         host: 'localhost',
-        port: 8001
-      }
+        port: 8001,
+      },
     };
     expect(hybridConfig.hosting).toBe('hybrid');
     expect(hybridConfig.worker?.enabled).toBe(true);
@@ -72,8 +67,8 @@ describe('Arcade Types', () => {
       toolkits: [],
       engine: {
         host: 'localhost',
-        port: 8000
-      }
+        port: 8000,
+      },
     };
     expect(selfHostedConfig.hosting).toBe('self_hosted');
     expect(selfHostedConfig.engine?.host).toBe('localhost');
@@ -82,18 +77,18 @@ describe('Arcade Types', () => {
   it('should correctly define health response', () => {
     const healthy: ArcadeHealthResponse = { healthy: true };
     const unhealthy: ArcadeHealthResponse = { healthy: false };
-    
+
     expect(healthy.healthy).toBe(true);
     expect(unhealthy.healthy).toBe(false);
   });
 
   it('should correctly define auth response states', () => {
-    const pending: ArcadeAuthResponse = { 
-      id: 'auth-123', 
+    const pending: ArcadeAuthResponse = {
+      id: 'auth-123',
       status: 'pending',
-      url: 'https://example.com/auth'
+      url: 'https://example.com/auth',
     };
-    
+
     const completed: ArcadeAuthResponse = {
       id: 'auth-123',
       status: 'completed',
@@ -101,15 +96,15 @@ describe('Arcade Types', () => {
       user_id: 'user-123',
       context: {
         token: 'abc123',
-        user_info: { name: 'Test User' }
-      }
+        user_info: { name: 'Test User' },
+      },
     };
-    
+
     const failed: ArcadeAuthResponse = {
       id: 'auth-123',
-      status: 'failed'
+      status: 'failed',
     };
-    
+
     expect(pending.status).toBe('pending');
     expect(completed.status).toBe('completed');
     expect(failed.status).toBe('failed');

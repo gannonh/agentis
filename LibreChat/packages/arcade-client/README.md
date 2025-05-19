@@ -13,6 +13,8 @@ This package provides a strongly-typed client for interacting with Arcade's API 
 - Authentication flow management
 - Tool and toolkit discovery
 - Tool execution with proper error handling
+- UI components for integration
+- Configuration management
 - Caching and performance optimization
 
 ## Installation
@@ -93,6 +95,67 @@ if (status.status === 'completed') {
 }
 ```
 
+### UI Integration
+
+The library provides UI components for integrating Arcade toolkits into your application:
+
+```typescript
+import { 
+  createToolkitSelector, 
+  createAuthFlow, 
+  createCallbackHandler,
+  mapToolkitToUIComponent 
+} from '@gannonh/arcade-client';
+
+// Create toolkit selector
+const selector = createToolkitSelector({
+  toolkits: arcadeToolkits,
+  authStatus: authStatusMap,
+  onStartAuth: startAuthCallback,
+  onCheckAuth: checkAuthCallback,
+});
+
+// Create auth flow
+const authFlow = createAuthFlow({
+  onAuthStart: handleAuthStart,
+  onAuthError: handleAuthError,
+  onAuthComplete: handleAuthComplete,
+});
+
+// Create callback handler
+const callbackHandler = createCallbackHandler({
+  client,
+  authFlow,
+  onSuccess: handleAuthSuccess,
+  onError: handleAuthError,
+  onCancel: handleAuthCancel,
+});
+```
+
+See the [UI Integration Guide](./docs/UI_INTEGRATION.md) for detailed information.
+
+### Configuration Management
+
+The library includes utilities for loading and validating configuration:
+
+```typescript
+import { loadArcadeConfig, validateConfig, isArcadeEnabled } from '@gannonh/arcade-client';
+
+// Load configuration from environment and YAML
+const config = loadArcadeConfig(yamlConfig);
+
+// Validate configuration
+const validation = validateConfig(config);
+if (!validation.success) {
+  console.error('Invalid configuration:', validation.error);
+}
+
+// Check if Arcade is enabled
+if (isArcadeEnabled(config)) {
+  // Initialize Arcade integration
+}
+```
+
 ## Development
 
 ### Prerequisites
@@ -127,7 +190,9 @@ npm run docs:serve
 - `/src/types`: TypeScript interfaces for the Arcade API
 - `/src/api`: Core API client implementation
 - `/src/auth`: Authentication utilities
+- `/src/config`: Configuration management
 - `/src/tools`: Toolkit-specific implementations
+- `/src/ui`: UI components and utilities
 - `/src/utils`: Utility functions
 
 ## Documentation
@@ -142,7 +207,12 @@ npm run docs
 npm run docs:serve
 ```
 
-Documentation standards are defined in [TSDoc-Standards.md](./docs/TSDoc-Standards.md).
+Documentation resources:
+
+- [TSDoc Standards](./docs/TSDoc-Standards.md) - Documentation standards
+- [UI Integration Guide](./docs/UI_INTEGRATION.md) - Guide for integrating UI components
+- [Implementation Patterns](./docs/IMPLEMENTATION_PATTERNS.md) - Design patterns used in the library
+- [API Reference](./docs/api/README.md) - Generated API documentation
 
 ## License
 

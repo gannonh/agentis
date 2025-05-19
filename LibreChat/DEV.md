@@ -4,7 +4,9 @@
 Digital Ocean
 gannonW@astro-labs.app
 S3cr3t77!
-droplet root: vyZcix-ruczyh-3wygqo
+droplet 
+root: vyZcix-ruczyh-3wygqo
+agentis: vIpKdgJGyk33Gu8
 
 ## Development Setup
 
