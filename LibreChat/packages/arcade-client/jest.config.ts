@@ -2,7 +2,7 @@
 export default {
   // Base configuration
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   
   // ESM support
   extensionsToTreatAsEsm: ['.ts'],
@@ -26,7 +26,7 @@ export default {
   ],
   
   // Coverage configuration
-  collectCoverage: true,
+  collectCoverage: false,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'cobertura'],
   collectCoverageFrom: [

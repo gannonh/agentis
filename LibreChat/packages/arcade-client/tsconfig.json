@@ -25,5 +25,5 @@
     }
   },
   "exclude": ["node_modules", "dist", "types"],
-  "include": ["src/**/*", "types/**/*"]
+  "include": ["src/**/*", "types/**/*", "jest.config.ts"]
 }
