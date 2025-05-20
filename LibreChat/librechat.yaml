@@ -131,7 +131,47 @@ actions:
     - "google.com"
 
 # Example MCP Servers Object Structure
-# mcpServers:
+# Example MCP Servers Object Structure
+mcpServers:
+  # everything:
+  #   # type: sse # type can optionally be omitted
+  #   url: http://localhost:3001/sse
+  googlesheets:
+    type: sse
+    # Including user_id in URL for Composio to identify unique user connections
+    url: https://mcp.composio.dev/composio/server/89f2e068-a152-4061-a61d-2d03d560fcc6?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    headers:
+      # Using header for user ID propagation as well for redundancy
+      X-User-ID: "{{LIBRECHAT_USER_ID}}"
+      X-API-Key: "${COMPOSIO_API_KEY}"
+      # Connection ID for session identification
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googlesheets"
+      # https://mcp.composio.dev/composio/server/89f2e068-a152-4061-a61d-2d03d560fcc6?transport=sse
+      # composion integration id: 63bd69eb-5641-42c5-b89c-dbb0fdc8b332
+  # puppeteer:
+  #   type: stdio
+  #   command: npx
+  #   args:
+  #     - -y
+  #     - "@modelcontextprotocol/server-puppeteer"
+  # filesystem:
+  #   # type: stdio
+  #   command: npx
+  #   args:
+  #     - -y
+  #     - "@modelcontextprotocol/server-filesystem"
+  #     - /home/user/LibreChat/
+  #   iconPath: /home/user/LibreChat/client/public/assets/logo.svg
+  # mcp-obsidian:
+  #   command: npx
+  #   args:
+  #     - -y
+  #     - "mcp-obsidian"
+  #     - /path/to/obsidian/vault
+  # streamable-http-server:
+  #   type: streamable-http
+  #   url: https://example.com/api/
+
 #   everything:
 #     # type: sse # type can optionally be omitted
 #     url: http://localhost:3001/sse

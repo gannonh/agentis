@@ -10,6 +10,10 @@
     ".": {
       "require": "./dist/index.js",
       "types": "./dist/types/index.d.ts"
+    },
+    "./diagnostics": {
+      "require": "./dist/diagnostics.js",
+      "types": "./dist/types/diagnostics.d.ts"
     }
   },
   "scripts": {

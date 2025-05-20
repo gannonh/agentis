@@ -182,6 +182,10 @@ export class MCPManager {
 
   /** Gets or creates a connection for a specific user */
   public async getUserConnection(userId: string, serverName: string): Promise<MCPConnection> {
+    // Debug logging for tracking user connections
+    this.logger.info(`[MCP-DEBUG][GetUserConnection] User ID: ${userId}, Server: ${serverName}`);
+    this.logger.info(`[MCP-DEBUG][Connection Map] Current user connections: ${Array.from(this.userConnections.keys()).join(', ')}`);
+    
     const userServerMap = this.userConnections.get(userId);
     let connection = userServerMap?.get(serverName);
     const now = Date.now();
@@ -201,7 +205,7 @@ export class MCPManager {
       connection = undefined; // Force creation of a new connection
     } else if (connection) {
       if (await connection.isConnected()) {
-        this.logger.debug(`[MCP][User: ${userId}][${serverName}] Reusing active connection`);
+        this.logger.info(`[MCP-DEBUG][User: ${userId}][${serverName}] Reusing active connection`);
         // Update timestamp on reuse
         this.updateUserLastActivity(userId);
         return connection;
@@ -228,8 +232,13 @@ export class MCPManager {
       );
     }
 
+    // Log the original config
+    this.logger.info(`[MCP-DEBUG][User: ${userId}][${serverName}] Original config: ${JSON.stringify(config)}`);
+
     if (this.processMCPEnv) {
       config = { ...(this.processMCPEnv(config, userId) ?? {}) };
+      // Log processed config to see if userId substitution worked
+      this.logger.info(`[MCP-DEBUG][User: ${userId}][${serverName}] Processed config with userId: ${JSON.stringify(config)}`);
     }
 
     connection = new MCPConnection(serverName, config, this.logger, userId);
@@ -428,13 +437,16 @@ export class MCPManager {
     const logPrefix = userId ? `[MCP][User: ${userId}][${serverName}]` : `[MCP][${serverName}]`;
 
     try {
+      this.logger.info(`[MCP-DEBUG][callTool] Method called with userId: ${userId}, toolName: ${toolName}, serverName: ${serverName}`);
       if (userId) {
         this.updateUserLastActivity(userId);
         // Get or create user-specific connection
         connection = await this.getUserConnection(userId, serverName);
+        this.logger.info(`[MCP-DEBUG][callTool] Using user-specific connection for userId: ${userId}`);
       } else {
         // Use app-level connection
         connection = this.connections.get(serverName);
+        this.logger.info(`[MCP-DEBUG][callTool] Using app-level connection (no userId provided)`);
         if (!connection) {
           throw new McpError(
             ErrorCode.InvalidRequest,

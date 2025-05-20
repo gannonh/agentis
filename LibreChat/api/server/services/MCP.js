@@ -52,7 +52,13 @@ async function createMCPTool({ req, toolKey, provider: _provider }) {
   const _call = async (toolArguments, config) => {
     try {
       const derivedSignal = config?.signal ? AbortSignal.any([config.signal]) : undefined;
-      const mcpManager = getMCPManager(config?.configurable?.user_id);
+      const userId = config?.configurable?.user_id;
+      
+      logger.info(`[MCP-DEBUG][Tool_Call] User ID from config: ${userId}`);
+      logger.info(`[MCP-DEBUG][Tool_Call] Request user ID: ${req.user?.id}`);
+      logger.info(`[MCP-DEBUG][Tool_Call] Tool: ${toolName}, Server: ${serverName}`);
+      
+      const mcpManager = getMCPManager(userId);
       const provider = (config?.metadata?.provider || _provider)?.toLowerCase();
       const result = await mcpManager.callTool({
         serverName,
@@ -60,7 +66,7 @@ async function createMCPTool({ req, toolKey, provider: _provider }) {
         provider,
         toolArguments,
         options: {
-          userId: config?.configurable?.user_id,
+          userId,
           signal: derivedSignal,
         },
       });

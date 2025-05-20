@@ -117,28 +117,97 @@ export type MCPOptions = z.infer<typeof MCPOptionsSchema>;
  * @returns {MCPOptions} - The processed object with environment variables replaced
  */
 export function processMCPEnv(obj: Readonly<MCPOptions>, userId?: string): MCPOptions {
+  console.log(`[MCP-DEBUG][processMCPEnv] Processing config with userId: ${userId}`);
+  
   if (obj === null || obj === undefined) {
+    console.log(`[MCP-DEBUG][processMCPEnv] Config is null or undefined`);
     return obj;
   }
 
   const newObj: MCPOptions = structuredClone(obj);
+  console.log(`[MCP-DEBUG][processMCPEnv] Original obj:`, JSON.stringify(obj));
 
+  // Process environment variables
   if ('env' in newObj && newObj.env) {
     const processedEnv: Record<string, string> = {};
     for (const [key, value] of Object.entries(newObj.env)) {
       processedEnv[key] = extractEnvVariable(value);
     }
     newObj.env = processedEnv;
-  } else if ('headers' in newObj && newObj.headers) {
+  } 
+  
+  // Process headers: First extract environment variables, then handle all user ID placeholders
+  if ('headers' in newObj && newObj.headers) {
+    console.log(`[MCP-DEBUG][processMCPEnv] Processing headers`);
     const processedHeaders: Record<string, string> = {};
+    
+    // First pass: Extract environment variables
     for (const [key, value] of Object.entries(newObj.headers)) {
-      if (value === '{{LIBRECHAT_USER_ID}}' && userId != null && userId) {
-        processedHeaders[key] = userId;
-        continue;
-      }
+      console.log(`[MCP-DEBUG][processMCPEnv] Processing header ${key}=${value}`);
       processedHeaders[key] = extractEnvVariable(value);
     }
+    
+    // Second pass: Handle all user ID placeholders in all headers
+    for (const key of Object.keys(processedHeaders)) {
+      const value = processedHeaders[key];
+      if (typeof value === 'string' && value.includes('{{LIBRECHAT_USER_ID}}') && userId != null && userId) {
+        console.log(`[MCP-DEBUG][processMCPEnv] Replacing {{LIBRECHAT_USER_ID}} with ${userId} in header ${key}`);
+        processedHeaders[key] = value.replace(/{{LIBRECHAT_USER_ID}}/g, userId);
+        console.log(`[MCP-DEBUG][processMCPEnv] New header value: ${key}=${processedHeaders[key]}`);
+      }
+    }
+    
     newObj.headers = processedHeaders;
+    console.log(`[MCP-DEBUG][processMCPEnv] Processed headers:`, JSON.stringify(newObj.headers));
+  }
+  
+  // Process URL for LIBRECHAT_USER_ID placeholders
+  if ('url' in newObj && typeof newObj.url === 'string') {
+    const originalUrl = newObj.url;
+    try {
+      let url = newObj.url;
+      
+      // First check for direct placeholder in the URL path or query string
+      if (url.includes('{{LIBRECHAT_USER_ID}}') && userId != null && userId) {
+        console.log(`[MCP-DEBUG][processMCPEnv] Found {{LIBRECHAT_USER_ID}} in URL: ${url}`);
+        // Properly encode the userId for URL use
+        const encodedUserId = encodeURIComponent(userId);
+        console.log(`[MCP-DEBUG][processMCPEnv] Encoded user ID: ${userId} -> ${encodedUserId}`);
+        url = url.replace(/{{LIBRECHAT_USER_ID}}/g, encodedUserId);
+        console.log(`[MCP-DEBUG][processMCPEnv] Replaced URL: ${originalUrl} -> ${url}`);
+      }
+      
+      // Then handle the parsed URL to ensure query parameters are properly set
+      try {
+        const urlObj = new URL(url);
+        
+        // Check specifically for user_id parameter
+        const userIdParam = urlObj.searchParams.get('user_id');
+        if (userIdParam && userIdParam.includes('{{LIBRECHAT_USER_ID}}') && userId != null && userId) {
+          console.log(`[MCP-DEBUG][processMCPEnv] Found {{LIBRECHAT_USER_ID}} in user_id param: ${userIdParam}`);
+          const encodedUserId = encodeURIComponent(userId);
+          const newValue = userIdParam.replace(/{{LIBRECHAT_USER_ID}}/g, encodedUserId);
+          urlObj.searchParams.set('user_id', newValue);
+          console.log(`[MCP-DEBUG][processMCPEnv] Updated user_id param: ${newValue}`);
+        }
+        
+        // Update URL with processed query parameters
+        url = urlObj.toString();
+      } catch (parseError) {
+        const errMsg = parseError instanceof Error ? parseError.message : String(parseError);
+        console.error(`[MCP-DEBUG][processMCPEnv] Error parsing URL: ${errMsg}`);
+      }
+      
+      // Update the result
+      newObj.url = url;
+      
+      if (originalUrl !== newObj.url) {
+        console.log(`[MCP-DEBUG][processMCPEnv] Final processed URL: ${newObj.url}`);
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error(`[MCP-DEBUG][processMCPEnv] Error processing URL: ${errMsg}`);
+    }
   }
 
   return newObj;
