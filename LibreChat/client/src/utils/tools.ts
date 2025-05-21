@@ -6,7 +6,7 @@ const MCP_DELIMITER = '_mcp_';
 
 // Create a local CONSTANTS object to avoid import issues
 const CONSTANTS = {
-  mcp_delimiter: MCP_DELIMITER
+  mcp_delimiter: MCP_DELIMITER,
 };
 
 export interface MCPServerGroup {
@@ -34,16 +34,17 @@ export function groupMCPToolsByServer(tools: TPlugin[] | undefined): {
   const mcpServerMap: Record<string, MCPServerGroup> = {};
 
   // Process all tools
-  tools.forEach(tool => {
+  tools.forEach((tool) => {
     // Check if it's an MCP tool
     if (tool.pluginKey.includes(CONSTANTS.mcp_delimiter)) {
       const parts = tool.pluginKey.split(CONSTANTS.mcp_delimiter);
       const serverName = parts[parts.length - 1];
-      const isHelperTool = tool.pluginKey.toLowerCase().includes('composio_check') || 
-                         tool.pluginKey.toLowerCase().includes('composio_initiate') ||
-                         tool.pluginKey.toLowerCase().includes('helper') ||
-                         !!tool.isHelper;
-      
+      const isHelperTool =
+        tool.pluginKey.toLowerCase().includes('composio_check') ||
+        tool.pluginKey.toLowerCase().includes('composio_initiate') ||
+        tool.pluginKey.toLowerCase().includes('helper') ||
+        !!tool.isHelper;
+
       // Initialize server entry if needed
       if (!mcpServerMap[serverName]) {
         mcpServerMap[serverName] = {
@@ -54,7 +55,7 @@ export function groupMCPToolsByServer(tools: TPlugin[] | undefined): {
           icon: tool.icon, // All tools from same server should have same icon
         };
       }
-      
+
       // Add to appropriate category
       if (isHelperTool) {
         mcpServerMap[serverName].helperTools.push(tool);
@@ -69,7 +70,7 @@ export function groupMCPToolsByServer(tools: TPlugin[] | undefined): {
 
   return {
     mcpServers: Object.values(mcpServerMap),
-    regularTools
+    regularTools,
   };
 }
 
@@ -80,8 +81,8 @@ export function groupMCPToolsByServer(tools: TPlugin[] | undefined): {
  * @returns An object with grouped MCP tools and individual tools
  */
 export function groupAgentToolsByServer(
-  toolKeys: string[] | undefined, 
-  allTools: TPlugin[] | undefined
+  toolKeys: string[] | undefined,
+  allTools: TPlugin[] | undefined,
 ): {
   mcpServerGroups: Record<string, TPlugin[]>;
   individualTools: TPlugin[];
@@ -94,19 +95,19 @@ export function groupAgentToolsByServer(
   const individualTools: TPlugin[] = [];
 
   // Process each tool key
-  toolKeys.forEach(toolKey => {
-    const tool = allTools.find(t => t.pluginKey === toolKey);
+  toolKeys.forEach((toolKey) => {
+    const tool = allTools.find((t) => t.pluginKey === toolKey);
     if (!tool) return;
 
     // Check if it's an MCP tool
     if (tool.pluginKey.includes(CONSTANTS.mcp_delimiter)) {
       const parts = tool.pluginKey.split(CONSTANTS.mcp_delimiter);
       const serverName = parts[parts.length - 1];
-      
+
       if (!mcpServerGroups[serverName]) {
         mcpServerGroups[serverName] = [];
       }
-      
+
       mcpServerGroups[serverName].push(tool);
     } else {
       // Regular non-MCP tool
@@ -116,6 +117,6 @@ export function groupAgentToolsByServer(
 
   return {
     mcpServerGroups,
-    individualTools
+    individualTools,
   };
 }
