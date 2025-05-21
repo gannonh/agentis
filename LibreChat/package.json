@@ -57,6 +57,7 @@
     "test:arcade-client": "cd packages/arcade-client && npm run test",
     "e2e:update": "playwright test --config=e2e/playwright.config.js --update-snapshots",
     "e2e:report": "npx playwright show-report e2e/playwright-report",
+    "e2e:record-large": "npx playwright codegen --viewport-size=1600,1700 http://localhost:3080/",
     "lint:fix": "eslint --fix \"./client/src/**/*.{js,jsx,ts,tsx}\" \"./api/**/*.{js,jsx,ts,tsx}\" \"./packages/**/*.{js,jsx,ts,tsx}\"",
     "lint": "eslint \"./client/src/**/*.{js,jsx,ts,tsx}\" \"./api/**/*.{js,jsx,ts,tsx}\" \"./packages/**/*.{js,jsx,ts,tsx}\"",
     "lint:client": "eslint \"./client/src/**/*.{js,jsx,ts,tsx}\"",
