@@ -13,8 +13,10 @@ const config: PlaywrightTestConfig = {
   webServer: {
     ...mainConfig.webServer,
     command: `node ${absolutePath}`,
+    port: 3081,
     env: {
       ...process.env,
+      PORT: '3081',
       SEARCH: 'false',
       NODE_ENV: 'CI',
       EMAIL_HOST: '',
