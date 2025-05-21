@@ -423,7 +423,7 @@ export const tPluginSchema = z.object({
   // Server grouping fields
   isServer: z.boolean().optional(),
   serverId: z.string().optional(),
-  tools: z.lazy(() => z.array(tPluginSchema).optional()),
+  tools: z.lazy(() => z.array(z.any()).optional()),
   isHelper: z.boolean().optional(),
   hidden: z.boolean().optional(),
 });

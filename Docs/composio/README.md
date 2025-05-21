@@ -231,6 +231,4 @@ We propose a new UI that:
 ## Related Documentation
 
 - [Implementation Plan](./implementation-plan.md) - Detailed technical implementation plan
-- [Component Mockups](./component-mockups.md) - Detailed mockups for all UI components
-- [Icon Resources](./icon-resources.md) - Guidelines for using branded SVG icons
 - [Composio MCP Documentation](https://docs.composio.dev/mcp/) - Official Composio MCP documentation

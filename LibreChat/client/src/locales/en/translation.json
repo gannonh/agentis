@@ -871,6 +871,15 @@
   "com_ui_x_selected": "{{0}} selected",
   "com_ui_yes": "Yes",
   "com_ui_zoom": "Zoom",
+  "com_ui_tools_available": "{{0}} tools available",
+  "com_ui_select_tools_for": "Select tools for {{0}}",
+  "com_ui_select_tools_description": "Choose which tools you want to add from this MCP server",
+  "com_ui_select_all_tools": "Select all tools",
+  "com_ui_helper_tools": "Helper tools",
+  "com_ui_helper_tools_description": "The following helper tools will be automatically included to support the functionality of your selected tools",
+  "com_ui_add_selected": "Add Selected",
+  "com_ui_remove_all": "Remove all tools from this server",
+  "com_ui_mcp_server_description": "{{0}} MCP Server",
   "com_user_message": "You",
   "com_warning_resubmit_unsupported": "Resubmitting the AI message is not supported for this endpoint."
 }

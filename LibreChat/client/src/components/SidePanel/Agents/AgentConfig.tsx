@@ -9,15 +9,16 @@ import { useToastContext, useFileMapContext } from '~/Providers';
 import Action from '~/components/SidePanel/Builder/Action';
 import { ToolSelectDialog } from '~/components/Tools';
 import { icons } from '~/hooks/Endpoint/Icons';
-import { processAgentOption } from '~/utils';
+import { processAgentOption, groupAgentToolsByServer } from '~/utils';
 import Instructions from './Instructions';
 import AgentAvatar from './AgentAvatar';
 import FileContext from './FileContext';
-import { useLocalize } from '~/hooks';
 import FileSearch from './FileSearch';
 import Artifacts from './Artifacts';
 import AgentTool from './AgentTool';
+import AgentToolGroup from './AgentToolGroup';
 import CodeForm from './Code/Form';
+import { useLocalize } from '~/hooks';
 import { Panel } from '~/common';
 
 const labelClass = 'mb-2 text-token-text-primary block font-medium';
@@ -148,6 +149,28 @@ export default function AgentConfig({
     }
     setActivePanel(Panel.actions);
   }, [agent_id, setActivePanel, showToast, localize]);
+
+  // Group tools by MCP server
+  const { mcpServerGroups, individualTools } = useMemo(() => {
+    return groupAgentToolsByServer(tools, allTools);
+  }, [tools, allTools]);
+
+  // Function to remove a tool
+  const removeTool = useCallback((toolKey: string) => {
+    if (toolKey) {
+      const newTools = (tools || []).filter(t => t !== toolKey);
+      methods.setValue('tools', newTools);
+    }
+  }, [tools, methods]);
+
+  // Function to remove a group of tools
+  const removeServerGroup = useCallback((serverName: string) => {
+    if (serverName && mcpServerGroups[serverName]) {
+      const toolsToRemove = mcpServerGroups[serverName].map(t => t.pluginKey);
+      const newTools = (tools || []).filter(t => !toolsToRemove.includes(t));
+      methods.setValue('tools', newTools);
+    }
+  }, [mcpServerGroups, tools, methods]);
 
   const providerValue = typeof provider === 'string' ? provider : provider?.value;
   let Icon: IconComponentTypes | null | undefined;
@@ -280,14 +303,30 @@ export default function AgentConfig({
               ${actionsEnabled === true ? localize('com_assistants_actions') : ''}`}
           </label>
           <div className="space-y-2">
-            {tools?.map((func, i) => (
+            {/* MCP Server Tool Groups */}
+            {Object.entries(mcpServerGroups).map(([serverName, serverTools]) => (
+              <AgentToolGroup
+                key={`group-${serverName}`}
+                serverName={serverName}
+                tools={serverTools}
+                allTools={allTools}
+                agent_id={agent_id}
+                onRemoveTool={removeTool}
+                onRemoveGroup={() => removeServerGroup(serverName)}
+              />
+            ))}
+            
+            {/* Individual Tools */}
+            {individualTools.map((tool) => (
               <AgentTool
-                key={`${func}-${i}-${agent_id}`}
-                tool={func}
+                key={`tool-${tool.pluginKey}`}
+                tool={tool.pluginKey}
                 allTools={allTools}
                 agent_id={agent_id}
               />
             ))}
+            
+            {/* Actions */}
             {actions
               .filter((action) => action.agent_id === agent_id)
               .map((action, i) => (
