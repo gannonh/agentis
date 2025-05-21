@@ -132,8 +132,36 @@ actions:
 
 # Example MCP Servers Object Structure
 # Example MCP Servers Object Structure
-# docs 2ddf5239-d9c6-4f1d-8864-1e8dfa34b33e
+# docs  
 mcpServers:
+
+  googledrive:
+    type: sse
+    # Including user_id in URL for Composio to identify unique user connections
+    url: https://mcp.composio.dev/composio/server/85dda66d-0d54-45d9-a1f7-d710d17ae2ba?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    headers:
+      # Using header for user ID propagation as well for redundancy
+      X-User-ID: "{{LIBRECHAT_USER_ID}}"
+      X-API-Key: "${COMPOSIO_API_KEY}"
+      # Connection ID for session identification
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googledrive"
+    displayName: "Google Drive"  # Add this line for custom server display name
+    toolDisplayNames:  # Add this section for custom tool display names
+      GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE: "Add File Sharing"
+      GOOGLEDRIVE_COPY_FILE: "Copy File"
+      GOOGLEDRIVE_CREATE_FILE_FROM_TEXT: "Create Text File"
+      GOOGLEDRIVE_CREATE_FOLDER: "Create Folder"
+      GOOGLEDRIVE_DELETE_FOLDER_OR_FILE: "Delete Item"
+      GOOGLEDRIVE_DOWNLOAD_FILE: "Download File"
+      GOOGLEDRIVE_EDIT_FILE: "Edit File"
+      GOOGLEDRIVE_FIND_FILE: "Find File"
+      GOOGLEDRIVE_FIND_FOLDER: "Find Folder"
+      GOOGLEDRIVE_PARSE_FILE: "Parse File"
+      GOOGLEDRIVE_UPLOAD_FILE: "Upload File"
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      COMPOSIO_INITIATE_CONNECTION: "Connect to Google Drive"
+      COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
+
   googlesheets:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
@@ -161,31 +189,26 @@ mcpServers:
       COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
       COMPOSIO_INITIATE_CONNECTION: "Connect to Google Sheets"
       COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
-  googledrive:
+
+  googledocs:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
-    url: https://mcp.composio.dev/composio/server/85dda66d-0d54-45d9-a1f7-d710d17ae2ba?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    url: https://mcp.composio.dev/composio/server/2ddf5239-d9c6-4f1d-8864-1e8dfa34b33e?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"
       X-API-Key: "${COMPOSIO_API_KEY}"
       # Connection ID for session identification
-      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googledrive"
-    displayName: "Google Drive"  # Add this line for custom server display name
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googlesheets"
+    displayName: "Google Docs"  # Add this line for custom server display name
     toolDisplayNames:  # Add this section for custom tool display names
-      GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE: "Add File Sharing"
-      GOOGLEDRIVE_COPY_FILE: "Copy File"
-      GOOGLEDRIVE_CREATE_FILE_FROM_TEXT: "Create Text File"
-      GOOGLEDRIVE_CREATE_FOLDER: "Create Folder"
-      GOOGLEDRIVE_DELETE_FOLDER_OR_FILE: "Delete Item"
-      GOOGLEDRIVE_DOWNLOAD_FILE: "Download File"
-      GOOGLEDRIVE_EDIT_FILE: "Edit File"
-      GOOGLEDRIVE_FIND_FILE: "Find File"
-      GOOGLEDRIVE_FIND_FOLDER: "Find Folder"
-      GOOGLEDRIVE_PARSE_FILE: "Parse File"
-      GOOGLEDRIVE_UPLOAD_FILE: "Upload File"
+      GOOGLEDOCS_CREATE_DOCUMENT: "Create Doc"
+      GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN: "Create Markdown Doc"
+      GOOGLEDOCS_GET_DOCUMENT_BY_ID: "Get Doc by ID"
+      GOOGLEDOCS_UPDATE_DOCUMENT_MARKDOWN: "Update Doc Markdown"
+      GOOGLEDOCS_UPDATE_EXISTING_DOCUMENT: "Update Existing Doc"
       COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
-      COMPOSIO_INITIATE_CONNECTION: "Connect to Google Drive"
+      COMPOSIO_INITIATE_CONNECTION: "Connect to Google Docs"
       COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
 
   # puppeteer:
