@@ -1,5 +1,12 @@
 // No need to import describe, it, expect with Jest as they are globally available
-import { groupMCPToolsByServer, groupAgentToolsByServer } from '../tools';
+import { 
+  groupMCPToolsByServer, 
+  groupAgentToolsByServer,
+  formatServerName,
+  formatToolName,
+  getServerDisplayName,
+  getToolDisplayName
+} from '../tools';
 import type { TPlugin } from 'librechat-data-provider';
 
 describe('MCP Tool Utilities', () => {
@@ -194,6 +201,81 @@ describe('MCP Tool Utilities', () => {
       expect(result.individualTools).toHaveLength(1);
       expect(result.individualTools[0].pluginKey).toBe('regular_tool');
       expect(Object.keys(result.mcpServerGroups)).toHaveLength(0);
+    });
+  });
+
+  describe('formatServerName', () => {
+    it('should format common MCP server names correctly', () => {
+      expect(formatServerName('googlesheets')).toBe('Google Sheets');
+      expect(formatServerName('github')).toBe('GitHub');
+      expect(formatServerName('firebase-mcp')).toBe('Firebase');
+      expect(formatServerName('firebase-mcp-dev')).toBe('Firebase (Dev)');
+    });
+
+    it('should handle hyphenated names', () => {
+      expect(formatServerName('custom-server')).toBe('Custom Server');
+      expect(formatServerName('firebase-custom')).toBe('Firebase Custom');
+    });
+
+    it('should handle camelCase names', () => {
+      expect(formatServerName('myCustomServer')).toBe('My Custom Server');
+      expect(formatServerName('camelCaseExample')).toBe('Camel Case Example');
+    });
+
+    it('should handle standard names', () => {
+      expect(formatServerName('regular')).toBe('Regular');
+      expect(formatServerName('server')).toBe('Server');
+    });
+  });
+
+  describe('formatToolName', () => {
+    it('should format tool names with server prefix', () => {
+      expect(formatToolName('GOOGLESHEETS_BATCH_GET', 'googlesheets')).toBe('Batch Get');
+      expect(formatToolName('github_get_pull_request', 'github')).toBe('Get Pull Request');
+    });
+
+    it('should format tool names with underscores', () => {
+      expect(formatToolName('get_user_info')).toBe('Get User Info');
+      expect(formatToolName('CREATE_NEW_DOCUMENT')).toBe('Create New Document');
+    });
+
+    it('should handle simple tool names', () => {
+      expect(formatToolName('search')).toBe('Search');
+      expect(formatToolName('find')).toBe('Find');
+    });
+  });
+
+  describe('getServerDisplayName', () => {
+    it('should use configured display name when available', () => {
+      expect(getServerDisplayName('googlesheets', { displayName: 'Custom Google Sheets' }))
+        .toBe('Custom Google Sheets');
+    });
+
+    it('should fall back to formatted name when no config is provided', () => {
+      expect(getServerDisplayName('googlesheets')).toBe('Google Sheets');
+    });
+
+    it('should fall back to formatted name when config has no display name', () => {
+      expect(getServerDisplayName('firebase-mcp', {})).toBe('Firebase');
+    });
+  });
+
+  describe('getToolDisplayName', () => {
+    it('should use configured display name when available', () => {
+      expect(getToolDisplayName('SHEETS_BATCH_GET', 'sheets', { 
+        toolDisplayNames: { 'SHEETS_BATCH_GET': 'Custom Batch Get' } 
+      })).toBe('Custom Batch Get');
+    });
+
+    it('should fall back to formatted name when no config is provided', () => {
+      expect(getToolDisplayName('GITHUB_GET_REPO', 'github'))
+        .toBe('Get Repo');
+    });
+
+    it('should fall back to formatted name when config has no matching tool', () => {
+      expect(getToolDisplayName('SHEETS_UPDATE', 'sheets', { 
+        toolDisplayNames: { 'OTHER_TOOL': 'Other Tool' } 
+      })).toBe('Update');
     });
   });
 });

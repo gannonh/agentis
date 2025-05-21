@@ -27,7 +27,7 @@ function ToolItem({ tool, onAddTool, onRemoveTool, isInstalled = false }: ToolIt
             {tool.icon != null && tool.icon ? (
               <img
                 src={tool.icon}
-                alt={localize('com_ui_logo', { 0: tool.name })}
+                alt={localize('com_ui_logo', { 0: tool.displayName || tool.name })}
                 className="h-full w-full rounded-[5px] bg-white"
               />
             ) : (
@@ -40,12 +40,12 @@ function ToolItem({ tool, onAddTool, onRemoveTool, isInstalled = false }: ToolIt
         </div>
         <div className="flex min-w-0 flex-col items-start justify-between">
           <div className="mb-2 line-clamp-1 max-w-full text-lg leading-5 text-text-primary">
-            {tool.name}
+            {tool.displayName || tool.name}
           </div>
           {!isInstalled ? (
             <button
               className="btn btn-primary relative"
-              aria-label={`${localize('com_ui_add')} ${tool.name}`}
+              aria-label={`${localize('com_ui_add')} ${tool.displayName || tool.name}`}
               onClick={handleClick}
             >
               <div className="flex w-full items-center justify-center gap-2">
@@ -57,7 +57,7 @@ function ToolItem({ tool, onAddTool, onRemoveTool, isInstalled = false }: ToolIt
             <button
               className="btn relative bg-gray-300 hover:bg-gray-400 dark:bg-gray-50 dark:hover:bg-gray-200"
               onClick={handleClick}
-              aria-label={`${localize('com_nav_tool_remove')} ${tool.name}`}
+              aria-label={`${localize('com_nav_tool_remove')} ${tool.displayName || tool.name}`}
             >
               <div className="flex w-full items-center justify-center gap-2">
                 {localize('com_nav_tool_remove')}

@@ -277,6 +277,7 @@ function ToolSelectDialog({
                           <MCPServerCard
                             key={`server-${serverGroup.serverName}`}
                             serverName={serverGroup.serverName}
+                            displayName={serverGroup.displayName}
                             description={serverGroup.description}
                             icon={serverGroup.icon}
                             tools={serverGroup.tools}
@@ -321,6 +322,7 @@ function ToolSelectDialog({
           isOpen={isServerDialogOpen}
           setIsOpen={setIsServerDialogOpen}
           serverName={selectedServer.serverName}
+          displayName={selectedServer.displayName}
           tools={selectedServer.tools}
           helperTools={selectedServer.helperTools}
           onConfirm={onAddServerTools}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronDown, X } from 'lucide-react';
 import { useLocalize } from '~/hooks';
 import AgentTool from './AgentTool';
+import { getServerDisplayName } from '~/utils/tools';
 import type { TPlugin } from 'librechat-data-provider';
 
 interface AgentToolGroupProps {
@@ -39,7 +40,7 @@ function AgentToolGroup({
             <ChevronDown className="h-4 w-4 text-text-secondary" /> : 
             <ChevronRight className="h-4 w-4 text-text-secondary" />
           }
-          <span className="font-medium text-text-primary">{serverName}</span>
+          <span className="font-medium text-text-primary">{getServerDisplayName(serverName)}</span>
           <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs font-medium text-text-tertiary">
             {tools.length} {localize('com_ui_tools')}
           </span>
@@ -59,15 +60,32 @@ function AgentToolGroup({
       
       {isExpanded && (
         <div className="border-t border-border-medium p-3 space-y-2 bg-surface-primary">
-          {tools.map(tool => (
-            <AgentTool
-              key={tool.pluginKey}
-              tool={tool.pluginKey}
-              allTools={allTools}
-              agent_id={agent_id}
-              onRemoveTool={() => onRemoveTool(tool.pluginKey)}
-            />
-          ))}
+          {tools.map(tool => {
+            // Enhance the tool with a display name if needed
+            if (!tool.displayName && tool.pluginKey) {
+              // If it's an MCP tool, extract the server name and apply formatting
+              if (tool.pluginKey.includes('_mcp_')) {
+                const parts = tool.pluginKey.split('_mcp_');
+                const toolServerName = parts[parts.length - 1];
+                // For server tools, the tool name is often in a standard format
+                const toolName = tool.name || tool.pluginKey.split('_mcp_')[0];
+                tool = {
+                  ...tool,
+                  displayName: getToolDisplayName(toolName, toolServerName || serverName)
+                };
+              }
+            }
+            
+            return (
+              <AgentTool
+                key={tool.pluginKey}
+                tool={tool} // Pass the enhanced tool object
+                allTools={allTools}
+                agent_id={agent_id}
+                onRemoveTool={() => onRemoveTool(tool.pluginKey)}
+              />
+            );
+          })}
         </div>
       )}
     </div>

@@ -13,7 +13,7 @@ import FinishedIcon from './FinishedIcon';
 import ToolPopover from './ToolPopover';
 import WrenchIcon from './WrenchIcon';
 import { useProgress } from '~/hooks';
-import { logger } from '~/utils';
+import { logger, getToolDisplayName } from '~/utils';
 
 const radius = 56.08695652173913;
 const circumference = 2 * Math.PI * radius;
@@ -139,13 +139,21 @@ export default function ToolCall({
     if (cancelled) {
       return localize('com_ui_error');
     }
+    
+    // Get a user-friendly display name for the tool
+    let displayName = function_name;
+    
     if (isMCPToolCall === true) {
-      return localize('com_assistants_completed_function', { 0: function_name });
+      // For MCP tools, use our enhanced display name utility
+      displayName = getToolDisplayName(function_name, domain || undefined);
+      return localize('com_assistants_completed_function', { 0: displayName });
     }
+    
     if (domain != null && domain && domain.length !== Constants.ENCODED_DOMAIN_LENGTH) {
       return localize('com_assistants_completed_action', { 0: domain });
     }
-    return localize('com_assistants_completed_function', { 0: function_name });
+    
+    return localize('com_assistants_completed_function', { 0: displayName });
   };
 
   return (
@@ -155,7 +163,13 @@ export default function ToolCall({
           <div className="relative h-5 w-5 shrink-0">{renderIcon()}</div>
           <ProgressText
             progress={cancelled ? 1 : progress}
-            inProgressText={localize('com_assistants_running_action')}
+            inProgressText={
+              isMCPToolCall 
+                ? localize('com_assistants_running_function', {
+                    0: getToolDisplayName(function_name, domain || undefined)
+                  })
+                : localize('com_assistants_running_action')
+            }
             authText={
               !cancelled && authDomain.length > 0 ? localize('com_ui_requires_auth') : undefined
             }

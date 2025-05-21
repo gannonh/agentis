@@ -16,7 +16,18 @@ export type WebSocketOptions = z.infer<typeof WebSocketOptionsSchema>;
 export type SSEOptions = z.infer<typeof SSEOptionsSchema>;
 export type StreamableHTTPOptions = z.infer<typeof StreamableHTTPOptionsSchema>;
 export type MCPOptions = z.infer<typeof MCPOptionsSchema>;
+export interface MCPServer extends z.infer<typeof MCPServersSchema> {
+  /** Optional display name for the MCP server that overrides the auto-formatted server name */
+  displayName?: string;
+  /** 
+   * Optional mapping of tool names to display names 
+   * Keys are the original tool names, values are the display names to use
+   */
+  toolDisplayNames?: Record<string, string>;
+}
+
 export type MCPServers = z.infer<typeof MCPServersSchema>;
+
 export interface MCPResource {
   uri: string;
   name: string;

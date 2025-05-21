@@ -9,7 +9,7 @@ import { useToastContext, useFileMapContext } from '~/Providers';
 import Action from '~/components/SidePanel/Builder/Action';
 import { ToolSelectDialog } from '~/components/Tools';
 import { icons } from '~/hooks/Endpoint/Icons';
-import { processAgentOption, groupAgentToolsByServer } from '~/utils';
+import { processAgentOption, groupAgentToolsByServer, getToolDisplayName } from '~/utils';
 import Instructions from './Instructions';
 import AgentAvatar from './AgentAvatar';
 import FileContext from './FileContext';
@@ -317,14 +317,52 @@ export default function AgentConfig({
             ))}
             
             {/* Individual Tools */}
-            {individualTools.map((tool) => (
-              <AgentTool
-                key={`tool-${tool.pluginKey}`}
-                tool={tool.pluginKey}
-                allTools={allTools}
-                agent_id={agent_id}
-              />
-            ))}
+            {individualTools.map((tool) => {
+              // Add display name enhancement to individual tools
+              const enhancedTool = { 
+                ...tool,
+                // If it's an MCP tool, extract the server name and apply formatting
+                displayName: tool.pluginKey.includes('_mcp_') 
+                  ? (() => {
+                      const parts = tool.pluginKey.split('_mcp_');
+                      const serverName = parts[parts.length - 1];
+                      // Extract the actual tool name from the plugin key if possible
+                      let toolName = tool.name || tool.pluginKey;
+                      
+                      // For Composio tools, the tool name is often in the format SERVERTYPE_TOOLACTION
+                      // Extract this from the pluginKey if needed
+                      if (tool.pluginKey.includes('COMPOSIO_') || 
+                          tool.pluginKey.includes(`${serverName.toUpperCase()}_`)) {
+                        const keyParts = tool.pluginKey.split('_mcp_')[0].split('_');
+                        // Get the last part if it's a simple key, or reconstruct the tool name
+                        // for more complex keys
+                        if (keyParts.length > 1) {
+                          // Join all parts except the last one (which is often 'plugin')
+                          toolName = keyParts.join('_');
+                        }
+                      }
+                      
+                      return getToolDisplayName(toolName, serverName);
+                    })()
+                  : tool.name
+              };
+              
+              // Add the enhanced tool to allTools array so it can be found by the AgentTool component
+              const enhancedAllTools = [...allTools];
+              const toolIndex = enhancedAllTools.findIndex(t => t.pluginKey === tool.pluginKey);
+              if (toolIndex >= 0) {
+                enhancedAllTools[toolIndex] = enhancedTool;
+              }
+              
+              return (
+                <AgentTool
+                  key={`tool-${tool.pluginKey}`}
+                  tool={enhancedTool} // Pass the entire enhanced tool object
+                  allTools={enhancedAllTools}
+                  agent_id={agent_id}
+                />
+              );
+            })}
             
             {/* Actions */}
             {actions

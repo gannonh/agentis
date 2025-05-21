@@ -1,3 +1,16 @@
+curl -X POST https://backend.composio.dev/api/v3/mcp/servers \
+  -H "x-api-key: by4hpe7n3gex5dp4peux5" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Google Super",
+    "apps": [
+      "GOOGLESUPER"
+    ],
+    "auth_config_id": {}
+  }'
+
+
+
 "e2e:record-large": "npx playwright codegen --viewport-size=1600,1700 http://localhost:3080/",
 
 GOOGLE_TEST_ACCOUNT_1_EMAIL="agentis.test@gmail.com"

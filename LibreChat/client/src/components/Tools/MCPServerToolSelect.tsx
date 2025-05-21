@@ -8,6 +8,7 @@ interface MCPServerToolSelectProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   serverName: string;
+  displayName?: string; // Display name for the server (optional)
   tools: TPlugin[];
   helperTools: TPlugin[];
   onConfirm: (selectedTools: string[]) => void;
@@ -21,6 +22,7 @@ function MCPServerToolSelect({
   isOpen,
   setIsOpen,
   serverName,
+  displayName,
   tools,
   helperTools,
   onConfirm,
@@ -73,7 +75,7 @@ function MCPServerToolSelect({
             <div className="flex items-center">
               <div className="text-center sm:text-left">
                 <DialogTitle className="text-lg font-medium leading-6 text-text-primary">
-                  {localize('com_ui_select_tools_for', { 0: serverName })}
+                  {localize('com_ui_select_tools_for', { 0: displayName || serverName })}
                 </DialogTitle>
                 <Description className="text-sm text-text-secondary">
                   {localize('com_ui_select_tools_description')}
@@ -122,7 +124,7 @@ function MCPServerToolSelect({
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-text-primary">{tool.name}</span>
+                      <span className="text-sm font-medium text-text-primary">{tool.displayName || tool.name}</span>
                       <span className="text-xs text-text-secondary">{tool.description}</span>
                     </div>
                   </label>
@@ -146,7 +148,7 @@ function MCPServerToolSelect({
                       </p>
                     </div>
                     <div className="mt-2 text-xs text-blue-600 dark:text-blue-300">
-                      {helperTools.map(tool => tool.name).join(', ')}
+                      {helperTools.map(tool => tool.displayName || tool.name).join(', ')}
                     </div>
                   </div>
                 </div>

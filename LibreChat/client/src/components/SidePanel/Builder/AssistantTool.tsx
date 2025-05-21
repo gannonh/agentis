@@ -70,7 +70,7 @@ export default function AssistantTool({
             className="h-9 grow px-3 py-2"
             style={{ textOverflow: 'ellipsis', wordBreak: 'break-all', overflow: 'hidden' }}
           >
-            {currentTool.name}
+            {currentTool.displayName || currentTool.name}
           </div>
         </div>
 

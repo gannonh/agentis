@@ -4,6 +4,7 @@ import type { TPlugin } from 'librechat-data-provider';
 
 interface MCPServerCardProps {
   serverName: string;
+  displayName?: string; // Display name for the server (optional)
   description: string;
   icon?: string;
   tools: TPlugin[];
@@ -16,12 +17,16 @@ interface MCPServerCardProps {
  */
 function MCPServerCard({ 
   serverName, 
+  displayName,
   description, 
   icon, 
   tools, 
   onAddServer 
 }: MCPServerCardProps) {
   const localize = useLocalize();
+  
+  // Use the display name if available, otherwise fallback to server name
+  const displayLabel = displayName || serverName;
   
   return (
     <div className="flex flex-col gap-4 rounded border border-border-medium bg-transparent p-6 hover:border-border-hover transition-colors duration-200">
@@ -31,7 +36,7 @@ function MCPServerCard({
             {icon ? (
               <img
                 src={icon}
-                alt={localize('com_ui_logo', { 0: serverName })}
+                alt={localize('com_ui_logo', { 0: displayLabel })}
                 className="h-full w-full rounded-[5px] bg-white object-contain p-1"
               />
             ) : (
@@ -44,11 +49,11 @@ function MCPServerCard({
         </div>
         <div className="flex min-w-0 flex-col items-start justify-between">
           <div className="mb-2 line-clamp-1 max-w-full text-lg font-medium leading-5 text-text-primary">
-            {serverName}
+            {displayLabel}
           </div>
           <button
             className="btn btn-primary relative"
-            aria-label={`${localize('com_ui_add')} ${serverName}`}
+            aria-label={`${localize('com_ui_add')} ${displayLabel}`}
             onClick={onAddServer}
           >
             <div className="flex w-full items-center justify-center gap-2">
