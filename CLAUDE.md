@@ -23,6 +23,12 @@ Agentis is an all-in-one AI conversations platform that integrates multiple AI m
   
 - **config/**: Utility scripts for user management, balance management, and configuration
 
+- **packages/**: Shared packages used by both client and server
+  - **data-provider**: Data services for client-server communication
+  - **data-schemas**: Mongoose schemas and model definitions
+  - **mcp**: Model Context Protocol integration services
+  - **arcade-client**: Client SDK for Arcade integration
+
 ## Development Commands
 
 ### Installation
@@ -50,6 +56,32 @@ npm run frontend:dev
 npm run backend      # Start backend server in production mode
 npm run frontend     # Build frontend for production
 ```
+
+### Package Development Workflow
+
+When making changes to shared packages, you need to rebuild them for changes to be reflected:
+
+1. **Package Purposes**:
+   - **data-schemas**: Mongoose schema definitions and models
+   - **data-provider**: API communication layer and data services
+   - **mcp**: Model Context Protocol integration services
+
+2. **When to rebuild packages**:
+   - Changes to `data-schemas` → rebuild with `npm run build:data-schemas`
+   - Changes to `data-provider` → rebuild with `npm run build:data-provider`
+   - Changes to `mcp` → rebuild with `npm run build:mcp`
+  
+3. **Dependency Order**: 
+   - Changes to a package require rebuilding that package and any that depend on it:
+   - Dependency chain: `data-schemas` → `data-provider` → `mcp` → client/API
+
+4. **Development Helper Script**:
+   - Use the provided script for easier rebuilding: `./scripts/dev-rebuild.sh`
+   - Example: `./scripts/dev-rebuild.sh --provider --frontend` to rebuild data-provider and restart frontend
+
+5. **Auto-watch During Development**:
+   - For continuous development, use watch mode in the package directory:
+   - Example: `cd packages/data-provider && npm run build:watch`
 
 ### Testing
 
@@ -216,5 +248,3 @@ docker-compose -f ./deploy-compose.yml up -d
 - Use local component state for UI-specific state
 - Avoid prop drilling by using Context or Recoil for shared state
 - Use the useReducer hook for complex state logic
-
-
