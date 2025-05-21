@@ -46,7 +46,12 @@ export interface LCFunctionTool {
 }
 
 export type LCAvailableTools = Record<string, LCFunctionTool>;
-export type LCManifestTool = TPlugin;
+export interface LCManifestTool extends TPlugin {
+  /** Optional display name that overrides the auto-formatted server name */
+  serverDisplayName?: string;
+  /** Optional display name that overrides the auto-formatted tool name */
+  displayName?: string;
+}
 export type LCToolManifest = TPlugin[];
 export interface MCPPrompt {
   name: string;

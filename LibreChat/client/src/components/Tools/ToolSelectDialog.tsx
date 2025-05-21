@@ -145,7 +145,9 @@ function ToolSelectDialog({
   };
 
   // Group tools by MCP server
-  const { mcpServers, regularTools } = groupMCPToolsByServer(tools);
+  const { mcpServers, regularTools } = tools && Array.isArray(tools) 
+    ? groupMCPToolsByServer(tools, window.__mcpServerConfigs) 
+    : { mcpServers: [], regularTools: [] };
   
   // Filter MCP servers and regular tools based on search
   const filteredServers = mcpServers.filter(server => 

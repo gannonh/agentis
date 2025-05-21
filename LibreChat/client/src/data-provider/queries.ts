@@ -208,7 +208,21 @@ export const useAvailableToolsQuery = <TData = t.TPlugin[]>(
     endpointsConfig?.[endpoint]?.version ?? defaultAssistantsVersion[endpoint];
   return useQuery<t.TPlugin[], unknown, TData>(
     [QueryKeys.tools],
-    () => dataService.getAvailableTools(endpoint, version),
+    async () => {
+      const response = await dataService.getAvailableTools(endpoint, version);
+      // Handle both array and object with tools property
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && Array.isArray(response.tools)) {
+        // Store MCP server configurations if available
+        if (response.mcpServers && window) {
+          window.__mcpServerConfigs = response.mcpServers;
+        }
+        return response.tools;
+      }
+      console.warn('Unexpected response format from tools API:', response);
+      return [];
+    },
     {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,

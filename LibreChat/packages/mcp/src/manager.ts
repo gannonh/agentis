@@ -385,16 +385,32 @@ export class MCPManager {
         const tools = await connection.fetchTools();
         for (const tool of tools) {
           const pluginKey = `${tool.name}${CONSTANTS.mcp_delimiter}${serverName}`;
+          const config = this.mcpConfigs[serverName];
+          
+          // Get display names from config if available
+          const serverDisplayName = config?.displayName;
+          const toolDisplayName = config?.toolDisplayNames?.[tool.name];
+          
           const manifestTool: t.LCManifestTool = {
             name: tool.name,
             pluginKey,
             description: tool.description ?? '',
             icon: connection.iconPath,
           };
-          const config = this.mcpConfigs[serverName];
+          
+          // Add display names if available in configuration
+          if (serverDisplayName) {
+            manifestTool.serverDisplayName = serverDisplayName;
+          }
+          
+          if (toolDisplayName) {
+            manifestTool.displayName = toolDisplayName;
+          }
+          
           if (config?.chatMenu === false) {
             manifestTool.chatMenu = false;
           }
+          
           mcpTools.push(manifestTool);
         }
       } catch (error) {

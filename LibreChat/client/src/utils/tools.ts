@@ -30,6 +30,13 @@ export interface MCPServerGroup {
  * @param tools - The list of all tools
  * @returns An array of grouped MCP server tools and an array of regular tools
  */
+// Add window type definition for storing MCP tools globally
+declare global {
+  interface Window { 
+    __mcpTools?: TPlugin[];
+  }
+}
+
 export function groupMCPToolsByServer(
   tools: TPlugin[] | undefined, 
   mcpServerConfigs?: Record<string, { displayName?: string; toolDisplayNames?: Record<string, string> }>
@@ -37,15 +44,24 @@ export function groupMCPToolsByServer(
   mcpServers: MCPServerGroup[];
   regularTools: TPlugin[];
 } {
-  if (!tools || tools.length === 0) {
+  // Make sure tools is an array
+  if (!tools || !Array.isArray(tools) || tools.length === 0) {
     return { mcpServers: [], regularTools: [] };
   }
+
+  // Store tools globally for other functions to access
+  window.__mcpTools = tools;
 
   const regularTools: TPlugin[] = [];
   const mcpServerMap: Record<string, MCPServerGroup> = {};
 
   // Process all tools
   tools.forEach((tool) => {
+    // Skip if tool or pluginKey is undefined
+    if (!tool || !tool.pluginKey || typeof tool.pluginKey !== 'string') {
+      return;
+    }
+    
     // Check if it's an MCP tool
     if (tool.pluginKey.includes(CONSTANTS.mcp_delimiter)) {
       const parts = tool.pluginKey.split(CONSTANTS.mcp_delimiter);
@@ -211,8 +227,27 @@ export function getServerDisplayName(
     return mcpServerConfig.displayName;
   }
   
+  // If the tool has a serverDisplayName property, use it
+  const serverDisplayNameFromPlugin = getServerDisplayNameFromPlugins(serverName);
+  if (serverDisplayNameFromPlugin) {
+    return serverDisplayNameFromPlugin;
+  }
+  
   // Otherwise, format the server name
   return formatServerName(serverName);
+}
+
+// Helper function to check for serverDisplayName in available tools
+function getServerDisplayNameFromPlugins(serverName: string): string | undefined {
+  // Access the globally stored tools if available
+  const toolsFromStore = window.__mcpTools || [];
+  
+  // Find any tool from this server
+  const toolFromServer = toolsFromStore.find(
+    tool => tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey.endsWith(`_mcp_${serverName}`)
+  );
+  
+  return toolFromServer?.serverDisplayName;
 }
 
 /**
@@ -232,21 +267,56 @@ export function getToolDisplayName(
     return mcpServerConfig.toolDisplayNames[toolName];
   }
   
-  // Fall back to automatic formatting
+  // If the tool already has a displayName property from the backend, use it
+  const toolDisplayNameFromPlugin = getToolDisplayNameFromPlugins(toolName, serverName);
+  if (toolDisplayNameFromPlugin) {
+    return toolDisplayNameFromPlugin;
+  }
   
-  // Otherwise, format the tool name
+  // Fall back to automatic formatting
   return formatToolName(toolName, serverName);
+}
+
+// Helper function to check for displayName in available tools
+function getToolDisplayNameFromPlugins(toolName: string, serverName?: string): string | undefined {
+  // Access the globally stored tools if available
+  const toolsFromStore = window.__mcpTools || [];
+  
+  // Try to find the exact tool by name and server
+  const pluginKey = serverName ? `${toolName}_mcp_${serverName}` : undefined;
+  
+  // First try exact match with pluginKey if available
+  if (pluginKey) {
+    const exactMatch = toolsFromStore.find(
+      tool => tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey === pluginKey
+    );
+    if (exactMatch?.displayName) {
+      return exactMatch.displayName;
+    }
+  }
+  
+  // Try to find by name
+  const toolMatch = toolsFromStore.find(
+    tool => tool.name && typeof tool.name === 'string' && tool.name === toolName
+  );
+  if (toolMatch?.displayName) {
+    return toolMatch.displayName;
+  }
+  
+  return undefined;
 }
 
 export function groupAgentToolsByServer(
   toolKeys: string[] | undefined,
   allTools: TPlugin[] | undefined,
-  mcpServerConfigs?: Record<string, { displayName?: string; toolDisplayNames?: Record<string, string> }>
+  mcpServerConfigs: Record<string, { displayName?: string; toolDisplayNames?: Record<string, string> }> = window.__mcpServerConfigs
 ): {
   mcpServerGroups: Record<string, TPlugin[]>;
   individualTools: TPlugin[];
 } {
-  if (!toolKeys || !allTools || toolKeys.length === 0 || allTools.length === 0) {
+  // Ensure both toolKeys and allTools are valid arrays
+  if (!toolKeys || !Array.isArray(toolKeys) || toolKeys.length === 0 || 
+      !allTools || !Array.isArray(allTools) || allTools.length === 0) {
     return { mcpServerGroups: {}, individualTools: [] };
   }
 
@@ -255,8 +325,10 @@ export function groupAgentToolsByServer(
 
   // Process each tool key
   toolKeys.forEach((toolKey) => {
-    const tool = allTools.find((t) => t.pluginKey === toolKey);
-    if (!tool) return;
+    if (typeof toolKey !== 'string') return;
+    
+    const tool = allTools.find((t) => t && t.pluginKey === toolKey);
+    if (!tool || !tool.pluginKey || typeof tool.pluginKey !== 'string') return;
 
     // Check if it's an MCP tool
     if (tool.pluginKey.includes(CONSTANTS.mcp_delimiter)) {

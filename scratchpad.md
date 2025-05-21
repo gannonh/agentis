@@ -1,14 +1,21 @@
-curl -X POST https://backend.composio.dev/api/v3/mcp/servers \
-  -H "x-api-key: by4hpe7n3gex5dp4peux5" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Google Super",
-    "apps": [
-      "GOOGLESUPER"
-    ],
-    "auth_config_id": {}
-  }'
+GOOGLESHEETS_BATCH_GET
+GOOGLESHEETS_BATCH_UPDATE
+GOOGLESHEETS_CLEAR_VALUES
+GOOGLESHEETS_CREATE_GOOGLE_SHEET1
+GOOGLESHEETS_CREATE_SPREADSHEET_COLUMN
+GOOGLESHEETS_CREATE_SPREADSHEET_ROW
+GOOGLESHEETS_FIND_WORKSHEET_BY_TITLE
+GOOGLESHEETS_FORMAT_CELL
+GOOGLESHEETS_GET_SHEET_NAMES
+GOOGLESHEETS_GET_SPREADSHEET_INFO
+GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW
+GOOGLESHEETS_SHEET_FROM_JSON
+COMPOSIO_CHECK_ACTIVE_CONNECTION
+COMPOSIO_INITIATE_CONNECTION
+COMPOSIO_GET_REQUIRED_PARAMETERS
 
+
+npm run build:mcp && npm run build:data-schemas && npm run build:data-provider
 
 
 "e2e:record-large": "npx playwright codegen --viewport-size=1600,1700 http://localhost:3080/",
