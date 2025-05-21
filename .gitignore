@@ -1,2 +1,4 @@
 .DS_Store
 .venv-arcade/
+backend.log
+frontend.log
