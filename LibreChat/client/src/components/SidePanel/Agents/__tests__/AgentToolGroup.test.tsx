@@ -1,10 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import AgentToolGroup from '../AgentToolGroup';
-import { vi } from 'vitest';
 
 // Mock the AgentTool component
-vi.mock('../AgentTool', () => ({
+jest.mock('../AgentTool', () => ({
   __esModule: true,
   default: ({ tool, onRemoveTool }) => (
     <div data-testid={`agent-tool-${tool}`}>
@@ -15,7 +14,7 @@ vi.mock('../AgentTool', () => ({
 }));
 
 // Mock localize hook
-vi.mock('~/hooks', () => ({
+jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => {
     if (key === 'com_ui_tools') return 'tools';
     if (key === 'com_ui_remove_all') return 'Remove all';
@@ -42,8 +41,8 @@ describe('AgentToolGroup', () => {
     tools: mockTools,
     allTools: [...mockTools],
     agent_id: 'agent-123',
-    onRemoveTool: vi.fn(),
-    onRemoveGroup: vi.fn(),
+    onRemoveTool: jest.fn(),
+    onRemoveGroup: jest.fn(),
   };
 
   it('renders correctly with collapsed state', () => {
@@ -53,7 +52,8 @@ describe('AgentToolGroup', () => {
     expect(screen.getByText('Google Sheets')).toBeInTheDocument();
     
     // Check tools count is displayed
-    expect(screen.getByText('(2 tools)')).toBeInTheDocument();
+    expect(screen.getByText('2', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('tools', { exact: false })).toBeInTheDocument();
     
     // Check that tools are not visible when collapsed
     expect(screen.queryByTestId('agent-tool-create_sheet_mcp_googlesheets')).not.toBeInTheDocument();

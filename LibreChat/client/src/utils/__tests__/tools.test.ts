@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+// No need to import describe, it, expect with Jest as they are globally available
 import { groupMCPToolsByServer, groupAgentToolsByServer } from '../tools';
 import type { TPlugin } from 'librechat-data-provider';
 

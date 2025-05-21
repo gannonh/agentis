@@ -29,20 +29,27 @@ function MCPServerToolSelect({
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
-  // Always include helper tools
-  const helperToolKeys = helperTools.map(tool => tool.pluginKey);
-  
+  // Compute helper tool keys only once when the component mounts
+  // or when helperTools changes
   useEffect(() => {
+    const helperToolKeys = helperTools.map(tool => tool.pluginKey);
+    
     if (selectAll) {
       setSelectedTools([...helperToolKeys, ...tools.map(tool => tool.pluginKey)]);
     } else {
       setSelectedTools([...helperToolKeys]);
     }
-  }, [selectAll, helperToolKeys, tools]);
+  }, [selectAll, helperTools, tools]);
 
   const handleToggle = (pluginKey: string) => {
+    // Make sure we don't remove helper tools (which should always be included)
+    const helperToolKeys = helperTools.map(tool => tool.pluginKey);
+    
     if (selectedTools.includes(pluginKey)) {
-      setSelectedTools(selectedTools.filter(key => key !== pluginKey));
+      // Only remove if it's not a helper tool
+      if (!helperToolKeys.includes(pluginKey)) {
+        setSelectedTools(selectedTools.filter(key => key !== pluginKey));
+      }
     } else {
       setSelectedTools([...selectedTools, pluginKey]);
     }
