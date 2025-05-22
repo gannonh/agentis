@@ -32,14 +32,17 @@ export interface MCPServerGroup {
  */
 // Add window type definition for storing MCP tools globally
 declare global {
-  interface Window { 
+  interface Window {
     __mcpTools?: TPlugin[];
   }
 }
 
 export function groupMCPToolsByServer(
-  tools: TPlugin[] | undefined, 
-  mcpServerConfigs?: Record<string, { displayName?: string; toolDisplayNames?: Record<string, string> }>
+  tools: TPlugin[] | undefined,
+  mcpServerConfigs?: Record<
+    string,
+    { displayName?: string; toolDisplayNames?: Record<string, string> }
+  >,
 ): {
   mcpServers: MCPServerGroup[];
   regularTools: TPlugin[];
@@ -61,7 +64,7 @@ export function groupMCPToolsByServer(
     if (!tool || !tool.pluginKey || typeof tool.pluginKey !== 'string') {
       return;
     }
-    
+
     // Check if it's an MCP tool
     if (tool.pluginKey.includes(CONSTANTS.mcp_delimiter)) {
       const parts = tool.pluginKey.split(CONSTANTS.mcp_delimiter);
@@ -74,7 +77,7 @@ export function groupMCPToolsByServer(
 
       // Get the server configuration if available
       const serverConfig = mcpServerConfigs?.[serverName];
-      
+
       // Get formatted server display name
       const displayName = getServerDisplayName(serverName, serverConfig);
 
@@ -93,11 +96,11 @@ export function groupMCPToolsByServer(
       // Attempt to format the tool's name for display
       const toolName = tool.name || tool.pluginKey;
       const toolDisplayName = getToolDisplayName(toolName, serverName, serverConfig);
-      
+
       // Clone the tool with updated name for display
       const toolWithDisplayName = {
         ...tool,
-        displayName: toolDisplayName // Add display name property
+        displayName: toolDisplayName, // Add display name property
       };
 
       // Add to appropriate category
@@ -128,7 +131,7 @@ export function groupMCPToolsByServer(
  * Transforms a server name into a user-friendly display format
  * @param serverName - The raw server name
  * @returns - A formatted display name
- * 
+ *
  * Examples:
  * - "googlesheets" -> "Google Sheets"
  * - "firebase-mcp" -> "Firebase"
@@ -137,17 +140,17 @@ export function groupMCPToolsByServer(
 export function formatServerName(serverName: string): string {
   // Special case for known service names with specific capitalization
   const specialCases: Record<string, string> = {
-    'github': 'GitHub',
-    'googlesheets': 'Google Sheets',
-    'googledocs': 'Google Docs',
-    'googledrive': 'Google Drive',
-    'oauth2': 'OAuth 2.0',
+    github: 'GitHub',
+    googlesheets: 'Google Sheets',
+    googledocs: 'Google Docs',
+    googledrive: 'Google Drive',
+    oauth2: 'OAuth 2.0',
     'firebase-mcp': 'Firebase',
     'firebase-mcp-dev': 'Firebase (Dev)',
     'firebase-mcp-npm': 'Firebase',
     'memento-mcp-dev': 'Memento',
     'memento-mcp-npx': 'Memento',
-    'composio': 'Composio',
+    composio: 'Composio',
   };
 
   // Return special case if it exists
@@ -158,19 +161,19 @@ export function formatServerName(serverName: string): string {
   // Remove common suffixes
   let cleanName = serverName
     .replace(/-mcp(-[a-z]+)?$/i, '') // Remove -mcp, -mcp-dev, etc.
-    .replace(/-client$/i, '');        // Remove -client
-  
+    .replace(/-client$/i, ''); // Remove -client
+
   // Handle hyphenated names by splitting and capitalizing each part
   if (cleanName.includes('-')) {
     return cleanName
       .split('-')
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
       .join(' ');
   }
-  
+
   // Basic word boundary detection for camelCase or PascalCase
   cleanName = cleanName.replace(/([a-z])([A-Z])/g, '$1 $2');
-  
+
   // Capitalize first letter of the entire string
   return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
 }
@@ -180,7 +183,7 @@ export function formatServerName(serverName: string): string {
  * @param toolName - The raw tool name
  * @param serverName - Optional server name to help with context-specific formatting
  * @returns - A formatted display name
- * 
+ *
  * Examples:
  * - "GOOGLESHEETS_BATCH_GET" -> "Batch Get"
  * - "github_get_pull_request" -> "Get Pull Request"
@@ -195,19 +198,19 @@ export function formatToolName(toolName: string, serverName?: string): string {
       const functionPart = toolName.substring(serverPrefix.length);
       return functionPart
         .split('_')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
         .join(' ');
     }
   }
-  
+
   // Basic transformation: replace underscores with spaces and capitalize each word
   if (toolName.includes('_')) {
     return toolName
       .split('_')
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
       .join(' ');
   }
-  
+
   // Simple case - just capitalize first letter
   return toolName.charAt(0).toUpperCase() + toolName.slice(1).toLowerCase();
 }
@@ -219,20 +222,20 @@ export function formatToolName(toolName: string, serverName?: string): string {
  * @returns - The display name to use
  */
 export function getServerDisplayName(
-  serverName: string, 
-  mcpServerConfig?: { displayName?: string }
+  serverName: string,
+  mcpServerConfig?: { displayName?: string },
 ): string {
   // If a display name is explicitly provided in the config, use it
   if (mcpServerConfig?.displayName) {
     return mcpServerConfig.displayName;
   }
-  
+
   // If the tool has a serverDisplayName property, use it
   const serverDisplayNameFromPlugin = getServerDisplayNameFromPlugins(serverName);
   if (serverDisplayNameFromPlugin) {
     return serverDisplayNameFromPlugin;
   }
-  
+
   // Otherwise, format the server name
   return formatServerName(serverName);
 }
@@ -241,12 +244,15 @@ export function getServerDisplayName(
 function getServerDisplayNameFromPlugins(serverName: string): string | undefined {
   // Access the globally stored tools if available
   const toolsFromStore = window.__mcpTools || [];
-  
+
   // Find any tool from this server
   const toolFromServer = toolsFromStore.find(
-    tool => tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey.endsWith(`_mcp_${serverName}`)
+    (tool) =>
+      tool.pluginKey &&
+      typeof tool.pluginKey === 'string' &&
+      tool.pluginKey.endsWith(`_mcp_${serverName}`),
   );
-  
+
   return toolFromServer?.serverDisplayName;
 }
 
@@ -260,19 +266,19 @@ function getServerDisplayNameFromPlugins(serverName: string): string | undefined
 export function getToolDisplayName(
   toolName: string,
   serverName?: string,
-  mcpServerConfig?: { toolDisplayNames?: Record<string, string> }
+  mcpServerConfig?: { toolDisplayNames?: Record<string, string> },
 ): string {
   // If a tool display name map is provided and contains this tool, use it
   if (mcpServerConfig?.toolDisplayNames && mcpServerConfig.toolDisplayNames[toolName]) {
     return mcpServerConfig.toolDisplayNames[toolName];
   }
-  
+
   // If the tool already has a displayName property from the backend, use it
   const toolDisplayNameFromPlugin = getToolDisplayNameFromPlugins(toolName, serverName);
   if (toolDisplayNameFromPlugin) {
     return toolDisplayNameFromPlugin;
   }
-  
+
   // Fall back to automatic formatting
   return formatToolName(toolName, serverName);
 }
@@ -281,42 +287,52 @@ export function getToolDisplayName(
 function getToolDisplayNameFromPlugins(toolName: string, serverName?: string): string | undefined {
   // Access the globally stored tools if available
   const toolsFromStore = window.__mcpTools || [];
-  
+
   // Try to find the exact tool by name and server
   const pluginKey = serverName ? `${toolName}_mcp_${serverName}` : undefined;
-  
+
   // First try exact match with pluginKey if available
   if (pluginKey) {
     const exactMatch = toolsFromStore.find(
-      tool => tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey === pluginKey
+      (tool) =>
+        tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey === pluginKey,
     );
     if (exactMatch?.displayName) {
       return exactMatch.displayName;
     }
   }
-  
+
   // Try to find by name
   const toolMatch = toolsFromStore.find(
-    tool => tool.name && typeof tool.name === 'string' && tool.name === toolName
+    (tool) => tool.name && typeof tool.name === 'string' && tool.name === toolName,
   );
   if (toolMatch?.displayName) {
     return toolMatch.displayName;
   }
-  
+
   return undefined;
 }
 
 export function groupAgentToolsByServer(
   toolKeys: string[] | undefined,
   allTools: TPlugin[] | undefined,
-  mcpServerConfigs: Record<string, { displayName?: string; toolDisplayNames?: Record<string, string> }> = window.__mcpServerConfigs
+  mcpServerConfigs: Record<
+    string,
+    { displayName?: string; toolDisplayNames?: Record<string, string> }
+  > = window.__mcpServerConfigs,
 ): {
   mcpServerGroups: Record<string, TPlugin[]>;
   individualTools: TPlugin[];
 } {
   // Ensure both toolKeys and allTools are valid arrays
-  if (!toolKeys || !Array.isArray(toolKeys) || toolKeys.length === 0 || 
-      !allTools || !Array.isArray(allTools) || allTools.length === 0) {
+  if (
+    !toolKeys ||
+    !Array.isArray(toolKeys) ||
+    toolKeys.length === 0 ||
+    !allTools ||
+    !Array.isArray(allTools) ||
+    allTools.length === 0
+  ) {
     return { mcpServerGroups: {}, individualTools: [] };
   }
 
@@ -326,7 +342,7 @@ export function groupAgentToolsByServer(
   // Process each tool key
   toolKeys.forEach((toolKey) => {
     if (typeof toolKey !== 'string') return;
-    
+
     const tool = allTools.find((t) => t && t.pluginKey === toolKey);
     if (!tool || !tool.pluginKey || typeof tool.pluginKey !== 'string') return;
 
@@ -334,14 +350,14 @@ export function groupAgentToolsByServer(
     if (tool.pluginKey.includes(CONSTANTS.mcp_delimiter)) {
       const parts = tool.pluginKey.split(CONSTANTS.mcp_delimiter);
       const serverName = parts[parts.length - 1];
-      
+
       // Get the server configuration if available
       const serverConfig = mcpServerConfigs?.[serverName];
-      
+
       // Clone the tool and add a display name
       const toolWithDisplayName = {
         ...tool,
-        displayName: getToolDisplayName(tool.name || tool.pluginKey, serverName, serverConfig)
+        displayName: getToolDisplayName(tool.name || tool.pluginKey, serverName, serverConfig),
       };
 
       if (!mcpServerGroups[serverName]) {

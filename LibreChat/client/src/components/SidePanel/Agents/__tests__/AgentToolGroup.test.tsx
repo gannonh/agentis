@@ -6,9 +6,9 @@ import AgentToolGroup from '../AgentToolGroup';
 jest.mock('../AgentTool', () => ({
   __esModule: true,
   default: ({ tool, onRemoveTool }) => (
-    <div data-testid={`agent-tool-${tool}`}>
-      {tool}
-      <button onClick={onRemoveTool} data-testid={`remove-tool-${tool}`}>Remove Tool</button>
+    <div data-testid={`agent-tool-${tool.pluginKey}`}>
+      {tool.displayName || tool.name || tool.pluginKey}
+      <button onClick={onRemoveTool} data-testid={`remove-tool-${tool.pluginKey}`}>Remove Tool</button>
     </div>
   ),
 }));

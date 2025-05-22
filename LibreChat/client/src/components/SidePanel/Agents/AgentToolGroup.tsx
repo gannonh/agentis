@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronDown, X } from 'lucide-react';
 import { useLocalize } from '~/hooks';
 import AgentTool from './AgentTool';
-import { getServerDisplayName } from '~/utils/tools';
+import { getServerDisplayName, getToolDisplayName } from '~/utils/tools';
 import type { TPlugin } from 'librechat-data-provider';
 
 interface AgentToolGroupProps {

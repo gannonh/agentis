@@ -65,7 +65,7 @@ const AppService = async (app) => {
     directory: paths.structuredTools,
   });
 
-  if (config.mcpServers != null) {
+  if (config.mcpServers != null && process.env.NODE_ENV !== 'test') {
     const mcpManager = getMCPManager();
     await mcpManager.initializeMCP(config.mcpServers, processMCPEnv);
     await mcpManager.mapAvailableTools(availableTools);

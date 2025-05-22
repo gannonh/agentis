@@ -7,6 +7,13 @@ const BaseOptionsSchema = z.object({
   initTimeout: z.number().optional(),
   /** Controls visibility in chat dropdown menu (MCPSelect) */
   chatMenu: z.boolean().optional(),
+  /** Optional display name for the MCP server that overrides the auto-formatted server name */
+  displayName: z.string().optional(),
+  /** 
+   * Optional mapping of tool names to display names 
+   * Keys are the original tool names, values are the display names to use
+   */
+  toolDisplayNames: z.record(z.string(), z.string()).optional(),
 });
 
 export const StdioOptionsSchema = BaseOptionsSchema.extend({
