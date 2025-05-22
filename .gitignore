@@ -5,3 +5,4 @@ frontend.log
 LibreChat/e2e/playwright-report*
 LibreChat/e2e/storageStateGoogle.json
 LibreChat/e2e/specs/.google-test-results/
+LibreChat/npm_check_output.txt

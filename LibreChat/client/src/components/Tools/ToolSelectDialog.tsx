@@ -34,7 +34,7 @@ function ToolSelectDialog({
   const { getValues, setValue } = useFormContext();
   const { data: tools } = useAvailableToolsQuery(endpoint);
   const isAgentTools = isAgentsEndpoint(endpoint);
-  
+
   // State for server tool selection dialog
   const [selectedServer, setSelectedServer] = useState<MCPServerGroup | null>(null);
   const [isServerDialogOpen, setIsServerDialogOpen] = useState(false);
@@ -125,11 +125,11 @@ function ToolSelectDialog({
       handleInstall({ pluginKey, action: 'install', auth: null });
     }
   };
-  
+
   const onAddServerTools = (selectedTools: string[]) => {
     // Add all selected tools in batch
     for (const toolKey of selectedTools) {
-      const toolPlugin = tools?.find(t => t.pluginKey === toolKey);
+      const toolPlugin = tools?.find((t) => t.pluginKey === toolKey);
       if (toolPlugin) {
         // Only add if not already added
         if (!getValues(toolsFormKey).includes(toolKey)) {
@@ -138,33 +138,33 @@ function ToolSelectDialog({
       }
     }
   };
-  
+
   const openServerToolSelection = (server: MCPServerGroup) => {
     setSelectedServer(server);
     setIsServerDialogOpen(true);
   };
 
   // Group tools by MCP server
-  const { mcpServers, regularTools } = tools && Array.isArray(tools) 
-    ? groupMCPToolsByServer(tools, window.__mcpServerConfigs) 
-    : { mcpServers: [], regularTools: [] };
-  
+  const { mcpServers, regularTools } =
+    tools && Array.isArray(tools)
+      ? groupMCPToolsByServer(tools, window.__mcpServerConfigs)
+      : { mcpServers: [], regularTools: [] };
+
   // Filter MCP servers and regular tools based on search
-  const filteredServers = mcpServers.filter(server => 
-    server.serverName.toLowerCase().includes(searchValue.toLowerCase()) ||
-    server.description.toLowerCase().includes(searchValue.toLowerCase())
+  const filteredServers = mcpServers.filter(
+    (server) =>
+      server.serverName.toLowerCase().includes(searchValue.toLowerCase()) ||
+      server.description.toLowerCase().includes(searchValue.toLowerCase()),
   );
-  
-  const filteredRegularTools = regularTools.filter(tool => 
-    tool.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-    tool.description.toLowerCase().includes(searchValue.toLowerCase())
+
+  const filteredRegularTools = regularTools.filter(
+    (tool) =>
+      tool.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+      tool.description.toLowerCase().includes(searchValue.toLowerCase()),
   );
-  
+
   // Combined filtered items for display
-  const filteredItems: (TPlugin | MCPServerGroup)[] = [
-    ...filteredServers,
-    ...filteredRegularTools
-  ];
+  const filteredItems: (TPlugin | MCPServerGroup)[] = [...filteredServers, ...filteredRegularTools];
 
   useEffect(() => {
     if (filteredItems) {
@@ -317,7 +317,7 @@ function ToolSelectDialog({
           </DialogPanel>
         </div>
       </Dialog>
-      
+
       {/* Secondary dialog for selecting server tools */}
       {selectedServer && (
         <MCPServerToolSelect

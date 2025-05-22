@@ -156,21 +156,27 @@ export default function AgentConfig({
   }, [tools, allTools]);
 
   // Function to remove a tool
-  const removeTool = useCallback((toolKey: string) => {
-    if (toolKey) {
-      const newTools = (tools || []).filter(t => t !== toolKey);
-      methods.setValue('tools', newTools);
-    }
-  }, [tools, methods]);
+  const removeTool = useCallback(
+    (toolKey: string) => {
+      if (toolKey) {
+        const newTools = (tools || []).filter((t) => t !== toolKey);
+        methods.setValue('tools', newTools);
+      }
+    },
+    [tools, methods],
+  );
 
   // Function to remove a group of tools
-  const removeServerGroup = useCallback((serverName: string) => {
-    if (serverName && mcpServerGroups[serverName]) {
-      const toolsToRemove = mcpServerGroups[serverName].map(t => t.pluginKey);
-      const newTools = (tools || []).filter(t => !toolsToRemove.includes(t));
-      methods.setValue('tools', newTools);
-    }
-  }, [mcpServerGroups, tools, methods]);
+  const removeServerGroup = useCallback(
+    (serverName: string) => {
+      if (serverName && mcpServerGroups[serverName]) {
+        const toolsToRemove = mcpServerGroups[serverName].map((t) => t.pluginKey);
+        const newTools = (tools || []).filter((t) => !toolsToRemove.includes(t));
+        methods.setValue('tools', newTools);
+      }
+    },
+    [mcpServerGroups, tools, methods],
+  );
 
   const providerValue = typeof provider === 'string' ? provider : provider?.value;
   let Icon: IconComponentTypes | null | undefined;
@@ -315,24 +321,26 @@ export default function AgentConfig({
                 onRemoveGroup={() => removeServerGroup(serverName)}
               />
             ))}
-            
+
             {/* Individual Tools */}
             {individualTools.map((tool) => {
               // Add display name enhancement to individual tools
-              const enhancedTool = { 
+              const enhancedTool = {
                 ...tool,
                 // If it's an MCP tool, extract the server name and apply formatting
-                displayName: tool.pluginKey.includes('_mcp_') 
+                displayName: tool.pluginKey.includes('_mcp_')
                   ? (() => {
                       const parts = tool.pluginKey.split('_mcp_');
                       const serverName = parts[parts.length - 1];
                       // Extract the actual tool name from the plugin key if possible
                       let toolName = tool.name || tool.pluginKey;
-                      
+
                       // For Composio tools, the tool name is often in the format SERVERTYPE_TOOLACTION
                       // Extract this from the pluginKey if needed
-                      if (tool.pluginKey.includes('COMPOSIO_') || 
-                          tool.pluginKey.includes(`${serverName.toUpperCase()}_`)) {
+                      if (
+                        tool.pluginKey.includes('COMPOSIO_') ||
+                        tool.pluginKey.includes(`${serverName.toUpperCase()}_`)
+                      ) {
                         const keyParts = tool.pluginKey.split('_mcp_')[0].split('_');
                         // Get the last part if it's a simple key, or reconstruct the tool name
                         // for more complex keys
@@ -341,19 +349,19 @@ export default function AgentConfig({
                           toolName = keyParts.join('_');
                         }
                       }
-                      
+
                       return getToolDisplayName(toolName, serverName);
                     })()
-                  : tool.name
+                  : tool.name,
               };
-              
+
               // Add the enhanced tool to allTools array so it can be found by the AgentTool component
               const enhancedAllTools = [...allTools];
-              const toolIndex = enhancedAllTools.findIndex(t => t.pluginKey === tool.pluginKey);
+              const toolIndex = enhancedAllTools.findIndex((t) => t.pluginKey === tool.pluginKey);
               if (toolIndex >= 0) {
                 enhancedAllTools[toolIndex] = enhancedTool;
               }
-              
+
               return (
                 <AgentTool
                   key={`tool-${tool.pluginKey}`}
@@ -363,7 +371,7 @@ export default function AgentConfig({
                 />
               );
             })}
-            
+
             {/* Actions */}
             {actions
               .filter((action) => action.agent_id === agent_id)

@@ -15,21 +15,21 @@ interface MCPServerCardProps {
  * MCPServerCard component displays an MCP server as a card in the tool selection dialog.
  * When clicked, it opens a secondary dialog to select specific tools from the server.
  */
-function MCPServerCard({ 
-  serverName, 
+function MCPServerCard({
+  serverName,
   displayName,
-  description, 
-  icon, 
-  tools, 
-  onAddServer 
+  description,
+  icon,
+  tools,
+  onAddServer,
 }: MCPServerCardProps) {
   const localize = useLocalize();
-  
+
   // Use the display name if available, otherwise fallback to server name
   const displayLabel = displayName || serverName;
-  
+
   return (
-    <div className="flex flex-col gap-4 rounded border border-border-medium bg-transparent p-6 hover:border-border-hover transition-colors duration-200">
+    <div className="hover:border-border-hover flex flex-col gap-4 rounded border border-border-medium bg-transparent p-6 transition-colors duration-200">
       <div className="flex gap-4">
         <div className="h-[70px] w-[70px] shrink-0">
           <div className="relative h-full w-full">
@@ -64,7 +64,7 @@ function MCPServerCard({
         </div>
       </div>
       <div className="line-clamp-3 h-[60px] text-sm text-text-secondary">{description}</div>
-      <div className="text-xs text-text-tertiary font-medium">
+      <div className="text-xs font-medium text-text-tertiary">
         {localize('com_ui_tools_available', { 0: tools.length })}
       </div>
     </div>

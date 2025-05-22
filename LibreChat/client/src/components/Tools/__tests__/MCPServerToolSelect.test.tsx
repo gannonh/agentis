@@ -67,7 +67,7 @@ describe('MCPServerToolSelect', () => {
     // Checking if there's a heading that contains the text "Helper tools"
     const helperToolsHeading = screen.getByRole('heading', { name: /Helper tools/ });
     expect(helperToolsHeading).toBeInTheDocument();
-    
+
     // Check for the helper tools description
     expect(screen.getByText('Helper tools will be included automatically')).toBeInTheDocument();
 

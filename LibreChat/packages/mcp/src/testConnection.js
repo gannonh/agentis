@@ -4,12 +4,12 @@ async function runTest(username, password) {
   console.log(`Starting test with username: ${username}`);
   const browser = await puppeteer.launch({
     headless: false,
-    defaultViewport: null
+    defaultViewport: null,
   });
 
   try {
     const page = await browser.newPage();
-    
+
     // Navigate to login page
     await page.goto('http://localhost:3080/login');
     console.log('Navigated to login page');
@@ -36,22 +36,22 @@ async function runTest(username, password) {
     try {
       // Wait a bit for UI to be fully loaded
       await page.waitForTimeout(2000);
-      
+
       // Look for toolbox or action buttons
       const actionButtonSelector = 'button.actionSelector';
-      const hasActionButton = await page.$(actionButtonSelector) !== null;
-      
+      const hasActionButton = (await page.$(actionButtonSelector)) !== null;
+
       if (hasActionButton) {
         await page.click(actionButtonSelector);
         console.log('Clicked action selector button');
-        
+
         // Wait for action menu to appear
         await page.waitForTimeout(1000);
-        
+
         // Look for MCP tools (adjust selector as needed)
         const mcpToolSelector = '.tool-item[data-tool-name="googlesheets"]';
-        const hasMcpTool = await page.$(mcpToolSelector) !== null;
-        
+        const hasMcpTool = (await page.$(mcpToolSelector)) !== null;
+
         if (hasMcpTool) {
           await page.click(mcpToolSelector);
           console.log('Selected MCP tool');
@@ -68,10 +68,9 @@ async function runTest(username, password) {
     // Keep the browser open for observation
     console.log('Test completed successfully. Check the logs for MCP connection information.');
     console.log('Press Ctrl+C to close the browser when done.');
-    
+
     // Keep the script running
     await new Promise(() => {});
-    
   } catch (error) {
     console.error('Test failed:', error);
     await browser.close();

@@ -15,7 +15,7 @@ describe('AnthropicClient', () => {
     {
       role: 'user',
       isCreatedByUser: true,
-      text: 'What\'s up',
+      text: "What's up",
       messageId: '3',
       parentMessageId: '2',
     },
@@ -170,7 +170,7 @@ describe('AnthropicClient', () => {
       client.options.modelLabel = 'Claude-2';
       const result = await client.buildMessages(messages, parentMessageId);
       const { prompt } = result;
-      expect(prompt).toContain('Human\'s name: John');
+      expect(prompt).toContain("Human's name: John");
       expect(prompt).toContain('You are Claude-2');
     });
   });

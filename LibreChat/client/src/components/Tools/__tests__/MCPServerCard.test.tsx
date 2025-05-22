@@ -38,22 +38,20 @@ describe('MCPServerCard', () => {
 
     // Check server name is displayed
     expect(screen.getByText('Google Sheets')).toBeInTheDocument();
-    
+
     // Check description is displayed
-    expect(
-      screen.getByText('Google Sheets integration with multiple tools')
-    ).toBeInTheDocument();
-    
+    expect(screen.getByText('Google Sheets integration with multiple tools')).toBeInTheDocument();
+
     // Check tools count is displayed
     expect(screen.getByText('2 tools available')).toBeInTheDocument();
-    
+
     // Check Add button is displayed
     expect(screen.getByText('Add')).toBeInTheDocument();
   });
 
   it('renders with default icon when no icon is provided', () => {
     render(<MCPServerCard {...defaultProps} />);
-    
+
     // Check that the component renders without crashing
     expect(screen.getByText('Google Sheets')).toBeInTheDocument();
     expect(screen.getByText('Add')).toBeInTheDocument();
@@ -64,9 +62,9 @@ describe('MCPServerCard', () => {
       ...defaultProps,
       icon: 'https://example.com/icon.png',
     };
-    
+
     render(<MCPServerCard {...propsWithIcon} />);
-    
+
     // Check that img element exists with the correct src
     const imgElement = screen.getByAltText('Logo for Google Sheets');
     expect(imgElement).toHaveAttribute('src', 'https://example.com/icon.png');
@@ -74,11 +72,11 @@ describe('MCPServerCard', () => {
 
   it('calls onAddServer when Add button is clicked', () => {
     render(<MCPServerCard {...defaultProps} />);
-    
+
     // Find and click the Add button
     const addButton = screen.getByText('Add');
     fireEvent.click(addButton);
-    
+
     // Check if onAddServer was called
     expect(defaultProps.onAddServer).toHaveBeenCalledTimes(1);
   });

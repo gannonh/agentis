@@ -23,12 +23,12 @@ jest.mock('react-hook-form', () => {
 jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => {
     const translations: Record<string, string> = {
-      'com_nav_tool_dialog': 'Add Tools',
-      'com_nav_tool_dialog_agents': 'Add Agent Tools',
-      'com_nav_tool_dialog_description': 'Select tools to add to your assistant',
-      'com_nav_tool_search': 'Search tools',
-      'com_nav_plugin_auth_error': 'Error:',
-      'com_ui_tools_available': 'tools available',
+      com_nav_tool_dialog: 'Add Tools',
+      com_nav_tool_dialog_agents: 'Add Agent Tools',
+      com_nav_tool_dialog_description: 'Select tools to add to your assistant',
+      com_nav_tool_search: 'Search tools',
+      com_nav_plugin_auth_error: 'Error:',
+      com_ui_tools_available: 'tools available',
     };
     return translations[key] || key;
   },
@@ -65,7 +65,7 @@ jest.mock('librechat-data-provider/react-query', () => ({
 // Using a type-safe mock for the EModelEndpoint enum and relevant types
 jest.mock('librechat-data-provider', () => {
   const actualModule = jest.requireActual('librechat-data-provider');
-  
+
   // Create enum values directly inside the mock function
   const EModelEndpoint = {
     azureOpenAI: 'azureOpenAI' as const,
@@ -80,7 +80,7 @@ jest.mock('librechat-data-provider', () => {
     chatGPTBrowser: 'chatGPTBrowser' as const,
     gptPlugins: 'gptPlugins' as const,
   };
-  
+
   return {
     ...actualModule,
     EModelEndpoint,
@@ -169,7 +169,9 @@ jest.mock('../MCPServerToolSelect', () => ({
       <div data-testid={`server-tool-select-${serverName}`}>
         Select tools for {serverName}
         <button
-          onClick={() => onConfirm(['auth_helper_mcp_googlesheets', 'create_sheet_mcp_googlesheets'])}
+          onClick={() =>
+            onConfirm(['auth_helper_mcp_googlesheets', 'create_sheet_mcp_googlesheets'])
+          }
           data-testid={`confirm-tools-${serverName}`}
         >
           Confirm
@@ -203,14 +205,16 @@ describe('ToolSelectDialog', () => {
     setIsOpen: jest.fn(),
     toolsFormKey: 'tools',
     // Cast specifically to the expected type (EModelEndpoint.agents) to match component requirements
-    endpoint: EModelEndpoint.agents as unknown as Parameters<typeof ToolSelectDialog>[0]['endpoint'],
+    endpoint: EModelEndpoint.agents as unknown as Parameters<
+      typeof ToolSelectDialog
+    >[0]['endpoint'],
   };
 
   it('renders correctly with MCP servers and regular tools', async () => {
     render(
       <FormWrapper>
         <ToolSelectDialog {...defaultProps} />
-      </FormWrapper>
+      </FormWrapper>,
     );
 
     // Check dialog title is displayed
@@ -228,7 +232,7 @@ describe('ToolSelectDialog', () => {
     render(
       <FormWrapper>
         <ToolSelectDialog {...defaultProps} />
-      </FormWrapper>
+      </FormWrapper>,
     );
 
     // Click on "Add Server" button for Google Sheets
@@ -244,7 +248,7 @@ describe('ToolSelectDialog', () => {
     const { getByPlaceholderText } = render(
       <FormWrapper>
         <ToolSelectDialog {...defaultProps} />
-      </FormWrapper>
+      </FormWrapper>,
     );
 
     // Enter search term
@@ -268,7 +272,7 @@ describe('ToolSelectDialog', () => {
     render(
       <FormWrapper>
         <ToolSelectDialog {...defaultProps} />
-      </FormWrapper>
+      </FormWrapper>,
     );
 
     // Click on "Add Server" button for Google Sheets
@@ -286,7 +290,14 @@ describe('ToolSelectDialog', () => {
     // we need to manually simulate the dialog closing
     // by calling the setIsOpen in the mock
     const { default: MCPServerToolSelect } = jest.requireMock('../MCPServerToolSelect');
-    MCPServerToolSelect({ isOpen: false, serverName: 'googlesheets', tools: [], helperTools: [], onConfirm: jest.fn(), setIsOpen: jest.fn() });
+    MCPServerToolSelect({
+      isOpen: false,
+      serverName: 'googlesheets',
+      tools: [],
+      helperTools: [],
+      onConfirm: jest.fn(),
+      setIsOpen: jest.fn(),
+    });
 
     // Consider the test successful even if the dialog doesn't close in this mock environment
     // In a real component, the dialog would close properly

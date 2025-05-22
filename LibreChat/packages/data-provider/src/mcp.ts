@@ -9,8 +9,8 @@ const BaseOptionsSchema = z.object({
   chatMenu: z.boolean().optional(),
   /** Optional display name for the MCP server that overrides the auto-formatted server name */
   displayName: z.string().optional(),
-  /** 
-   * Optional mapping of tool names to display names 
+  /**
+   * Optional mapping of tool names to display names
    * Keys are the original tool names, values are the display names to use
    */
   toolDisplayNames: z.record(z.string(), z.string()).optional(),
@@ -137,60 +137,70 @@ export function processMCPEnv(obj: Readonly<MCPOptions>, userId?: string): MCPOp
       processedEnv[key] = extractEnvVariable(value);
     }
     newObj.env = processedEnv;
-  } 
-  
+  }
+
   // Process headers: First extract environment variables, then handle all user ID placeholders
   if ('headers' in newObj && newObj.headers) {
     const processedHeaders: Record<string, string> = {};
-    
+
     // First pass: Extract environment variables
     for (const [key, value] of Object.entries(newObj.headers)) {
       processedHeaders[key] = extractEnvVariable(value);
     }
-    
+
     // Second pass: Handle all user ID placeholders in all headers
     for (const key of Object.keys(processedHeaders)) {
       const value = processedHeaders[key];
-      if (typeof value === 'string' && value.includes('{{LIBRECHAT_USER_ID}}') && userId != null && userId) {
+      if (
+        typeof value === 'string' &&
+        value.includes('{{LIBRECHAT_USER_ID}}') &&
+        userId != null &&
+        userId
+      ) {
         processedHeaders[key] = value.replace(/{{LIBRECHAT_USER_ID}}/g, userId);
       }
     }
-    
+
     newObj.headers = processedHeaders;
   }
-  
+
   // Process URL for LIBRECHAT_USER_ID placeholders
   if ('url' in newObj && typeof newObj.url === 'string') {
     const originalUrl = newObj.url;
     try {
       let url = newObj.url;
-      
+
       // First check for direct placeholder in the URL path or query string
       if (url.includes('{{LIBRECHAT_USER_ID}}') && userId != null && userId) {
         // Properly encode the userId for URL use
         const encodedUserId = encodeURIComponent(userId);
         url = url.replace(/{{LIBRECHAT_USER_ID}}/g, encodedUserId);
       }
-      
+
       // Then handle the parsed URL to ensure query parameters are properly set
       try {
         const urlObj = new URL(url);
-        
+
         // Check specifically for user_id parameter
         const userIdParam = urlObj.searchParams.get('user_id');
-        if (userIdParam && userIdParam.includes('{{LIBRECHAT_USER_ID}}') && userId != null && userId) {
+        if (
+          userIdParam &&
+          userIdParam.includes('{{LIBRECHAT_USER_ID}}') &&
+          userId != null &&
+          userId
+        ) {
           const encodedUserId = encodeURIComponent(userId);
           const newValue = userIdParam.replace(/{{LIBRECHAT_USER_ID}}/g, encodedUserId);
           urlObj.searchParams.set('user_id', newValue);
         }
-        
+
         // Update URL with processed query parameters
         url = urlObj.toString();
       } catch (parseError) {
         const errMsg = parseError instanceof Error ? parseError.message : String(parseError);
         console.error(`Error parsing URL: ${errMsg}`);
       }
-      
+
       // Update the result
       newObj.url = url;
     } catch (error) {

@@ -34,10 +34,10 @@ function MCPServerToolSelect({
   // Compute helper tool keys only once when the component mounts
   // or when helperTools changes
   useEffect(() => {
-    const helperToolKeys = helperTools.map(tool => tool.pluginKey);
-    
+    const helperToolKeys = helperTools.map((tool) => tool.pluginKey);
+
     if (selectAll) {
-      setSelectedTools([...helperToolKeys, ...tools.map(tool => tool.pluginKey)]);
+      setSelectedTools([...helperToolKeys, ...tools.map((tool) => tool.pluginKey)]);
     } else {
       setSelectedTools([...helperToolKeys]);
     }
@@ -45,12 +45,12 @@ function MCPServerToolSelect({
 
   const handleToggle = (pluginKey: string) => {
     // Make sure we don't remove helper tools (which should always be included)
-    const helperToolKeys = helperTools.map(tool => tool.pluginKey);
-    
+    const helperToolKeys = helperTools.map((tool) => tool.pluginKey);
+
     if (selectedTools.includes(pluginKey)) {
       // Only remove if it's not a helper tool
       if (!helperToolKeys.includes(pluginKey)) {
-        setSelectedTools(selectedTools.filter(key => key !== pluginKey));
+        setSelectedTools(selectedTools.filter((key) => key !== pluginKey));
       }
     } else {
       setSelectedTools([...selectedTools, pluginKey]);
@@ -63,11 +63,7 @@ function MCPServerToolSelect({
   };
 
   return (
-    <Dialog
-      open={isOpen}
-      onClose={() => setIsOpen(false)}
-      className="relative z-[103]"
-    >
+    <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-[103]">
       <div className="fixed inset-0 bg-surface-primary opacity-60 transition-opacity dark:opacity-80" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="relative w-full transform overflow-hidden rounded-lg bg-surface-secondary text-left shadow-xl transition-all sm:mx-7 sm:my-8 sm:max-w-lg">
@@ -93,9 +89,9 @@ function MCPServerToolSelect({
               </button>
             </div>
           </div>
-          
+
           <div className="p-4 sm:p-6">
-            <div className="flex items-center justify-between px-2 py-4 border-b border-border-medium mb-2">
+            <div className="mb-2 flex items-center justify-between border-b border-border-medium px-2 py-4">
               <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
                 <input
                   type="checkbox"
@@ -105,16 +101,16 @@ function MCPServerToolSelect({
                 />
                 {localize('com_ui_select_all_tools')}
               </label>
-              <span className="text-xs text-text-tertiary font-medium">
+              <span className="text-xs font-medium text-text-tertiary">
                 {tools.length} {localize('com_ui_tools')}
               </span>
             </div>
-            
+
             <div className="max-h-80 overflow-y-auto">
-              {tools.map(tool => (
+              {tools.map((tool) => (
                 <div
                   key={tool.pluginKey}
-                  className="flex items-center justify-between rounded px-2 py-3 hover:bg-surface-hover transition-colors duration-150"
+                  className="flex items-center justify-between rounded px-2 py-3 transition-colors duration-150 hover:bg-surface-hover"
                 >
                   <label className="flex flex-1 cursor-pointer items-center gap-3">
                     <input
@@ -124,16 +120,18 @@ function MCPServerToolSelect({
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-text-primary">{tool.displayName || tool.name}</span>
+                      <span className="text-sm font-medium text-text-primary">
+                        {tool.displayName || tool.name}
+                      </span>
                       <span className="text-xs text-text-secondary">{tool.description}</span>
                     </div>
                   </label>
                 </div>
               ))}
             </div>
-            
+
             {helperTools.length > 0 && (
-              <div className="mt-4 rounded-md bg-blue-50 p-4 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+              <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <Check className="h-5 w-5 text-blue-500" aria-hidden="true" />
@@ -143,18 +141,16 @@ function MCPServerToolSelect({
                       {localize('com_ui_helper_tools')} ({helperTools.length})
                     </h3>
                     <div className="mt-2 text-sm text-blue-700 dark:text-blue-200">
-                      <p>
-                        {localize('com_ui_helper_tools_description')}
-                      </p>
+                      <p>{localize('com_ui_helper_tools_description')}</p>
                     </div>
                     <div className="mt-2 text-xs text-blue-600 dark:text-blue-300">
-                      {helperTools.map(tool => tool.displayName || tool.name).join(', ')}
+                      {helperTools.map((tool) => tool.displayName || tool.name).join(', ')}
                     </div>
                   </div>
                 </div>
               </div>
             )}
-            
+
             <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
               <button
                 type="button"
@@ -165,7 +161,7 @@ function MCPServerToolSelect({
               </button>
               <button
                 type="button"
-                className="mt-3 w-full sm:mt-0 sm:w-auto btn btn-neutral"
+                className="btn btn-neutral mt-3 w-full sm:mt-0 sm:w-auto"
                 onClick={() => setIsOpen(false)}
               >
                 {localize('com_ui_cancel')}

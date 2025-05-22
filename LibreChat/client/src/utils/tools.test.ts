@@ -64,10 +64,12 @@ describe('MCP Display Name Utils', () => {
 
   describe('getToolDisplayName', () => {
     test('prefers config display name when available', () => {
-      const config = { 
-        toolDisplayNames: { 'GOOGLESHEETS_BATCH_GET': 'Custom Tool Name' } 
+      const config = {
+        toolDisplayNames: { GOOGLESHEETS_BATCH_GET: 'Custom Tool Name' },
       };
-      expect(getToolDisplayName('GOOGLESHEETS_BATCH_GET', 'googlesheets', config)).toBe('Custom Tool Name');
+      expect(getToolDisplayName('GOOGLESHEETS_BATCH_GET', 'googlesheets', config)).toBe(
+        'Custom Tool Name',
+      );
     });
 
     test('falls back to formatted name when no config is provided', () => {
@@ -75,10 +77,12 @@ describe('MCP Display Name Utils', () => {
     });
 
     test('falls back to formatted name when tool not in config', () => {
-      const config = { 
-        toolDisplayNames: { 'SOME_OTHER_TOOL': 'Other Tool' } 
+      const config = {
+        toolDisplayNames: { SOME_OTHER_TOOL: 'Other Tool' },
       };
-      expect(getToolDisplayName('GOOGLESHEETS_BATCH_GET', 'googlesheets', config)).toBe('Batch Get');
+      expect(getToolDisplayName('GOOGLESHEETS_BATCH_GET', 'googlesheets', config)).toBe(
+        'Batch Get',
+      );
     });
   });
 });

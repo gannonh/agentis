@@ -23,11 +23,9 @@ export default function AgentTool({
   const { showToast } = useToastContext();
   const updateUserPlugins = useUpdateUserPluginsMutation();
   const { getValues, setValue } = useFormContext();
-  
+
   // Handle both string and TPlugin object
-  const currentTool = typeof tool === 'string' 
-    ? allTools.find((t) => t.pluginKey === tool)
-    : tool;
+  const currentTool = typeof tool === 'string' ? allTools.find((t) => t.pluginKey === tool) : tool;
 
   const removeTool = (toolKey: string) => {
     if (toolKey) {
@@ -97,7 +95,7 @@ export default function AgentTool({
           </Label>
         }
         selection={{
-          selectHandler: () => currentTool?.pluginKey ? removeTool(currentTool.pluginKey) : null,
+          selectHandler: () => (currentTool?.pluginKey ? removeTool(currentTool.pluginKey) : null),
           selectClasses:
             'bg-red-700 dark:bg-red-600 hover:bg-red-800 dark:hover:bg-red-800 transition-color duration-200 text-white',
           selectText: localize('com_ui_delete'),

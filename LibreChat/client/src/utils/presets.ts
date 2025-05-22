@@ -47,13 +47,13 @@ export const getPresetTitle = (preset: TPreset, mention?: boolean) => {
     }${
       tools
         ? ` | ${tools
-          .map((tool: TPlugin | string) => {
-            if (typeof tool === 'string') {
-              return tool;
-            }
-            return tool.pluginKey;
-          })
-          .join(', ')}`
+            .map((tool: TPlugin | string) => {
+              if (typeof tool === 'string') {
+                return tool;
+              }
+              return tool.pluginKey;
+            })
+            .join(', ')}`
         : ''
     }`;
   }

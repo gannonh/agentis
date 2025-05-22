@@ -179,17 +179,19 @@ export class MCPConnection extends EventEmitter {
           // Fix for user ID in headers and URL
           let fixedHeaders = options.headers || {};
           let fixedUrl = url.toString();
-          
+
           // Replace any unresolved user ID placeholders in the headers with the provided userId
           if (this.userId) {
             fixedHeaders = { ...fixedHeaders };
             for (const [key, value] of Object.entries(fixedHeaders)) {
               if (typeof value === 'string' && value.includes('{{LIBRECHAT_USER_ID}}')) {
                 fixedHeaders[key] = value.replace(/{{LIBRECHAT_USER_ID}}/g, this.userId);
-                this.logger?.info(`${this.getLogPrefix()} Replaced placeholder in header ${key}: ${fixedHeaders[key]}`);
+                this.logger?.info(
+                  `${this.getLogPrefix()} Replaced placeholder in header ${key}: ${fixedHeaders[key]}`,
+                );
               }
             }
-            
+
             // Also check URL query parameters for the same placeholder
             if (fixedUrl.includes('user_id=')) {
               try {
@@ -207,7 +209,7 @@ export class MCPConnection extends EventEmitter {
               }
             }
           }
-          
+
           const transport = new SSEClientTransport(new URL(fixedUrl), {
             requestInit: {
               headers: fixedHeaders,

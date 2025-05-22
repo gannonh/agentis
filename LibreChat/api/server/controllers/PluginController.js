@@ -134,13 +134,13 @@ const getAvailableTools = async (req, res) => {
     // Include MCP server configurations in the response
     const responseData = {
       tools,
-      mcpServers: customConfig?.mcpServers || {}
+      mcpServers: customConfig?.mcpServers || {},
     };
 
     await cache.set(CacheKeys.TOOLS, responseData);
-    console.log('Responding with tools:', { 
-      toolCount: tools.length, 
-      mcpServerCount: Object.keys(customConfig?.mcpServers || {}).length 
+    console.log('Responding with tools:', {
+      toolCount: tools.length,
+      mcpServerCount: Object.keys(customConfig?.mcpServers || {}).length,
     });
     res.status(200).json(responseData);
   } catch (error) {

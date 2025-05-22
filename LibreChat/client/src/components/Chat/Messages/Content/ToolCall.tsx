@@ -139,20 +139,20 @@ export default function ToolCall({
     if (cancelled) {
       return localize('com_ui_error');
     }
-    
+
     // Get a user-friendly display name for the tool
     let displayName = function_name;
-    
+
     if (isMCPToolCall === true) {
       // For MCP tools, use our enhanced display name utility
       displayName = getToolDisplayName(function_name, domain || undefined);
       return localize('com_assistants_completed_function', { 0: displayName });
     }
-    
+
     if (domain != null && domain && domain.length !== Constants.ENCODED_DOMAIN_LENGTH) {
       return localize('com_assistants_completed_action', { 0: domain });
     }
-    
+
     return localize('com_assistants_completed_function', { 0: displayName });
   };
 
@@ -164,9 +164,9 @@ export default function ToolCall({
           <ProgressText
             progress={cancelled ? 1 : progress}
             inProgressText={
-              isMCPToolCall 
+              isMCPToolCall
                 ? localize('com_assistants_running_function', {
-                    0: getToolDisplayName(function_name, domain || undefined)
+                    0: getToolDisplayName(function_name, domain || undefined),
                   })
                 : localize('com_assistants_running_action')
             }
