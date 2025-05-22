@@ -2494,6 +2494,16 @@ html {
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.35);
 }
 
+/* Theme-aware logo styling */
+.theme-logo {
+  filter: brightness(0) saturate(100%) invert(15%) sepia(8%) saturate(3507%) hue-rotate(206deg) brightness(95%) contrast(86%);
+  transition: filter 0.2s ease;
+}
+
+.dark .theme-logo {
+  filter: brightness(0) saturate(100%) invert(91%) sepia(5%) saturate(183%) hue-rotate(202deg) brightness(106%) contrast(86%);
+}
+
 :focus {
   outline: none;
 }
