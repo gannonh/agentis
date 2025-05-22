@@ -7,7 +7,6 @@ import SiblingSwitch from '~/components/Chat/Messages/SiblingSwitch';
 import { Plugin } from '~/components/Messages/Content';
 import SubRow from '~/components/Chat/Messages/SubRow';
 import { MessageContext } from '~/Providers';
-// eslint-disable-next-line import/no-cycle
 import MultiMessage from './MultiMessage';
 import { cn } from '~/utils';
 import store from '~/store';

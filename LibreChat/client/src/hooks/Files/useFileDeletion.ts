@@ -19,8 +19,7 @@ const useFileDeletion = ({
   assistant_id?: string;
   tool_resource?: EToolResources;
 }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_batch, setFileDeleteBatch] = useState<t.BatchFile[]>([]);
+  const [, setFileDeleteBatch] = useState<t.BatchFile[]>([]);
   const setFilesToDelete = useSetFilesToDelete();
 
   const executeBatchDelete = useCallback(

@@ -1,11 +1,9 @@
-import type { TPlugin } from 'librechat-data-provider';
+import type { TPlugin as BaseTPlugin } from 'librechat-data-provider';
 import i18n from '~/locales/i18n';
 
-// Augment the TPlugin type with display name property
-declare module 'librechat-data-provider' {
-  interface TPlugin {
-    displayName?: string; // Display-friendly name for the tool
-  }
+// Extend the TPlugin type with display name property
+export interface TPlugin extends BaseTPlugin {
+  displayName?: string; // Display-friendly name for the tool
 }
 
 // MCP delimiter constant

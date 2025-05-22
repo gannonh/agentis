@@ -264,6 +264,9 @@ describe('ToolSelectDialog', () => {
     // Gmail server should be shown, Google Sheets should be filtered out
     // Note: This is a limitation of our testing approach, as the component doesn't directly re-render
     // In a real implementation, we'd verify that Gmail is shown and others are hidden
+
+    // At minimum, verify the search input was updated
+    expect(searchInput).toHaveValue('Gmail');
   });
 
   it('adds tools when confirming server tool selection', async () => {

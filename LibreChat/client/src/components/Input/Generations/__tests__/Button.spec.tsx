@@ -10,6 +10,7 @@ describe('Button', () => {
           ('');
         }}
       >
+        {}
         Regenerate
       </Button>,
     );
@@ -21,6 +22,7 @@ describe('Button', () => {
     const handleClick = jest.fn();
     const { getByText } = render(
       <Button type="continue" onClick={handleClick}>
+        {}
         Continue
       </Button>,
     );

@@ -1,6 +1,6 @@
 import { atom } from 'recoil';
 import { logger } from '~/utils';
-import type { Artifact } from '~/common';
+import type { Artifact, CodeBlock } from '~/common';
 
 export const artifactsState = atom<Record<string, Artifact | undefined> | null>({
   key: 'artifactsState',
@@ -54,6 +54,36 @@ export const visibleArtifacts = atom<Record<string, Artifact | undefined> | null
     ({ onSet, node }) => {
       onSet(async (newValue) => {
         logger.log('artifacts', 'Recoil Effect: Setting `visibleArtifacts`', {
+          key: node.key,
+          newValue,
+        });
+      });
+    },
+  ] as const,
+});
+
+export const codeBlocksState = atom<Record<string, CodeBlock>>({
+  key: 'codeBlocksState',
+  default: {},
+  effects: [
+    ({ onSet, node }) => {
+      onSet(async (newValue) => {
+        logger.log('artifacts', 'Recoil Effect: Setting codeBlocksState', {
+          key: node.key,
+          newValue,
+        });
+      });
+    },
+  ] as const,
+});
+
+export const codeBlockIdsState = atom<string[]>({
+  key: 'codeBlockIdsState',
+  default: [],
+  effects: [
+    ({ onSet, node }) => {
+      onSet(async (newValue) => {
+        logger.log('artifacts', 'Recoil Effect: Setting codeBlockIdsState', {
           key: node.key,
           newValue,
         });
