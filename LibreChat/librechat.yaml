@@ -147,6 +147,7 @@ mcpServers:
       X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googledrive"
     displayName: "Google Drive"  # Add this line for custom server display name
     iconPath: "/assets/tools/google-drive.svg"  # Icon for the MCP server
+    description: "Google Drive is a cloud storage service that allows you to store, share, and collaborate on files and folders from any device."
     toolDisplayNames:  # Add this section for custom tool display names
       GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE: "Add File Sharing"
       GOOGLEDRIVE_COPY_FILE: "Copy File"
@@ -175,6 +176,7 @@ mcpServers:
       X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googlesheets"
     displayName: "Google Sheets"  # Add this line for custom server display name
     iconPath: "/assets/tools/google-sheets.svg"  # Icon for the MCP server
+    description: "Google Sheets is a web-based spreadsheet application that allows you to create, edit, and collaborate on spreadsheets in real-time."
     toolDisplayNames:  # Add this section for custom tool display names
       GOOGLESHEETS_BATCH_GET: "Get Range Data"
       GOOGLESHEETS_BATCH_UPDATE: "Update Range Data"
@@ -204,6 +206,7 @@ mcpServers:
       X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googlesheets"
     displayName: "Google Docs"  # Add this line for custom server display name
     iconPath: "/assets/tools/google-docs.svg"  # Icon for the MCP server
+    description: "Google Docs is a web-based word processor that allows you to create, edit, and collaborate on documents online."
     toolDisplayNames:  # Add this section for custom tool display names
       GOOGLEDOCS_CREATE_DOCUMENT: "Create Doc"
       GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN: "Create Markdown Doc"
