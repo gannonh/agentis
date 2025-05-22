@@ -179,22 +179,28 @@ const PromptForm = () => {
   }, []);
 
   const debouncedUpdateOneliner = useCallback(
-    debounce((oneliner: string) => {
-      if (!group || !group._id) {
-        return console.warn('Group not found');
-      }
-      updateGroupMutation.mutate({ id: group._id, payload: { oneliner } });
-    }, 950),
+    (oneliner: string) => {
+      const handler = debounce(() => {
+        if (!group || !group._id) {
+          return console.warn('Group not found');
+        }
+        updateGroupMutation.mutate({ id: group._id, payload: { oneliner } });
+      }, 950);
+      handler();
+    },
     [updateGroupMutation, group],
   );
 
   const debouncedUpdateCommand = useCallback(
-    debounce((command: string) => {
-      if (!group || !group._id) {
-        return console.warn('Group not found');
-      }
-      updateGroupMutation.mutate({ id: group._id, payload: { command } });
-    }, 950),
+    (command: string) => {
+      const handler = debounce(() => {
+        if (!group || !group._id) {
+          return console.warn('Group not found');
+        }
+        updateGroupMutation.mutate({ id: group._id, payload: { command } });
+      }, 950);
+      handler();
+    },
     [updateGroupMutation, group],
   );
 

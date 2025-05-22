@@ -67,7 +67,10 @@ export function EndpointItem({ endpoint }: EndpointItemProps) {
   const { model: selectedModel, endpoint: selectedEndpoint } = selectedValues;
 
   const searchValue = endpointSearchValues[endpoint.value] || '';
-  const isUserProvided = useMemo(() => endpointRequiresUserKey(endpoint.value), [endpoint.value]);
+  const isUserProvided = useMemo(
+    () => endpointRequiresUserKey(endpoint.value),
+    [endpoint.value, endpointRequiresUserKey],
+  );
 
   const renderIconLabel = () => (
     <div className="flex items-center gap-2">

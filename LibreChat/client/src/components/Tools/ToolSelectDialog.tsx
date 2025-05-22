@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 import { useFormContext } from 'react-hook-form';
@@ -164,7 +164,10 @@ function ToolSelectDialog({
   );
 
   // Combined filtered items for display
-  const filteredItems: (TPlugin | MCPServerGroup)[] = [...filteredServers, ...filteredRegularTools];
+  const filteredItems: (TPlugin | MCPServerGroup)[] = useMemo(
+    () => [...filteredServers, ...filteredRegularTools],
+    [filteredServers, filteredRegularTools]
+  );
 
   useEffect(() => {
     if (filteredItems) {

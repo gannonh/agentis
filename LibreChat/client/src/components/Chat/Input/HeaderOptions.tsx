@@ -45,14 +45,14 @@ export default function HeaderOptions({
     () => ({
       [EModelEndpoint.chatGPTBrowser]: true,
     }),
-    [conversationId],
+    [],
   );
 
   useEffect(() => {
     if (endpoint && noSettings[endpoint]) {
       setShowPopover(false);
     }
-  }, [endpoint, noSettings]);
+  }, [endpoint, noSettings, setShowPopover]);
 
   const saveAsPreset = () => {
     setSaveAsDialogShow(true);

@@ -39,7 +39,8 @@ export default function AgentConfig({
   const fileMap = useFileMapContext();
   const queryClient = useQueryClient();
 
-  const allTools = queryClient.getQueryData<TPlugin[]>([QueryKeys.tools]) ?? [];
+  const allToolsData = queryClient.getQueryData<TPlugin[]>([QueryKeys.tools]);
+  const allTools = useMemo(() => allToolsData ?? [], [allToolsData]);
   const { showToast } = useToastContext();
   const localize = useLocalize();
 
