@@ -9,6 +9,8 @@ const BaseOptionsSchema = z.object({
   chatMenu: z.boolean().optional(),
   /** Optional display name for the MCP server that overrides the auto-formatted server name */
   displayName: z.string().optional(),
+  /** Optional description for the MCP server that overrides the auto-generated description */
+  description: z.string().optional(),
   /**
    * Optional mapping of tool names to display names
    * Keys are the original tool names, values are the display names to use

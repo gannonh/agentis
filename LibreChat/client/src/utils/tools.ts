@@ -35,7 +35,12 @@ export function groupMCPToolsByServer(
   tools: TPlugin[] | undefined,
   mcpServerConfigs?: Record<
     string,
-    { displayName?: string; toolDisplayNames?: Record<string, string> }
+    {
+      displayName?: string;
+      description?: string;
+      toolDisplayNames?: Record<string, string>;
+      iconPath?: string;
+    }
   >,
 ): {
   mcpServers: MCPServerGroup[];
@@ -80,10 +85,14 @@ export function groupMCPToolsByServer(
         mcpServerMap[serverName] = {
           serverName,
           displayName, // Add the display name to the server group
-          description: i18n.t('com_ui_mcp_server_description', { 0: displayName }),
+          // Use custom description if provided, otherwise use the auto-generated one
+          description:
+            serverConfig?.description ||
+            i18n.t('com_ui_mcp_server_description', { 0: displayName }),
           tools: [],
           helperTools: [],
-          icon: tool.icon, // All tools from same server should have same icon
+          // Use iconPath from server config if available, otherwise fall back to tool.icon
+          icon: serverConfig?.iconPath || tool.icon,
         };
       }
 
@@ -312,7 +321,12 @@ export function groupAgentToolsByServer(
   allTools: TPlugin[] | undefined,
   mcpServerConfigs: Record<
     string,
-    { displayName?: string; toolDisplayNames?: Record<string, string> }
+    {
+      displayName?: string;
+      description?: string;
+      toolDisplayNames?: Record<string, string>;
+      iconPath?: string;
+    }
   > = window.__mcpServerConfigs || {},
 ): {
   mcpServerGroups: Record<string, TPlugin[]>;

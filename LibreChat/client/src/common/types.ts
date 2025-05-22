@@ -584,7 +584,12 @@ declare global {
     __mcpTools?: t.TPlugin[];
     __mcpServerConfigs?: Record<
       string,
-      { displayName?: string; toolDisplayNames?: Record<string, string> }
+      {
+        displayName?: string;
+        description?: string;
+        toolDisplayNames?: Record<string, string>;
+        iconPath?: string;
+      }
     >;
   }
 }

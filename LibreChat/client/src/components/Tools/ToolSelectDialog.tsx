@@ -166,7 +166,7 @@ function ToolSelectDialog({
   // Combined filtered items for display
   const filteredItems: (TPlugin | MCPServerGroup)[] = useMemo(
     () => [...filteredServers, ...filteredRegularTools],
-    [filteredServers, filteredRegularTools]
+    [filteredServers, filteredRegularTools],
   );
 
   useEffect(() => {
