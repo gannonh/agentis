@@ -207,7 +207,7 @@ function ToolSelectDialog({
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <DialogPanel
             className="relative w-full transform overflow-hidden overflow-y-auto rounded-lg bg-surface-secondary text-left shadow-xl transition-all max-sm:h-full sm:mx-7 sm:my-8 sm:max-w-2xl lg:max-w-5xl xl:max-w-7xl"
-            style={{ minHeight: '810px' }} // Increased from 610px to accommodate 4 rows
+            style={{ minHeight: '860px' }} // Increased to accommodate 3 rows of tools
           >
             <div className="flex items-center justify-between border-b-[1px] border-border-medium px-4 pb-4 pt-5 sm:p-6">
               <div className="flex items-center">
@@ -270,7 +270,7 @@ function ToolSelectDialog({
                 <div
                   ref={gridRef}
                   className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                  style={{ minHeight: '610px' }} // Increased from 410px to accommodate 4 rows
+                  style={{ minHeight: '660px' }} // Increased to accommodate 3 rows of tools
                 >
                   {filteredItems
                     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
