@@ -23,9 +23,7 @@ export default function CodeForm({
             <span className="text-token-text-primary block font-medium">
               {localize('com_agents_code_interpreter_title')}
             </span>
-            <span className="text-xs text-text-secondary">
-              {localize('com_agents_by_Agentis')}
-            </span>
+            <span className="text-xs text-text-secondary">{localize('com_agents_by_Agentis')}</span>
           </div>
         </div>
       </div>
