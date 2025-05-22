@@ -68,6 +68,7 @@ export default function Message(props: TMessageProps) {
                     value={{
                       messageId,
                       conversationId: conversation?.conversationId,
+                      isExpanded: false,
                     }}
                   >
                     {/* Legacy Plugins */}

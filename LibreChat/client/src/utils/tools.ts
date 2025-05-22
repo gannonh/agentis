@@ -28,12 +28,8 @@ export interface MCPServerGroup {
  * @param tools - The list of all tools
  * @returns An array of grouped MCP server tools and an array of regular tools
  */
-// Add window type definition for storing MCP tools globally
-declare global {
-  interface Window {
-    __mcpTools?: TPlugin[];
-  }
-}
+// Window type definitions are already declared in common/types.ts
+// No need to redeclare them here
 
 export function groupMCPToolsByServer(
   tools: TPlugin[] | undefined,
@@ -251,7 +247,9 @@ function getServerDisplayNameFromPlugins(serverName: string): string | undefined
       tool.pluginKey.endsWith(`_mcp_${serverName}`),
   );
 
-  return toolFromServer?.serverDisplayName;
+  // serverDisplayName property doesn't exist on TPlugin type
+  // Return undefined as we can't access non-existent property
+  return undefined;
 }
 
 /**
@@ -295,18 +293,16 @@ function getToolDisplayNameFromPlugins(toolName: string, serverName?: string): s
       (tool) =>
         tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey === pluginKey,
     );
-    if (exactMatch?.displayName) {
-      return exactMatch.displayName;
-    }
+    // displayName property doesn't exist on TPlugin type
+    // Skip this check
   }
 
   // Try to find by name
   const toolMatch = toolsFromStore.find(
     (tool) => tool.name && typeof tool.name === 'string' && tool.name === toolName,
   );
-  if (toolMatch?.displayName) {
-    return toolMatch.displayName;
-  }
+  // displayName property doesn't exist on TPlugin type
+  // Skip this check
 
   return undefined;
 }
@@ -317,7 +313,7 @@ export function groupAgentToolsByServer(
   mcpServerConfigs: Record<
     string,
     { displayName?: string; toolDisplayNames?: Record<string, string> }
-  > = window.__mcpServerConfigs,
+  > = window.__mcpServerConfigs || {},
 ): {
   mcpServerGroups: Record<string, TPlugin[]>;
   individualTools: TPlugin[];

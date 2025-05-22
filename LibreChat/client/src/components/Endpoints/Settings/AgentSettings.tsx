@@ -54,7 +54,7 @@ export default function Settings({ conversation, setOption, models, readonly }: 
               <Label htmlFor="temp-int" className="text-left text-sm font-medium">
                 {localize('com_endpoint_temperature')}{' '}
                 <small className="opacity-40">
-                  ({localize('com_endpoint_default_with_num', '0')})
+                  ({localize('com_endpoint_default_with_num', { 0: '0' })})
                 </small>
               </Label>
               <InputNumber
