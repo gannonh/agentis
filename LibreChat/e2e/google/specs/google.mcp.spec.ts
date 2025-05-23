@@ -24,7 +24,6 @@ test('Create Google Sheets MCP', async ({ page }) => {
   // Create Google Sheets Agent
   await page.getByRole('button', { name: 'Controls' }).click();
   await page.getByRole('button', { name: 'Agent Builder' }).click();
-  await page.getByRole('button', { name: 'Create New Agent' }).click();
   await page.getByRole('textbox', { name: 'Agent name' }).click();
   await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
   await page.getByRole('textbox', { name: 'Agent name' }).dblclick();

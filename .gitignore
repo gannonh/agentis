@@ -11,3 +11,4 @@ LibreChat/npm_check_output_fixed.txt
 LibreChat/e2e/google/playwright-report/
 LibreChat/e2e/google/specs/.test-results/
 e2e/storageState.json
+LibreChat/e2e/google/test-results/
