@@ -8,3 +8,6 @@ LibreChat/e2e/specs/.google-test-results/
 LibreChat/npm_check_output.txt
 npm_check_output.txt
 LibreChat/npm_check_output_fixed.txt
+LibreChat/e2e/google/playwright-report/
+LibreChat/e2e/google/specs/.test-results/
+e2e/storageState.json
