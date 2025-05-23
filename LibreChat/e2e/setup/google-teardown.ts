@@ -4,7 +4,24 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Ensure environment variables are loaded for VS Code GUI
+const envPaths = [
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'LibreChat/.env'),
+];
+
+for (const envPath of envPaths) {
+  try {
+    const result = dotenv.config({ path: envPath });
+    if (!result.error) {
+      console.log('🤖: GOOGLE TEARDOWN - Loaded env from:', envPath);
+      break;
+    }
+  } catch (error) {
+    // Continue to next path
+  }
+}
 
 async function googleTeardown() {
   try {
