@@ -8,7 +8,7 @@ test.use({
 });
 
 test('Google MCP authentication and landing page', async ({ page }) => {
-  await page.goto('http://localhost:3081/');
+  await page.goto('http://localhost:3080/');
 
   // Handle Terms of Service modal if it appears
   try {
