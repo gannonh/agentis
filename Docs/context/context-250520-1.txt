@@ -1,0 +1,34 @@
+I'll continue helping with your Composio integration issue without
+   considering the local command output you shared.
+
+  To further diagnose why different users in different browsers are
+  showing the same user ID in logs, we should investigate how MCP
+  connections are managed and how user context is propagated. Here
+  are the key areas to check:
+
+  1. Verify user context in MCP calls:
+    - Check how the JWT user ID is passed to the MCP connection
+  manager
+    - Look for places where a default user ID might be used as a
+  fallback
+  2. Check connection initialization:
+    - Review how user-specific connections are created in MCPManager
+    - Verify that the request context properly includes the
+  authenticated user's ID
+  3. Examine logging implementation:
+    - The logged user ID might be coming from a different source
+  than the actual connection user
+    - There could be a mismatch between the logged user and the
+  connection user
+  4. Next steps to fix:
+    - Add debug logging to trace the user ID at each step of the MCP
+   connection process
+    - Compare the actual user ID from authentication with what's
+  being used in the MCP connection
+    - Verify that the MCPManager's user connection map is properly
+  storing separate connections per user
+
+  The issue is likely in how user context is passed to or utilized
+  by the MCP connection system. Both the URL parameter issue and the
+   shared user ID point to a broader problem with user context
+  propagation in the MCP integration.

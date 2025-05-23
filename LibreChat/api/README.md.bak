@@ -1,0 +1,93 @@
+# LibreChat API
+
+The backend API server for Agentis (forked from LibreChat), built with Node.js and Express.
+
+## Overview
+
+This directory contains the backend API implementation that powers LibreChat's conversation management, AI provider integrations, and user authentication.
+
+## Structure
+
+```
+api/
+├── app/           # Application logic
+│   ├── clients/   # AI provider client adapters (OpenAI, Anthropic, Google, etc.)
+│   └── index.js   # Express app configuration
+├── cache/         # Caching utilities and stores
+├── config/        # Configuration files and parsers
+├── lib/           # Core libraries and utilities
+├── models/        # MongoDB/Mongoose models
+├── server/        # Server implementation
+│   ├── controllers/   # Route controllers
+│   ├── middleware/    # Express middleware
+│   ├── routes/        # API route definitions
+│   └── services/      # Business logic services
+├── strategies/    # Authentication strategies (JWT, OAuth, LDAP)
+└── utils/         # Utility functions and helpers
+```
+
+## Key Features
+
+- **Multi-Provider Support**: Integrates with OpenAI, Anthropic, Google, Azure, and custom endpoints
+- **Authentication**: JWT, OAuth2, LDAP, and local authentication strategies
+- **Real-time Streaming**: SSE/WebSocket support for streaming AI responses
+- **File Management**: Support for multiple storage backends (local, S3, Azure, Firebase)
+- **Rate Limiting**: Built-in rate limiting and usage tracking
+- **Conversation Management**: Full CRUD operations for conversations and messages
+- **Plugin System**: Extensible plugin architecture for custom tools
+
+## Running the API
+
+```bash
+# Development mode with hot reload
+npm run backend:dev
+
+# Production mode
+npm run backend
+
+# Run tests
+npm run test:api
+```
+
+## Environment Variables
+
+Key environment variables (see .env.example for full list):
+
+- `MONGO_URI`: MongoDB connection string
+- `JWT_SECRET`: Secret for JWT token generation
+- `PORT`: API server port (default: 3080)
+- Various AI provider API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)
+
+## API Routes
+
+Main route groups:
+
+- `/api/auth/*` - Authentication endpoints
+- `/api/conversations/*` - Conversation management
+- `/api/messages/*` - Message operations
+- `/api/models/*` - Available AI models
+- `/api/endpoints/*` - Endpoint configurations
+- `/api/files/*` - File upload/download
+- `/api/user/*` - User profile management
+
+## Testing
+
+```bash
+# Run all API tests
+npm run test:api
+
+# Run specific test file
+npm run test:api -- path/to/test.js
+
+# Run with coverage
+npm run test:api -- --coverage
+```
+
+## Development Guidelines
+
+1. Follow CommonJS module pattern (require/exports)
+2. Use Express Router for route organization
+3. Implement proper error handling with try-catch blocks
+4. Add JSDoc comments for functions and classes
+5. Keep controllers thin, delegate to services
+6. Write unit tests for new functionality
