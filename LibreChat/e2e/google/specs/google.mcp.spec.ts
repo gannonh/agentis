@@ -77,3 +77,18 @@ test('Create Google Sheets MCP', async ({ page }) => {
   // assert mcp/tool
   await expect(page.getByText('Create New Spreadsheet')).toBeVisible();
 });
+
+test('Use Google Sheets Agent', async ({ page }) => {
+  await page.goto('http://localhost:3080/');
+
+  // Handle Terms of Service modal if it appears
+  try {
+    await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
+  } catch (e) {
+    // Modal might not appear, continue
+    console.log('No TOS modal found or could not click accept button');
+  }
+
+  // Verify we're on the main chat page
+  await expect(page).toHaveURL(/.*\/c\/new/);
+});

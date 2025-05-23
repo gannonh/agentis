@@ -50,6 +50,7 @@
     "test:arcade-client": "cd packages/arcade-client && npm run test",
     "e2e": "playwright test --config=e2e/playwright.config.local.ts",
     "e2e:record-large": "npx playwright codegen --viewport-size=1600,1700 http://localhost:3080/",
+    "e2e:google": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 playwright test --config=e2e/google/playwright.config.ts e2e/google/specs/",
     "e2e:google-mcp": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 playwright test --config=e2e/google/playwright.config.ts e2e/google/specs/google.mcp.spec.ts",
     "e2e:headed": "playwright test --config=e2e/playwright.config.local.ts --headed",
     "e2e:a11y": "playwright test --config=e2e/playwright.config.a11y.ts --headed",
