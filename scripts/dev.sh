@@ -12,6 +12,7 @@ function show_usage {
   echo -e "Usage: ./dev-rebuild.sh [options]"
   echo -e "\nBuild Options:"
   echo -e "  --all      Rebuild all packages and restart dev servers"
+  echo -e "  --reset    Complete reset: cleanup caches, rebuild all packages, restart servers"
   echo -e "  --build    Rebuild all packages (no server restart)"
   echo -e "  --data     Rebuild data-schemas package only"
   echo -e "  --provider Rebuild data-provider package only"
@@ -21,13 +22,18 @@ function show_usage {
   echo -e "  --backend  Restart backend dev server (logs to logs/backend.log)"
   echo -e "  --stop     Stop all running dev servers"
   echo -e "  --kill-all-node  Kill ALL node processes (nuclear option)"
+  echo -e "\nCleanup Options:"
+  echo -e "  --clean     Aggressive cleanup: Remove client/dist and node_modules/.cache"
+  echo -e "  --clean-all Super aggressive cleanup: Remove all build artifacts and caches"
   echo -e "  --help     Show this help message"
   echo -e "\nExamples:"
+  echo -e "  ./dev-rebuild.sh --all                # Quick: rebuild packages + restart servers"
+  echo -e "  ./dev-rebuild.sh --reset              # Full reset: cleanup + rebuild + restart"
   echo -e "  ./dev-rebuild.sh --build              # Just rebuild all packages"
   echo -e "  ./dev-rebuild.sh --provider           # Rebuild data-provider only"
-  echo -e "  ./dev-rebuild.sh --provider --frontend # Rebuild and restart frontend"
+  echo -e "  ./dev-rebuild.sh --clean              # Clean caches and rebuild frontend"
+  echo -e "  ./dev-rebuild.sh --clean-all          # Nuclear cleanup and rebuild everything"
   echo -e "  ./dev-rebuild.sh --stop               # Stop all running servers"
-  echo -e "  ./dev-rebuild.sh --kill-all-node     # Kill ALL node processes"
   echo -e "\nNote: Server restarts log to files. Use 'tail -f logs/*.log' to monitor."
 }
 
@@ -45,11 +51,23 @@ RESTART_FRONTEND=false
 RESTART_BACKEND=false
 STOP_SERVERS=false
 DO_ALL=false
+DO_CLEAN=false
+DO_CLEAN_ALL=false
+KILL_ALL_NODE=false
 
 for arg in "$@"; do
   case $arg in
     --all)
       DO_ALL=true
+      REBUILD_DATA=true
+      REBUILD_PROVIDER=true
+      REBUILD_MCP=true
+      RESTART_FRONTEND=true
+      RESTART_BACKEND=true
+      ;;
+    --reset)
+      DO_ALL=true
+      DO_CLEAN=true
       REBUILD_DATA=true
       REBUILD_PROVIDER=true
       REBUILD_MCP=true
@@ -78,6 +96,15 @@ for arg in "$@"; do
       ;;
     --stop)
       STOP_SERVERS=true
+      ;;
+    --clean)
+      DO_CLEAN=true
+      ;;
+    --clean-all)
+      DO_CLEAN_ALL=true
+      ;;
+    --kill-all-node)
+      KILL_ALL_NODE=true
       ;;
     --help)
       show_usage
@@ -167,13 +194,91 @@ function stop_all_servers {
   echo -e "${GREEN}All development servers stopped!${NC}"
 }
 
-# Handle stop servers request first (and exit if that's all that was requested)
-if $STOP_SERVERS; then
-  stop_all_servers
-  if ! $REBUILD_DATA && ! $REBUILD_PROVIDER && ! $REBUILD_MCP && ! $RESTART_FRONTEND && ! $RESTART_BACKEND; then
+# Function to kill ALL node processes (nuclear option)
+function kill_all_node {
+  echo -e "${RED}WARNING: This will kill ALL Node.js processes on your system!${NC}"
+  echo -e "${YELLOW}Proceeding in 3 seconds... Press Ctrl+C to cancel${NC}"
+  sleep 3
+  
+  echo -e "${GREEN}Killing all Node.js processes...${NC}"
+  pkill -f node 2>/dev/null && echo -e "${GREEN}✓ All Node.js processes killed${NC}" || echo -e "${YELLOW}No Node.js processes found${NC}"
+}
+
+# Function to perform aggressive cleanup
+function do_clean {
+  echo -e "${GREEN}Performing aggressive cleanup...${NC}"
+  
+  # Remove client/dist (frontend build output)
+  if [ -d "client/dist" ]; then
+    echo -e "${YELLOW}Removing client/dist...${NC}"
+    rm -rf client/dist
+    echo -e "${GREEN}✓ Removed client/dist${NC}"
+  fi
+  
+  # Remove node_modules/.cache
+  if [ -d "node_modules/.cache" ]; then
+    echo -e "${YELLOW}Removing node_modules/.cache...${NC}"
+    rm -rf node_modules/.cache
+    echo -e "${GREEN}✓ Removed node_modules/.cache${NC}"
+  fi
+  
+  echo -e "${GREEN}Aggressive cleanup completed!${NC}"
+}
+
+# Function to perform super aggressive cleanup
+function do_clean_all {
+  echo -e "${GREEN}Performing super aggressive cleanup...${NC}"
+  
+  # First do the standard cleanup
+  do_clean
+  
+  # Remove all package build outputs
+  echo -e "${YELLOW}Removing package build outputs...${NC}"
+  rm -rf packages/data-provider/dist
+  rm -rf packages/data-schemas/dist  
+  rm -rf packages/mcp/dist
+  rm -rf packages/arcade-client/dist
+  
+  # Remove package node_modules caches
+  rm -rf packages/*/node_modules/.cache
+  
+  # Remove any .tsbuildinfo files
+  find . -name "*.tsbuildinfo" -delete
+  
+  echo -e "${GREEN}✓ Removed all build artifacts and caches${NC}"
+  echo -e "${GREEN}Super aggressive cleanup completed!${NC}"
+}
+
+# Handle nuclear option first
+if $KILL_ALL_NODE; then
+  kill_all_node
+  if ! $REBUILD_DATA && ! $REBUILD_PROVIDER && ! $REBUILD_MCP && ! $RESTART_FRONTEND && ! $RESTART_BACKEND && ! $DO_CLEAN && ! $DO_CLEAN_ALL && ! $STOP_SERVERS; then
     echo -e "${GREEN}Done!${NC}"
     exit 0
   fi
+fi
+
+# Handle stop servers request first (and exit if that's all that was requested)
+if $STOP_SERVERS; then
+  stop_all_servers
+  if ! $REBUILD_DATA && ! $REBUILD_PROVIDER && ! $REBUILD_MCP && ! $RESTART_FRONTEND && ! $RESTART_BACKEND && ! $DO_CLEAN && ! $DO_CLEAN_ALL; then
+    echo -e "${GREEN}Done!${NC}"
+    exit 0
+  fi
+fi
+
+# Handle cleanup requests
+FRONTEND_NEEDS_REBUILD=false
+if $DO_CLEAN_ALL; then
+  do_clean_all
+  FRONTEND_NEEDS_REBUILD=true
+  # If we did a super aggressive cleanup, we need to rebuild all packages
+  REBUILD_DATA=true
+  REBUILD_PROVIDER=true
+  REBUILD_MCP=true
+elif $DO_CLEAN; then
+  do_clean
+  FRONTEND_NEEDS_REBUILD=true
 fi
 
 # Rebuild data-schemas if needed
@@ -192,6 +297,13 @@ fi
 if $REBUILD_MCP; then
   echo -e "${GREEN}Rebuilding mcp...${NC}"
   npm run build:mcp
+fi
+
+# Rebuild frontend if cleanup was performed
+if $FRONTEND_NEEDS_REBUILD; then
+  echo -e "${GREEN}Rebuilding frontend after cleanup...${NC}"
+  npm run frontend:ci
+  echo -e "${GREEN}✓ Frontend rebuilt with clean cache${NC}"
 fi
 
 # Ensure logs directory exists
