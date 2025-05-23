@@ -50,7 +50,7 @@
     "test:arcade-client": "cd packages/arcade-client && npm run test",
     "e2e": "playwright test --config=e2e/playwright.config.local.ts",
     "e2e:headed": "playwright test --config=e2e/playwright.config.local.ts --headed",
-    "e2e:google-mcp": "playwright test --config=e2e/playwright.config.google.ts e2e/specs/google.mcp.spec.ts --headed",
+    "e2e:google-mcp": "../scripts/dev.sh --stop && playwright test --config=e2e/playwright.config.google.ts e2e/specs/google.mcp.spec.ts --headed",
     "e2e:a11y": "playwright test --config=e2e/playwright.config.a11y.ts --headed",
     "e2e:ci": "playwright test --config=e2e/playwright.config.ts",
     "e2e:debug": "cross-env PWDEBUG=1 playwright test --config=e2e/playwright.config.local.ts",
