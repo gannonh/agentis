@@ -125,12 +125,13 @@ playwright.config.ts (base)
   - All security restrictions disabled for easier testing
 
 ### Google Configuration (`playwright.config.google.ts`)
-- **Purpose**: Google OAuth authentication testing
+- **Purpose**: Google OAuth authentication and Agent Builder testing
 - **Port**: 3080
 - **Features**:
   - Google-specific setup/teardown
   - Environment variable based credentials
   - MCP (Model Context Protocol) integration testing
+  - Agent Builder workflow testing
   - Dedicated storage state file
 
 ### Accessibility Configuration (`playwright.config.a11y.ts`)
@@ -177,13 +178,14 @@ npm run e2e:headed            # Run all tests (with browser visible)
 npm run e2e:ci                # Run in CI mode (uses main config)
 
 # Specific Test Suites
-npm run e2e:google-mcp        # Google OAuth + MCP tests
+npm run e2e:google-mcp        # Google OAuth + Agent Builder tests (debug mode)
 npm run e2e:a11y             # Accessibility tests
 
 # Development Tools
 npm run e2e:debug            # Debug mode with Playwright Inspector
 npm run e2e:codegen          # Generate test code interactively
 npm run e2e:report           # View HTML test report
+npm run e2e:record-large     # Record with large viewport (1600x1700)
 
 # Utility Commands
 npm run e2e:login            # Record auth session manually
@@ -208,13 +210,15 @@ npx playwright test --config=e2e/playwright.config.local.ts
 ### Authentication Tests
 
 #### Google MCP Tests (`google.mcp.spec.ts`)
-Tests Google OAuth flow and Model Context Protocol integration:
+Tests Google OAuth flow and Agent Builder functionality:
 - Google account authentication
 - Terms of Service handling
-- MCP tool availability
+- Agent Builder navigation
+- Agent creation workflow
+- MCP tools integration (Google Sheets)
 - Session persistence
 
-Example test:
+The test includes a complete Agent Builder workflow:
 ```typescript
 test('Google MCP authentication and landing page', async ({ page }) => {
   await page.goto('http://localhost:3080/');
@@ -223,12 +227,27 @@ test('Google MCP authentication and landing page', async ({ page }) => {
   try {
     await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
   } catch (e) {
-    console.log('No TOS modal found');
+    console.log('No TOS modal found or could not click accept button');
   }
   
   // Verify authentication success
-  await expect(page.locator('nav')).toBeVisible();
   await expect(page).toHaveURL(/.*\/c\/new/);
+  
+  // Test Agent Builder functionality
+  await page.getByRole('button', { name: 'Controls' }).click();
+  await page.getByRole('button', { name: 'Agent Builder' }).click();
+  await page.getByRole('button', { name: 'Create New Agent' }).click();
+  
+  // Configure Google Sheets Agent
+  await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Sheets Agent');
+  await page.getByRole('textbox', { name: 'Agent description' })
+    .fill('Claude 3.7 Agent with access to Google Sheets.');
+  
+  // Add Google Sheets tools
+  await page.getByRole('button', { name: 'Add Tools' }).click();
+  await page.getByRole('button', { name: 'Add Google Sheets' }).click();
+  await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+  await page.getByRole('button', { name: 'Add Selected' }).click();
 });
 ```
 
@@ -241,6 +260,7 @@ Comprehensive chat functionality testing:
 - Message editing and regeneration
 - Stop/continue generation
 - Conversation management
+- Focus state management
 
 #### Navigation (`nav.spec.ts`)
 Application routing and navigation:
@@ -330,35 +350,41 @@ await page.waitForFunction(
 );
 ```
 
+#### Testing Authentication Flows
+```typescript
+// Example: Adding a new OAuth provider
+async function authenticateProvider(page: Page, provider: string) {
+  await page.goto('/login');
+  await page.getByRole('button', { name: `Sign in with ${provider}` }).click();
+  
+  // Handle provider-specific login flow
+  await page.waitForURL(/.*\/c\/new/);
+}
+```
+
 ## Setup and Teardown
 
 ### Authentication Flow
 
 1. **Setup Phase** (`authenticate.ts`):
-   ```typescript
    - Check if user exists in database
    - Register new user or use existing
    - Login with credentials
    - Save browser storage state
    - Set localStorage preferences
-   ```
 
 2. **Test Execution**:
-   ```typescript
    - Load saved storage state
    - Navigate to application
    - Execute test scenarios
    - Capture screenshots/videos on failure
-   ```
 
 3. **Teardown Phase** (`cleanupUser.ts`):
-   ```typescript
    - Delete user conversations
    - Delete user messages  
    - Clear user sessions
    - Remove user account
    - Clean browser storage
-   ```
 
 ### Database Cleanup Process
 
@@ -491,6 +517,8 @@ try {
 1. **Use Debug Mode**:
    ```bash
    npm run e2e:debug
+   # Or for specific tests like Google MCP (already in debug mode)
+   npm run e2e:google-mcp
    ```
 
 2. **Enable Verbose Logging**:
