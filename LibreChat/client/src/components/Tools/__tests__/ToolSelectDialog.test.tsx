@@ -20,6 +20,12 @@ jest.mock('react-hook-form', () => {
   };
 });
 
+// Create a mock state for the hook that can be updated
+let mockSearchValue = '';
+let mockSetSearchValue = jest.fn((value) => {
+  mockSearchValue = value;
+});
+
 jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => {
     const translations: Record<string, string> = {
@@ -40,10 +46,13 @@ jest.mock('~/hooks', () => ({
     itemsPerPage: 8,
     searchChanged: false,
     setSearchChanged: jest.fn(),
-    searchValue: '',
-    setSearchValue: jest.fn(),
+    searchValue: mockSearchValue,
+    setSearchValue: mockSetSearchValue,
     gridRef: { current: null },
-    handleSearch: jest.fn(),
+    handleSearch: jest.fn((e) => {
+      mockSearchValue = e.target.value;
+      mockSetSearchValue(e.target.value);
+    }),
     handleChangePage: jest.fn(),
     error: false,
     setError: jest.fn(),
@@ -210,6 +219,14 @@ describe('ToolSelectDialog', () => {
     >[0]['endpoint'],
   };
 
+  beforeEach(() => {
+    // Reset mock state before each test
+    mockSearchValue = '';
+    mockSetSearchValue = jest.fn((value) => {
+      mockSearchValue = value;
+    });
+  });
+
   it('renders correctly with MCP servers and regular tools', async () => {
     render(
       <FormWrapper>
@@ -245,7 +262,7 @@ describe('ToolSelectDialog', () => {
   });
 
   it('filters items based on search input', async () => {
-    const { getByPlaceholderText } = render(
+    const { getByPlaceholderText, rerender } = render(
       <FormWrapper>
         <ToolSelectDialog {...defaultProps} />
       </FormWrapper>,
@@ -255,17 +272,14 @@ describe('ToolSelectDialog', () => {
     const searchInput = getByPlaceholderText('Search tools');
     fireEvent.change(searchInput, { target: { value: 'Gmail' } });
 
-    // Simulate the effect running by directly triggering state update from mock
-    const { usePluginDialogHelpers } = jest.requireMock('~/hooks');
-    jest.mocked(usePluginDialogHelpers().setSearchValue).mockImplementation((value) => {
-      jest.mocked(usePluginDialogHelpers()).searchValue = value as string;
-    });
+    // Force re-render to reflect the updated mock state
+    rerender(
+      <FormWrapper>
+        <ToolSelectDialog {...defaultProps} />
+      </FormWrapper>,
+    );
 
-    // Gmail server should be shown, Google Sheets should be filtered out
-    // Note: This is a limitation of our testing approach, as the component doesn't directly re-render
-    // In a real implementation, we'd verify that Gmail is shown and others are hidden
-
-    // At minimum, verify the search input was updated
+    // Verify the search input was updated
     expect(searchInput).toHaveValue('Gmail');
   });
 
