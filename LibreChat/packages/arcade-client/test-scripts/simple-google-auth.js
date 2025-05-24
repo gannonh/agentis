@@ -33,11 +33,11 @@ async function healthCheck() {
     const response = await fetch(`${BASE_URL}/health`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${ARCADE_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${ARCADE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
     });
-    
+
     const data = await response.json();
     return data.healthy;
   } catch (error) {
@@ -52,15 +52,15 @@ async function requestAuth() {
     const response = await fetch(`${BASE_URL}/tools/authorize`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ARCADE_API_KEY}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${ARCADE_API_KEY}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         tool_name: TOOLKIT_NAME,
-        user_id: USER_ID
-      })
+        user_id: USER_ID,
+      }),
     });
-    
+
     return await response.json();
   } catch (error) {
     console.error('Authorization request failed:', error);
@@ -74,11 +74,11 @@ async function checkAuthStatus(authId) {
     const response = await fetch(`${BASE_URL}/auth/status?id=${authId}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${ARCADE_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${ARCADE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
     });
-    
+
     return await response.json();
   } catch (error) {
     console.error('Auth status check failed:', error);
@@ -88,12 +88,13 @@ async function checkAuthStatus(authId) {
 
 // Open URL in default browser
 function openBrowser(url) {
-  const command = process.platform === 'win32' 
-    ? `start "${url}"`
-    : process.platform === 'darwin' 
-      ? `open "${url}"` 
-      : `xdg-open "${url}"`;
-  
+  const command =
+    process.platform === 'win32'
+      ? `start "${url}"`
+      : process.platform === 'darwin'
+        ? `open "${url}"`
+        : `xdg-open "${url}"`;
+
   exec(command, (error) => {
     if (error) {
       console.error(`❌ Failed to open browser: ${error.message}`);
@@ -105,12 +106,12 @@ function openBrowser(url) {
 // Poll auth status
 async function pollAuthStatus(authId, attempts = 30) {
   console.log(`🔄 Polling authentication status...`);
-  
+
   for (let i = 0; i < attempts; i++) {
     try {
       const status = await checkAuthStatus(authId);
       console.log(`Poll attempt ${i + 1}/${attempts}: Status=${status.status}`);
-      
+
       if (status.status === 'completed') {
         console.log('✅ Authentication completed successfully!');
         console.log('Auth context:', status.context);
@@ -119,15 +120,15 @@ async function pollAuthStatus(authId, attempts = 30) {
         console.error('❌ Authentication failed');
         return status;
       }
-      
+
       // Wait for 2 seconds before polling again
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
       console.error(`❌ Error while polling auth status: ${error}`);
       return null;
     }
   }
-  
+
   console.error('❌ Timed out waiting for authentication to complete');
   return null;
 }
@@ -141,19 +142,19 @@ async function main() {
     return;
   }
   console.log('✅ Arcade API is healthy');
-  
+
   // Request auth
   console.log(`🔑 Requesting authorization for ${TOOLKIT_NAME}...`);
   const authResponse = await requestAuth();
   console.log('Authorization response:', JSON.stringify(authResponse, null, 2));
-  
+
   if (authResponse.status === 'pending' && authResponse.url) {
     console.log(`✅ Got auth URL: ${authResponse.url}`);
     console.log('👉 Opening browser for authentication...');
-    
+
     // Open the auth URL in the default browser
     openBrowser(authResponse.url);
-    
+
     // Poll for auth status
     await pollAuthStatus(authResponse.id);
   } else if (authResponse.status === 'completed') {

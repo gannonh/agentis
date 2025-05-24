@@ -420,6 +420,12 @@ export const tPluginSchema = z.object({
   chatMenu: z.boolean().optional(),
   isButton: z.boolean().optional(),
   toolkit: z.boolean().optional(),
+  // Server grouping fields
+  isServer: z.boolean().optional(),
+  serverId: z.string().optional(),
+  tools: z.lazy(() => z.array(z.any()).optional()),
+  isHelper: z.boolean().optional(),
+  hidden: z.boolean().optional(),
 });
 
 export type TPlugin = z.infer<typeof tPluginSchema>;

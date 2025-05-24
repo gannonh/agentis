@@ -1,0 +1,22 @@
+Create a comprehensive README for the working directory: $ARGUMENTS. Firstly, add the following to your todos then execute.
+
+- Focus only on $ARGUMENTS and its sub-directories
+- If a README exists in the cwd `mv README.md README.md.bak`
+- Thoroughly examine the sourcode
+- Read any existing docs
+- Think deeply
+- Create 1st draft: READMEv1.md
+- Review READMEv1.md with a thoughtful and critical eye, confirming assumptions and thinking deeply
+- Create 2nd draft: READMEv2.md
+- Ask the user to review READMEv2.md, ask clarifying questions, and provide feedback
+- Create READMEv3.md based on the prior user interaction and your own critical reassessment of READMEv2
+- Ask the user to approve READMEv3.md or provide additional feedback
+- Continue to iterate as needed, 
+- Finally, produce the final version, `README.md`, with a particular focus on editorial polish:
+  - Ensure consistent formatting, tone, and terminology throughout
+  - Remove redundant explanations and consolidate overlapping sections
+  - Verify all code examples compile and run correctly
+  - Check that installation steps are complete and in proper sequence
+  - Confirm API documentation matches actual function signatures
+  - Polish language for clarity while maintaining technical precision
+  - Validate all links and references work correctly

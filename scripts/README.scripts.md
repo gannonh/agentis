@@ -2,6 +2,38 @@
 
 This folder contains utility scripts for managing Docker services and other development tools for the Agentis project.
 
+## Development Scripts
+
+### dev-rebuild.sh
+
+A utility script for rebuilding npm packages and restarting development servers. This simplifies the development workflow when working with shared packages in the monorepo structure.
+
+```bash
+# Show script usage
+./dev-rebuild.sh --help
+
+# Rebuild all packages and restart all servers
+./dev-rebuild.sh --all
+
+# Rebuild specific packages
+./dev-rebuild.sh --data --provider --mcp
+
+# Restart specific servers
+./dev-rebuild.sh --frontend --backend 
+
+# Rebuild a specific package and restart frontend
+./dev-rebuild.sh --provider --frontend
+```
+
+**Available Options:**
+- `--all`: Rebuild all packages and restart all servers
+- `--data`: Rebuild data-schemas package only
+- `--provider`: Rebuild data-provider package only  
+- `--mcp`: Rebuild mcp package only
+- `--frontend`: Restart frontend dev server
+- `--backend`: Restart backend dev server
+- `--help`: Show the help message
+
 ## Documentation Tools
 
 ### generate-docs-index.js

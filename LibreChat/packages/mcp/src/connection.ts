@@ -176,14 +176,48 @@ export class MCPConnection extends EventEmitter {
           const url = new URL(options.url);
           this.logger?.info(`${this.getLogPrefix()} Creating SSE transport: ${url.toString()}`);
           const abortController = new AbortController();
-          const transport = new SSEClientTransport(url, {
+          // Fix for user ID in headers and URL
+          let fixedHeaders = options.headers || {};
+          let fixedUrl = url.toString();
+
+          // Replace any unresolved user ID placeholders in the headers with the provided userId
+          if (this.userId) {
+            fixedHeaders = { ...fixedHeaders };
+            for (const [key, value] of Object.entries(fixedHeaders)) {
+              if (typeof value === 'string' && value.includes('{{LIBRECHAT_USER_ID}}')) {
+                fixedHeaders[key] = value.replace(/{{LIBRECHAT_USER_ID}}/g, this.userId);
+                this.logger?.info(
+                  `${this.getLogPrefix()} Replaced placeholder in header ${key}: ${fixedHeaders[key]}`,
+                );
+              }
+            }
+
+            // Also check URL query parameters for the same placeholder
+            if (fixedUrl.includes('user_id=')) {
+              try {
+                const urlObj = new URL(fixedUrl);
+                const userIdParam = urlObj.searchParams.get('user_id');
+                if (userIdParam && userIdParam.includes('{{LIBRECHAT_USER_ID}}')) {
+                  const encodedUserId = encodeURIComponent(this.userId);
+                  urlObj.searchParams.set('user_id', encodedUserId);
+                  fixedUrl = urlObj.toString();
+                  this.logger?.info(`${this.getLogPrefix()} Fixed user_id in URL: ${fixedUrl}`);
+                }
+              } catch (error) {
+                const errMsg = error instanceof Error ? error.message : String(error);
+                this.logger?.error(`${this.getLogPrefix()} Error processing URL: ${errMsg}`);
+              }
+            }
+          }
+
+          const transport = new SSEClientTransport(new URL(fixedUrl), {
             requestInit: {
-              headers: options.headers,
+              headers: fixedHeaders,
               signal: abortController.signal,
             },
             eventSourceInit: {
               fetch: (url, init) => {
-                const headers = new Headers(Object.assign({}, init?.headers, options.headers));
+                const headers = new Headers(Object.assign({}, init?.headers, fixedHeaders));
                 return fetch(url, {
                   ...init,
                   headers,

@@ -131,8 +131,18 @@ const getAvailableTools = async (req, res) => {
           Object.keys(toolDefinitions).some((key) => getToolkitKey(key) === plugin.pluginKey)),
     );
 
-    await cache.set(CacheKeys.TOOLS, tools);
-    res.status(200).json(tools);
+    // Include MCP server configurations in the response
+    const responseData = {
+      tools,
+      mcpServers: customConfig?.mcpServers || {},
+    };
+
+    await cache.set(CacheKeys.TOOLS, responseData);
+    console.log('Responding with tools:', {
+      toolCount: tools.length,
+      mcpServerCount: Object.keys(customConfig?.mcpServers || {}).length,
+    });
+    res.status(200).json(responseData);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

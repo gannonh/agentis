@@ -1,2 +1,14 @@
 .DS_Store
 .venv-arcade/
+backend.log
+frontend.log
+LibreChat/e2e/playwright-report*
+LibreChat/e2e/storageStateGoogle.json
+LibreChat/e2e/specs/.google-test-results/
+LibreChat/npm_check_output.txt
+npm_check_output.txt
+LibreChat/npm_check_output_fixed.txt
+LibreChat/e2e/google/playwright-report/
+LibreChat/e2e/google/specs/.test-results/
+e2e/storageState.json
+LibreChat/e2e/google/test-results/

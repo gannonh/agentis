@@ -14,7 +14,7 @@ export default function AgentTool({
   allTools,
   agent_id = '',
 }: {
-  tool: string;
+  tool: string | TPlugin;
   allTools: TPlugin[];
   agent_id?: string;
 }) {
@@ -23,18 +23,20 @@ export default function AgentTool({
   const { showToast } = useToastContext();
   const updateUserPlugins = useUpdateUserPluginsMutation();
   const { getValues, setValue } = useFormContext();
-  const currentTool = allTools.find((t) => t.pluginKey === tool);
 
-  const removeTool = (tool: string) => {
-    if (tool) {
+  // Handle both string and TPlugin object
+  const currentTool = typeof tool === 'string' ? allTools.find((t) => t.pluginKey === tool) : tool;
+
+  const removeTool = (toolKey: string) => {
+    if (toolKey) {
       updateUserPlugins.mutate(
-        { pluginKey: tool, action: 'uninstall', auth: null, isEntityTool: true },
+        { pluginKey: toolKey, action: 'uninstall', auth: null, isEntityTool: true },
         {
           onError: (error: unknown) => {
             showToast({ message: `Error while deleting the tool: ${error}`, status: 'error' });
           },
           onSuccess: () => {
-            const tools = getValues('tools').filter((fn: string) => fn !== tool);
+            const tools = getValues('tools').filter((fn: string) => fn !== toolKey);
             setValue('tools', tools);
             showToast({ message: 'Tool deleted successfully', status: 'success' });
           },
@@ -67,7 +69,7 @@ export default function AgentTool({
             className="h-9 grow px-3 py-2"
             style={{ textOverflow: 'ellipsis', wordBreak: 'break-all', overflow: 'hidden' }}
           >
-            {currentTool.name}
+            {currentTool.displayName || currentTool.name}
           </div>
         </div>
 
@@ -93,7 +95,7 @@ export default function AgentTool({
           </Label>
         }
         selection={{
-          selectHandler: () => removeTool(currentTool.pluginKey),
+          selectHandler: () => (currentTool?.pluginKey ? removeTool(currentTool.pluginKey) : null),
           selectClasses:
             'bg-red-700 dark:bg-red-600 hover:bg-red-800 dark:hover:bg-red-800 transition-color duration-200 text-white',
           selectText: localize('com_ui_delete'),

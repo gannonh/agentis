@@ -26,7 +26,7 @@ function usePluginDialogHelpers() {
     } else {
       columns = 4;
     }
-    setItemsPerPage(columns * 2); // 2 rows
+    setItemsPerPage(columns * 3); // 3 rows
   };
 
   const gridRef: (instance: HTMLDivElement | null) => void = useCallback(

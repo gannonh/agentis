@@ -131,7 +131,116 @@ actions:
     - "google.com"
 
 # Example MCP Servers Object Structure
-# mcpServers:
+# Example MCP Servers Object Structure
+# docs  
+mcpServers:
+
+  googledrive:
+    type: sse
+    # Including user_id in URL for Composio to identify unique user connections
+    url: https://mcp.composio.dev/composio/server/85dda66d-0d54-45d9-a1f7-d710d17ae2ba?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    headers:
+      # Using header for user ID propagation as well for redundancy
+      X-User-ID: "{{LIBRECHAT_USER_ID}}"
+      X-API-Key: "${COMPOSIO_API_KEY}"
+      # Connection ID for session identification
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googledrive"
+    displayName: "Google Drive"  # Add this line for custom server display name
+    iconPath: "/assets/tools/google-drive.svg"  # Icon for the MCP server
+    description: "Google Drive is a cloud storage service that allows you to store, share, and collaborate on files and folders from any device."
+    toolDisplayNames:  # Add this section for custom tool display names
+      GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE: "Add File Sharing"
+      GOOGLEDRIVE_COPY_FILE: "Copy File"
+      GOOGLEDRIVE_CREATE_FILE_FROM_TEXT: "Create Text File"
+      GOOGLEDRIVE_CREATE_FOLDER: "Create Folder"
+      GOOGLEDRIVE_DELETE_FOLDER_OR_FILE: "Delete Item"
+      GOOGLEDRIVE_DOWNLOAD_FILE: "Download File"
+      GOOGLEDRIVE_EDIT_FILE: "Edit File"
+      GOOGLEDRIVE_FIND_FILE: "Find File"
+      GOOGLEDRIVE_FIND_FOLDER: "Find Folder"
+      GOOGLEDRIVE_PARSE_FILE: "Parse File"
+      GOOGLEDRIVE_UPLOAD_FILE: "Upload File"
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      COMPOSIO_INITIATE_CONNECTION: "Connect to Google Drive"
+      COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
+
+  googlesheets:
+    type: sse
+    # Including user_id in URL for Composio to identify unique user connections
+    url: https://mcp.composio.dev/composio/server/89f2e068-a152-4061-a61d-2d03d560fcc6?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    headers:
+      # Using header for user ID propagation as well for redundancy
+      X-User-ID: "{{LIBRECHAT_USER_ID}}"
+      X-API-Key: "${COMPOSIO_API_KEY}"
+      # Connection ID for session identification
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googlesheets"
+    displayName: "Google Sheets"  # Add this line for custom server display name
+    iconPath: "/assets/tools/google-sheets.svg"  # Icon for the MCP server
+    description: "Google Sheets is a web-based spreadsheet application that allows you to create, edit, and collaborate on spreadsheets in real-time."
+    toolDisplayNames:  # Add this section for custom tool display names
+      GOOGLESHEETS_BATCH_GET: "Get Range Data"
+      GOOGLESHEETS_BATCH_UPDATE: "Update Range Data"
+      GOOGLESHEETS_CLEAR_VALUES: "Clear Cell Values"
+      GOOGLESHEETS_CREATE_GOOGLE_SHEET1: "Create New Spreadsheet"
+      GOOGLESHEETS_CREATE_SPREADSHEET_COLUMN: "Add Column"
+      GOOGLESHEETS_CREATE_SPREADSHEET_ROW: "Add Row"
+      GOOGLESHEETS_FIND_WORKSHEET_BY_TITLE: "Find Worksheet"
+      GOOGLESHEETS_FORMAT_CELL: "Format Cell" 
+      GOOGLESHEETS_GET_SHEET_NAMES: "List Worksheets"
+      GOOGLESHEETS_GET_SPREADSHEET_INFO: "Get Spreadsheet Details"
+      GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW: "Find Row Data"
+      GOOGLESHEETS_SHEET_FROM_JSON: "Import JSON Data"
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      COMPOSIO_INITIATE_CONNECTION: "Connect to Google Sheets"
+      COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
+
+  googledocs:
+    type: sse
+    # Including user_id in URL for Composio to identify unique user connections
+    url: https://mcp.composio.dev/composio/server/2ddf5239-d9c6-4f1d-8864-1e8dfa34b33e?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    headers:
+      # Using header for user ID propagation as well for redundancy
+      X-User-ID: "{{LIBRECHAT_USER_ID}}"
+      X-API-Key: "${COMPOSIO_API_KEY}"
+      # Connection ID for session identification
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googlesheets"
+    displayName: "Google Docs"  # Add this line for custom server display name
+    iconPath: "/assets/tools/google-docs.svg"  # Icon for the MCP server
+    description: "Google Docs is a web-based word processor that allows you to create, edit, and collaborate on documents online."
+    toolDisplayNames:  # Add this section for custom tool display names
+      GOOGLEDOCS_CREATE_DOCUMENT: "Create Doc"
+      GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN: "Create Markdown Doc"
+      GOOGLEDOCS_GET_DOCUMENT_BY_ID: "Get Doc by ID"
+      GOOGLEDOCS_UPDATE_DOCUMENT_MARKDOWN: "Update Doc Markdown"
+      GOOGLEDOCS_UPDATE_EXISTING_DOCUMENT: "Update Existing Doc"
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      COMPOSIO_INITIATE_CONNECTION: "Connect to Google Docs"
+      COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
+
+  # puppeteer:
+  #   type: stdio
+  #   command: npx
+  #   args:
+  #     - -y
+  #     - "@modelcontextprotocol/server-puppeteer"
+  # filesystem:
+  #   # type: stdio
+  #   command: npx
+  #   args:
+  #     - -y
+  #     - "@modelcontextprotocol/server-filesystem"
+  #     - /home/user/LibreChat/
+  #   iconPath: /home/user/LibreChat/client/public/assets/logo.svg
+  # mcp-obsidian:
+  #   command: npx
+  #   args:
+  #     - -y
+  #     - "mcp-obsidian"
+  #     - /path/to/obsidian/vault
+  # streamable-http-server:
+  #   type: streamable-http
+  #   url: https://example.com/api/
+
 #   everything:
 #     # type: sse # type can optionally be omitted
 #     url: http://localhost:3001/sse
@@ -266,23 +375,23 @@ endpoints:
       dropParams: ['stop']
       modelDisplayLabel: 'OpenRouter'
 
-    # Portkey AI Example
-    - name: "Portkey"
-      apiKey: "dummy"
-      baseURL: 'https://api.portkey.ai/v1'
-      headers:
-          x-portkey-api-key: '${PORTKEY_API_KEY}'
-          x-portkey-virtual-key: '${PORTKEY_OPENAI_VIRTUAL_KEY}'
-      models:
-          default: ['gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest']
-          fetch: true
-      titleConvo: true
-      titleModel: 'current_model'
-      summarize: false
-      summaryModel: 'current_model'
-      forcePrompt: false
-      modelDisplayLabel: 'Portkey'
-      iconURL: https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/rjqy7ghvjoiu4cd1xjbf
+    # # Portkey AI Example
+    # - name: "Portkey"
+    #   apiKey: "dummy"
+    #   baseURL: 'https://api.portkey.ai/v1'
+    #   headers:
+    #       x-portkey-api-key: '${PORTKEY_API_KEY}'
+    #       x-portkey-virtual-key: '${PORTKEY_OPENAI_VIRTUAL_KEY}'
+    #   models:
+    #       default: ['gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest']
+    #       fetch: true
+    #   titleConvo: true
+    #   titleModel: 'current_model'
+    #   summarize: false
+    #   summaryModel: 'current_model'
+    #   forcePrompt: false
+    #   modelDisplayLabel: 'Portkey'
+    #   iconURL: https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/rjqy7ghvjoiu4cd1xjbf
 # fileConfig:
 #   endpoints:
 #     assistants:

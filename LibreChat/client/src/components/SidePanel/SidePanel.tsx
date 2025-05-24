@@ -79,7 +79,7 @@ const SidePanel = ({
     setFullCollapse(true);
     localStorage.setItem('fullPanelCollapse', 'true');
     panelRef.current?.collapse();
-  }, []);
+  }, [setIsCollapsed, setCollapsedSize, setMinSize, setFullCollapse, panelRef]);
 
   const Links = useSideNavLinks({
     endpoint,
@@ -108,7 +108,17 @@ const SidePanel = ({
     } else {
       panelRef.current?.expand();
     }
-  }, [isCollapsed, newUser, setNewUser, navCollapsedSize]);
+  }, [
+    isCollapsed,
+    newUser,
+    setNewUser,
+    navCollapsedSize,
+    setIsCollapsed,
+    setMinSize,
+    setCollapsedSize,
+    setFullCollapse,
+    panelRef,
+  ]);
 
   return (
     <>

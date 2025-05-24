@@ -179,22 +179,28 @@ const PromptForm = () => {
   }, []);
 
   const debouncedUpdateOneliner = useCallback(
-    debounce((oneliner: string) => {
-      if (!group || !group._id) {
-        return console.warn('Group not found');
-      }
-      updateGroupMutation.mutate({ id: group._id, payload: { oneliner } });
-    }, 950),
+    (oneliner: string) => {
+      const handler = debounce(() => {
+        if (!group || !group._id) {
+          return console.warn('Group not found');
+        }
+        updateGroupMutation.mutate({ id: group._id, payload: { oneliner } });
+      }, 950);
+      handler();
+    },
     [updateGroupMutation, group],
   );
 
   const debouncedUpdateCommand = useCallback(
-    debounce((command: string) => {
-      if (!group || !group._id) {
-        return console.warn('Group not found');
-      }
-      updateGroupMutation.mutate({ id: group._id, payload: { command } });
-    }, 950),
+    (command: string) => {
+      const handler = debounce(() => {
+        if (!group || !group._id) {
+          return console.warn('Group not found');
+        }
+        updateGroupMutation.mutate({ id: group._id, payload: { command } });
+      }, 950);
+      handler();
+    },
     [updateGroupMutation, group],
   );
 
@@ -287,18 +293,18 @@ const PromptForm = () => {
       {editorMode === PromptsEditorMode.ADVANCED &&
         (isLoadingPrompts
           ? Array.from({ length: 6 }).map((_, index: number) => (
-            <div key={index} className="my-2">
-              <Skeleton className="h-[72px] w-full" />
-            </div>
-          ))
+              <div key={index} className="my-2">
+                <Skeleton className="h-[72px] w-full" />
+              </div>
+            ))
           : prompts.length > 0 && (
-            <PromptVersions
-              group={group}
-              prompts={prompts}
-              selectionIndex={selectionIndex}
-              setSelectionIndex={setSelectionIndex}
-            />
-          ))}
+              <PromptVersions
+                group={group}
+                prompts={prompts}
+                selectionIndex={selectionIndex}
+                setSelectionIndex={setSelectionIndex}
+              />
+            ))}
     </div>
   );
 

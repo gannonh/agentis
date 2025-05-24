@@ -1,6 +1,6 @@
 import { EModelEndpoint } from 'librechat-data-provider';
 import type { IconMapProps, AgentIconMapProps, IconsRecord } from '~/common';
-import { Feather } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import {
   MinimalPlugin,
   GPTIcon,
@@ -53,7 +53,7 @@ const AgentAvatar = ({ className = '', avatar = '', agentName, size }: AgentIcon
     );
   }
 
-  return <Feather className={cn(agentName === '' ? 'icon-2xl' : '', className)} size={size} />;
+  return <Bot className={cn(agentName === '' ? 'icon-2xl' : '', className)} size={size} />;
 };
 
 const Bedrock = ({ className = '' }: IconMapProps) => {

@@ -109,7 +109,7 @@ export default function Settings({
             placeholder={localize('com_endpoint_openai_prompt_prefix_placeholder')}
             className={cn(
               defaultTextProps,
-              'flex max-h-[138px] min-h-[100px] w-full resize-none px-3 py-2 ',
+              'flex max-h-[138px] min-h-[100px] w-full resize-none px-3 py-2',
             )}
           />
         </div>
@@ -160,7 +160,9 @@ export default function Settings({
             <div className="flex justify-between">
               <Label htmlFor="top-p-int" className="text-left text-sm font-medium">
                 {localize('com_endpoint_top_p')}{' '}
-                <small className="opacity-40">({localize('com_endpoint_default')}: 1)</small>
+                <small className="opacity-40">
+                  ({localize('com_endpoint_default_with_num', { 0: '1' })})
+                </small>
               </Label>
               <InputNumber
                 id="top-p-int"
@@ -199,7 +201,9 @@ export default function Settings({
             <div className="flex justify-between">
               <Label htmlFor="freq-penalty-int" className="text-left text-sm font-medium">
                 {localize('com_endpoint_frequency_penalty')}{' '}
-                <small className="opacity-40">({localize('com_endpoint_default')}: 0)</small>
+                <small className="opacity-40">
+                  ({localize('com_endpoint_default_with_num', { 0: '0' })})
+                </small>
               </Label>
               <InputNumber
                 id="freq-penalty-int"
@@ -238,7 +242,9 @@ export default function Settings({
             <div className="flex justify-between">
               <Label htmlFor="pres-penalty-int" className="text-left text-sm font-medium">
                 {localize('com_endpoint_presence_penalty')}{' '}
-                <small className="opacity-40">({localize('com_endpoint_default')}: 0)</small>
+                <small className="opacity-40">
+                  ({localize('com_endpoint_default_with_num', { 0: '0' })})
+                </small>
               </Label>
               <InputNumber
                 id="pres-penalty-int"

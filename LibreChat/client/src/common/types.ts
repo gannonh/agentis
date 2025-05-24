@@ -581,5 +581,15 @@ export type TThread = { id: string; createdAt: string };
 declare global {
   interface Window {
     google_tag_manager?: unknown;
+    __mcpTools?: t.TPlugin[];
+    __mcpServerConfigs?: Record<
+      string,
+      {
+        displayName?: string;
+        description?: string;
+        toolDisplayNames?: Record<string, string>;
+        iconPath?: string;
+      }
+    >;
   }
 }

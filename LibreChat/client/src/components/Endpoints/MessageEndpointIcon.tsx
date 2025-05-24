@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Feather } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { EModelEndpoint, isAssistantsEndpoint, alternateName } from 'librechat-data-provider';
 import {
   Plugin,
@@ -119,7 +119,7 @@ const MessageEndpointIcon: React.FC<IconProps> = (props) => {
     ) : (
       <div className="h-6 w-6">
         <div className="shadow-stroke flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
-          <Feather className="h-2/3 w-2/3 text-gray-400" />
+          <Bot className="h-2/3 w-2/3 text-gray-400" />
         </div>
       </div>
     ),

@@ -16,7 +16,9 @@ export type WebSocketOptions = z.infer<typeof WebSocketOptionsSchema>;
 export type SSEOptions = z.infer<typeof SSEOptionsSchema>;
 export type StreamableHTTPOptions = z.infer<typeof StreamableHTTPOptionsSchema>;
 export type MCPOptions = z.infer<typeof MCPOptionsSchema>;
+export type MCPServer = z.infer<typeof MCPServersSchema>;
 export type MCPServers = z.infer<typeof MCPServersSchema>;
+
 export interface MCPResource {
   uri: string;
   name: string;
@@ -35,7 +37,12 @@ export interface LCFunctionTool {
 }
 
 export type LCAvailableTools = Record<string, LCFunctionTool>;
-export type LCManifestTool = TPlugin;
+export interface LCManifestTool extends TPlugin {
+  /** Optional display name that overrides the auto-formatted server name */
+  serverDisplayName?: string;
+  /** Optional display name that overrides the auto-formatted tool name */
+  displayName?: string;
+}
 export type LCToolManifest = TPlugin[];
 export interface MCPPrompt {
   name: string;

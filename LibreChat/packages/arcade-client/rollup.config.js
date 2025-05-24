@@ -18,8 +18,8 @@ const packageJson = {
   module: 'index.es.js',
   types: 'types/index.d.ts',
   peerDependencies: {
-    "@librechat/data-provider": "*",
-    "@librechat/data-schemas": "*"
+    '@librechat/data-provider': '*',
+    '@librechat/data-schemas': '*',
   },
 };
 
@@ -50,8 +50,14 @@ export default [
       }),
       alias({
         entries: [
-          { find: '@librechat/data-provider', replacement: pathResolve(__dirname, '../data-provider/src') },
-          { find: '@librechat/data-schemas', replacement: pathResolve(__dirname, '../data-schemas/src') },
+          {
+            find: '@librechat/data-provider',
+            replacement: pathResolve(__dirname, '../data-provider/src'),
+          },
+          {
+            find: '@librechat/data-schemas',
+            replacement: pathResolve(__dirname, '../data-schemas/src'),
+          },
         ],
       }),
       commonjs(),

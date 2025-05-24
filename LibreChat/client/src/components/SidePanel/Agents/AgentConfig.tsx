@@ -9,15 +9,16 @@ import { useToastContext, useFileMapContext } from '~/Providers';
 import Action from '~/components/SidePanel/Builder/Action';
 import { ToolSelectDialog } from '~/components/Tools';
 import { icons } from '~/hooks/Endpoint/Icons';
-import { processAgentOption } from '~/utils';
+import { processAgentOption, groupAgentToolsByServer, getToolDisplayName } from '~/utils';
 import Instructions from './Instructions';
 import AgentAvatar from './AgentAvatar';
 import FileContext from './FileContext';
-import { useLocalize } from '~/hooks';
 import FileSearch from './FileSearch';
 import Artifacts from './Artifacts';
 import AgentTool from './AgentTool';
+import AgentToolGroup from './AgentToolGroup';
 import CodeForm from './Code/Form';
+import { useLocalize } from '~/hooks';
 import { Panel } from '~/common';
 
 const labelClass = 'mb-2 text-token-text-primary block font-medium';
@@ -38,7 +39,8 @@ export default function AgentConfig({
   const fileMap = useFileMapContext();
   const queryClient = useQueryClient();
 
-  const allTools = queryClient.getQueryData<TPlugin[]>([QueryKeys.tools]) ?? [];
+  const allToolsData = queryClient.getQueryData<TPlugin[]>([QueryKeys.tools]);
+  const allTools = useMemo(() => allToolsData ?? [], [allToolsData]);
   const { showToast } = useToastContext();
   const localize = useLocalize();
 
@@ -148,6 +150,34 @@ export default function AgentConfig({
     }
     setActivePanel(Panel.actions);
   }, [agent_id, setActivePanel, showToast, localize]);
+
+  // Group tools by MCP server
+  const { mcpServerGroups, individualTools } = useMemo(() => {
+    return groupAgentToolsByServer(tools, allTools);
+  }, [tools, allTools]);
+
+  // Function to remove a tool
+  const removeTool = useCallback(
+    (toolKey: string) => {
+      if (toolKey) {
+        const newTools = (tools || []).filter((t) => t !== toolKey);
+        methods.setValue('tools', newTools);
+      }
+    },
+    [tools, methods],
+  );
+
+  // Function to remove a group of tools
+  const removeServerGroup = useCallback(
+    (serverName: string) => {
+      if (serverName && mcpServerGroups[serverName]) {
+        const toolsToRemove = mcpServerGroups[serverName].map((t) => t.pluginKey);
+        const newTools = (tools || []).filter((t) => !toolsToRemove.includes(t));
+        methods.setValue('tools', newTools);
+      }
+    },
+    [mcpServerGroups, tools, methods],
+  );
 
   const providerValue = typeof provider === 'string' ? provider : provider?.value;
   let Icon: IconComponentTypes | null | undefined;
@@ -280,14 +310,70 @@ export default function AgentConfig({
               ${actionsEnabled === true ? localize('com_assistants_actions') : ''}`}
           </label>
           <div className="space-y-2">
-            {tools?.map((func, i) => (
-              <AgentTool
-                key={`${func}-${i}-${agent_id}`}
-                tool={func}
+            {/* MCP Server Tool Groups */}
+            {Object.entries(mcpServerGroups).map(([serverName, serverTools]) => (
+              <AgentToolGroup
+                key={`group-${serverName}`}
+                serverName={serverName}
+                tools={serverTools}
                 allTools={allTools}
                 agent_id={agent_id}
+                onRemoveTool={removeTool}
+                onRemoveGroup={() => removeServerGroup(serverName)}
               />
             ))}
+
+            {/* Individual Tools */}
+            {individualTools.map((tool) => {
+              // Add display name enhancement to individual tools
+              const enhancedTool = {
+                ...tool,
+                // If it's an MCP tool, extract the server name and apply formatting
+                displayName: tool.pluginKey.includes('_mcp_')
+                  ? (() => {
+                      const parts = tool.pluginKey.split('_mcp_');
+                      const serverName = parts[parts.length - 1];
+                      // Extract the actual tool name from the plugin key if possible
+                      let toolName = tool.name || tool.pluginKey;
+
+                      // For Composio tools, the tool name is often in the format SERVERTYPE_TOOLACTION
+                      // Extract this from the pluginKey if needed
+                      if (
+                        tool.pluginKey.includes('COMPOSIO_') ||
+                        tool.pluginKey.includes(`${serverName.toUpperCase()}_`)
+                      ) {
+                        const keyParts = tool.pluginKey.split('_mcp_')[0].split('_');
+                        // Get the last part if it's a simple key, or reconstruct the tool name
+                        // for more complex keys
+                        if (keyParts.length > 1) {
+                          // Join all parts except the last one (which is often 'plugin')
+                          toolName = keyParts.join('_');
+                        }
+                      }
+
+                      return getToolDisplayName(toolName, serverName);
+                    })()
+                  : tool.name,
+              };
+
+              // Add the enhanced tool to allTools array so it can be found by the AgentTool component
+              const enhancedAllTools = [...allTools];
+              const toolIndex = enhancedAllTools.findIndex((t) => t.pluginKey === tool.pluginKey);
+              if (toolIndex >= 0) {
+                enhancedAllTools[toolIndex] = enhancedTool;
+              }
+
+              return (
+                <AgentTool
+                  key={`tool-${tool.pluginKey}`}
+                  tool={enhancedTool} // Pass the entire enhanced tool object
+                  allTools={enhancedAllTools}
+                  agent_id={agent_id}
+                />
+              );
+            })}
+
+            {/* Actions */}
             {actions
               .filter((action) => action.agent_id === agent_id)
               .map((action, i) => (
