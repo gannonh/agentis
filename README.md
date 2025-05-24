@@ -1,7 +1,5 @@
 # Agentis
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
 Agentis is an all-in-one AI conversations platform that integrates multiple AI models into a single chat interface. It's a branded fork of LibreChat with custom capabilities, allowing users to integrate various AI models including:
