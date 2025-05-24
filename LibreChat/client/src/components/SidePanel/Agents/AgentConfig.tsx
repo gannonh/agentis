@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Controller, useWatch, useFormContext } from 'react-hook-form';
 import { QueryKeys, EModelEndpoint, AgentCapabilities } from 'librechat-data-provider';
 import type { TPlugin } from 'librechat-data-provider';
+import { useAvailableAgentToolsQuery } from '~/data-provider';
 import type { AgentForm, AgentPanelProps, IconComponentTypes } from '~/common';
 import { cn, defaultTextProps, removeFocusOutlines, getEndpointField, getIconKey } from '~/utils';
 import { useToastContext, useFileMapContext } from '~/Providers';
@@ -10,6 +11,7 @@ import Action from '~/components/SidePanel/Builder/Action';
 import { ToolSelectDialog } from '~/components/Tools';
 import { icons } from '~/hooks/Endpoint/Icons';
 import { processAgentOption, groupAgentToolsByServer, getToolDisplayName } from '~/utils';
+import { Spinner } from '~/components/svg';
 import Instructions from './Instructions';
 import AgentAvatar from './AgentAvatar';
 import FileContext from './FileContext';
@@ -39,7 +41,7 @@ export default function AgentConfig({
   const fileMap = useFileMapContext();
   const queryClient = useQueryClient();
 
-  const allToolsData = queryClient.getQueryData<TPlugin[]>([QueryKeys.tools]);
+  const { data: allToolsData, isLoading: toolsLoading } = useAvailableAgentToolsQuery();
   const allTools = useMemo(() => allToolsData ?? [], [allToolsData]);
   const { showToast } = useToastContext();
   const localize = useLocalize();
@@ -310,8 +312,16 @@ export default function AgentConfig({
               ${actionsEnabled === true ? localize('com_assistants_actions') : ''}`}
           </label>
           <div className="space-y-2">
+            {/* Loading spinner for tools */}
+            {toolsLoading && (
+              <div className="flex items-center justify-center gap-2 py-4">
+                <Spinner size="1.2em" />
+                <span className="text-text-secondary">{localize('com_ui_loading')}</span>
+              </div>
+            )}
+
             {/* MCP Server Tool Groups */}
-            {Object.entries(mcpServerGroups).map(([serverName, serverTools]) => (
+            {!toolsLoading && Object.entries(mcpServerGroups).map(([serverName, serverTools]) => (
               <AgentToolGroup
                 key={`group-${serverName}`}
                 serverName={serverName}
@@ -324,7 +334,7 @@ export default function AgentConfig({
             ))}
 
             {/* Individual Tools */}
-            {individualTools.map((tool) => {
+            {!toolsLoading && individualTools.map((tool) => {
               // Add display name enhancement to individual tools
               const enhancedTool = {
                 ...tool,
@@ -374,7 +384,7 @@ export default function AgentConfig({
             })}
 
             {/* Actions */}
-            {actions
+            {!toolsLoading && actions
               .filter((action) => action.agent_id === agent_id)
               .map((action, i) => (
                 <Action
@@ -386,7 +396,7 @@ export default function AgentConfig({
                   }}
                 />
               ))}
-            <div className="flex space-x-2">
+            {!toolsLoading && <div className="flex space-x-2">
               {(toolsEnabled ?? false) && (
                 <button
                   type="button"
@@ -412,7 +422,7 @@ export default function AgentConfig({
                   </div>
                 </button>
               )}
-            </div>
+            </div>}
           </div>
         </div>
       </div>
