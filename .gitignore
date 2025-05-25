@@ -12,5 +12,3 @@ LibreChat/e2e/google/playwright-report/
 LibreChat/e2e/google/specs/.test-results/
 e2e/storageState.json
 LibreChat/e2e/google/test-results/
-LibreChat/docker-compose.dev.yml
-LibreChat/docker-compose.override.yml.example

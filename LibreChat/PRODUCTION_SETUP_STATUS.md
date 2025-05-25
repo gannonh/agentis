@@ -69,30 +69,40 @@ This document summarizes the progress made on setting up the Agentis platform (L
    - `Dockerfile.multi` - Added --legacy-peer-deps flag
 
 3. **CI/CD**:
-   - `.github/workflows/deploy-production.yml` - GitHub Actions workflow
+   - `.github/workflows/deploy-production.yml` - GitHub Actions workflow (updated with correct registry paths)
 
 4. **Documentation**:
    - `README.devops.md` - Updated with production setup progress
    - `README.docker.md` - Updated with Agentis platform notes
+   - `docs/GITHUB_SECRETS.md` - GitHub secrets configuration guide
+
+5. **Scripts**:
+   - `scripts/test-github-build.sh` - Test GitHub Actions build locally
+   - `scripts/verify-deployment.sh` - Verify production deployment health
 
 ## Remaining Tasks
 
 ### High Priority
-1. **Complete Docker builds via GitHub Actions**
-   - Test the workflow on GitHub
-   - Ensure images build successfully with adequate memory
+1. **Complete Docker builds via GitHub Actions** ✅ READY
+   - GitHub Actions workflow updated with correct registry paths
+   - Test script created at `scripts/test-github-build.sh`
+   - Workflow configured to use ghcr.io/gannonh/agentis images
 
-2. **Configure GitHub Secrets**
-   - `PRODUCTION_HOST`: Digital Ocean droplet IP
-   - `PRODUCTION_USER`: agentis
-   - `PRODUCTION_PASSWORD`: vIpKdgJGyk33Gu8
+2. **Configure GitHub Secrets** ✅ DOCUMENTED
+   - Documentation created at `docs/GITHUB_SECRETS.md`
+   - Required secrets:
+     - `PRODUCTION_HOST`: Digital Ocean droplet IP
+     - `PRODUCTION_USER`: agentis
+     - `PRODUCTION_PASSWORD`: vIpKdgJGyk33Gu8
 
-3. **Update docker-compose.prod.yml**
-   - Reference GitHub Container Registry images instead of local builds
+3. **Update docker-compose.prod.yml** ✅ COMPLETED
+   - Updated to use environment variables for images
+   - Default images: ghcr.io/gannonh/agentis/api:latest and client:latest
+   - Images can be overridden with API_IMAGE and CLIENT_IMAGE env vars
 
-4. **Run smoke tests**
-   - Verify all services start correctly
-   - Test basic functionality (auth, chat, search)
+4. **Run smoke tests** ✅ SCRIPT CREATED
+   - Deployment verification script at `scripts/verify-deployment.sh`
+   - Tests all containers, endpoints, and basic functionality
 
 ### Medium Priority
 1. **SSL/TLS Configuration**
@@ -112,14 +122,41 @@ This document summarizes the progress made on setting up the Agentis platform (L
 - LibreChat directory will eventually be renamed to `platform/`
 - All custom branding and modifications preserved
 
-## Next Steps for Development Environment
+## Immediate Next Steps
 
-1. Pull the `prod-devops` branch (to be created)
-2. Review the GitHub Actions workflow
-3. Test builds locally with more memory
-4. Configure GitHub repository secrets
-5. Run the workflow to build and push images
-6. Return to production server to complete deployment
+1. **Test the Build Locally** ✅ COMPLETED
+   ```bash
+   ./scripts/test-github-build.sh
+   ```
+   This ensures the Dockerfiles work correctly before pushing to GitHub
+   - API build: ✅ Success
+   - Client build: ✅ Success
+   - Push to ghcr.io: ❌ Expected failure (no real credentials locally)
+
+2. **Enable GitHub Packages for Repository**
+   - Go to your repository → Settings → Actions → General
+   - Scroll to "Workflow permissions"
+   - Select "Read and write permissions"
+   - Click "Save"
+
+3. **Configure GitHub Repository Secrets**
+   - Go to GitHub repository → Settings → Secrets and variables → Actions
+   - Add the three required secrets as documented in `docs/GITHUB_SECRETS.md`
+
+4. **Trigger the GitHub Actions Workflow**
+   - Push to main branch or manually trigger the workflow
+   - Monitor the Actions tab for build progress
+
+5. **Verify Deployment**
+   ```bash
+   ./scripts/verify-deployment.sh <PRODUCTION_HOST>
+   ```
+
+6. **Complete Production Setup**
+   - Configure SSL/TLS with Let's Encrypt
+   - Set up domain name and DNS
+   - Update environment variables with production values
+   - Change default database passwords
 
 ## Important Notes
 

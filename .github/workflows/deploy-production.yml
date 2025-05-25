@@ -16,6 +16,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+    outputs:
+      repo-name: ${{ steps.repo.outputs.name }}
     
     steps:
       - name: Checkout repository
@@ -30,6 +33,10 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Convert repository name to lowercase
+        id: repo
+        run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Extract metadata
         id: meta
@@ -48,7 +55,7 @@ jobs:
           file: ./LibreChat/Dockerfile.multi
           target: api-build
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
+          tags: ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -61,7 +68,7 @@ jobs:
           file: ./LibreChat/Dockerfile.multi
           target: client-build
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/client:latest
+          tags: ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/client:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -82,12 +89,12 @@ jobs:
             cd /home/agentis/agentis/LibreChat
             
             # Pull latest images
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/client:latest
+            docker pull ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/api:latest
+            docker pull ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/client:latest
             
             # Update docker-compose to use new images
-            export API_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:latest
-            export CLIENT_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/client:latest
+            export API_IMAGE=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/api:latest
+            export CLIENT_IMAGE=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/client:latest
             
             # Stop existing containers
             docker compose -f docker-compose.prod.yml down

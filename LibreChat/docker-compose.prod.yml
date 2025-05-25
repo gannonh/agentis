@@ -2,10 +2,7 @@ version: '3.8'
 
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.multi
-      target: api-build
+    image: ${API_IMAGE:-ghcr.io/gannonh/agentis/api:latest}
     container_name: agentis-api
     ports:
       - "3080:3080"
@@ -34,10 +31,7 @@ services:
       - agentis_network
 
   client:
-    build:
-      context: .
-      dockerfile: Dockerfile.multi
-      target: client-build
+    image: ${CLIENT_IMAGE:-ghcr.io/gannonh/agentis/client:latest}
     container_name: agentis-client
     ports:
       - "80:80"
