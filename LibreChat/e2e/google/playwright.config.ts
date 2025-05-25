@@ -52,8 +52,8 @@ const absolutePath = path.join(__dirname, '../../api/server/index.js');
 const config: PlaywrightTestConfig = {
   ...mainConfig,
   retries: 0,
-  globalSetup: require.resolve('../setup/google-setup'),
-  globalTeardown: require.resolve('../setup/google-teardown'),
+  globalSetup: require.resolve('./setup/google-setup'),
+  globalTeardown: require.resolve('./setup/google-teardown'),
   webServer: {
     ...mainConfig.webServer,
     command: `node ${absolutePath}`,
