@@ -15,7 +15,7 @@ export async function expectWithLog(
   page: Page,
   selector: string,
   message: string,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ) {
   await expect(page.getByRole('button', { name: selector })).toBeVisible(options);
   logProgress(`✅ ${message}`);
