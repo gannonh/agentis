@@ -18,11 +18,25 @@ test('Create Google Sheets MCP', async ({ page }) => {
     // Modal might not appear, continue
     console.log('No TOS modal found or could not click accept button');
   }
+  // handle login if it appears
+  try {
+    //await page.getByRole('button', { name: 'Log in' }).click({ timeout: 5000 });
+    await page
+      .locator('input[name="email"]')
+      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com');
+    await page
+      .locator('input[name="password"]')
+      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '');
+    await page.locator('input[name="password"]').press('Enter');
+    // Wait for the page to load after login
+    await page.waitForURL(/.*\/c\/new/, { timeout: 10000 });
+  } catch (e) {
+    // Login might not be required, continue
+    console.log('No login required or could not click login button');
+  }
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
-  //
-
   //
 
   // Create Google Sheets Agent
@@ -60,7 +74,10 @@ test('Create Google Sheets MCP', async ({ page }) => {
   await page.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByText('Anthropic').click();
   await page.getByRole('combobox', { name: 'Model' }).click();
-  await page.getByText('claude-sonnet-4-').click();
+  //
+
+  //
+  await page.getByText('claude-3-7-sonnet-').click();
   await page.getByRole('button', { name: 'Create' }).click();
   // add mcp tools
   await page
@@ -99,7 +116,21 @@ test('Use Google Sheets Agent', async ({ page }) => {
     // Modal might not appear, continue
     console.log('No TOS modal found or could not click accept button');
   }
-
+  // handle login if it appears
+  try {
+    await page
+      .locator('input[name="email"]')
+      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com');
+    await page
+      .locator('input[name="password"]')
+      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '');
+    await page.locator('input[name="password"]').press('Enter');
+    // Wait for the page to load after login
+    await page.waitForURL(/.*\/c\/new/, { timeout: 10000 });
+  } catch (e) {
+    // Login might not be required, continue
+    console.log('No login required or could not click login button');
+  }
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   // START
@@ -121,7 +152,7 @@ test('Use Google Sheets Agent', async ({ page }) => {
     timeout: 15000,
   });
 
-  await page.pause();
+  //await page.pause();
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   await cleanupAgents(testUserEmail);
 });
