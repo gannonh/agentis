@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import cleanupAgents from '../../utils/cleanupAgents';
+import { handleInitialPageState } from '../../utils/handleInitialPageState';
 
 test.use({
   viewport: {
@@ -11,29 +12,8 @@ test.use({
 test('Create Google Sheets MCP', async ({ page }) => {
   await page.goto('http://localhost:3080/');
 
-  // Handle Terms of Service modal if it appears
-  try {
-    await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
-  } catch (e) {
-    // Modal might not appear, continue
-    console.log('No TOS modal found or could not click accept button');
-  }
-  // handle login if it appears
-  try {
-    //await page.getByRole('button', { name: 'Log in' }).click({ timeout: 5000 });
-    await page
-      .locator('input[name="email"]')
-      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com');
-    await page
-      .locator('input[name="password"]')
-      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '');
-    await page.locator('input[name="password"]').press('Enter');
-    // Wait for the page to load after login
-    await page.waitForURL(/.*\/c\/new/, { timeout: 10000 });
-  } catch (e) {
-    // Login might not be required, continue
-    console.log('No login required or could not click login button');
-  }
+  // Handle TOS and login if needed
+  await handleInitialPageState(page);
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
@@ -109,28 +89,8 @@ test('Create Google Sheets MCP', async ({ page }) => {
 test('Use Google Sheets Agent', async ({ page }) => {
   await page.goto('http://localhost:3080/');
 
-  // Handle Terms of Service modal if it appears
-  try {
-    await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
-  } catch (e) {
-    // Modal might not appear, continue
-    console.log('No TOS modal found or could not click accept button');
-  }
-  // handle login if it appears
-  try {
-    await page
-      .locator('input[name="email"]')
-      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com');
-    await page
-      .locator('input[name="password"]')
-      .fill(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '');
-    await page.locator('input[name="password"]').press('Enter');
-    // Wait for the page to load after login
-    await page.waitForURL(/.*\/c\/new/, { timeout: 10000 });
-  } catch (e) {
-    // Login might not be required, continue
-    console.log('No login required or could not click login button');
-  }
+  // Handle TOS and login if needed
+  await handleInitialPageState(page);
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   // START
@@ -156,10 +116,3 @@ test('Use Google Sheets Agent', async ({ page }) => {
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   await cleanupAgents(testUserEmail);
 });
-
-// Global cleanup hooks
-// test.afterEach(async () => {
-//   // Clean up test data after each test
-//   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
-//   await cleanupAgents(testUserEmail);
-// });
