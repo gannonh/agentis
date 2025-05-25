@@ -73,39 +73,52 @@ DB_NAME=mydatabase
 
 The `.env.docker` file is added to `.gitignore` to prevent API keys from being committed to the repository.
 
-## Production Environment
+## Production Environment (Agentis Platform)
 
-For production deployment, a multi-container Docker setup can be used where all components (including API and client) run in separate containers.
+**Note**: We are building the Agentis platform as a custom fork of LibreChat. The LibreChat directory will eventually be renamed to `platform/`. We are NOT using the upstream LibreChat Docker images.
 
-### Production Docker Compose
+### Production Setup (Digital Ocean)
 
-```yaml
-version: '3.8'
-services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    # ...configuration...
-    
-  client:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    # ...configuration...
-    
-  mongodb:
-    # ...configuration...
-    
-  meilisearch:
-    # ...configuration...
-    
-  vectordb:
-    # ...configuration...
-    
-  rag_api:
-    # ...configuration...
-```
+As of May 24, 2025, we're setting up production on a Digital Ocean droplet for the Agentis platform:
+
+1. **Environment Configuration**:
+   - Production config is stored in `.env.prod` (copy of development `.env` with production values)
+   - Need to create custom `docker-compose.prod.yml` for Agentis deployment
+
+2. **Services to Deploy**:
+   - **Agentis API**: Custom build from our codebase (port 3080)
+   - **Agentis Client**: Custom React build served by nginx (ports 80/443)
+   - **MongoDB**: Official mongo image with authentication enabled
+   - **Meilisearch**: v1.12.3 for search functionality
+   - **VectorDB**: pgvector for RAG functionality
+   - **RAG API**: May need custom build or use upstream image
+
+3. **Production Deployment Steps** (To Be Implemented):
+   ```bash
+   # 1. Configure production environment
+   cp .env .env.prod
+   # Edit .env.prod with production values
+   
+   # 2. Build Agentis images
+   docker build -t agentis/api:latest -f Dockerfile.multi --target api-build .
+   docker build -t agentis/client:latest -f Dockerfile.multi --target client-build .
+   
+   # 3. Start services with production compose file
+   docker compose -f docker-compose.prod.yml up -d
+   
+   # 4. Check service health
+   docker compose -f docker-compose.prod.yml ps
+   docker compose -f docker-compose.prod.yml logs
+   ```
+
+### CD Pipeline (To Be Implemented)
+
+The continuous deployment pipeline for Agentis will:
+1. Trigger on pushes to main branch
+2. Build and push Agentis Docker images to our registry
+3. SSH into the production server
+4. Pull latest Agentis images and restart services
+5. Run health checks
 
 ## Data Persistence
 
