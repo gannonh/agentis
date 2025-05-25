@@ -1,8 +1,26 @@
 import { Page, FullConfig, chromium } from '@playwright/test';
 import type { User } from '../types';
-import cleanupUser from './cleanupUser';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+
+// Load environment variables from correct paths
+const envPaths = [
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'LibreChat/.env'),
+];
+
+for (const envPath of envPaths) {
+  try {
+    const result = dotenv.config({ path: envPath });
+    if (!result.error) {
+      console.log('🤖: AUTHENTICATE - Loaded env from:', envPath);
+      break;
+    }
+  } catch (error) {
+    // Continue to next path
+  }
+}
 
 const timeout = 6000;
 
@@ -64,6 +82,7 @@ async function authenticate(config: FullConfig, user: User) {
       const userExists = page.getByTestId('registration-error');
       if (userExists) {
         console.log('🤖: 🚨  user already exists');
+        const { default: cleanupUser } = await import('./cleanupUser');
         await cleanupUser(user);
         await page.goto(baseURL, { timeout });
         await register(page, user);

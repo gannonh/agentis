@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import cleanupAgents from '../../utils/cleanupAgents';
 
 test.use({
   viewport: {
@@ -20,10 +21,21 @@ test('Create Google Sheets MCP', async ({ page }) => {
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
+  //
+
+  //
 
   // Create Google Sheets Agent
   await page.getByRole('button', { name: 'Controls' }).click();
   await page.getByRole('button', { name: 'Agent Builder' }).click();
+
+  try {
+    await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
+  } catch (e) {
+    // Button might not exist, continue
+    console.log('Create New Agent button not found, continuing...');
+  }
+
   await page.getByRole('textbox', { name: 'Agent name' }).click();
   await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
   await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
@@ -90,4 +102,33 @@ test('Use Google Sheets Agent', async ({ page }) => {
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
+  // START
+
+  await page
+    .getByTestId('text-input')
+    .fill(
+      'Create a spreadsheet of every David Bowie studio album. Create columns for producer, guitarists, drummers, keyboard/piano, and other musicians.',
+    );
+  await page.getByTestId('send-button').click();
+  await expect(page.getByRole('button', { name: 'Running Composio Check Active' })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByRole('button', { name: 'Ran Composio Check Active' })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await expect(page.getByRole('button', { name: 'Ran Create Google Sheet1' })).toBeVisible({
+    timeout: 15000,
+  });
+
+  await page.pause();
+  const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
+  await cleanupAgents(testUserEmail);
 });
+
+// Global cleanup hooks
+// test.afterEach(async () => {
+//   // Clean up test data after each test
+//   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
+//   await cleanupAgents(testUserEmail);
+// });
