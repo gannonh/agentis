@@ -66,7 +66,7 @@ jobs:
         with:
           context: ./LibreChat
           file: ./LibreChat/Dockerfile.multi
-          target: client-build
+          target: client-deploy
           push: true
           tags: ${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}/client:latest
           cache-from: type=gha
