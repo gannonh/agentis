@@ -54,6 +54,7 @@ const config: PlaywrightTestConfig = {
   retries: 0,
   globalSetup: require.resolve('./setup/google-setup'),
   globalTeardown: require.resolve('./setup/google-teardown'),
+  timeout: 5 * 60 * 1000, // 5 minutes
   webServer: {
     ...mainConfig.webServer,
     command: `node ${absolutePath}`,

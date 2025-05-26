@@ -10,7 +10,7 @@ export async function handleInitialPageState(
   options?: {
     email?: string;
     password?: string;
-  }
+  },
 ) {
   // Handle Terms of Service modal if it appears
   try {
@@ -22,15 +22,12 @@ export async function handleInitialPageState(
 
   // Handle login if it appears
   try {
-    const email = options?.email || process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
+    const email =
+      options?.email || process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
     const password = options?.password || process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '';
-    
-    await page
-      .locator('input[name="email"]')
-      .fill(email, { timeout: 5000 });
-    await page
-      .locator('input[name="password"]')
-      .fill(password);
+
+    await page.locator('input[name="email"]').fill(email, { timeout: 5000 });
+    await page.locator('input[name="password"]').fill(password);
     await page.locator('input[name="password"]').press('Enter');
     // Wait for the page to load after login
     await page.waitForURL(/.*\/c\/new/, { timeout: 10000 });

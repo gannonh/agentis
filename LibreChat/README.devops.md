@@ -10,6 +10,56 @@ droplet
 root pw: vyZcix-ruczyh-3wygqo
 agentis pw: vIpKdgJGyk33Gu8
 
+### Production Setup Progress (May 24, 2025)
+
+#### Initial Server Setup
+- ✅ Digital Ocean droplet provisioned
+- ✅ Docker and Docker Compose installed (Docker 28.1.1, Compose v2.35.1)
+- ✅ Agentis repository cloned to `/home/agentis/agentis`
+- ✅ Created `.env.prod` from development `.env` configuration
+
+#### Architecture Notes
+- Building custom Agentis platform (not using upstream LibreChat images)
+- LibreChat directory will be renamed to `platform/` in future
+- Need to create custom `docker-compose.prod.yml` for our production deployment
+
+#### Current Status
+- ✅ Node.js upgraded to 20.19.2
+- ✅ Created 2GB swap file (server only has 1GB RAM)
+- Dependencies installation in progress
+- No Docker containers running
+
+#### Memory Issue Resolved
+- Digital Ocean droplet only has 1GB RAM
+- Created 2GB swap file at `/swapfile` to prevent OOM kills during npm install
+- Swap made permanent in `/etc/fstab`
+
+#### Immediate Tasks
+1. **Upgrade Node.js to 20.x**
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   ```
+
+2. **Install dependencies and build packages**
+   ```bash
+   npm ci
+   npm run build:data-provider
+   npm run build:mcp
+   npm run build:data-schemas
+   ```
+
+3. **Configure production environment**
+   - Edit `.env.prod` with production values
+   - Create `docker-compose.prod.yml` for Agentis platform
+
+#### Future Steps
+1. Build Agentis Docker images (API and client)
+2. Configure nginx for SSL/TLS termination
+3. Set up CI/CD pipeline with GitHub Actions
+4. Configure domain and DNS settings
+5. Set up monitoring and logging
+
 ## Development Setup
 
 1. Use Node.JS 20.x.

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
-import cleanupAgents from '../../utils/cleanupAgents';
+import cleanupAgents, { cleanupChats } from '../../utils/cleanupUser';
 import { handleInitialPageState } from '../../utils/handleInitialPageState';
+import { logProgress } from '../../utils/testLogger';
 
 test.use({
   viewport: {
@@ -10,18 +11,22 @@ test.use({
 });
 
 test('Create Google Sheets MCP', async ({ page }) => {
+  logProgress('Starting Create Google Sheets MCP test');
   await page.goto('http://localhost:3080/');
 
   // Handle TOS and login if needed
   await handleInitialPageState(page);
+  logProgress('Initial page state handled');
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
+  logProgress('Verified on main chat page');
   //
 
   // Create Google Sheets Agent
   await page.getByRole('button', { name: 'Controls' }).click();
   await page.getByRole('button', { name: 'Agent Builder' }).click();
+  logProgress('Opened Agent Builder');
 
   try {
     await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
@@ -59,6 +64,7 @@ test('Create Google Sheets MCP', async ({ page }) => {
   //
   await page.getByText('claude-3-7-sonnet-').click();
   await page.getByRole('button', { name: 'Create' }).click();
+  logProgress('Created agent with basic settings');
   // add mcp tools
   await page
     .getByLabel('Agent Builder')
@@ -72,9 +78,11 @@ test('Create Google Sheets MCP', async ({ page }) => {
   await page.getByRole('button', { name: 'Add Selected' }).click();
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
+  logProgress('Saved agent configuration');
 
   // Assert MCP is created
   await expect(page.getByText('Google Sheets', { exact: true })).toBeVisible();
+  logProgress('Google Sheets MCP created successfully');
   // open panel
   await page
     .locator('div')
@@ -87,12 +95,15 @@ test('Create Google Sheets MCP', async ({ page }) => {
 });
 
 test('Use Google Sheets Agent', async ({ page }) => {
+  logProgress('Starting Use Google Sheets Agent test');
   await page.goto('http://localhost:3080/');
 
   // Handle TOS and login if needed
   await handleInitialPageState(page);
+  logProgress('Initial page state handled');
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
+  logProgress('Verified on main chat page');
   // START
 
   await page
@@ -101,18 +112,26 @@ test('Use Google Sheets Agent', async ({ page }) => {
       'Create a spreadsheet of every David Bowie studio album. Create columns for producer, guitarists, drummers, keyboard/piano, and other musicians.',
     );
   await page.getByTestId('send-button').click();
+  logProgress('Sent message to create spreadsheet');
+
   await expect(page.getByRole('button', { name: 'Running Composio Check Active' })).toBeVisible({
     timeout: 15000,
   });
+  logProgress('Composio Check Active started running');
+
   await expect(page.getByRole('button', { name: 'Ran Composio Check Active' })).toBeVisible({
     timeout: 15000,
   });
+  logProgress('Composio Check Active completed');
 
   await expect(page.getByRole('button', { name: 'Ran Create Google Sheet1' })).toBeVisible({
     timeout: 15000,
   });
+  logProgress('Google Sheet created successfully');
 
   //await page.pause();
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   await cleanupAgents(testUserEmail);
+  await cleanupChats(testUserEmail);
+  logProgress('Cleaned up agents and chats for test user');
 });

@@ -21,15 +21,6 @@
                 "@modelcontextprotocol/server-puppeteer"
             ]
         },
-        "perplexity-server": {
-            "command": "/Users/gannonhall/.nvm/versions/node/v23.6.0/bin/node",
-            "args": [
-                "/Users/gannonhall/+DEV/MCP/perplexity-server/build/index.js"
-            ],
-            "env": {
-                "PERPLEXITY_API_KEY": "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"
-            }
-        },
         "sequential-thinking": {
             "command": "npx",
             "args": [

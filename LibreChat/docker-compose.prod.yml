@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  api:
+    image: ${API_IMAGE:-ghcr.io/gannonh/agentis/api:latest}
+    container_name: agentis-api
+    ports:
+      - "3080:3080"
+    depends_on:
+      - mongodb
+      - meilisearch
+      - vectordb
+      - rag_api
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env.prod
+    environment:
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://admin:password@mongodb:27017/Agentis?authSource=admin
+      - MEILI_HOST=http://meilisearch:7700
+      - RAG_API_URL=http://rag_api:8000
+    volumes:
+      - ./librechat.yaml:/app/librechat.yaml
+      - ./images:/app/client/public/images
+      - ./uploads:/app/api/uploads
+      - ./logs:/app/api/logs
+    networks:
+      - agentis_network
+
+  client:
+    image: ${CLIENT_IMAGE:-ghcr.io/gannonh/agentis/client:latest}
+    container_name: agentis-client
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+    restart: unless-stopped
+    volumes:
+      - ./client/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - agentis_network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: agentis-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: Agentis
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - agentis_network
+    command: mongod --auth
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12.3
+    container_name: agentis-meilisearch
+    restart: unless-stopped
+    environment:
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - agentis_network
+
+  vectordb:
+    image: ankane/pgvector:latest
+    container_name: agentis-vectordb
+    environment:
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - agentis_network
+
+  rag_api:
+    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+    container_name: agentis-rag-api
+    restart: unless-stopped
+    depends_on:
+      - vectordb
+    environment:
+      - DB_HOST=vectordb
+      - DB_PORT=5432
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+      - DB_NAME=mydatabase
+      - RAG_PORT=8000
+    env_file:
+      - .env.prod
+    networks:
+      - agentis_network
+
+  # Optional: Sandpack for code execution
+  # sandpack:
+  #   image: ghcr.io/codesandbox/nodebox-runtime:latest
+  #   container_name: agentis-sandpack
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   networks:
+  #     - agentis_network
+
+networks:
+  agentis_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+  meilisearch_data:
+  pgdata:

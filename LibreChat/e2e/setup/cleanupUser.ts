@@ -16,7 +16,12 @@ export default async function cleanupUser(user: TUser) {
     const db = await connectDb();
     console.log('🤖:  ✅  Connected to Database');
 
-    const { _id: user } = await User.findOne({ email }).lean();
+    const foundUser = await User.findOne({ email }).lean();
+    if (!foundUser) {
+      console.log('🤖:  ❌  User not found in Database');
+      return;
+    }
+    const { _id: user } = foundUser;
     console.log('🤖:  ✅  Found user in Database');
 
     // Delete all conversations & associated messages
@@ -37,8 +42,8 @@ export default async function cleanupUser(user: TUser) {
       console.log(`🤖:  ✅  Deleted ${deletedMessages} remaining message(s)`);
     }
 
-    // TODO: fix this to delete all user sessions with the user's email
-    await deleteAllUserSessions(user);
+    // Delete all user sessions with the user's email
+    await deleteAllUserSessions(email);
 
     await User.deleteMany({ _id: user });
     await Balance.deleteMany({ user });
