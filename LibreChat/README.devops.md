@@ -10,6 +10,14 @@
 - **OS**: Ubuntu with Docker 28.1.1, Docker Compose v2.35.1
 - **Deployment Path**: `/home/agentis/agentis-deploy`
 
+### Access Credentials
+
+- **Email**: gannonW@astro-labs.app
+- **Email Password**: S3cr3t77!
+- **Droplet Root Password**: vyZcix-ruczyh-3wygqo
+- **Droplet Agentis Password**: vIpKdgJGyk33Gu8
+- **Read Packages Access Token**: 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
+
 ### Production Architecture
 
 The Agentis platform uses a Docker-only deployment strategy:
