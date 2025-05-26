@@ -85,6 +85,7 @@ jobs:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           password: ${{ secrets.PRODUCTION_PASSWORD }}
+          command_timeout: 30m
           script: |
             cd /home/agentis/agentis/LibreChat
             
