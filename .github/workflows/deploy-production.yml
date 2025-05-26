@@ -89,6 +89,9 @@ jobs:
           script: |
             cd /home/agentis/agentis/LibreChat
             
+            # Login to GitHub Container Registry using PAT
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
             # Pull latest images
             docker pull ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/api:latest
             docker pull ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/client:latest
