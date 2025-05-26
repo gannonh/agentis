@@ -131,8 +131,7 @@ actions:
     - "google.com"
 
 # Example MCP Servers Object Structure
-# Example MCP Servers Object Structure
-# docs  
+#   
 mcpServers:
 
   googledrive:

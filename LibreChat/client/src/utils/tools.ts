@@ -301,17 +301,21 @@ function getToolDisplayNameFromPlugins(toolName: string, serverName?: string): s
     const exactMatch = toolsFromStore.find(
       (tool) =>
         tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey === pluginKey,
-    );
-    // displayName property doesn't exist on TPlugin type
-    // Skip this check
+    ) as TPlugin | undefined;
+    
+    if (exactMatch?.displayName) {
+      return exactMatch.displayName;
+    }
   }
 
   // Try to find by name
   const toolMatch = toolsFromStore.find(
     (tool) => tool.name && typeof tool.name === 'string' && tool.name === toolName,
-  );
-  // displayName property doesn't exist on TPlugin type
-  // Skip this check
+  ) as TPlugin | undefined;
+  
+  if (toolMatch?.displayName) {
+    return toolMatch.displayName;
+  }
 
   return undefined;
 }

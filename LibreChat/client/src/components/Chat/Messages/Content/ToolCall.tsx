@@ -153,6 +153,8 @@ export default function ToolCall({
       return localize('com_assistants_completed_action', { 0: domain });
     }
 
+    // For all other tools (including agent tools), try to get the display name
+    displayName = getToolDisplayName(function_name, domain || undefined);
     return localize('com_assistants_completed_function', { 0: displayName });
   };
 
