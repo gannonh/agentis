@@ -133,11 +133,12 @@ This document summarizes the progress made on setting up the Agentis platform (L
    - Client build: ✅ Success
    - Push to ghcr.io: ❌ Expected failure (no real credentials locally)
 
-2. **Enable GitHub Packages for Repository**
+2. **Enable GitHub Actions Write Permissions**
    - Go to your repository → Settings → Actions → General
    - Scroll to "Workflow permissions"
    - Select "Read and write permissions"
    - Click "Save"
+   - This allows GitHub Actions to push images to GitHub Container Registry (ghcr.io)
 
 3. **Configure GitHub Repository Secrets**
    - Go to GitHub repository → Settings → Secrets and variables → Actions
