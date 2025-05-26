@@ -19,7 +19,7 @@ jobs:
       id-token: write
     outputs:
       repo-name: ${{ steps.repo.outputs.name }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Convert repository name to lowercase
         id: repo
         run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
@@ -77,7 +77,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Deploy to Digital Ocean
         uses: appleboy/ssh-action@v1.0.0
@@ -87,28 +87,241 @@ jobs:
           password: ${{ secrets.PRODUCTION_PASSWORD }}
           command_timeout: 30m
           script: |
-            cd /home/agentis/agentis/LibreChat
-            
+            # Create deployment directory if it doesn't exist
+            mkdir -p /home/agentis/agentis-deploy
+            cd /home/agentis/agentis-deploy
+
+            # Remove old deployment directory if migrating
+            if [ -d "/home/agentis/agentis" ]; then
+              echo "Migrating from old deployment structure..."
+              cd /home/agentis/agentis/LibreChat
+              docker compose -f docker-compose.prod.yml down || true
+              cd /home/agentis
+              rm -rf agentis-deploy
+            fi
+
+            # Create docker-compose.prod.yml with all environment variables
+            cat > docker-compose.prod.yml << 'EOF'
+            services:
+              api:
+                image: ${API_IMAGE:-ghcr.io/gannonh/agentis/api:latest}
+                container_name: agentis-api
+                ports:
+                  - "3080:3080"
+                depends_on:
+                  - mongodb
+                  - meilisearch
+                  - vectordb
+                  - rag_api
+                restart: unless-stopped
+                extra_hosts:
+                  - "host.docker.internal:host-gateway"
+                environment:
+                  # Server Configuration
+                  - HOST=0.0.0.0
+                  - PORT=3080
+                  - NODE_ENV=production
+                  - MONGO_URI=mongodb://admin:password@mongodb:27017/Agentis?authSource=admin
+                  - DOMAIN_CLIENT=https://agentis.ai
+                  - DOMAIN_SERVER=https://agentis.ai
+                  - NO_INDEX=true
+                  - TRUST_PROXY=1
+                  - CONSOLE_JSON=false
+                  - DEBUG_LOGGING=true
+                  - DEBUG_CONSOLE=false
+                  
+                  # Endpoints Configuration
+                  - ENDPOINTS=agents,anthropic,openAI,google,assistants
+                  
+                  # API Keys
+                  - OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+                  - ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+                  - GOOGLE_KEY=${{ secrets.GOOGLE_KEY }}
+                  - ASSISTANTS_API_KEY=${{ secrets.ASSISTANTS_API_KEY }}
+                  - IMAGE_GEN_OAI_API_KEY=${{ secrets.IMAGE_GEN_OAI_API_KEY }}
+                  
+                  # OCR and Other Services
+                  - OCR_API_KEY=${{ secrets.OCR_API_KEY }}
+                  - MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}
+                  - OPENROUTER_KEY=${{ secrets.OPENROUTER_KEY }}
+                  
+                  # Arcade and Composio
+                  - ARCADE_API_KEY=${{ secrets.ARCADE_API_KEY }}
+                  - ARCADE_CALLBACK_URL=https://agentis.ai/api/arcade/callback
+                  - COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY }}
+                  
+                  # Google Models Configuration
+                  - GOOGLE_MODELS=gemini-2.5-pro-preview-05-06,gemini-2.5-flash-preview-04-17,gemini-2.0-flash-001,gemini-2.0-flash-exp,gemini-2.0-flash-lite-001,gemini-1.5-pro-002,gemini-1.5-flash-002
+                  - DEBUG_OPENAI=false
+                  
+                  # Plugins and Security
+                  - CREDS_KEY=${{ secrets.CREDS_KEY }}
+                  - CREDS_IV=${{ secrets.CREDS_IV }}
+                  
+                  # Search Configuration
+                  - SEARCH=true
+                  - MEILI_NO_ANALYTICS=true
+                  - MEILI_HOST=http://meilisearch:7700
+                  - MEILI_MASTER_KEY=${{ secrets.MEILI_MASTER_KEY }}
+                  
+                  # RAG Configuration
+                  - RAG_API_URL=http://rag_api:8000
+                  - SANDPACK_BUNDLER_URL=http://localhost:8080
+                  
+                  # Moderation and Security
+                  - OPENAI_MODERATION=false
+                  - BAN_VIOLATIONS=true
+                  - BAN_DURATION=7200000
+                  - BAN_INTERVAL=20
+                  - LOGIN_VIOLATION_SCORE=1
+                  - REGISTRATION_VIOLATION_SCORE=1
+                  - CONCURRENT_VIOLATION_SCORE=1
+                  - MESSAGE_VIOLATION_SCORE=1
+                  - NON_BROWSER_VIOLATION_SCORE=20
+                  - LOGIN_MAX=7
+                  - LOGIN_WINDOW=5
+                  - REGISTER_MAX=5
+                  - REGISTER_WINDOW=60
+                  - LIMIT_CONCURRENT_MESSAGES=true
+                  - CONCURRENT_MESSAGE_MAX=2
+                  - LIMIT_MESSAGE_IP=true
+                  - MESSAGE_IP_MAX=40
+                  - MESSAGE_IP_WINDOW=1
+                  - LIMIT_MESSAGE_USER=false
+                  - MESSAGE_USER_MAX=40
+                  - MESSAGE_USER_WINDOW=1
+                  - ILLEGAL_MODEL_REQ_SCORE=5
+                  
+                  # Registration and Login
+                  - ALLOW_EMAIL_LOGIN=true
+                  - ALLOW_REGISTRATION=true
+                  - ALLOW_SOCIAL_LOGIN=false
+                  - ALLOW_SOCIAL_REGISTRATION=false
+                  - ALLOW_PASSWORD_RESET=false
+                  - ALLOW_UNVERIFIED_EMAIL_LOGIN=true
+                  - SESSION_EXPIRY=900000
+                  - REFRESH_TOKEN_EXPIRY=604800000
+                  - JWT_SECRET=${{ secrets.JWT_SECRET }}
+                  - JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+                  
+                  # Shared Links
+                  - ALLOW_SHARED_LINKS=true
+                  - ALLOW_SHARED_LINKS_PUBLIC=true
+                  
+                  # UI Configuration
+                  - APP_TITLE=Agentis
+                  - HELP_AND_FAQ_URL=https://agentis.ai
+                volumes:
+                  - agentis_uploads:/app/api/uploads
+                  - agentis_logs:/app/api/logs
+                  - agentis_images:/app/client/public/images
+                networks:
+                  - agentis_network
+
+              client:
+                image: ${CLIENT_IMAGE:-ghcr.io/gannonh/agentis/client:latest}
+                container_name: agentis-client
+                ports:
+                  - "80:80"
+                  - "443:443"
+                depends_on:
+                  - api
+                restart: unless-stopped
+                networks:
+                  - agentis_network
+
+              mongodb:
+                image: mongo:7.0
+                container_name: agentis-mongodb
+                restart: unless-stopped
+                environment:
+                  MONGO_INITDB_ROOT_USERNAME: admin
+                  MONGO_INITDB_ROOT_PASSWORD: password
+                  MONGO_INITDB_DATABASE: Agentis
+                volumes:
+                  - mongodb_data:/data/db
+                  - mongodb_config:/data/configdb
+                networks:
+                  - agentis_network
+                command: mongod --auth
+
+              meilisearch:
+                image: getmeili/meilisearch:v1.12.3
+                container_name: agentis-meilisearch
+                restart: unless-stopped
+                environment:
+                  - MEILI_HOST=http://meilisearch:7700
+                  - MEILI_MASTER_KEY=DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt
+                  - MEILI_NO_ANALYTICS=true
+                volumes:
+                  - meilisearch_data:/meili_data
+                networks:
+                  - agentis_network
+
+              vectordb:
+                image: ankane/pgvector:latest
+                container_name: agentis-vectordb
+                environment:
+                  POSTGRES_DB: mydatabase
+                  POSTGRES_USER: myuser
+                  POSTGRES_PASSWORD: mypassword
+                restart: unless-stopped
+                volumes:
+                  - pgdata:/var/lib/postgresql/data
+                networks:
+                  - agentis_network
+
+              rag_api:
+                image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+                container_name: agentis-rag-api
+                restart: unless-stopped
+                depends_on:
+                  - vectordb
+                environment:
+                  - DB_HOST=vectordb
+                  - DB_PORT=5432
+                  - DB_USER=myuser
+                  - DB_PASSWORD=mypassword
+                  - DB_NAME=mydatabase
+                  - RAG_PORT=8000
+                  - OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+                networks:
+                  - agentis_network
+
+            networks:
+              agentis_network:
+                driver: bridge
+
+            volumes:
+              mongodb_data:
+              mongodb_config:
+              meilisearch_data:
+              pgdata:
+              agentis_uploads:
+              agentis_logs:
+              agentis_images:
+            EOF
+
             # Login to GitHub Container Registry using PAT
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Pull latest images
-            docker pull ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/api:latest
-            docker pull ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/client:latest
-            
-            # Update docker-compose to use new images
+
+            # Set image variables
             export API_IMAGE=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/api:latest
             export CLIENT_IMAGE=${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.repo-name }}/client:latest
-            
+
+            # Pull latest images
+            docker pull $API_IMAGE
+            docker pull $CLIENT_IMAGE
+
             # Stop existing containers
-            docker compose -f docker-compose.prod.yml down
-            
+            docker compose -f docker-compose.prod.yml down || true
+
             # Start with new images
             docker compose -f docker-compose.prod.yml up -d
-            
+
             # Check health
             sleep 30
             docker compose -f docker-compose.prod.yml ps
-            
+
             # Clean up old images
             docker image prune -f

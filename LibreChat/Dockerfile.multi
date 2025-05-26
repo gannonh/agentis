@@ -62,6 +62,7 @@ WORKDIR /app
 RUN npm ci --omit=dev --legacy-peer-deps
 COPY api ./api
 COPY config ./config
+COPY librechat.yaml ./librechat.yaml
 COPY --from=data-provider-build /app/packages/data-provider/dist ./packages/data-provider/dist
 COPY --from=mcp-build /app/packages/mcp/dist ./packages/mcp/dist
 COPY --from=data-schemas-build /app/packages/data-schemas/dist ./packages/data-schemas/dist

@@ -57,7 +57,7 @@ free -h
 echo ""
 echo "6. Docker compose status..."
 echo "---------------------------"
-cd /home/agentis/agentis/LibreChat
+cd /home/agentis/agentis-deploy
 docker compose -f docker-compose.prod.yml ps
 
 EOF
@@ -72,5 +72,5 @@ echo "2. API endpoint: http://$PRODUCTION_HOST:3080/health"
 echo ""
 echo "If containers are not running, SSH in and check logs:"
 echo "  ssh $PRODUCTION_USER@$PRODUCTION_HOST"
-echo "  cd /home/agentis/agentis/LibreChat"
+echo "  cd /home/agentis/agentis-deploy"
 echo "  docker compose -f docker-compose.prod.yml logs"
