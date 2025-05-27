@@ -12,7 +12,7 @@
 
 ### Access Credentials
 
-- **Email**: gannonW@astro-labs.app
+- **Email**: gannon@astro-labs.app
 - **Email Password**: S3cr3t77!
 - **Droplet Root Password**: vyZcix-ruczyh-3wygqo
 - **Droplet Agentis Password**: vIpKdgJGyk33Gu8
