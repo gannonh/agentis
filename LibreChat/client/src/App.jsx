@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { RecoilRoot } from 'recoil';
 import { DndProvider } from 'react-dnd';
 import { RouterProvider } from 'react-router-dom';
@@ -10,9 +11,17 @@ import { ToastProvider } from './Providers';
 import Toast from './components/ui/Toast';
 import { LiveAnnouncer } from '~/a11y';
 import { router } from './routes';
+import LibreChatConfigService from './services/LibreChatConfigService';
 
 const App = () => {
   const { setError } = useApiErrorBoundary();
+
+  // Load librechat.yaml configuration on app startup
+  useEffect(() => {
+    LibreChatConfigService.loadConfig().catch((error) => {
+      console.error('Failed to load LibreChat configuration:', error);
+    });
+  }, []);
 
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
