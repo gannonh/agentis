@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "data-provider": "cd .. && npm run build:data-provider",
+    "prebuild": "cp ../librechat.yaml public/librechat.yaml || true",
     "build:file": "cross-env NODE_ENV=production vite build --debug > vite-output.log 2>&1",
     "build": "cross-env NODE_ENV=production vite build",
     "build:ci": "cross-env NODE_ENV=development vite build --mode ci",
@@ -56,6 +57,7 @@
     "@react-spring/web": "^9.7.5",
     "@tanstack/react-query": "^4.28.0",
     "@tanstack/react-table": "^8.11.7",
+    "@types/js-yaml": "^4.0.9",
     "class-variance-authority": "^0.6.0",
     "clsx": "^1.2.1",
     "copy-to-clipboard": "^3.3.3",
@@ -70,6 +72,7 @@
     "i18next-browser-languagedetector": "^8.0.3",
     "input-otp": "^1.4.2",
     "js-cookie": "^3.0.5",
+    "js-yaml": "^4.1.0",
     "librechat-data-provider": "*",
     "lodash": "^4.17.21",
     "lucide-react": "^0.394.0",
