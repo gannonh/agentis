@@ -125,9 +125,7 @@ test('Use Google Sheets Agent', async ({ page }) => {
   });
   logProgress('✅ Ran Check Connection');
 
-  // Handle Google Docs Authentication
-  // await expect(page.getByRole('link', { name: 'https://backend.composio.dev/' })).toBeVisible();
-
+  // Handle Google Sheets Authentication
   await handleGoogleOAuth(page, 'Google Sheets');
 
   await page.getByTestId('text-input').fill('Ok, please try now');
