@@ -4,6 +4,7 @@ import { ShieldCheck, TriangleAlert } from 'lucide-react';
 import { actionDelimiter, actionDomainSeparator, Constants } from 'librechat-data-provider';
 import type { TAttachment } from 'librechat-data-provider';
 import useLocalize from '~/hooks/useLocalize';
+import { useMCPServerConfig } from '~/hooks/useLibreChatConfig';
 import ProgressCircle from './ProgressCircle';
 import InProgressCall from './InProgressCall';
 import Attachment from './Parts/Attachment';
@@ -60,6 +61,26 @@ export default function ToolCall({
       isMCPToolCall: false,
     };
   }, [name]);
+
+  // Get MCP server config if this is an MCP tool
+  const mcpServerConfig = useMCPServerConfig(isMCPToolCall ? domain : null);
+
+  // DEBUG: Show debug info when localStorage flag is set
+  // To enable: localStorage.setItem('debug-tool-display-names', 'true')
+  // To disable: localStorage.removeItem('debug-tool-display-names')
+  const debugValue = typeof window !== 'undefined' ? localStorage.getItem('debug-tool-display-names') : null;
+  const isDebugEnabled = debugValue === 'true';
+  
+  const debugInfo = isMCPToolCall && isDebugEnabled ? {
+    function_name,
+    domain,
+    mcpServerConfig: mcpServerConfig ? {
+      name: mcpServerConfig.name,
+      toolDisplayNames: mcpServerConfig.toolDisplayNames
+    } : null,
+    name,
+    displayNameResult: mcpServerConfig ? getToolDisplayName(function_name, domain || undefined, mcpServerConfig) : 'no-config'
+  } : null;
 
   const error =
     typeof output === 'string' && output.toLowerCase().includes('error processing tool');
@@ -144,8 +165,8 @@ export default function ToolCall({
     let displayName = function_name;
 
     if (isMCPToolCall === true) {
-      // For MCP tools, use our enhanced display name utility
-      displayName = getToolDisplayName(function_name, domain || undefined);
+      // For MCP tools, use our enhanced display name utility with config
+      displayName = getToolDisplayName(function_name, domain || undefined, mcpServerConfig);
       return localize('com_assistants_completed_function', { 0: displayName });
     }
 
@@ -154,7 +175,7 @@ export default function ToolCall({
     }
 
     // For all other tools (including agent tools), try to get the display name
-    displayName = getToolDisplayName(function_name, domain || undefined);
+    displayName = getToolDisplayName(function_name, domain || undefined, mcpServerConfig);
     return localize('com_assistants_completed_function', { 0: displayName });
   };
 
@@ -168,7 +189,7 @@ export default function ToolCall({
             inProgressText={
               isMCPToolCall
                 ? localize('com_assistants_running_function', {
-                    0: getToolDisplayName(function_name, domain || undefined),
+                    0: getToolDisplayName(function_name, domain || undefined, mcpServerConfig),
                   })
                 : localize('com_assistants_running_action')
             }
@@ -209,6 +230,24 @@ export default function ToolCall({
         )}
       </div>
       {attachments?.map((attachment, index) => <Attachment attachment={attachment} key={index} />)}
+      
+      {/* DEBUG: Display debug info on screen */}
+      {debugInfo && (
+        <div className="mt-2 rounded-lg bg-yellow-100 border border-yellow-300 p-3 text-xs font-mono text-yellow-800">
+          <div className="font-bold text-yellow-900 mb-2">🐛 TOOL DEBUG:</div>
+          <div><strong>function_name:</strong> {debugInfo.function_name}</div>
+          <div><strong>domain:</strong> {debugInfo.domain || 'null'}</div>
+          <div><strong>name:</strong> {debugInfo.name}</div>
+          <div><strong>mcpServerConfig:</strong> {debugInfo.mcpServerConfig ? 'LOADED' : 'NULL'}</div>
+          <div><strong>displayNameResult:</strong> {debugInfo.displayNameResult}</div>
+          {debugInfo.mcpServerConfig && (
+            <div className="ml-4 mt-1">
+              <div><strong>config.name:</strong> {debugInfo.mcpServerConfig.name}</div>
+              <div><strong>toolDisplayNames:</strong> {JSON.stringify(debugInfo.mcpServerConfig.toolDisplayNames, null, 2)}</div>
+            </div>
+          )}
+        </div>
+      )}
     </Popover.Root>
   );
 }
