@@ -130,6 +130,10 @@ test('Use Google Sheets Agent', async ({ page }) => {
 
   await handleGoogleOAuth(page, 'Google Sheets');
 
+  await page.getByTestId('text-input').fill('Ok, please try now');
+  await page.getByTestId('send-button').click();
+  logProgress('✅ Sent message to try again since now authenticated');
+
   await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible({
     timeout: 15000,
   });

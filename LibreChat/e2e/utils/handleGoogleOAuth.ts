@@ -27,7 +27,20 @@ export async function handleGoogleOAuth(
 
   try {
     logProgress(`Looking for ${serviceName} authorization link`);
-    await page.getByRole('link', { name: linkName }).click({ timeout });
+
+    // First try to find the Composio backend link with a longer wait
+    const composioLink = page.locator('a[href*="backend.composio.dev"]');
+
+    try {
+      // Wait up to 30 seconds for the Composio link to appear
+      await composioLink.waitFor({ timeout: 60000 });
+      logProgress(`Found Composio backend authorization link`);
+      await composioLink.click({ timeout });
+    } catch (e) {
+      // Fallback to the original link name approach
+      logProgress(`Composio link not found after 30s, trying link by name: ${linkName}`);
+      await page.getByRole('link', { name: linkName }).click({ timeout });
+    }
 
     const popupPromise = page.waitForEvent('popup');
     const popup = await popupPromise;
@@ -58,6 +71,13 @@ export async function handleGoogleOAuth(
     } catch (e) {
       // Permissions might already be granted
     }
+
+    // Wait a moment for any redirects to complete
+    await popup.waitForTimeout(2000);
+
+    // Close the popup and return to the main page
+    await popup.close();
+    await page.bringToFront();
 
     logProgress(`${serviceName} OAuth completed successfully`);
   } catch (e) {
