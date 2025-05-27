@@ -4,4 +4,3 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @README.md
 @LibreChat/README.devops.md
-@LibreChat/README.docker.md
