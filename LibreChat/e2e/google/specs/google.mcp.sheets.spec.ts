@@ -114,20 +114,25 @@ test('Use Google Sheets Agent', async ({ page }) => {
   await page.getByTestId('send-button').click();
   logProgress('Sent message to create spreadsheet');
 
-  await expect(page.getByRole('button', { name: 'Running Composio Check Active' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Running Check Connection' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Composio Check Active started running');
+  logProgress('Running Check Connection');
 
-  await expect(page.getByRole('button', { name: 'Ran Composio Check Active' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Composio Check Active completed');
+  logProgress('Ran Check Connection');
 
-  await expect(page.getByRole('button', { name: 'Ran Create Google Sheet1' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Google Sheet created successfully');
+  logProgress('Running Create New Spreadsheet');
+  ``;
+  await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
+    timeout: 15000,
+  });
+  logProgress('Ran Create New Spreadsheet');
 
   //await page.pause();
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
