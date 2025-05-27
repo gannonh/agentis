@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { ShieldCheck, TriangleAlert } from 'lucide-react';
 import { actionDelimiter, actionDomainSeparator, Constants } from 'librechat-data-provider';
@@ -132,7 +132,7 @@ export default function ToolCall({
           data-projection-id="849"
         >
           <div>
-            <ShieldCheck />
+            {React.createElement(ShieldCheck as any)}
           </div>
         </div>
       );
@@ -180,6 +180,7 @@ export default function ToolCall({
   };
 
   return (
+    // @ts-ignore - React type mismatch between different versions
     <Popover.Root>
       <div className="my-2.5 flex flex-wrap items-center gap-2.5">
         <div className="flex w-full items-center gap-2.5">
@@ -223,7 +224,7 @@ export default function ToolCall({
               </a>
             </div>
             <p className="flex items-center text-xs text-text-secondary">
-              <TriangleAlert className="mr-1.5 inline-block h-4 w-4" />
+              {React.createElement(TriangleAlert as any, { className: "mr-1.5 inline-block h-4 w-4" })}
               {localize('com_assistants_allow_sites_you_trust')}
             </p>
           </div>

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import cleanupAgents, { cleanupChats } from '../../utils/cleanupUser';
 import { handleInitialPageState } from '../../utils/handleInitialPageState';
 import { logProgress } from '../../utils/testLogger';
+import { handleGoogleOAuth } from '../../utils/handleGoogleOAuth';
 
 test.use({
   viewport: {
@@ -82,7 +83,7 @@ test('Create Google Sheets MCP', async ({ page }) => {
 
   // Assert MCP is created
   await expect(page.getByText('Google Sheets', { exact: true })).toBeVisible();
-  logProgress('Google Sheets MCP created successfully');
+  logProgress('✅ Google Sheets MCP created successfully');
   // open panel
   await page
     .locator('div')
@@ -95,15 +96,15 @@ test('Create Google Sheets MCP', async ({ page }) => {
 });
 
 test('Use Google Sheets Agent', async ({ page }) => {
-  logProgress('Starting Use Google Sheets Agent test');
+  logProgress('✅ Starting Use Google Sheets Agent test');
   await page.goto('http://localhost:3080/');
 
   // Handle TOS and login if needed
   await handleInitialPageState(page);
-  logProgress('Initial page state handled');
+  logProgress('✅ Initial page state handled');
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
-  logProgress('Verified on main chat page');
+  logProgress('✅ Verified on main chat page');
   // START
 
   await page
@@ -112,31 +113,36 @@ test('Use Google Sheets Agent', async ({ page }) => {
       'Create a spreadsheet of every David Bowie studio album. Create columns for producer, guitarists, drummers, keyboard/piano, and other musicians.',
     );
   await page.getByTestId('send-button').click();
-  logProgress('Sent message to create spreadsheet');
+  logProgress('✅ Sent message to create spreadsheet');
 
   await expect(page.getByRole('button', { name: 'Running Check Connection' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Running Check Connection');
+  logProgress('✅ Running Check Connection');
 
   await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Ran Check Connection');
+  logProgress('✅ Ran Check Connection');
+
+  // Handle Google Docs Authentication
+  // await expect(page.getByRole('link', { name: 'https://backend.composio.dev/' })).toBeVisible();
+
+  await handleGoogleOAuth(page, 'Google Sheets');
 
   await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Running Create New Spreadsheet');
-  ``;
+  logProgress('✅ Running Create New Spreadsheet');
+
   await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Ran Create New Spreadsheet');
+  logProgress('✅ Ran Create New Spreadsheet');
 
   //await page.pause();
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   await cleanupAgents(testUserEmail);
   await cleanupChats(testUserEmail);
-  logProgress('Cleaned up agents and chats for test user');
+  logProgress('✅ Cleaned up agents and chats for test user');
 });

@@ -2,6 +2,7 @@ import { chromium } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import cleanupUser from '../../setup/cleanupUser';
 
 // Load environment variables BEFORE importing any backend modules
 const envPaths = [
@@ -25,11 +26,9 @@ for (const envPath of envPaths) {
 async function googleTeardown() {
   try {
     console.log('🤖: GOOGLE TEARDOWN -----------------');
+
     // Clean up the Google test user
     if (process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL && process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD) {
-      // Import cleanupUser only when needed, after env vars are loaded
-      const { default: cleanupUser } = await import('../../setup/cleanupUser');
-
       const googleTestUser = {
         email: process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL,
         password: process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD,

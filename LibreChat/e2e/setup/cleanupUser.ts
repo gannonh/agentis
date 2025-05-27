@@ -42,8 +42,8 @@ export default async function cleanupUser(user: TUser) {
       console.log(`🤖:  ✅  Deleted ${deletedMessages} remaining message(s)`);
     }
 
-    // Delete all user sessions with the user's email
-    await deleteAllUserSessions(email);
+    // Delete all user sessions with the user's ID
+    await deleteAllUserSessions(user);
 
     await User.deleteMany({ _id: user });
     await Balance.deleteMany({ user });
