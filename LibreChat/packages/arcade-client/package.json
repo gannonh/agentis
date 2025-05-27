@@ -21,6 +21,7 @@
     "build": "npm run clean && rollup -c --silent --bundleConfigAsCjs",
     "build:watch": "rollup -c -w",
     "test": "jest --config jest.config.ts",
+    "test:ci": "jest --coverage --ci",
     "test:watch": "jest --config jest.config.ts --watch",
     "test:coverage": "jest --config jest.config.ts --coverage",
     "test:no-coverage": "jest --config jest.config.ts --no-coverage",
