@@ -133,7 +133,7 @@ actions:
 # Example MCP Servers Object Structure
 #   
 mcpServers:
-
+ 
   googledrive:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
@@ -215,6 +215,18 @@ mcpServers:
       COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
       COMPOSIO_INITIATE_CONNECTION: "Connect to Google Docs"
       COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
+ # googleworkspace:
+  #   type: streamable-http
+  #   url: http://localhost:8001/mcp
+  #   headers:
+  #     # Using header for user ID propagation as well for redundancy
+  #     X-User-ID: "{{LIBRECHAT_USER_ID}}"
+  #     # X-API-Key: "${COMPOSIO_API_KEY}"
+  #     # Connection ID for session identification
+  #     X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googleworkspace"
+  #   displayName: "Google Workspace"  # Add this line for custom server display name
+  #   iconPath: "/assets/tools/google-drive.svg"  # Icon for the MCP server
+  #   description: "Google Workspace is a cloud-based productivity suite that includes Gmail, Docs, Drive, and more."
 
   # puppeteer:
   #   type: stdio
