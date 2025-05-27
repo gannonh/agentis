@@ -403,6 +403,162 @@ const queryClient = useQueryClient();
 console.log(queryClient.getQueryCache());
 ```
 
+## 🔧 LibreChat Configuration Integration
+
+### Overview
+
+The client integrates with `librechat.yaml` configuration to provide custom tool display names for MCP (Model Context Protocol) tools. This ensures that tool calls in the chat interface show user-friendly names instead of technical function names.
+
+### How It Works
+
+#### Development Mode
+- **File Source**: Uses symlink to `/LibreChat/client/public/librechat.yaml` → `../librechat.yaml`
+- **Service**: `LibreChatConfigService` fetches `/librechat.yaml` from dev server
+- **Hot Reload**: Changes to `librechat.yaml` are reflected after browser refresh
+
+#### Production/E2E Mode
+- **File Source**: Copy created by `prebuild` script: `../librechat.yaml` → `public/librechat.yaml`
+- **Build Process**: File is copied and compressed to `dist/librechat.yaml.gz`
+- **Service**: Same fetch URL `/librechat.yaml` (browser handles gzip decompression)
+
+### Architecture Components
+
+#### LibreChatConfigService (`src/services/LibreChatConfigService.ts`)
+- **Purpose**: Singleton service to load and manage librechat.yaml configuration
+- **Key Features**:
+  - Fetches YAML from `/librechat.yaml` endpoint
+  - Parses YAML and builds MCP server config map
+  - Provides methods to get tool display names
+  - Handles object-based `mcpServers` structure (not array)
+
+```typescript
+// Example usage
+const config = await LibreChatConfigService.loadConfig();
+const displayName = config.getToolDisplayName('COMPOSIO_CHECK_ACTIVE_CONNECTION', 'googlesheets');
+// Returns: "Check Connection"
+```
+
+#### useLibreChatConfig Hook (`src/hooks/useLibreChatConfig.ts`)
+- **useMCPServerConfig**: React hook to get server configuration for specific MCP server
+- **Async Loading**: Ensures config is loaded before components need it
+- **Type Safety**: Returns `MCPServerConfig | undefined`
+
+#### ToolCall Component Integration
+- **File**: `src/components/Chat/Messages/Content/ToolCall.tsx`
+- **Integration**: Uses `useMCPServerConfig` hook to get server config
+- **Display Logic**: Calls `getToolDisplayName()` with server config for MCP tools
+- **Fallback**: Shows transformed function name if no config available
+
+### Configuration Structure
+
+The client expects this YAML structure:
+```yaml
+mcpServers:
+  googlesheets:
+    type: sse
+    url: "https://example.com"
+    displayName: "Google Sheets"
+    toolDisplayNames:
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      GOOGLESHEETS_CREATE_GOOGLE_SHEET1: "Create New Spreadsheet"
+      # ... more mappings
+```
+
+### Build Process Integration
+
+#### Package.json Scripts
+```json
+{
+  "prebuild": "cp ../librechat.yaml public/librechat.yaml || true"
+}
+```
+
+#### Development Setup
+```bash
+# Symlink is created automatically during development
+ln -sf ../librechat.yaml public/librechat.yaml
+```
+
+#### Production Build
+1. `prebuild` script copies `../librechat.yaml` to `public/librechat.yaml`
+2. Vite build process includes file in `dist/` (compressed as `.gz`)
+3. Production server serves file at `/librechat.yaml` endpoint
+
+### Debug System
+
+A localStorage-based debug system is available for troubleshooting:
+
+#### Enable Debugging
+```javascript
+// In browser console
+localStorage.setItem('debug-tool-display-names', 'true');
+// Refresh page or trigger new tool call
+```
+
+#### Debug Information Shows
+- **UI Debug Boxes**: Yellow boxes below MCP tool calls showing:
+  - Function name, domain, name parameters
+  - Whether MCP server config loaded successfully
+  - Resolved display name result
+  - Complete tool display names mapping
+- **Console Logs**: Configuration loading details and MCP servers found
+
+#### Disable Debugging
+```javascript
+// In browser console
+localStorage.removeItem('debug-tool-display-names');
+```
+
+### Docker & CI/CD Considerations
+
+#### Current Implementation
+✅ **No changes needed** - the current approach works across all deployment modes:
+
+- **Development**: Symlink allows real-time config changes
+- **Docker Development**: Volume mount includes `librechat.yaml` at project root
+- **Production Build**: `prebuild` script ensures file is included in build artifacts
+- **CI/CD**: GitHub Actions build process will include the file automatically
+
+#### File Flow in Different Modes
+
+| Mode | Source | Destination | Method |
+|------|--------|-------------|--------|
+| **Dev (local)** | `../librechat.yaml` | `public/librechat.yaml` | Symlink |
+| **E2E Tests** | `../librechat.yaml` | `dist/librechat.yaml.gz` | `prebuild` → copy → build |
+| **Docker Dev** | `../librechat.yaml` | Container volume | Volume mount |
+| **Docker Prod** | `../librechat.yaml` | Image build | Copy during image build |
+| **CI/CD** | `../librechat.yaml` | Build artifacts | `prebuild` → copy → build |
+
+### Troubleshooting
+
+#### Tool Display Names Not Working
+1. **Enable debug mode**: `localStorage.setItem('debug-tool-display-names', 'true')`
+2. **Check debug output**:
+   - Is `mcpServerConfig: LOADED`?
+   - Does `toolDisplayNames` contain expected mappings?
+   - What does `displayNameResult` show?
+
+#### Common Issues
+- **Config not loading**: Check browser Network tab for `/librechat.yaml` 404 errors
+- **Wrong server name**: Verify MCP server domain matches YAML key names
+- **Tool name mismatch**: Ensure YAML mapping keys match exact function names
+
+#### YAML Structure Validation
+```bash
+# Validate YAML syntax
+npx js-yaml ../librechat.yaml
+
+# Check MCP servers structure
+node -e "console.log(Object.keys(require('js-yaml').load(require('fs').readFileSync('../librechat.yaml', 'utf8')).mcpServers))"
+```
+
+### Future Enhancements
+
+1. **Real-time Config Updates**: WebSocket-based config reloading
+2. **Config Validation**: Runtime validation of YAML structure
+3. **Fallback Handling**: Better error handling for missing configurations
+4. **Admin Interface**: UI for managing tool display names
+
 ## 📚 Additional Resources
 
 - [React Best Practices](https://react.dev/learn)
@@ -411,6 +567,7 @@ console.log(queryClient.getQueryCache());
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [Radix UI](https://radix-ui.com/primitives)
 - [TanStack Query](https://tanstack.com/query/latest)
+- [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
 
 ## 🤝 Contributing
 
