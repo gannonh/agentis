@@ -113,29 +113,39 @@ test('Use Google Docs Agent', async ({ page }) => {
 
   await page
     .getByTestId('text-input')
-    .fill('Create a 500 word doc about musician Carlos Alomar. Include a discograph.');
+    .fill('Create a 500 word doc about musician Carlos Alomar. Include a discography.');
   await page.getByTestId('send-button').click();
   logProgress('Sent message to create document');
 
-  await expect(page.getByRole('button', { name: 'Running Composio Check Active' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Running Check Connection' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Composio Check Active started running');
+  logProgress('✅ Running Check Connection');
 
-  await expect(page.getByRole('button', { name: 'Ran Composio Check Active' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
     timeout: 15000,
   });
-  logProgress('Composio Check Active completed');
+  logProgress('✅ Ran Check Connection');
 
   // Handle Google Docs Authentication
   await handleGoogleOAuth(page, 'Google Docs');
 
-  await expect(page.getByRole('button', { name: 'Ran Create Document Markdown' })).toBeVisible({
-    timeout: 60000,
-  });
-  logProgress('Document created successfully');
+  await page.getByTestId('text-input').fill('Ok, please try now');
+  await page.getByTestId('send-button').click();
+  logProgress('✅ Sent message to try again since now authenticated');
 
   // await page.pause();
+
+  await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
+    timeout: 60000,
+  });
+  logProgress('✅ Running Create Markdown Doc');
+
+  await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
+    timeout: 90000,
+  });
+  logProgress('✅ Ran Create Markdown Doc');
+
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   await cleanupAgents(testUserEmail);
   await cleanupChats(testUserEmail);
