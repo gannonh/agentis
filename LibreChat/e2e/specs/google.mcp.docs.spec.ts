@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
 import { logProgress } from '../utils/testLogger';
 import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
+import { handleConditionalAuth } from '../utils/handleConditionalAuth';
 
 test.use({
   viewport: {
@@ -98,48 +99,85 @@ test('Use Google Docs Agent', async ({ page }) => {
   logProgress('Starting Use Google Docs Agent test');
   await page.goto('http://localhost:3080/');
 
+  // Handle conditional authentication
+  await handleConditionalAuth(page);
+
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
-  logProgress('Verified on main chat page');
+  logProgress('✅ Verified on main chat page');
   // START
 
   await page
     .getByTestId('text-input')
     .fill('Create a 500 word doc about musician Carlos Alomar. Include a discography.');
+
   await page.getByTestId('send-button').click();
-  logProgress('Sent message to create document');
+  logProgress('✅ Sent message to create document');
 
-  await expect(page.getByRole('button', { name: 'Running Check Connection' })).toBeVisible({
-    timeout: 15000,
+  // Wait for any MCP tool execution to start - could be Check Connection or Create Document
+  const firstToolSelector = page.locator('button').filter({
+    hasText: /^Running (Check Connection|Create Document)$/,
   });
-  logProgress('✅ Running Check Connection');
+  await expect(firstToolSelector).toBeVisible({ timeout: 15000 });
 
-  await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
-    timeout: 15000,
-  });
-  logProgress('✅ Ran Check Connection');
+  const firstToolText = await firstToolSelector.textContent();
+  logProgress(`✅ First tool started: ${firstToolText}`);
 
-  // Handle Google Docs Authentication
-  await handleGoogleOAuth(page, 'Google Docs');
+  if (firstToolText?.includes('Check Connection')) {
+    // If it starts with Check Connection, wait for it to complete
+    await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
+      timeout: 15000,
+    });
+    logProgress('✅ Check Connection completed');
 
-  await page.getByTestId('text-input').fill('Ok, please try now');
-  await page.getByTestId('send-button').click();
-  logProgress('✅ Sent message to try again since now authenticated');
+    // Handle authentication when prompted
+    await handleGoogleOAuth(page, 'Google Docs');
 
-  // await page.pause();
+    // Send follow-up message to try creating document now that we're authenticated
+    await page.getByTestId('text-input').fill('Ok, please try now');
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent follow-up message after authentication');
 
-  await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
-    timeout: 60000,
-  });
-  logProgress('✅ Running Create Markdown Doc');
+    // Now wait for Create New Doc
+    await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
+      timeout: 60000,
+    });
+    logProgress('✅ Create New Doc started');
 
-  await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
-    timeout: 90000,
-  });
-  logProgress('✅ Ran Create Markdown Doc');
+    await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
+      timeout: 60000,
+    });
+    logProgress('✅ Create New Doc completed');
+  } else if (firstToolText?.includes('Create New Doc')) {
+    // If it goes directly to Create New Spreadsheet, wait for completion
+    await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
+      timeout: 15000,
+    });
+    logProgress('✅ Create New Doc completed (direct)');
 
+    // Handle authentication if it appears after the attempt
+    await handleGoogleOAuth(page, 'Google Docs');
+
+    // Send follow-up message to retry now that we're authenticated
+    await page.getByTestId('text-input').fill('Ok, please try now');
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent retry message after authentication');
+
+    // Wait for the retry execution
+    await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
+      timeout: 90000,
+    });
+    logProgress('✅ Create New Doc started (retry)');
+
+    await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
+      timeout: 90000,
+    });
+    logProgress('✅ Create New Doc completed (retry)');
+  }
+
+  //await page.pause();
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   await cleanupAgents(testUserEmail);
   await cleanupChats(testUserEmail);
-  logProgress('Cleaned up agents and chats for test user');
+  logProgress('✅ Cleaned up agents and chats for test user');
 });

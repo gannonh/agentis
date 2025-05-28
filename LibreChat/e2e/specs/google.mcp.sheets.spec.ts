@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
 import { logProgress } from '../utils/testLogger';
 import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
+import { handleConditionalAuth } from '../utils/handleConditionalAuth';
 
 test.use({
   viewport: {
@@ -14,39 +15,8 @@ test('Create Google Sheets MCP', async ({ page }) => {
   logProgress('Starting Create Google Sheets MCP test');
   await page.goto('http://localhost:3080/');
 
-  // Check if we need to authenticate (when running individually from VS Code)
-  if (page.url().includes('/login')) {
-    logProgress('Not authenticated, logging in...');
-
-    // Use the same credentials as the setup
-    let user;
-    if (process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL && process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD) {
-      user = {
-        email: String(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL),
-        password: String(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD),
-      };
-    } else if (process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD) {
-      user = {
-        email: String(process.env.E2E_USER_EMAIL),
-        password: String(process.env.E2E_USER_PASSWORD),
-      };
-    } else {
-      throw new Error('No test credentials available');
-    }
-
-    // Login
-    await page.locator('input[name="email"]').fill(user.email);
-    await page.locator('input[name="password"]').fill(user.password);
-    await page.locator('input[name="password"]').press('Enter');
-
-    // Handle TOS modal if it appears
-    try {
-      await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
-      logProgress('Accepted Terms of Service');
-    } catch (e) {
-      logProgress('No TOS modal found');
-    }
-  }
+  // Handle conditional authentication
+  await handleConditionalAuth(page);
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
@@ -129,39 +99,8 @@ test('Use Google Sheets Agent', async ({ page }) => {
   logProgress('✅ Starting Use Google Sheets Agent test');
   await page.goto('http://localhost:3080/');
 
-  // Check if we need to authenticate (when running individually from VS Code)
-  if (page.url().includes('/login')) {
-    logProgress('Not authenticated, logging in...');
-
-    // Use the same credentials as the setup
-    let user;
-    if (process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL && process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD) {
-      user = {
-        email: String(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL),
-        password: String(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD),
-      };
-    } else if (process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD) {
-      user = {
-        email: String(process.env.E2E_USER_EMAIL),
-        password: String(process.env.E2E_USER_PASSWORD),
-      };
-    } else {
-      throw new Error('No test credentials available');
-    }
-
-    // Login
-    await page.locator('input[name="email"]').fill(user.email);
-    await page.locator('input[name="password"]').fill(user.password);
-    await page.locator('input[name="password"]').press('Enter');
-
-    // Handle TOS modal if it appears
-    try {
-      await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
-      logProgress('Accepted Terms of Service');
-    } catch (e) {
-      logProgress('No TOS modal found');
-    }
-  }
+  // Handle conditional authentication
+  await handleConditionalAuth(page);
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
