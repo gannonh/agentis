@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
-import { handleInitialPageState } from '../utils/handleInitialPageState';
 import { logProgress } from '../utils/testLogger';
 import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
 
@@ -15,9 +14,39 @@ test('Create Google Sheets MCP', async ({ page }) => {
   logProgress('Starting Create Google Sheets MCP test');
   await page.goto('http://localhost:3080/');
 
-  // Handle TOS and login if needed
-  await handleInitialPageState(page);
-  logProgress('Initial page state handled');
+  // Check if we need to authenticate (when running individually from VS Code)
+  if (page.url().includes('/login')) {
+    logProgress('Not authenticated, logging in...');
+
+    // Use the same credentials as the setup
+    let user;
+    if (process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL && process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD) {
+      user = {
+        email: String(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL),
+        password: String(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD),
+      };
+    } else if (process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD) {
+      user = {
+        email: String(process.env.E2E_USER_EMAIL),
+        password: String(process.env.E2E_USER_PASSWORD),
+      };
+    } else {
+      throw new Error('No test credentials available');
+    }
+
+    // Login
+    await page.locator('input[name="email"]').fill(user.email);
+    await page.locator('input[name="password"]').fill(user.password);
+    await page.locator('input[name="password"]').press('Enter');
+
+    // Handle TOS modal if it appears
+    try {
+      await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
+      logProgress('Accepted Terms of Service');
+    } catch (e) {
+      logProgress('No TOS modal found');
+    }
+  }
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
@@ -43,7 +72,7 @@ test('Create Google Sheets MCP', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
   await page
     .getByRole('textbox', { name: 'Agent description' })
-    .fill('Claude 3.7 Agent with access to Google Sheets.');
+    .fill('Claude 3.5 Agent with access to Google Sheets.');
   await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
   await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
   await page.getByRole('textbox', { name: 'Agent instructions' }).click();
@@ -63,7 +92,8 @@ test('Create Google Sheets MCP', async ({ page }) => {
   //
 
   //
-  await page.getByText('claude-3-7-sonnet-').click();
+  await page.getByText('claude-3-5-sonnet-20241022').click();
+
   await page.getByRole('button', { name: 'Create' }).click();
   logProgress('Created agent with basic settings');
   // add mcp tools
@@ -99,9 +129,40 @@ test('Use Google Sheets Agent', async ({ page }) => {
   logProgress('✅ Starting Use Google Sheets Agent test');
   await page.goto('http://localhost:3080/');
 
-  // Handle TOS and login if needed
-  await handleInitialPageState(page);
-  logProgress('✅ Initial page state handled');
+  // Check if we need to authenticate (when running individually from VS Code)
+  if (page.url().includes('/login')) {
+    logProgress('Not authenticated, logging in...');
+
+    // Use the same credentials as the setup
+    let user;
+    if (process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL && process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD) {
+      user = {
+        email: String(process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL),
+        password: String(process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD),
+      };
+    } else if (process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD) {
+      user = {
+        email: String(process.env.E2E_USER_EMAIL),
+        password: String(process.env.E2E_USER_PASSWORD),
+      };
+    } else {
+      throw new Error('No test credentials available');
+    }
+
+    // Login
+    await page.locator('input[name="email"]').fill(user.email);
+    await page.locator('input[name="password"]').fill(user.password);
+    await page.locator('input[name="password"]').press('Enter');
+
+    // Handle TOS modal if it appears
+    try {
+      await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
+      logProgress('Accepted Terms of Service');
+    } catch (e) {
+      logProgress('No TOS modal found');
+    }
+  }
+
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
@@ -115,32 +176,66 @@ test('Use Google Sheets Agent', async ({ page }) => {
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create spreadsheet');
 
-  await expect(page.getByRole('button', { name: 'Running Check Connection' })).toBeVisible({
-    timeout: 15000,
+  // Wait for any MCP tool execution to start - could be Check Connection or Create Spreadsheet
+  const firstToolSelector = page.locator('button').filter({
+    hasText: /^Running (Check Connection|Create New Spreadsheet)$/,
   });
-  logProgress('✅ Running Check Connection');
+  await expect(firstToolSelector).toBeVisible({ timeout: 15000 });
 
-  await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
-    timeout: 15000,
-  });
-  logProgress('✅ Ran Check Connection');
+  const firstToolText = await firstToolSelector.textContent();
+  logProgress(`✅ First tool started: ${firstToolText}`);
 
-  // Handle Google Sheets Authentication
-  await handleGoogleOAuth(page, 'Google Sheets');
+  if (firstToolText?.includes('Check Connection')) {
+    // If it starts with Check Connection, wait for it to complete
+    await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
+      timeout: 15000,
+    });
+    logProgress('✅ Check Connection completed');
 
-  await page.getByTestId('text-input').fill('Ok, please try now');
-  await page.getByTestId('send-button').click();
-  logProgress('✅ Sent message to try again since now authenticated');
+    // Handle authentication when prompted
+    await handleGoogleOAuth(page, 'Google Sheets');
 
-  await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible({
-    timeout: 15000,
-  });
-  logProgress('✅ Running Create New Spreadsheet');
+    // Send follow-up message to try creating spreadsheet now that we're authenticated
+    await page.getByTestId('text-input').fill('Ok, please try now');
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent follow-up message after authentication');
 
-  await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
-    timeout: 15000,
-  });
-  logProgress('✅ Ran Create New Spreadsheet');
+    // Now wait for Create New Spreadsheet
+    await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible({
+      timeout: 15000,
+    });
+    logProgress('✅ Create New Spreadsheet started');
+
+    await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
+      timeout: 15000,
+    });
+    logProgress('✅ Create New Spreadsheet completed');
+  } else if (firstToolText?.includes('Create New Spreadsheet')) {
+    // If it goes directly to Create New Spreadsheet, wait for completion
+    await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
+      timeout: 15000,
+    });
+    logProgress('✅ Create New Spreadsheet completed (direct)');
+
+    // Handle authentication if it appears after the attempt
+    await handleGoogleOAuth(page, 'Google Sheets');
+
+    // Send follow-up message to retry now that we're authenticated
+    await page.getByTestId('text-input').fill('Ok, please try now');
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent retry message after authentication');
+
+    // Wait for the retry execution
+    await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible({
+      timeout: 15000,
+    });
+    logProgress('✅ Create New Spreadsheet started (retry)');
+
+    await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
+      timeout: 90000,
+    });
+    logProgress('✅ Create New Spreadsheet completed (retry)');
+  }
 
   //await page.pause();
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';

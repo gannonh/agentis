@@ -1,10 +1,11 @@
+import { test } from '@playwright/test';
 import { chromium } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
-import cleanupUser from './cleanupUser';
+import cleanupUser from '../setup/cleanupUser';
 
-// Load environment variables BEFORE importing any backend modules
+// Load environment variables
 const envPaths = [
   path.resolve(__dirname, '../.env'),
   path.resolve(process.cwd(), '.env'),
@@ -15,7 +16,7 @@ for (const envPath of envPaths) {
   try {
     const result = dotenv.config({ path: envPath });
     if (!result.error) {
-      console.log('🤖: TEARDOWN - Loaded env from:', envPath);
+      console.log('🤖: AUTH TEARDOWN - Loaded env from:', envPath);
       break;
     }
   } catch (error) {
@@ -23,9 +24,9 @@ for (const envPath of envPaths) {
   }
 }
 
-async function globalTeardown() {
+test('cleanup test user', async () => {
   try {
-    console.log('🤖: GLOBAL TEARDOWN -----------------');
+    console.log('🤖: AUTH TEARDOWN PROJECT -----------------');
 
     // Clean up the appropriate test user based on what credentials are available
     let user;
@@ -61,10 +62,8 @@ async function globalTeardown() {
     await context.clearCookies();
     await browser.close();
     console.log('🤖: ✔️  Cleared browser cookies and storage');
-    console.log('🤖: GLOBAL TEARDOWN COMPLETE ✅');
+    console.log('🤖: AUTH TEARDOWN PROJECT COMPLETE ✅');
   } catch (error) {
-    console.error('Error during global teardown:', error);
+    console.error('Error during auth teardown:', error);
   }
-}
-
-export default globalTeardown;
+});

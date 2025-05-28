@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
-import { handleInitialPageState } from '../utils/handleInitialPageState';
 import { logProgress } from '../utils/testLogger';
 import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
 
@@ -14,10 +13,6 @@ test.use({
 test('Create Google Docs MCP', async ({ page }) => {
   logProgress('Starting Create Google Docs MCP test');
   await page.goto('http://localhost:3080/');
-
-  // Handle TOS and login if needed
-  await handleInitialPageState(page);
-  logProgress('Initial page state handled');
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
@@ -44,7 +39,7 @@ test('Create Google Docs MCP', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Docs Agent');
   await page
     .getByRole('textbox', { name: 'Agent description' })
-    .fill('Sonnet 3.7 with access to Google Sheets');
+    .fill('Sonnet 3.5 with access to Google Sheets');
   await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
   await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
   await page.getByRole('textbox', { name: 'Agent instructions' }).click();
@@ -65,7 +60,7 @@ test('Create Google Docs MCP', async ({ page }) => {
   //
 
   //
-  await page.getByText('claude-3-7-sonnet-').click();
+  await page.getByText('claude-3-5-sonnet-20241022').click();
   await page.getByRole('button', { name: 'Create' }).click();
   logProgress('Created agent with basic settings');
   // add mcp tools
@@ -103,9 +98,6 @@ test('Use Google Docs Agent', async ({ page }) => {
   logProgress('Starting Use Google Docs Agent test');
   await page.goto('http://localhost:3080/');
 
-  // Handle TOS and login if needed
-  await handleInitialPageState(page);
-  logProgress('Initial page state handled');
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('Verified on main chat page');

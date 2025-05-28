@@ -1,13 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
-const absolutePath = path.resolve(process.cwd(), 'api/server/index.js');
+const absolutePath = path.resolve(__dirname, '../api/server/index.js');
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file - try multiple possible paths
 const envPaths = [
-  path.resolve(__dirname, '../.env'),
-  path.resolve(process.cwd(), '.env'),
-  path.resolve(process.cwd(), 'LibreChat/.env'),
+  path.resolve(__dirname, '../.env'), // From e2e/ -> LibreChat/.env
+  path.resolve(process.cwd(), '.env'), // From current working directory
+  path.resolve(process.cwd(), 'LibreChat/.env'), // From parent directory
 ];
 
 let envLoaded = false;
@@ -54,8 +54,6 @@ if (missingGoogleVars.length > 0) {
 }
 
 export default defineConfig({
-  globalSetup: require.resolve('./setup/global-setup'),
-  globalTeardown: require.resolve('./setup/global-teardown'),
   testDir: 'specs/',
   outputDir: 'specs/.test-results',
   /* Run tests in files in parallel.
@@ -77,7 +75,6 @@ export default defineConfig({
     trace: 'retain-on-failure',
     ignoreHTTPSErrors: true,
     headless: true,
-    storageState: path.resolve(process.cwd(), 'e2e/storageState.json'),
     screenshot: 'only-on-failure',
   },
   expect: {
@@ -86,18 +83,45 @@ export default defineConfig({
   timeout: 5 * 60 * 1000, // 5 minutes for Google tests
   /* Configure projects for major browsers */
   projects: [
+    // Setup project for authentication
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+      teardown: 'cleanup',
+      use: {
+        // Don't use storage state for setup - it doesn't exist yet
+        storageState: undefined,
+      },
+    },
+    // Teardown project for cleanup
+    {
+      name: 'cleanup',
+      testMatch: /.*\.teardown\.ts/,
+      use: {
+        // Don't need storage state for cleanup
+        storageState: undefined,
+      },
+    },
+    // Main test project
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Use the storage state created by the setup project
+        storageState: path.resolve(__dirname, 'storageState.json'),
+      },
+      dependencies: ['setup'],
     },
     /* Test against mobile viewports. */
     // {
     //   name: 'Mobile Chrome',
     //   use: { ...devices['Pixel 5'] },
+    //   dependencies: ['setup'],
     // },
     // {
     //   name: 'Mobile Safari',
     //   use: { ...devices['iPhone 12'] },
+    //   dependencies: ['setup'],
     // },
   ],
 
