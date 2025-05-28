@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import cleanupAgents, { cleanupChats } from '../../utils/cleanupUser';
-import { handleInitialPageState } from '../../utils/handleInitialPageState';
-import { logProgress } from '../../utils/testLogger';
-import { handleGoogleOAuth } from '../../utils/handleGoogleOAuth';
+import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
+import { handleInitialPageState } from '../utils/handleInitialPageState';
+import { logProgress } from '../utils/testLogger';
+import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
 
 test.use({
   viewport: {
