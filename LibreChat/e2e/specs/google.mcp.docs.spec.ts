@@ -109,7 +109,7 @@ test('Use Google Docs Agent', async ({ page }) => {
 
   await page
     .getByTestId('text-input')
-    .fill('Create a 500 word doc about musician Carlos Alomar. Include a discography.');
+    .fill('Create a 250 word doc about musician Carlos Alomar. Include a discography.');
 
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create document');
