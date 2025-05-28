@@ -56,7 +56,7 @@
     "test:all": "npm run test:client && npm run test:api && npm run test:mcp && npm run test:data-provider && npm run test:data-schemas && npm run test:arcade-client",
     "e2e": "playwright test --config=e2e/playwright.config.local.ts",
     "e2e:record-large": "npx playwright codegen --viewport-size=1600,1700 http://localhost:3080/",
-    "e2e:google": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 playwright test --config=e2e/google/playwright.config.ts e2e/google/specs/",
+    "e2e:google": "npm run e2e:google-mcp-sheets && npm run e2e:google-mcp-docs",
     "e2e:google-mcp-sheets": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.sheets.spec.ts --headed",
     "e2e:google-mcp-docs": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.docs.spec.ts --headed",
     "e2e:headed": "playwright test --config=e2e/playwright.config.local.ts --headed",
