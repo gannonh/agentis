@@ -69,6 +69,14 @@ export async function handleGoogleOAuth(
           logProgress('No permissions checkbox found, continuing...');
         }
 
+        // Next try another version of the checkbox
+        try {
+          await popup.getByRole('checkbox', { name: 'Select all' }).check({ timeout: 5000 });
+          logProgress('✅ Checked permissions checkbox');
+        } catch (e) {
+          logProgress('No permissions checkbox found, continuing...');
+        }
+
         // Then try to click Continue button if it exists
         try {
           await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 5000 });
