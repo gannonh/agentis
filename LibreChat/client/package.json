@@ -6,9 +6,9 @@
   "scripts": {
     "data-provider": "cd .. && npm run build:data-provider",
     "prebuild": "cp ../librechat.yaml public/librechat.yaml || true",
-    "build:file": "cross-env NODE_ENV=production vite build --debug > vite-output.log 2>&1",
-    "build": "cross-env NODE_ENV=production vite build",
-    "build:ci": "cross-env NODE_ENV=development vite build --mode ci",
+    "build:file": "npm run prebuild && cross-env NODE_ENV=production vite build --debug > vite-output.log 2>&1",
+    "build": "npm run prebuild && cross-env NODE_ENV=production vite build",
+    "build:ci": "npm run prebuild && cross-env NODE_ENV=development vite build --mode ci",
     "dev": "cross-env NODE_ENV=development vite",
     "preview-prod": "cross-env NODE_ENV=development vite preview",
     "test": "cross-env NODE_ENV=development jest --watch",
