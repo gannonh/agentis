@@ -215,6 +215,26 @@ mcpServers:
       COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
       COMPOSIO_INITIATE_CONNECTION: "Connect to Google Docs"
       COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
+      
+  googlecalendar:
+    type: streamable-http
+    # Including user_id in URL for Composio to identify unique user connections
+    # https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc?transport=sse/sse 
+    # https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc?transport=sse/mcp
+    url: https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc/mcp?useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    headers:
+      # Using header for user ID propagation as well for redundancy
+      X-User-ID: "{{LIBRECHAT_USER_ID}}"
+      X-API-Key: "${COMPOSIO_API_KEY}"
+      # Connection ID for session identification
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googlecalendar"
+    displayName: "Google Calendar"  # Add this line for custom server display name
+    iconPath: "/assets/tools/google-calendar.svg"  # Icon for the MCP server
+    description: "Google Calendar is a time management tool providing scheduling features, event reminders, and integration with email and other apps for streamlined organization"
+    toolDisplayNames:  # Add this section for custom tool display names
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      COMPOSIO_INITIATE_CONNECTION: "Connect to Google Calendar"
+      COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
 
   gmail:
     type: sse
@@ -230,51 +250,35 @@ mcpServers:
     iconPath: "/assets/tools/gmail.svg"  # Icon for the MCP server
     description: "Gmail is a web-based email service that allows you to send, receive, and manage your email."
     toolDisplayNames:  # Add this section for custom tool display names
-      # GMAIL_SEND_EMAIL: "Send Email"
-      # GMAIL_GET_EMAIL: "Get Email"
-      # GMAIL_DELETE_EMAIL: "Delete Email"
-      # GMAIL_ADD_LABEL_TO_EMAIL: "Add Label to Email"
-      # GMAIL_CREATE_EMAIL_DRAFT: "Create Email Draft"
-      # GMAIL_CREATE_LABEL: "Create Label"
-      # GMAIL_DELETE_DRAFT: "Delete Draft"
-      # GMAIL_DELETE_MESSAGE: "Delete Message"
-      # GMAIL_FETCH_EMAILS: "Fetch Emails"
-      # GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID: "Fetch Message by ID"
-      # GMAIL_FETCH_MESSAGE_BY_THREAD_ID: "Fetch Message by Thread ID"
-      # GMAIL_GET_ATTACHMENT: "Get Attachment"
-      # GMAIL_GET_CONTACTS: "Get Contacts"
-      # GMAIL_GET_PEOPLE: "Get People"
-      # GMAIL_GET_PROFILE: "Get Profile"
-      # GMAIL_LIST_DRAFTS: "List Drafts"
-      # GMAIL_LIST_LABELS: "List Labels"
-      # GMAIL_LIST_THREADS: "List Threads"
-      # GMAIL_MODIFY_THREAD_LABELS: "Modify Thread Labels"
-      # GMAIL_MOVE_TO_TRASH: "Move to Trash"
-      # GMAIL_REMOVE_LABEL: "Remove Label"
-      # GMAIL_REPLY_TO_THREAD: "Reply to Thread"
-      # GMAIL_SEARCH_PEOPLE: "Search People"
-      # GMAIL_SEND_EMAIL: "Send Email"
-      # COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
-      # COMPOSIO_INITIATE_CONNECTION: "Connect to Gmail"
-      # COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
-
+      GMAIL_ADD_LABEL_TO_EMAIL: "Add Label to Email"
+      GMAIL_CREATE_EMAIL_DRAFT: "Create Email Draft"
+      GMAIL_CREATE_LABEL: "Create Label"
+      GMAIL_DELETE_EMAIL: "Delete Email"
+      GMAIL_DELETE_DRAFT: "Delete Draft"
+      GMAIL_DELETE_MESSAGE: "Delete Message"
+      GMAIL_FETCH_EMAILS: "Fetch Emails"
+      GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID: "Fetch Message by ID"
+      GMAIL_FETCH_MESSAGE_BY_THREAD_ID: "Fetch Message by Thread ID"
+      GMAIL_GET_ATTACHMENT: "Get Attachment"
+      GMAIL_GET_CONTACTS: "Get Contacts"
+      GMAIL_GET_EMAIL: "Get Email"
+      GMAIL_GET_PEOPLE: "Get People"
+      GMAIL_GET_PROFILE: "Get Profile"
+      GMAIL_LIST_DRAFTS: "List Drafts"
+      GMAIL_LIST_LABELS: "List Labels"
+      GMAIL_LIST_THREADS: "List Threads"
+      GMAIL_MODIFY_THREAD_LABELS: "Modify Thread Labels"
+      GMAIL_MOVE_TO_TRASH: "Move to Trash"
+      GMAIL_REMOVE_LABEL: "Remove Label"
+      GMAIL_REPLY_TO_THREAD: "Reply to Thread"
+      GMAIL_SEARCH_PEOPLE: "Search People"
+      GMAIL_SEND_EMAIL: "Send Email"
       COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
       COMPOSIO_INITIATE_CONNECTION: "Connect to Gmail"
       COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
+  
 
-      # gmail mcp https://mcp.composio.dev/composio/server
- # googleworkspace:
-  #   type: streamable-http
-  #   url: http://localhost:8001/mcp
-  #   headers:
-  #     # Using header for user ID propagation as well for redundancy
-  #     X-User-ID: "{{LIBRECHAT_USER_ID}}"
-  #     # X-API-Key: "${COMPOSIO_API_KEY}"
-  #     # Connection ID for session identification
-  #     X-Connection-ID: "{{LIBRECHAT_USER_ID}}-googleworkspace"
-  #   displayName: "Google Workspace"  # Add this line for custom server display name
-  #   iconPath: "/assets/tools/google-drive.svg"  # Icon for the MCP server
-  #   description: "Google Workspace is a cloud-based productivity suite that includes Gmail, Docs, Drive, and more."
+
 
   # puppeteer:
   #   type: stdio

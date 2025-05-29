@@ -41,7 +41,7 @@ function AgentToolGroup({
           ) : (
             <ChevronRight className="h-4 w-4 text-text-secondary" />
           )}
-          <span className="font-medium text-text-primary">{getServerDisplayName(serverName)}</span>
+          <span className="font-medium text-text-primary">{getServerDisplayName(serverName, window.__mcpServerConfigs?.[serverName])}</span>
           <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs font-medium text-text-tertiary">
             {tools.length} {localize('com_ui_tools')}
           </span>
