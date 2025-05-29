@@ -442,10 +442,10 @@ export class MCPConnection extends EventEmitter {
 
     const originalSend = this.transport.send.bind(this.transport);
     this.transport.send = async (msg) => {
+      // Log outgoing messages for debugging, but don't interfere with ping responses
+      // Empty results are normal for ping responses and should not be treated as errors
       if ('result' in msg && !('method' in msg) && Object.keys(msg.result ?? {}).length === 0) {
-        if (Date.now() - this.lastPingTime < FIVE_MINUTES) {
-          throw new Error('Empty result');
-        }
+        this.logger?.debug(`${this.getLogPrefix()} Sending empty result (likely ping response)`);
         this.lastPingTime = Date.now();
       }
       this.logger?.debug(`${this.getLogPrefix()} Transport sending: ${JSON.stringify(msg)}`);
