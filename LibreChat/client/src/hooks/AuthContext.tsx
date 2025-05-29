@@ -122,9 +122,12 @@ const AuthContextProvider = ({
 
   const userQuery = useGetUserQuery({ enabled: !!(token ?? '') });
 
-  const login = (data: t.TLoginUser) => {
-    loginUser.mutate(data);
-  };
+  const login = useCallback(
+    (data: t.TLoginUser) => {
+      loginUser.mutate(data);
+    },
+    [loginUser],
+  );
 
   const silentRefresh = useCallback(() => {
     if (authConfig?.test === true) {
@@ -152,7 +155,7 @@ const AuthContextProvider = ({
         navigate('/login');
       },
     });
-  }, []);
+  }, [authConfig?.test, navigate, refreshToken, setUserContext]);
 
   useEffect(() => {
     if (userQuery.data) {
@@ -167,18 +170,7 @@ const AuthContextProvider = ({
     if (token == null || !token || !isAuthenticated) {
       silentRefresh();
     }
-  }, [
-    token,
-    isAuthenticated,
-    userQuery.data,
-    userQuery.isError,
-    userQuery.error,
-    error,
-    setUser,
-    navigate,
-    silentRefresh,
-    setUserContext,
-  ]);
+  }, [token, isAuthenticated, userQuery.data, userQuery.isError, userQuery.error, error]);
 
   useEffect(() => {
     const handleTokenUpdate = (event) => {
@@ -214,7 +206,7 @@ const AuthContextProvider = ({
       isAuthenticated,
     }),
 
-    [user, error, isAuthenticated, token, userRole, adminRole],
+    [user, error, isAuthenticated, token, userRole, adminRole, login, logout],
   );
 
   return <AuthContext.Provider value={memoedValue}>{children}</AuthContext.Provider>;

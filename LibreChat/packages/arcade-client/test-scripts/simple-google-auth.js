@@ -20,7 +20,7 @@ if (!process.env.ARCADE_API_KEY) {
 }
 
 const ARCADE_API_KEY = process.env.ARCADE_API_KEY;
-const CALLBACK_URL = process.env.ARCADE_CALLBACK_URL || 'http://localhost:3080/api/arcade/callback';
+// const CALLBACK_URL = process.env.ARCADE_CALLBACK_URL || 'http://localhost:3080/api/arcade/callback';
 const USER_ID = 'test-user-id-123';
 const TOOLKIT_NAME = 'Google.ListEmails'; // Use a specific Google tool
 const BASE_URL = 'https://api.arcade.dev/v1';
@@ -88,12 +88,14 @@ async function checkAuthStatus(authId) {
 
 // Open URL in default browser
 function openBrowser(url) {
-  const command =
-    process.platform === 'win32'
-      ? `start "${url}"`
-      : process.platform === 'darwin'
-        ? `open "${url}"`
-        : `xdg-open "${url}"`;
+  let command;
+  if (process.platform === 'win32') {
+    command = `start "${url}"`;
+  } else if (process.platform === 'darwin') {
+    command = `open "${url}"`;
+  } else {
+    command = `xdg-open "${url}"`;
+  }
 
   exec(command, (error) => {
     if (error) {

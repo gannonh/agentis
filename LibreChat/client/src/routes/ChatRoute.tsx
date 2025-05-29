@@ -113,6 +113,10 @@ export default function ChatRoute() {
     endpointsQuery.data,
     modelsQuery.data,
     assistantListMap,
+    conversation,
+    conversationId,
+    hasSetConversation,
+    newConversation,
   ]);
 
   if (endpointsQuery.isLoading || modelsQuery.isLoading) {

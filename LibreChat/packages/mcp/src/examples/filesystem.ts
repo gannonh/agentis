@@ -5,10 +5,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
-  JSONRPCMessage,
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  InitializeRequestSchema,
   ToolSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import fs from 'fs/promises';
@@ -16,8 +14,7 @@ import path from 'path';
 import os from 'os';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { diffLines, createTwoFilesPatch } from 'diff';
-import { IncomingMessage, ServerResponse } from 'node:http';
+import { createTwoFilesPatch } from 'diff';
 import { minimatch } from 'minimatch';
 import express from 'express';
 
@@ -100,7 +97,7 @@ async function validatePath(requestedPath: string): Promise<string> {
       throw new Error('Access denied - symlink target outside allowed directories');
     }
     return realPath;
-  } catch (error) {
+  } catch {
     // For new files that don't exist yet, verify parent directory
     const parentDir = path.dirname(absolute);
     try {
@@ -165,8 +162,7 @@ const GetFileInfoArgsSchema = z.object({
   path: z.string(),
 });
 
-const ToolInputSchema = ToolSchema.shape.inputSchema;
-type ToolInput = z.infer<typeof ToolInputSchema>;
+type ToolInput = z.infer<typeof ToolSchema.shape.inputSchema>;
 
 interface FileInfo {
   size: number;
@@ -240,7 +236,7 @@ async function searchFiles(
         if (entry.isDirectory()) {
           await search(fullPath);
         }
-      } catch (error) {
+      } catch {
         // Skip invalid paths during search
         continue;
       }

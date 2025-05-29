@@ -38,6 +38,8 @@ export default [
       'packages/data-provider/types/**/*',
       'packages/data-provider/dist/**/*',
       'packages/data-provider/test_bundle/**/*',
+      'packages/data-schemas/dist/**/*',
+      'packages/data-schemas/types/**/*',
       'data-node/**/*',
       'meili_data/**/*',
       '**/node_modules/**/*',

@@ -27,26 +27,7 @@ export default defineConfig({
   envDir: '../',
   envPrefix: ['VITE_', 'SCRIPT_', 'DOMAIN_', 'ALLOW_'],
   css: {
-    postcss: {
-      // Suppress verbose PostCSS warnings that show entire file context
-      // These are compatibility warnings, not functional issues
-      plugins: [
-        {
-          postcssPlugin: 'suppress-verbose-warnings',
-          OnceExit() {
-            // Override console to filter out verbose CSS line-by-line output
-            const originalWarn = console.warn;
-            console.warn = (...args) => {
-              const message = args.join(' ');
-              // Skip the verbose line-by-line CSS output (contains | and ^ markers)
-              if (!message.includes('|') || !message.includes('^')) {
-                originalWarn(...args);
-              }
-            };
-          }
-        }
-      ]
-    }
+    postcss: './postcss.config.cjs'
   },
   plugins: [
     react(),

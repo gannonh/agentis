@@ -1,4 +1,5 @@
 import { MCPManager } from './manager';
+import type { MCPConnection } from './connection';
 import type { Logger } from 'winston';
 
 /**
@@ -15,7 +16,7 @@ export async function diagnoseUserConnections(logger: Logger): Promise<void> {
 
     // Get a reference to the userConnections map (for diagnostics only)
     // @ts-ignore - Accessing private property for diagnostics
-    const userConnections = manager['userConnections'] as Map<string, Map<string, any>>;
+    const userConnections = manager['userConnections'] as Map<string, Map<string, MCPConnection>>;
 
     // @ts-ignore - Accessing private property for diagnostics
     const userLastActivity = manager['userLastActivity'] as Map<string, number>;
@@ -74,13 +75,16 @@ export async function diagnoseUserConnections(logger: Logger): Promise<void> {
  * @param logger Winston logger instance
  * @returns Connection information for the specific user
  */
-export async function diagnoseSpecificUser(userId: string, logger: Logger): Promise<any> {
+export async function diagnoseSpecificUser(
+  userId: string,
+  logger: Logger,
+): Promise<Record<string, unknown>> {
   try {
     const manager = MCPManager.getInstance(logger);
     logger.info(`[MCP-DIAGNOSTICS] Running diagnostics for user ${userId}`);
 
     // @ts-ignore - Accessing private property for diagnostics
-    const userConnections = manager['userConnections'] as Map<string, Map<string, any>>;
+    const userConnections = manager['userConnections'] as Map<string, Map<string, MCPConnection>>;
 
     // @ts-ignore - Accessing private property for diagnostics
     const userLastActivity = manager['userLastActivity'] as Map<string, number>;

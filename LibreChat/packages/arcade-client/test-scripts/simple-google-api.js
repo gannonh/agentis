@@ -97,12 +97,14 @@ async function executeTool(toolName, params) {
 
 // Open URL in default browser
 function openBrowser(url) {
-  const command =
-    process.platform === 'win32'
-      ? `start "${url}"`
-      : process.platform === 'darwin'
-        ? `open "${url}"`
-        : `xdg-open "${url}"`;
+  let command;
+  if (process.platform === 'win32') {
+    command = `start "${url}"`;
+  } else if (process.platform === 'darwin') {
+    command = `open "${url}"`;
+  } else {
+    command = `xdg-open "${url}"`;
+  }
 
   exec(command, (error) => {
     if (error) {

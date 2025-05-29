@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { useSpeechToTextMutation } from '~/data-provider';
 import useGetAudioSettings from './useGetAudioSettings';
@@ -89,17 +89,7 @@ const useSpeechToTextExternal = (
     }
   };
 
-  const cleanup = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.removeEventListener('dataavailable', (event: BlobEvent) => {
-        audioChunks.push(event.data);
-      });
-      mediaRecorderRef.current.removeEventListener('stop', handleStop);
-      mediaRecorderRef.current = null;
-    }
-  };
-
-  const getMicrophonePermission = async () => {
+  const getMicrophonePermission = useCallback(async () => {
     try {
       const streamData = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -110,9 +100,9 @@ const useSpeechToTextExternal = (
     } catch (err) {
       setPermission(false);
     }
-  };
+  }, []);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     if (audioChunks.length > 0) {
       const audioBlob = new Blob(audioChunks, { type: audioMimeType });
       const fileExtension = getFileExtension(audioMimeType);
@@ -122,47 +112,81 @@ const useSpeechToTextExternal = (
       const formData = new FormData();
       formData.append('audio', audioBlob, `audio.${fileExtension}`);
       setIsRequestBeingMade(true);
-      cleanup();
       processAudio(formData);
     } else {
       showToast({ message: 'The audio was too short', status: 'warning' });
     }
-  };
+  }, [audioChunks, audioMimeType, processAudio, showToast]);
 
-  const monitorSilence = (stream: MediaStream, stopRecording: () => void) => {
-    const audioContext = new AudioContext();
-    const audioStreamSource = audioContext.createMediaStreamSource(stream);
-    const analyser = audioContext.createAnalyser();
-    analyser.minDecibels = minDecibels;
-    audioStreamSource.connect(analyser);
+  const cleanup = useCallback(() => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.removeEventListener('dataavailable', (event: BlobEvent) => {
+        audioChunks.push(event.data);
+      });
+      mediaRecorderRef.current.removeEventListener('stop', handleStop);
+      mediaRecorderRef.current = null;
+    }
+  }, [audioChunks, handleStop]);
 
-    const bufferLength = analyser.frequencyBinCount;
-    const domainData = new Uint8Array(bufferLength);
-    let lastSoundTime = Date.now();
+  const stopRecording = useCallback(() => {
+    if (!mediaRecorderRef.current) {
+      return;
+    }
 
-    const detectSound = () => {
-      analyser.getByteFrequencyData(domainData);
-      const isSoundDetected = domainData.some((value) => value > 0);
+    if (mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
 
-      if (isSoundDetected) {
-        lastSoundTime = Date.now();
+      audioStream.current?.getTracks().forEach((track) => track.stop());
+      audioStream.current = null;
+
+      if (animationFrameIdRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
       }
 
-      const timeSinceLastSound = Date.now() - lastSoundTime;
-      const isOverSilenceThreshold = timeSinceLastSound > 3000;
+      setIsListening(false);
+    } else {
+      showToast({ message: 'MediaRecorder is not recording', status: 'error' });
+    }
+  }, [showToast]);
 
-      if (isOverSilenceThreshold) {
-        stopRecording();
-        return;
-      }
+  const monitorSilence = useCallback(
+    (stream: MediaStream, stopRecording: () => void) => {
+      const audioContext = new AudioContext();
+      const audioStreamSource = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.minDecibels = minDecibels;
+      audioStreamSource.connect(analyser);
+
+      const bufferLength = analyser.frequencyBinCount;
+      const domainData = new Uint8Array(bufferLength);
+      let lastSoundTime = Date.now();
+
+      const detectSound = () => {
+        analyser.getByteFrequencyData(domainData);
+        const isSoundDetected = domainData.some((value) => value > 0);
+
+        if (isSoundDetected) {
+          lastSoundTime = Date.now();
+        }
+
+        const timeSinceLastSound = Date.now() - lastSoundTime;
+        const isOverSilenceThreshold = timeSinceLastSound > 3000;
+
+        if (isOverSilenceThreshold) {
+          stopRecording();
+          return;
+        }
+
+        animationFrameIdRef.current = window.requestAnimationFrame(detectSound);
+      };
 
       animationFrameIdRef.current = window.requestAnimationFrame(detectSound);
-    };
+    },
+    [minDecibels],
+  );
 
-    animationFrameIdRef.current = window.requestAnimationFrame(detectSound);
-  };
-
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     if (isRequestBeingMade) {
       showToast({ message: 'A request is already being made. Please wait.', status: 'warning' });
       return;
@@ -196,29 +220,18 @@ const useSpeechToTextExternal = (
     } else {
       showToast({ message: 'Microphone permission not granted', status: 'error' });
     }
-  };
-
-  const stopRecording = () => {
-    if (!mediaRecorderRef.current) {
-      return;
-    }
-
-    if (mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-
-      audioStream.current?.getTracks().forEach((track) => track.stop());
-      audioStream.current = null;
-
-      if (animationFrameIdRef.current !== null) {
-        window.cancelAnimationFrame(animationFrameIdRef.current);
-        animationFrameIdRef.current = null;
-      }
-
-      setIsListening(false);
-    } else {
-      showToast({ message: 'MediaRecorder is not recording', status: 'error' });
-    }
-  };
+  }, [
+    isRequestBeingMade,
+    getMicrophonePermission,
+    audioMimeType,
+    handleStop,
+    autoTranscribeAudio,
+    speechToText,
+    stopRecording,
+    showToast,
+    audioChunks,
+    monitorSilence,
+  ]);
 
   const externalStartRecording = () => {
     if (isListening) {
@@ -241,26 +254,37 @@ const useSpeechToTextExternal = (
     stopRecording();
   };
 
-  const handleKeyDown = async (e: KeyboardEvent) => {
-    if (e.shiftKey && e.altKey && e.code === 'KeyL' && isExternalSTTEnabled) {
-      if (!window.MediaRecorder) {
-        showToast({ message: 'MediaRecorder is not supported in this browser', status: 'error' });
-        return;
-      }
+  const handleKeyDown = useCallback(
+    async (e: KeyboardEvent) => {
+      if (e.shiftKey && e.altKey && e.code === 'KeyL' && isExternalSTTEnabled) {
+        if (!window.MediaRecorder) {
+          showToast({ message: 'MediaRecorder is not supported in this browser', status: 'error' });
+          return;
+        }
 
-      if (permission === false) {
-        await getMicrophonePermission();
-      }
+        if (permission === false) {
+          await getMicrophonePermission();
+        }
 
-      if (isListening) {
-        stopRecording();
-      } else {
-        startRecording();
-      }
+        if (isListening) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
 
-      e.preventDefault();
-    }
-  };
+        e.preventDefault();
+      }
+    },
+    [
+      isExternalSTTEnabled,
+      permission,
+      getMicrophonePermission,
+      isListening,
+      stopRecording,
+      startRecording,
+      showToast,
+    ],
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -268,7 +292,7 @@ const useSpeechToTextExternal = (
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isListening]);
+  }, [isListening, handleKeyDown]);
 
   return {
     isListening,
