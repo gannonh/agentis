@@ -74,7 +74,7 @@ export class MCPManager {
       entries.map(async ([serverName, _config], i) => {
         // Initialize health tracking for this server
         this.initializeServerHealth(serverName);
-        
+
         /** Process env for app-level connections */
         const config = this.processMCPEnv ? this.processMCPEnv(_config) : _config;
         const connection = new MCPConnection(serverName, config, this.logger);
@@ -155,37 +155,37 @@ export class MCPManager {
       attempts++;
       try {
         this.logger.info(`${logPrefix} Connection attempt ${attempts}/${maxAttempts}`);
-        
+
         await connection.connect();
-        
+
         // Verify connection with a ping test
         if (await connection.isConnected()) {
           this.logger.info(`${logPrefix} Successfully connected and verified`);
           return;
         }
-        
+
         throw new Error('Connection attempt succeeded but ping verification failed');
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         // Log the error with attempt context
         this.logger.warn(
-          `${logPrefix} Attempt ${attempts}/${maxAttempts} failed: ${lastError.message}`
+          `${logPrefix} Attempt ${attempts}/${maxAttempts} failed: ${lastError.message}`,
         );
-        
+
         if (attempts === maxAttempts) {
           this.logger.error(
             `${logPrefix} Failed to connect after ${maxAttempts} attempts. Final error:`,
-            lastError
+            lastError,
           );
           throw lastError;
         }
-        
+
         // Exponential backoff: 1s, 2s, 4s, 8s with jitter
         const baseDelay = 1000 * Math.pow(2, attempts - 1);
         const jitter = Math.random() * 1000; // Add jitter to prevent thundering herd
         const delay = Math.min(baseDelay + jitter, 15000); // Cap at 15s
-        
+
         this.logger.info(`${logPrefix} Retrying in ${Math.round(delay)}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -227,12 +227,12 @@ export class MCPManager {
         health.state = 'circuit_open';
         health.circuitOpenUntil = Date.now() + this.CIRCUIT_BREAKER_TIMEOUT;
         this.logger.warn(
-          `[MCP][${serverName}] Circuit breaker OPENED after ${health.consecutiveFailures} consecutive failures`
+          `[MCP][${serverName}] Circuit breaker OPENED after ${health.consecutiveFailures} consecutive failures`,
         );
       } else {
         health.state = 'degraded';
         this.logger.warn(
-          `[MCP][${serverName}] Health: DEGRADED (${health.consecutiveFailures}/${this.CIRCUIT_BREAKER_FAILURE_THRESHOLD} failures)`
+          `[MCP][${serverName}] Health: DEGRADED (${health.consecutiveFailures}/${this.CIRCUIT_BREAKER_FAILURE_THRESHOLD} failures)`,
         );
       }
     }
@@ -283,9 +283,8 @@ export class MCPManager {
     for (const [serverName, health] of this.serverHealth.entries()) {
       // Check if server needs recovery attempt
       const timeSinceLastFailure = now - health.lastFailureTime;
-      const shouldAttemptRecovery = 
-        health.state === 'degraded' && 
-        timeSinceLastFailure > this.CIRCUIT_BREAKER_RECOVERY_TIMEOUT;
+      const shouldAttemptRecovery =
+        health.state === 'degraded' && timeSinceLastFailure > this.CIRCUIT_BREAKER_RECOVERY_TIMEOUT;
 
       if (shouldAttemptRecovery) {
         healthCheckPromises.push(this.attemptServerRecovery(serverName));
@@ -293,7 +292,9 @@ export class MCPManager {
     }
 
     if (healthCheckPromises.length > 0) {
-      this.logger.info(`[MCP] Performing health check on ${healthCheckPromises.length} degraded servers`);
+      this.logger.info(
+        `[MCP] Performing health check on ${healthCheckPromises.length} degraded servers`,
+      );
       await Promise.allSettled(healthCheckPromises);
     }
   }
@@ -311,7 +312,7 @@ export class MCPManager {
     try {
       // Test the connection with a simple ping
       const isConnected = await connection.isConnected();
-      
+
       if (isConnected) {
         this.recordServerSuccess(serverName);
         this.logger.info(`[MCP][${serverName}] Server recovery successful`);
@@ -375,7 +376,7 @@ export class MCPManager {
 
     // Initialize health tracking if not already done
     this.initializeServerHealth(serverName);
-    
+
     const userServerMap = this.userConnections.get(userId);
     let connection = userServerMap?.get(serverName);
     const now = Date.now();
@@ -456,7 +457,7 @@ export class MCPManager {
     } catch (error) {
       // Record failed connection attempt
       this.recordServerFailure(serverName);
-      
+
       this.logger.error(
         `[MCP][User: ${userId}][${serverName}] Failed to establish connection`,
         error,
@@ -683,7 +684,7 @@ export class MCPManager {
       );
       // Record successful tool call
       this.recordServerSuccess(serverName);
-      
+
       if (userId) {
         this.updateUserLastActivity(userId);
       }
@@ -692,7 +693,7 @@ export class MCPManager {
     } catch (error) {
       // Record failed tool call
       this.recordServerFailure(serverName);
-      
+
       // Log with context and re-throw or handle as needed
       this.logger.error(`${logPrefix}[${toolName}] Tool call failed`, error);
       // Rethrowing allows the caller (createMCPTool) to handle the final user message

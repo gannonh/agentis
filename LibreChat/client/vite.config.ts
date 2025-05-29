@@ -26,6 +26,28 @@ export default defineConfig({
   // Set the directory where environment variables are loaded from and restrict prefixes
   envDir: '../',
   envPrefix: ['VITE_', 'SCRIPT_', 'DOMAIN_', 'ALLOW_'],
+  css: {
+    postcss: {
+      // Suppress verbose PostCSS warnings that show entire file context
+      // These are compatibility warnings, not functional issues
+      plugins: [
+        {
+          postcssPlugin: 'suppress-verbose-warnings',
+          OnceExit() {
+            // Override console to filter out verbose CSS line-by-line output
+            const originalWarn = console.warn;
+            console.warn = (...args) => {
+              const message = args.join(' ');
+              // Skip the verbose line-by-line CSS output (contains | and ^ markers)
+              if (!message.includes('|') || !message.includes('^')) {
+                originalWarn(...args);
+              }
+            };
+          }
+        }
+      ]
+    }
+  },
   plugins: [
     react(),
     nodePolyfills(),
@@ -133,7 +155,7 @@ export default defineConfig({
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.names && /\.(woff|woff2|eot|ttf|otf)$/.test(assetInfo.names)) {
+          if (assetInfo.names && assetInfo.names.some(name => /\.(woff|woff2|eot|ttf|otf)$/.test(name))) {
             return 'assets/fonts/[name][extname]';
           }
           return 'assets/[name].[hash][extname]';

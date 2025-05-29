@@ -302,7 +302,7 @@ function getToolDisplayNameFromPlugins(toolName: string, serverName?: string): s
       (tool) =>
         tool.pluginKey && typeof tool.pluginKey === 'string' && tool.pluginKey === pluginKey,
     ) as TPlugin | undefined;
-    
+
     if (exactMatch?.displayName) {
       return exactMatch.displayName;
     }
@@ -312,7 +312,7 @@ function getToolDisplayNameFromPlugins(toolName: string, serverName?: string): s
   const toolMatch = toolsFromStore.find(
     (tool) => tool.name && typeof tool.name === 'string' && tool.name === toolName,
   ) as TPlugin | undefined;
-  
+
   if (toolMatch?.displayName) {
     return toolMatch.displayName;
   }

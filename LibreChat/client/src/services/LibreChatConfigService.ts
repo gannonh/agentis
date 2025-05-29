@@ -65,7 +65,7 @@ class LibreChatConfigService {
       // In development, the file will be served from the public directory
       // In production, it will be served from the dist directory
       const response = await fetch('/librechat.yaml');
-      
+
       if (!response.ok) {
         console.warn('Failed to load librechat.yaml:', response.status, response.statusText);
         return {};
@@ -73,11 +73,17 @@ class LibreChatConfigService {
 
       const yamlContent = await response.text();
       const parsedConfig = yaml.load(yamlContent) as LibreChatConfig;
-      
+
       // Debug logging when debug flag is enabled
-      if (typeof window !== 'undefined' && localStorage.getItem('debug-tool-display-names') === 'true') {
+      if (
+        typeof window !== 'undefined' &&
+        localStorage.getItem('debug-tool-display-names') === 'true'
+      ) {
         console.log('Loaded librechat.yaml configuration:', parsedConfig);
-        console.log('MCP Servers found:', parsedConfig?.mcpServers ? Object.keys(parsedConfig.mcpServers) : 'none');
+        console.log(
+          'MCP Servers found:',
+          parsedConfig?.mcpServers ? Object.keys(parsedConfig.mcpServers) : 'none',
+        );
       }
       return parsedConfig || {};
     } catch (error) {
