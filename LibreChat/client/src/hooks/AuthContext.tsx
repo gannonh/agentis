@@ -170,8 +170,8 @@ const AuthContextProvider = ({
     if (token == null || !token || !isAuthenticated) {
       silentRefresh();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, isAuthenticated, userQuery.data, userQuery.isError, userQuery.error, error]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   // Note: silentRefresh, setUser, navigate, doSetError intentionally excluded to prevent circular dependencies
 
   useEffect(() => {
