@@ -30,13 +30,23 @@ export async function handleGoogleOAuth(
 
     // First try to find the Composio backend link with a longer wait
     // Use .first() to handle multiple similar links and select the first valid one
-    const composioLink = page.locator('a[href*="backend.composio.dev"]').first();
+    // Wait for the full URL pattern to ensure it's completely rendered
+    // https://backend.composio.dev/api/v3/s/8q3Nx2XX
+    const composioLink = page.locator('a[href*="https://backend.composio.dev/api/v3/"]').first();
 
     try {
-      // Wait up to 30 seconds for the Composio link to appear
+      // Wait up to 60 seconds for the fully resolved Composio link to appear
       await composioLink.waitFor({ timeout: 60000 });
-      logProgress(`Found Composio backend authorization link`);
-      await composioLink.click({ timeout });
+      logProgress(`Found fully resolved Composio backend authorization link`);
+
+      // Additional verification that the href attribute is complete
+      const href = await composioLink.getAttribute('href');
+      if (href && href.includes('https://backend.composio.dev/api/v3/') && href.length > 40) {
+        logProgress(`Verified complete Composio URL: ${href.substring(0, 50)}...`);
+        await composioLink.click({ timeout });
+      } else {
+        throw new Error('Composio URL appears incomplete');
+      }
       const popupPromise = page.waitForEvent('popup');
       const popup = await popupPromise;
 

@@ -143,3 +143,10 @@ e2e scripts
 
 test22@example.com
 222222222
+
+
+[WebServer] 2025-05-29 05:52:21 error: [MCPJ [googledocs] Ping failed: Error POSTing to endpoint (HTTP 405) :
+
+[WebServer] 2025-05-29 06:04:01 error: [MCP][User: 68385b206e4650512d53cbd7][googlesheets][COMPOSIO_INITIATE_CONNECTION] Tool call failed Error POSTing to endpoint (HTTP 405): 
+[WebServer] 2025-05-29 06:04:01 error: [MCP][User: 68385b206e4650512d53cbd7][googlesheets] Error calling "COMPOSIO_INITIATE_CONNECTION" MCP tool: Error POSTing to endpoint (HTTP 405): 
+[WebServer] 2025-05-29 06:04:01 error: [api/server/controllers/agents/client.js #chatCompletion] Tool Error "COMPOSIO_INITIATE_CONNECTION_mcp_googlesheets" tool call failed: Error POSTing to endpoint (HTTP 405): 

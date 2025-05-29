@@ -156,6 +156,7 @@ test('Use Google Sheets Agent', async ({ page }) => {
     });
     logProgress('✅ Create New Spreadsheet completed (direct)');
 
+    // page.pause(); // Pause for debugging if needed
     // Handle authentication if it appears after the attempt
     await handleGoogleOAuth(page, 'Google Sheets');
 
