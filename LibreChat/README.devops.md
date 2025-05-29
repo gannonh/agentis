@@ -145,6 +145,14 @@ Docker volumes ensure data persists across container restarts:
 - Check health: `curl http://localhost:8000/health`
 - View docs: `http://localhost:8000/docs`
 
+#### Dependency Issues
+- **Missing `@smithy/signature-v4` or similar AWS/Langchain errors**:
+  ```bash
+  npm install --legacy-peer-deps
+  ```
+- **MongoDB connection errors**: Check that `mongodb` package is in `api/package.json` dependencies
+- **Module resolution errors**: Ensure packages are built: `npm run build:all`
+
 #### General Debugging
 - Check logs: `docker logs [container_name]`
 - Enter container: `docker exec -it [container_name] bash`
@@ -165,8 +173,10 @@ Docker volumes ensure data persists across container restarts:
    ```bash
    git clone https://github.com/gannonh/agentis.git
    cd agentis
-   npm ci
+   npm ci --legacy-peer-deps
    ```
+   
+   **Note**: The `--legacy-peer-deps` flag is required due to peer dependency conflicts between AWS SDK and Langchain packages. This is automatically configured via `.npmrc` but may be needed for some npm commands.
 
 2. **Build shared packages**:
    ```bash
