@@ -61,20 +61,23 @@ function Avatar() {
     handleFile(file);
   };
 
-  const handleFile = (file: File | undefined) => {
-    if (fileConfig.avatarSizeLimit != null && file && file.size <= fileConfig.avatarSizeLimit) {
-      setImage(file);
-      setScale(1);
-      setRotation(0);
-    } else {
-      const megabytes =
-        fileConfig.avatarSizeLimit != null ? formatBytes(fileConfig.avatarSizeLimit) : 2;
-      showToast({
-        message: localize('com_ui_upload_invalid_var', { 0: megabytes + '' }),
-        status: 'error',
-      });
-    }
-  };
+  const handleFile = useCallback(
+    (file: File | undefined) => {
+      if (fileConfig.avatarSizeLimit != null && file && file.size <= fileConfig.avatarSizeLimit) {
+        setImage(file);
+        setScale(1);
+        setRotation(0);
+      } else {
+        const megabytes =
+          fileConfig.avatarSizeLimit != null ? formatBytes(fileConfig.avatarSizeLimit) : 2;
+        showToast({
+          message: localize('com_ui_upload_invalid_var', { 0: megabytes + '' }),
+          status: 'error',
+        });
+      }
+    },
+    [fileConfig.avatarSizeLimit, showToast, localize],
+  );
 
   const handleScaleChange = (value: number[]) => {
     setScale(value[0]);

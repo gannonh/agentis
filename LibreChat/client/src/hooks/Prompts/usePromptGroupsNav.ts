@@ -32,7 +32,7 @@ export default function usePromptGroupsNav() {
     maxPageNumberReached.current = 1;
     setPageNumber(1);
     queryClient.resetQueries([QueryKeys.promptGroups, name, category, pageSize]);
-  }, [pageSize, name, category, setPageNumber]);
+  }, [pageSize, name, category, setPageNumber, queryClient]);
 
   const promptGroups = useMemo(() => {
     return groupsQuery.data?.pages[pageNumber - 1 + '']?.promptGroups || [];
@@ -53,9 +53,9 @@ export default function usePromptGroupsNav() {
   const hasPreviousPage = !!groupsQuery.hasPreviousPage || pageNumber > 1;
 
   const debouncedSetName = useCallback(
-    debounce((nextValue: string) => {
-      setName(nextValue);
-    }, 850),
+    (nextValue: string) => {
+      debounce(setName, 850)(nextValue);
+    },
     [setName],
   );
 

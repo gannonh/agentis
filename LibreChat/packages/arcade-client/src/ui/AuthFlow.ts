@@ -92,7 +92,7 @@ export function createAuthFlow(config: AuthFlowConfig): AuthFlow {
         startedAt: new Date(parsed.startedAt),
       };
     }
-  } catch (error) {
+  } catch {
     // Use error handler for better error reporting in production
     localStorage.removeItem(storageKey);
   }

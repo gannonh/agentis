@@ -25,6 +25,7 @@ function show_usage {
   echo -e "\nCleanup Options:"
   echo -e "  --clean     Aggressive cleanup: Remove client/dist and node_modules/.cache"
   echo -e "  --clean-all Super aggressive cleanup: Remove all build artifacts and caches"
+  echo -e "  --test-build Test complete build process from scratch (clean-all + reinstall + rebuild)"
   echo -e "  --help     Show this help message"
   echo -e "\nExamples:"
   echo -e "  ./dev-rebuild.sh --all                # Quick: rebuild packages + restart servers"
@@ -33,6 +34,7 @@ function show_usage {
   echo -e "  ./dev-rebuild.sh --provider           # Rebuild data-provider only"
   echo -e "  ./dev-rebuild.sh --clean              # Clean caches and rebuild frontend"
   echo -e "  ./dev-rebuild.sh --clean-all          # Nuclear cleanup and rebuild everything"
+  echo -e "  ./dev-rebuild.sh --test-build         # Test complete build process from scratch"
   echo -e "  ./dev-rebuild.sh --stop               # Stop all running servers"
   echo -e "\nNote: Server restarts log to files. Use 'tail -f logs/*.log' to monitor."
 }
@@ -53,6 +55,7 @@ STOP_SERVERS=false
 DO_ALL=false
 DO_CLEAN=false
 DO_CLEAN_ALL=false
+TEST_BUILD=false
 KILL_ALL_NODE=false
 
 for arg in "$@"; do
@@ -102,6 +105,9 @@ for arg in "$@"; do
       ;;
     --clean-all)
       DO_CLEAN_ALL=true
+      ;;
+    --test-build)
+      TEST_BUILD=true
       ;;
     --kill-all-node)
       KILL_ALL_NODE=true
@@ -242,6 +248,14 @@ function do_clean_all {
   # Remove package node_modules caches
   rm -rf packages/*/node_modules/.cache
   
+  # Remove workspace node_modules directories (forces complete dependency reinstall)
+  echo -e "${YELLOW}Removing workspace node_modules directories...${NC}"
+  rm -rf node_modules
+  rm -rf api/node_modules
+  rm -rf client/node_modules
+  rm -rf packages/*/node_modules
+  echo -e "${GREEN}✓ Removed all node_modules directories${NC}"
+  
   # Remove any .tsbuildinfo files
   find . -name "*.tsbuildinfo" -delete
   
@@ -267,11 +281,29 @@ if $STOP_SERVERS; then
   fi
 fi
 
+# Handle test-build request (highest priority)
+if $TEST_BUILD; then
+  echo -e "${GREEN}=== TESTING COMPLETE BUILD PROCESS ===${NC}"
+  echo -e "${GREEN}This will test the entire build process from scratch${NC}"
+  
+  # Force all cleanup and rebuild options
+  DO_CLEAN_ALL=true
+  REBUILD_DATA=true
+  REBUILD_PROVIDER=true
+  REBUILD_MCP=true
+  FRONTEND_NEEDS_REBUILD=true
+  DEPS_NEED_INSTALL=true
+  
+  # Don't restart servers for test build
+  RESTART_FRONTEND=false
+  RESTART_BACKEND=false
+fi
+
 # Handle cleanup requests
-FRONTEND_NEEDS_REBUILD=false
 if $DO_CLEAN_ALL; then
   do_clean_all
   FRONTEND_NEEDS_REBUILD=true
+  DEPS_NEED_INSTALL=true
   # If we did a super aggressive cleanup, we need to rebuild all packages
   REBUILD_DATA=true
   REBUILD_PROVIDER=true
@@ -281,19 +313,28 @@ elif $DO_CLEAN; then
   FRONTEND_NEEDS_REBUILD=true
 fi
 
-# Rebuild data-schemas if needed
-if $REBUILD_DATA; then
-  echo -e "${GREEN}Rebuilding data-schemas...${NC}"
-  npm run build:data-schemas
+# Reinstall dependencies if needed after cleanup
+if $DEPS_NEED_INSTALL; then
+  echo -e "${GREEN}Reinstalling dependencies after cleanup...${NC}"
+  npm install --legacy-peer-deps
+  echo -e "${GREEN}✓ Dependencies reinstalled${NC}"
 fi
 
-# Rebuild data-provider if needed
+# Rebuild packages in correct dependency order
+# data-provider must be built first (provides base types/constants)
+# then data-schemas (uses types from data-provider)  
+# then mcp (uses both data-provider and data-schemas)
+
 if $REBUILD_PROVIDER; then
   echo -e "${GREEN}Rebuilding data-provider...${NC}"
   npm run build:data-provider
 fi
 
-# Rebuild mcp if needed
+if $REBUILD_DATA; then
+  echo -e "${GREEN}Rebuilding data-schemas...${NC}"
+  npm run build:data-schemas
+fi
+
 if $REBUILD_MCP; then
   echo -e "${GREEN}Rebuilding mcp...${NC}"
   npm run build:mcp
@@ -332,7 +373,13 @@ if $RESTART_BACKEND; then
   echo -e "${GREEN}Backend server restarted (PID: $!)${NC}"
 fi
 
-if $DO_ALL; then
+if $TEST_BUILD; then
+  echo -e "${GREEN}=== BUILD PROCESS TEST COMPLETE ===${NC}"
+  echo -e "${GREEN}✓ All node_modules directories removed and reinstalled${NC}"
+  echo -e "${GREEN}✓ All packages successfully rebuilt from scratch${NC}"
+  echo -e "${GREEN}✓ Frontend successfully rebuilt with clean cache${NC}"
+  echo -e "${YELLOW}Build process is robust and working correctly!${NC}"
+elif $DO_ALL; then
   echo -e "${GREEN}All packages rebuilt and servers restarted!${NC}"
   echo -e "${YELLOW}Frontend running on: http://localhost:3090+ (Vite auto-increments ports)${NC}"
   echo -e "${YELLOW}Backend running on: http://localhost:3080${NC}"

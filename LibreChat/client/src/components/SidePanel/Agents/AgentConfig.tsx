@@ -321,108 +321,113 @@ export default function AgentConfig({
             )}
 
             {/* MCP Server Tool Groups */}
-            {!toolsLoading && Object.entries(mcpServerGroups).map(([serverName, serverTools]) => (
-              <AgentToolGroup
-                key={`group-${serverName}`}
-                serverName={serverName}
-                tools={serverTools}
-                allTools={allTools}
-                agent_id={agent_id}
-                onRemoveTool={removeTool}
-                onRemoveGroup={() => removeServerGroup(serverName)}
-              />
-            ))}
-
-            {/* Individual Tools */}
-            {!toolsLoading && individualTools.map((tool) => {
-              // Add display name enhancement to individual tools
-              const enhancedTool = {
-                ...tool,
-                // If it's an MCP tool, extract the server name and apply formatting
-                displayName: tool.pluginKey.includes('_mcp_')
-                  ? (() => {
-                      const parts = tool.pluginKey.split('_mcp_');
-                      const serverName = parts[parts.length - 1];
-                      // Extract the actual tool name from the plugin key if possible
-                      let toolName = tool.name || tool.pluginKey;
-
-                      // For Composio tools, the tool name is often in the format SERVERTYPE_TOOLACTION
-                      // Extract this from the pluginKey if needed
-                      if (
-                        tool.pluginKey.includes('COMPOSIO_') ||
-                        tool.pluginKey.includes(`${serverName.toUpperCase()}_`)
-                      ) {
-                        const keyParts = tool.pluginKey.split('_mcp_')[0].split('_');
-                        // Get the last part if it's a simple key, or reconstruct the tool name
-                        // for more complex keys
-                        if (keyParts.length > 1) {
-                          // Join all parts except the last one (which is often 'plugin')
-                          toolName = keyParts.join('_');
-                        }
-                      }
-
-                      return getToolDisplayName(toolName, serverName);
-                    })()
-                  : tool.name,
-              };
-
-              // Add the enhanced tool to allTools array so it can be found by the AgentTool component
-              const enhancedAllTools = [...allTools];
-              const toolIndex = enhancedAllTools.findIndex((t) => t.pluginKey === tool.pluginKey);
-              if (toolIndex >= 0) {
-                enhancedAllTools[toolIndex] = enhancedTool;
-              }
-
-              return (
-                <AgentTool
-                  key={`tool-${tool.pluginKey}`}
-                  tool={enhancedTool} // Pass the entire enhanced tool object
-                  allTools={enhancedAllTools}
+            {!toolsLoading &&
+              Object.entries(mcpServerGroups).map(([serverName, serverTools]) => (
+                <AgentToolGroup
+                  key={`group-${serverName}`}
+                  serverName={serverName}
+                  tools={serverTools}
+                  allTools={allTools}
                   agent_id={agent_id}
-                />
-              );
-            })}
-
-            {/* Actions */}
-            {!toolsLoading && actions
-              .filter((action) => action.agent_id === agent_id)
-              .map((action, i) => (
-                <Action
-                  key={i}
-                  action={action}
-                  onClick={() => {
-                    setAction(action);
-                    setActivePanel(Panel.actions);
-                  }}
+                  onRemoveTool={removeTool}
+                  onRemoveGroup={() => removeServerGroup(serverName)}
                 />
               ))}
-            {!toolsLoading && <div className="flex space-x-2">
-              {(toolsEnabled ?? false) && (
-                <button
-                  type="button"
-                  onClick={() => setShowToolDialog(true)}
-                  className="btn btn-neutral border-token-border-light relative h-9 w-full rounded-lg font-medium"
-                  aria-haspopup="dialog"
-                >
-                  <div className="flex w-full items-center justify-center gap-2">
-                    {localize('com_assistants_add_tools')}
-                  </div>
-                </button>
-              )}
-              {(actionsEnabled ?? false) && (
-                <button
-                  type="button"
-                  disabled={!agent_id}
-                  onClick={handleAddActions}
-                  className="btn btn-neutral border-token-border-light relative h-9 w-full rounded-lg font-medium"
-                  aria-haspopup="dialog"
-                >
-                  <div className="flex w-full items-center justify-center gap-2">
-                    {localize('com_assistants_add_actions')}
-                  </div>
-                </button>
-              )}
-            </div>}
+
+            {/* Individual Tools */}
+            {!toolsLoading &&
+              individualTools.map((tool) => {
+                // Add display name enhancement to individual tools
+                const enhancedTool = {
+                  ...tool,
+                  // If it's an MCP tool, extract the server name and apply formatting
+                  displayName: tool.pluginKey.includes('_mcp_')
+                    ? (() => {
+                        const parts = tool.pluginKey.split('_mcp_');
+                        const serverName = parts[parts.length - 1];
+                        // Extract the actual tool name from the plugin key if possible
+                        let toolName = tool.name || tool.pluginKey;
+
+                        // For Composio tools, the tool name is often in the format SERVERTYPE_TOOLACTION
+                        // Extract this from the pluginKey if needed
+                        if (
+                          tool.pluginKey.includes('COMPOSIO_') ||
+                          tool.pluginKey.includes(`${serverName.toUpperCase()}_`)
+                        ) {
+                          const keyParts = tool.pluginKey.split('_mcp_')[0].split('_');
+                          // Get the last part if it's a simple key, or reconstruct the tool name
+                          // for more complex keys
+                          if (keyParts.length > 1) {
+                            // Join all parts except the last one (which is often 'plugin')
+                            toolName = keyParts.join('_');
+                          }
+                        }
+
+                        return getToolDisplayName(toolName, serverName);
+                      })()
+                    : tool.name,
+                };
+
+                // Add the enhanced tool to allTools array so it can be found by the AgentTool component
+                const enhancedAllTools = [...allTools];
+                const toolIndex = enhancedAllTools.findIndex((t) => t.pluginKey === tool.pluginKey);
+                if (toolIndex >= 0) {
+                  enhancedAllTools[toolIndex] = enhancedTool;
+                }
+
+                return (
+                  <AgentTool
+                    key={`tool-${tool.pluginKey}`}
+                    tool={enhancedTool} // Pass the entire enhanced tool object
+                    allTools={enhancedAllTools}
+                    agent_id={agent_id}
+                  />
+                );
+              })}
+
+            {/* Actions */}
+            {!toolsLoading &&
+              actions
+                .filter((action) => action.agent_id === agent_id)
+                .map((action, i) => (
+                  <Action
+                    key={i}
+                    action={action}
+                    onClick={() => {
+                      setAction(action);
+                      setActivePanel(Panel.actions);
+                    }}
+                  />
+                ))}
+            {!toolsLoading && (
+              <div className="flex space-x-2">
+                {(toolsEnabled ?? false) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowToolDialog(true)}
+                    className="btn btn-neutral border-token-border-light relative h-9 w-full rounded-lg font-medium"
+                    aria-haspopup="dialog"
+                  >
+                    <div className="flex w-full items-center justify-center gap-2">
+                      {localize('com_assistants_add_tools')}
+                    </div>
+                  </button>
+                )}
+                {(actionsEnabled ?? false) && (
+                  <button
+                    type="button"
+                    disabled={!agent_id}
+                    onClick={handleAddActions}
+                    className="btn btn-neutral border-token-border-light relative h-9 w-full rounded-lg font-medium"
+                    aria-haspopup="dialog"
+                  >
+                    <div className="flex w-full items-center justify-center gap-2">
+                      {localize('com_assistants_add_actions')}
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

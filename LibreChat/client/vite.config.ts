@@ -26,6 +26,9 @@ export default defineConfig({
   // Set the directory where environment variables are loaded from and restrict prefixes
   envDir: '../',
   envPrefix: ['VITE_', 'SCRIPT_', 'DOMAIN_', 'ALLOW_'],
+  css: {
+    postcss: './postcss.config.cjs'
+  },
   plugins: [
     react(),
     nodePolyfills(),
@@ -133,7 +136,7 @@ export default defineConfig({
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.names && /\.(woff|woff2|eot|ttf|otf)$/.test(assetInfo.names)) {
+          if (assetInfo.names && assetInfo.names.some(name => /\.(woff|woff2|eot|ttf|otf)$/.test(name))) {
             return 'assets/fonts/[name][extname]';
           }
           return 'assets/[name].[hash][extname]';

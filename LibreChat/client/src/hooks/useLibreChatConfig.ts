@@ -22,13 +22,16 @@ export function useLibreChatConfig() {
 
   return {
     isLoaded,
-    getMCPServerConfig: (serverName: string) => LibreChatConfigService.getMCPServerConfig(serverName),
-    getToolDisplayName: (toolName: string, serverName?: string) => 
+    getMCPServerConfig: (serverName: string) =>
+      LibreChatConfigService.getMCPServerConfig(serverName),
+    getToolDisplayName: (toolName: string, serverName?: string) =>
       LibreChatConfigService.getToolDisplayName(toolName, serverName),
   };
 }
 
-export function useMCPServerConfig(serverName: string | null | undefined): MCPServerConfig | undefined {
+export function useMCPServerConfig(
+  serverName: string | null | undefined,
+): MCPServerConfig | undefined {
   const [config, setConfig] = useState<MCPServerConfig | undefined>();
 
   useEffect(() => {

@@ -222,11 +222,11 @@ export default function useMentions({
     agentsList,
     assistantMap,
     modelsConfig,
+    interfaceConfig.modelSelect,
     endpointsConfig,
     assistantListMap,
     includeAssistants,
     interfaceConfig.presets,
-    interfaceConfig.endpointsMenu,
   ]);
 
   return {

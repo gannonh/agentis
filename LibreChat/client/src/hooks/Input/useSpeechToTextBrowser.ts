@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import useGetAudioSettings from './useGetAudioSettings';
@@ -68,7 +68,7 @@ const useSpeechToTextBrowser = (
     };
   }, [setText, onTranscriptionComplete, resetTranscript, finalTranscript, autoSendText]);
 
-  const toggleListening = () => {
+  const toggleListening = useCallback(() => {
     if (!browserSupportsSpeechRecognition) {
       showToast({
         message: 'Browser does not support SpeechRecognition',
@@ -93,7 +93,14 @@ const useSpeechToTextBrowser = (
         continuous: autoTranscribeAudio,
       });
     }
-  };
+  }, [
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable,
+    isListening,
+    languageSTT,
+    autoTranscribeAudio,
+    showToast,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -104,7 +111,7 @@ const useSpeechToTextBrowser = (
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isBrowserSTTEnabled, toggleListening]);
 
   return {
     isListening,

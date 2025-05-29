@@ -68,19 +68,27 @@ export default function ToolCall({
   // DEBUG: Show debug info when localStorage flag is set
   // To enable: localStorage.setItem('debug-tool-display-names', 'true')
   // To disable: localStorage.removeItem('debug-tool-display-names')
-  const debugValue = typeof window !== 'undefined' ? localStorage.getItem('debug-tool-display-names') : null;
+  const debugValue =
+    typeof window !== 'undefined' ? localStorage.getItem('debug-tool-display-names') : null;
   const isDebugEnabled = debugValue === 'true';
-  
-  const debugInfo = isMCPToolCall && isDebugEnabled ? {
-    function_name,
-    domain,
-    mcpServerConfig: mcpServerConfig ? {
-      name: mcpServerConfig.name,
-      toolDisplayNames: mcpServerConfig.toolDisplayNames
-    } : null,
-    name,
-    displayNameResult: mcpServerConfig ? getToolDisplayName(function_name, domain || undefined, mcpServerConfig) : 'no-config'
-  } : null;
+
+  const debugInfo =
+    isMCPToolCall && isDebugEnabled
+      ? {
+          function_name,
+          domain,
+          mcpServerConfig: mcpServerConfig
+            ? {
+                name: mcpServerConfig.name,
+                toolDisplayNames: mcpServerConfig.toolDisplayNames,
+              }
+            : null,
+          name,
+          displayNameResult: mcpServerConfig
+            ? getToolDisplayName(function_name, domain || undefined, mcpServerConfig)
+            : 'no-config',
+        }
+      : null;
 
   const error =
     typeof output === 'string' && output.toLowerCase().includes('error processing tool');
@@ -131,9 +139,7 @@ export default function ToolCall({
           style={{ opacity: 1, transform: 'none' }}
           data-projection-id="849"
         >
-          <div>
-            {React.createElement(ShieldCheck as any)}
-          </div>
+          <div>{React.createElement(ShieldCheck as any)}</div>
         </div>
       );
     } else if (progress < 1) {
@@ -224,27 +230,44 @@ export default function ToolCall({
               </a>
             </div>
             <p className="flex items-center text-xs text-text-secondary">
-              {React.createElement(TriangleAlert as any, { className: "mr-1.5 inline-block h-4 w-4" })}
+              {React.createElement(TriangleAlert as any, {
+                className: 'mr-1.5 inline-block h-4 w-4',
+              })}
               {localize('com_assistants_allow_sites_you_trust')}
             </p>
           </div>
         )}
       </div>
       {attachments?.map((attachment, index) => <Attachment attachment={attachment} key={index} />)}
-      
+
       {/* DEBUG: Display debug info on screen */}
       {debugInfo && (
-        <div className="mt-2 rounded-lg bg-yellow-100 border border-yellow-300 p-3 text-xs font-mono text-yellow-800">
-          <div className="font-bold text-yellow-900 mb-2">🐛 TOOL DEBUG:</div>
-          <div><strong>function_name:</strong> {debugInfo.function_name}</div>
-          <div><strong>domain:</strong> {debugInfo.domain || 'null'}</div>
-          <div><strong>name:</strong> {debugInfo.name}</div>
-          <div><strong>mcpServerConfig:</strong> {debugInfo.mcpServerConfig ? 'LOADED' : 'NULL'}</div>
-          <div><strong>displayNameResult:</strong> {debugInfo.displayNameResult}</div>
+        <div className="mt-2 rounded-lg border border-yellow-300 bg-yellow-100 p-3 font-mono text-xs text-yellow-800">
+          <div className="mb-2 font-bold text-yellow-900">🐛 TOOL DEBUG:</div>
+          <div>
+            <strong>function_name:</strong> {debugInfo.function_name}
+          </div>
+          <div>
+            <strong>domain:</strong> {debugInfo.domain || 'null'}
+          </div>
+          <div>
+            <strong>name:</strong> {debugInfo.name}
+          </div>
+          <div>
+            <strong>mcpServerConfig:</strong> {debugInfo.mcpServerConfig ? 'LOADED' : 'NULL'}
+          </div>
+          <div>
+            <strong>displayNameResult:</strong> {debugInfo.displayNameResult}
+          </div>
           {debugInfo.mcpServerConfig && (
             <div className="ml-4 mt-1">
-              <div><strong>config.name:</strong> {debugInfo.mcpServerConfig.name}</div>
-              <div><strong>toolDisplayNames:</strong> {JSON.stringify(debugInfo.mcpServerConfig.toolDisplayNames, null, 2)}</div>
+              <div>
+                <strong>config.name:</strong> {debugInfo.mcpServerConfig.name}
+              </div>
+              <div>
+                <strong>toolDisplayNames:</strong>{' '}
+                {JSON.stringify(debugInfo.mcpServerConfig.toolDisplayNames, null, 2)}
+              </div>
             </div>
           )}
         </div>

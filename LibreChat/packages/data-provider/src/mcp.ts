@@ -168,7 +168,6 @@ export function processMCPEnv(obj: Readonly<MCPOptions>, userId?: string): MCPOp
 
   // Process URL for LIBRECHAT_USER_ID placeholders
   if ('url' in newObj && typeof newObj.url === 'string') {
-    const originalUrl = newObj.url;
     try {
       let url = newObj.url;
 

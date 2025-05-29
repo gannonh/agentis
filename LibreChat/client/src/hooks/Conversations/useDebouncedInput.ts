@@ -31,8 +31,11 @@ function useDebouncedInput<T = unknown>({
    *
   Note: We use useCallback to ensure our debounced function is stable across renders. */
   const setDebouncedOption = useCallback(
-    debounce(setOption && optionKey ? setOption(optionKey) : setter, delay),
-    [],
+    (newValue: T) => {
+      const fn = setOption && optionKey ? setOption(optionKey) : setter;
+      debounce(fn, delay)(newValue);
+    },
+    [setOption, optionKey, setter, delay],
   );
 
   /** An onChange handler that updates the local state and the debounced option */

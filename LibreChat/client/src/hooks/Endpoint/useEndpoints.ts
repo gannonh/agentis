@@ -60,12 +60,12 @@ export const useEndpoints = ({
 
   const assistants: Assistant[] = useMemo(
     () => Object.values(assistantsMap?.[EModelEndpoint.assistants] ?? {}),
-    [endpoint, assistantsMap],
+    [assistantsMap],
   );
 
   const azureAssistants: Assistant[] = useMemo(
     () => Object.values(assistantsMap?.[EModelEndpoint.azureAssistants] ?? {}),
-    [endpoint, assistantsMap],
+    [assistantsMap],
   );
 
   const filteredEndpoints = useMemo(() => {
@@ -84,7 +84,7 @@ export const useEndpoints = ({
     }
 
     return result;
-  }, [endpoints, hasAgentAccess, includedEndpoints]);
+  }, [endpoints, hasAgentAccess, includedEndpoints, interfaceConfig.modelSelect]);
 
   const endpointRequiresUserKey = useCallback(
     (ep: string) => {
@@ -193,7 +193,15 @@ export const useEndpoints = ({
 
       return result;
     });
-  }, [filteredEndpoints, endpointsConfig, modelsQuery.data, agents, assistants]);
+  }, [
+    filteredEndpoints,
+    endpointsConfig,
+    modelsQuery.data,
+    agents,
+    assistants,
+    azureAssistants,
+    instanceProjectId,
+  ]);
 
   return {
     mappedEndpoints,
