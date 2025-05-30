@@ -55,7 +55,7 @@ export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
       type="button"
       onClick={handleClick}
       aria-label={`Start chat with ${agentName}`}
-      className="group w-full rounded-lg border border-gray-200 bg-white p-4 text-center transition-all duration-200 hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-600"
+      className="group w-72 rounded-lg border border-gray-200 bg-white p-4 text-center transition-all duration-200 hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-600"
     >
       <div className="flex flex-col items-center space-y-3">
         {/* Row 1: Tool Icons - Copy exact pattern from tools picker */}

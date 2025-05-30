@@ -37,7 +37,7 @@ export default function AgentDiscovery({ onStartChat }: AgentDiscoveryProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-4xl pb-12">
       {/* Header */}
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
@@ -51,7 +51,7 @@ export default function AgentDiscovery({ onStartChat }: AgentDiscoveryProps) {
       {/* Agent Grid */}
       <div
         data-testid="agent-discovery-grid"
-        className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+        className="flex flex-wrap justify-center gap-4"
       >
         {featuredAgents.map((agent) => (
           <AgentCTA key={agent.id} agent={agent} onStartChat={onStartChat} />

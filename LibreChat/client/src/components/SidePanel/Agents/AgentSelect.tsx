@@ -187,7 +187,7 @@ export default function AgentSelect({
           setValue={onSelect}
           items={
             agents?.map((agent) => ({
-              label: agent.name ?? '',
+              label: agent.name || agent.id || 'Unnamed Agent',
               value: agent.id ?? '',
               icon: agent.icon,
             })) ?? [
