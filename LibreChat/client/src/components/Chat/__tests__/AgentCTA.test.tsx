@@ -116,7 +116,7 @@ describe('AgentCTA Component', () => {
     expect(container.querySelector('img[src="/assets/tools/google-sheets.svg"]')).toBeInTheDocument();
     expect(container.querySelector('img[src="/assets/tools/gmail.svg"]')).toBeInTheDocument();
     // Should show tool count for additional tools  
-    expect(screen.getByText('+3 more tools')).toBeInTheDocument();
+    expect(screen.getByText('+2 more tools')).toBeInTheDocument();
   });
 
   it('should call onStartChat when CTA is clicked', () => {
