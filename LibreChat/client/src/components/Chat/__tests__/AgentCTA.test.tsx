@@ -71,7 +71,7 @@ const mockAgent: Agent = {
     top_p: 1,
     top_k: 40,
   },
-  tools: ['execute_code', 'file_search'],
+  tools: ['googlesheets', 'gmail'],
   created_at: Date.now(),
   featured: true,
 };
@@ -84,32 +84,39 @@ describe('AgentCTA Component', () => {
   });
 
   it('should render agent CTA with name, description, and tools', () => {
-    render(<AgentCTA agent={mockAgent} onStartChat={mockOnStartChat} />);
+    const { container } = render(<AgentCTA agent={mockAgent} onStartChat={mockOnStartChat} />);
 
     expect(screen.getByText('Code Assistant')).toBeInTheDocument();
     expect(screen.getByText('Helps with coding tasks and debugging')).toBeInTheDocument();
-    expect(screen.getByTestId('openai-icon')).toBeInTheDocument();
+    // Should show tool icons
+    expect(container.querySelector('img[src="/assets/tools/google-sheets.svg"]')).toBeInTheDocument();
   });
 
   it('should display single tool icon when agent has one tool', () => {
     const singleToolAgent = {
       ...mockAgent,
-      tools: ['execute_code'],
+      tools: ['googlesheets'],
     };
 
-    render(<AgentCTA agent={singleToolAgent} onStartChat={mockOnStartChat} />);
+    const { container } = render(<AgentCTA agent={singleToolAgent} onStartChat={mockOnStartChat} />);
 
-    // Should show the execute_code icon
-    expect(screen.getByTestId('tool-icon-execute_code')).toBeInTheDocument();
+    // Should show the Google Sheets icon
+    expect(container.querySelector('img[src="/assets/tools/google-sheets.svg"]')).toBeInTheDocument();
   });
 
   it('should display multiple tool icons with count when agent has multiple tools', () => {
-    render(<AgentCTA agent={mockAgent} onStartChat={mockOnStartChat} />);
+    const multiToolAgent = {
+      ...mockAgent,
+      tools: ['googlesheets', 'gmail', 'googlesheets', 'gmail', 'gmail'], // 5 tools, 2 unique
+    };
 
-    // Should show first tool icon
-    expect(screen.getByTestId('tool-icon-execute_code')).toBeInTheDocument();
-    // Should show count indicator for additional tools
-    expect(screen.getByText('+1')).toBeInTheDocument();
+    const { container } = render(<AgentCTA agent={multiToolAgent} onStartChat={mockOnStartChat} />);
+
+    // Should show unique tool icons
+    expect(container.querySelector('img[src="/assets/tools/google-sheets.svg"]')).toBeInTheDocument();
+    expect(container.querySelector('img[src="/assets/tools/gmail.svg"]')).toBeInTheDocument();
+    // Should show tool count for additional tools  
+    expect(screen.getByText('+3 more tools')).toBeInTheDocument();
   });
 
   it('should call onStartChat when CTA is clicked', () => {

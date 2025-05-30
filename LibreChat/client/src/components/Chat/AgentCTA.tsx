@@ -48,12 +48,7 @@ export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
     return acc;
   }, []);
   
-  console.log('AgentCTA Debug:', {
-    agentName,
-    totalTools: agentTools.length,
-    uniqueTools: uniqueTools.length,
-    uniqueIcons: uniqueTools.map(t => ({ name: t.name, icon: t.icon }))
-  });
+  // Debug removed for production
 
   return (
     <button
