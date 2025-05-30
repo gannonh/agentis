@@ -226,7 +226,7 @@ describe('AgentDiscovery Component', () => {
     expect(screen.getByText('No featured agents available')).toBeInTheDocument();
   });
 
-  it('should be responsive and display agents in grid layout', () => {
+  it('should be responsive and display agents in flex layout', () => {
     mockUseListAgentsQuery.mockReturnValue({
       data: { data: mockAgents },
       isLoading: false,
@@ -238,7 +238,9 @@ describe('AgentDiscovery Component', () => {
     });
 
     const container = screen.getByTestId('agent-discovery-grid');
-    expect(container).toHaveClass('grid');
+    expect(container).toHaveClass('flex');
+    expect(container).toHaveClass('flex-wrap');
+    expect(container).toHaveClass('justify-center');
   });
 
   it('should show maximum of 6 featured agents', () => {

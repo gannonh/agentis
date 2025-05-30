@@ -21,7 +21,6 @@ export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
   const handleClick = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('AgentCTA clicked:', agent.name, agent.id);
     onStartChat(agent);
   };
 

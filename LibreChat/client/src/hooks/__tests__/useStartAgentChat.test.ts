@@ -24,6 +24,9 @@ jest.mock('~/Providers', () => ({
 
 jest.mock('~/store', () => ({
   submission: {},
+  useCreateConversationAtom: jest.fn(() => ({
+    setConversation: mockSetConversation,
+  })),
 }));
 
 const mockAgent: Agent = {
