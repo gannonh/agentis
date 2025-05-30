@@ -22,10 +22,10 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
   beforeEach(() => {
     // Reset the singleton instance
     (MCPManager as any).instance = null;
-    
+
     // Create manager instance
     manager = MCPManager.getInstance(mockLogger);
-    
+
     // Create mock connection instance
     mockConnection = {
       isConnected: jest.fn(),
@@ -37,7 +37,7 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
         listTools: jest.fn().mockResolvedValue({ tools: [] }),
       },
     } as any;
-    
+
     // Mock the constructor to return our mock
     MockMCPConnection.mockImplementation(() => mockConnection);
   });
@@ -108,7 +108,7 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     it('should prevent requests when circuit is open', () => {
       // Initialize server health manually
       (manager as any).initializeServerHealth('test-server');
-      
+
       // Force circuit open
       for (let i = 0; i < 3; i++) {
         (manager as any).recordServerFailure('test-server');
@@ -121,7 +121,7 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     it('should allow test request after circuit timeout', async () => {
       // Initialize server health manually
       (manager as any).initializeServerHealth('test-server');
-      
+
       // Force circuit open with past timeout
       const health = manager.getServerHealth('test-server');
       if (health) {
@@ -132,7 +132,7 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
 
       const isAvailable = (manager as any).isServerAvailable('test-server');
       expect(isAvailable).toBe(true);
-      
+
       // Should transition to degraded state
       const updatedHealth = manager.getServerHealth('test-server');
       expect(updatedHealth?.state).toBe('degraded');
@@ -141,7 +141,7 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     it('should reset circuit on successful operation', () => {
       // Initialize server health manually
       (manager as any).initializeServerHealth('test-server');
-      
+
       // Force degraded state
       (manager as any).recordServerFailure('test-server');
       (manager as any).recordServerFailure('test-server');
@@ -213,7 +213,7 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
         .mockRejectedValueOnce(new Error('Connection failed 1'))
         .mockRejectedValueOnce(new Error('Connection failed 2'))
         .mockResolvedValueOnce(undefined);
-      
+
       mockConnection.isConnected.mockResolvedValue(true);
 
       const startTime = Date.now();
@@ -257,12 +257,12 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     it('should attempt recovery for degraded servers after timeout', async () => {
       // Initialize server health manually
       (manager as any).initializeServerHealth('test-server');
-      
+
       // Set server to degraded state with old failure time
       const health = manager.getServerHealth('test-server');
       if (health) {
         health.state = 'degraded';
-        health.lastFailureTime = 1000000 - (6 * 60 * 1000); // 6 minutes ago
+        health.lastFailureTime = 1000000 - 6 * 60 * 1000; // 6 minutes ago
       }
 
       // Mock successful recovery
@@ -281,12 +281,12 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     it('should not attempt recovery for recently failed servers', async () => {
       // Initialize server health manually
       (manager as any).initializeServerHealth('test-server');
-      
+
       // Set server to degraded state with recent failure
       const health = manager.getServerHealth('test-server');
       if (health) {
         health.state = 'degraded';
-        health.lastFailureTime = 1000000 - (2 * 60 * 1000); // 2 minutes ago
+        health.lastFailureTime = 1000000 - 2 * 60 * 1000; // 2 minutes ago
       }
 
       // Spy on attemptServerRecovery method
@@ -300,12 +300,12 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     it('should handle recovery attempt failures gracefully', async () => {
       // Initialize server health manually
       (manager as any).initializeServerHealth('test-server');
-      
+
       // Set server to degraded state with old failure time
       const health = manager.getServerHealth('test-server');
       if (health) {
         health.state = 'degraded';
-        health.lastFailureTime = 1000000 - (6 * 60 * 1000); // 6 minutes ago
+        health.lastFailureTime = 1000000 - 6 * 60 * 1000; // 6 minutes ago
       }
 
       // Mock failed recovery
@@ -387,7 +387,7 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
 
       // Should now allow test request
       expect((manager as any).isServerAvailable('test-server')).toBe(true);
-      
+
       // Simulate successful recovery
       (manager as any).recordServerSuccess('test-server');
 

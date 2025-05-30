@@ -97,7 +97,7 @@ describe('MCPConnection', () => {
 
     it('should emit error events with error details', (done) => {
       const testError = new Error('Test connection error');
-      
+
       connection.on('error', (error) => {
         expect(error).toBe(testError);
         done();
@@ -114,8 +114,8 @@ describe('MCPConnection', () => {
         command: 'test-command',
         args: ['--port', '8080'],
         env: {
-          'TEST_VAR': 'test-value',
-          'API_KEY': 'secret-key',
+          TEST_VAR: 'test-value',
+          API_KEY: 'secret-key',
         },
       };
 
@@ -127,7 +127,7 @@ describe('MCPConnection', () => {
       const wsOptions = {
         url: 'ws://localhost:8080',
         headers: {
-          'Authorization': 'Bearer token',
+          Authorization: 'Bearer token',
           'X-Custom-Header': 'custom-value',
         },
       } as WebSocketOptions;
@@ -169,7 +169,7 @@ describe('MCPConnection', () => {
 
     it('should handle connection timeout errors', (done) => {
       const timeoutError = new Error('Connection timeout');
-      
+
       connection.on('error', (error) => {
         expect(error.message).toContain('timeout');
         done();
@@ -181,7 +181,7 @@ describe('MCPConnection', () => {
 
     it('should handle process spawn errors for stdio connections', (done) => {
       const spawnError = new Error('spawn ENOENT');
-      
+
       connection.on('error', (error) => {
         expect(error.message).toContain('ENOENT');
         done();
@@ -197,7 +197,7 @@ describe('MCPConnection', () => {
       };
 
       connection = new MCPConnection('failing-ws', wsOptions, mockLogger);
-      
+
       connection.on('error', (error) => {
         expect(error.message).toBe('ECONNREFUSED');
         done();
@@ -228,7 +228,7 @@ describe('MCPConnection', () => {
 
     it('should attempt reconnection on disconnection', (done) => {
       let reconnectAttempted = false;
-      
+
       connection.on('reconnecting', () => {
         reconnectAttempted = true;
       });
@@ -248,7 +248,7 @@ describe('MCPConnection', () => {
 
     it('should respect maximum reconnection attempts', (done) => {
       let attemptCount = 0;
-      
+
       connection.on('reconnecting', () => {
         attemptCount++;
       });
@@ -271,7 +271,7 @@ describe('MCPConnection', () => {
 
     it('should stop reconnecting when explicitly requested', () => {
       let shouldStop = false;
-      
+
       connection.on('stop_reconnecting', () => {
         shouldStop = true;
       });
@@ -304,7 +304,7 @@ describe('MCPConnection', () => {
     it('should track last ping time', () => {
       const initialTime = (connection as any).lastPingTime;
       expect(initialTime).toBeGreaterThan(0);
-      
+
       // Simulate ping update
       const newTime = Date.now();
       (connection as any).lastPingTime = newTime;
@@ -318,7 +318,7 @@ describe('MCPConnection', () => {
         command: 'test-command',
         args: [],
       };
-      
+
       connection = new MCPConnection('user-server', options, mockLogger, 'user-123');
       expect((connection as any).userId).toBe('user-123');
     });
@@ -328,7 +328,7 @@ describe('MCPConnection', () => {
         command: 'test-command',
         args: [],
       };
-      
+
       connection = new MCPConnection('no-user-server', options, mockLogger);
       expect((connection as any).userId).toBeUndefined();
     });
@@ -362,9 +362,9 @@ describe('MCPConnection', () => {
     it('should properly remove event listeners', () => {
       const testListener = jest.fn();
       connection.on('test_event', testListener);
-      
+
       expect(connection.listenerCount('test_event')).toBe(1);
-      
+
       connection.removeListener('test_event', testListener);
       expect(connection.listenerCount('test_event')).toBe(0);
     });
@@ -376,10 +376,10 @@ describe('MCPConnection', () => {
         command: 'test-command',
         args: [],
       };
-      
+
       connection = new MCPConnection('metadata-server', options, mockLogger);
       expect(connection.client).toBeDefined();
-      
+
       // The client should be initialized with librechat-mcp-client name and version
       // This is verified by the constructor call in the implementation
     });
@@ -389,9 +389,9 @@ describe('MCPConnection', () => {
         command: 'test-command',
         args: [],
       };
-      
+
       connection = new MCPConnection('capabilities-server', options, mockLogger);
-      
+
       // The client should be initialized with capabilities
       // This is handled in the constructor
       expect(connection.client).toBeDefined();

@@ -20,6 +20,7 @@ import Artifacts from './Artifacts';
 import AgentTool from './AgentTool';
 import AgentToolGroup from './AgentToolGroup';
 import CodeForm from './Code/Form';
+import FeaturedToggle from './FeaturedToggle';
 import { useLocalize } from '~/hooks';
 import { Panel } from '~/common';
 
@@ -289,6 +290,8 @@ export default function AgentConfig({
             </div>
           </button>
         </div>
+        {/* Featured Toggle */}
+        <FeaturedToggle />
         {(codeEnabled || fileSearchEnabled || artifactsEnabled || ocrEnabled) && (
           <div className="mb-4 flex w-full flex-col items-start gap-3">
             <label className="text-token-text-primary block font-medium">

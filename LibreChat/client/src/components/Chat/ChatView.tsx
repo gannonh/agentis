@@ -14,6 +14,8 @@ import { Spinner } from '~/components/svg';
 import Presentation from './Presentation';
 import { buildTree, cn } from '~/utils';
 import ChatForm from './Input/ChatForm';
+import AgentDiscovery from './AgentDiscovery';
+import useStartAgentChat from '~/hooks/useStartAgentChat';
 import Landing from './Landing';
 import Header from './Header';
 import Footer from './Footer';
@@ -36,6 +38,7 @@ function ChatView({ index = 0 }: { index?: number }) {
   const centerFormOnLanding = useRecoilValue(store.centerFormOnLanding);
 
   const fileMap = useFileMapContext();
+  const startAgentChat = useStartAgentChat();
 
   const { data: messagesTree = null, isLoading } = useGetMessagesByConvoId(conversationId ?? '', {
     select: useCallback(
@@ -63,6 +66,10 @@ function ChatView({ index = 0 }: { index?: number }) {
     (!messagesTree || messagesTree.length === 0) &&
     (conversationId === Constants.NEW_CONVO || !conversationId);
   const isNavigating = (!messagesTree || messagesTree.length === 0) && conversationId != null;
+  
+  // Show CTAs whenever we're on /c/new (regardless of URL parameters)
+  console.log('ChatView Debug:', { conversationId, NEW_CONVO: Constants.NEW_CONVO, match: conversationId === Constants.NEW_CONVO });
+  const showAgentDiscovery = conversationId === Constants.NEW_CONVO;
 
   if (isLoading && conversationId !== Constants.NEW_CONVO) {
     content = <LoadingSpinner />;
@@ -70,6 +77,13 @@ function ChatView({ index = 0 }: { index?: number }) {
     content = <LoadingSpinner />;
   } else if (!isLandingPage) {
     content = <MessagesView messagesTree={messagesTree} />;
+  } else if (showAgentDiscovery) {
+    content = (
+      <div className="flex flex-col space-y-8">
+        <Landing centerFormOnLanding={centerFormOnLanding} />
+        <AgentDiscovery onStartChat={startAgentChat} />
+      </div>
+    );
   } else {
     content = <Landing centerFormOnLanding={centerFormOnLanding} />;
   }

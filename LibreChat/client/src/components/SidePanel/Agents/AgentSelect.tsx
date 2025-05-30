@@ -106,6 +106,8 @@ export default function AgentSelect({
 
         if (typeof value !== 'number' && typeof value !== 'object') {
           formValues[name] = value;
+        } else if (typeof value === 'boolean') {
+          formValues[name] = value;
         }
       });
 

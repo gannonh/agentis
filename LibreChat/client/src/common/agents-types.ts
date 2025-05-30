@@ -29,4 +29,5 @@ export type AgentForm = {
   agent_ids?: string[];
   [AgentCapabilities.artifacts]?: ArtifactModes | string;
   recursion_limit?: number;
+  featured?: boolean;
 } & TAgentCapabilities;
