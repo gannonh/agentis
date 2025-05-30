@@ -281,6 +281,7 @@ const getListAgents = async (searchParameter) => {
       description: 1,
       isCollaborative: 1,
       featured: 1,
+      tools: 1,
     }).lean()
   ).map((agent) => {
     if (agent.author?.toString() !== author) {
