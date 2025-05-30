@@ -60,67 +60,67 @@ KILL_ALL_NODE=false
 
 for arg in "$@"; do
   case $arg in
-    --all)
-      DO_ALL=true
-      REBUILD_DATA=true
-      REBUILD_PROVIDER=true
-      REBUILD_MCP=true
-      RESTART_FRONTEND=true
-      RESTART_BACKEND=true
-      ;;
-    --reset)
-      DO_ALL=true
-      DO_CLEAN=true
-      REBUILD_DATA=true
-      REBUILD_PROVIDER=true
-      REBUILD_MCP=true
-      RESTART_FRONTEND=true
-      RESTART_BACKEND=true
-      ;;
-    --build)
-      REBUILD_DATA=true
-      REBUILD_PROVIDER=true
-      REBUILD_MCP=true
-      ;;
-    --data)
-      REBUILD_DATA=true
-      ;;
-    --provider)
-      REBUILD_PROVIDER=true
-      ;;
-    --mcp)
-      REBUILD_MCP=true
-      ;;
-    --frontend)
-      RESTART_FRONTEND=true
-      ;;
-    --backend)
-      RESTART_BACKEND=true
-      ;;
-    --stop)
-      STOP_SERVERS=true
-      ;;
-    --clean)
-      DO_CLEAN=true
-      ;;
-    --clean-all)
-      DO_CLEAN_ALL=true
-      ;;
-    --test-build)
-      TEST_BUILD=true
-      ;;
-    --kill-all-node)
-      KILL_ALL_NODE=true
-      ;;
-    --help)
-      show_usage
-      exit 0
-      ;;
-    *)
-      echo -e "${RED}Unknown option: $arg${NC}"
-      show_usage
-      exit 1
-      ;;
+  --all)
+    DO_ALL=true
+    REBUILD_DATA=true
+    REBUILD_PROVIDER=true
+    REBUILD_MCP=true
+    RESTART_FRONTEND=true
+    RESTART_BACKEND=true
+    ;;
+  --reset)
+    DO_ALL=true
+    DO_CLEAN=true
+    REBUILD_DATA=true
+    REBUILD_PROVIDER=true
+    REBUILD_MCP=true
+    RESTART_FRONTEND=true
+    RESTART_BACKEND=true
+    ;;
+  --build)
+    REBUILD_DATA=true
+    REBUILD_PROVIDER=true
+    REBUILD_MCP=true
+    ;;
+  --data)
+    REBUILD_DATA=true
+    ;;
+  --provider)
+    REBUILD_PROVIDER=true
+    ;;
+  --mcp)
+    REBUILD_MCP=true
+    ;;
+  --frontend)
+    RESTART_FRONTEND=true
+    ;;
+  --backend)
+    RESTART_BACKEND=true
+    ;;
+  --stop)
+    STOP_SERVERS=true
+    ;;
+  --clean)
+    DO_CLEAN=true
+    ;;
+  --clean-all)
+    DO_CLEAN_ALL=true
+    ;;
+  --test-build)
+    TEST_BUILD=true
+    ;;
+  --kill-all-node)
+    KILL_ALL_NODE=true
+    ;;
+  --help)
+    show_usage
+    exit 0
+    ;;
+  *)
+    echo -e "${RED}Unknown option: $arg${NC}"
+    show_usage
+    exit 1
+    ;;
   esac
 done
 
@@ -175,28 +175,28 @@ function kill_process_on_port {
 # Function to stop all development servers
 function stop_all_servers {
   echo -e "${GREEN}Stopping all development servers...${NC}"
-  
+
   # Stop frontend (usually port 3090, but Vite may auto-increment)
   for port in 3090 3091 3092 3093 3094 3095; do
     kill_process_on_port $port "frontend server"
   done
-  
-  # Stop backend (usually port 3080) 
+
+  # Stop backend (usually port 3080)
   kill_process_on_port 3080 "backend server"
-  
+
   # Also look for any node processes running our specific scripts
   echo -e "${YELLOW}Looking for additional Node.js processes...${NC}"
-  
+
   # Kill any nodemon processes
   pkill -f "nodemon.*server/index.js" 2>/dev/null && echo -e "${GREEN}✓ Stopped nodemon backend process${NC}"
-  
+
   # Kill any vite dev server processes
   pkill -f "vite.*dev" 2>/dev/null && echo -e "${GREEN}✓ Stopped vite dev server${NC}"
-  
+
   # Kill any npm run processes for our specific commands
   pkill -f "npm.*frontend:dev" 2>/dev/null && echo -e "${GREEN}✓ Stopped npm frontend:dev process${NC}"
   pkill -f "npm.*backend:dev" 2>/dev/null && echo -e "${GREEN}✓ Stopped npm backend:dev process${NC}"
-  
+
   echo -e "${GREEN}All development servers stopped!${NC}"
 }
 
@@ -205,7 +205,7 @@ function kill_all_node {
   echo -e "${RED}WARNING: This will kill ALL Node.js processes on your system!${NC}"
   echo -e "${YELLOW}Proceeding in 3 seconds... Press Ctrl+C to cancel${NC}"
   sleep 3
-  
+
   echo -e "${GREEN}Killing all Node.js processes...${NC}"
   pkill -f node 2>/dev/null && echo -e "${GREEN}✓ All Node.js processes killed${NC}" || echo -e "${YELLOW}No Node.js processes found${NC}"
 }
@@ -213,41 +213,41 @@ function kill_all_node {
 # Function to perform aggressive cleanup
 function do_clean {
   echo -e "${GREEN}Performing aggressive cleanup...${NC}"
-  
+
   # Remove client/dist (frontend build output)
   if [ -d "client/dist" ]; then
     echo -e "${YELLOW}Removing client/dist...${NC}"
     rm -rf client/dist
     echo -e "${GREEN}✓ Removed client/dist${NC}"
   fi
-  
+
   # Remove node_modules/.cache
   if [ -d "node_modules/.cache" ]; then
     echo -e "${YELLOW}Removing node_modules/.cache...${NC}"
     rm -rf node_modules/.cache
     echo -e "${GREEN}✓ Removed node_modules/.cache${NC}"
   fi
-  
+
   echo -e "${GREEN}Aggressive cleanup completed!${NC}"
 }
 
 # Function to perform super aggressive cleanup
 function do_clean_all {
   echo -e "${GREEN}Performing super aggressive cleanup...${NC}"
-  
+
   # First do the standard cleanup
   do_clean
-  
+
   # Remove all package build outputs
   echo -e "${YELLOW}Removing package build outputs...${NC}"
   rm -rf packages/data-provider/dist
-  rm -rf packages/data-schemas/dist  
+  rm -rf packages/data-schemas/dist
   rm -rf packages/mcp/dist
   rm -rf packages/arcade-client/dist
-  
+
   # Remove package node_modules caches
   rm -rf packages/*/node_modules/.cache
-  
+
   # Remove workspace node_modules directories (forces complete dependency reinstall)
   echo -e "${YELLOW}Removing workspace node_modules directories...${NC}"
   rm -rf node_modules
@@ -255,10 +255,10 @@ function do_clean_all {
   rm -rf client/node_modules
   rm -rf packages/*/node_modules
   echo -e "${GREEN}✓ Removed all node_modules directories${NC}"
-  
+
   # Remove any .tsbuildinfo files
   find . -name "*.tsbuildinfo" -delete
-  
+
   echo -e "${GREEN}✓ Removed all build artifacts and caches${NC}"
   echo -e "${GREEN}Super aggressive cleanup completed!${NC}"
 }
@@ -285,7 +285,7 @@ fi
 if $TEST_BUILD; then
   echo -e "${GREEN}=== TESTING COMPLETE BUILD PROCESS ===${NC}"
   echo -e "${GREEN}This will test the entire build process from scratch${NC}"
-  
+
   # Force all cleanup and rebuild options
   DO_CLEAN_ALL=true
   REBUILD_DATA=true
@@ -293,7 +293,7 @@ if $TEST_BUILD; then
   REBUILD_MCP=true
   FRONTEND_NEEDS_REBUILD=true
   DEPS_NEED_INSTALL=true
-  
+
   # Don't restart servers for test build
   RESTART_FRONTEND=false
   RESTART_BACKEND=false
@@ -322,7 +322,7 @@ fi
 
 # Rebuild packages in correct dependency order
 # data-provider must be built first (provides base types/constants)
-# then data-schemas (uses types from data-provider)  
+# then data-schemas (uses types from data-provider)
 # then mcp (uses both data-provider and data-schemas)
 
 if $REBUILD_PROVIDER; then
@@ -359,7 +359,7 @@ if $RESTART_FRONTEND; then
     kill_process_on_port $port "frontend server"
   done
   # Start frontend in the background
-  npm run frontend:dev > "$LOGS_DIR/frontend.log" 2>&1 &
+  npm run frontend:dev >"$LOGS_DIR/frontend.log" 2>&1 &
   echo -e "${GREEN}Frontend server restarted (PID: $!)${NC}"
 fi
 
@@ -369,7 +369,7 @@ if $RESTART_BACKEND; then
   # Kill existing backend server (typically runs on port 3080)
   kill_process_on_port 3080 "backend server"
   # Start backend in the background
-  npm run backend:dev > "$LOGS_DIR/backend.log" 2>&1 &
+  npm run backend:dev >"$LOGS_DIR/backend.log" 2>&1 &
   echo -e "${GREEN}Backend server restarted (PID: $!)${NC}"
 fi
 
@@ -381,7 +381,7 @@ if $TEST_BUILD; then
   echo -e "${YELLOW}Build process is robust and working correctly!${NC}"
 elif $DO_ALL; then
   echo -e "${GREEN}All packages rebuilt and servers restarted!${NC}"
-  echo -e "${YELLOW}Frontend running on: http://localhost:3090+ (Vite auto-increments ports)${NC}"
+  echo -e "${YELLOW}Frontend running on: http://localhost:3090 (Vite auto-increments ports)${NC}"
   echo -e "${YELLOW}Backend running on: http://localhost:3080${NC}"
   echo -e "${YELLOW}Monitor logs with: tail -f logs/frontend.log logs/backend.log${NC}"
 elif $RESTART_FRONTEND || $RESTART_BACKEND; then

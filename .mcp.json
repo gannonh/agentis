@@ -14,26 +14,27 @@
                 "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
             }
         },
-        "puppeteer": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-puppeteer"
-            ]
-        },
-        "sequential-thinking": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-sequential-thinking"
-            ]
-        },
         "context7": {
             "command": "npx",
             "args": [
                 "-y",
                 "@upstash/context7-mcp@latest"
             ]
+        },
+        "playwright": {
+            "command": "npx",
+            "args": [
+                "@playwright/mcp@latest"
+            ]
+        },
+        "perplexity-server": {
+            "command": "/Users/gannonhall/.nvm/versions/node/v23.6.0/bin/node",
+            "args": [
+                "/Users/gannonhall/+DEV/MCP/perplexity-server/build/index.js"
+            ],
+            "env": {
+                "PERPLEXITY_API_KEY": "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"
+            }
         }
     }
 }
