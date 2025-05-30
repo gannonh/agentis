@@ -57,8 +57,8 @@ describe('useStartAgentChat Hook', () => {
 
     result.current(mockAgent);
 
-    // Should navigate to new conversation
-    expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+    // Should navigate to new conversation with agent_id
+    expect(mockNavigate).toHaveBeenCalledWith('/c/new?agent_id=test-agent-1');
   });
 
   it('should set up conversation with agent endpoint', () => {

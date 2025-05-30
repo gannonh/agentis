@@ -9,6 +9,24 @@ import AgentDiscovery from '../AgentDiscovery';
 const mockUseListAgentsQuery = jest.fn();
 jest.mock('~/data-provider', () => ({
   useListAgentsQuery: () => mockUseListAgentsQuery(),
+  useAvailableToolsQuery: () => ({
+    data: [
+      {
+        name: 'Google Sheets',
+        pluginKey: 'googlesheets',
+        icon: '/assets/tools/google-sheets.svg',
+        description: 'Google Sheets tool'
+      },
+      {
+        name: 'Gmail',
+        pluginKey: 'gmail',
+        icon: '/assets/tools/gmail.svg',
+        description: 'Gmail tool'
+      }
+    ],
+    isLoading: false,
+    error: null
+  })
 }));
 
 // Mock other dependencies

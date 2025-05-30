@@ -1,5 +1,5 @@
 import React from 'react';
-import { Agent } from 'librechat-data-provider';
+import { Agent, EModelEndpoint, TPlugin } from 'librechat-data-provider';
 import { useLocalize } from '~/hooks';
 import { useAvailableToolsQuery } from '~/data-provider';
 import { Wrench } from 'lucide-react';
@@ -11,7 +11,7 @@ interface AgentCTAProps {
 
 export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
   const localize = useLocalize();
-  const { data: allTools = [] } = useAvailableToolsQuery('');
+  const { data: allTools = [] } = useAvailableToolsQuery(EModelEndpoint.agents);
 
   // Don't render if agent is not featured
   if (!agent.featured) {
@@ -35,10 +35,10 @@ export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
   // Get actual tool objects with icons - SIMPLE approach
   const agentTools = toolKeys
     .map(toolKey => allTools.find(tool => tool.pluginKey === toolKey || tool.name === toolKey))
-    .filter(Boolean);
+    .filter((tool): tool is TPlugin => Boolean(tool));
     
   // Deduplicate by icon - only show unique icons
-  const uniqueTools = agentTools.reduce((acc, tool) => {
+  const uniqueTools = agentTools.reduce((acc: TPlugin[], tool: TPlugin) => {
     if (!tool.icon) return acc;
     
     const existingTool = acc.find(t => t.icon === tool.icon);
@@ -79,7 +79,7 @@ export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
                   {tool.icon ? (
                     <img
                       src={tool.icon}
-                      alt={tool.displayName || tool.name}
+                      alt={tool.name}
                       className="h-full w-full rounded-md object-contain"
                     />
                   ) : (

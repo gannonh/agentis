@@ -2,12 +2,11 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import { Agent, EModelEndpoint } from 'librechat-data-provider';
-import { useSetConvoContext } from '~/Providers';
 import store from '~/store';
 
 const useStartAgentChat = () => {
   const navigate = useNavigate();
-  const { setConversation } = useSetConvoContext();
+  const { setConversation } = store.useCreateConversationAtom(0);
   const setSubmission = useSetRecoilState(store.submission);
 
   const startAgentChat = useCallback(

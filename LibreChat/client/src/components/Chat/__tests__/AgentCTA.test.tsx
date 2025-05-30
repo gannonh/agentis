@@ -14,6 +14,27 @@ jest.mock('~/hooks', () => ({
   },
 }));
 
+jest.mock('~/data-provider', () => ({
+  useAvailableToolsQuery: () => ({
+    data: [
+      {
+        name: 'Google Sheets',
+        pluginKey: 'googlesheets',
+        icon: '/assets/tools/google-sheets.svg',
+        description: 'Google Sheets tool'
+      },
+      {
+        name: 'Gmail',
+        pluginKey: 'gmail',
+        icon: '/assets/tools/gmail.svg',
+        description: 'Gmail tool'
+      }
+    ],
+    isLoading: false,
+    error: null
+  })
+}));
+
 jest.mock('~/utils', () => ({
   getIconKey: (provider: string) => provider,
 }));
