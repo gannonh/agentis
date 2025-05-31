@@ -51,3 +51,9 @@
 - Save generated test file in the e2e specs directory: `./LibreChat/e2e/specs`
 - Execute the test file and iterate until the test passes
 - To get startted, ask me what I want to test.
+
+## Things to remember
+
+  - Playwright tests **run** on port 3080 because Playwright uses its own webserver (config in `./LibreChat/e2e/playwright.config.ts`)
+  - This also means that e2e tests **will NOT** pick up changes to client app without building first. To ensure changes are picked up, do a full **clean rebuild when testing e2e** after making changes to packages or client: `./scripts/dev.sh --clean`.
+  - However, when using `playwright:browser_navigate (MCP)` to access the app to run through user flows, make sure the dev servers are running (`./scripts/dev.sh --all`), and access on **PORT 3090 (not 3080!)**.
