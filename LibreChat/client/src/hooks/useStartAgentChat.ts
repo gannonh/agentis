@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import { Agent, EModelEndpoint } from 'librechat-data-provider';
+import { Agent, EModelEndpoint, Constants } from 'librechat-data-provider';
 import store from '~/store';
 
 const useStartAgentChat = () => {
@@ -14,7 +14,7 @@ const useStartAgentChat = () => {
       // Create a new conversation configuration with the agent
       const newConversation = {
         conversationId: null,
-        parentMessageId: null,
+        parentMessageId: Constants.NO_PARENT,
         messages: [],
         endpoint: EModelEndpoint.agents,
         agent_id: agent.id,
@@ -22,7 +22,7 @@ const useStartAgentChat = () => {
         modelDisplayLabel: agent.name || 'Agent Chat',
         title: agent.name || 'New Agent Chat',
         // Add timestamp to make conversations unique
-        createdAt: Date.now(),
+        createdAt: new Date().toISOString(),
         agent: {
           id: agent.id,
           name: agent.name,

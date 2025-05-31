@@ -378,7 +378,49 @@ test.describe('Agent CTA Display', () => {
       page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
     ).toBeVisible();
     logProgress('✅ Google Calendar Agent CTA is visible');
+  });
+  test('chat should dissapear CTAs', async ({ page }) => {
+    logProgress('Starting CTA navigation test');
+    await page.goto('http://localhost:3080/');
+    // Handle conditional authentication using existing system
+    await handleConditionalAuth(page);
+    // Verify we're on the main chat page
+    await expect(page).toHaveURL(/.*\/c\/new/);
+    logProgress('Verified on main chat page');
 
+    await page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }).click();
+    await page.getByTestId('text-input').click();
+    await page.getByTestId('text-input').fill('Do I have any appointments today?');
+    await page.getByTestId('send-button').click();
+
+    // Verify that CTAs are no longer visible after starting a chat
+    await expect(page.getByRole('heading', { name: 'Discover Agents' })).not.toBeVisible();
+    logProgress('✅ Discover Agents section is no longer visible after starting a chat');
+    await expect(page.getByTestId('agent-discovery-grid')).not.toBeVisible();
+    logProgress('✅ Agent discovery grid is no longer visible after starting a chat');
+    await expect(
+      page.getByRole('button', { name: 'Start chat with Google Sheets' }),
+    ).not.toBeVisible();
+    logProgress('✅ Google Sheets Agent CTA is no longer visible after starting a chat');
+    await expect(
+      page.getByRole('button', { name: 'Start chat with Google Drive' }),
+    ).not.toBeVisible();
+    logProgress('✅ Google Drive Agent CTA is no longer visible after starting a chat');
+    await expect(
+      page.getByRole('button', { name: 'Start chat with Google Docs' }),
+    ).not.toBeVisible();
+    logProgress('✅ Google Docs Agent CTA is no longer visible after starting a chat');
+    await expect(
+      page.getByRole('button', { name: 'Start chat with Gmail Agent' }),
+    ).not.toBeVisible();
+    logProgress('✅ Gmail Agent CTA is no longer visible after starting a chat');
+    await expect(
+      page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
+    ).not.toBeVisible();
+    logProgress('✅ Google Calendar Agent CTA is no longer visible after starting a chat');
+    // Verify the chat message was sent successfully
+    await expect(page.getByTestId('text-input')).toHaveValue('');
+    await expect(page.getByText('Do I have any appointments')).toBeVisible();
     // Cleanup
     const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
     await cleanupAgents(testUserEmail);

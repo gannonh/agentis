@@ -59,7 +59,7 @@
     "e2e:google-mcp-sheets": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.sheets.spec.ts --headed",
     "e2e:google-mcp-docs": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.docs.spec.ts --headed",
     "e2e:google-mcp-gmail": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.gmail.spec.ts --headed",
-    "e2e:agent-cta": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/agent-cta-display.spec.ts --headed",
+    "e2e:agent-cta": "../scripts/dev.sh --stop && cross-env PWDEBUG=1 npx playwright test --config=e2e/playwright.config.ts e2e/specs/agent-cta-display.spec.ts --headed",
     "e2e:ci": "playwright test --config=e2e/playwright.config.ts",
     "e2e:update": "playwright test --config=e2e/playwright.config.js --update-snapshots",
     "e2e:report": "npx playwright show-report e2e/playwright-report",
