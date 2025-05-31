@@ -52,8 +52,35 @@
 - Execute the test file and iterate until the test passes
 - To get startted, ask me what I want to test.
 
+## CRITICAL: Before Debugging Tests
+
+**ALWAYS read the complete test file first** before attempting any debugging or manual testing:
+
+1. **Read the entire test file** - Understand all tests, their sequence, and what each expects
+2. **Identify data dependencies** - Map which tests create data and which tests consume it
+3. **Understand the data contract** - What specific data does each test expect to exist?
+4. **Check test sequence** - Tests often have dependencies (Test 1 creates data, Tests 2-N use it, Last test cleans up)
+5. **Never manually create test data** - The tests themselves should create the data they need
+
+Common test patterns:
+- Test 1: Verify clean state (no data)
+- Test 2: Create test data (specific entities with specific names/properties)
+- Tests 3-N: Use the data created in Test 2
+- Last test: Clean up all test data
+
+**Manual testing through the UI is NOT equivalent to what automated tests expect.**
+
 ## Things to remember
 
   - Playwright tests **run** on port 3080 because Playwright uses its own webserver (config in `./LibreChat/e2e/playwright.config.ts`)
   - This also means that e2e tests **will NOT** pick up changes to client app without building first. To ensure changes are picked up, do a full **clean rebuild when testing e2e** after making changes to packages or client: `./scripts/dev.sh --clean`.
   - However, when using `playwright:browser_navigate (MCP)` to access the app to run through user flows, make sure the dev servers are running (`./scripts/dev.sh --all`), and access on **PORT 3090 (not 3080!)**.
+  - Here is a typical run command from package.json: `../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/agent-cta-display.spec.ts --headed0`
+  - Typically in a test suite, we set up the data in the first test and then cleanup in the last test. This allows the data to persist through all tests in the suite:
+    ```js
+    // Cleanup
+    const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
+    await cleanupAgents(testUserEmail);
+    await cleanupChats(testUserEmail);
+    logProgress('✅ Cleaned up test data');
+    ```
