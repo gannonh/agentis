@@ -1,5 +1,6 @@
 import { MCPManager } from './manager';
 import { MCPConnection } from './connection';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { Logger } from 'winston';
 import type { MCPOptions } from 'librechat-data-provider';
 
@@ -15,7 +16,7 @@ const mockLogger: Logger = {
   debug: jest.fn(),
 } as unknown as Logger;
 
-describe('MCPManager Circuit Breaker and Retry Strategy', () => {
+describe('MCPManager', () => {
   let manager: MCPManager;
   let mockConnection: jest.Mocked<MCPConnection>;
 
@@ -30,11 +31,12 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     mockConnection = {
       isConnected: jest.fn(),
       connect: jest.fn(),
-      close: jest.fn(),
-      callTool: jest.fn(),
+      disconnect: jest.fn().mockResolvedValue(undefined),
+      serverName: 'test-server',
       client: {
         getServerCapabilities: jest.fn().mockReturnValue({}),
         listTools: jest.fn().mockResolvedValue({ tools: [] }),
+        request: jest.fn(),
       },
     } as any;
 
@@ -48,8 +50,22 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
     (MCPManager as any).instance = null;
   });
 
-  describe('Circuit Breaker Pattern', () => {
-    it('should initialize server health state correctly', async () => {
+  describe('Singleton Pattern', () => {
+    it('should return the same instance when called multiple times', () => {
+      const instance1 = MCPManager.getInstance(mockLogger);
+      const instance2 = MCPManager.getInstance(mockLogger);
+      
+      expect(instance1).toBe(instance2);
+    });
+
+    it('should use default logger when none provided', () => {
+      const instance = MCPManager.getInstance();
+      expect(instance).toBeDefined();
+    });
+  });
+
+  describe('App-level Server Initialization', () => {
+    it('should initialize app-level servers successfully', async () => {
       const serverConfig: MCPOptions = {
         command: 'test-command',
         args: ['test-arg'],
@@ -61,14 +77,11 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
 
       await manager.initializeMCP({ 'test-server': serverConfig });
 
-      const health = manager.getServerHealth('test-server');
-      expect(health).toBeDefined();
-      expect(health?.state).toBe('healthy');
-      expect(health?.consecutiveFailures).toBe(0);
-      expect(health?.lastSuccessTime).toBeGreaterThan(0);
+      expect(mockConnection.connect).toHaveBeenCalled();
+      expect(manager.getConnection('test-server')).toBeDefined();
     });
 
-    it('should transition to degraded state after first failure', async () => {
+    it('should handle initialization failures gracefully', async () => {
       const serverConfig: MCPOptions = {
         command: 'test-command',
         args: ['test-arg'],
@@ -78,131 +91,24 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
       mockConnection.isConnected.mockResolvedValue(false);
       mockConnection.connect.mockRejectedValue(new Error('Connection failed'));
 
-      await manager.initializeMCP({ 'test-server': serverConfig });
-
-      const health = manager.getServerHealth('test-server');
-      expect(health?.state).toBe('degraded');
-      expect(health?.consecutiveFailures).toBe(1);
-    }, 30000);
-
-    it('should open circuit breaker after threshold failures', async () => {
-      const serverConfig: MCPOptions = {
-        command: 'test-command',
-        args: ['test-arg'],
-      };
-
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
-
-      // Simulate multiple failures
-      for (let i = 0; i < 3; i++) {
-        (manager as any).recordServerFailure('test-server');
-      }
-
-      const health = manager.getServerHealth('test-server');
-      expect(health?.state).toBe('circuit_open');
-      expect(health?.consecutiveFailures).toBe(3);
-      expect(health?.circuitOpenUntil).toBeGreaterThan(Date.now());
+      // Should not throw
+      await expect(manager.initializeMCP({ 'test-server': serverConfig })).resolves.not.toThrow();
+      
+      // Should not add failed connections
+      expect(manager.getConnection('test-server')).toBeUndefined();
     });
 
-    it('should prevent requests when circuit is open', () => {
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
+    it('should store processing function and connected account resolver', async () => {
+      const processMCPEnv = jest.fn((config) => config);
+      const connectedAccountResolver = jest.fn().mockResolvedValue('account-123');
 
-      // Force circuit open
-      for (let i = 0; i < 3; i++) {
-        (manager as any).recordServerFailure('test-server');
-      }
+      await manager.initializeMCP({}, processMCPEnv, connectedAccountResolver);
 
-      const isAvailable = (manager as any).isServerAvailable('test-server');
-      expect(isAvailable).toBe(false);
+      // Verify they were stored (we can't directly test this, but we test the behavior later)
+      expect(processMCPEnv).not.toHaveBeenCalled(); // Not called for app-level
     });
 
-    it('should allow test request after circuit timeout', async () => {
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
-
-      // Force circuit open with past timeout
-      const health = manager.getServerHealth('test-server');
-      if (health) {
-        health.state = 'circuit_open';
-        health.consecutiveFailures = 3;
-        health.circuitOpenUntil = Date.now() - 1000; // Past timeout
-      }
-
-      const isAvailable = (manager as any).isServerAvailable('test-server');
-      expect(isAvailable).toBe(true);
-
-      // Should transition to degraded state
-      const updatedHealth = manager.getServerHealth('test-server');
-      expect(updatedHealth?.state).toBe('degraded');
-    });
-
-    it('should reset circuit on successful operation', () => {
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
-
-      // Force degraded state
-      (manager as any).recordServerFailure('test-server');
-      (manager as any).recordServerFailure('test-server');
-
-      let health = manager.getServerHealth('test-server');
-      expect(health?.state).toBe('degraded');
-      expect(health?.consecutiveFailures).toBe(2);
-
-      // Record success
-      (manager as any).recordServerSuccess('test-server');
-
-      health = manager.getServerHealth('test-server');
-      expect(health?.state).toBe('healthy');
-      expect(health?.consecutiveFailures).toBe(0);
-      expect(health?.circuitOpenUntil).toBeUndefined();
-    });
-  });
-
-  describe('Server Health Management', () => {
-    it('should track multiple server health states independently', () => {
-      // Initialize multiple servers
-      (manager as any).initializeServerHealth('server-1');
-      (manager as any).initializeServerHealth('server-2');
-
-      // Fail server-1 but not server-2
-      (manager as any).recordServerFailure('server-1');
-      (manager as any).recordServerSuccess('server-2');
-
-      const health1 = manager.getServerHealth('server-1');
-      const health2 = manager.getServerHealth('server-2');
-
-      expect(health1?.state).toBe('degraded');
-      expect(health1?.consecutiveFailures).toBe(1);
-      expect(health2?.state).toBe('healthy');
-      expect(health2?.consecutiveFailures).toBe(0);
-    });
-
-    it('should return all server health statuses', () => {
-      // Initialize multiple servers
-      (manager as any).initializeServerHealth('server-1');
-      (manager as any).initializeServerHealth('server-2');
-      (manager as any).initializeServerHealth('server-3');
-
-      const allHealth = manager.getAllServerHealth();
-      expect(allHealth.size).toBe(3);
-      expect(allHealth.has('server-1')).toBe(true);
-      expect(allHealth.has('server-2')).toBe(true);
-      expect(allHealth.has('server-3')).toBe(true);
-    });
-
-    it('should handle unknown servers gracefully', () => {
-      const health = manager.getServerHealth('unknown-server');
-      expect(health).toBeUndefined();
-
-      const isAvailable = (manager as any).isServerAvailable('unknown-server');
-      expect(isAvailable).toBe(true); // Unknown servers are considered available
-    });
-  });
-
-  describe('Connection Retry Logic', () => {
-    it('should retry connection attempts with exponential backoff', async () => {
+    it('should retry connection attempts on failure', async () => {
       const serverConfig: MCPOptions = {
         command: 'test-command',
         args: ['test-arg'],
@@ -216,184 +122,383 @@ describe('MCPManager Circuit Breaker and Retry Strategy', () => {
 
       mockConnection.isConnected.mockResolvedValue(true);
 
-      const startTime = Date.now();
       await manager.initializeMCP({ 'test-server': serverConfig });
-      const endTime = Date.now();
 
-      // Should have taken some time due to retries
-      expect(endTime - startTime).toBeGreaterThan(100);
       expect(mockConnection.connect).toHaveBeenCalledTimes(3);
+      expect(manager.getConnection('test-server')).toBeDefined();
+    }, 10000);
+  });
+
+  describe('User Connection Management', () => {
+    beforeEach(async () => {
+      // Initialize with a basic server config
+      await manager.initializeMCP({
+        'test-server': { command: 'test-command', args: [] }
+      });
     });
 
-    it('should respect maximum retry attempts', async () => {
+    it('should create user connections on demand', async () => {
+      const userId = 'user-123';
+      
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+
+      const connection = await manager.getUserConnection(userId, 'test-server');
+      
+      expect(connection).toBeDefined();
+      expect(mockConnection.connect).toHaveBeenCalled();
+    });
+
+    it('should reuse existing user connections', async () => {
+      const userId = 'user-123';
+      
+      // Mock successful connection for both calls
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+
+      const connection1 = await manager.getUserConnection(userId, 'test-server');
+      const connection2 = await manager.getUserConnection(userId, 'test-server');
+      
+      // Both should be the same instance
+      expect(connection1).toBe(connection2);
+    });
+
+    it('should disconnect user connections', async () => {
+      const userId = 'user-123';
+      
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.disconnect.mockResolvedValue(undefined);
+
+      await manager.getUserConnection(userId, 'test-server');
+      await manager.disconnectUserConnection(userId, 'test-server');
+      
+      expect(mockConnection.disconnect).toHaveBeenCalled();
+    });
+
+    it('should disconnect all user connections', async () => {
+      const userId = 'user-123';
+      
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.disconnect.mockResolvedValue(undefined);
+
+      await manager.getUserConnection(userId, 'test-server');
+      await manager.disconnectUserConnections(userId);
+      
+      expect(mockConnection.disconnect).toHaveBeenCalled();
+    });
+  });
+
+  describe('Composio Authentication', () => {
+    let connectedAccountResolver: jest.Mock;
+
+    beforeEach(async () => {
+      connectedAccountResolver = jest.fn();
+      
+      // Initialize with Composio server
+      await manager.initializeMCP(
+        {
+          'googlesheets': {
+            type: 'sse',
+            url: 'https://mcp.composio.dev/composio/server/uuid/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}'
+          }
+        },
+        undefined,
+        connectedAccountResolver
+      );
+    });
+
+    it('should throw authentication error when no connected account found', async () => {
+      const userId = 'user-123';
+      connectedAccountResolver.mockResolvedValue(null);
+
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+
+      await expect(
+        manager.callTool({
+          serverName: 'googlesheets',
+          toolName: 'test-tool',
+          provider: 'openai',
+          options: { userId }
+        })
+      ).rejects.toThrow();
+
+      // Check that the error has authentication properties
+      try {
+        await manager.callTool({
+          serverName: 'googlesheets',
+          toolName: 'test-tool',
+          provider: 'openai',
+          options: { userId }
+        });
+      } catch (error: any) {
+        expect(error.authenticationRequired).toBe(true);
+        expect(error.service).toBe('googlesheets');
+      }
+    });
+
+    it('should proceed when connected account is found', async () => {
+      const userId = 'user-123';
+      connectedAccountResolver.mockResolvedValue('account-123');
+
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.client.request.mockResolvedValue({
+        content: [{ type: 'text', text: 'Tool executed successfully' }]
+      });
+
+      await manager.callTool({
+        serverName: 'googlesheets',
+        toolName: 'test-tool',
+        provider: 'openai',
+        options: { userId }
+      });
+
+      expect(connectedAccountResolver).toHaveBeenCalledWith(userId, 'googlesheets');
+      expect(mockConnection.client.request).toHaveBeenCalled();
+    });
+
+    it('should not check authentication for non-Composio servers', async () => {
+      const userId = 'user-123';
+      
+      // Add a non-Composio server
+      await manager.initializeMCP({
+        'regular-server': { command: 'test-command', args: [] }
+      });
+
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.client.request.mockResolvedValue({
+        content: [{ type: 'text', text: 'Tool executed successfully' }]
+      });
+
+      await manager.callTool({
+        serverName: 'regular-server',
+        toolName: 'test-tool',
+        provider: 'openai',
+        options: { userId }
+      });
+
+      expect(connectedAccountResolver).not.toHaveBeenCalled();
+      expect(mockConnection.client.request).toHaveBeenCalled();
+    });
+
+    it('should handle authentication resolver errors gracefully', async () => {
+      const userId = 'user-123';
+      connectedAccountResolver.mockRejectedValue(new Error('Resolver failed'));
+
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.client.request.mockResolvedValue({
+        content: [{ type: 'text', text: 'Tool executed successfully' }]
+      });
+
+      // Should continue with tool call despite resolver error
+      await manager.callTool({
+        serverName: 'googlesheets',
+        toolName: 'test-tool',
+        provider: 'openai',
+        options: { userId }
+      });
+
+      expect(mockConnection.client.request).toHaveBeenCalled();
+    });
+  });
+
+  describe('Tool Calling', () => {
+    beforeEach(async () => {
+      await manager.initializeMCP({
+        'test-server': { command: 'test-command', args: [] }
+      });
+    });
+
+    it('should call tools on app-level connections when no userId provided', async () => {
+      // First ensure the app-level connection is established
       const serverConfig: MCPOptions = {
         command: 'test-command',
         args: ['test-arg'],
       };
 
-      // Mock persistent connection failures
-      mockConnection.connect.mockRejectedValue(new Error('Persistent failure'));
-      mockConnection.isConnected.mockResolvedValue(false);
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.client.request.mockResolvedValue({
+        content: [{ type: 'text', text: 'Tool result' }]
+      });
 
       await manager.initializeMCP({ 'test-server': serverConfig });
 
-      // Should eventually give up after max retries
-      const health = manager.getServerHealth('test-server');
-      expect(health?.state).toBe('degraded');
-      expect(mockConnection.connect).toHaveBeenCalledTimes(5); // Based on actual retry logic
-    }, 30000);
-  });
+      const result = await manager.callTool({
+        serverName: 'test-server',
+        toolName: 'test-tool',
+        provider: 'openai'
+      });
 
-  describe('Health Check and Recovery', () => {
-    beforeEach(() => {
-      // Mock Date.now to control timing
-      jest.spyOn(Date, 'now').mockImplementation(() => 1000000);
+      expect(result).toBeDefined();
+      expect(mockConnection.client.request).toHaveBeenCalledWith(
+        {
+          method: 'tools/call',
+          params: {
+            name: 'test-tool',
+            arguments: undefined,
+          },
+        },
+        expect.anything(),
+        expect.anything()
+      );
     });
 
-    afterEach(() => {
-      jest.restoreAllMocks();
-    });
-
-    it('should attempt recovery for degraded servers after timeout', async () => {
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
-
-      // Set server to degraded state with old failure time
-      const health = manager.getServerHealth('test-server');
-      if (health) {
-        health.state = 'degraded';
-        health.lastFailureTime = 1000000 - 6 * 60 * 1000; // 6 minutes ago
-      }
-
-      // Mock successful recovery
+    it('should call tools on user connections when userId provided', async () => {
+      const userId = 'user-123';
+      
       mockConnection.isConnected.mockResolvedValue(true);
-      (mockConnection.client.listTools as jest.Mock).mockResolvedValue({ tools: [] });
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.client.request.mockResolvedValue({
+        content: [{ type: 'text', text: 'Tool result' }]
+      });
 
-      // Spy on attemptServerRecovery method
-      const attemptRecoverySpy = jest.spyOn(manager as any, 'attemptServerRecovery');
-      attemptRecoverySpy.mockResolvedValue(undefined);
+      const result = await manager.callTool({
+        serverName: 'test-server',
+        toolName: 'test-tool',
+        provider: 'openai',
+        options: { userId }
+      });
 
-      await manager.performHealthCheck();
-
-      expect(attemptRecoverySpy).toHaveBeenCalledWith('test-server');
+      expect(result).toBeDefined();
+      expect(mockConnection.client.request).toHaveBeenCalled();
     });
 
-    it('should not attempt recovery for recently failed servers', async () => {
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
+    it('should handle tool call errors', async () => {
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.client.request.mockRejectedValue(new Error('Tool failed'));
 
-      // Set server to degraded state with recent failure
-      const health = manager.getServerHealth('test-server');
-      if (health) {
-        health.state = 'degraded';
-        health.lastFailureTime = 1000000 - 2 * 60 * 1000; // 2 minutes ago
-      }
-
-      // Spy on attemptServerRecovery method
-      const attemptRecoverySpy = jest.spyOn(manager as any, 'attemptServerRecovery');
-
-      await manager.performHealthCheck();
-
-      expect(attemptRecoverySpy).not.toHaveBeenCalled();
+      await expect(
+        manager.callTool({
+          serverName: 'test-server',
+          toolName: 'test-tool',
+          provider: 'openai'
+        })
+      ).rejects.toThrow();
     });
 
-    it('should handle recovery attempt failures gracefully', async () => {
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
-
-      // Set server to degraded state with old failure time
-      const health = manager.getServerHealth('test-server');
-      if (health) {
-        health.state = 'degraded';
-        health.lastFailureTime = 1000000 - 6 * 60 * 1000; // 6 minutes ago
-      }
-
-      // Mock failed recovery
-      const attemptRecoverySpy = jest.spyOn(manager as any, 'attemptServerRecovery');
-      attemptRecoverySpy.mockRejectedValue(new Error('Recovery failed'));
-
-      // Should not throw
-      await expect(manager.performHealthCheck()).resolves.not.toThrow();
+    it('should throw error for unknown servers', async () => {
+      await expect(
+        manager.callTool({
+          serverName: 'unknown-server',
+          toolName: 'test-tool',
+          provider: 'openai'
+        })
+      ).rejects.toThrow();
     });
   });
 
-  describe('Integration Tests', () => {
-    it('should handle mixed success and failure scenarios', async () => {
-      const serverConfigs = {
-        'good-server': { command: 'good-command', args: [] },
-        'bad-server': { command: 'bad-command', args: [] },
-        'flaky-server': { command: 'flaky-command', args: [] },
+  describe('Connection Management', () => {
+    it('should return app-level connections', async () => {
+      const serverConfig: MCPOptions = {
+        command: 'test-command',
+        args: ['test-arg'],
       };
 
-      // Mock different behaviors for different servers
-      MockMCPConnection.mockImplementation((serverName) => {
-        const mockConn = {
-          isConnected: jest.fn(),
-          connect: jest.fn(),
-          close: jest.fn(),
-          callTool: jest.fn(),
-          client: {
-            getServerCapabilities: jest.fn().mockReturnValue({}),
-            listTools: jest.fn().mockResolvedValue({ tools: [] }),
-          },
-        } as any;
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
 
-        if (serverName === 'good-server') {
-          mockConn.connect.mockResolvedValue(undefined);
-          mockConn.isConnected.mockResolvedValue(true);
-        } else if (serverName === 'bad-server') {
-          mockConn.connect.mockRejectedValue(new Error('Persistent failure'));
-          mockConn.isConnected.mockResolvedValue(false);
-        } else if (serverName === 'flaky-server') {
-          mockConn.connect
-            .mockRejectedValueOnce(new Error('Flaky failure'))
-            .mockResolvedValue(undefined);
-          mockConn.isConnected.mockResolvedValue(true);
-        }
+      await manager.initializeMCP({ 'test-server': serverConfig });
 
-        return mockConn;
-      });
+      const connection = manager.getConnection('test-server');
+      expect(connection).toBeDefined();
+    });
+
+    it('should return all connections', async () => {
+      const serverConfigs = {
+        'server-1': { command: 'cmd1', args: [] },
+        'server-2': { command: 'cmd2', args: [] }
+      };
+
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
 
       await manager.initializeMCP(serverConfigs);
 
-      const goodHealth = manager.getServerHealth('good-server');
-      const badHealth = manager.getServerHealth('bad-server');
-      const flakyHealth = manager.getServerHealth('flaky-server');
+      const allConnections = manager.getAllConnections();
+      expect(allConnections.size).toBe(2);
+      expect(allConnections.has('server-1')).toBe(true);
+      expect(allConnections.has('server-2')).toBe(true);
+    });
 
-      expect(goodHealth?.state).toBe('healthy');
-      expect(badHealth?.state).toBe('degraded');
-      expect(flakyHealth?.state).toBe('healthy'); // Should recover after retry
-    }, 30000);
+    it('should disconnect individual servers', async () => {
+      const serverConfig: MCPOptions = {
+        command: 'test-command',
+        args: ['test-arg'],
+      };
 
-    it('should maintain circuit breaker state across multiple operations', async () => {
-      // Initialize server health manually
-      (manager as any).initializeServerHealth('test-server');
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.disconnect.mockResolvedValue(undefined);
 
-      // Simulate a series of failures followed by circuit opening
-      for (let i = 0; i < 3; i++) {
-        (manager as any).recordServerFailure('test-server');
-      }
+      await manager.initializeMCP({ 'test-server': serverConfig });
+      await manager.disconnectServer('test-server');
 
-      let health = manager.getServerHealth('test-server');
-      expect(health?.state).toBe('circuit_open');
+      expect(mockConnection.disconnect).toHaveBeenCalled();
+      expect(manager.getConnection('test-server')).toBeUndefined();
+    });
 
-      // Verify circuit remains closed for new requests
-      expect((manager as any).isServerAvailable('test-server')).toBe(false);
+    it('should disconnect all servers', async () => {
+      const serverConfigs = {
+        'server-1': { command: 'cmd1', args: [] },
+        'server-2': { command: 'cmd2', args: [] }
+      };
 
-      // Simulate timeout expiry
-      if (health?.circuitOpenUntil) {
-        health.circuitOpenUntil = Date.now() - 1000;
-      }
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.disconnect.mockResolvedValue(undefined);
 
-      // Should now allow test request
-      expect((manager as any).isServerAvailable('test-server')).toBe(true);
+      await manager.initializeMCP(serverConfigs);
+      await manager.disconnectAll();
 
-      // Simulate successful recovery
-      (manager as any).recordServerSuccess('test-server');
+      expect(mockConnection.disconnect).toHaveBeenCalledTimes(2);
+      expect(manager.getAllConnections().size).toBe(0);
+    });
+  });
 
-      health = manager.getServerHealth('test-server');
-      expect(health?.state).toBe('healthy');
-      expect(health?.consecutiveFailures).toBe(0);
+  describe('Instance Management', () => {
+    it('should destroy singleton instance', async () => {
+      const instance = MCPManager.getInstance(mockLogger);
+      
+      await MCPManager.destroyInstance();
+      
+      const newInstance = MCPManager.getInstance(mockLogger);
+      expect(newInstance).not.toBe(instance);
+    });
+  });
+
+  describe('Idle Connection Cleanup', () => {
+    beforeEach(async () => {
+      await manager.initializeMCP({
+        'test-server': { command: 'test-command', args: [] }
+      });
+    });
+
+    it('should track user activity', async () => {
+      const userId = 'user-123';
+      
+      mockConnection.isConnected.mockResolvedValue(true);
+      mockConnection.connect.mockResolvedValue(undefined);
+      mockConnection.client.request.mockResolvedValue({
+        content: [{ type: 'text', text: 'Tool result' }]
+      });
+
+      // Calling a tool should update user activity
+      await manager.callTool({
+        serverName: 'test-server',
+        toolName: 'test-tool',
+        provider: 'openai',
+        options: { userId }
+      });
+
+      // No direct way to test this, but the activity tracking should prevent idle cleanup
+      // This is more of an integration test that the mechanism exists
+      expect(mockConnection.client.request).toHaveBeenCalled();
     });
   });
 });
