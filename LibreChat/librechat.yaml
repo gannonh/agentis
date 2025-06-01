@@ -166,7 +166,10 @@ mcpServers:
   googlesheets:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
-    url: https://mcp.composio.dev/composio/server/89f2e068-a152-4061-a61d-2d03d560fcc6?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    #https://mcp.composio.dev/composio/server/2a9e503b-d2a3-4435-89c5-488145930119/sse
+    url: https://mcp.composio.dev/composio/server/2a9e503b-d2a3-4435-89c5-488145930119/sse?include_composio_helper_actions=true&user_id={{LIBRECHAT_USER_ID}}
+    # old
+    # url: https://mcp.composio.dev/composio/server/89f2e068-a152-4061-a61d-2d03d560fcc6?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"
@@ -217,11 +220,13 @@ mcpServers:
       COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
       
   googlecalendar:
-    type: streamable-http
+    # type: streamable-http
+    type: sse
     # Including user_id in URL for Composio to identify unique user connections
     # https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc?transport=sse/sse 
     # https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc?transport=sse/mcp
-    url: https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc/mcp?useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    # url: https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc/mcp?useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    url: https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"

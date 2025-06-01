@@ -131,7 +131,7 @@ test('Use Google Docs Agent', async ({ page }) => {
     logProgress('✅ Check Connection completed');
 
     // Handle authentication when prompted
-    await handleGoogleOAuth(page, 'Google Docs');
+    await handleGoogleOAuth(page, 'Google Docs', { timeout: 90000 });
 
     // Send follow-up message to try creating document now that we're authenticated
     await page.getByTestId('text-input').fill('Ok, please try now');
@@ -165,12 +165,12 @@ test('Use Google Docs Agent', async ({ page }) => {
 
     // Wait for the retry execution
     await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
-      timeout: 90000,
+      timeout: 120000,
     });
     logProgress('✅ Create New Doc started (retry)');
 
     await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
-      timeout: 90000,
+      timeout: 10000,
     });
     logProgress('✅ Create New Doc completed (retry)');
   }

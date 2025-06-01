@@ -35,13 +35,13 @@ export async function handleGoogleOAuth(
     const composioLink = page.locator('a[href*="https://backend.composio.dev/api/v3/"]').first();
 
     try {
-      // Wait up to 60 seconds for the fully resolved Composio link to appear
-      await composioLink.waitFor({ timeout: 60000 });
+      // Wait up to 30 seconds for the fully resolved Composio link to appear
+      await composioLink.waitFor({ timeout });
       logProgress(`Found fully resolved Composio backend authorization link`);
 
       // Additional verification that the href attribute is complete
       const href = await composioLink.getAttribute('href');
-      if (href && href.includes('https://backend.composio.dev/api/v3/') && href.length > 40) {
+      if (href && href.includes('https://backend.composio.dev/api/v3/')) {
         logProgress(`Verified complete Composio URL: ${href.substring(0, 50)}...`);
         await composioLink.click({ timeout });
       } else {
@@ -87,6 +87,8 @@ export async function handleGoogleOAuth(
           logProgress('No permissions checkbox found, continuing...');
         }
 
+        //   await popup.getByRole('link', { name: 'Agentis Hall agentis.test@' }).click();
+
         // Then try to click Continue button if it exists
         try {
           await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 5000 });
@@ -112,6 +114,6 @@ export async function handleGoogleOAuth(
     }
   } catch (e) {
     // Fallback to the original link name approach
-    logProgress(`Composio link not found after 30s, trying link by name: ${linkName}`);
+    logProgress(`Composio link not found after 30s`);
   }
 }

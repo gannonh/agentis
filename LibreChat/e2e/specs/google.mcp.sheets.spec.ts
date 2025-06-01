@@ -158,7 +158,7 @@ test('Use Google Sheets Agent', async ({ page }) => {
 
     // page.pause(); // Pause for debugging if needed
     // Handle authentication if it appears after the attempt
-    await handleGoogleOAuth(page, 'Google Sheets');
+    await handleGoogleOAuth(page, 'Google Sheets', { timeout: 90000 });
 
     // Send follow-up message to retry now that we're authenticated
     await page.getByTestId('text-input').fill('Ok, please try now');

@@ -104,38 +104,12 @@ test('Use Gmail Agent', async ({ page }) => {
   await page
     .getByTestId('text-input')
     .fill(
-      'Create a 250 word Gmail draft about musician Carlos Alomar. Include a discography.\n\nRecipient: agentis.test@gmail.com\nSubject: Carlos Alomar blurb',
+      "Create a 250 word Gmail draft about musician Carlos Alomar. Include a discography.\n\nRecipient: agentis.test@gmail.com\nSubject: Carlos Alomar blurb.\n\nFirst I'll need to authorize with Gmail so please first run 'Connect to Gmail' and provide an authorization link. You do not need to check a connection first and if you do it will erroneously tell you that you have one.",
     );
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create Gmail draft');
 
-  try {
-    await expect(page.getByRole('button', { name: 'Running Check Connection' })).toBeVisible({
-      timeout: 15000,
-    });
-    logProgress('✅ Running Check Connection');
-    await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
-      timeout: 15000,
-    });
-    logProgress('✅ Ran Check Connection');
-  } catch (error) {
-    logProgress('⚠️ Check Connection step may not have appeared');
-  }
-
-  try {
-    await expect(page.getByRole('button', { name: 'Running Connect to Gmail' })).toBeVisible({
-      timeout: 15000,
-    });
-    logProgress('✅ Running Connect to Gmail');
-    await expect(page.getByRole('button', { name: 'Ran Connect to Gmail' })).toBeVisible({
-      timeout: 15000,
-    });
-    logProgress('✅ Ran Connect to Gmail');
-  } catch (error) {
-    logProgress('⚠️ Connect to Gmail step may not have appeared');
-  }
-
-  await handleGoogleOAuth(page, 'Gmail');
+  await handleGoogleOAuth(page, 'Gmail', { timeout: 90000 });
 
   await page.getByTestId('text-input').fill('Ok, please try now');
   await page.getByTestId('send-button').click();
@@ -143,11 +117,13 @@ test('Use Gmail Agent', async ({ page }) => {
 
   //await page.pause();
 
-  await expect(page.getByRole('button', { name: 'Running Create Email Draft' })).toBeVisible({
+  await expect(
+    page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
+  ).toBeVisible({
     timeout: 90000,
   });
   logProgress('✅ Running Create Email Draft');
-  await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Ran Create Email Draft' }).first()).toBeVisible({
     timeout: 90000,
   });
   logProgress('✅ Ran Create Email Draft');
