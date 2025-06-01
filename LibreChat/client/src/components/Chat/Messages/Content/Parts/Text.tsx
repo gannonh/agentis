@@ -2,6 +2,7 @@ import { memo, useMemo, ReactElement } from 'react';
 import { useRecoilValue } from 'recoil';
 import MarkdownLite from '~/components/Chat/Messages/Content/MarkdownLite';
 import Markdown from '~/components/Chat/Messages/Content/Markdown';
+import AuthCodeParser from '~/components/Messages/Content/AuthCodeParser';
 import { useChatContext, useMessageContext } from '~/Providers';
 import { cn } from '~/utils';
 import store from '~/store';
@@ -28,6 +29,17 @@ const TextPart = memo(({ text, isCreatedByUser, showCursor }: TextPartProps) => 
   );
 
   const content: ContentType = useMemo(() => {
+    // Check if this text contains Google Sheets authentication keywords
+    const needsGoogleSheetsAuth = text.toLowerCase().includes('authenticate with google sheets') ||
+                                  text.toLowerCase().includes('connect to google sheets') ||
+                                  text.toLowerCase().includes('authentication button');
+    
+    if (needsGoogleSheetsAuth && !isCreatedByUser) {
+      // This looks like an authentication message, use AuthCodeParser to add auth button
+      return <AuthCodeParser content={text} isAuthMessage={true} />;
+    }
+    
+    // Normal text processing
     if (!isCreatedByUser) {
       return <Markdown content={text} isLatestMessage={isLatestMessage} />;
     } else if (enableUserMsgMarkdown) {

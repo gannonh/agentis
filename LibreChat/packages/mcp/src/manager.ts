@@ -1,6 +1,7 @@
 import { CallToolResultSchema, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import type { JsonSchemaType, MCPOptions } from 'librechat-data-provider';
+import { resolveComposioPlaceholders } from 'librechat-data-provider';
 import type { Logger } from 'winston';
 import type * as t from './types/mcp';
 import { formatToolContent } from './parsers';
@@ -11,14 +12,6 @@ export interface CallToolOptions extends RequestOptions {
   userId?: string;
 }
 
-interface ServerHealthState {
-  state: 'healthy' | 'degraded' | 'circuit_open';
-  consecutiveFailures: number;
-  lastFailureTime: number;
-  lastSuccessTime: number;
-  circuitOpenUntil?: number;
-}
-
 export class MCPManager {
   private static instance: MCPManager | null = null;
   /** App-level connections initialized at startup */
@@ -27,14 +20,10 @@ export class MCPManager {
   private userConnections: Map<string, Map<string, MCPConnection>> = new Map();
   /** Last activity timestamp for users (not per server) */
   private userLastActivity: Map<string, number> = new Map();
-  /** Server health state tracking for circuit breaker pattern */
-  private serverHealth: Map<string, ServerHealthState> = new Map();
   private readonly USER_CONNECTION_IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes (TODO: make configurable)
-  private readonly CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3; // Open circuit after 3 consecutive failures
-  private readonly CIRCUIT_BREAKER_TIMEOUT = 60 * 1000; // Keep circuit open for 1 minute
-  private readonly CIRCUIT_BREAKER_RECOVERY_TIMEOUT = 5 * 60 * 1000; // Try recovery after 5 minutes
   private mcpConfigs: t.MCPServers = {};
   private processMCPEnv?: (obj: MCPOptions, userId?: string) => MCPOptions; // Store the processing function
+  private connectedAccountResolver?: (userId: string, service: string) => Promise<string | null>; // Store the connected account resolver
   private logger: Logger;
 
   private static getDefaultLogger(): Logger {
@@ -62,21 +51,20 @@ export class MCPManager {
   /** Stores configs and initializes app-level connections */
   public async initializeMCP(
     mcpServers: t.MCPServers,
-    processMCPEnv?: (obj: MCPOptions) => MCPOptions,
+    processMCPEnv?: (obj: MCPOptions, userId?: string) => MCPOptions,
+    connectedAccountResolver?: (userId: string, service: string) => Promise<string | null>,
   ): Promise<void> {
     this.logger.info('[MCP] Initializing app-level servers');
     this.processMCPEnv = processMCPEnv; // Store the function
+    this.connectedAccountResolver = connectedAccountResolver; // Store the resolver
     this.mcpConfigs = mcpServers;
 
     const entries = Object.entries(mcpServers);
     const initializedServers = new Set();
     const connectionResults = await Promise.allSettled(
       entries.map(async ([serverName, _config], i) => {
-        // Initialize health tracking for this server
-        this.initializeServerHealth(serverName);
-
         /** Process env for app-level connections */
-        const config = this.processMCPEnv ? this.processMCPEnv(_config) : _config;
+        const config = this.processMCPEnv ? this.processMCPEnv(_config, undefined) : _config;
         const connection = new MCPConnection(serverName, config, this.logger);
 
         try {
@@ -90,7 +78,6 @@ export class MCPManager {
           if (await connection.isConnected()) {
             initializedServers.add(i);
             this.connections.set(serverName, connection); // Store in app-level map
-            this.recordServerSuccess(serverName); // Record successful initialization
 
             const serverCapabilities = connection.client.getServerCapabilities();
             this.logger.info(
@@ -109,7 +96,6 @@ export class MCPManager {
             }
           }
         } catch (error) {
-          this.recordServerFailure(serverName); // Record failed initialization
           this.logger.error(`[MCP][${serverName}] Initialization failed`, error);
           throw error;
         }
@@ -145,191 +131,35 @@ export class MCPManager {
     }
   }
 
-  /** Generic server initialization logic with enhanced retry strategy */
+  /** Generic server initialization logic */
   private async initializeServer(connection: MCPConnection, logPrefix: string): Promise<void> {
-    const maxAttempts = 5; // Increased from 3 for Composio server load issues
+    const maxAttempts = 3;
     let attempts = 0;
-    let lastError: Error | null = null;
 
     while (attempts < maxAttempts) {
-      attempts++;
       try {
-        this.logger.info(`${logPrefix} Connection attempt ${attempts}/${maxAttempts}`);
-
         await connection.connect();
-
-        // Verify connection with a ping test
         if (await connection.isConnected()) {
-          this.logger.info(`${logPrefix} Successfully connected and verified`);
           return;
         }
-
-        throw new Error('Connection attempt succeeded but ping verification failed');
+        throw new Error('Connection attempt succeeded but status is not connected');
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        // Log the error with attempt context
-        this.logger.warn(
-          `${logPrefix} Attempt ${attempts}/${maxAttempts} failed: ${lastError.message}`,
-        );
-
+        attempts++;
         if (attempts === maxAttempts) {
-          this.logger.error(
-            `${logPrefix} Failed to connect after ${maxAttempts} attempts. Final error:`,
-            lastError,
-          );
-          throw lastError;
+          this.logger.error(`${logPrefix} Failed to connect after ${maxAttempts} attempts`, error);
+          throw error; // Re-throw the last error
         }
-
-        // Exponential backoff: 1s, 2s, 4s, 8s with jitter
-        const baseDelay = 1000 * Math.pow(2, attempts - 1);
-        const jitter = Math.random() * 1000; // Add jitter to prevent thundering herd
-        const delay = Math.min(baseDelay + jitter, 15000); // Cap at 15s
-
-        this.logger.info(`${logPrefix} Retrying in ${Math.round(delay)}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempts));
       }
     }
   }
 
-  /** Initialize server health state */
-  private initializeServerHealth(serverName: string): void {
-    if (!this.serverHealth.has(serverName)) {
-      this.serverHealth.set(serverName, {
-        state: 'healthy',
-        consecutiveFailures: 0,
-        lastFailureTime: 0,
-        lastSuccessTime: Date.now(),
-      });
+  /** Check if a server configuration is for Composio */
+  private isComposioServer(config: MCPOptions): boolean {
+    if ('url' in config && typeof config.url === 'string') {
+      return config.url.includes('mcp.composio.dev');
     }
-  }
-
-  /** Record a successful server interaction */
-  private recordServerSuccess(serverName: string): void {
-    const health = this.serverHealth.get(serverName);
-    if (health) {
-      health.state = 'healthy';
-      health.consecutiveFailures = 0;
-      health.lastSuccessTime = Date.now();
-      health.circuitOpenUntil = undefined;
-      this.logger.debug(`[MCP][${serverName}] Health: Success recorded, state reset to healthy`);
-    }
-  }
-
-  /** Record a server failure and update circuit breaker state */
-  private recordServerFailure(serverName: string): void {
-    const health = this.serverHealth.get(serverName);
-    if (health) {
-      health.consecutiveFailures++;
-      health.lastFailureTime = Date.now();
-
-      if (health.consecutiveFailures >= this.CIRCUIT_BREAKER_FAILURE_THRESHOLD) {
-        health.state = 'circuit_open';
-        health.circuitOpenUntil = Date.now() + this.CIRCUIT_BREAKER_TIMEOUT;
-        this.logger.warn(
-          `[MCP][${serverName}] Circuit breaker OPENED after ${health.consecutiveFailures} consecutive failures`,
-        );
-      } else {
-        health.state = 'degraded';
-        this.logger.warn(
-          `[MCP][${serverName}] Health: DEGRADED (${health.consecutiveFailures}/${this.CIRCUIT_BREAKER_FAILURE_THRESHOLD} failures)`,
-        );
-      }
-    }
-  }
-
-  /** Check if server is available (circuit breaker check) */
-  private isServerAvailable(serverName: string): boolean {
-    const health = this.serverHealth.get(serverName);
-    if (!health) {
-      return true; // Unknown servers are considered available
-    }
-
-    const now = Date.now();
-
-    switch (health.state) {
-      case 'healthy':
-        return true;
-      case 'degraded':
-        return true; // Still allow attempts, but will be monitored
-      case 'circuit_open':
-        if (health.circuitOpenUntil && now > health.circuitOpenUntil) {
-          // Circuit breaker timeout expired, allow one test request
-          health.state = 'degraded';
-          this.logger.info(`[MCP][${serverName}] Circuit breaker half-open: allowing test request`);
-          return true;
-        }
-        return false;
-      default:
-        return true;
-    }
-  }
-
-  /** Get server health status */
-  public getServerHealth(serverName: string): ServerHealthState | undefined {
-    return this.serverHealth.get(serverName);
-  }
-
-  /** Get all server health statuses */
-  public getAllServerHealth(): Map<string, ServerHealthState> {
-    return new Map(this.serverHealth);
-  }
-
-  /** Proactive health check and recovery for degraded servers */
-  public async performHealthCheck(): Promise<void> {
-    const now = Date.now();
-    const healthCheckPromises: Promise<void>[] = [];
-
-    for (const [serverName, health] of this.serverHealth.entries()) {
-      // Check if server needs recovery attempt
-      const timeSinceLastFailure = now - health.lastFailureTime;
-      const shouldAttemptRecovery =
-        health.state === 'degraded' && timeSinceLastFailure > this.CIRCUIT_BREAKER_RECOVERY_TIMEOUT;
-
-      if (shouldAttemptRecovery) {
-        healthCheckPromises.push(this.attemptServerRecovery(serverName));
-      }
-    }
-
-    if (healthCheckPromises.length > 0) {
-      this.logger.info(
-        `[MCP] Performing health check on ${healthCheckPromises.length} degraded servers`,
-      );
-      await Promise.allSettled(healthCheckPromises);
-    }
-  }
-
-  /** Attempt to recover a degraded server */
-  private async attemptServerRecovery(serverName: string): Promise<void> {
-    const connection = this.connections.get(serverName);
-    if (!connection) {
-      this.logger.warn(`[MCP][${serverName}] No connection found for recovery attempt`);
-      return;
-    }
-
-    this.logger.info(`[MCP][${serverName}] Attempting server recovery`);
-
-    try {
-      // Test the connection with a simple ping
-      const isConnected = await connection.isConnected();
-
-      if (isConnected) {
-        this.recordServerSuccess(serverName);
-        this.logger.info(`[MCP][${serverName}] Server recovery successful`);
-      } else {
-        // Try to reconnect
-        await connection.connect();
-        if (await connection.isConnected()) {
-          this.recordServerSuccess(serverName);
-          this.logger.info(`[MCP][${serverName}] Server reconnection successful`);
-        } else {
-          throw new Error('Reconnection failed');
-        }
-      }
-    } catch (error) {
-      this.recordServerFailure(serverName);
-      this.logger.warn(`[MCP][${serverName}] Server recovery failed:`, error);
-    }
+    return false;
   }
 
   /** Check for and disconnect idle connections */
@@ -364,19 +194,6 @@ export class MCPManager {
 
   /** Gets or creates a connection for a specific user */
   public async getUserConnection(userId: string, serverName: string): Promise<MCPConnection> {
-    // Check circuit breaker before attempting connection
-    if (!this.isServerAvailable(serverName)) {
-      const health = this.serverHealth.get(serverName);
-      const timeUntilRecovery = health?.circuitOpenUntil ? health.circuitOpenUntil - Date.now() : 0;
-      throw new McpError(
-        ErrorCode.InternalError,
-        `[MCP][User: ${userId}][${serverName}] Server temporarily unavailable (circuit breaker open). Retry in ${Math.ceil(timeUntilRecovery / 1000)}s.`,
-      );
-    }
-
-    // Initialize health tracking if not already done
-    this.initializeServerHealth(serverName);
-
     const userServerMap = this.userConnections.get(userId);
     let connection = userServerMap?.get(serverName);
     const now = Date.now();
@@ -423,6 +240,22 @@ export class MCPManager {
       );
     }
 
+    // Handle Composio connected account resolution for user connections
+    if (this.connectedAccountResolver && this.isComposioServer(config)) {
+      try {
+        const connectedAccountId = await this.connectedAccountResolver(userId, serverName);
+        if (connectedAccountId) {
+          this.logger.info(`[MCP][User: ${userId}][${serverName}] Using connected account: ${connectedAccountId}`);
+          config = resolveComposioPlaceholders(config, connectedAccountId);
+        } else {
+          this.logger.warn(`[MCP][User: ${userId}][${serverName}] No connected account found, connection may fail`);
+        }
+      } catch (error) {
+        this.logger.error(`[MCP][User: ${userId}][${serverName}] Failed to resolve connected account:`, error);
+        // Continue without connected account resolution - user may need to authenticate
+      }
+    }
+
     if (this.processMCPEnv) {
       config = { ...(this.processMCPEnv(config, userId) ?? {}) };
     }
@@ -443,9 +276,6 @@ export class MCPManager {
         throw new Error('Failed to establish connection after initialization attempt.');
       }
 
-      // Record successful connection
-      this.recordServerSuccess(serverName);
-
       if (!this.userConnections.has(userId)) {
         this.userConnections.set(userId, new Map());
       }
@@ -455,9 +285,6 @@ export class MCPManager {
       this.updateUserLastActivity(userId);
       return connection;
     } catch (error) {
-      // Record failed connection attempt
-      this.recordServerFailure(serverName);
-
       this.logger.error(
         `[MCP][User: ${userId}][${serverName}] Failed to establish connection`,
         error,
@@ -647,6 +474,36 @@ export class MCPManager {
     try {
       if (userId) {
         this.updateUserLastActivity(userId);
+        
+        // Check if this is a Composio server that requires authentication
+        const config = this.mcpConfigs[serverName];
+        
+        if (config && this.isComposioServer(config) && this.connectedAccountResolver) {
+          try {
+            const connectedAccountId = await this.connectedAccountResolver(userId, serverName);
+            
+            if (!connectedAccountId) {
+              // No connected account found - user needs to authenticate
+              const authenticationRequiredError = new McpError(
+                ErrorCode.InvalidRequest,
+                `Authentication required for ${serverName}. Please connect your account to use ${serverName} tools.`,
+              );
+              (authenticationRequiredError as any).authenticationRequired = true;
+              (authenticationRequiredError as any).serverName = serverName;
+              (authenticationRequiredError as any).service = serverName;
+              throw authenticationRequiredError;
+            }
+            this.logger.info(`${logPrefix} Using connected account: ${connectedAccountId}`);
+          } catch (error) {
+            // If it's already an authentication error, re-throw it
+            if ((error as any).authenticationRequired) {
+              throw error;
+            }
+            // For other errors, log and continue (may be transient)
+            this.logger.warn(`${logPrefix} Failed to check authentication status:`, error);
+          }
+        }
+        
         // Get or create user-specific connection
         connection = await this.getUserConnection(userId, serverName);
       } else {
@@ -682,18 +539,12 @@ export class MCPManager {
           ...callOptions,
         },
       );
-      // Record successful tool call
-      this.recordServerSuccess(serverName);
-
       if (userId) {
         this.updateUserLastActivity(userId);
       }
       this.checkIdleConnections();
       return formatToolContent(result, provider);
     } catch (error) {
-      // Record failed tool call
-      this.recordServerFailure(serverName);
-
       // Log with context and re-throw or handle as needed
       this.logger.error(`${logPrefix}[${toolName}] Tool call failed`, error);
       // Rethrowing allows the caller (createMCPTool) to handle the final user message
