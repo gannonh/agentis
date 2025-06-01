@@ -45,10 +45,11 @@ npm run dev
 - **Parameter Control**: Adjust temperature, max tokens, etc.
 
 ### 🛠️ Agent System
-- **MCP Integration**: Model Context Protocol server support
-- **Tool Calling**: Visual tool execution tracking
+- **MCP Integration**: Model Context Protocol server support with Composio authentication
+- **Tool Calling**: Visual tool execution tracking with inline authentication
 - **Ephemeral Agents**: Per-conversation agent instances
 - **Server Management**: Configure MCP servers through UI
+- **Inline Authentication**: OAuth flows directly within chat conversations
 
 ### 💻 Code Artifacts
 - **Live Execution**: Sandpack-powered code runner
@@ -87,6 +88,7 @@ client/
 │   │   ├── Messages/       # Message rendering & actions
 │   │   ├── Artifacts/      # Code artifact system
 │   │   ├── Tools/          # MCP & tool integration
+│   │   ├── Composio/       # Composio authentication components
 │   │   ├── SidePanel/      # Navigation & conversation list
 │   │   ├── Nav/            # Main navigation
 │   │   └── svg/            # SVG icon library
@@ -159,6 +161,39 @@ submission           // Input form state
 | `/login` | Login | Authentication |
 | `/register` | Registration | Account creation |
 | `/settings/*` | Settings | User preferences |
+
+## 🔐 Composio Authentication System
+
+The client includes a comprehensive inline authentication system for Composio MCP tools, enabling seamless OAuth flows directly within chat conversations.
+
+### Key Components
+
+- **AuthCodeParser**: Detects authentication messages and renders inline auth UI
+- **ComposioAuthButton**: Reactive authentication button with status polling
+- **ComposioTestPage**: Development testing interface for OAuth flows
+
+### Authentication Flow
+
+1. **Detection**: Text component identifies authentication messages
+2. **UI Render**: Inline authentication UI appears below agent message  
+3. **OAuth Flow**: Popup window handles Google OAuth with Composio
+4. **Status Update**: Button reactively updates to "✓ Connected" status
+5. **Tool Access**: Users can immediately retry tools after authentication
+
+### Supported Services
+
+- Google Sheets
+- Google Docs  
+- Google Drive
+- Gmail
+- Google Calendar
+
+### Technical Features
+
+- **Reactive Status**: Real-time connection status checking and polling
+- **Cross-Session Persistence**: Authentication status persists across page refreshes
+- **Error Handling**: Graceful fallbacks for failed OAuth flows
+- **Theme Integration**: UI components adapt to light/dark themes
 
 ## 🛠️ Development
 

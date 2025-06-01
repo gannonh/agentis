@@ -8,7 +8,7 @@ Core packages powering LibreChat/Agentis's modular architecture. These packages 
 |---------|---------|---------|
 | **@librechat/data-schemas** | v0.0.7 | Mongoose schemas and TypeScript types for MongoDB data models |
 | **librechat-data-provider** | v0.7.83 | Data services layer providing API communication and state management |
-| **librechat-mcp** | v1.2.2 | Model Context Protocol (MCP) integration services |
+| **librechat-mcp** | v1.2.2 | Model Context Protocol (MCP) integration services with Composio authentication |
 | **@gannonh/arcade-client** | v0.0.1 | TypeScript client for Arcade API tool integration |
 
 ## Quick Start
@@ -90,7 +90,7 @@ const { data } = useGetConversations();
 
 #### librechat-mcp
 
-Model Context Protocol server management.
+Model Context Protocol server management with Composio authentication support.
 
 ```typescript
 import { MCPManager } from 'librechat-mcp';
@@ -98,6 +98,12 @@ import { MCPManager } from 'librechat-mcp';
 const manager = new MCPManager({ userId, keyv });
 await manager.initialize();
 const tools = await manager.getTools();
+
+// With Composio connected account resolution
+const connectedAccountResolver = async (userId, service) => {
+  return await composioService.getConnectedAccountId(userId, service);
+};
+await manager.initializeMCP(mcpServers, processMCPEnv, connectedAccountResolver);
 ```
 
 #### @gannonh/arcade-client
