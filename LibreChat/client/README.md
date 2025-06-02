@@ -195,6 +195,72 @@ The client includes a comprehensive inline authentication system for Composio MC
 - **Error Handling**: Graceful fallbacks for failed OAuth flows
 - **Theme Integration**: UI components adapt to light/dark themes
 
+### Adding New Auth Providers
+
+The inline authentication system is provider-agnostic and designed for easy extension. To add new OAuth providers (e.g., Notion, GitHub, Slack):
+
+#### 1. Backend Service Updates
+Add service mapping in `ComposioService.js`:
+```javascript
+getServiceFromIntegrationId(integrationId) {
+  const serviceMap = {
+    // Existing Google services...
+    'notion': 'notion',
+    'github': 'github', 
+    'slack': 'slack'
+  };
+  return serviceMap[integrationId] || integrationId;
+}
+```
+
+#### 2. Frontend Component Updates
+Update service detection and display names in:
+
+**AuthCodeParser.tsx**:
+```typescript
+const getServiceDisplayName = (service: string) => {
+  const serviceNames: Record<string, string> = {
+    // Existing services...
+    notion: 'Notion',
+    github: 'GitHub',
+    slack: 'Slack'
+  };
+  return serviceNames[service] || service;
+};
+
+// Add detection logic
+if (lowerContent.includes('notion')) {
+  service = 'notion';
+} else if (lowerContent.includes('github')) {
+  service = 'github';
+}
+```
+
+**ComposioAuthButton.tsx** - Same service name mapping as above.
+
+#### 3. MCP Server Configuration
+Add to `librechat.yaml`:
+```yaml
+mcpServers:
+  notion:
+    type: sse
+    url: "https://mcp.composio.dev/composio/server/{uuid}/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}"
+```
+
+#### 4. Test Coverage
+Add test cases following existing patterns in:
+- `AuthCodeParser.test.tsx`
+- `ComposioAuthButton.test.tsx`
+- New E2E specs: `e2e/specs/[service].mcp.spec.ts`
+
+#### 5. Benefits of This Architecture
+- **Minimal Code Changes**: Most logic is already generic
+- **Consistent UX**: Same authentication flow for all providers
+- **Easy Testing**: Established test patterns
+- **Scalable**: No architectural changes needed
+
+The core authentication flow, UI components, backend services, and database schema work unchanged for any OAuth 2.0 provider that Composio supports.
+
 ## 🛠️ Development
 
 ### Essential Commands
