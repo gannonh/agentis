@@ -137,10 +137,16 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           })
           .then(response => response.json())
           .then(data => {
+            console.log('Wait-for-connection response:', data);
             if (data.success && data.isActive) {
               setConnectionStatus('active');
               setIsAuthenticating(false);
               onAuthSuccess?.(service, data.connectedAccountId);
+            } else if (data.success) {
+              // Connection exists but might not be ACTIVE yet - treat as success
+              setConnectionStatus('active'); 
+              setIsAuthenticating(false);
+              onAuthSuccess?.(service, event.data.connectedAccountId);
             } else {
               setConnectionStatus('error');
               setIsAuthenticating(false);
@@ -181,10 +187,16 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           })
           .then(response => response.json())
           .then(data => {
+            console.log('Wait-for-connection response (PENDING):', data);
             if (data.success && data.isActive) {
               setConnectionStatus('active');
               setIsAuthenticating(false);
               onAuthSuccess?.(service, data.connectedAccountId);
+            } else if (data.success) {
+              // Connection exists but might not be ACTIVE yet - treat as success
+              setConnectionStatus('active');
+              setIsAuthenticating(false);
+              onAuthSuccess?.(service, event.data.connectedAccountId);
             } else {
               setConnectionStatus('pending');
               setIsAuthenticating(false);
