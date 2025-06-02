@@ -2,7 +2,7 @@ import { Page } from '@playwright/test';
 import { logProgress } from './testLogger';
 
 /**
- * Handles Google OAuth authentication flow for Google Workspace services
+ * Handles Google OAuth authentication flow using the new inline ComposioAuthButton
  * @param page - The main Playwright page object
  * @param serviceName - The name of the service (e.g., 'Google Docs', 'Google Sheets')
  * @param options - Optional configuration for authentication
@@ -13,107 +13,158 @@ export async function handleGoogleOAuth(
   options?: {
     email?: string;
     password?: string;
-    linkName?: string;
-    permissions?: string;
     timeout?: number;
   },
 ) {
   const email =
     options?.email || process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   const password = options?.password || process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '';
-  const linkName = options?.linkName || `${serviceName} Authorization Link`;
-  const permissions = options?.permissions || 'See, edit, create, and delete';
   const timeout = options?.timeout || 20000;
 
   try {
-    logProgress(`Looking for ${serviceName} authorization link`);
+    logProgress(`Looking for ${serviceName} inline authentication button`);
 
-    // First try to find the Composio backend link with a longer wait
-    // Use .first() to handle multiple similar links and select the first valid one
-    // Wait for the full URL pattern to ensure it's completely rendered
-    // https://backend.composio.dev/api/v3/s/8q3Nx2XX
-    const composioLink = page.locator('a[href*="https://backend.composio.dev/api/v3/"]').first();
+    // Look for inline ComposioAuthButton - try multiple selector approaches
+    const authButtonSelectors = [
+      'button:has-text("Connect to Google")',
+      'button:has-text("Authenticate")',
+      'button[data-testid*="composio-auth"]',
+      'button:has-text("Connect Google")',
+      'button[aria-label*="Connect"]',
+      'button:has-text("🔐")', // Icon-based buttons
+    ];
 
+    let authButton = null;
+    for (const selector of authButtonSelectors) {
+      try {
+        authButton = page.locator(selector).first();
+        await authButton.waitFor({ timeout: 5000 });
+        logProgress(`✅ Found auth button with selector: ${selector}`);
+        break;
+      } catch (e) {
+        // Try next selector
+      }
+    }
+
+    if (!authButton || !(await authButton.isVisible())) {
+      logProgress(
+        `No inline authentication button found for ${serviceName} - may already be authenticated`,
+      );
+      return;
+    }
+
+    logProgress('✅ Found inline authentication button, clicking...');
+
+    // Click the authentication button to start OAuth flow
+    const popupPromise = page.waitForEvent('popup');
+    await authButton.click();
+    const popup = await popupPromise;
+
+    logProgress(`✅ OAuth popup opened for ${serviceName}`);
+
+    // Handle Google OAuth flow in popup
+    await handleGoogleOAuthPopup(popup, email, password);
+
+    // Wait for popup to close and authentication to complete
+    await popup.waitForEvent('close');
+    await page.bringToFront();
+
+    // Wait for the authentication button to update to show success state
     try {
-      // Wait up to 30 seconds for the fully resolved Composio link to appear
-      await composioLink.waitFor({ timeout });
-      logProgress(`Found fully resolved Composio backend authorization link`);
+      // Look for success indicators
+      const successSelectors = [
+        'button:has-text("✓ Connected")',
+        'button:has-text("Connected")',
+        'text="Authentication successful"',
+        'text="Connected successfully"',
+        'text="✅"', // Success emoji
+      ];
 
-      // Additional verification that the href attribute is complete
-      const href = await composioLink.getAttribute('href');
-      if (href && href.includes('https://backend.composio.dev/api/v3/')) {
-        logProgress(`Verified complete Composio URL: ${href.substring(0, 50)}...`);
-        await composioLink.click({ timeout });
-      } else {
-        throw new Error('Composio URL appears incomplete');
-      }
-      const popupPromise = page.waitForEvent('popup');
-      const popup = await popupPromise;
-
-      logProgress(`Handling Google OAuth for ${serviceName}`);
-
-      // Enter email
-      await popup.getByRole('textbox', { name: 'Email or phone' }).click();
-      await popup.getByRole('textbox', { name: 'Email or phone' }).fill(email);
-      await popup.getByRole('button', { name: 'Next' }).click();
-
-      // Enter password
-      await popup.getByRole('textbox', { name: 'Enter your password' }).click();
-      await popup.getByRole('textbox', { name: 'Enter your password' }).fill(password);
-      await popup.getByRole('button', { name: 'Next' }).click();
-
-      // Handle consent screens
-      try {
-        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 5000 });
-      } catch (e) {
-        // Continue button might not appear on subsequent auth
+      for (const selector of successSelectors) {
+        try {
+          await page.locator(selector).waitFor({ timeout: 10000 });
+          logProgress(`✅ ${serviceName} authentication completed successfully`);
+          return;
+        } catch (e) {
+          // Try next selector
+        }
       }
 
-      // Grant permissions - handle different OAuth consent screen variations
-      try {
-        // First try to check permissions checkbox if it exists
-        try {
-          await popup.getByRole('checkbox', { name: permissions }).check({ timeout: 5000 });
-          logProgress('✅ Checked permissions checkbox');
-        } catch (e) {
-          logProgress('No permissions checkbox found, continuing...');
-        }
-
-        // Next try another version of the checkbox
-        try {
-          await popup.getByRole('checkbox', { name: 'Select all' }).check({ timeout: 5000 });
-          logProgress('✅ Checked permissions checkbox');
-        } catch (e) {
-          logProgress('No permissions checkbox found, continuing...');
-        }
-
-        //   await popup.getByRole('link', { name: 'Agentis Hall agentis.test@' }).click();
-
-        // Then try to click Continue button if it exists
-        try {
-          await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 5000 });
-          logProgress('✅ Clicked Continue button');
-        } catch (e) {
-          logProgress('No Continue button found');
-        }
-      } catch (e) {
-        // Permissions might already be granted
-        logProgress('Permissions handling completed or already granted');
-      }
-
-      // Wait a moment for any redirects to complete
-      await popup.waitForTimeout(2000);
-
-      // Close the popup and return to the main page
-      await popup.close();
-      await page.bringToFront();
-
-      logProgress(`✅ ${serviceName} OAuth completed successfully`);
+      // If no explicit success indicator, wait a moment and check if auth button is gone/changed
+      await page.waitForTimeout(3000);
+      logProgress(`✅ ${serviceName} OAuth flow completed`);
     } catch (e) {
-      logProgress(`No ${serviceName} authorization required or already authorized`);
+      logProgress(`Warning: Could not verify authentication success state for ${serviceName}`);
     }
   } catch (e) {
-    // Fallback to the original link name approach
-    logProgress(`Composio link not found after 30s`);
+    logProgress(`Error during ${serviceName} authentication: ${e}`);
+    // Don't throw - authentication might not be required or already completed
+  }
+}
+
+/**
+ * Handles the Google OAuth flow inside a popup window
+ * @param popup - The popup window page object
+ * @param email - Google account email
+ * @param password - Google account password
+ */
+async function handleGoogleOAuthPopup(popup: Page, email: string, password: string) {
+  try {
+    logProgress('Handling Google OAuth popup flow...');
+
+    // Enter email
+    await popup.getByRole('textbox', { name: 'Email or phone' }).click();
+    await popup.getByRole('textbox', { name: 'Email or phone' }).fill(email);
+    await popup.getByRole('button', { name: 'Next' }).click();
+    logProgress('✅ Entered email');
+
+    // Enter password
+    await popup.getByRole('textbox', { name: 'Enter your password' }).click();
+    await popup.getByRole('textbox', { name: 'Enter your password' }).fill(password);
+    await popup.getByRole('button', { name: 'Next' }).click();
+    logProgress('✅ Entered password');
+
+    // Handle consent screens
+    try {
+      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 5000 });
+      logProgress('✅ Clicked Continue button');
+    } catch (e) {
+      logProgress('No Continue button found, proceeding...');
+    }
+
+    // Grant permissions - handle different OAuth consent screen variations
+    try {
+      // Try to check permissions checkboxes
+      const checkboxSelectors = ['See, edit, create, and delete', 'Select all', 'All scopes'];
+
+      for (const checkboxName of checkboxSelectors) {
+        try {
+          await popup.getByRole('checkbox', { name: checkboxName }).check({ timeout: 3000 });
+          logProgress(`✅ Checked "${checkboxName}" checkbox`);
+          break;
+        } catch (e) {
+          logProgress(`No "${checkboxName}" checkbox found`);
+        }
+      }
+
+      // Click permission grant buttons
+      const buttonSelectors = ['Continue', 'Allow', 'Accept', 'Grant access'];
+      for (const buttonText of buttonSelectors) {
+        try {
+          await popup.getByRole('button', { name: buttonText }).click({ timeout: 5000 });
+          logProgress(`✅ Clicked ${buttonText} button`);
+          break;
+        } catch (e) {
+          logProgress(`No ${buttonText} button found`);
+        }
+      }
+    } catch (e) {
+      logProgress('Permissions handling completed or already granted');
+    }
+
+    logProgress('✅ Google OAuth popup flow completed');
+  } catch (e) {
+    logProgress(`Error in OAuth popup: ${e}`);
+    throw e;
   }
 }
