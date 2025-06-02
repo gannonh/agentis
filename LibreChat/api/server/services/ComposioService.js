@@ -47,7 +47,7 @@ class ComposioService {
     const existingDbRecord = await ComposioConnectedAccount.findOne({
       user: userId,
       service: service,
-      status: 'active',
+      connectionStatus: 'ACTIVE',
     });
 
     if (existingDbRecord) {
@@ -85,7 +85,7 @@ class ComposioService {
               service: service,
               connectedAccountId: activeConnection.id,
               appName: appName,
-              status: 'active',
+              connectionStatus: 'ACTIVE',
               metadata: {
                 entityId: userId,
                 appName: appName,
@@ -142,7 +142,7 @@ class ComposioService {
               service: service,
               connectedAccountId: existingConnection.id,
               appName: appName,
-              status: 'active', // Mark as active in our DB since it's working
+              connectionStatus: 'ACTIVE', // Mark as active in our DB since it's working
               metadata: {
                 entityId: userId,
                 appName: appName,
@@ -189,7 +189,7 @@ class ComposioService {
         service: service,
         connectedAccountId: response.connectedAccountId,
         appName: appName,
-        status: 'active',
+        connectionStatus: 'ACTIVE',
         metadata: {
           entityId: userId,
           appName: appName,
@@ -311,7 +311,7 @@ class ComposioService {
   async getUserConnectedAccounts(userId) {
     return await ComposioConnectedAccount.find({
       user: userId,
-      status: 'active',
+      connectionStatus: 'ACTIVE',
     });
   }
 
@@ -350,7 +350,7 @@ class ComposioService {
       // For now, just check if it exists in our database
       const account = await ComposioConnectedAccount.findOne({
         connectedAccountId: connectedAccountId,
-        status: 'active',
+        connectionStatus: 'ACTIVE',
       });
 
       return !!account;
@@ -496,7 +496,7 @@ class ComposioService {
    * @param {string} service - The service name
    * @param {string} connectedAccountId - The connected account ID
    * @param {number} timeoutSeconds - Timeout in seconds (default 180)
-   * @returns {Promise<boolean>} Whether connection became active
+   * @returns {Promise<{isActive: boolean, connectedAccountId?: string}>} Whether connection became active and the new ID
    */
   async waitForConnectionActive(userId, service, connectedAccountId, timeoutSeconds = 180) {
     await this.initialize();
@@ -523,15 +523,25 @@ class ComposioService {
             logger.info(`[ComposioService] Found ACTIVE connection ${activeConnection.id} for ${service}!`);
             
             // Update our database with the new active connection ID
-            await ComposioConnectedAccount.findOneAndUpdate(
+            logger.info(`[ComposioService] Updating MongoDB record for user ${userId}, service ${service} with new connection ID: ${activeConnection.id}`);
+            
+            // First, let's check what we're trying to update
+            const existingRecord = await ComposioConnectedAccount.findOne({ user: userId, service: service });
+            logger.info(`[ComposioService] Existing record before update:`, existingRecord ? JSON.stringify(existingRecord.toObject()) : 'null');
+            
+            const updateResult = await ComposioConnectedAccount.findOneAndUpdate(
               { user: userId, service: service },
               {
-                connectedAccountId: activeConnection.id, // Update to the new active connection ID
-                connectionStatus: 'ACTIVE',
-              }
+                $set: {
+                  connectedAccountId: activeConnection.id, // Update to the new active connection ID
+                  connectionStatus: 'ACTIVE',
+                }
+              },
+              { new: true, runValidators: false }
             );
+            logger.info(`[ComposioService] Update result:`, updateResult ? JSON.stringify(updateResult.toObject()) : 'null');
             
-            return true;
+            return { isActive: true, connectedAccountId: activeConnection.id };
           } else {
             // Log all connections for debugging
             const serviceConnections = connections.filter(conn => 
@@ -552,10 +562,10 @@ class ComposioService {
       }
       
       logger.warn(`[ComposioService] Connection ${connectedAccountId} did not become active within ${timeoutSeconds} seconds`);
-      return false;
+      return { isActive: false };
     } catch (error) {
       logger.error(`[ComposioService] Error waiting for connection to become active:`, error);
-      return false;
+      return { isActive: false };
     }
   }
 
@@ -601,7 +611,7 @@ class ComposioService {
           service: service,
           connectedAccountId: connectedAccountId,
           appName: appName,
-          status: connection.status === 'ACTIVE' ? 'active' : 'active', // Mark as active even if still initializing
+          connectionStatus: 'ACTIVE', // Mark as active even if still initializing
           metadata: {
             entityId: userId,
             appName: appName,

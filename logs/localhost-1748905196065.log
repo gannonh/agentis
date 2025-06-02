@@ -1,0 +1,313 @@
+ProactiveMCPAuth.tsx:27 🔍 [ProactiveMCPAuth] COMPONENT RENDERED! {messages: 4, conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3'}
+ProactiveMCPAuth.tsx:41 [ProactiveMCPAuth] Debug Info: {conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3', conversation: {…}, agentsMap: {…}, ephemeralAgent: null, allTools: 0, …}
+ProactiveMCPAuth.tsx:98 🚫 [ProactiveMCPAuth] NOT SHOWING AUTH UI: {shouldShow: false, authServicesLength: 0, authServices: Array(0), reason: 'shouldShow is false'}
+logger.ts:18 [icon_data] {endpoint: 'agents', model: 'gpt-4-0613', iconURL: undefined, modelLabel: 'gannon hall', isCreatedByUser: true} undefined {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+logger.ts:18 [icon_data] {endpoint: 'agents', model: 'agent_RUCnYDpHPt-kkSb2BGhh9', iconURL: undefined, modelLabel: 'Google Sheets Agent', isCreatedByUser: false} undefined {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+logger.ts:18 [icon_data] {endpoint: 'agents', model: 'gpt-4-0613', iconURL: undefined, modelLabel: 'gannon hall', isCreatedByUser: true} undefined {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+logger.ts:18 [icon_data] {endpoint: 'agents', model: 'agent_RUCnYDpHPt-kkSb2BGhh9', iconURL: undefined, modelLabel: 'Google Sheets Agent', isCreatedByUser: false} undefined {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+ProactiveMCPAuth.tsx:55 [ProactiveMCPAuth] Getting agent... {agentId: 'agent_RUCnYDpHPt-kkSb2BGhh9', hasAgentsMap: true, agentFromMap: {…}, ephemeralAgent: null}
+ProactiveMCPAuth.tsx:64 [ProactiveMCPAuth] Using agent from map: {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+mcpAuth.ts:65 [detectMCPAuthServices] Input: {agent: Array(16), allToolsCount: 0}
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: ocr
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: null
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_GOOGLE_SHEET1_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_GET_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_UPDATE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CLEAR_VALUES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_COLUMN_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FIND_WORKSHEET_BY_TITLE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FORMAT_CELL_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SHEET_NAMES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SPREADSHEET_INFO_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_SHEET_FROM_JSON_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_CHECK_ACTIVE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_INITIATE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_GET_REQUIRED_PARAMETERS_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:96 [detectMCPAuthServices] Final auth services: ['googlesheets']
+ProactiveMCPAuth.tsx:83 [ProactiveMCPAuth] Detected auth services: ['googlesheets']
+mcpAuth.ts:130 [shouldShowAuthUI] Input: {messages: 4, authServices: Array(1)}
+mcpAuth.ts:139 [shouldShowAuthUI] Auth services found, returning true
+ProactiveMCPAuth.tsx:88 [ProactiveMCPAuth] Should show auth UI: true {messagesLength: 4, userMessages: 0, assistantMessages: 0, servicesLength: 1}
+ProactiveMCPAuth.tsx:27 🔍 [ProactiveMCPAuth] COMPONENT RENDERED! {messages: 4, conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3'}
+ProactiveMCPAuth.tsx:41 [ProactiveMCPAuth] Debug Info: {conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3', conversation: {…}, agentsMap: {…}, ephemeralAgent: null, allTools: 0, …}
+ProactiveMCPAuth.tsx:98 🚫 [ProactiveMCPAuth] NOT SHOWING AUTH UI: {shouldShow: false, authServicesLength: 0, authServices: Array(0), reason: 'shouldShow is false'}
+ProactiveMCPAuth.tsx:55 [ProactiveMCPAuth] Getting agent... {agentId: 'agent_RUCnYDpHPt-kkSb2BGhh9', hasAgentsMap: true, agentFromMap: {…}, ephemeralAgent: null}
+ProactiveMCPAuth.tsx:64 [ProactiveMCPAuth] Using agent from map: {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+mcpAuth.ts:65 [detectMCPAuthServices] Input: {agent: Array(16), allToolsCount: 0}
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: ocr
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: null
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_GOOGLE_SHEET1_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_GET_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_UPDATE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CLEAR_VALUES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_COLUMN_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FIND_WORKSHEET_BY_TITLE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FORMAT_CELL_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SHEET_NAMES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SPREADSHEET_INFO_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_SHEET_FROM_JSON_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_CHECK_ACTIVE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_INITIATE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_GET_REQUIRED_PARAMETERS_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:96 [detectMCPAuthServices] Final auth services: ['googlesheets']
+ProactiveMCPAuth.tsx:83 [ProactiveMCPAuth] Detected auth services: ['googlesheets']
+mcpAuth.ts:130 [shouldShowAuthUI] Input: {messages: 4, authServices: Array(1)}
+mcpAuth.ts:139 [shouldShowAuthUI] Auth services found, returning true
+ProactiveMCPAuth.tsx:88 [ProactiveMCPAuth] Should show auth UI: true {messagesLength: 4, userMessages: 0, assistantMessages: 0, servicesLength: 1}
+ProactiveMCPAuth.tsx:27 🔍 [ProactiveMCPAuth] COMPONENT RENDERED! {messages: 4, conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3'}
+ProactiveMCPAuth.tsx:41 [ProactiveMCPAuth] Debug Info: {conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3', conversation: {…}, agentsMap: {…}, ephemeralAgent: null, allTools: 0, …}
+ProactiveMCPAuth.tsx:107 ✅ [ProactiveMCPAuth] SHOWING AUTH UI! {authServices: Array(1)}
+ProactiveMCPAuth.tsx:55 [ProactiveMCPAuth] Getting agent... {agentId: 'agent_RUCnYDpHPt-kkSb2BGhh9', hasAgentsMap: true, agentFromMap: {…}, ephemeralAgent: null}
+ProactiveMCPAuth.tsx:64 [ProactiveMCPAuth] Using agent from map: {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+mcpAuth.ts:65 [detectMCPAuthServices] Input: {agent: Array(16), allToolsCount: undefined}
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: ocr
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: null
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_GOOGLE_SHEET1_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_GET_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_UPDATE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CLEAR_VALUES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_COLUMN_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FIND_WORKSHEET_BY_TITLE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FORMAT_CELL_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SHEET_NAMES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SPREADSHEET_INFO_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_SHEET_FROM_JSON_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_CHECK_ACTIVE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_INITIATE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_GET_REQUIRED_PARAMETERS_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:96 [detectMCPAuthServices] Final auth services: ['googlesheets']
+ProactiveMCPAuth.tsx:83 [ProactiveMCPAuth] Detected auth services: ['googlesheets']
+mcpAuth.ts:130 [shouldShowAuthUI] Input: {messages: 4, authServices: Array(1)}
+mcpAuth.ts:139 [shouldShowAuthUI] Auth services found, returning true
+ProactiveMCPAuth.tsx:88 [ProactiveMCPAuth] Should show auth UI: true {messagesLength: 4, userMessages: 0, assistantMessages: 0, servicesLength: 1}
+ProactiveMCPAuth.tsx:27 🔍 [ProactiveMCPAuth] COMPONENT RENDERED! {messages: 4, conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3'}
+ProactiveMCPAuth.tsx:41 [ProactiveMCPAuth] Debug Info: {conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3', conversation: {…}, agentsMap: {…}, ephemeralAgent: null, allTools: 0, …}
+ProactiveMCPAuth.tsx:107 ✅ [ProactiveMCPAuth] SHOWING AUTH UI! {authServices: Array(1)}
+ProactiveMCPAuth.tsx:55 [ProactiveMCPAuth] Getting agent... {agentId: 'agent_RUCnYDpHPt-kkSb2BGhh9', hasAgentsMap: true, agentFromMap: {…}, ephemeralAgent: null}
+ProactiveMCPAuth.tsx:64 [ProactiveMCPAuth] Using agent from map: {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+mcpAuth.ts:65 [detectMCPAuthServices] Input: {agent: Array(16), allToolsCount: undefined}
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: ocr
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: null
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_GOOGLE_SHEET1_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_GET_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_UPDATE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CLEAR_VALUES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_COLUMN_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FIND_WORKSHEET_BY_TITLE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FORMAT_CELL_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SHEET_NAMES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SPREADSHEET_INFO_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_SHEET_FROM_JSON_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_CHECK_ACTIVE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_INITIATE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_GET_REQUIRED_PARAMETERS_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:96 [detectMCPAuthServices] Final auth services: ['googlesheets']
+ProactiveMCPAuth.tsx:83 [ProactiveMCPAuth] Detected auth services: ['googlesheets']
+mcpAuth.ts:130 [shouldShowAuthUI] Input: {messages: 4, authServices: Array(1)}
+mcpAuth.ts:139 [shouldShowAuthUI] Auth services found, returning true
+ProactiveMCPAuth.tsx:88 [ProactiveMCPAuth] Should show auth UI: true {messagesLength: 4, userMessages: 0, assistantMessages: 0, servicesLength: 1}
+ProactiveMCPAuth.tsx:27 🔍 [ProactiveMCPAuth] COMPONENT RENDERED! {messages: 4, conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3'}
+ProactiveMCPAuth.tsx:41 [ProactiveMCPAuth] Debug Info: {conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3', conversation: {…}, agentsMap: {…}, ephemeralAgent: null, allTools: 0, …}
+ProactiveMCPAuth.tsx:107 ✅ [ProactiveMCPAuth] SHOWING AUTH UI! {authServices: Array(1)}
+ProactiveMCPAuth.tsx:27 🔍 [ProactiveMCPAuth] COMPONENT RENDERED! {messages: 4, conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3'}
+ProactiveMCPAuth.tsx:41 [ProactiveMCPAuth] Debug Info: {conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3', conversation: {…}, agentsMap: {…}, ephemeralAgent: null, allTools: 0, …}
+ProactiveMCPAuth.tsx:107 ✅ [ProactiveMCPAuth] SHOWING AUTH UI! {authServices: Array(1)}
+ProactiveMCPAuth.tsx:55 [ProactiveMCPAuth] Getting agent... {agentId: 'agent_RUCnYDpHPt-kkSb2BGhh9', hasAgentsMap: true, agentFromMap: {…}, ephemeralAgent: null}
+ProactiveMCPAuth.tsx:64 [ProactiveMCPAuth] Using agent from map: {id: 'agent_RUCnYDpHPt-kkSb2BGhh9', name: 'Google Sheets Agent', description: 'Claude 3.7 Agent with access to Google Sheets.', tools: Array(16), author: '682a44303d70a1dd221f37a7', …}
+mcpAuth.ts:65 [detectMCPAuthServices] Input: {agent: Array(16), allToolsCount: undefined}
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: ocr
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: null
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_GOOGLE_SHEET1_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_GET_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_BATCH_UPDATE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CLEAR_VALUES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_COLUMN_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_CREATE_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FIND_WORKSHEET_BY_TITLE_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_FORMAT_CELL_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SHEET_NAMES_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_GET_SPREADSHEET_INFO_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: GOOGLESHEETS_SHEET_FROM_JSON_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_CHECK_ACTIVE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_INITIATE_CONNECTION_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:76 [detectMCPAuthServices] Processing tool: COMPOSIO_GET_REQUIRED_PARAMETERS_mcp_googlesheets
+mcpAuth.ts:82 [detectMCPAuthServices] Extracted server name: googlesheets
+mcpAuth.ts:88 [detectMCPAuthServices] Auth service for googlesheets : googlesheets
+mcpAuth.ts:96 [detectMCPAuthServices] Final auth services: ['googlesheets']
+ProactiveMCPAuth.tsx:83 [ProactiveMCPAuth] Detected auth services: ['googlesheets']
+mcpAuth.ts:130 [shouldShowAuthUI] Input: {messages: 4, authServices: Array(1)}
+mcpAuth.ts:139 [shouldShowAuthUI] Auth services found, returning true
+ProactiveMCPAuth.tsx:88 [ProactiveMCPAuth] Should show auth UI: true {messagesLength: 4, userMessages: 0, assistantMessages: 0, servicesLength: 1}
+ProactiveMCPAuth.tsx:27 🔍 [ProactiveMCPAuth] COMPONENT RENDERED! {messages: 4, conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3'}
+ProactiveMCPAuth.tsx:41 [ProactiveMCPAuth] Debug Info: {conversationId: 'b1fdacda-bb94-440d-ad4c-c5d36ec2cff3', conversation: {…}, agentsMap: {…}, ephemeralAgent: null, allTools: 0, …}
+ProactiveMCPAuth.tsx:107 ✅ [ProactiveMCPAuth] SHOWING AUTH UI! {authServices: Array(1)}
+ComposioAuthButton.tsx:96 OAuth initiated: {success: true, redirectUrl: 'https://backend.composio.dev/api/v3/s/y44c1lYq', connectedAccountId: 'ac78e96c-05f4-48c2-bb98-5d35be94b712', connectionStatus: 'INITIATED', service: 'googlesheets', …}
+ComposioAuthButton.tsx:220 Cross-Origin-Opener-Policy policy would block the window.closed call.
+(anonymous) @ ComposioAuthButton.tsx:220
+ComposioAuthButton.tsx:220 Cross-Origin-Opener-Policy policy would block the window.closed call.
+(anonymous) @ ComposioAuthButton.tsx:220
+ComposioAuthButton.tsx:220 Cross-Origin-Opener-Policy policy would block the window.closed call.
+(anonymous) @ ComposioAuthButton.tsx:220
+ComposioAuthButton.tsx:220 Cross-Origin-Opener-Policy policy would block the window.closed call.
+(anonymous) @ ComposioAuthButton.tsx:220
+ComposioAuthButton.tsx:220 Cross-Origin-Opener-Policy policy would block the window.closed call.
+(anonymous) @ ComposioAuthButton.tsx:220
+ComposioAuthButton.tsx:220 Cross-Origin-Opener-Policy policy would block the window.closed call.
+(anonymous) @ ComposioAuthButton.tsx:220

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthContext } from '~/hooks';
-
+// TODO: JSDoc
 interface ComposioAuthButtonProps {
   service: string;
   onAuthSuccess?: (service: string, connectedAccountId: string) => void;
@@ -30,7 +30,7 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
       try {
         const response = await fetch(`/api/composio/connection-status/${service}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -57,7 +57,7 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
 
     // Set up polling every 5 seconds, but only if we're in an authenticating state
     let pollInterval: NodeJS.Timeout | null = null;
-    
+
     if (isAuthenticating) {
       pollInterval = setInterval(checkConnectionStatus, 5000);
     }
@@ -83,7 +83,7 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
       const response = await fetch(`/api/composio/auth/${service}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -101,7 +101,7 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
       const popup = window.open(
         data.redirectUrl,
         'composio-oauth',
-        'width=600,height=700,scrollbars=yes,resizable=yes'
+        'width=600,height=700,scrollbars=yes,resizable=yes',
       );
 
       if (!popup) {
@@ -121,12 +121,12 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           setConnectionStatus('pending');
           window.removeEventListener('message', handleMessage);
           popup.close();
-          
+
           // Call wait-for-connection to update MongoDB with the new active connection ID
           fetch(`/api/composio/wait-for-connection`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -135,30 +135,30 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
               timeoutSeconds: 30,
             }),
           })
-          .then(response => response.json())
-          .then(data => {
-            console.log('Wait-for-connection response:', data);
-            if (data.success && data.isActive) {
-              setConnectionStatus('active');
-              setIsAuthenticating(false);
-              onAuthSuccess?.(service, data.connectedAccountId);
-            } else if (data.success) {
-              // Connection exists but might not be ACTIVE yet - treat as success
-              setConnectionStatus('active'); 
-              setIsAuthenticating(false);
-              onAuthSuccess?.(service, event.data.connectedAccountId);
-            } else {
+            .then((response) => response.json())
+            .then((data) => {
+              console.log('Wait-for-connection response:', data);
+              if (data.success && data.isActive) {
+                setConnectionStatus('active');
+                setIsAuthenticating(false);
+                onAuthSuccess?.(service, data.connectedAccountId);
+              } else if (data.success) {
+                // Connection exists but might not be ACTIVE yet - treat as success
+                setConnectionStatus('active');
+                setIsAuthenticating(false);
+                onAuthSuccess?.(service, event.data.connectedAccountId);
+              } else {
+                setConnectionStatus('error');
+                setIsAuthenticating(false);
+                onAuthError?.('Connection did not become active');
+              }
+            })
+            .catch((error) => {
+              console.error('Failed to wait for connection:', error);
               setConnectionStatus('error');
               setIsAuthenticating(false);
-              onAuthError?.('Connection did not become active');
-            }
-          })
-          .catch(error => {
-            console.error('Failed to wait for connection:', error);
-            setConnectionStatus('error');
-            setIsAuthenticating(false);
-            onAuthError?.('Failed to verify connection');
-          });
+              onAuthError?.('Failed to verify connection');
+            });
         } else if (event.data.type === 'COMPOSIO_AUTH_ERROR') {
           console.error('OAuth error:', event.data);
           setConnectionStatus('error');
@@ -171,12 +171,12 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           setConnectionStatus('pending');
           window.removeEventListener('message', handleMessage);
           popup.close();
-          
+
           // Call wait-for-connection to update MongoDB with the new active connection ID
           fetch(`/api/composio/wait-for-connection`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -185,37 +185,77 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
               timeoutSeconds: 30,
             }),
           })
-          .then(response => response.json())
-          .then(data => {
-            console.log('Wait-for-connection response (PENDING):', data);
-            if (data.success && data.isActive) {
-              setConnectionStatus('active');
-              setIsAuthenticating(false);
-              onAuthSuccess?.(service, data.connectedAccountId);
-            } else if (data.success) {
-              // Connection exists but might not be ACTIVE yet - treat as success
-              setConnectionStatus('active');
-              setIsAuthenticating(false);
-              onAuthSuccess?.(service, event.data.connectedAccountId);
-            } else {
+            .then((response) => response.json())
+            .then((data) => {
+              console.log('Wait-for-connection response (PENDING):', data);
+              if (data.success && data.isActive) {
+                setConnectionStatus('active');
+                setIsAuthenticating(false);
+                onAuthSuccess?.(service, data.connectedAccountId);
+              } else if (data.success) {
+                // Connection exists but might not be ACTIVE yet - treat as success
+                setConnectionStatus('active');
+                setIsAuthenticating(false);
+                onAuthSuccess?.(service, event.data.connectedAccountId);
+              } else {
+                setConnectionStatus('pending');
+                setIsAuthenticating(false);
+                // Connection is still being set up, but we can proceed
+                onAuthSuccess?.(service, event.data.connectedAccountId);
+              }
+            })
+            .catch((error) => {
+              console.error('Failed to wait for connection:', error);
               setConnectionStatus('pending');
               setIsAuthenticating(false);
-              // Connection is still being set up, but we can proceed
               onAuthSuccess?.(service, event.data.connectedAccountId);
-            }
-          })
-          .catch(error => {
-            console.error('Failed to wait for connection:', error);
-            setConnectionStatus('pending');
-            setIsAuthenticating(false);
-            onAuthSuccess?.(service, event.data.connectedAccountId);
-          });
+            });
         }
       };
 
       window.addEventListener('message', handleMessage);
 
-      // Step 4: Handle popup closed without completion
+      // Step 4: Poll for connection status while popup is open
+      const pollForConnection = async () => {
+        try {
+          const pollResponse = await fetch(`/api/composio/wait-for-connection`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              service: service,
+              connectedAccountId: data.connectedAccountId,
+              timeoutSeconds: 120, // 2 minutes timeout
+            }),
+          });
+
+          if (pollResponse.ok) {
+            const pollData = await pollResponse.json();
+            console.log('Poll response:', pollData);
+            
+            if (pollData.isActive) {
+              setConnectionStatus('active');
+              setIsAuthenticating(false);
+              onAuthSuccess?.(service, pollData.connectedAccountId);
+              popup.close();
+              window.removeEventListener('message', handleMessage);
+            }
+          }
+        } catch (error) {
+          console.error('Polling error:', error);
+        }
+      };
+
+      // Start polling after a short delay to give OAuth time to complete
+      setTimeout(() => {
+        if (popup && !popup.closed) {
+          pollForConnection();
+        }
+      }, 5000);
+
+      // Handle popup closed without completion
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
@@ -227,7 +267,6 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           }
         }
       }, 1000);
-
     } catch (error) {
       console.error('OAuth error:', error);
       setConnectionStatus('error');
@@ -238,30 +277,42 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
 
   const getStatusColor = () => {
     switch (connectionStatus) {
-      case 'active': return 'text-green-600';
-      case 'pending': return 'text-green-600'; // Treat pending as green since it works
-      case 'error': return 'text-red-600';
-      case 'cancelled': return 'text-gray-600';
-      default: return 'text-blue-600';
+      case 'active':
+        return 'text-green-600';
+      case 'pending':
+        return 'text-green-600'; // Treat pending as green since it works
+      case 'error':
+        return 'text-red-600';
+      case 'cancelled':
+        return 'text-gray-600';
+      default:
+        return 'text-blue-600';
     }
   };
 
   const getStatusText = () => {
     switch (connectionStatus) {
-      case 'initiating': return 'Starting OAuth...';
-      case 'redirecting': return 'Opening authorization window...';
-      case 'active': return 'Connected!';
-      case 'pending': return 'Connected!'; // Treat pending as connected since it works
-      case 'error': return 'Connection failed';
-      case 'cancelled': return 'OAuth cancelled';
-      default: return 'Not connected';
+      case 'initiating':
+        return 'Starting OAuth...';
+      case 'redirecting':
+        return 'Opening authorization window...';
+      case 'active':
+        return 'Connected!';
+      case 'pending':
+        return 'Connected!'; // Treat pending as connected since it works
+      case 'error':
+        return 'Connection failed';
+      case 'cancelled':
+        return 'OAuth cancelled';
+      default:
+        return 'Not connected';
     }
   };
 
   const getServiceDisplayName = (service: string) => {
     const serviceNames: Record<string, string> = {
       googlesheets: 'Google Sheets',
-      googledrive: 'Google Drive', 
+      googledrive: 'Google Drive',
       googledocs: 'Google Docs',
       gmail: 'Gmail',
       googlecalendar: 'Google Calendar',
@@ -272,27 +323,32 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
   if (inline) {
     // Inline version for use in chat messages
     return (
-      <div className="flex flex-col space-y-2">        
+      <div className="flex flex-col space-y-2">
         {/* Authentication button */}
         <button
           onClick={handleAuthenticate}
-          disabled={isChecking || isAuthenticating || connectionStatus === 'active' || connectionStatus === 'pending'}
-          className={`
-            w-full px-4 py-2 rounded-md font-medium transition-colors text-sm
-            ${isChecking || isAuthenticating || connectionStatus === 'active' || connectionStatus === 'pending'
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          disabled={
+            isChecking ||
+            isAuthenticating ||
+            connectionStatus === 'active' ||
+            connectionStatus === 'pending'
+          }
+          className={`w-full rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            isChecking ||
+            isAuthenticating ||
+            connectionStatus === 'active' ||
+            connectionStatus === 'pending'
+              ? 'cursor-not-allowed bg-gray-300 text-gray-500'
               : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            }
-          `}
+          } `}
         >
           {isChecking
             ? 'Checking...'
-            : isAuthenticating 
-              ? 'Authenticating...' 
-              : (connectionStatus === 'active' || connectionStatus === 'pending')
-                ? '✓ Connected' 
-                : `Connect ${getServiceDisplayName(service)}`
-          }
+            : isAuthenticating
+              ? 'Authenticating...'
+              : connectionStatus === 'active' || connectionStatus === 'pending'
+                ? '✓ Connected'
+                : `Connect ${getServiceDisplayName(service)}`}
         </button>
       </div>
     );
@@ -300,30 +356,33 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
 
   // Original card version for test page
   return (
-    <div className="flex flex-col items-center space-y-2 p-4 border rounded-lg">
+    <div className="flex flex-col items-center space-y-2 rounded-lg border p-4">
       <h3 className="font-semibold capitalize">{getServiceDisplayName(service)}</h3>
-      <p className={`text-sm ${getStatusColor()}`}>
-        {getStatusText()}
-      </p>
+      <p className={`text-sm ${getStatusColor()}`}>{getStatusText()}</p>
       <button
         onClick={handleAuthenticate}
-        disabled={isChecking || isAuthenticating || connectionStatus === 'active' || connectionStatus === 'pending'}
-        className={`
-          px-4 py-2 rounded-md font-medium transition-colors
-          ${isChecking || isAuthenticating || connectionStatus === 'active' || connectionStatus === 'pending'
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+        disabled={
+          isChecking ||
+          isAuthenticating ||
+          connectionStatus === 'active' ||
+          connectionStatus === 'pending'
+        }
+        className={`rounded-md px-4 py-2 font-medium transition-colors ${
+          isChecking ||
+          isAuthenticating ||
+          connectionStatus === 'active' ||
+          connectionStatus === 'pending'
+            ? 'cursor-not-allowed bg-gray-300 text-gray-500'
             : 'bg-blue-600 text-white hover:bg-blue-700'
-          }
-        `}
+        } `}
       >
         {isChecking
           ? 'Checking...'
-          : isAuthenticating 
-            ? 'Authenticating...' 
-            : (connectionStatus === 'active' || connectionStatus === 'pending')
-              ? 'Connected' 
-              : `Connect ${getServiceDisplayName(service)}`
-        }
+          : isAuthenticating
+            ? 'Authenticating...'
+            : connectionStatus === 'active' || connectionStatus === 'pending'
+              ? 'Connected'
+              : `Connect ${getServiceDisplayName(service)}`}
       </button>
     </div>
   );

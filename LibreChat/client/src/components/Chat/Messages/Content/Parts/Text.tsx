@@ -29,15 +29,16 @@ const TextPart = memo(({ text, isCreatedByUser, showCursor }: TextPartProps) => 
   );
 
   const content: ContentType = useMemo(() => {
-    // Check if this text contains Google Sheets authentication keywords
-    const needsGoogleSheetsAuth = text.toLowerCase().includes('authenticate with google sheets') ||
-                                  text.toLowerCase().includes('connect to google sheets') ||
-                                  text.toLowerCase().includes('authentication button');
+    // Disable reactive auth detection since we now have proactive auth UI
+    // TODO: Remove this comment and the commented code below after confirming proactive auth works
     
-    if (needsGoogleSheetsAuth && !isCreatedByUser) {
-      // This looks like an authentication message, use AuthCodeParser to add auth button
-      return <AuthCodeParser content={text} isAuthMessage={true} />;
-    }
+    // const needsGoogleSheetsAuth = text.toLowerCase().includes('authenticate with google sheets') ||
+    //                               text.toLowerCase().includes('connect to google sheets') ||
+    //                               text.toLowerCase().includes('authentication button');
+    // 
+    // if (needsGoogleSheetsAuth && !isCreatedByUser) {
+    //   return <AuthCodeParser content={text} isAuthMessage={true} />;
+    // }
     
     // Normal text processing
     if (!isCreatedByUser) {
