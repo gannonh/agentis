@@ -4,9 +4,8 @@ export interface IComposioConnectedAccount extends Document {
   user: Types.ObjectId;
   service: string; // 'googlesheets', 'googledrive', 'googledocs', 'gmail', 'googlecalendar'
   connectedAccountId: string; // Composio's connected_account_id
-  appName: string; // Composio app name used when creating the connection
-  status: 'active' | 'expired' | 'error' | 'pending'; // Connection status
-  metadata?: Record<string, any>; // Additional metadata from Composio
+  connectionStatus: 'PENDING' | 'INITIATED' | 'ACTIVE' | 'ERROR'; // Direct Composio status
+  redirectUrl?: string; // OAuth redirect URL (only during flow)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,18 +26,14 @@ const composioConnectedAccountSchema: Schema<IComposioConnectedAccount> = new Sc
       type: String,
       required: true,
     },
-    appName: {
+    connectionStatus: {
       type: String,
       required: true,
+      enum: ['PENDING', 'INITIATED', 'ACTIVE', 'ERROR'],
+      default: 'PENDING',
     },
-    status: {
+    redirectUrl: {
       type: String,
-      required: true,
-      enum: ['active', 'expired', 'error', 'pending'],
-      default: 'pending',
-    },
-    metadata: {
-      type: Schema.Types.Mixed,
       required: false,
     },
   },
@@ -51,6 +46,6 @@ const composioConnectedAccountSchema: Schema<IComposioConnectedAccount> = new Sc
 composioConnectedAccountSchema.index({ user: 1, service: 1 }, { unique: true });
 
 // Index for cleanup operations
-composioConnectedAccountSchema.index({ status: 1, updatedAt: 1 });
+composioConnectedAccountSchema.index({ connectionStatus: 1, updatedAt: 1 });
 
 export default composioConnectedAccountSchema;

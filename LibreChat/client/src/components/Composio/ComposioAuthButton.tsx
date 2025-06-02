@@ -118,11 +118,41 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
 
         if (event.data.type === 'COMPOSIO_AUTH_SUCCESS') {
           console.log('OAuth success:', event.data);
-          setConnectionStatus('active');
-          setIsAuthenticating(false);
-          onAuthSuccess?.(event.data.service, event.data.connectedAccountId);
+          setConnectionStatus('pending');
           window.removeEventListener('message', handleMessage);
           popup.close();
+          
+          // Call wait-for-connection to update MongoDB with the new active connection ID
+          fetch(`/api/composio/wait-for-connection`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              service: service,
+              connectedAccountId: event.data.connectedAccountId,
+              timeoutSeconds: 30,
+            }),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.isActive) {
+              setConnectionStatus('active');
+              setIsAuthenticating(false);
+              onAuthSuccess?.(service, data.connectedAccountId);
+            } else {
+              setConnectionStatus('error');
+              setIsAuthenticating(false);
+              onAuthError?.('Connection did not become active');
+            }
+          })
+          .catch(error => {
+            console.error('Failed to wait for connection:', error);
+            setConnectionStatus('error');
+            setIsAuthenticating(false);
+            onAuthError?.('Failed to verify connection');
+          });
         } else if (event.data.type === 'COMPOSIO_AUTH_ERROR') {
           console.error('OAuth error:', event.data);
           setConnectionStatus('error');
@@ -133,11 +163,41 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
         } else if (event.data.type === 'COMPOSIO_AUTH_PENDING') {
           console.log('OAuth pending:', event.data);
           setConnectionStatus('pending');
-          setIsAuthenticating(false);
-          // Connection is still being set up, but we can proceed
-          onAuthSuccess?.(event.data.service, event.data.connectedAccountId);
           window.removeEventListener('message', handleMessage);
           popup.close();
+          
+          // Call wait-for-connection to update MongoDB with the new active connection ID
+          fetch(`/api/composio/wait-for-connection`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              service: service,
+              connectedAccountId: event.data.connectedAccountId,
+              timeoutSeconds: 30,
+            }),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.isActive) {
+              setConnectionStatus('active');
+              setIsAuthenticating(false);
+              onAuthSuccess?.(service, data.connectedAccountId);
+            } else {
+              setConnectionStatus('pending');
+              setIsAuthenticating(false);
+              // Connection is still being set up, but we can proceed
+              onAuthSuccess?.(service, event.data.connectedAccountId);
+            }
+          })
+          .catch(error => {
+            console.error('Failed to wait for connection:', error);
+            setConnectionStatus('pending');
+            setIsAuthenticating(false);
+            onAuthSuccess?.(service, event.data.connectedAccountId);
+          });
         }
       };
 

@@ -216,11 +216,11 @@ class ComposioService {
    * @returns {Promise<string|null>} The connected account ID or null if not found
    */
   async getConnectedAccountId(userId, service) {
-    // Look for active connections first, then pending (which can often work)
+    // Look for active connections first, then initiated (which can often work)
     const connectedAccount = await ComposioConnectedAccount.findOne({
       user: userId,
       service: service,
-      status: { $in: ['active', 'pending'] }, // Include pending connections since they often work
+      connectionStatus: { $in: ['ACTIVE', 'INITIATED'] }, // Include initiated connections since they often work
     }).sort({ updatedAt: -1 }); // Get most recent
 
     return connectedAccount ? connectedAccount.connectedAccountId : null;
@@ -235,12 +235,12 @@ class ComposioService {
     await this.initialize();
     
     try {
-      // Delete from our database
-      await ComposioConnectedAccount.deleteMany({
+      // Delete from our database (wait for completion)
+      const deleteResult = await ComposioConnectedAccount.deleteMany({
         user: userId,
         service: service,
       });
-      logger.info(`[ComposioService] Cleaned up database records for user ${userId}, service ${service}`);
+      logger.info(`[ComposioService] Cleaned up ${deleteResult.deletedCount} database records for user ${userId}, service ${service}`);
       
       const appName = this.getAppNameForService(service);
       
@@ -295,13 +295,12 @@ class ComposioService {
    * @param {string} service - The service name
    */
   async removeConnectedAccount(userId, service) {
-    await ComposioConnectedAccount.findOneAndUpdate(
-      { user: userId, service: service },
-      { status: 'expired' },
-      { new: true }
-    );
+    await ComposioConnectedAccount.deleteMany({
+      user: userId,
+      service: service,
+    });
 
-    logger.info(`[ComposioService] Marked connected account as expired for user ${userId}, service ${service}`);
+    logger.info(`[ComposioService] Deleted connected account for user ${userId}, service ${service}`);
   }
 
   /**
@@ -371,23 +370,21 @@ class ComposioService {
     await this.initialize();
     
     try {
-      // First check our database for active or pending connections (pending often work)
+      // First check our database for active or initiated connections (initiated often work)
       const dbRecord = await ComposioConnectedAccount.findOne({
         user: userId,
         service: service,
-        status: { $in: ['active', 'pending'] },
+        connectionStatus: { $in: ['ACTIVE', 'INITIATED'] },
       }).sort({ updatedAt: -1 }); // Get most recent
       
       if (!dbRecord) {
         return false;
       }
       
-      // If we have a recent check (within 5 minutes), trust it
-      const timeSinceLastCheck = dbRecord.metadata?.lastChecked 
-        ? new Date() - new Date(dbRecord.metadata.lastChecked)
-        : Infinity;
+      // If we have a recent update (within 5 minutes), trust it
+      const timeSinceUpdate = new Date() - new Date(dbRecord.updatedAt);
       
-      if (timeSinceLastCheck < 5 * 60 * 1000) {
+      if (timeSinceUpdate < 5 * 60 * 1000) {
         return true;
       }
       
@@ -405,15 +402,12 @@ class ComposioService {
       if (activeConnection) {
         // Update our database record
         await ComposioConnectedAccount.findByIdAndUpdate(dbRecord._id, {
-          'metadata.lastChecked': new Date(),
-          'metadata.composioStatus': activeConnection.status,
+          connectionStatus: activeConnection.status,
         });
         return true;
       } else {
-        // Connection is no longer active, mark as expired
-        await ComposioConnectedAccount.findByIdAndUpdate(dbRecord._id, {
-          status: 'expired',
-        });
+        // Connection is no longer active, delete the record
+        await ComposioConnectedAccount.findByIdAndDelete(dbRecord._id);
         return false;
       }
     } catch (error) {
@@ -459,19 +453,31 @@ class ComposioService {
         user: userId,
         service: service,
         connectedAccountId: connectionRequest.connectedAccountId,
-        appName: appName,
-        status: 'pending', // Mark as pending until OAuth completes
-        metadata: {
-          entityId: userId,
-          appName: appName,
-          connectionStatus: connectionRequest.connectionStatus,
-          redirectUrl: connectionRequest.redirectUrl,
-          initiated: true,
-          initiatedAt: new Date(),
-        },
+        connectionStatus: connectionRequest.connectionStatus, // Use Composio's status directly
+        redirectUrl: connectionRequest.redirectUrl,
       });
 
-      await connectedAccount.save();
+      try {
+        await connectedAccount.save();
+        logger.info(`[ComposioService] Created connected account ${connectionRequest.connectedAccountId} for user ${userId}, service ${service}`);
+      } catch (saveError) {
+        if (saveError.code === 11000) { // Duplicate key error
+          logger.error(`[ComposioService] Duplicate key error - cleanup may have failed. Attempting upsert.`);
+          // Use upsert to update existing record
+          const upsertResult = await ComposioConnectedAccount.findOneAndUpdate(
+            { user: userId, service: service },
+            {
+              connectedAccountId: connectionRequest.connectedAccountId,
+              connectionStatus: connectionRequest.connectionStatus,
+              redirectUrl: connectionRequest.redirectUrl,
+            },
+            { upsert: true, new: true }
+          );
+          logger.info(`[ComposioService] Upserted connected account for user ${userId}, service ${service}`);
+        } else {
+          throw saveError;
+        }
+      }
       
       return {
         redirectUrl: connectionRequest.redirectUrl,
@@ -505,25 +511,37 @@ class ComposioService {
       while (Date.now() - startTime < timeout) {
         try {
           const connections = await entity.getConnections();
-          const connection = connections.find(conn => conn.id === connectedAccountId);
+          const appName = this.getAppNameForService(service);
           
-          if (connection && connection.status === 'ACTIVE') {
-            logger.info(`[ComposioService] Connection ${connectedAccountId} is now ACTIVE!`);
+          // Look for any ACTIVE connection for this app, not just the specific ID
+          const activeConnection = connections.find(conn => 
+            conn.appName.toLowerCase() === appName.toLowerCase() && 
+            conn.status === 'ACTIVE'
+          );
+          
+          if (activeConnection) {
+            logger.info(`[ComposioService] Found ACTIVE connection ${activeConnection.id} for ${service}!`);
             
-            // Update our database
+            // Update our database with the new active connection ID
             await ComposioConnectedAccount.findOneAndUpdate(
-              { user: userId, service: service, connectedAccountId: connectedAccountId },
+              { user: userId, service: service },
               {
-                status: 'active',
-                'metadata.composioStatus': 'ACTIVE',
-                'metadata.activatedAt': new Date(),
-                'metadata.lastChecked': new Date(),
+                connectedAccountId: activeConnection.id, // Update to the new active connection ID
+                connectionStatus: 'ACTIVE',
               }
             );
             
             return true;
-          } else if (connection) {
-            logger.debug(`[ComposioService] Connection ${connectedAccountId} status: ${connection.status}`);
+          } else {
+            // Log all connections for debugging
+            const serviceConnections = connections.filter(conn => 
+              conn.appName.toLowerCase() === appName.toLowerCase()
+            );
+            if (serviceConnections.length > 0) {
+              logger.debug(`[ComposioService] Found ${serviceConnections.length} ${service} connections, statuses: ${serviceConnections.map(c => c.status).join(', ')}`);
+            } else {
+              logger.debug(`[ComposioService] No ${service} connections found yet`);
+            }
           }
         } catch (checkError) {
           logger.warn(`[ComposioService] Error checking connection status:`, checkError);
