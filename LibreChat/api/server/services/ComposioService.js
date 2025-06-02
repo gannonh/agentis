@@ -513,6 +513,8 @@ class ComposioService {
           const connections = await entity.getConnections();
           const appName = this.getAppNameForService(service);
           
+          logger.info(`[ComposioService] All connections for entity ${userId}:`, JSON.stringify(connections));
+          
           // Look for any ACTIVE connection for this app, not just the specific ID
           const activeConnection = connections.find(conn => 
             conn.appName.toLowerCase() === appName.toLowerCase() && 

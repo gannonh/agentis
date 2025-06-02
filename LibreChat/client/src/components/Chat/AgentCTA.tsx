@@ -33,7 +33,7 @@ export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
   
   // Get actual tool objects with icons - SIMPLE approach
   const agentTools = toolKeys
-    .map(toolKey => allTools.find(tool => tool.pluginKey === toolKey || tool.name === toolKey))
+    .map(toolKey => Array.isArray(allTools) ? allTools.find(tool => tool.pluginKey === toolKey || tool.name === toolKey) : undefined)
     .filter((tool): tool is TPlugin => Boolean(tool));
     
   // Deduplicate by icon - only show unique icons
