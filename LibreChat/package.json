@@ -55,10 +55,12 @@
     "test:packages": "npm run test:mcp && npm run test:data-provider && npm run test:data-schemas && npm run test:arcade-client",
     "test:all": "npm run test:client && npm run test:api && npm run test:mcp && npm run test:data-provider && npm run test:data-schemas && npm run test:arcade-client",
     "e2e:record-large": "npx playwright codegen --viewport-size=1600,1700 http://localhost:3080/",
-    "e2e:google": "npm run e2e:google-mcp-sheets && npm run e2e:google-mcp-docs && npm run e2e:google-mcp-gmail",
-    "e2e:google-mcp-sheets": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.sheets.spec.ts --headed",
-    "e2e:google-mcp-docs": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.docs.spec.ts --headed",
-    "e2e:google-mcp-gmail": "../scripts/dev.sh --stop && cross-env PWDEBUG=1 playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.gmail.spec.ts --headed",
+    "e2e": "npm run e2e:google-mcp-sheets && npm run e2e:google-mcp-docs && npm run e2e:google-mcp-gmail && npm run e2e:agent-cta",
+    "e2e:google-mcp-sheets": "../scripts/dev.sh --stop && cross-env PWDEBUG=1 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.sheets.spec.ts --headed",
+    "e2e:google-mcp-docs": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.docs.spec.ts --headed",
+    "e2e:google-mcp-gmail": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.gmail.spec.ts --headed",
+    "e2e:google-mcp-calendar": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.calendar.spec.ts --headed",
+    "e2e:agent-cta": "../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/agent-cta-display.spec.ts --headed",
     "e2e:ci": "playwright test --config=e2e/playwright.config.ts",
     "e2e:update": "playwright test --config=e2e/playwright.config.js --update-snapshots",
     "e2e:report": "npx playwright show-report e2e/playwright-report",
@@ -168,5 +170,9 @@
       "admin/",
       "packages/"
     ]
+  },
+  "dependencies": {
+    "ai": "^4.3.16",
+    "composio-core": "^0.5.39"
   }
 }

@@ -16,6 +16,9 @@ export type { IBanner } from './schema/banner';
 export { default as categoriesSchema } from './schema/categories';
 export type { ICategory } from './schema/categories';
 
+export { default as composioConnectedAccountSchema } from './schema/composioConnectedAccount';
+export type { IComposioConnectedAccount } from './schema/composioConnectedAccount';
+
 export { default as conversationTagSchema } from './schema/conversationTag';
 export type { IConversationTag } from './schema/conversationTag';
 

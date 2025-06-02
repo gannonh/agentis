@@ -55,7 +55,7 @@ export const processAgentOption = ({
     (instanceProjectId != null && _agent?.projectIds?.includes(instanceProjectId)) ?? false;
   const agent: TAgentOption = {
     ...(_agent ?? ({} as Agent)),
-    label: _agent?.name ?? '',
+    label: _agent?.name || _agent?.id || 'Unnamed Agent',
     value: _agent?.id ?? '',
     icon: isGlobal ? <EarthIcon className="icon-md text-green-400" /> : null,
     context_files: _agent?.tool_resources?.ocr?.file_ids

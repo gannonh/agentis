@@ -50,11 +50,13 @@ export async function cleanupChats(
       user._id,
       {},
     );
-    console.log(`🤖:  ✅  Deleted ${conversationCount} conversations and ${messageCount} messages`);
+    console.log(
+      `🤖:  ✅  Deleted ${conversationCount} conversations and ${messageCount.deletedCount} messages`,
+    );
 
     // Delete any orphaned messages
     const { deletedCount: orphanedMessages } = await deleteMessages({ user: user._id });
-    const totalMessages = messageCount + orphanedMessages;
+    const totalMessages = messageCount.deletedCount + orphanedMessages;
     if (orphanedMessages > 0) {
       console.log(`🤖:  ✅  Deleted ${orphanedMessages} orphaned messages`);
     }

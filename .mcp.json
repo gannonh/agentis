@@ -15,20 +15,21 @@
             }
         },
         "context7": {
-            "command": "npx",
+            "command": "/Users/gannonhall/.local/bin/mcp-npx",
             "args": [
                 "-y",
                 "@upstash/context7-mcp@latest"
             ]
         },
         "playwright": {
-            "command": "npx",
+            "command": "/Users/gannonhall/.local/bin/mcp-npx",
             "args": [
+                "-y",
                 "@playwright/mcp@latest"
             ]
         },
         "perplexity-server": {
-            "command": "/Users/gannonhall/.nvm/versions/node/v23.6.0/bin/node",
+            "command": "/Users/gannonhall/.local/bin/mcp-node-exec",
             "args": [
                 "/Users/gannonhall/+DEV/MCP/perplexity-server/build/index.js"
             ],

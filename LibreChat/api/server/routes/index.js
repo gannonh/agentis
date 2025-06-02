@@ -26,6 +26,7 @@ const edit = require('./edit');
 const keys = require('./keys');
 const user = require('./user');
 const ask = require('./ask');
+const composio = require('./composio');
 const mcpDiagnostics = require('./mcp-diagnostics');
 
 module.exports = {
@@ -57,5 +58,6 @@ module.exports = {
   assistants,
   categories,
   staticRoute,
+  composio,
   mcpDiagnostics,
 };

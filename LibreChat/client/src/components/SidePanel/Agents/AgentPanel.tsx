@@ -140,6 +140,7 @@ export default function AgentPanel({
         end_after_tools,
         hide_sequential_outputs,
         recursion_limit,
+        featured,
       } = data;
 
       const model = _model ?? '';
@@ -162,6 +163,7 @@ export default function AgentPanel({
             end_after_tools,
             hide_sequential_outputs,
             recursion_limit,
+            featured,
           },
         });
         return;
@@ -187,6 +189,7 @@ export default function AgentPanel({
         end_after_tools,
         hide_sequential_outputs,
         recursion_limit,
+        featured,
       });
     },
     [agent_id, create, update, showToast, localize],

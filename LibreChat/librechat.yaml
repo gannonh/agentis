@@ -131,13 +131,13 @@ actions:
     - "google.com"
 
 # Example MCP Servers Object Structure
-#   
+# url: https://mcp.composio.dev/composio/server/<UUID>/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}
 mcpServers:
- 
   googledrive:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
-    url: https://mcp.composio.dev/composio/server/85dda66d-0d54-45d9-a1f7-d710d17ae2ba?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    url: https://mcp.composio.dev/composio/server/85dda66d-0d54-45d9-a1f7-d710d17ae2ba/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}
+
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"
@@ -166,7 +166,8 @@ mcpServers:
   googlesheets:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
-    url: https://mcp.composio.dev/composio/server/89f2e068-a152-4061-a61d-2d03d560fcc6?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    url: https://mcp.composio.dev/composio/server/e2c46896-9156-4549-b901-14eed2d4167d/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}
+
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"
@@ -196,7 +197,8 @@ mcpServers:
   googledocs:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
-    url: https://mcp.composio.dev/composio/server/2ddf5239-d9c6-4f1d-8864-1e8dfa34b33e?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    url: https://mcp.composio.dev/composio/server/2ddf5239-d9c6-4f1d-8864-1e8dfa34b33e/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}
+
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"
@@ -217,11 +219,11 @@ mcpServers:
       COMPOSIO_GET_REQUIRED_PARAMETERS: "Get Required Parameters"
       
   googlecalendar:
-    type: streamable-http
+    # type: streamable-http
+    type: sse
     # Including user_id in URL for Composio to identify unique user connections
-    # https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc?transport=sse/sse 
-    # https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc?transport=sse/mcp
-    url: https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc/mcp?useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    url: https://mcp.composio.dev/composio/server/1e43eb21-1656-4df8-9df1-874b61cbc1bc/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}
+
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"
@@ -239,7 +241,7 @@ mcpServers:
   gmail:
     type: sse
     # Including user_id in URL for Composio to identify unique user connections
-    url: https://mcp.composio.dev/composio/server/74c76b7f-545f-4a98-acb4-ee28f37e54fe?transport=sse&useComposioHelperActions=true&user_id={{LIBRECHAT_USER_ID}}
+    url: https://mcp.composio.dev/composio/server/74c76b7f-545f-4a98-acb4-ee28f37e54fe/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}
     headers:
       # Using header for user ID propagation as well for redundancy
       X-User-ID: "{{LIBRECHAT_USER_ID}}"

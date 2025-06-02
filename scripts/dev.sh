@@ -10,6 +10,8 @@ NC='\033[0m' # No Color
 function show_usage {
   echo -e "${GREEN}Agentis Development Helper Script${NC}"
   echo -e "Usage: ./dev-rebuild.sh [options]"
+  echo -e "\nQuick Start Options:"
+  echo -e "  --start    Stop services, build packages, start both dev servers (logs to logs/)"
   echo -e "\nBuild Options:"
   echo -e "  --all      Rebuild all packages and restart dev servers"
   echo -e "  --reset    Complete reset: cleanup caches, rebuild all packages, restart servers"
@@ -28,7 +30,8 @@ function show_usage {
   echo -e "  --test-build Test complete build process from scratch (clean-all + reinstall + rebuild)"
   echo -e "  --help     Show this help message"
   echo -e "\nExamples:"
-  echo -e "  ./dev-rebuild.sh --all                # Quick: rebuild packages + restart servers"
+  echo -e "  ./dev-rebuild.sh --start              # Quick start: stop, build, start (most common)"
+  echo -e "  ./dev-rebuild.sh --all                # Rebuild packages + restart servers"
   echo -e "  ./dev-rebuild.sh --reset              # Full reset: cleanup + rebuild + restart"
   echo -e "  ./dev-rebuild.sh --build              # Just rebuild all packages"
   echo -e "  ./dev-rebuild.sh --provider           # Rebuild data-provider only"
@@ -60,6 +63,14 @@ KILL_ALL_NODE=false
 
 for arg in "$@"; do
   case $arg in
+  --start)
+    STOP_SERVERS=true
+    REBUILD_DATA=true
+    REBUILD_PROVIDER=true
+    REBUILD_MCP=true
+    RESTART_FRONTEND=true
+    RESTART_BACKEND=true
+    ;;
   --all)
     DO_ALL=true
     REBUILD_DATA=true
