@@ -119,6 +119,19 @@ export default function ChatRoute() {
     newConversation,
   ]);
 
+  // Calculate isTemporaryChat before any early returns
+  const isTemporaryChat = conversation && conversation.expiredAt ? true : false;
+
+  // Must call ALL hooks before ANY early returns (React rules of hooks)
+  useEffect(() => {
+    if (conversationId !== Constants.NEW_CONVO && !isTemporaryChat) {
+      setIsTemporary(false);
+    } else if (isTemporaryChat) {
+      setIsTemporary(isTemporaryChat);
+    }
+  }, [conversationId, isTemporaryChat, setIsTemporary]);
+
+  // Now we can have early returns
   if (endpointsQuery.isLoading || modelsQuery.isLoading) {
     return (
       <div className="flex h-screen items-center justify-center" aria-live="polite" role="status">
@@ -142,14 +155,6 @@ export default function ChatRoute() {
   // if conversationId is null
   if (!conversationId) {
     return null;
-  }
-
-  const isTemporaryChat = conversation && conversation.expiredAt ? true : false;
-
-  if (conversationId !== Constants.NEW_CONVO && !isTemporaryChat) {
-    setIsTemporary(false);
-  } else if (isTemporaryChat) {
-    setIsTemporary(isTemporaryChat);
   }
 
   return (

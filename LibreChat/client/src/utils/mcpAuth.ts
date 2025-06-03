@@ -127,16 +127,16 @@ export function shouldShowAuthUI(
   messages: Array<{ role: string }> | undefined,
   authServices: string[],
 ): boolean {
-  console.log('[shouldShowAuthUI] Input:', { messages: messages?.length, authServices });
+  // console.log('[shouldShowAuthUI] Input:', { messages: messages?.length, authServices });
 
   // No auth services detected
   if (!authServices || authServices.length === 0) {
-    console.log('[shouldShowAuthUI] No auth services, returning false');
+    // console.log('[shouldShowAuthUI] No auth services, returning false');
     return false;
   }
 
   // For now, just show if we have auth services (temporary for debugging)
-  console.log('[shouldShowAuthUI] Auth services found, returning true');
+  // console.log('[shouldShowAuthUI] Auth services found, returning true');
   return true;
 }
 

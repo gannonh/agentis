@@ -3,7 +3,7 @@
  * after the first user message when agents have MCP tools requiring auth
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import type { TMessage } from 'librechat-data-provider';
 import { useAuthContext } from '~/hooks/AuthContext';
@@ -24,48 +24,27 @@ interface ProactiveMCPAuthProps {
 }
 
 export default function ProactiveMCPAuth({ messages, conversationId }: ProactiveMCPAuthProps) {
-  console.log('🔍 [ProactiveMCPAuth] COMPONENT RENDERED!', { messages: messages?.length, conversationId });
+  // console.log('🔍 [ProactiveMCPAuth] COMPONENT RENDERED!', { messages: messages?.length, conversationId });
   
   const { isAuthenticated } = useAuthContext();
   const { conversation } = useChatContext();
   const agentsMap = useAgentsMapContext();
   const ephemeralAgent = useRecoilValue(ephemeralAgentByConvoId(conversationId || 'new'));
   
-  const [authServices, setAuthServices] = useState<string[]>([]);
-  const [shouldShow, setShouldShow] = useState(false);
-
   // Fetch all available tools/plugins
   const { data: allTools = [] } = useAvailableAgentToolsQuery();
 
-  // Debug logging
-  console.log('[ProactiveMCPAuth] Debug Info:', {
-    conversationId,
-    conversation,
-    agentsMap,
-    ephemeralAgent,
-    allTools: allTools?.length || 0,
-    messages: messages?.length || 0,
-    isAuthenticated
-  });
-
-  useEffect(() => {
-    // Get the agent - either from conversation agent_id or ephemeral state
-    let agent = null;
-    
-    console.log('[ProactiveMCPAuth] Getting agent...', {
-      agentId: conversation?.agent_id,
-      hasAgentsMap: !!agentsMap,
-      agentFromMap: conversation?.agent_id ? agentsMap?.[conversation.agent_id] : null,
-      ephemeralAgent
-    });
-    
-    if (conversation?.agent_id && agentsMap?.[conversation.agent_id]) {
-      agent = agentsMap[conversation.agent_id];
-      console.log('[ProactiveMCPAuth] Using agent from map:', agent);
+  // Memoize stable values to prevent unnecessary re-renders
+  const agentId = conversation?.agent_id;
+  const messagesLength = messages?.length || 0;
+  
+  // Memoize the agent object to prevent recreation on every render
+  const agent = useMemo(() => {
+    if (agentId && agentsMap?.[agentId]) {
+      return agentsMap[agentId];
     } else if (ephemeralAgent) {
       // For ephemeral agents, we need to construct a compatible agent object
-      // Ephemeral agents store MCP server names directly
-      agent = {
+      return {
         tools: ephemeralAgent.mcp?.map(serverName => {
           // Find a tool from this server to get the proper tool key format
           const serverTool = allTools.find(tool => 
@@ -75,36 +54,23 @@ export default function ProactiveMCPAuth({ messages, conversationId }: Proactive
           return serverTool?.pluginKey || `placeholder_mcp_${serverName}`;
         }) || []
       };
-      console.log('[ProactiveMCPAuth] Using ephemeral agent:', agent);
     }
+    return null;
+  }, [agentId, agentsMap, ephemeralAgent, allTools]);
 
-    // Detect auth services
-    const services = getConversationAuthServices(conversation, agent, allTools);
-    console.log('[ProactiveMCPAuth] Detected auth services:', services);
-    setAuthServices(services);
+  // Memoize auth services detection
+  const authServices = useMemo(() => {
+    return getConversationAuthServices(conversation, agent, allTools);
+  }, [conversation, agent, allTools]);
 
-    // Determine if we should show the auth UI
-    const show = shouldShowAuthUI(messages, services);
-    console.log('[ProactiveMCPAuth] Should show auth UI:', show, {
-      messagesLength: messages?.length,
-      userMessages: messages?.filter(m => m.role === 'user').length,
-      assistantMessages: messages?.filter(m => m.role === 'assistant').length,
-      servicesLength: services.length
-    });
-    setShouldShow(show);
-  }, [conversation, agentsMap, ephemeralAgent, messages, allTools]);
+  // Memoize should show logic  
+  const shouldShow = useMemo(() => {
+    return shouldShowAuthUI(messages, authServices);
+  }, [messages, authServices]);
 
   if (!shouldShow || authServices.length === 0) {
-    console.log('🚫 [ProactiveMCPAuth] NOT SHOWING AUTH UI:', {
-      shouldShow,
-      authServicesLength: authServices.length,
-      authServices,
-      reason: !shouldShow ? 'shouldShow is false' : 'no auth services detected'
-    });
     return null;
   }
-
-  console.log('✅ [ProactiveMCPAuth] SHOWING AUTH UI!', { authServices });
 
   return (
     <div className="w-full py-3">
