@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
+import cleanupAgents, { cleanupChats, cleanupConnections } from '../utils/cleanupUser';
 import { logProgress } from '../utils/testLogger';
 import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
 import { handleConditionalAuth } from '../utils/handleConditionalAuth';
@@ -13,6 +13,7 @@ test.use({
 
 test('Create Google Sheets MCP', async ({ page }) => {
   logProgress('Starting Create Google Sheets MCP test');
+
   await page.goto('http://localhost:3080/');
 
   // Handle conditional authentication
@@ -91,8 +92,8 @@ test('Create Google Sheets MCP', async ({ page }) => {
   await expect(page.getByText('Create New Spreadsheet')).toBeVisible();
 });
 
-test('Use Google Sheets Agent', async ({ page }) => {
-  logProgress('✅ Starting Use Google Sheets Agent test');
+test('Use Google Sheets Agent with Proactive MCP Auth', async ({ page }) => {
+  logProgress('✅ Starting Use Google Sheets Agent with Proactive MCP Auth test');
   await page.goto('http://localhost:3080/');
 
   // Handle conditional authentication
@@ -101,8 +102,8 @@ test('Use Google Sheets Agent', async ({ page }) => {
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
-  // START
 
+  // Send first message to trigger proactive MCP auth
   await page
     .getByTestId('text-input')
     .fill(
@@ -111,20 +112,29 @@ test('Use Google Sheets Agent', async ({ page }) => {
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create spreadsheet');
 
-  // Wait for agent response
-  await page.waitForTimeout(10000);
-  logProgress('✅ Waited for agent response');
+  // Wait for the proactive MCP auth component to appear
+  await page.waitForTimeout(3000);
+  logProgress('✅ Waited for proactive auth component');
 
-  // Look for the inline authentication UI
+  // Check for the new ProactiveMCPAuth component
   try {
-    await expect(page.getByText('Authentication Required')).toBeVisible({ timeout: 5000 });
-    logProgress('✅ Found Authentication Required section');
+    // Look for the proactive authentication UI that should appear automatically
+    await expect(page.getByText('Authentication Required')).toBeVisible({ timeout: 8000 });
+    logProgress('✅ Found proactive Authentication Required section');
 
-    // Look for the Connect Google Sheets button
+    // Verify the descriptive text about tools requiring authentication
+    await expect(
+      page.getByText('This conversation uses tools that require authentication:'),
+    ).toBeVisible({
+      timeout: 5000,
+    });
+    logProgress('✅ Found descriptive text about authentication');
+
+    // Look for the Connect Google Sheets button in the proactive auth UI
     await expect(page.getByRole('button', { name: 'Connect Google Sheets' })).toBeVisible({
       timeout: 5000,
     });
-    logProgress('✅ Found Connect Google Sheets button');
+    logProgress('✅ Found Connect Google Sheets button in proactive auth UI');
 
     // Handle the authentication
     await handleGoogleOAuth(page, 'Google Sheets');
@@ -132,21 +142,60 @@ test('Use Google Sheets Agent', async ({ page }) => {
     // Wait for authentication to complete
     await page.waitForTimeout(3000);
 
-    // Send follow-up message to retry
-    await page.getByTestId('text-input').fill('Please try creating the spreadsheet now');
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent retry message after authentication');
+    // The proactive auth section should remain visible as part of conversation history
+    await expect(page.getByText('Authentication Required')).toBeVisible({
+      timeout: 5000,
+    });
+    logProgress('✅ Proactive auth section remains visible as part of conversation history');
 
-    // Wait for the response
-    await page.waitForTimeout(15000);
-    logProgress('✅ Waited for response after authentication');
+    // Check that the button shows "✓ Connected" after successful authentication
+    await expect(page.getByText('✓ Connected')).toBeVisible({ timeout: 5000 });
+    logProgress('✅ Found "✓ Connected" status indicating successful Google Sheets authentication');
+
+    // Now send a follow-up message asking the agent to try again
+    await page
+      .getByTestId('text-input')
+      .fill('I am now authenticated with Google Sheets. Please try creating the spreadsheet now.');
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent message indicating user is authenticated and ready to retry');
+
+    // Wait for the agent to process the request with authentication
+    // await page.waitForTimeout(15000);
+    // logProgress('✅ Waited for authenticated agent response');
+
+    // Assert successful outcomes - check for specific success indicators
+    // This MUST succeed for the test to pass - if we don't see "Running" the agent didn't try
+    await expect(page.getByText('Running Create New Spreadsheet')).toBeVisible({
+      timeout: 30000,
+    });
+    logProgress('✅ Found "Running Create New Spreadsheet" tool execution');
+
+    // Wait for tool execution to complete
+    await expect(page.getByText('Ran Create New Spreadsheet')).toBeVisible({
+      timeout: 30000,
+    });
+    logProgress('✅ Found "Ran Create New Spreadsheet" tool execution completed');
+
+    // Check for Google Sheets link in the response (optional - spreadsheet creation might still succeed without visible link)
+    try {
+      await expect(page.locator('a[href*="docs.google.com/spreadsheets"]')).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Found Google Sheets link in response');
+    } catch (e) {
+      logProgress('⚠️ Google Sheets link not found - but tool execution completed');
+    }
   } catch (e) {
-    logProgress('No authentication required or spreadsheet already created');
+    logProgress(
+      '❌ Proactive authentication UI not found - this indicates the feature may not be working correctly',
+    );
+    throw e; // Re-throw to fail the test properly
   }
 
   //await page.pause();
   const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   await cleanupAgents(testUserEmail);
   await cleanupChats(testUserEmail);
-  logProgress('✅ Cleaned up agents and chats for test user');
+  await cleanupConnections(testUserEmail);
+  logProgress('✅ Cleaned up agents, chats, and connections for test user');
 });

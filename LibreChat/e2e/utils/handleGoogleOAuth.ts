@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { logProgress } from './testLogger';
 
 /**
@@ -34,11 +34,12 @@ export async function handleGoogleOAuth(
       'button:has-text("🔐")', // Icon-based buttons
     ];
 
-    let authButton = null;
+    let authButton: Locator | null = null;
     for (const selector of authButtonSelectors) {
       try {
-        authButton = page.locator(selector).first();
-        await authButton.waitFor({ timeout: 5000 });
+        const candidate = page.locator(selector).first();
+        await candidate.waitFor({ timeout: 1000 });
+        authButton = candidate;
         logProgress(`✅ Found auth button with selector: ${selector}`);
         break;
       } catch (e) {
@@ -46,9 +47,16 @@ export async function handleGoogleOAuth(
       }
     }
 
-    if (!authButton || !(await authButton.isVisible())) {
+    if (!authButton) {
       logProgress(
         `No inline authentication button found for ${serviceName} - may already be authenticated`,
+      );
+      return;
+    }
+
+    if (!(await authButton.isVisible())) {
+      logProgress(
+        `Authentication button found but not visible for ${serviceName} - may already be authenticated`,
       );
       return;
     }
@@ -66,8 +74,16 @@ export async function handleGoogleOAuth(
     await handleGoogleOAuthPopup(popup, email, password);
 
     // Wait for popup to close and authentication to complete
-    await popup.waitForEvent('close');
-    await page.bringToFront();
+    try {
+      await popup.waitForEvent('close');
+    } catch (e) {
+      logProgress(`popup not closed`);
+    }
+    try {
+      await page.bringToFront();
+    } catch (e) {
+      logProgress(`page not brought to front`);
+    }
 
     // Wait for the authentication button to update to show success state
     try {
@@ -126,7 +142,7 @@ async function handleGoogleOAuthPopup(popup: Page, email: string, password: stri
 
     // Handle consent screens
     try {
-      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 5000 });
+      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 1000 });
       logProgress('✅ Clicked Continue button');
     } catch (e) {
       logProgress('No Continue button found, proceeding...');
@@ -139,7 +155,7 @@ async function handleGoogleOAuthPopup(popup: Page, email: string, password: stri
 
       for (const checkboxName of checkboxSelectors) {
         try {
-          await popup.getByRole('checkbox', { name: checkboxName }).check({ timeout: 3000 });
+          await popup.getByRole('checkbox', { name: checkboxName }).check({ timeout: 1000 });
           logProgress(`✅ Checked "${checkboxName}" checkbox`);
           break;
         } catch (e) {
@@ -151,7 +167,7 @@ async function handleGoogleOAuthPopup(popup: Page, email: string, password: stri
       const buttonSelectors = ['Continue', 'Allow', 'Accept', 'Grant access'];
       for (const buttonText of buttonSelectors) {
         try {
-          await popup.getByRole('button', { name: buttonText }).click({ timeout: 5000 });
+          await popup.getByRole('button', { name: buttonText }).click({ timeout: 1000 });
           logProgress(`✅ Clicked ${buttonText} button`);
           break;
         } catch (e) {
