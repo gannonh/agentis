@@ -61,7 +61,7 @@ Concatenates all markdown files in a specified directory into a single comprehen
 node scripts/concat-md.js /path/to/directory
 
 # Example
-node scripts/concat-md.js /Users/gannonhall/+DEV/agentis/Docs/arcade/arcade-docs
+node scripts/concat-md.js /Users/gannonhall/dev/agentis/Docs/arcade/arcade-docs
 ```
 
 ## Docker CLI Tool
@@ -76,18 +76,18 @@ The `docker-cli.sh` script provides a simple command-line interface for managing
 
 ### Available Commands
 
-| Command | Description |
-|---------|-------------|
-| `start [service]` | Start all or specific service |
-| `stop [service]` | Stop all or specific service |
-| `restart [service]` | Restart all or specific service |
-| `status [service]` | Check the status of all or specific service |
-| `logs [service]` | Show logs for all or specific service |
-| `shell <service>` | Open shell in a specific container |
-| `mongo-shell` | Open MongoDB shell |
-| `backup` | Create a backup of MongoDB data |
-| `restore <file>` | Restore MongoDB from a backup file |
-| `help` | Show help message |
+| Command             | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `start [service]`   | Start all or specific service               |
+| `stop [service]`    | Stop all or specific service                |
+| `restart [service]` | Restart all or specific service             |
+| `status [service]`  | Check the status of all or specific service |
+| `logs [service]`    | Show logs for all or specific service       |
+| `shell <service>`   | Open shell in a specific container          |
+| `mongo-shell`       | Open MongoDB shell                          |
+| `backup`            | Create a backup of MongoDB data             |
+| `restore <file>`    | Restore MongoDB from a backup file          |
+| `help`              | Show help message                           |
 
 ### Available Services
 

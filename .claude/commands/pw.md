@@ -1,3 +1,5 @@
+ $ARGUMENTS
+
 ## Browser Automation with Playwright MCP
 
 **Best Practices for Playwright MCP Usage:**
@@ -84,3 +86,19 @@ Common test patterns:
     await cleanupChats(testUserEmail);
     logProgress('✅ Cleaned up test data');
     ```
+
+### Auth Accounts
+
+- Create a new user when you need a fresh account, otherwise use an existing agentis test account:
+  - Test Account 1 (populated with several custom agents)
+    - gannonhall@gmail.com
+    - 999999999
+  - Test Account 2 (populated with some though fewer content)
+    - gannon@astro-labs.app
+    - 111111111
+  - Test Account 3 (best to use for destructive tests)
+    - test@test111.com
+    - 111111111
+  - Google Auth Accounts (use the follow to authenticate for Google service; these are also .env vars)
+    - GOOGLE_TEST_ACCOUNT_1_EMAIL="agentis.test@gmail.com"
+    - GOOGLE_TEST_ACCOUNT_1_PASSWORD="KJHkh97HKH87jjfU"
