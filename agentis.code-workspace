@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../oss/playwright-mcp"
 		}
 	],
 	"settings": {}
