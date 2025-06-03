@@ -92,8 +92,11 @@ describe('useStartAgentChat Hook', () => {
     expect(mockSetConversation).toHaveBeenCalledWith(
       expect.objectContaining({
         conversationId: null,
-        parentMessageId: null,
         messages: [],
+        agent_id: 'test-agent-1',
+        endpoint: 'agents',
+        model: 'gpt-4',
+        tools: ['execute_code'],
       }),
     );
   });
@@ -163,28 +166,35 @@ describe('useStartAgentChat Hook', () => {
     );
   });
 
-  it('should generate unique conversation ID', () => {
-    const { result } = renderHook(() => useStartAgentChat());
-
+  it('should generate unique conversation setup', () => {
     // Mock Date.now to return different values
     const originalDateNow = Date.now;
-    let callCount = 0;
+    let timestamp = 1000000000000; // Fixed base timestamp
     Date.now = jest.fn(() => {
-      callCount++;
-      return originalDateNow() + callCount * 1000; // Ensure different timestamps
+      timestamp += 1000; // Increment by 1 second each call
+      return timestamp;
     });
 
-    // Start multiple chats
+    const { result } = renderHook(() => useStartAgentChat());
+
+    // Start first chat
     result.current(mockAgent);
     const firstCall = mockSetConversation.mock.calls[0][0];
 
-    jest.clearAllMocks();
+    // Clear mocks but keep the Date mock
+    mockSetConversation.mockClear();
 
+    // Start second chat
     result.current(mockAgent);
     const secondCall = mockSetConversation.mock.calls[0][0];
 
-    // Each should have different conversation setup
-    expect(firstCall).not.toEqual(secondCall);
+    // Each should have different createdAt timestamps
+    expect(firstCall.createdAt).not.toEqual(secondCall.createdAt);
+    
+    // But same basic structure
+    expect(firstCall.conversationId).toBe(null);
+    expect(secondCall.conversationId).toBe(null);
+    expect(firstCall.agent_id).toBe(secondCall.agent_id);
 
     // Restore original Date.now
     Date.now = originalDateNow;
