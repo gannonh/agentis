@@ -53,15 +53,19 @@ export default function MessagesView({
     flattenMessages(_messagesTree);
 
     // Check if we have at least one user message (simplified condition for testing)
-    const userMessages = flatMessages.filter(m => m.role === 'user');
-    const assistantMessages = flatMessages.filter(m => m.role === 'assistant');
+    const userMessages = flatMessages.filter(m => m.isCreatedByUser === true);
+    const assistantMessages = flatMessages.filter(m => m.isCreatedByUser === false);
 
     const shouldShow = userMessages.length >= 1;
     console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth result:', shouldShow, {
       flatMessagesCount: flatMessages.length,
       userMessagesCount: userMessages.length,
       assistantMessagesCount: assistantMessages.length,
-      flatMessages: flatMessages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.substring(0, 50) : String(m.content).substring(0, 50) }))
+      flatMessages: flatMessages.map(m => ({ 
+        isCreatedByUser: m.isCreatedByUser, 
+        sender: m.sender,
+        content: typeof m.text === 'string' ? m.text.substring(0, 50) : String(m.text || '').substring(0, 50) 
+      }))
     });
 
     return shouldShow;
@@ -129,7 +133,7 @@ export default function MessagesView({
             }}
           >
             <div className="flex flex-col pb-9 dark:bg-transparent">
-              {renderMessagesWithAuth(_messagesTree)}
+              {renderMessagesWithAuth(_messagesTree ?? null)}
               <div
                 id="messages-end"
                 className="group h-0 w-full flex-shrink-0"
