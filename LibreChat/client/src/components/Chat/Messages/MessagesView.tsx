@@ -33,10 +33,10 @@ export default function MessagesView({
 
   // Helper function to determine if we should show ProactiveMCPAuth
   const shouldShowProactiveMCPAuth = (_messagesTree: TMessage[] | null) => {
-    console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth called with:', _messagesTree?.length || 0, 'messages');
+    // console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth called with:', _messagesTree?.length || 0, 'messages');
     
     if (!_messagesTree || _messagesTree.length === 0) {
-      console.log('🔍 [MessagesView] No messages tree, returning false');
+      // console.log('🔍 [MessagesView] No messages tree, returning false');
       return false;
     }
 
@@ -57,16 +57,16 @@ export default function MessagesView({
     const assistantMessages = flatMessages.filter(m => m.isCreatedByUser === false);
 
     const shouldShow = userMessages.length >= 1;
-    console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth result:', shouldShow, {
-      flatMessagesCount: flatMessages.length,
-      userMessagesCount: userMessages.length,
-      assistantMessagesCount: assistantMessages.length,
-      flatMessages: flatMessages.map(m => ({ 
-        isCreatedByUser: m.isCreatedByUser, 
-        sender: m.sender,
-        content: typeof m.text === 'string' ? m.text.substring(0, 50) : String(m.text || '').substring(0, 50) 
-      }))
-    });
+    // console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth result:', shouldShow, {
+    //   flatMessagesCount: flatMessages.length,
+    //   userMessagesCount: userMessages.length,
+    //   assistantMessagesCount: assistantMessages.length,
+    //   flatMessages: flatMessages.map(m => ({ 
+    //     isCreatedByUser: m.isCreatedByUser, 
+    //     sender: m.sender,
+    //     content: typeof m.text === 'string' ? m.text.substring(0, 50) : String(m.text || '').substring(0, 50) 
+    //   }))
+    // });
 
     return shouldShow;
   };

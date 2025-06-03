@@ -47,7 +47,7 @@ export function extractMCPServerName(toolKey: string): string | null {
   if (!toolKey || !toolKey.includes(MCP_DELIMITER)) {
     return null;
   }
-  
+
   const parts = toolKey.split(MCP_DELIMITER);
   return parts[parts.length - 1] || null;
 }
@@ -60,12 +60,12 @@ export function extractMCPServerName(toolKey: string): string | null {
  */
 export function detectMCPAuthServices(
   agent: TAgentOption | null | undefined,
-  allTools: TPlugin[] | undefined
+  allTools: TPlugin[] | undefined,
 ): string[] {
-  console.log('[detectMCPAuthServices] Input:', { agent: agent?.tools, allToolsCount: allTools?.length });
-  
+  //console.log('[detectMCPAuthServices] Input:', { agent: agent?.tools, allToolsCount: allTools?.length });
+
   if (!agent?.tools || !Array.isArray(agent.tools) || agent.tools.length === 0) {
-    console.log('[detectMCPAuthServices] No agent tools found');
+    //console.log('[detectMCPAuthServices] No agent tools found');
     return [];
   }
 
@@ -73,27 +73,27 @@ export function detectMCPAuthServices(
 
   // Process each tool key
   agent.tools.forEach((toolKey) => {
-    console.log('[detectMCPAuthServices] Processing tool:', toolKey);
-    
+    // console.log('[detectMCPAuthServices] Processing tool:', toolKey);
+
     if (typeof toolKey !== 'string') return;
 
     // Extract MCP server name
     const serverName = extractMCPServerName(toolKey);
-    console.log('[detectMCPAuthServices] Extracted server name:', serverName);
-    
+    // console.log('[detectMCPAuthServices] Extracted server name:', serverName);
+
     if (!serverName) return;
 
     // Check if this server requires authentication
     const authService = getAuthService(serverName);
-    console.log('[detectMCPAuthServices] Auth service for', serverName, ':', authService);
-    
+    // console.log('[detectMCPAuthServices] Auth service for', serverName, ':', authService);
+
     if (authService) {
       authServices.add(authService);
     }
   });
 
   const result = Array.from(authServices);
-  console.log('[detectMCPAuthServices] Final auth services:', result);
+  // console.log('[detectMCPAuthServices] Final auth services:', result);
   return result;
 }
 
@@ -107,7 +107,7 @@ export function detectMCPAuthServices(
 export function getConversationAuthServices(
   conversation: { agent_id?: string } | null | undefined,
   agent: TAgentOption | null | undefined,
-  allTools: TPlugin[] | undefined
+  allTools: TPlugin[] | undefined,
 ): string[] {
   // If no agent is associated with the conversation, return empty
   if (!conversation?.agent_id && !agent) {
@@ -125,10 +125,10 @@ export function getConversationAuthServices(
  */
 export function shouldShowAuthUI(
   messages: Array<{ role: string }> | undefined,
-  authServices: string[]
+  authServices: string[],
 ): boolean {
   console.log('[shouldShowAuthUI] Input:', { messages: messages?.length, authServices });
-  
+
   // No auth services detected
   if (!authServices || authServices.length === 0) {
     console.log('[shouldShowAuthUI] No auth services, returning false');
