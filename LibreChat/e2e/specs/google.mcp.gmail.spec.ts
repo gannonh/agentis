@@ -109,7 +109,7 @@ test('Use Gmail Agent', async ({ page }) => {
   logProgress('✅ Sent message to create Gmail draft');
 
   await expect(page.getByRole('button', { name: 'Running Create Email Draft' })).toBeVisible({
-    timeout: 10000,
+    timeout: 60000,
   });
   logProgress('✅ Found "Running Create Email Draft" tool execution');
   await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
@@ -165,7 +165,6 @@ test('Use Gmail Agent', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Ran Create Email Draft' }).first()).toBeVisible({
     timeout: 90000,
   });
-  await page.pause();
 
   logProgress('✅ Ran Create Email Draft');
 });

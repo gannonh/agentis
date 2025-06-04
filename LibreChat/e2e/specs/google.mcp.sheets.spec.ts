@@ -10,8 +10,8 @@ test.use({
   },
 });
 
-test('Create Google Docs MCP', async ({ page }) => {
-  logProgress('Starting Create Google Docs MCP test');
+test('Create Google Sheets MCP', async ({ page }) => {
+  logProgress('Starting Create Google Sheets MCP test');
   await page.goto('http://localhost:3080/');
 
   // Handle conditional authentication
@@ -87,8 +87,8 @@ test('Create Google Docs MCP', async ({ page }) => {
   await expect(page.getByText('Create New Spreadsheet')).toBeVisible();
 });
 
-test('Use Google Docs Agent', async ({ page }) => {
-  logProgress('Starting Use Google Docs Agent test');
+test('Use Google Sheets Agent', async ({ page }) => {
+  logProgress('Starting Use Google Sheets Agent test');
   await page.goto('http://localhost:3080/');
 
   // Handle conditional authentication

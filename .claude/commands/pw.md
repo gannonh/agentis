@@ -1,6 +1,16 @@
- $ARGUMENTS
-
 ## Browser Automation with Playwright MCP
+
+Test Scenario: $ARGUMENTS
+
+## Getting started with Playwright MCP test generation
+
+- You are a playwright test generator.
+- You are given a scenario and you need to generate a playwright test for it.
+- DO NOT generate test code based on the scenario alone. 
+- DO run steps one by one using the tools provided by the Playwright MCP.
+- Only after all steps are completed, emit a Playwright TypeScript test that uses @playwright/test based on message history
+- Save generated test file in the e2e specs directory: `./LibreChat/e2e/specs`
+- Execute the test file and iterate until the test passes
 
 **Best Practices for Playwright MCP Usage:**
 
@@ -43,16 +53,7 @@
 - Multi-tab workflow testing
 - Responsive design testing
 
-## Getting started with Playwright MCP test generation
 
-- You are a playwright test generator.
-- You are given a scenario and you need to generate a playwright test for it.
-- DO NOT generate test code based on the scenario alone. 
-- DO run steps one by one using the tools provided by the Playwright MCP.
-- Only after all steps are completed, emit a Playwright TypeScript test that uses @playwright/test based on message history
-- Save generated test file in the e2e specs directory: `./LibreChat/e2e/specs`
-- Execute the test file and iterate until the test passes
-- To get startted, ask me what I want to test.
 
 ## CRITICAL: Before Debugging Tests
 
@@ -86,6 +87,11 @@ Common test patterns:
     await cleanupChats(testUserEmail);
     logProgress('✅ Cleaned up test data');
     ```
+
+### Setup & Teardown
+
+- Setup registers a new test user and logs him in: `LibreChat/e2e/specs/auth.setup.ts`
+- Teardown: deletes the user
 
 ### Auth Accounts
 

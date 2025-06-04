@@ -21,7 +21,7 @@ export default async function cleanupUser(user: TUser) {
       console.log('🤖:  ❌  User not found in Database');
       return;
     }
-    const { _id: user } = foundUser;
+    const user = (foundUser._id?.toString() || foundUser._id) as string;
     console.log('🤖:  ✅  Found user in Database');
 
     // Delete all conversations & associated messages

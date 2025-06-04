@@ -52,7 +52,7 @@ test('Create Google Docs MCP', async ({ page }) => {
   await page
     .getByRole('textbox', { name: 'Agent instructions' })
     .fill(
-      'You possess expert-level Google Docs skills. Whenever you create a new spreadsheet or make spreadsheet edits for the user, please provide a link so they can access it conveniently.',
+      'You possess expert-level Google Docs skills. Whenever you create a new document or make document edits for the user, please provide a link so they can access it conveniently.',
     );
 
   await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();

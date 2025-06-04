@@ -37,7 +37,15 @@ const mockAgent: Agent = {
   avatar: null,
   provider: 'openAI',
   model: 'gpt-4',
-  model_parameters: {},
+  model_parameters: {
+    temperature: 0.7,
+    maxContextTokens: 4096,
+    max_context_tokens: 4096,
+    max_output_tokens: 2048,
+    top_p: 1.0,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+  },
   tools: ['execute_code'],
   created_at: Date.now(),
   featured: true,
@@ -147,7 +155,12 @@ describe('useStartAgentChat Hook', () => {
       ...mockAgent,
       model_parameters: {
         temperature: 0.7,
-        max_tokens: 1000,
+        maxContextTokens: 4096,
+        max_context_tokens: 4096,
+        max_output_tokens: 1000,
+        top_p: 1.0,
+        frequency_penalty: 0,
+        presence_penalty: 0,
       },
     };
 
@@ -161,18 +174,34 @@ describe('useStartAgentChat Hook', () => {
         model: 'gpt-4',
         modelDisplayLabel: 'Test Agent',
         temperature: 0.7,
-        max_tokens: 1000,
+        max_output_tokens: 1000,
       }),
     );
   });
 
   it('should generate unique conversation setup', () => {
-    // Mock Date.now to return different values
-    const originalDateNow = Date.now;
-    let timestamp = 1000000000000; // Fixed base timestamp
-    Date.now = jest.fn(() => {
-      timestamp += 1000; // Increment by 1 second each call
-      return timestamp;
+    // Mock Date constructor to return different timestamps
+    const OriginalDate = Date;
+    let callCount = 0;
+    
+    // Create a mock Date constructor that returns incrementing timestamps
+    global.Date = jest.fn((...args: any[]) => {
+      if (args.length === 0) {
+        // Constructor called without arguments (new Date())
+        callCount++;
+        // Create dates 1 second apart
+        return new OriginalDate(1000000000000 + (callCount * 1000));
+      }
+      // Pass through for other Date constructor calls
+      return new OriginalDate(...(args as ConstructorParameters<typeof Date>));
+    }) as any;
+    
+    // Preserve static Date methods
+    Object.setPrototypeOf(global.Date, OriginalDate);
+    Object.getOwnPropertyNames(OriginalDate).forEach((prop) => {
+      if (prop !== 'prototype' && prop !== 'length' && prop !== 'name') {
+        (global.Date as any)[prop] = (OriginalDate as any)[prop];
+      }
     });
 
     const { result } = renderHook(() => useStartAgentChat());
@@ -196,7 +225,7 @@ describe('useStartAgentChat Hook', () => {
     expect(secondCall.conversationId).toBe(null);
     expect(firstCall.agent_id).toBe(secondCall.agent_id);
 
-    // Restore original Date.now
-    Date.now = originalDateNow;
+    // Restore original Date
+    global.Date = OriginalDate;
   });
 });
