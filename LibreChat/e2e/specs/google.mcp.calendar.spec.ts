@@ -23,7 +23,7 @@ test('Create Calendar MCP Agent', async ({ page }) => {
   logProgress('Verified on main chat page');
   //
 
-  // Create Google Sheets Agent
+  // Create Google Calendar Agent
   await page.getByRole('button', { name: 'Controls' }).click();
   await page.getByRole('button', { name: 'Agent Builder' }).click();
   logProgress('Opened Agent Builder');
@@ -53,7 +53,7 @@ test('Create Calendar MCP Agent', async ({ page }) => {
   await page.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByText('Anthropic').click();
   await page.getByRole('combobox', { name: 'Model' }).click();
-  await page.getByText('claude-3-5-sonnet-20241022').click();
+  await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
   await page.getByRole('button', { name: 'Create' }).click();
   await page
     .getByLabel('Agent Builder')
@@ -90,19 +90,9 @@ test('Use Calendar Agent', async ({ page }) => {
   // Handle conditional authentication
   await handleConditionalAuth(page);
 
-  await page.getByRole('button', { name: 'Select a model' }).click({
-    timeout: 10000,
-  });
-  await page.getByText('Agents', { exact: true }).click({
-    timeout: 10000,
-  });
-  await page
-    .getByLabel('Agents')
-    .getByRole('option')
-    .locator('div')
-    .filter({ hasText: 'Google Calendar Agent' })
-    .click();
-  logProgress('✅ Selected Google Calendar Agent');
+  // Verify we're on the main chat page
+  await expect(page).toHaveURL(/.*\/c\/new/);
+  logProgress('✅ Verified on main chat page');
 
   await page.getByTestId('text-input').click();
   await page
@@ -113,64 +103,57 @@ test('Use Calendar Agent', async ({ page }) => {
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create calendar events');
 
-  try {
-    await expect(
-      page.getByRole('button', { name: 'Running Check Connection' }).first(),
-    ).toBeVisible({
-      timeout: 10000,
-    });
-    logProgress('✅ Running Check Connection button is visible');
-  } catch (error) {
-    logProgress('Running Check Connection button not found within timeout');
-  }
+  // auth ---------------------------
+  // Look for the proactive authentication UI that should appear automatically
+  await expect(page.getByText('Authentication Required')).toBeVisible();
+  logProgress('✅ Found proactive Authentication Required section');
 
-  try {
-    await expect(
-      page.getByRole('button', { name: 'Running Connect to Google Calendar' }).first(),
-    ).toBeVisible({
-      timeout: 10000,
-    });
-    logProgress('✅ Running Connect to Google Calendar button is visible');
-  } catch (error) {
-    logProgress('Running Connect to Google Calendar button not found within timeout');
-  }
+  // Verify the descriptive text about tools requiring authentication
+  await expect(
+    page.getByText('This conversation uses tools that require authentication:'),
+  ).toBeVisible();
+  logProgress('✅ Found descriptive text about authentication');
 
+  // Look for the Connect Google Calendar button in the proactive auth UI
+  await expect(page.getByRole('button', { name: 'Connect Google Calendar' })).toBeVisible();
+  logProgress('✅ Found Connect Google Calendar button in proactive auth UI');
+  // await page.pause();
+
+  // Handle the authentication
   await handleGoogleOAuth(page, 'Google Calendar', { timeout: 90000 });
+  logProgress('✅ Starting Google Calendar authentication');
 
-  await page.getByTestId('text-input').click();
-  await page.getByTestId('text-input').fill("ok, I've authenticated.");
-  await page.getByTestId('send-button').click();
-  logProgress('✅ Sent message to confirm authentication');
-  try {
-    await expect(page.getByRole('button', { name: 'Ran Get Current Date Time' })).toBeVisible({
-      timeout: 10000,
-    });
-    logProgress('✅ Ran Get Current Date Time button is visible');
-  } catch (error) {
-    logProgress('Ran Get Current Date Time button not found within timeout');
-  }
+  // Wait for authentication to complete
+  logProgress('⏳ Waiting 2 sec for authentication to complete...');
+  await page.waitForTimeout(2000);
+  logProgress('✅ Waited for authentication to complete');
 
-  try {
-    await expect(page.getByRole('button', { name: 'Ran Create Event' }).first()).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Ran Create Event button is visible');
-  } catch (error) {
-    logProgress('Ran Create Event button not found within timeout');
-  }
+  // The proactive auth section should remain visible as part of conversation history
+  await expect(page.getByText('Authentication Required')).toBeVisible();
+  logProgress('✅ Proactive auth section remains visible as part of conversation history');
 
-  try {
-    await expect(page.getByRole('button', { name: 'Ran Find Event' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Ran Find Event button is visible');
-  } catch (error) {
-    logProgress('Ran Find Event button not found within timeout');
-  }
+  // Check that the button shows "✓ Connected" after successful authentication
+  await expect(page.getByText('✓ Connected')).toBeVisible();
+  logProgress('✅ Found "✓ Connected" status indicating successful Google Calendar authentication');
 
-  //await page.pause();
-  const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
-  await cleanupAgents(testUserEmail);
-  await cleanupChats(testUserEmail);
-  logProgress('✅ Cleaned up agents and chats for test user');
+  // await page.getByTestId('text-input').click();
+  // await page.getByTestId('text-input').fill("ok, I've authenticated.");
+  // await page.getByTestId('send-button').click();
+  // logProgress('✅ Sent message to confirm authentication');
+
+  // await page.pause();
+
+  // Running Create Event
+
+  await expect(page.getByRole('button', { name: 'Running Create Event' })).toBeVisible({
+    timeout: 10000,
+  });
+  logProgress('✅ Found "Running Create Event" tool execution');
+
+  // Wait for the tool to finish running
+
+  await expect(page.getByRole('button', { name: 'Ran Create Event' })).toBeVisible({
+    timeout: 10000,
+  });
+  logProgress('✅ Found "Ran Create Event" tool execution');
 });

@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import cleanupUser from '../setup/cleanupUser';
+import cleanupAgents, { cleanupChats, cleanupConnections } from '../utils/cleanupUser';
 
 // Load environment variables
 const envPaths = [
@@ -46,8 +47,15 @@ test('cleanup test user', async () => {
       console.log('⚠️ No test user credentials found for cleanup');
       return;
     }
-
+    const testUserEmail = user.email;
+    await cleanupAgents(testUserEmail);
+    console.log('🤖: ✔️  Cleaned up agents for user:', testUserEmail);
+    await cleanupChats(testUserEmail);
+    console.log('🤖: ✔️  Cleaned up chats for user:', testUserEmail);
+    await cleanupConnections(testUserEmail);
+    console.log('🤖: ✔️  Cleaned up connections for user:', testUserEmail);
     await cleanupUser(user);
+    console.log('🤖: ✔️  Cleaned up user:', testUserEmail);
 
     // Clear browser storage state
     const storageStatePath = path.resolve(process.cwd(), 'e2e/storageState.json');

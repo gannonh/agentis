@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import cleanupAgents, { cleanupChats, cleanupConnections } from '../utils/cleanupUser';
 import { logProgress } from '../utils/testLogger';
 import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
 import { handleConditionalAuth } from '../utils/handleConditionalAuth';
@@ -42,7 +41,7 @@ test('Create Google Docs MCP', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
   await page
     .getByRole('textbox', { name: 'Agent description' })
-    .fill('Sonnet 3.5 with access to Google Docs');
+    .fill('Sonnet 3.7 with access to Google Docs');
   await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
   await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
   await page.getByRole('textbox', { name: 'Agent instructions' }).click();
@@ -60,10 +59,8 @@ test('Create Google Docs MCP', async ({ page }) => {
   await page.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByText('Anthropic').click();
   await page.getByRole('combobox', { name: 'Model' }).click();
-  //
 
-  //
-  await page.getByText('claude-3-5-sonnet-20241022').click();
+  await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
   await page.getByRole('button', { name: 'Create' }).click();
   logProgress('Created agent with basic settings');
   // add mcp tools
@@ -110,137 +107,74 @@ test('Use Google Docs Agent', async ({ page }) => {
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create document');
 
-  // Wait for the proactive MCP auth component to appear
-  await page.waitForTimeout(3000);
-  logProgress('✅ Waited for proactive auth component');
+  // run ------------------
+  await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible();
+  logProgress('✅ Found "Running Create" tool execution');
 
-  // Check for the new ProactiveMCPAuth component
-  try {
-    // Look for the proactive authentication UI that should appear automatically
-    await expect(page.getByText('Authentication Required')).toBeVisible({ timeout: 8000 });
-    logProgress('✅ Found proactive Authentication Required section');
+  // ran ------------------
+  await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible();
+  logProgress('✅ Found "Ran Create" tool execution');
 
-    // Verify the descriptive text about tools requiring authentication
-    await expect(
-      page.getByText('This conversation uses tools that require authentication:'),
-    ).toBeVisible({
-      timeout: 5000,
-    });
-    logProgress('✅ Found descriptive text about authentication');
+  // auth ---------------------------
+  // Look for the proactive authentication UI that should appear automatically
+  await expect(page.getByText('Authentication Required')).toBeVisible();
+  logProgress('✅ Found proactive Authentication Required section');
 
-    // Look for the Connect Google Docs button in the proactive auth UI
-    await expect(page.getByRole('button', { name: 'Connect Google Docs' })).toBeVisible({
-      timeout: 5000,
-    });
-    logProgress('✅ Found Connect Google Docs button in proactive auth UI');
+  // Verify the descriptive text about tools requiring authentication
+  await expect(
+    page.getByText('This conversation uses tools that require authentication:'),
+  ).toBeVisible();
+  logProgress('✅ Found descriptive text about authentication');
 
-    // Handle the authentication
-    await handleGoogleOAuth(page, 'Google Docs');
+  // Look for the Connect Google Docs button in the proactive auth UI
+  await expect(page.getByRole('button', { name: 'Connect Google Docs' })).toBeVisible();
+  logProgress('✅ Found Connect Google Docs button in proactive auth UI');
 
-    // Wait for authentication to complete
-    await page.waitForTimeout(3000);
+  // Handle the authentication
+  await handleGoogleOAuth(page, 'Google Docs');
+  logProgress('✅ starting Google Docs authentication');
 
-    // The proactive auth section should remain visible as part of conversation history
-    await expect(page.getByText('Authentication Required')).toBeVisible({
-      timeout: 5000,
-    });
-    logProgress('✅ Proactive auth section remains visible as part of conversation history');
+  // Wait for authentication to complete
+  logProgress('⏳ Waiting 2 sec for authentication to complete...');
+  await page.waitForTimeout(2000);
+  logProgress('✅ Waited for authentication to complete');
 
-    // Check that the button shows "✓ Connected" after successful authentication
-    await expect(page.getByText('✓ Connected')).toBeVisible({ timeout: 5000 });
-    logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
+  // The proactive auth section should remain visible as part of conversation history
+  await expect(page.getByText('Authentication Required')).toBeVisible();
+  logProgress('✅ Proactive auth section remains visible as part of conversation history');
 
-    // Check if the agent already created the doc while we were authenticating
-    let docAlreadyCreated = false;
-    try {
-      // Quick check for success indicators
-      const successCheck = await Promise.race([
-        page.locator('text=/Ran Create/').waitFor({ state: 'visible', timeout: 3000 }),
-        page.locator('a[href*="docs.google.com/"]').waitFor({ state: 'visible', timeout: 3000 }),
-      ])
-        .then(() => true)
-        .catch(() => false);
+  // Check that the button shows "✓ Connected" after successful authentication
+  await expect(page.getByText('✓ Connected')).toBeVisible();
+  logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
 
-      if (successCheck) {
-        docAlreadyCreated = true;
-        logProgress('✅ Document was already created during authentication');
-      }
-    } catch (e) {
-      // Not created yet, continue
-    }
+  // try again -------------------
+  await page.getByTestId('text-input').click();
+  await page
+    .getByTestId('text-input')
+    .fill('ok, try now. please also provide a link to the doc when created.');
+  await page.getByTestId('send-button').click();
+  logProgress('✅ Sent message to create document after authentication');
 
-    // Only send retry message if doc wasn't already created
-    if (!docAlreadyCreated) {
-      logProgress('📝 Document not created yet, sending retry message');
+  // run ------------------ (after authentication)
+  await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
+    timeout: 30000,
+  });
+  logProgress('✅ Found "Running Create" tool execution after authentication');
 
-      // Wait a bit before sending retry
-      await page.waitForTimeout(3000);
+  // ran ------------------ (after authentication)
+  // Wait for the second "Ran" button to appear (indicating completion)
+  await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toHaveCount(2, {
+    timeout: 30000,
+  });
+  logProgress('✅ Found second "Ran Create" tool execution after authentication');
 
-      // Send a simpler retry message
-      await page.getByTestId('text-input').click();
-      await page.getByTestId('text-input').fill('Please try creating the document now.');
-      await page.getByTestId('send-button').click();
-      logProgress('✅ Sent retry message');
-
-      // Give the agent time to process
-      await page.waitForTimeout(8000);
-      logProgress('⏳ Waiting for agent to process the authenticated request');
-    }
-
-    // Check for "Running" indicator (optional)
-    try {
-      await expect(page.locator('text=/Running Create/')).toBeVisible({
-        timeout: 10000,
-      });
-      logProgress('✅ Found "Running Create" tool execution');
-    } catch (e) {
-      logProgress('⚠️ "Running Create" not found - checking for completion indicators');
-    }
-
-    // Check for success indicators in parallel - test passes when either is found
-    const successIndicators = [
-      {
-        locator: page.locator('text=/Ran Create/'),
-        name: '"Ran Create" tool execution completed',
-      },
-      {
-        locator: page.locator('a[href*="docs.google.com/"]'),
-        name: 'Google Docs link',
-      },
-    ];
-
-    try {
-      // Race all success indicators - resolves when first one is found
-      const result = await Promise.race(
-        successIndicators.map(async (indicator) => {
-          try {
-            await indicator.locator.waitFor({ state: 'visible', timeout: 30000 });
-            return indicator.name;
-          } catch (e) {
-            // This promise will never resolve if element not found
-            return new Promise(() => {});
-          }
-        }),
-      );
-      //await page.pause();
-      logProgress(`✅ Test passed: Found ${result}`);
-    } catch (e) {
-      // If Promise.race times out, none of the indicators were found
-      throw new Error(
-        'Test failed: Neither "Ran Create" nor Google Docs link found within timeout',
-      );
-    }
-  } catch (e) {
-    logProgress(
-      '❌ Proactive authentication UI not found - this indicates the feature may not be working correctly',
-    );
-    throw e; // Re-throw to fail the test properly
-  }
+  // Long wait because agent may want to do some formatting or other processing
+  logProgress('⏳ Waiting for Google Docs link to appear...');
+  await expect(page.getByRole('link', { name: 'https://docs.google.com/' })).toBeVisible({
+    timeout: 90000,
+  });
+  logProgress('✅ Found Google Docs link');
 
   //await page.pause();
-  const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
-  await cleanupAgents(testUserEmail);
-  await cleanupChats(testUserEmail);
-  await cleanupConnections(testUserEmail);
-  logProgress('✅ Cleaned up agents, chats, and connections for test user');
+  // Markdown Doc
 });

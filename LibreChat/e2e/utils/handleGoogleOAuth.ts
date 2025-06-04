@@ -26,6 +26,7 @@ export async function handleGoogleOAuth(
 
     // Look for inline ComposioAuthButton - try multiple selector approaches
     const authButtonSelectors = [
+      `button:has-text("Connect ${serviceName}")`, // Service-specific button (e.g., "Connect Gmail")
       'button:has-text("Connect to Google")',
       'button:has-text("Authenticate")',
       'button[data-testid*="composio-auth"]',
@@ -76,17 +77,11 @@ export async function handleGoogleOAuth(
     await popup.getByRole('textbox', { name: 'Enter your password' }).fill(password);
     await popup.getByRole('button', { name: 'Next' }).click();
     await popup.getByRole('button', { name: 'Continue' }).click();
-    await popup.getByRole('button', { name: 'Continue' }).click();
-
-    // Handle Google OAuth flow in popup
-    // await handleGoogleOAuthPopup(popup, email, password);
-
-    // // Wait for popup to close and authentication to complete
-    // try {
-    //   await popup.waitForEvent('close');
-    // } catch (e) {
-    //   logProgress(`popup not closed`);
-    // }
+    try {
+      await popup.getByRole('button', { name: 'Continue' }).click();
+    } catch {
+      logProgress(`No "Continue" button found, may not be needed`);
+    }
     try {
       await page.bringToFront();
     } catch (e) {
