@@ -67,18 +67,26 @@ export async function handleGoogleOAuth(
     const popupPromise = page.waitForEvent('popup');
     await authButton.click();
     const popup = await popupPromise;
+    const popUpItemsTimeout = 10000;
 
     logProgress(`✅ OAuth popup opened for ${serviceName}`);
+    await popup.getByRole('textbox', { name: 'Email or phone' }).fill(email);
+    await popup.getByRole('button', { name: 'Next' }).click();
+    await popup.getByRole('textbox', { name: 'Enter your password' }).click();
+    await popup.getByRole('textbox', { name: 'Enter your password' }).fill(password);
+    await popup.getByRole('button', { name: 'Next' }).click();
+    await popup.getByRole('button', { name: 'Continue' }).click();
+    await popup.getByRole('button', { name: 'Continue' }).click();
 
     // Handle Google OAuth flow in popup
-    await handleGoogleOAuthPopup(popup, email, password);
+    // await handleGoogleOAuthPopup(popup, email, password);
 
-    // Wait for popup to close and authentication to complete
-    try {
-      await popup.waitForEvent('close');
-    } catch (e) {
-      logProgress(`popup not closed`);
-    }
+    // // Wait for popup to close and authentication to complete
+    // try {
+    //   await popup.waitForEvent('close');
+    // } catch (e) {
+    //   logProgress(`popup not closed`);
+    // }
     try {
       await page.bringToFront();
     } catch (e) {
@@ -115,72 +123,5 @@ export async function handleGoogleOAuth(
   } catch (e) {
     logProgress(`Error during ${serviceName} authentication: ${e}`);
     // Don't throw - authentication might not be required or already completed
-  }
-}
-
-/**
- * Handles the Google OAuth flow inside a popup window
- * @param popup - The popup window page object
- * @param email - Google account email
- * @param password - Google account password
- */
-async function handleGoogleOAuthPopup(popup: Page, email: string, password: string) {
-  try {
-    logProgress('Handling Google OAuth popup flow...');
-
-    // Enter email
-    await popup.getByRole('textbox', { name: 'Email or phone' }).click();
-    await popup.getByRole('textbox', { name: 'Email or phone' }).fill(email);
-    await popup.getByRole('button', { name: 'Next' }).click();
-    logProgress('✅ Entered email');
-
-    // Enter password
-    await popup.getByRole('textbox', { name: 'Enter your password' }).click();
-    await popup.getByRole('textbox', { name: 'Enter your password' }).fill(password);
-    await popup.getByRole('button', { name: 'Next' }).click();
-    logProgress('✅ Entered password');
-
-    // Handle consent screens
-    try {
-      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 1000 });
-      logProgress('✅ Clicked Continue button');
-    } catch (e) {
-      logProgress('No Continue button found, proceeding...');
-    }
-
-    // Grant permissions - handle different OAuth consent screen variations
-    try {
-      // Try to check permissions checkboxes
-      const checkboxSelectors = ['See, edit, create, and delete', 'Select all', 'All scopes'];
-
-      for (const checkboxName of checkboxSelectors) {
-        try {
-          await popup.getByRole('checkbox', { name: checkboxName }).check({ timeout: 1000 });
-          logProgress(`✅ Checked "${checkboxName}" checkbox`);
-          break;
-        } catch (e) {
-          logProgress(`No "${checkboxName}" checkbox found`);
-        }
-      }
-
-      // Click permission grant buttons
-      const buttonSelectors = ['Continue', 'Allow', 'Accept', 'Grant access'];
-      for (const buttonText of buttonSelectors) {
-        try {
-          await popup.getByRole('button', { name: buttonText }).click({ timeout: 1000 });
-          logProgress(`✅ Clicked ${buttonText} button`);
-          break;
-        } catch (e) {
-          logProgress(`No ${buttonText} button found`);
-        }
-      }
-    } catch (e) {
-      logProgress('Permissions handling completed or already granted');
-    }
-
-    logProgress('✅ Google OAuth popup flow completed');
-  } catch (e) {
-    logProgress(`Error in OAuth popup: ${e}`);
-    throw e;
   }
 }
