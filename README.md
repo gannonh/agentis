@@ -117,6 +117,17 @@ npm run format       # Format code with prettier
 
 ## Docker Configuration
 
+### Self-Hosted Dependencies
+
+Agentis uses self-hosted Docker images for all external dependencies to ensure security, reliability, and control:
+
+- **RAG API**: `ghcr.io/gannonh/rag-api-lite:latest` - Document processing and retrieval
+- **Sandpack**: `ghcr.io/gannonh/codesandbox-client/bundler:latest` - Code execution environment
+
+These are maintained in separate repositories:
+- [rag_api](https://github.com/gannonh/rag_api) - Forked from danny-avila/rag_api
+- [codesandbox-client](https://github.com/gannonh/codesandbox-client) - Forked from LibreChat-AI/codesandbox-client
+
 ### Development Setup
 
 For local development, use the dev configuration that runs only supporting services while keeping the API and client running on the host:

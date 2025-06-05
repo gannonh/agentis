@@ -1,0 +1,115 @@
+name: Preflight Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './LibreChat/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./LibreChat
+        run: |
+          npm ci --legacy-peer-deps
+          
+      - name: Install Playwright browsers
+        working-directory: ./LibreChat
+        run: |
+          npx playwright install chromium
+          npx playwright install-deps chromium
+
+      - name: Build packages
+        working-directory: ./LibreChat
+        run: npm run build:all
+
+      - name: Run linting
+        working-directory: ./LibreChat
+        run: npm run lint
+
+      - name: Run formatting check
+        working-directory: ./LibreChat
+        run: npm run format
+
+      - name: Run type checking
+        working-directory: ./LibreChat
+        run: npm run typecheck:all
+
+      - name: Start MongoDB for tests
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: '7.0'
+          mongodb-replica-set: test-rs
+          mongodb-port: 27017
+
+      - name: Run unit tests
+        working-directory: ./LibreChat
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://127.0.0.1:27017/test?replicaSet=test-rs
+        run: npm run test:all
+
+      - name: Setup environment for E2E tests
+        working-directory: ./LibreChat
+        run: |
+          cp .env.example .env
+          # Add test-specific environment variables
+          echo "MONGO_URI=mongodb://127.0.0.1:27017/LibreChat?replicaSet=test-rs" >> .env
+          echo "OPENAI_API_KEY=test-key" >> .env
+          echo "ANTHROPIC_API_KEY=test-key" >> .env
+          # Google test credentials from secrets
+          echo "GOOGLE_TEST_ACCOUNT_1_EMAIL=${{ secrets.GOOGLE_TEST_ACCOUNT_1_EMAIL }}" >> .env
+          echo "GOOGLE_TEST_ACCOUNT_1_PASSWORD=${{ secrets.GOOGLE_TEST_ACCOUNT_1_PASSWORD }}" >> .env
+
+      - name: Run E2E tests
+        working-directory: ./LibreChat
+        env:
+          NODE_ENV: CI
+          CI: true
+        run: npm run e2e:ci
+        
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: |
+            LibreChat/e2e/playwright-report/
+            LibreChat/e2e/specs/.test-results/
+            LibreChat/coverage/
+          retention-days: 7
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            LibreChat/api/coverage/
+            LibreChat/client/coverage/
+            LibreChat/packages/*/coverage/
+          retention-days: 7
+
+  # This job acts as a gate - it only passes if all checks pass
+  preflight-gate:
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preflight checks passed
+        run: echo "All preflight checks passed successfully!"

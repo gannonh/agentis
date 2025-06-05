@@ -26,6 +26,18 @@ The Agentis platform uses a Docker-only deployment strategy:
 - Configuration is injected via environment variables from GitHub Secrets
 - Docker images are stored in GitHub Container Registry (ghcr.io)
 
+#### Self-Hosted Dependencies
+
+All external dependencies are self-hosted for security and reliability:
+- **RAG API**: `ghcr.io/gannonh/rag-api-lite:latest` - Forked from danny-avila/rag_api
+- **Sandpack**: `ghcr.io/gannonh/codesandbox-client/bundler:latest` - Forked from LibreChat-AI/codesandbox-client
+
+Benefits:
+- No reliance on external Docker registries or services
+- Full control over updates and security patches
+- Consistent branding (removed "librechat" references)
+- Reduced attack surface and dependency risks
+
 ### CI/CD Pipeline
 
 The production deployment is fully automated through GitHub Actions:
@@ -86,7 +98,8 @@ The production deployment runs the following services:
 3. **agentis-mongodb** - MongoDB database
 4. **agentis-meilisearch** - Search engine
 5. **agentis-vectordb** - PostgreSQL with pgvector
-6. **agentis-rag-api** - RAG (Retrieval-Augmented Generation) API
+6. **agentis-rag-api** - Self-hosted RAG API (`ghcr.io/gannonh/rag-api-lite:latest`)
+7. **agentis-sandpack** - Self-hosted code execution (`ghcr.io/gannonh/codesandbox-client/bundler:latest`)
 
 All services run in Docker containers managed by Docker Compose.
 
@@ -102,8 +115,8 @@ The `docker-compose.dev.yml` file defines:
 1. **MongoDB** - Database for user data and conversations
 2. **Meilisearch** - Search engine for conversation search
 3. **VectorDB** - PostgreSQL with pgvector for embeddings
-4. **RAG API** - Document processing and retrieval
-5. **Sandpack** - Code execution environment
+4. **RAG API** - Self-hosted document processing (`ghcr.io/gannonh/rag-api-lite:latest`)
+5. **Sandpack** - Self-hosted code execution (`ghcr.io/gannonh/codesandbox-client/bundler:latest`)
 
 #### Managing Docker Services
 
@@ -330,6 +343,113 @@ free -h
 1. **Weekly**: Clean up old Docker images: `docker image prune -f`
 2. **Monthly**: Review and rotate API keys
 3. **Quarterly**: Update base Docker images and dependencies
+
+## Preflight Checks System
+
+### Overview
+
+The preflight checks ensure code quality before merging to main and deploying to production.
+
+### NPM Scripts
+
+The following scripts are available in `/LibreChat/package.json`:
+
+- **`npm run check:all`** - Runs lint, format, typecheck, and all unit tests
+- **`npm run preflight`** - Full preflight including builds, all checks, and E2E tests
+- **`npm run preflight:fix`** - Same as preflight but auto-fixes lint issues
+
+### Local Usage
+
+Before creating a pull request:
+
+```bash
+cd LibreChat
+
+# Run all checks with auto-fix
+npm run preflight:fix
+
+# Or run without auto-fix to see what would fail in CI
+npm run preflight
+```
+
+### GitHub Actions Workflows
+
+#### 1. PR Checks (`.github/workflows/preflight-checks.yml`)
+
+**Triggers on**: Pull requests to main
+
+**Purpose**: Provides visual feedback on PR quality with red/green status indicators
+
+**Runs**:
+- Package builds
+- Linting
+- Formatting checks  
+- Type checking
+- Unit tests (all packages, API, and client)
+- E2E tests
+
+**Uploads**: Test artifacts and coverage reports on failure
+
+#### 2. Production Deployment (`.github/workflows/deploy-production.yml`)
+
+**Triggers on**: Pushes to main (when you merge PRs)
+
+**Flow**:
+1. **Preflight job**: Runs same checks as PR workflow
+2. **Build-and-push job**: Only runs if preflight passes
+3. **Deploy job**: Only runs if build succeeds
+
+**Failure behavior**: If preflight fails, deployment stops automatically
+
+### Visual Feedback System
+
+Instead of enforcing rules (which requires paid GitHub), we use visual indicators:
+
+#### On Pull Requests:
+- ✅ **Green checkmarks**: All checks passed, safe to merge
+- ❌ **Red X marks**: Issues found, fix before merging
+- 🟡 **Yellow dots**: Tests still running
+
+#### On Main Branch:
+- If preflight fails → Deployment automatically stops
+- If build fails → Deployment stops  
+- Only successful runs reach production
+
+### Development Flow
+
+1. **Create feature branch** from main
+2. **Develop and test locally** using `npm run preflight:fix`
+3. **Create PR to main** - GitHub Actions runs checks automatically
+4. **Review PR status** - Only merge when all checks are green ✅
+5. **Merge to main** - Triggers automatic deployment if all checks pass
+6. **Monitor deployment** - Check GitHub Actions for any deployment issues
+
+### Troubleshooting Preflight
+
+#### Preflight Failing Locally but Working in CI
+
+- Ensure you have the latest dependencies: `npm ci --legacy-peer-deps`
+- Check Node version matches CI: `node --version` (should be 20.x)
+- Clean build: `rm -rf node_modules package-lock.json && npm install --legacy-peer-deps`
+
+#### E2E Tests Failing
+
+- Check if you have the required environment variables set
+- Ensure MongoDB is running locally
+- Try running with headed mode: `npm run e2e:headed`
+
+#### Type Errors
+
+- Rebuild packages first: `npm run build:all`
+- Check for `@types/node` issues in E2E tests
+
+### Best Practices
+
+1. **Always run preflight locally** before pushing
+2. **Fix issues immediately** - don't push broken code
+3. **Keep PRs small** - easier to fix preflight issues
+4. **Update tests** when changing functionality
+5. **Don't disable checks** - fix the underlying issues
 
 ## Future Improvements
 
