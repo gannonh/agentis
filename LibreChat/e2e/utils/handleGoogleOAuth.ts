@@ -1,6 +1,13 @@
 import { Page, Locator } from '@playwright/test';
 import { logProgress } from './testLogger';
 
+declare const process: {
+  env: {
+    GOOGLE_TEST_ACCOUNT_1_EMAIL?: string;
+    GOOGLE_TEST_ACCOUNT_1_PASSWORD?: string;
+  };
+};
+
 /**
  * Handles Google OAuth authentication flow using the new inline ComposioAuthButton
  * @param page - The main Playwright page object
@@ -19,7 +26,6 @@ export async function handleGoogleOAuth(
   const email =
     options?.email || process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
   const password = options?.password || process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '';
-  const timeout = options?.timeout || 20000;
 
   try {
     logProgress(`Looking for ${serviceName} inline authentication button`);
@@ -65,23 +71,54 @@ export async function handleGoogleOAuth(
     logProgress('✅ Found inline authentication button, clicking...');
 
     // Click the authentication button to start OAuth flow
-    const popupPromise = page.waitForEvent('popup');
-    await authButton.click();
-    const popup = await popupPromise;
-    const popUpItemsTimeout = 10000;
-
-    logProgress(`✅ OAuth popup opened for ${serviceName}`);
-    await popup.getByRole('textbox', { name: 'Email or phone' }).fill(email);
-    await popup.getByRole('button', { name: 'Next' }).click();
-    await popup.getByRole('textbox', { name: 'Enter your password' }).click();
-    await popup.getByRole('textbox', { name: 'Enter your password' }).fill(password);
-    await popup.getByRole('button', { name: 'Next' }).click();
-    await popup.getByRole('button', { name: 'Continue' }).click();
+    let popup: Page | null;
     try {
-      await popup.getByRole('button', { name: 'Continue' }).click();
-    } catch {
-      logProgress(`No "Continue" button found, may not be needed`);
+      // Set up popup listener with timeout AFTER the click
+      const [clickResult] = await Promise.all([
+        page.waitForEvent('popup', { timeout: 5000 }).catch(() => null),
+        authButton.click(),
+      ]);
+
+      popup = clickResult;
+
+      if (!popup) {
+        logProgress(`⚠️ No popup appeared for ${serviceName} - may already be authenticated`);
+        return;
+      }
+
+      logProgress(`✅ OAuth popup opened for ${serviceName}`);
+    } catch (error) {
+      logProgress(`❌ Error handling popup: ${error}`);
+      return;
     }
+
+    try {
+      // Check if login form exists with short timeout
+      await popup.getByRole('textbox', { name: 'Email or phone' }).waitFor({ timeout: 2000 });
+
+      // If we get here, the form exists - proceed with login
+      await popup.getByRole('textbox', { name: 'Email or phone' }).fill(email);
+      await popup.getByRole('button', { name: 'Next' }).click();
+      await popup.getByRole('textbox', { name: 'Enter your password' }).click();
+      await popup.getByRole('textbox', { name: 'Enter your password' }).fill(password);
+      await popup.getByRole('button', { name: 'Next' }).click();
+      await popup.getByRole('button', { name: 'Continue' }).click();
+      try {
+        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 1000 });
+      } catch {
+        logProgress(`No "Continue" button found, may not be needed`);
+      }
+    } catch (error) {
+      // otherwise click through this version
+      await popup.getByRole('link', { name: 'Agentis Hall agentis.test@' }).click();
+      await popup.getByRole('button', { name: 'Continue' }).click();
+      try {
+        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 1000 });
+      } catch {
+        logProgress(`No "Continue" button found, may not be needed`);
+      }
+    }
+
     try {
       await page.bringToFront();
     } catch (e) {
@@ -101,7 +138,7 @@ export async function handleGoogleOAuth(
 
       for (const selector of successSelectors) {
         try {
-          await page.locator(selector).waitFor({ timeout: 10000 });
+          await page.locator(selector).waitFor({ timeout: 2000 });
           logProgress(`✅ ${serviceName} authentication completed successfully`);
           return;
         } catch (e) {
