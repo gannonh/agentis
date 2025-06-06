@@ -5,6 +5,9 @@ import {
   createGoogleAgent,
   GOOGLE_AGENT_CONFIG,
   GOOGLE_CREDS,
+  handleInitialAuth,
+  handleExistingAccountAuth,
+  handleExistingAccountAuthSingle,
 } from '../utils/googleAuth';
 
 test.use({
@@ -31,17 +34,17 @@ test('Create Google Multi Agent', async ({ page }) => {
   // Verify agent was created successfully
   await expect(page.getByRole('button', { name: 'Start chat with Google Multi' })).toBeVisible();
   logProgress('✅ Found "Start chat with Google Multi Agent" button');
-  
+
   await expect(page.getByTestId('agent-discovery-grid').getByRole('heading')).toContainText(
     GOOGLE_AGENT_CONFIG.name,
   );
   logProgress('✅ Found agent name in discovery grid');
-  
+
   await expect(page.getByTestId('agent-discovery-grid').getByRole('paragraph')).toContainText(
     "Seamlessly work across Google's core productivity tools to manage",
   );
   logProgress('✅ Found agent description in discovery grid');
-  
+
   await expect(page.getByTestId('agent-discovery-grid').locator('span')).toContainText(
     '+25 more tools',
   );
@@ -81,17 +84,8 @@ test('Use Google Multi Agent', async ({ page }) => {
     - button "Connect Google Sheets"
     `);
 
-  // START 1ST AUTH
-
-  const page1Promise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'Connect Google Drive' }).click();
-  const page1 = await page1Promise;
-
-  await page1.getByRole('textbox', { name: 'Email or phone' }).fill(GOOGLE_CREDS.email);
-  await page1.getByRole('button', { name: 'Next' }).click();
-
-  await page1.getByRole('textbox', { name: 'Enter your password' }).fill(GOOGLE_CREDS.password);
-  await page1.getByRole('button', { name: 'Next' }).click();
+  // START 1ST AUTH - Google Drive (initial auth flow)
+  const page1 = await handleInitialAuth(page, 'Google Drive');
   try {
     await expect(page1.locator('body')).toMatchAriaSnapshot(`
       - text: Sign in with Google
@@ -186,12 +180,8 @@ test('Use Google Multi Agent', async ({ page }) => {
     console.log('Error matching aria snapshot for Google Drive auth completion:', error);
   }
 
-  const page2Promise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'Connect Google Docs' }).click();
-  const page2 = await page2Promise;
-  await page2.getByRole('link', { name: 'Agentis Hall agentis.test@' }).click();
-  await page2.getByRole('button', { name: 'Continue' }).click();
-  await page2.getByRole('button', { name: 'Continue' }).click();
+  // Google Docs (existing account flow)
+  const page2 = await handleExistingAccountAuth(page, 'Google Docs');
   try {
     await expect(page.getByRole('main')).toMatchAriaSnapshot(`
       - img
@@ -204,11 +194,8 @@ test('Use Google Multi Agent', async ({ page }) => {
   } catch (error) {
     console.log('Error matching aria snapshot for Google Docs auth completion:', error);
   }
-  const page3Promise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'Connect Google Sheets' }).click();
-  const page3 = await page3Promise;
-  await page3.getByRole('link', { name: 'Agentis Hall agentis.test@' }).click();
-  await page3.getByRole('button', { name: 'Continue' }).click();
+  // Google Sheets (existing account flow - single Continue button)
+  const page3 = await handleExistingAccountAuthSingle(page, 'Google Sheets');
   try {
     await expect(page.getByRole('main')).toMatchAriaSnapshot(`
       - img
