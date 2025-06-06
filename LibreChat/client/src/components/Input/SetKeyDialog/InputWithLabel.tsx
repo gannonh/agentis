@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import type { ChangeEvent, FC, Ref } from 'react';
+import type { ChangeEvent, Ref } from 'react';
 import { cn, defaultTextPropsLabel, removeFocusOutlines, defaultTextProps } from '~/utils/';
 import { Input, Label } from '~/components/ui';
 import { useLocalize } from '~/hooks';
@@ -15,7 +15,7 @@ interface InputWithLabelProps {
   ref?: Ref<HTMLInputElement>;
 }
 
-const InputWithLabel: FC<InputWithLabelProps> = forwardRef((props, ref) => {
+const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>((props, ref) => {
   const { id, value, label, subLabel, onChange, labelClassName = '', inputClassName = '' } = props;
   const localize = useLocalize();
   return (

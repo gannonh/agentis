@@ -91,7 +91,7 @@ export default function useExportConversation({
 
     if (content.type === ContentTypes.ERROR) {
       // ERROR
-      return [sender, content[ContentTypes.TEXT]?.value || ''];
+      return [sender, typeof content.text === 'string' ? content.text : content.text?.value || ''];
     }
 
     if (content.type === ContentTypes.TEXT) {

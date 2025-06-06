@@ -21,7 +21,7 @@ export default function Retrieval({ retrievalModels }: { retrievalModels: Set<st
   const { control, setValue, getValues } = methods;
   const model = useWatch({ control, name: 'model' });
 
-  const isDisabled = useMemo(() => !retrievalModels.has(model), [model, retrievalModels]);
+  const isDisabled = useMemo(() => !model || !retrievalModels.has(model), [model, retrievalModels]);
 
   useEffect(() => {
     if (model && isDisabled) {
@@ -55,6 +55,7 @@ export default function Retrieval({ retrievalModels }: { retrievalModels: Set<st
               )}
               htmlFor={Capabilities.retrieval}
               onClick={() =>
+                model &&
                 retrievalModels.has(model) &&
                 setValue(Capabilities.retrieval, !getValues(Capabilities.retrieval), {
                   shouldDirty: true,

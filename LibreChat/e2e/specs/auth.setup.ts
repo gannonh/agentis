@@ -109,7 +109,8 @@ test('authenticate test user', async ({ page }) => {
     console.log('🤖: ✔️  Cleared browser cookies and storage');
     console.log('🤖: ✔️  Full cleanup complete - fresh state guaranteed');
   } catch (error) {
-    console.log('🤖: Cleanup failed or no data to clean:', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.log('🤖: Cleanup failed or no data to clean:', errorMessage);
   }
 
   // Set localStorage before navigating to the page

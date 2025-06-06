@@ -14,7 +14,7 @@ const useStartAgentChat = () => {
       // Create a new conversation configuration with the agent
       const newConversation = {
         conversationId: null,
-        parentMessageId: Constants.NO_PARENT,
+        parentMessageId: Constants.NO_PARENT as string,
         messages: [],
         endpoint: EModelEndpoint.agents,
         agent_id: agent.id,
@@ -36,8 +36,15 @@ const useStartAgentChat = () => {
           model_parameters: agent.model_parameters,
         },
         tools: agent.tools || [],
-        // Spread agent model parameters into conversation
-        ...(agent.model_parameters || {}),
+        // Spread agent model parameters into conversation, filtering out null values
+        ...(agent.model_parameters
+          ? Object.fromEntries(
+              Object.entries(agent.model_parameters).map(([key, value]) => [
+                key,
+                value === null ? undefined : value,
+              ]),
+            )
+          : {}),
       };
 
       // Set the conversation context

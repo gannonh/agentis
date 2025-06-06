@@ -33,7 +33,9 @@ function useDebouncedInput<T = unknown>({
   const setDebouncedOption = useCallback(
     (newValue: T) => {
       const fn = setOption && optionKey ? setOption(optionKey) : setter;
-      debounce(fn, delay)(newValue);
+      if (fn) {
+        debounce(fn, delay)(newValue);
+      }
     },
     [setOption, optionKey, setter, delay],
   );
