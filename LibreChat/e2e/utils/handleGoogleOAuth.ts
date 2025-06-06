@@ -93,6 +93,8 @@ export async function handleGoogleOAuth(
     }
 
     try {
+      await page.pause(); //------------------------------------
+
       // Check if login form exists with short timeout
       await popup.getByRole('textbox', { name: 'Email or phone' }).waitFor({ timeout: 2000 });
 
@@ -104,26 +106,34 @@ export async function handleGoogleOAuth(
       await popup.getByRole('button', { name: 'Next' }).click();
       await popup.getByRole('button', { name: 'Continue' }).click();
       try {
+        await page.pause(); //------------------------------------
+
         await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 1000 });
       } catch {
-        logProgress(`No "Continue" button found, may not be needed`);
+        await page.pause(); //------------------------------------
+
+        logProgress(`No 2nd "Continue" button found, may not be needed`);
       }
     } catch (error) {
       // otherwise click through this version
+      await page.pause(); //------------------------------------
+
       await popup.getByRole('link', { name: 'Agentis Hall agentis.test@' }).click();
       await popup.getByRole('button', { name: 'Continue' }).click();
       try {
+        await page.pause(); //------------------------------------
+
         await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 1000 });
       } catch {
         logProgress(`No "Continue" button found, may not be needed`);
       }
     }
 
-    try {
-      await page.bringToFront();
-    } catch (e) {
-      logProgress(`page not brought to front`);
-    }
+    // try {
+    //   await page.bringToFront();
+    // } catch (e) {
+    //   logProgress(`page not brought to front`);
+    // }
 
     // Wait for the authentication button to update to show success state
     try {
