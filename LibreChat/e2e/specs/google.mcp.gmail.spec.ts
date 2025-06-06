@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
-import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
 import { logProgress } from '../utils/testLogger';
-import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
+import { handleInitialAuth } from '../utils/googleAuth';
 import { handleConditionalAuth } from '../utils/handleConditionalAuth';
 
 test.use({
@@ -113,7 +112,7 @@ test('Use Gmail Agent', async ({ page }) => {
   });
   logProgress('✅ Found "Running Create Email Draft" tool execution');
   await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
-    timeout: 10000,
+    timeout: 60000,
   });
   logProgress('✅ Found "Ran Create Email Draft" tool execution');
 
@@ -134,8 +133,14 @@ test('Use Gmail Agent', async ({ page }) => {
   // await page.pause();
 
   // Handle the authentication
-  await handleGoogleOAuth(page, 'Gmail', { timeout: 90000 });
   logProgress('✅ Starting Gmail authentication');
+  const popup = await handleInitialAuth(page, 'Gmail');
+
+  // Handle the consent screens
+  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+  logProgress('✅ Clicked Continue on first consent screen');
+  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+  logProgress('✅ Clicked Continue on second consent screen');
 
   // Wait for authentication to complete
   logProgress('⏳ Waiting 2 sec for authentication to complete...');
