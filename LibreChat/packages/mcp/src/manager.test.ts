@@ -13,12 +13,12 @@ describe('MCPManager', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     // Reset the singleton instance
-    (MCPManager as typeof MCPManager & { instance: MCPManager | null }).instance = null;
+    (MCPManager as any).instance = null;
   });
 
   afterEach(() => {
     jest.useRealTimers();
-    (MCPManager as typeof MCPManager & { instance: MCPManager | null }).instance = null;
+    (MCPManager as any).instance = null;
   });
 
   it('should create singleton instance', () => {
