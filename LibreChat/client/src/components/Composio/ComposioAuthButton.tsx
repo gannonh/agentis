@@ -234,7 +234,7 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           if (pollResponse.ok) {
             const pollData = await pollResponse.json();
             console.log('Poll response:', pollData);
-            
+
             if (pollData.isActive) {
               setConnectionStatus('active');
               setIsAuthenticating(false);

@@ -219,7 +219,10 @@ export function processMCPEnv(obj: Readonly<MCPOptions>, userId?: string): MCPOp
  * @param {string} connectedAccountId - The Composio connected account ID to use
  * @returns {MCPOptions} - The processed object with connected account placeholders replaced
  */
-export function resolveComposioPlaceholders(obj: Readonly<MCPOptions>, connectedAccountId: string): MCPOptions {
+export function resolveComposioPlaceholders(
+  obj: Readonly<MCPOptions>,
+  connectedAccountId: string,
+): MCPOptions {
   if (obj === null || obj === undefined) {
     return obj;
   }
@@ -229,37 +232,43 @@ export function resolveComposioPlaceholders(obj: Readonly<MCPOptions>, connected
   // Process headers for connected account ID placeholders
   if ('headers' in newObj && newObj.headers) {
     const processedHeaders: Record<string, string> = {};
-    
+
     for (const [key, value] of Object.entries(newObj.headers)) {
       if (typeof value === 'string' && value.includes('{{COMPOSIO_CONNECTED_ACCOUNT_ID}}')) {
-        processedHeaders[key] = value.replace(/{{COMPOSIO_CONNECTED_ACCOUNT_ID}}/g, connectedAccountId);
+        processedHeaders[key] = value.replace(
+          /{{COMPOSIO_CONNECTED_ACCOUNT_ID}}/g,
+          connectedAccountId,
+        );
       } else {
         processedHeaders[key] = value;
       }
     }
-    
+
     newObj.headers = processedHeaders;
   }
 
   // Process URL for connected account ID placeholders
   if ('url' in newObj && typeof newObj.url === 'string') {
     let url = newObj.url;
-    
+
     // Replace direct placeholder in URL
     if (url.includes('{{COMPOSIO_CONNECTED_ACCOUNT_ID}}')) {
       const encodedAccountId = encodeURIComponent(connectedAccountId);
       url = url.replace(/{{COMPOSIO_CONNECTED_ACCOUNT_ID}}/g, encodedAccountId);
     }
-    
+
     // Handle URL query parameters
     try {
       const urlObj = new URL(url);
-      
+
       // Check for connected_account_id parameter
       const accountIdParam = urlObj.searchParams.get('connected_account_id');
       if (accountIdParam && accountIdParam.includes('{{COMPOSIO_CONNECTED_ACCOUNT_ID}}')) {
         const encodedAccountId = encodeURIComponent(connectedAccountId);
-        const newValue = accountIdParam.replace(/{{COMPOSIO_CONNECTED_ACCOUNT_ID}}/g, encodedAccountId);
+        const newValue = accountIdParam.replace(
+          /{{COMPOSIO_CONNECTED_ACCOUNT_ID}}/g,
+          encodedAccountId,
+        );
         urlObj.searchParams.set('connected_account_id', newValue);
         url = urlObj.toString();
       }
@@ -267,7 +276,7 @@ export function resolveComposioPlaceholders(obj: Readonly<MCPOptions>, connected
       const errMsg = parseError instanceof Error ? parseError.message : String(parseError);
       console.error(`Error parsing URL for Composio placeholders: ${errMsg}`);
     }
-    
+
     newObj.url = url;
   }
 

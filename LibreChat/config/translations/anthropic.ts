@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type * as a from '@anthropic-ai/sdk';
-import { parseParamFromPrompt, genTranslationPrompt } from '~/app/clients/prompts/titlePrompts';
+import { parseParamFromPrompt, genTranslationPrompt } from '../../api/app/clients/prompts/titlePrompts';
 
 /**
  * Get the initialized Anthropic client.
@@ -73,7 +73,8 @@ export async function translateKeyPhrase({ key, baselineTranslation, translation
     try {
       const client = getClient();
       const response = await client.messages.create(requestOptions);
-      const text = response.content[0].text;
+      const content = response.content[0];
+      const text = content.type === 'text' ? content.text : '';
       translation = parseParamFromPrompt(text, 'translation');
     } catch (e) {
       console.error('[AnthropicClient] There was an issue generating the translation', e);

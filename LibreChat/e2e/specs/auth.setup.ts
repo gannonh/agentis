@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
+import { chromium } from '@playwright/test';
+import fs from 'fs';
+import cleanupUser from '../setup/cleanupUser';
+import cleanupAgents, { cleanupChats, cleanupConnections } from '../utils/cleanupUser';
 
 const STORAGE_STATE = path.join(__dirname, '../storageState.json');
 const timeout = 6000;
@@ -76,6 +80,37 @@ test('authenticate test user', async ({ page }) => {
   }
 
   console.log('🤖: Authenticating user:', user.email);
+
+  // Run full teardown/cleanup process before setup (same as auth.teardown.ts)
+  try {
+    console.log('🤖: Running full cleanup before setup...');
+    const testUserEmail = user.email;
+    await cleanupAgents(testUserEmail);
+    console.log('🤖: ✔️  Cleaned up agents for user:', testUserEmail);
+    await cleanupChats(testUserEmail);
+    console.log('🤖: ✔️  Cleaned up chats for user:', testUserEmail);
+    await cleanupConnections(testUserEmail);
+    console.log('🤖: ✔️  Cleaned up connections for user:', testUserEmail);
+    await cleanupUser(user);
+    console.log('🤖: ✔️  Cleaned up user:', testUserEmail);
+
+    // Clear browser storage state
+    const storageStatePath = path.resolve(process.cwd(), 'e2e/storageState.json');
+    if (fs.existsSync(storageStatePath)) {
+      fs.unlinkSync(storageStatePath);
+      console.log('🤖: ✔️  Cleared browser storage state');
+    }
+
+    // Clear any browser cookies and local storage
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext();
+    await context.clearCookies();
+    await browser.close();
+    console.log('🤖: ✔️  Cleared browser cookies and storage');
+    console.log('🤖: ✔️  Full cleanup complete - fresh state guaranteed');
+  } catch (error) {
+    console.log('🤖: Cleanup failed or no data to clean:', error.message);
+  }
 
   // Set localStorage before navigating to the page
   await page.addInitScript(() => {

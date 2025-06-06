@@ -95,7 +95,7 @@ export function Artifact({
       setArtifacts((prevArtifacts) => {
         if (
           prevArtifacts?.[artifactKey] != null &&
-          prevArtifacts[artifactKey].content === content
+          prevArtifacts[artifactKey]?.content === content
         ) {
           return prevArtifacts;
         }

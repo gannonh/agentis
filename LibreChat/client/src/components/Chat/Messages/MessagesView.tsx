@@ -34,7 +34,7 @@ export default function MessagesView({
   // Helper function to determine if we should show ProactiveMCPAuth
   const shouldShowProactiveMCPAuth = (_messagesTree: TMessage[] | null) => {
     // console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth called with:', _messagesTree?.length || 0, 'messages');
-    
+
     if (!_messagesTree || _messagesTree.length === 0) {
       // console.log('🔍 [MessagesView] No messages tree, returning false');
       return false;
@@ -53,18 +53,18 @@ export default function MessagesView({
     flattenMessages(_messagesTree);
 
     // Check if we have at least one user message (simplified condition for testing)
-    const userMessages = flatMessages.filter(m => m.isCreatedByUser === true);
-    const assistantMessages = flatMessages.filter(m => m.isCreatedByUser === false);
+    const userMessages = flatMessages.filter((m) => m.isCreatedByUser === true);
+    const assistantMessages = flatMessages.filter((m) => m.isCreatedByUser === false);
 
     const shouldShow = userMessages.length >= 1;
     // console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth result:', shouldShow, {
     //   flatMessagesCount: flatMessages.length,
     //   userMessagesCount: userMessages.length,
     //   assistantMessagesCount: assistantMessages.length,
-    //   flatMessages: flatMessages.map(m => ({ 
-    //     isCreatedByUser: m.isCreatedByUser, 
+    //   flatMessages: flatMessages.map(m => ({
+    //     isCreatedByUser: m.isCreatedByUser,
     //     sender: m.sender,
-    //     content: typeof m.text === 'string' ? m.text.substring(0, 50) : String(m.text || '').substring(0, 50) 
+    //     content: typeof m.text === 'string' ? m.text.substring(0, 50) : String(m.text || '').substring(0, 50)
     //   }))
     // });
 
@@ -102,10 +102,7 @@ export default function MessagesView({
       <>
         <div ref={screenshotTargetRef}>
           {/* Show auth UI after first user message */}
-          <ProactiveMCPAuth
-            messages={flatMessages}
-            conversationId={conversationId ?? null}
-          />
+          <ProactiveMCPAuth messages={flatMessages} conversationId={conversationId ?? null} />
           <MultiMessage
             key={conversationId}
             messagesTree={_messagesTree}

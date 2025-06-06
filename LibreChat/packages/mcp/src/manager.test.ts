@@ -13,12 +13,12 @@ describe('MCPManager', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     // Reset the singleton instance
-    (MCPManager as any).instance = null;
+    (MCPManager as typeof MCPManager & { instance: MCPManager | null }).instance = null;
   });
 
   afterEach(() => {
     jest.useRealTimers();
-    (MCPManager as any).instance = null;
+    (MCPManager as typeof MCPManager & { instance: MCPManager | null }).instance = null;
   });
 
   it('should create singleton instance', () => {
@@ -41,13 +41,13 @@ describe('MCPManager', () => {
 
   it('should throw error for unknown servers in callTool', async () => {
     const manager = MCPManager.getInstance(mockLogger);
-    
+
     await expect(
       manager.callTool({
         serverName: 'unknown-server',
         toolName: 'test-tool',
-        provider: 'openAI'
-      })
+        provider: 'openAI',
+      }),
     ).rejects.toThrow();
   });
 });

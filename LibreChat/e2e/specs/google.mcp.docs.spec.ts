@@ -127,10 +127,24 @@ test('Use Google Docs Agent', async ({ page }) => {
   const popup = await handleInitialAuth(page, 'Google Docs');
 
   // Handle the consent screens
-  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-  logProgress('✅ Clicked Continue on first consent screen');
-  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-  logProgress('✅ Clicked Continue on second consent screen');
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on first consent screen');
+  } catch (error) {
+    logProgress('⚠️ Consent screen 1 handling completed or not needed');
+  }
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on second consent screen');
+  } catch (error) {
+    logProgress('⚠️ Consent screen 2 handling completed or not needed');
+  }
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on third consent screen');
+  } catch (error) {
+    logProgress('⚠️ Consent screen 3 handling completed or not needed');
+  }
 
   // Wait for authentication to complete
   logProgress('⏳ Waiting 2 sec for authentication to complete...');

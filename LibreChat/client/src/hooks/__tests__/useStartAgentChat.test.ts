@@ -29,6 +29,38 @@ jest.mock('~/store', () => ({
   })),
 }));
 
+// Helper function for Date mocking
+function createDateMock() {
+  const OriginalDate = Date;
+  let callCount = 0;
+
+  const mockDate = jest.fn((...args: any[]) => {
+    if (args.length === 0) {
+      // Constructor called without arguments (new Date())
+      callCount++;
+      // Create dates 1 second apart
+      return new OriginalDate(1000000000000 + callCount * 1000);
+    }
+    // Pass through for other Date constructor calls
+    return new OriginalDate(...(args as ConstructorParameters<typeof Date>));
+  }) as any;
+
+  // Preserve static Date methods
+  Object.setPrototypeOf(mockDate, OriginalDate);
+  Object.getOwnPropertyNames(OriginalDate).forEach((prop) => {
+    if (prop !== 'prototype' && prop !== 'length' && prop !== 'name') {
+      (mockDate as any)[prop] = (OriginalDate as any)[prop];
+    }
+  });
+
+  return {
+    mockDate,
+    restore: () => {
+      global.Date = OriginalDate;
+    },
+  };
+}
+
 const mockAgent: Agent = {
   id: 'test-agent-1',
   name: 'Test Agent',
@@ -52,9 +84,19 @@ const mockAgent: Agent = {
 };
 
 describe('useStartAgentChat Hook', () => {
+  let dateMockHelper: { mockDate: any; restore: () => void } | null = null;
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
+  });
+
+  afterEach(() => {
+    // Always restore Date mock if it was created
+    if (dateMockHelper) {
+      dateMockHelper.restore();
+      dateMockHelper = null;
+    }
   });
 
   it('should return a function to start chat with agent', () => {
@@ -180,29 +222,9 @@ describe('useStartAgentChat Hook', () => {
   });
 
   it('should generate unique conversation setup', () => {
-    // Mock Date constructor to return different timestamps
-    const OriginalDate = Date;
-    let callCount = 0;
-    
-    // Create a mock Date constructor that returns incrementing timestamps
-    global.Date = jest.fn((...args: any[]) => {
-      if (args.length === 0) {
-        // Constructor called without arguments (new Date())
-        callCount++;
-        // Create dates 1 second apart
-        return new OriginalDate(1000000000000 + (callCount * 1000));
-      }
-      // Pass through for other Date constructor calls
-      return new OriginalDate(...(args as ConstructorParameters<typeof Date>));
-    }) as any;
-    
-    // Preserve static Date methods
-    Object.setPrototypeOf(global.Date, OriginalDate);
-    Object.getOwnPropertyNames(OriginalDate).forEach((prop) => {
-      if (prop !== 'prototype' && prop !== 'length' && prop !== 'name') {
-        (global.Date as any)[prop] = (OriginalDate as any)[prop];
-      }
-    });
+    // Use the helper function to create Date mock
+    dateMockHelper = createDateMock();
+    global.Date = dateMockHelper.mockDate;
 
     const { result } = renderHook(() => useStartAgentChat());
 
@@ -219,13 +241,12 @@ describe('useStartAgentChat Hook', () => {
 
     // Each should have different createdAt timestamps
     expect(firstCall.createdAt).not.toEqual(secondCall.createdAt);
-    
+
     // But same basic structure
     expect(firstCall.conversationId).toBe(null);
     expect(secondCall.conversationId).toBe(null);
     expect(firstCall.agent_id).toBe(secondCall.agent_id);
 
-    // Restore original Date
-    global.Date = OriginalDate;
+    // Date restoration will be handled by afterEach
   });
 });

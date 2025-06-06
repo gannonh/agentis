@@ -23,6 +23,7 @@ const useStartAgentChat = () => {
         title: agent.name || 'New Agent Chat',
         // Add timestamp to make conversations unique
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         agent: {
           id: agent.id,
           name: agent.name,
@@ -43,7 +44,7 @@ const useStartAgentChat = () => {
       setConversation(newConversation);
 
       // Clear any existing submission
-      setSubmission({});
+      setSubmission(null);
 
       // Navigate to new conversation with agent_id parameter
       navigate(`/c/new?agent_id=${agent.id}`);

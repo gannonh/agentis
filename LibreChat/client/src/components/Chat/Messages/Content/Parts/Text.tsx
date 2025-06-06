@@ -31,15 +31,15 @@ const TextPart = memo(({ text, isCreatedByUser, showCursor }: TextPartProps) => 
   const content: ContentType = useMemo(() => {
     // Disable reactive auth detection since we now have proactive auth UI
     // TODO: Remove this comment and the commented code below after confirming proactive auth works
-    
+
     // const needsGoogleSheetsAuth = text.toLowerCase().includes('authenticate with google sheets') ||
     //                               text.toLowerCase().includes('connect to google sheets') ||
     //                               text.toLowerCase().includes('authentication button');
-    // 
+    //
     // if (needsGoogleSheetsAuth && !isCreatedByUser) {
     //   return <AuthCodeParser content={text} isAuthMessage={true} />;
     // }
-    
+
     // Normal text processing
     if (!isCreatedByUser) {
       return <Markdown content={text} isLatestMessage={isLatestMessage} />;

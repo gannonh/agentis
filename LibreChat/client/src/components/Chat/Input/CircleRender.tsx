@@ -1,12 +1,30 @@
 import React from 'react';
-import { CircleIcon, CircleDotsIcon } from '~/components/svg';
-import { ECallState } from 'librechat-data-provider';
+import { DotsIcon } from '~/components/svg';
 
-const CircleRender = ({ rmsLevel, isCameraOn, state }) => {
+enum ECallState {
+  Thinking = 'thinking',
+  Idle = 'idle',
+}
+
+// Simple circle component since CircleIcon doesn't exist
+const CircleIcon = ({ state, size }: { state: ECallState; size: string }) => (
+  <div
+    className="rounded-full border-2 border-gray-400"
+    style={{ width: `${size}px`, height: `${size}px` }}
+  />
+);
+
+interface CircleRenderProps {
+  rmsLevel: number;
+  isCameraOn: boolean;
+  state: ECallState;
+}
+
+const CircleRender: React.FC<CircleRenderProps> = ({ rmsLevel, isCameraOn, state }) => {
   const getIconComponent = (state) => {
     switch (state) {
       case ECallState.Thinking:
-        return <CircleDotsIcon />;
+        return <DotsIcon />;
       default:
         return (
           <div className="smooth-transition" style={{ transform: `scale(${transformScale})` }}>

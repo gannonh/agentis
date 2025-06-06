@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test';
-import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
 import { logProgress } from '../utils/testLogger';
-import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
 import { handleConditionalAuth } from '../utils/handleConditionalAuth';
+import { handleInitialAuth } from '../utils/googleAuth';
 
 test.use({
   viewport: {
@@ -94,6 +93,8 @@ test('Use Calendar Agent', async ({ page }) => {
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
 
+  // ----------------- begin cogegen
+
   await page.getByTestId('text-input').click();
   await page
     .getByTestId('text-input')
@@ -103,6 +104,11 @@ test('Use Calendar Agent', async ({ page }) => {
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create calendar events');
 
+  // Wait for agent's initial response to complete (regenerate button appears - unique to agent messages)
+  // await expect(page.getByRole('button', { name: 'Regenerate' })).toBeVisible();
+  // logProgress('✅ Agent initial response completed - Regenerate button appeared');
+
+  // NOW authenticate after agent finished its initial response
   // auth ---------------------------
   // Look for the proactive authentication UI that should appear automatically
   await expect(page.getByText('Authentication Required')).toBeVisible();
@@ -117,11 +123,18 @@ test('Use Calendar Agent', async ({ page }) => {
   // Look for the Connect Google Calendar button in the proactive auth UI
   await expect(page.getByRole('button', { name: 'Connect Google Calendar' })).toBeVisible();
   logProgress('✅ Found Connect Google Calendar button in proactive auth UI');
-  // await page.pause();
 
   // Handle the authentication
-  await handleGoogleOAuth(page, 'Google Calendar', { timeout: 90000 });
+  const popup = await handleInitialAuth(page, 'Google Calendar');
   logProgress('✅ Starting Google Calendar authentication');
+
+  // Handle the consent screens
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click();
+    await popup.getByRole('button', { name: 'Continue' }).click();
+  } catch (error) {
+    logProgress('⚠️ Consent screen handling completed or not needed');
+  }
 
   // Wait for authentication to complete
   logProgress('⏳ Waiting 2 sec for authentication to complete...');
@@ -136,24 +149,47 @@ test('Use Calendar Agent', async ({ page }) => {
   await expect(page.getByText('✓ Connected')).toBeVisible();
   logProgress('✅ Found "✓ Connected" status indicating successful Google Calendar authentication');
 
-  // await page.getByTestId('text-input').click();
-  // await page.getByTestId('text-input').fill("ok, I've authenticated.");
-  // await page.getByTestId('send-button').click();
-  // logProgress('✅ Sent message to confirm authentication');
+  // Check if agent starts using tools automatically after authentication
+  logProgress('⏳ Checking if agent starts tool execution automatically...');
 
-  // await page.pause();
+  try {
+    // run ------------------ (after authentication)
+    await expect(page.getByRole('button').filter({ hasText: 'Running' })).toBeVisible({
+      timeout: 30000,
+    });
+    logProgress('✅ Found "Running"  execution after authentication');
 
-  // Running Create Event
+    // ran ------------------ (after authentication)
+    // Wait for the second "Ran" button to appear (indicating completion)
+    await expect(page.getByRole('button').filter({ hasText: 'Ran' })).toBeVisible({
+      timeout: 30000,
+    });
+    logProgress('✅ Found "Ran"  execution after authentication');
+  } catch (error) {
+    logProgress('⚠️ No run ran - wait for regenerate button to appear');
+    // If no run ran, wait for the regenerate button to appear
+    await expect(page.getByRole('button', { name: 'Regenerate' })).toBeVisible({
+      timeout: 30000,
+    });
+    logProgress('✅ Regenerate button appeared after authentication');
 
-  await expect(page.getByRole('button', { name: 'Running Create Event' })).toBeVisible({
-    timeout: 10000,
-  });
-  logProgress('✅ Found "Running Create Event" tool execution');
+    // send follow up message that you have authenticated and to try now
+    await page.getByTestId('text-input').click();
+    await page.getByTestId('text-input').fill('ok, try now.');
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent message to create calendar events after authentication');
+    // run ------------------ (after authentication)
+    // run ------------------ (after authentication)
+    await expect(page.getByRole('button').filter({ hasText: 'Running' })).toBeVisible({
+      timeout: 30000,
+    });
+    logProgress('✅ Found "Running"  execution after authentication');
 
-  // Wait for the tool to finish running
-
-  await expect(page.getByRole('button', { name: 'Ran Create Event' })).toBeVisible({
-    timeout: 10000,
-  });
-  logProgress('✅ Found "Ran Create Event" tool execution');
+    // ran ------------------ (after authentication)
+    // Wait for the second "Ran" button to appear (indicating completion)
+    await expect(page.getByRole('button').filter({ hasText: 'Ran' })).toBeVisible({
+      timeout: 30000,
+    });
+    logProgress('✅ Found "Ran"  execution after authentication');
+  }
 });

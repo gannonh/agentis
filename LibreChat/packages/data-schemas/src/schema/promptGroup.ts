@@ -64,9 +64,9 @@ const promptGroupSchema = new Schema<IPromptGroupDocument>(
       index: true,
       validate: {
         validator: function (v: unknown): boolean {
-          return v === undefined || v === null || v === '' || /^[a-z0-9-]+$/.test(v);
+          return v === undefined || v === null || v === '' || /^[a-z0-9-]+$/.test(v as string);
         },
-        message: (props: unknown) =>
+        message: (props: { value: string }) =>
           `${props.value} is not a valid command. Only lowercase alphanumeric characters and hyphens are allowed.`,
       },
       maxlength: [

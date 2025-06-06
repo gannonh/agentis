@@ -14,7 +14,7 @@ jobs:
   # Run preflight checks first
   preflight:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,14 +22,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: './LibreChat/package-lock.json'
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "./LibreChat/package-lock.json"
 
       - name: Install dependencies
         working-directory: ./LibreChat
         run: npm ci --legacy-peer-deps
-          
+
       - name: Build packages
         working-directory: ./LibreChat
         run: npm run build:all
@@ -49,7 +49,7 @@ jobs:
       - name: Start MongoDB for tests
         uses: supercharge/mongodb-github-action@1.10.0
         with:
-          mongodb-version: '7.0'
+          mongodb-version: "7.0"
           mongodb-replica-set: test-rs
           mongodb-port: 27017
 
@@ -137,17 +137,47 @@ jobs:
           password: ${{ secrets.PRODUCTION_PASSWORD }}
           command_timeout: 30m
           script: |
+            # Enable strict error handling
+            set -e
+            
             # Create deployment directory if it doesn't exist
-            mkdir -p /home/agentis/agentis-deploy
-            cd /home/agentis/agentis-deploy
+            echo "Creating deployment directory..."
+            if ! mkdir -p /home/agentis/agentis-deploy; then
+              echo "ERROR: Failed to create deployment directory"
+              exit 1
+            fi
+            
+            if ! cd /home/agentis/agentis-deploy; then
+              echo "ERROR: Failed to change to deployment directory"
+              exit 1
+            fi
 
             # Remove old deployment directory if migrating
             if [ -d "/home/agentis/agentis" ]; then
               echo "Migrating from old deployment structure..."
-              cd /home/agentis/agentis/LibreChat
-              docker compose -f docker-compose.prod.yml down || true
-              cd /home/agentis
-              rm -rf agentis-deploy
+              
+              if ! cd /home/agentis/agentis/LibreChat; then
+                echo "ERROR: Failed to change to old LibreChat directory"
+                exit 1
+              fi
+              
+              echo "Stopping existing containers..."
+              if ! docker compose -f docker-compose.prod.yml down; then
+                echo "WARNING: Failed to stop existing containers, continuing..."
+              fi
+              
+              if ! cd /home/agentis; then
+                echo "ERROR: Failed to change back to agentis home directory"
+                exit 1
+              fi
+              
+              echo "Removing old deployment directory..."
+              if ! rm -rf agentis-deploy; then
+                echo "ERROR: Failed to remove old deployment directory"
+                exit 1
+              fi
+              
+              echo "Migration completed successfully"
             fi
 
             # Create docker-compose.prod.yml with all environment variables
@@ -301,7 +331,7 @@ jobs:
                 restart: unless-stopped
                 environment:
                   - MEILI_HOST=http://meilisearch:7700
-                  - MEILI_MASTER_KEY=DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt
+                  - MEILI_MASTER_KEY=${{ secrets.MEILI_MASTER_KEY }}
                   - MEILI_NO_ANALYTICS=true
                 volumes:
                   - meilisearch_data:/meili_data
@@ -322,7 +352,7 @@ jobs:
                   - agentis_network
 
               rag_api:
-                image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+                image: ghcr.io/gannonh/rag-api-lite:latest
                 container_name: agentis-rag-api
                 restart: unless-stopped
                 depends_on:
@@ -335,6 +365,16 @@ jobs:
                   - DB_NAME=mydatabase
                   - RAG_PORT=8000
                   - OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+                networks:
+                  - agentis_network
+
+              # Sandpack for code execution
+              sandpack:
+                image: ghcr.io/gannonh/codesandbox-client/bundler:latest
+                container_name: agentis-sandpack
+                restart: unless-stopped
+                ports:
+                  - "8080:80"
                 networks:
                   - agentis_network
 

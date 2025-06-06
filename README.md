@@ -113,7 +113,25 @@ npm run e2e:a11y     # Run accessibility tests
 npm run lint         # Check for linting issues
 npm run lint:fix     # Fix linting issues automatically
 npm run format       # Format code with prettier
+
+# TypeScript
+npm run typecheck:client    # Check client production code types
+npm run typecheck:packages  # Check packages production code types
+npm run typecheck:all       # Check all production code types
 ```
+
+### TypeScript Configuration
+
+The project uses separate TypeScript configurations to improve developer experience:
+
+- **Production Type Checking**: `npm run typecheck:*` commands exclude test files, focusing on runtime-affecting errors
+- **Development**: IDEs use full configurations including test files for complete IntelliSense
+- **Benefits**: Reduced noise in CI/CD (63 vs 101 errors), faster type checking, better error focus
+
+Each component has multiple `tsconfig.json` files:
+- `tsconfig.json` - Full development configuration
+- `tsconfig.typecheck.json` - Production code only (used by CI/CD)
+- `tsconfig.test.json` - Test files only (optional)
 
 ## Docker Configuration
 

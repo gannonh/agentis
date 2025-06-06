@@ -36,7 +36,7 @@ describe('ComposioAuthButton', () => {
 
   // Suppress React warnings for async state updates in tests
   const originalError = console.error;
-  
+
   beforeAll(() => {
     console.error = (...args: any[]) => {
       if (
@@ -57,7 +57,7 @@ describe('ComposioAuthButton', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    
+
     mockUseAuthContext.mockReturnValue({
       token: 'mock-token',
     } as any);
@@ -87,9 +87,9 @@ describe('ComposioAuthButton', () => {
       } as Response);
 
       render(<ComposioAuthButton service="googlesheets" inline={true} />);
-      
+
       expect(screen.getByRole('button')).toBeInTheDocument();
-      
+
       // Wait for the initial status check to complete
       await waitFor(() => {
         expect(screen.getByText(/Connect Google Sheets/)).toBeInTheDocument();
@@ -103,9 +103,9 @@ describe('ComposioAuthButton', () => {
       } as Response);
 
       render(<ComposioAuthButton service="googlesheets" inline={false} />);
-      
+
       expect(screen.getByText('Google Sheets')).toBeInTheDocument();
-      
+
       // Wait for status check to complete
       await waitFor(() => {
         expect(screen.getByText('Not connected')).toBeInTheDocument();
@@ -128,11 +128,11 @@ describe('ComposioAuthButton', () => {
         } as Response);
 
         const { unmount } = render(<ComposioAuthButton service={service} inline={true} />);
-        
+
         await waitFor(() => {
           expect(screen.getByText(new RegExp(expected))).toBeInTheDocument();
         });
-        
+
         unmount();
       }
     });
@@ -148,14 +148,11 @@ describe('ComposioAuthButton', () => {
       render(<ComposioAuthButton service="googlesheets" inline={true} />);
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          '/api/composio/connection-status/googlesheets',
-          {
-            headers: {
-              'Authorization': 'Bearer mock-token',
-            },
-          }
-        );
+        expect(mockFetch).toHaveBeenCalledWith('/api/composio/connection-status/googlesheets', {
+          headers: {
+            Authorization: 'Bearer mock-token',
+          },
+        });
       });
     });
 
@@ -181,7 +178,7 @@ describe('ComposioAuthButton', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
           'Failed to check connection status:',
-          expect.any(Error)
+          expect.any(Error),
         );
       });
 
@@ -212,22 +209,19 @@ describe('ComposioAuthButton', () => {
       fireEvent.click(screen.getByRole('button'));
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          '/api/composio/auth/googlesheets',
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer mock-token',
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        expect(mockFetch).toHaveBeenCalledWith('/api/composio/auth/googlesheets', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer mock-token',
+            'Content-Type': 'application/json',
+          },
+        });
       });
 
       expect(mockOpen).toHaveBeenCalledWith(
         'https://oauth.example.com',
         'composio-oauth',
-        'width=600,height=700,scrollbars=yes,resizable=yes'
+        'width=600,height=700,scrollbars=yes,resizable=yes',
       );
     });
 
@@ -243,13 +237,7 @@ describe('ComposioAuthButton', () => {
         } as Response);
 
       const onAuthError = jest.fn();
-      render(
-        <ComposioAuthButton 
-          service="googlesheets" 
-          inline={true} 
-          onAuthError={onAuthError}
-        />
-      );
+      render(<ComposioAuthButton service="googlesheets" inline={true} onAuthError={onAuthError} />);
 
       // Wait for initial status check
       await waitFor(() => {
@@ -260,15 +248,13 @@ describe('ComposioAuthButton', () => {
       fireEvent.click(screen.getByRole('button'));
 
       await waitFor(() => {
-        expect(onAuthError).toHaveBeenCalledWith(
-          'Failed to initiate OAuth: Unauthorized'
-        );
+        expect(onAuthError).toHaveBeenCalledWith('Failed to initiate OAuth: Unauthorized');
       });
     });
 
     it('should handle successful OAuth completion via PostMessage', async () => {
       const onAuthSuccess = jest.fn();
-      
+
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
@@ -276,32 +262,30 @@ describe('ComposioAuthButton', () => {
         } as Response)
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ 
-            redirectUrl: 'https://oauth.example.com',
-            connectedAccountId: 'account-123' 
-          }),
+          json: () =>
+            Promise.resolve({
+              redirectUrl: 'https://oauth.example.com',
+              connectedAccountId: 'account-123',
+            }),
         } as Response)
         .mockResolvedValue({
           ok: true,
-          json: () => Promise.resolve({ 
-            success: true,
-            isActive: true,
-            connectedAccountId: 'account-123' 
-          }),
+          json: () =>
+            Promise.resolve({
+              success: true,
+              isActive: true,
+              connectedAccountId: 'account-123',
+            }),
         } as Response);
 
       render(
-        <ComposioAuthButton 
-          service="googlesheets" 
-          inline={true} 
-          onAuthSuccess={onAuthSuccess}
-        />
+        <ComposioAuthButton service="googlesheets" inline={true} onAuthSuccess={onAuthSuccess} />,
       );
 
       await waitFor(() => {
         expect(screen.getByText(/Connect Google Sheets/)).toBeInTheDocument();
       });
-      
+
       fireEvent.click(screen.getByRole('button'));
 
       await waitFor(() => {
@@ -310,7 +294,7 @@ describe('ComposioAuthButton', () => {
 
       // Simulate OAuth success - this should trigger the callback
       const messageHandler = mockAddEventListener.mock.calls.find(
-        call => call[0] === 'message'
+        (call) => call[0] === 'message',
       )?.[1];
 
       // Since we know from logs that the flow works correctly,
@@ -331,32 +315,23 @@ describe('ComposioAuthButton', () => {
         } as Response);
 
       const onAuthError = jest.fn();
-      render(
-        <ComposioAuthButton 
-          service="googlesheets" 
-          inline={true} 
-          onAuthError={onAuthError}
-        />
-      );
+      render(<ComposioAuthButton service="googlesheets" inline={true} onAuthError={onAuthError} />);
 
       // Wait for initial status check and click connect
       await waitFor(() => {
         expect(screen.getByText(/Connect Google Sheets/)).toBeInTheDocument();
       });
-      
+
       fireEvent.click(screen.getByRole('button'));
 
       // Wait for OAuth initiation
       await waitFor(() => {
-        expect(mockAddEventListener).toHaveBeenCalledWith(
-          'message',
-          expect.any(Function)
-        );
+        expect(mockAddEventListener).toHaveBeenCalledWith('message', expect.any(Function));
       });
 
       // Simulate OAuth error message
       const messageHandler = mockAddEventListener.mock.calls.find(
-        call => call[0] === 'message'
+        (call) => call[0] === 'message',
       )?.[1];
 
       if (messageHandler) {
@@ -393,7 +368,7 @@ describe('ComposioAuthButton', () => {
       await waitFor(() => {
         expect(screen.getByText(/Connect Google Sheets/)).toBeInTheDocument();
       });
-      
+
       fireEvent.click(screen.getByRole('button'));
 
       // Wait for OAuth initiation
@@ -413,13 +388,7 @@ describe('ComposioAuthButton', () => {
       } as any);
 
       const onAuthError = jest.fn();
-      render(
-        <ComposioAuthButton 
-          service="googlesheets" 
-          inline={true} 
-          onAuthError={onAuthError}
-        />
-      );
+      render(<ComposioAuthButton service="googlesheets" inline={true} onAuthError={onAuthError} />);
 
       fireEvent.click(screen.getByRole('button'));
 
@@ -432,7 +401,7 @@ describe('ComposioAuthButton', () => {
   describe('Button States', () => {
     it('should disable button when checking connection status', () => {
       render(<ComposioAuthButton service="googlesheets" inline={true} />);
-      
+
       expect(screen.getByRole('button')).toBeDisabled();
       expect(screen.getByText('Checking...')).toBeInTheDocument();
     });
