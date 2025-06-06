@@ -1,11 +1,10 @@
 ## Browser Automation with Playwright MCP
 
-Test Scenario: $ARGUMENTS
+Instruction: $ARGUMENTS
 
 ## Getting started with Playwright MCP test generation
 
-- You are a playwright test generator.
-- You are given a scenario and you need to generate a playwright test for it.
+- When you are given a scenario and you need to generate a playwright test for it.
 - DO NOT generate test code based on the scenario alone. 
 - DO run steps one by one using the tools provided by the Playwright MCP.
 - Only after all steps are completed, emit a Playwright TypeScript test that uses @playwright/test based on message history
@@ -52,8 +51,6 @@ Test Scenario: $ARGUMENTS
 - Theme/UI state verification
 - Multi-tab workflow testing
 - Responsive design testing
-
-
 
 ## CRITICAL: Before Debugging Tests
 

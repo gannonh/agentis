@@ -29,24 +29,29 @@ test('cleanup test user', async () => {
   try {
     console.log('🤖: AUTH TEARDOWN PROJECT -----------------');
 
-    // Clean up the appropriate test user based on what credentials are available
-    let user;
-    if (process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL && process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD) {
-      user = {
-        email: process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL,
-        password: process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD,
-      };
-      console.log('🤖: Cleaning up Google test user:', user.email);
-    } else if (process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD) {
-      user = {
-        email: String(process.env.E2E_USER_EMAIL),
-        password: String(process.env.E2E_USER_PASSWORD),
-      };
-      console.log('🤖: Cleaning up E2E test user:', user.email);
-    } else {
-      console.log('⚠️ No test user credentials found for cleanup');
+    // Read the test user info from storage state
+    const storageStatePath = path.resolve(process.cwd(), 'e2e/storageState.json');
+    let user = { email: '', password: '' };
+    
+    if (fs.existsSync(storageStatePath)) {
+      const storageState = JSON.parse(fs.readFileSync(storageStatePath, 'utf8'));
+      const origin = storageState.origins?.find(o => o.origin === 'http://localhost:3080');
+      if (origin?.localStorage) {
+        const emailItem = origin.localStorage.find(item => item.name === 'testUserEmail');
+        const passwordItem = origin.localStorage.find(item => item.name === 'testUserPassword');
+        if (emailItem && passwordItem) {
+          user.email = emailItem.value;
+          user.password = passwordItem.value;
+        }
+      }
+    }
+    
+    if (!user.email || !user.password) {
+      console.log('⚠️ No test user found in storage state for cleanup');
       return;
     }
+    
+    console.log('🤖: Cleaning up test user:', user.email);
     const testUserEmail = user.email;
     await cleanupAgents(testUserEmail);
     console.log('🤖: ✔️  Cleaned up agents for user:', testUserEmail);
@@ -58,7 +63,6 @@ test('cleanup test user', async () => {
     console.log('🤖: ✔️  Cleaned up user:', testUserEmail);
 
     // Clear browser storage state
-    const storageStatePath = path.resolve(process.cwd(), 'e2e/storageState.json');
     if (fs.existsSync(storageStatePath)) {
       fs.unlinkSync(storageStatePath);
       console.log('🤖: ✔️  Cleared browser storage state');
