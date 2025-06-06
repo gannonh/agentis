@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
-import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
 import { handleConditionalAuth } from '../utils/handleConditionalAuth';
+import { handleInitialAuth } from '../utils/googleAuth';
 
 test.use({
   viewport: {
@@ -108,11 +108,15 @@ test('Use Google Sheets Agent', async ({ page }) => {
   logProgress('✅ Sent message to create spreadsheet');
 
   // run ------------------
-  await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Running Create New Spreadsheet' })).toBeVisible({
+    timeout: 30000,
+  });
   logProgress('✅ Found "Running Create" tool execution');
 
   // ran ------------------
-  await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
+    timeout: 30000,
+  });
   logProgress('✅ Found "Ran Create" tool execution');
 
   // auth ---------------------------
@@ -131,8 +135,18 @@ test('Use Google Sheets Agent', async ({ page }) => {
   logProgress('✅ Found Connect Google Sheets button in proactive auth UI');
 
   // Handle the authentication
-  await handleGoogleOAuth(page, 'Google Sheets');
-  logProgress('✅ starting Google Sheets authentication');
+  logProgress('✅ Starting Google Sheets authentication');
+  const popup = await handleInitialAuth(page, 'Google Sheets');
+
+  // Handle the consent screens
+  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+  logProgress('✅ Clicked Continue on first consent screen');
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on second consent screen');
+  } catch (error) {
+    logProgress('⚠️ Consent screen handling completed or not needed');
+  }
 
   // Wait for authentication to complete
   logProgress('⏳ Waiting 2 sec for authentication to complete...');
