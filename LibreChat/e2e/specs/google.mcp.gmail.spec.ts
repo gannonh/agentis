@@ -99,6 +99,12 @@ test('Use Gmail Agent', async ({ page }) => {
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
 
+  // Select the Gmail Agent explicitly to avoid conflicts with other parallel tests
+  await page.getByRole('button', { name: 'Select a model' }).click();
+  await page.getByText('Agents', { exact: true }).click();
+  await page.getByLabel('Agents').getByText('Gmail Agent').click();
+  logProgress('✅ Selected Gmail Agent');
+
   await page
     .getByTestId('text-input')
     .fill(

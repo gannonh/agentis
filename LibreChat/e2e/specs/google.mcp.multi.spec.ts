@@ -64,7 +64,6 @@ test('Create Google Multi Agent', async ({ page }) => {
   await page.getByRole('checkbox', { name: 'Select all tools' }).check();
   await page.getByRole('button', { name: 'Add Selected' }).click();
   await page.getByRole('button', { name: 'Close dialog' }).click();
-  await page.getByTestId('featured-toggle').click();
   await page.getByRole('button', { name: 'Save' }).click();
 
   // Verify agent was created successfully
@@ -97,6 +96,12 @@ test('Use Google Multi Agent', async ({ page }) => {
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
+
+  // Select the Google Multi Agent explicitly to avoid conflicts with other parallel tests
+  await page.getByRole('button', { name: 'Select a model' }).click();
+  await page.getByText('Agents', { exact: true }).click();
+  await page.getByLabel('Agents').getByText('Google Multi Agent').click();
+  logProgress('✅ Selected Google Multi Agent');
 
   // ----------------- begin cogegen
   // await page.pause();

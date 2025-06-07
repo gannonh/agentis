@@ -99,6 +99,12 @@ test('Use Google Docs Agent', async ({ page }) => {
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
 
+  // Select the Google Docs Agent explicitly to avoid conflicts with other parallel tests
+  await page.getByRole('button', { name: 'Select a model' }).click();
+  await page.getByText('Agents', { exact: true }).click();
+  await page.getByLabel('Agents').getByText('Google Docs Agent').click();
+  logProgress('✅ Selected Google Docs Agent');
+
   // Send first message to trigger proactive MCP auth
   await page
     .getByTestId('text-input')
