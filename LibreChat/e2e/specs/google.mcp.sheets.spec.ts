@@ -10,6 +10,8 @@ test.use({
     width: 1600,
   },
 });
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
 
 test('Create Google Sheets MCP', async ({ page }) => {
   logProgress('Starting Create Google Sheets MCP test');

@@ -14,6 +14,9 @@ test.use({
   },
 });
 
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
+
 test('Create Google Multi Agent', async ({ page }) => {
   logProgress('Starting agent creation test');
   await page.goto('http://localhost:3080/');
@@ -43,6 +46,8 @@ test('Create Google Multi Agent', async ({ page }) => {
   await page.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByText('Anthropic').click();
   await page.getByRole('combobox', { name: 'Model' }).click();
+  // toggle featured
+
   await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
   await page.getByRole('button', { name: 'Create', exact: true }).click();
 
@@ -64,8 +69,9 @@ test('Create Google Multi Agent', async ({ page }) => {
   await page.getByRole('checkbox', { name: 'Select all tools' }).check();
   await page.getByRole('button', { name: 'Add Selected' }).click();
   await page.getByRole('button', { name: 'Close dialog' }).click();
+  await page.getByTestId('featured-toggle').click();
   await page.getByRole('button', { name: 'Save' }).click();
-
+  logProgress('✅ Created Google Multi Agent');
   // Verify agent was created successfully
   await expect(page.getByRole('button', { name: 'Start chat with Google Multi' })).toBeVisible();
   logProgress('✅ Found "Start chat with Google Multi Agent" button');
@@ -99,7 +105,7 @@ test('Use Google Multi Agent', async ({ page }) => {
 
   // Select the Google Multi Agent explicitly to avoid conflicts with other parallel tests
   await page.getByRole('button', { name: 'Select a model' }).click();
-  await page.getByText('Agents', { exact: true }).click();
+  await page.getByRole('dialog').getByRole('option', { name: 'Agents' }).click();
   await page.getByLabel('Agents').getByText('Google Multi Agent').click();
   logProgress('✅ Selected Google Multi Agent');
 

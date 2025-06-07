@@ -10,6 +10,9 @@ test.use({
   },
 });
 
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
+
 test('Create Gmail MCP', async ({ page }) => {
   logProgress('Starting Create Gmail MCP test');
   await page.goto('http://localhost:3080/');
@@ -101,8 +104,8 @@ test('Use Gmail Agent', async ({ page }) => {
 
   // Select the Gmail Agent explicitly to avoid conflicts with other parallel tests
   await page.getByRole('button', { name: 'Select a model' }).click();
-  await page.getByText('Agents', { exact: true }).click();
-  await page.getByLabel('Agents').getByText('Gmail Agent').click();
+  await page.getByRole('dialog').getByRole('option', { name: 'Agents' }).click();
+  await page.getByLabel('Agents').getByText('Gmail Agent').click(); // ISSUE
   logProgress('✅ Selected Gmail Agent');
 
   await page

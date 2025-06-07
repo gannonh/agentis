@@ -10,6 +10,9 @@ test.use({
   },
 });
 
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
+
 test('Create Google Docs MCP', async ({ page }) => {
   logProgress('Starting Create Google Docs MCP test');
   await page.goto('http://localhost:3080/');
