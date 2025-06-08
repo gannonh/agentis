@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MCPManager } from './manager';
 import type { Logger } from 'winston';
 
