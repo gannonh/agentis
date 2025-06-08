@@ -1,16 +1,16 @@
 /**
  * @fileoverview Playwright test fixtures with UUID-based user isolation
- * 
+ *
  * This module provides a file-scoped authentication fixture that creates unique users
  * for each test file using UUIDs. This ensures complete test isolation where each
  * test file gets its own user account and data, preventing cross-contamination.
- * 
+ *
  * Authentication Flow:
  * 1. Generate UUID for unique user identification
  * 2. Check if storage state exists and is valid
  * 3. If not, create fresh user: Registration → Login → Accept TOS → Save Storage State
  * 4. Reuse storage state for subsequent tests in the same file
- * 
+ *
  * @see {@link /Users/gannonhall/dev/agentis/LibreChat/e2e/README.md#test-isolation-pattern-definitive} for pattern documentation
  */
 
@@ -53,13 +53,13 @@ interface TestUser {
 
 /**
  * Performs complete cleanup of user data and account
- * 
+ *
  * This function removes all user-related data from the database including:
  * - Agents created by the user
  * - Chat conversations and messages
  * - External service connections
  * - User account itself
- * 
+ *
  * @param userEmail - The email address of the user to clean up
  * @returns Promise that resolves when cleanup is complete
  */
@@ -89,7 +89,7 @@ async function cleanupCompleteUser(userEmail: string): Promise<void> {
 
 /**
  * Validates that a storage state file contains valid authentication
- * 
+ *
  * @param browser - Playwright browser instance
  * @param storageStatePath - Path to the storage state file to validate
  * @param testFileName - Name of the test file for logging
@@ -98,7 +98,7 @@ async function cleanupCompleteUser(userEmail: string): Promise<void> {
 async function validateStorageState(
   browser: any,
   storageStatePath: string,
-  testFileName: string
+  testFileName: string,
 ): Promise<boolean> {
   try {
     const testContext = await browser.newContext({ storageState: storageStatePath });
@@ -107,24 +107,26 @@ async function validateStorageState(
 
     const isValid = !testPage.url().includes('/login');
     await testContext.close();
-    
+
     if (isValid) {
       console.log(`🔧 File ${testFileName}: ✔️ Storage state valid, reusing`);
     } else {
       console.log(`🔧 File ${testFileName}: ⚠️ Storage state expired, recreating...`);
     }
-    
+
     return isValid;
   } catch (error) {
     // TODO: Add more specific error handling for different failure types
-    console.log(`🔧 File ${testFileName}: ⚠️ Storage state validation failed: ${error.message}`);
+    console.log(
+      `🔧 File ${testFileName}: ⚠️ Storage state validation failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return false;
   }
 }
 
 /**
  * Performs user registration in the LibreChat application
- * 
+ *
  * @param page - Playwright page instance
  * @param user - Test user object with registration details
  * @param testFileName - Name of the test file for logging
@@ -132,10 +134,10 @@ async function validateStorageState(
  */
 async function performRegistration(page: any, user: TestUser, testFileName: string): Promise<void> {
   console.log(`🔧 File ${testFileName}: Starting user registration`);
-  
+
   await page.goto('http://localhost:3080/');
   await page.getByRole('link', { name: 'Sign up' }).click();
-  
+
   // Fill registration form
   await page.getByLabel('Full name').fill('test');
   await page.getByLabel('Username (optional)').fill('test');
@@ -150,7 +152,7 @@ async function performRegistration(page: any, user: TestUser, testFileName: stri
     console.log(`🔧 File ${testFileName}: ✔️ Registration successful`);
   } catch (error) {
     console.log(`🔧 File ${testFileName}: Registration may have failed, will try login...`);
-    
+
     // Navigate to login page if not already there
     if (!page.url().includes('/login')) {
       await page.goto('http://localhost:3080/login');
@@ -160,7 +162,7 @@ async function performRegistration(page: any, user: TestUser, testFileName: stri
 
 /**
  * Performs user login in the LibreChat application
- * 
+ *
  * @param page - Playwright page instance
  * @param user - Test user object with login credentials
  * @param testFileName - Name of the test file for logging
@@ -168,12 +170,12 @@ async function performRegistration(page: any, user: TestUser, testFileName: stri
  */
 async function performLogin(page: any, user: TestUser, testFileName: string): Promise<void> {
   console.log(`🔧 File ${testFileName}: Starting user login`);
-  
+
   // Ensure we're on the login page
   if (!page.url().includes('/login')) {
     await page.goto('http://localhost:3080/login');
   }
-  
+
   // Fill login form
   await page.getByRole('textbox', { name: 'Email' }).fill(user.email);
   await page.getByRole('textbox', { name: 'Password' }).fill(user.password);
@@ -188,7 +190,7 @@ async function performLogin(page: any, user: TestUser, testFileName: string): Pr
       console.log(`🔧 File ${testFileName}: ✔️ Login successful - already on /c/new`);
     } else {
       throw new Error(
-        `Login failed - nav-user not found and not on /c/new. Current URL: ${page.url()}`
+        `Login failed - nav-user not found and not on /c/new. Current URL: ${page.url()}`,
       );
     }
   }
@@ -196,7 +198,7 @@ async function performLogin(page: any, user: TestUser, testFileName: string): Pr
 
 /**
  * Handles Terms of Service modal that may appear after authentication
- * 
+ *
  * @param page - Playwright page instance
  * @param testFileName - Name of the test file for logging
  * @returns Promise that resolves when TOS handling is complete
@@ -212,7 +214,7 @@ async function handleTermsOfService(page: any, testFileName: string): Promise<vo
 
 /**
  * Extended Playwright test with file-scoped authentication fixture
- * 
+ *
  * The fileStorageState fixture creates a unique user for each test file using UUIDs,
  * ensuring complete test isolation. The authentication state is saved and reused
  * for all tests within the same file.
@@ -220,14 +222,14 @@ async function handleTermsOfService(page: any, testFileName: string): Promise<vo
 export const test = baseTest.extend<object, { fileStorageState: string }>({
   /**
    * File-scoped storage state fixture that provides unique authentication per test file
-   * 
+   *
    * This fixture:
    * 1. Generates a unique UUID for the test file
    * 2. Creates a unique user account: test-{uuid}@librechat.test
    * 3. Performs authentication: Registration → Login → Accept TOS
    * 4. Saves browser storage state for reuse within the file
    * 5. Provides complete test isolation between different test files
-   * 
+   *
    * @param browser - Playwright browser instance
    * @param use - Fixture use function to provide storage state path
    * @param testInfo - Playwright test information object
@@ -239,10 +241,10 @@ export const test = baseTest.extend<object, { fileStorageState: string }>({
       const user: TestUser = {
         name: `Test User ${uuid}`,
         email: `test-${uuid}@librechat.test`,
-        password: 'TestPassword123!'
+        password: 'TestPassword123!',
       };
       const storageStatePath = path.join(__dirname, `storageState-${uuid}.json`);
-      const testFileName = testInfo?.file?.split('/').pop() || testInfo?.title || 'unknown';
+      const testFileName = testInfo?.project?.name || 'unknown';
 
       console.log(`🔧 File ${testFileName}: Creating auth for unique user: ${user.email}`);
 
@@ -250,7 +252,7 @@ export const test = baseTest.extend<object, { fileStorageState: string }>({
       const fs = await import('fs');
       if (fs.existsSync(storageStatePath)) {
         console.log(`🔧 File ${testFileName}: ✔️ Storage state exists, validating...`);
-        
+
         const isValid = await validateStorageState(browser, storageStatePath, testFileName);
         if (isValid) {
           await use(storageStatePath);
@@ -289,9 +291,11 @@ export const test = baseTest.extend<object, { fileStorageState: string }>({
         // Save the storage state for reuse
         await context.storageState({ path: storageStatePath });
         console.log(`🔧 File ${testFileName}: ✔️ Authentication state saved`);
-        
       } catch (error) {
-        console.error(`🔧 File ${testFileName}: ❌ Authentication failed for ${user.email}:`, error);
+        console.error(
+          `🔧 File ${testFileName}: ❌ Authentication failed for ${user.email}:`,
+          error,
+        );
         throw error;
       } finally {
         // Ensure context is properly closed
@@ -299,12 +303,14 @@ export const test = baseTest.extend<object, { fileStorageState: string }>({
           await Promise.race([
             context.close(),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Context close timeout')), 5000)
+              setTimeout(() => reject(new Error('Context close timeout')), 5000),
             ),
           ]);
           console.log(`🔧 File ${testFileName}: ✔️ Browser context closed`);
         } catch (closeError) {
-          console.log(`🔧 File ${testFileName}: ⚠️ Context close error: ${closeError.message}`);
+          console.log(
+            `🔧 File ${testFileName}: ⚠️ Context close error: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
+          );
           // Continue anyway - Playwright will clean up
         }
       }
@@ -312,7 +318,7 @@ export const test = baseTest.extend<object, { fileStorageState: string }>({
       // Provide storage state to tests
       await use(storageStatePath);
       console.log(`🔧 File ${testFileName}: ✔️ Storage state preserved for test reuse`);
-      
+
       // TODO: Add cleanup strategy for old storage state files (remove files older than 7 days)
       // TODO: Add retry logic for flaky authentication steps with exponential backoff
       // TODO: Consider adding performance metrics for authentication time tracking
