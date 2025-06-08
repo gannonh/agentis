@@ -394,7 +394,10 @@ test('should navigate correctly when clicking on CTAs', async ({ browser, fileSt
     try {
       await context.close();
     } catch (closeError) {
-      console.log('⚠️ Context close error:', closeError.message);
+      console.log(
+        '⚠️ Context close error:',
+        closeError instanceof Error ? closeError.message : String(closeError),
+      );
       // Don't throw here - we want the original test error to propagate
     }
   }
@@ -454,7 +457,10 @@ test('chat should dissapear CTAs', async ({ browser, fileStorageState }) => {
     try {
       await context.close();
     } catch (closeError) {
-      console.log('⚠️ Context close error:', closeError.message);
+      console.log(
+        '⚠️ Context close error:',
+        closeError instanceof Error ? closeError.message : String(closeError),
+      );
       // Don't throw here - we want the original test error to propagate
     }
   }
