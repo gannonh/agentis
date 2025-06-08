@@ -121,7 +121,7 @@ test('Use Google Docs Agent', async ({ browser, fileStorageState }) => {
 
   // Select the Google Docs Agent explicitly to avoid conflicts with other parallel tests
   await page.getByRole('button', { name: 'Select a model' }).click();
-  await page.getByText('Agents', { exact: true }).click();
+  await page.getByText('Agents', { exact: true }).first().click();
   await page.getByLabel('Agents').getByText('Google Docs Agent').first().click();
   logProgress('✅ Selected Google Docs Agent');
 

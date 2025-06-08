@@ -99,19 +99,21 @@ test('Create Google Multi Agent', async ({ browser, fileStorageState }) => {
     await expect(page.getByRole('button', { name: 'Start chat with Google Multi' })).toBeVisible();
     logProgress('✅ Found "Start chat with Google Multi Agent" button');
 
-    await expect(page.getByTestId('agent-discovery-grid').getByRole('heading')).toContainText(
-      'Google Multi Agent',
-    );
+    await expect(
+      page.getByTestId('agent-discovery-grid').getByRole('heading', { name: /Google Multi Agent/ }),
+    ).toBeVisible();
     logProgress('✅ Found agent name in discovery grid');
 
-    await expect(page.getByTestId('agent-discovery-grid').getByRole('paragraph')).toContainText(
-      "Seamlessly work across Google's core productivity tools to manage",
-    );
+    await expect(
+      page
+        .getByTestId('agent-discovery-grid')
+        .getByText(/Seamlessly work across Google's core productivity tools to manage/),
+    ).toBeVisible();
     logProgress('✅ Found agent description in discovery grid');
 
-    await expect(page.getByTestId('agent-discovery-grid').locator('span')).toContainText(
-      '+25 more tools',
-    );
+    await expect(
+      page.getByTestId('agent-discovery-grid').getByText('+25 more tools'),
+    ).toBeVisible();
     logProgress('✅ Found "+25 more tools" in discovery grid');
   } finally {
     // Always close context, regardless of test success/failure
@@ -141,7 +143,7 @@ test('Use Google Multi Agent', async ({ browser, fileStorageState }) => {
 
   // Select the Google Multi Agent explicitly to avoid conflicts with other parallel tests
   await page.getByRole('button', { name: 'Select a model' }).click();
-  await page.getByText('Agents', { exact: true }).click();
+  await page.getByText('Agents', { exact: true }).first().click();
 
   // Debug: Check if any agents are available
   const agentsContainer = page.getByLabel('Agents');

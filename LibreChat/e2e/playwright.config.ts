@@ -76,6 +76,10 @@ export default defineConfig({
       SESSION_EXPIRY: '60000',
       ALLOW_REGISTRATION: 'true',
       REFRESH_TOKEN_EXPIRY: '300000',
+      // Disable registration rate limiting for E2E tests
+      REGISTER_WINDOW: '1', // 1 minute window
+      REGISTER_MAX: '1000', // Allow 1000 registrations per window
+      REGISTRATION_VIOLATION_SCORE: '0', // Don't score violations
       // Explicitly set critical variables to ensure they're passed to the server
       MONGO_URI: 'mongodb://admin:password@localhost:27017/Agentis?authSource=admin',
       GOOGLE_TEST_ACCOUNT_1_EMAIL: 'agentis.test@gmail.com',

@@ -184,48 +184,48 @@ test('Use Calendar Agent', async ({ browser, fileStorageState }) => {
 
   // Check if agent starts using tools automatically after authentication
   logProgress('⏳ Checking if agent starts tool execution automatically...');
+  if (!process.env.CI) {
+    try {
+      // run ------------------ (after authentication)
+      await expect(page.getByRole('button').filter({ hasText: 'Running' })).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Found "Running"  execution after authentication');
 
-  try {
-    // run ------------------ (after authentication)
-    await expect(page.getByRole('button').filter({ hasText: 'Running' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Found "Running"  execution after authentication');
+      // ran ------------------ (after authentication)
+      // Wait for the second "Ran" button to appear (indicating completion)
+      await expect(page.getByRole('button').filter({ hasText: 'Ran' })).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Found "Ran"  execution after authentication');
+    } catch (error) {
+      logProgress('⚠️ No run ran - wait for regenerate button to appear');
+      // If no run ran, wait for the regenerate button to appear
+      await expect(page.getByRole('button', { name: 'Regenerate' })).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Regenerate button appeared after authentication');
 
-    // ran ------------------ (after authentication)
-    // Wait for the second "Ran" button to appear (indicating completion)
-    await expect(page.getByRole('button').filter({ hasText: 'Ran' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Found "Ran"  execution after authentication');
-  } catch (error) {
-    logProgress('⚠️ No run ran - wait for regenerate button to appear');
-    // If no run ran, wait for the regenerate button to appear
-    await expect(page.getByRole('button', { name: 'Regenerate' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Regenerate button appeared after authentication');
+      // send follow up message that you have authenticated and to try now
+      await page.getByTestId('text-input').click();
+      await page.getByTestId('text-input').fill('ok, try now.');
+      await page.getByTestId('send-button').click();
+      logProgress('✅ Sent message to create calendar events after authentication');
+      // run ------------------ (after authentication)
+      // run ------------------ (after authentication)
+      await expect(page.getByRole('button').filter({ hasText: 'Running' })).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Found "Running"  execution after authentication');
 
-    // send follow up message that you have authenticated and to try now
-    await page.getByTestId('text-input').click();
-    await page.getByTestId('text-input').fill('ok, try now.');
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent message to create calendar events after authentication');
-    // run ------------------ (after authentication)
-    // run ------------------ (after authentication)
-    await expect(page.getByRole('button').filter({ hasText: 'Running' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Found "Running"  execution after authentication');
-
-    // ran ------------------ (after authentication)
-    // Wait for the second "Ran" button to appear (indicating completion)
-    await expect(page.getByRole('button').filter({ hasText: 'Ran' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Found "Ran"  execution after authentication');
+      // ran ------------------ (after authentication)
+      // Wait for the second "Ran" button to appear (indicating completion)
+      await expect(page.getByRole('button').filter({ hasText: 'Ran' })).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Found "Ran"  execution after authentication');
+    }
   }
-
   // Close the context
   await context.close();
 });

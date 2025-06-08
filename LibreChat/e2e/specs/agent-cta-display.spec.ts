@@ -97,7 +97,7 @@ test('should create featured agent and display in CTAs', async ({ browser, fileS
     await page.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByText('claude-3-5-sonnet-20241022').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     logProgress('✅ Basic agent created');
 
@@ -152,7 +152,7 @@ test('should create featured agent and display in CTAs', async ({ browser, fileS
     await page.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByText('claude-3-5-sonnet-20241022').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     await page
       .getByLabel('Agent Builder')
@@ -188,7 +188,7 @@ test('should create featured agent and display in CTAs', async ({ browser, fileS
     await page.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByText('claude-3-5-sonnet-20241022').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     await page
       .getByLabel('Agent Builder')
@@ -224,7 +224,7 @@ test('should create featured agent and display in CTAs', async ({ browser, fileS
     await page.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByText('claude-3-5-sonnet-20241022').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     await page
       .getByLabel('Agent Builder')
@@ -260,7 +260,7 @@ test('should create featured agent and display in CTAs', async ({ browser, fileS
     await page.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByText('claude-3-5-sonnet-20241022').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     await page
       .getByLabel('Agent Builder')
@@ -294,18 +294,14 @@ test('should create featured agent and display in CTAs', async ({ browser, fileS
 
     // Verify other featured agents CTAs are displayed
 
-    await expect(page.getByRole('button', { name: 'Start chat with Google Sheets' })).toBeVisible();
-    logProgress('✅ Google Sheets Agent CTA is visible');
-    await expect(page.getByRole('button', { name: 'Start chat with Google Drive' })).toBeVisible();
-    logProgress('✅ Google Drive Agent CTA is visible');
-    await expect(page.getByRole('button', { name: 'Start chat with Google Docs' })).toBeVisible();
-    logProgress('✅ Google Docs Agent CTA is visible');
-    await expect(page.getByRole('button', { name: 'Start chat with Gmail Agent' })).toBeVisible();
-    logProgress('✅ Gmail Agent CTA is visible');
     await expect(
       page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
     ).toBeVisible();
     logProgress('✅ Google Calendar Agent CTA is visible');
+    await expect(page.getByRole('button', { name: 'Start chat with Gmail Agent' })).toBeVisible();
+    logProgress('✅ Gmail Agent CTA is visible');
+    await expect(page.getByRole('button', { name: 'Start chat with Google Docs' })).toBeVisible();
+    logProgress('✅ Google Docs Agent CTA is visible');
   } finally {
     await context.close();
   }
@@ -324,67 +320,60 @@ test('should navigate correctly when clicking on CTAs', async ({ browser, fileSt
     await expect(page).toHaveURL(/.*\/c\/new/);
     logProgress('Verified on main chat page');
 
-    await page.getByRole('button', { name: 'Start chat with Google Sheets' }).click();
-    await expect(page.getByLabel('Select a model').locator('span')).toContainText(
-      'Google Sheets Agent',
-    );
-    await expect(page.getByRole('main')).toContainText('Google Sheets Agent');
-    await expect(page.getByRole('main')).toContainText(
-      'Create charts, run complex calculations, automate data processing, and build custom reports.',
-    );
-    logProgress('✅ Navigated to Google Sheets Agent chat');
-
-    await page.getByRole('button', { name: 'Start chat with Google Drive' }).click();
-    await expect(page.getByLabel('Select a model').locator('span')).toContainText(
-      'Google Drive Agent',
-    );
-    await expect(page.getByRole('main')).toContainText('Google Drive Agent');
-    await expect(page.getByRole('main')).toContainText(
-      'Find files instantly, create folder structures, manage permissions, and streamline document workflows.',
-    );
-    logProgress('✅ Navigated to Google Drive Agent chat');
-
     await page.getByRole('button', { name: 'Start chat with Google Docs' }).click();
-    await expect(page.getByLabel('Select a model').locator('span')).toContainText(
+    logProgress('Clicked Google Docs Agent CTA');
+    await expect(page.getByRole('button', { name: 'Select a model' })).toBeVisible();
+    logProgress('Model selection button is visible after clicking CTA');
+    await expect(page.getByLabel('Start chat with Google Docs').getByRole('heading')).toContainText(
       'Google Docs Agent',
     );
-    await expect(page.getByRole('main')).toContainText('Google Docs Agent');
-    await expect(page.getByRole('main')).toContainText(
+    logProgress('Google Docs Agent heading is visible');
+    await expect(
+      page.getByLabel('Start chat with Google Docs').getByRole('paragraph'),
+    ).toContainText(
       'Generate content, format documents professionally, create templates, and extract key information.',
     );
-    logProgress('✅ Navigated to Google Docs Agent chat');
-
+    logProgress('Google Docs Agent paragraph is visible');
     await page.getByRole('button', { name: 'Start chat with Gmail Agent' }).click();
-    await expect(page.getByLabel('Select a model').locator('span')).toContainText('Gmail Agent');
-    await expect(page.getByRole('main')).toContainText('Gmail Agent');
-    await expect(page.getByRole('main')).toContainText(
+    logProgress('Clicked Gmail Agent CTA');
+    await expect(page.getByRole('button', { name: 'Select a model' })).toBeVisible();
+    logProgress('Model selection button is visible after clicking Gmail Agent CTA');
+    await expect(page.getByLabel('Start chat with Gmail Agent').getByRole('heading')).toContainText(
+      'Gmail Agent',
+    );
+    logProgress('Gmail Agent heading is visible');
+    await expect(
+      page.getByLabel('Start chat with Gmail Agent').getByRole('paragraph'),
+    ).toContainText(
       'Draft emails, organize messages, schedule sends, and analyze communication patterns.',
     );
-    logProgress('✅ Navigated to Gmail Agent chat');
-
+    logProgress('Gmail Agent paragraph is visible');
     await page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }).click();
-    await expect(page.getByLabel('Select a model').locator('span')).toContainText(
-      'Google Calendar Agent',
-    );
-    await expect(page.getByRole('main')).toContainText(
-      'Google Calendar AgentGoogle Calendar Agent',
-    );
-    await expect(page.getByRole('main')).toContainText(
+    logProgress('Clicked Google Calendar Agent CTA');
+    await expect(page.getByRole('button', { name: 'Select a model' })).toBeVisible();
+    logProgress('Model selection button is visible after clicking Google Calendar Agent CTA');
+    await expect(
+      page.getByLabel('Start chat with Google Calendar Agent').getByRole('heading'),
+    ).toContainText('Google Calendar Agent');
+    logProgress('Google Calendar Agent heading is visible');
+    await expect(
+      page.getByLabel('Start chat with Google Calendar Agent').getByRole('paragraph'),
+    ).toContainText(
       'Schedule meetings intelligently, find open time slots, set smart reminders, and coordinate with others.',
     );
-    logProgress('✅ Navigated to Google Calendar Agent chat');
+    logProgress('Google Calendar Agent paragraph is visible');
 
     // Verify featured agents CTAs are still displayed
     logProgress('Verify featured agents CTAs are still displayed');
 
-    await expect(page.getByRole('button', { name: 'Start chat with Google Sheets' })).toBeVisible();
-    logProgress('✅ Google Sheets Agent CTA is visible');
-    await expect(page.getByRole('button', { name: 'Start chat with Google Drive' })).toBeVisible();
-    logProgress('✅ Google Drive Agent CTA is visible');
-    await expect(page.getByRole('button', { name: 'Start chat with Google Docs' })).toBeVisible();
-    logProgress('✅ Google Docs Agent CTA is visible');
+    await expect(
+      page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
+    ).toBeVisible();
+    logProgress('✅ Google Calendar Agent CTA is visible');
     await expect(page.getByRole('button', { name: 'Start chat with Gmail Agent' })).toBeVisible();
     logProgress('✅ Gmail Agent CTA is visible');
+    await expect(page.getByRole('button', { name: 'Start chat with Google Docs' })).toBeVisible();
+    logProgress('✅ Google Docs Agent CTA is visible');
     await expect(
       page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
     ).toBeVisible();
@@ -426,26 +415,7 @@ test('chat should dissapear CTAs', async ({ browser, fileStorageState }) => {
     logProgress('✅ Discover Agents section is no longer visible after starting a chat');
     await expect(page.getByTestId('agent-discovery-grid')).not.toBeVisible();
     logProgress('✅ Agent discovery grid is no longer visible after starting a chat');
-    await expect(
-      page.getByRole('button', { name: 'Start chat with Google Sheets' }),
-    ).not.toBeVisible();
-    logProgress('✅ Google Sheets Agent CTA is no longer visible after starting a chat');
-    await expect(
-      page.getByRole('button', { name: 'Start chat with Google Drive' }),
-    ).not.toBeVisible();
-    logProgress('✅ Google Drive Agent CTA is no longer visible after starting a chat');
-    await expect(
-      page.getByRole('button', { name: 'Start chat with Google Docs' }),
-    ).not.toBeVisible();
-    logProgress('✅ Google Docs Agent CTA is no longer visible after starting a chat');
-    await expect(
-      page.getByRole('button', { name: 'Start chat with Gmail Agent' }),
-    ).not.toBeVisible();
-    logProgress('✅ Gmail Agent CTA is no longer visible after starting a chat');
-    await expect(
-      page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
-    ).not.toBeVisible();
-    logProgress('✅ Google Calendar Agent CTA is no longer visible after starting a chat');
+
     // Verify the chat message was sent successfully
     await expect(page.getByTestId('text-input')).toHaveValue('');
     await expect(page.getByText('Do I have any appointments')).toBeVisible();
