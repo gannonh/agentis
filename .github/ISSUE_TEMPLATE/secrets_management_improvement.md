@@ -1,4 +1,10 @@
-# Security: Implement SOPS-based secrets management
+---
+name: Secrets Management Improvement
+about: Implement proper secrets management to replace current .env file approach
+title: 'Security: Implement SOPS-based secrets management'
+labels: ['security', 'infrastructure', 'enhancement']
+assignees: ''
+---
 
 ## Problem Statement
 
@@ -63,7 +69,7 @@ Implement a phased approach to secrets management:
 - `scripts/rotate-secrets.sh` - Secret rotation script
 - `.env.config` - Public configuration
 - `.env.secrets.enc` - Encrypted secrets file
-- `docs/SECRETS_MANAGEMENT_GUIDE.md` - Documentation ✅ (Already created)
+- `docs/SECRETS_MANAGEMENT_GUIDE.md` - Documentation
 
 ### Modified Files
 - `.env.prod` → Split into config and secrets
@@ -90,14 +96,13 @@ LOCAL      -> .env.local (gitignored)
 - OPENROUTER_KEY
 - ARCADE_API_KEY
 - COMPOSIO_API_KEY
-- MEILI_MASTER_KEY
 
 **Security Keys:**
 - CREDS_KEY
 - CREDS_IV
 - JWT_SECRET
 - JWT_REFRESH_SECRET
-
+- MEILI_MASTER_KEY
 
 **Database Credentials:**
 - MONGO_ROOT_PASSWORD
@@ -133,6 +138,13 @@ LOCAL      -> .env.local (gitignored)
 - Add monitoring and alerting for secret access
 - Consider integration with external secret management services
 
+## Related Files
+
+- Current secrets in `.env.prod`
+- Docker configuration in `docker-compose.prod.yml`
+- Deployment scripts in GitHub Actions
+- Documentation in `docs/` directory
+
 ## Priority
 
 **High** - This addresses security vulnerabilities and operational complexity that affect our entire deployment pipeline.
@@ -140,15 +152,3 @@ LOCAL      -> .env.local (gitignored)
 ## Estimated Effort
 
 **2-3 weeks** for full implementation across all environments with proper testing and documentation.
-
----
-
-**Labels:** `security`, `infrastructure`, `enhancement`
-**Assignees:** (assign to appropriate team members)
-**Milestone:** (set appropriate milestone)
-
-## Reference Documentation
-
-- Full implementation guide: `docs/SECRETS_MANAGEMENT_GUIDE.md`
-- SOPS documentation: https://github.com/mozilla/sops
-- Age encryption: https://age-encryption.org/

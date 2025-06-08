@@ -90,14 +90,13 @@ LOCAL      -> .env.local (gitignored)
 - OPENROUTER_KEY
 - ARCADE_API_KEY
 - COMPOSIO_API_KEY
-- MEILI_MASTER_KEY
 
 **Security Keys:**
 - CREDS_KEY
 - CREDS_IV
 - JWT_SECRET
 - JWT_REFRESH_SECRET
-
+- MEILI_MASTER_KEY
 
 **Database Credentials:**
 - MONGO_ROOT_PASSWORD
