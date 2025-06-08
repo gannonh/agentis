@@ -1,7 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/fixtures';
 import { logProgress } from '../utils/testLogger';
-import { handleConditionalAuth } from '../utils/handleConditionalAuth';
-import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
 
 /**
  * Test 1: Basic CTA Display Test
@@ -15,16 +13,23 @@ test.use({
   },
 });
 
-test.describe.skip('Agent CTA Display', () => {
-  test('should display no featured agents message when no agents are featured', async ({
-    page,
-  }) => {
-    logProgress('Starting no featured agents test');
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
+
+test('should display no featured agents message when no agents are featured', async ({
+  browser,
+  fileStorageState,
+}) => {
+  logProgress('Starting no featured agents test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
+  try {
     await page.goto('http://localhost:3080/');
 
-    // Handle conditional authentication using existing system
-    await handleConditionalAuth(page);
-
+    // With storage state, we should be automatically authenticated
     // Verify we're on the main chat page
     await expect(page).toHaveURL(/.*\/c\/new/);
     logProgress('Verified on main chat page');
@@ -36,19 +41,21 @@ test.describe.skip('Agent CTA Display', () => {
     // Verify Discover Agents section does not appear when no featured agents
     await expect(page.getByRole('heading', { name: 'Discover Agents' })).not.toBeVisible();
     logProgress('✅ Discover Agents section properly hidden when no featured agents');
+  } finally {
+    await context.close();
+  }
+});
+test('should create featured agent and display in CTAs', async ({ browser, fileStorageState }) => {
+  logProgress('Starting Agent CTA Display test');
 
-    // Cleanup
-    const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
-    await cleanupAgents(testUserEmail);
-    await cleanupChats(testUserEmail);
-    logProgress('✅ Cleaned up test data');
-  });
-  test('should create featured agent and display in CTAs', async ({ page }) => {
-    logProgress('Starting Agent CTA Display test');
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
+  try {
     await page.goto('http://localhost:3080/');
 
-    // Handle conditional authentication using existing system
-    await handleConditionalAuth(page);
+    // With storage state, we should be automatically authenticated
 
     // Verify we're on the main chat page
     await expect(page).toHaveURL(/.*\/c\/new/);
@@ -299,12 +306,20 @@ test.describe.skip('Agent CTA Display', () => {
       page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
     ).toBeVisible();
     logProgress('✅ Google Calendar Agent CTA is visible');
-  });
-  test('should navigate correctly when clicking on CTAs', async ({ page }) => {
-    logProgress('Starting CTA navigation test');
+  } finally {
+    await context.close();
+  }
+});
+test('should navigate correctly when clicking on CTAs', async ({ browser, fileStorageState }) => {
+  logProgress('Starting CTA navigation test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
+  try {
     await page.goto('http://localhost:3080/');
-    // Handle conditional authentication using existing system
-    await handleConditionalAuth(page);
+    // With storage state, we should be automatically authenticated
     // Verify we're on the main chat page
     await expect(page).toHaveURL(/.*\/c\/new/);
     logProgress('Verified on main chat page');
@@ -374,12 +389,26 @@ test.describe.skip('Agent CTA Display', () => {
       page.getByRole('button', { name: 'Start chat with Google Calendar Agent' }),
     ).toBeVisible();
     logProgress('✅ Google Calendar Agent CTA is visible');
-  });
-  test('chat should dissapear CTAs', async ({ page }) => {
-    logProgress('Starting CTA navigation test');
+  } finally {
+    // Always close context, regardless of test success/failure
+    try {
+      await context.close();
+    } catch (closeError) {
+      console.log('⚠️ Context close error:', closeError.message);
+      // Don't throw here - we want the original test error to propagate
+    }
+  }
+});
+test('chat should dissapear CTAs', async ({ browser, fileStorageState }) => {
+  logProgress('Starting CTA navigation test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
+  try {
     await page.goto('http://localhost:3080/');
-    // Handle conditional authentication using existing system
-    await handleConditionalAuth(page);
+    // With storage state, we should be automatically authenticated
     // Verify we're on the main chat page
     await expect(page).toHaveURL(/.*\/c\/new/);
     logProgress('Verified on main chat page');
@@ -417,10 +446,16 @@ test.describe.skip('Agent CTA Display', () => {
     // Verify the chat message was sent successfully
     await expect(page.getByTestId('text-input')).toHaveValue('');
     await expect(page.getByText('Do I have any appointments')).toBeVisible();
-    // Cleanup
-    const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
-    await cleanupAgents(testUserEmail);
-    await cleanupChats(testUserEmail);
-    logProgress('✅ Cleaned up test data');
-  });
+
+    // Note: No cleanup needed - the fixture handles cleanup on next run
+    logProgress('✅ Test complete - fixture will handle cleanup on next run');
+  } finally {
+    // Always close context, regardless of test success/failure
+    try {
+      await context.close();
+    } catch (closeError) {
+      console.log('⚠️ Context close error:', closeError.message);
+      // Don't throw here - we want the original test error to propagate
+    }
+  }
 });

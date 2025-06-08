@@ -1,7 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/fixtures';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/googleAuth';
-import { handleConditionalAuth } from '../utils/handleConditionalAuth';
 
 test.use({
   viewport: {
@@ -13,13 +12,16 @@ test.use({
 // Tests in this file run in order. Retries, if any, run independently.
 test.describe.configure({ mode: 'default' });
 
-test('Create Gmail MCP', async ({ page }) => {
+test('Create Gmail MCP', async ({ browser, fileStorageState }) => {
   logProgress('Starting Create Gmail MCP test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('Verified on main chat page');
@@ -78,6 +80,14 @@ test('Create Gmail MCP', async ({ page }) => {
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
+  // Wait for save operation to complete
+  try {
+    await page.waitForTimeout(2000); // Give server time to save
+    logProgress('Waited for save operation to complete');
+  } catch (error) {
+    logProgress('⚠️ Save wait timeout, continuing...');
+  }
+
   logProgress('Saved agent configuration');
 
   // Assert MCP is created
@@ -89,15 +99,21 @@ test('Create Gmail MCP', async ({ page }) => {
   // assert mcp/tool
 
   await expect(page.getByText('Add Label To Email')).toBeVisible();
+
+  // Close the context
+  await context.close();
 });
 
-test('Use Gmail Agent', async ({ page }) => {
+test('Use Gmail Agent', async ({ browser, fileStorageState }) => {
   logProgress('✅ Starting Use Gmail Agent test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
@@ -181,4 +197,7 @@ test('Use Gmail Agent', async ({ page }) => {
   });
 
   logProgress('✅ Ran Create Email Draft');
+
+  // Close the context
+  await context.close();
 });

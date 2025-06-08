@@ -3,7 +3,6 @@
 # Logs
 data-node
 meili_data*
-data/
 logs
 *.log
 
@@ -88,7 +87,7 @@ monospace.json
 *.iml
 *.pem
 config.local.ts
-**/storageState.json
+**/storageState*.json
 junit.xml
 **/.venv/
 **/venv/

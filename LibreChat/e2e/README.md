@@ -69,25 +69,16 @@ e2e/
 ├── playwright.config.google.ts     # Google OAuth testing configuration
 ├── playwright.config.local.ts      # Local development testing configuration
 │
-├── setup/                          # Setup and teardown utilities
-│   ├── authenticate.ts             # Core authentication logic (register/login)
-│   ├── cleanupUser.ts             # Database cleanup utility
-│   ├── global-setup.ts            # Main test environment setup
-│   ├── global-setup.local.ts      # Local test environment setup
-│   ├── global-teardown.ts         # Main test environment teardown
-│   ├── global-teardown.local.ts   # Local test environment teardown
-│   ├── google-setup.ts            # Google OAuth specific setup
-│   └── google-teardown.ts         # Google OAuth specific teardown
+├── fixtures/                       # Playwright test fixtures
+│   └── fixtures.ts                # File-scoped authentication fixture with UUID isolation
 │
 ├── specs/                         # Test specifications
-│   ├── a11y.spec.ts              # WCAG accessibility compliance tests
-│   ├── google.mcp.spec.ts        # Google auth + MCP integration tests
-│   ├── keys.spec.ts              # API key management tests
-│   ├── landing.spec.ts           # Landing page and initial load tests
-│   ├── messages.spec.ts          # Chat message functionality tests
-│   ├── nav.spec.ts               # Navigation and routing tests
-│   ├── popup.spec.ts             # Modal and popup interaction tests
-│   └── settings.spec.ts          # User settings and preferences tests
+│   ├── agent-cta-display.spec.ts # Agent discovery and CTA display tests
+│   ├── google.mcp.calendar.spec.ts # Google Calendar MCP integration tests
+│   ├── google.mcp.docs.spec.ts   # Google Docs MCP integration tests
+│   ├── google.mcp.gmail.spec.ts  # Gmail MCP integration tests
+│   ├── google.mcp.multi.spec.ts  # Multi-service Google MCP tests
+│   └── google.mcp.sheets.spec.ts # Google Sheets MCP integration tests
 │
 ├── playwright-report/             # HTML test reports (gitignored)
 ├── playwright-report-google/      # Google-specific test reports (gitignored)
@@ -293,8 +284,9 @@ Common test patterns:
 
 ### Setup & Teardown
 
-- Setup registers a new test user and logs him in: `LibreChat/e2e/specs/auth.setup.ts`
-- Teardown: deletes the user
+- Setup is automatically handled by the `fileStorageState` fixture in `fixtures/fixtures.ts`
+- Each test file gets a unique user with UUID-based isolation
+- Teardown is handled automatically by the fixture cleanup system
 
 ### Auth Accounts
 
@@ -313,37 +305,144 @@ Common test patterns:
     - GOOGLE_TEST_ACCOUNT_1_PASSWORD="KJHkh97HKH87jjfU"
 
 
+## Test Isolation Pattern (DEFINITIVE)
+
+### Worker-to-File Mapping with Unique Users
+
+**CRITICAL**: This pattern is set in stone and must be followed exactly for all E2E tests.
+
+Each test file gets its own unique user, ensuring complete test isolation between files while allowing data sharing within a file:
+
+```mermaid
+graph TD
+    A[Test File 1: google.mcp.calendar.spec.ts] --> B[Worker 1]
+    B --> C[UUID: abc123ef]
+    C --> D[User: test-abc123ef@librechat.test]
+    D --> E[Registration]
+    E --> F[Login]
+    F --> G[Accept TOS]
+    G --> H[Storage State: storageState-abc123ef.json]
+    H --> I[Test 1.1: Create Calendar Agent]
+    H --> J[Test 1.2: Use Calendar Agent]
+    
+    K[Test File 2: google.mcp.docs.spec.ts] --> L[Worker 2]
+    L --> M[UUID: def456gh]
+    M --> N[User: test-def456gh@librechat.test]
+    N --> O[Registration]
+    O --> P[Login]
+    P --> Q[Accept TOS]
+    Q --> R[Storage State: storageState-def456gh.json]
+    R --> S[Test 2.1: Create Docs Agent]
+    R --> T[Test 2.2: Use Docs Agent]
+    
+    style A fill:#e1f5fe
+    style K fill:#e8f5e8
+    style D fill:#fff3e0
+    style N fill:#fff3e0
+    style H fill:#f3e5f5
+    style R fill:#f3e5f5
+```
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant TF as Test File
+    participant F as Fixture
+    participant B as Browser
+    participant App as LibreChat App
+    participant DB as Database
+    
+    TF->>F: Request fileStorageState
+    F->>F: Generate UUID (abc123ef)
+    F->>F: Create user: test-abc123ef@librechat.test
+    F->>B: Create browser context
+    F->>App: Navigate to /register
+    F->>App: Fill registration form
+    App->>DB: Create user account
+    F->>App: Navigate to /login
+    F->>App: Fill login form
+    App->>DB: Authenticate user
+    App->>F: Redirect to /c/new
+    F->>App: Accept TOS modal
+    F->>F: Save storage state: storageState-abc123ef.json
+    F->>TF: Return storage state path
+    
+    Note over TF: First test uses fresh auth
+    Note over TF: Subsequent tests reuse storage state
+    
+    TF->>B: Create context with storage state
+    TF->>App: Already authenticated
+    TF->>TF: Run test scenarios
+```
+
+### Key Principles
+
+1. **One User Per Test File**: Each test file gets a UUID-based unique user
+2. **Shared Storage State**: All tests within a file share the same authentication storage state  
+3. **Registration + Login + TOS Flow**: Always: Registration → Login → Accept TOS → Homepage
+4. **First Test Authenticates**: First test in file handles full auth flow, subsequent tests reuse storage state
+5. **Complete Isolation**: Different test files cannot see each other's data (users, agents, chats)
+
+### Implementation
+
+```typescript
+// fixtures.ts - Creates unique user per test file
+const uuid = crypto.randomUUID().substring(0, 8);
+const user = {
+  name: `Test User ${uuid}`,
+  email: `test-${uuid}@librechat.test`, 
+  password: 'TestPassword123!'
+};
+const storageStatePath = path.join(__dirname, `storageState-${uuid}.json`);
+```
+
+**This pattern ensures**:
+- No cross-contamination between test files
+- Data persistence within test file for sequential tests  
+- Predictable, repeatable test runs
+- Clear data ownership and cleanup
+
 ## Writing New Tests
 
 ### Test Structure
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/fixtures';
+import { logProgress } from '../utils/testLogger';
 
 // Configure viewport for consistent testing
 test.use({
   viewport: { width: 1600, height: 1700 }
 });
 
-// Describe test suite
-test.describe('Feature Name', () => {
-  // Setup before each test
-  test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3080/');
-  });
+// Tests run in order within the file, but with isolated users between files
+test.describe.configure({ mode: 'default' });
+
+// Individual test case using the fileStorageState fixture
+test('should perform specific action', async ({ browser, fileStorageState }) => {
+  logProgress('Starting test');
   
-  // Individual test case
-  test('should perform specific action', async ({ page }) => {
-    // Arrange - set up test state
+  // Create browser context with authenticated user
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
+  try {
+    // Navigate to app (already authenticated)
+    await page.goto('http://localhost:3080/');
+    await expect(page).toHaveURL(/.*\/c\/new/);
+    
+    // Perform test actions
     const message = 'Test message';
+    await page.getByTestId('text-input').fill(message);
+    await page.getByTestId('send-button').click();
     
-    // Act - perform actions
-    await page.locator('form').getByRole('textbox').fill(message);
-    await page.locator('form').getByRole('textbox').press('Enter');
-    
-    // Assert - verify results
-    await expect(page.locator('.message')).toContainText(message);
-  });
+    // Verify results
+    await expect(page.getByText(message)).toBeVisible();
+    logProgress('✅ Test completed successfully');
+  } finally {
+    await context.close();
+  }
 });
 ```
 
@@ -384,27 +483,31 @@ async function authenticateProvider(page: Page, provider: string) {
 
 ## Setup and Teardown
 
-### Authentication Flow
+### Authentication Flow (Current)
 
-1. **Setup Phase** (`authenticate.ts`):
-   - Check if user exists in database
-   - Register new user or use existing
+The authentication flow is now handled entirely by the `fileStorageState` fixture:
+
+1. **UUID Generation**: 
+   - Generate unique 8-character UUID for test file
+   - Create user: `test-{uuid}@librechat.test`
+
+2. **Storage State Check**:
+   - Check if valid storage state exists for this UUID
+   - Validate authentication by navigating to app
+   - Reuse valid state or recreate if expired
+
+3. **Fresh Authentication** (when needed):
+   - Clean up any existing user data
+   - Navigate to registration page
+   - Register new user account
    - Login with credentials
+   - Accept Terms of Service
    - Save browser storage state
-   - Set localStorage preferences
 
-2. **Test Execution**:
-   - Load saved storage state
-   - Navigate to application
-   - Execute test scenarios
-   - Capture screenshots/videos on failure
-
-3. **Teardown Phase** (`cleanupUser.ts`):
-   - Delete user conversations
-   - Delete user messages  
-   - Clear user sessions
-   - Remove user account
-   - Clean browser storage
+4. **Test Execution**:
+   - Load saved storage state for all tests in file
+   - All tests share same authenticated user
+   - Complete isolation between different test files
 
 ### Database Cleanup Process
 

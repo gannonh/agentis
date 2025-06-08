@@ -1,8 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/fixtures';
 import { logProgress } from '../utils/testLogger';
-import { handleConditionalAuth } from '../utils/handleConditionalAuth';
 import { handleInitialAuth } from '../utils/googleAuth';
-import { log } from 'console';
 
 test.use({
   viewport: {
@@ -13,12 +11,16 @@ test.use({
 // Tests in this file run in order. Retries, if any, run independently.
 test.describe.configure({ mode: 'default' });
 
-test('Create Google Sheets MCP', async ({ page }) => {
+test('Create Google Sheets MCP', async ({ browser, fileStorageState }) => {
   logProgress('Starting Create Google Sheets MCP test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
+  // With storage state, we should be automatically authenticated
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
@@ -78,24 +80,41 @@ test('Create Google Sheets MCP', async ({ page }) => {
   await page.getByRole('button', { name: 'Add Selected' }).click();
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
+
+  // Wait for save operation to complete
+  try {
+    await page.waitForTimeout(2000); // Give server time to save
+    logProgress('Waited for save operation to complete');
+  } catch (error) {
+    logProgress('⚠️ Save wait timeout, continuing...');
+  }
+
   logProgress('Saved agent configuration');
 
   // Assert MCP is created
-  await expect(page.getByText('Google Sheets', { exact: true })).toBeVisible();
-  logProgress('Google Sheets MCP created successfully');
-  // open panel
-  await page.getByText('Google Sheets', { exact: true }).click();
+  await expect(
+    page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }),
+  ).toBeVisible();
+  logProgress('✅ Google Sheets MCP created successfully');
+  await page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }).click();
 
   // assert mcp/tool
   await expect(page.getByText('Create New Spreadsheet')).toBeVisible();
+
+  // Close the context
+  await context.close();
 });
 
-test('Use Google Sheets Agent', async ({ page }) => {
-  logProgress('Starting Use Google Sheets Agent test');
+test('Use Google Sheets Agent', async ({ browser, fileStorageState }) => {
+  logProgress('✅ Starting Use Google Sheets Agent test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
+  // With storage state, we should be automatically authenticated
 
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
@@ -104,7 +123,29 @@ test('Use Google Sheets Agent', async ({ page }) => {
   // Select the Google Sheets Agent explicitly to avoid conflicts with other parallel tests
   await page.getByRole('button', { name: 'Select a model' }).click();
   await page.getByText('Agents', { exact: true }).click();
-  await page.getByLabel('Agents').getByText('Google Sheets Agent').click();
+
+  // Debug: Check if any agents are available
+  const agentsContainer = page.getByLabel('Agents');
+  await expect(agentsContainer).toBeVisible();
+
+  // Wait longer and add debug logging
+  try {
+    await expect(agentsContainer.getByText('Google Sheets Agent')).toBeVisible({
+      timeout: 15000,
+    });
+  } catch (error) {
+    // Debug: Log all available agents
+    const allAgents = await agentsContainer.locator('text=').allTextContents();
+    console.log('Available agents:', allAgents);
+
+    // Try alternative selectors
+    const agentExists = await page.locator('text=Google Sheets Agent').count();
+    console.log('Agent count:', agentExists);
+
+    throw new Error(`Google Sheets Agent not found. Available agents: ${allAgents.join(', ')}`);
+  }
+
+  await agentsContainer.getByText('Google Sheets Agent').click();
   logProgress('✅ Selected Google Sheets Agent');
 
   // Send first message to trigger proactive MCP auth
@@ -216,5 +257,6 @@ test('Use Google Sheets Agent', async ({ page }) => {
   });
   logProgress('✅ Found Google Sheets link');
 
-  //await page.pause();
+  // Close the context
+  await context.close();
 });

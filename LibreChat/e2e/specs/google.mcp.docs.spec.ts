@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/fixtures';
 import { logProgress } from '../utils/testLogger';
-import { handleConditionalAuth } from '../utils/handleConditionalAuth';
 import { handleInitialAuth } from '../utils/googleAuth';
 
 test.use({
@@ -13,13 +12,16 @@ test.use({
 // Tests in this file run in order. Retries, if any, run independently.
 test.describe.configure({ mode: 'default' });
 
-test('Create Google Docs MCP', async ({ page }) => {
+test('Create Google Docs MCP', async ({ browser, fileStorageState }) => {
   logProgress('Starting Create Google Docs MCP test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('Verified on main chat page');
@@ -79,6 +81,15 @@ test('Create Google Docs MCP', async ({ page }) => {
   await page.getByRole('button', { name: 'Add Selected' }).click();
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
+
+  // Wait for save operation to complete
+  try {
+    await page.waitForTimeout(2000); // Give server time to save
+    logProgress('Waited for save operation to complete');
+  } catch (error) {
+    logProgress('⚠️ Save wait timeout, continuing...');
+  }
+
   logProgress('Saved agent configuration');
 
   // Assert MCP is created
@@ -89,15 +100,21 @@ test('Create Google Docs MCP', async ({ page }) => {
 
   // assert mcp/tool
   await expect(page.getByText('Create Doc')).toBeVisible();
+
+  // Close the context
+  await context.close();
 });
 
-test('Use Google Docs Agent', async ({ page }) => {
+test('Use Google Docs Agent', async ({ browser, fileStorageState }) => {
   logProgress('Starting Use Google Docs Agent test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
@@ -105,7 +122,7 @@ test('Use Google Docs Agent', async ({ page }) => {
   // Select the Google Docs Agent explicitly to avoid conflicts with other parallel tests
   await page.getByRole('button', { name: 'Select a model' }).click();
   await page.getByText('Agents', { exact: true }).click();
-  await page.getByLabel('Agents').getByText('Google Docs Agent').click();
+  await page.getByLabel('Agents').getByText('Google Docs Agent').first().click();
   logProgress('✅ Selected Google Docs Agent');
 
   // Send first message to trigger proactive MCP auth
@@ -185,4 +202,7 @@ test('Use Google Docs Agent', async ({ page }) => {
     timeout: 90000,
   });
   logProgress('✅ Found Google Docs link');
+
+  // Close the context
+  await context.close();
 });

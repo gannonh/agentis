@@ -21,3 +21,7 @@ logs/
 # Other repos
 codesandbox-client/
 rag_api/
+LibreChat/data/violations.json
+.gitignore
+LibreChat/e2e/data/violations.json
+LibreChat/e2e/data/logs.json

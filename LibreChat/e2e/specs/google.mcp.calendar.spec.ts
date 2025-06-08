@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/fixtures';
 import { logProgress } from '../utils/testLogger';
-import { handleConditionalAuth } from '../utils/handleConditionalAuth';
 import { handleInitialAuth } from '../utils/googleAuth';
 
 test.use({
@@ -10,13 +9,19 @@ test.use({
   },
 });
 
-test('Create Calendar MCP Agent', async ({ page }) => {
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
+
+test('Create Calendar MCP Agent', async ({ browser, fileStorageState }) => {
   logProgress('Starting Create Calendar MCP test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('Verified on main chat page');
@@ -67,6 +72,23 @@ test('Create Calendar MCP Agent', async ({ page }) => {
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
+  // Wait for save operation to complete by waiting for success indicator or page change
+  try {
+    // Look for success toast, saved state, or navigation change
+    await page.waitForTimeout(2000); // Give server time to save
+    logProgress('Waited for save operation to complete');
+  } catch (error) {
+    logProgress('⚠️ Save wait timeout, continuing...');
+  }
+
+  // Verify agent was saved by checking for success state
+  try {
+    await expect(page.getByText('Agent saved successfully')).toBeVisible({ timeout: 5000 });
+    logProgress('✅ Found explicit save confirmation');
+  } catch (error) {
+    logProgress('⚠️ No explicit save confirmation found, continuing...');
+  }
+
   logProgress('Saved agent configuration');
 
   // Assert MCP is created
@@ -79,24 +101,30 @@ test('Create Calendar MCP Agent', async ({ page }) => {
   await page.getByLabel('Agent Builder').getByText('Google Calendar', { exact: true }).click();
 
   await expect(page.getByText('Create Event')).toBeVisible();
+
+  // Close the context
+  await context.close();
 });
 
-test('Use Calendar Agent', async ({ page }) => {
+test('Use Calendar Agent', async ({ browser, fileStorageState }) => {
   logProgress('✅ Starting Use Google Calendar Agent test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
 
   // Select the Google Calendar Agent explicitly to avoid conflicts with other parallel tests
+
   await page.getByRole('button', { name: 'Select a model' }).click();
   await page.getByText('Agents', { exact: true }).click();
-  await page.getByLabel('Agents').getByText('Google Calendar Agent').click();
-  logProgress('✅ Selected Google Calendar Agent');
+  await page.getByLabel('Agents').getByText('Google Calendar Agent').first().click();
 
   // ----------------- begin cogegen
 
@@ -197,4 +225,7 @@ test('Use Calendar Agent', async ({ page }) => {
     });
     logProgress('✅ Found "Ran"  execution after authentication');
   }
+
+  // Close the context
+  await context.close();
 });

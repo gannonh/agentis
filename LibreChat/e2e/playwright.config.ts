@@ -12,13 +12,14 @@ export default defineConfig({
   /* Run tests in files in parallel.
   NOTE: This sometimes causes issues on Windows.
   Set to false if you experience issues running on a Windows machine. */
-  fullyParallel: false,
+  fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: 0, // Set to 0 for Google tests to avoid issues
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Enable multiple workers for parallel execution */
+  // TODO: Optimize worker count based on system resources and test performance
+  workers: process.env.CI ? 4 : 4,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { outputFolder: 'playwright-report' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -36,34 +37,13 @@ export default defineConfig({
   timeout: 5 * 60 * 1000, // 5 minutes for Google tests
   /* Configure projects for major browsers */
   projects: [
-    // Setup project for authentication
-    {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
-      teardown: 'cleanup',
-      use: {
-        // Don't use storage state for setup - it doesn't exist yet
-        storageState: undefined,
-      },
-    },
-    // Teardown project for cleanup
-    {
-      name: 'cleanup',
-      testMatch: /.*\.teardown\.ts/,
-      use: {
-        // Don't need storage state for cleanup
-        storageState: undefined,
-      },
-    },
-    // Main test project
+    // Main test project with worker-scoped authentication
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Use the storage state created by the setup project
-        storageState: path.resolve(__dirname, 'storageState.json'),
+        // Worker-scoped storage state will be handled by fixtures
       },
-      dependencies: ['setup'],
     },
     /* Test against mobile viewports. */
     // {
@@ -87,6 +67,7 @@ export default defineConfig({
     // url: 'http://localhost:3080',
     timeout: 60_000, // More generous timeout for Google tests
     reuseExistingServer: false, // Don't reuse to ensure clean state
+    // SEE /Users/gannonhall/dev/agentis/LibreChat/e2e/fixtures/fixtures.ts
     env: {
       ...process.env,
       NODE_ENV: 'CI',
