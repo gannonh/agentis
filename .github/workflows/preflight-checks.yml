@@ -12,6 +12,54 @@ on:
 jobs:
   preflight:
     runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password
+          MONGO_INITDB_DATABASE: Agentis
+        options: --health-cmd="mongosh --eval 'db.runCommand({ping:1})'" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      meilisearch:
+        image: getmeili/meilisearch:v1.12.3
+        ports:
+          - 7700:7700
+        env:
+          MEILI_HOST: http://localhost:7700
+          MEILI_MASTER_KEY: ${{ secrets.MEILI_MASTER_KEY }}
+          MEILI_NO_ANALYTICS: true
+
+      vectordb:
+        image: ankane/pgvector:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: mydatabase
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword
+        options: --health-cmd="pg_isready -U myuser" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      rag_api:
+        image: ghcr.io/gannonh/rag-api-lite:latest
+        ports:
+          - 8000:8000
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: myuser
+          DB_PASSWORD: mypassword
+          DB_NAME: mydatabase
+          RAG_PORT: 8000
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      sandpack:
+        image: ghcr.io/gannonh/codesandbox-client/bundler:latest
+        ports:
+          - 8080:80
 
     steps:
       - name: Checkout repository
@@ -51,30 +99,54 @@ jobs:
         working-directory: ./LibreChat
         run: npm run typecheck:all
 
-      - name: Start MongoDB for tests
-        uses: supercharge/mongodb-github-action@1.10.0
-        with:
-          mongodb-version: "7.0"
-          mongodb-replica-set: test-rs
-          mongodb-port: 27017
-
       - name: Run unit tests
         working-directory: ./LibreChat
         env:
           NODE_ENV: test
-          MONGO_URI: mongodb://127.0.0.1:27017/test?replicaSet=test-rs
+          MONGO_URI: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
         run: npm run test:all
 
       - name: Setup environment for E2E tests
         working-directory: ./LibreChat
         run: |
           # Add test-specific environment variables
-          echo "MONGO_URI=mongodb://127.0.0.1:27017/LibreChat?replicaSet=test-rs" >> .env
-          echo "OPENAI_API_KEY=test-key" >> .env
-          echo "ANTHROPIC_API_KEY=test-key" >> .env
-          # Google test credentials from secrets
-          echo "GOOGLE_TEST_ACCOUNT_1_EMAIL= >> .env
-          echo "GOOGLE_TEST_ACCOUNT_1_PASSWORD= >> .env
+          echo "MONGO_URI=mongodb://admin:password@localhost:27017/Agentis?authSource=admin" >> .env
+          echo "DOMAIN_CLIENT=http://localhost:3080" >> .env
+          echo "DOMAIN_SERVER=http://localhost:3080" >> .env
+          echo "ALLOW_REGISTRATION=true" >> .env
+          echo "SESSION_EXPIRY=60000" >> .env
+          echo "REFRESH_TOKEN_EXPIRY=300000" >> .env
+          echo "SEARCH=true" >> .env
+          echo "MEILI_HOST=http://localhost:7700" >> .env
+          echo "MEILI_MASTER_KEY=${{ secrets.MEILI_MASTER_KEY }}" >> .env
+          echo "RAG_API_URL=http://localhost:8000" >> .env
+          echo "SANDPACK_BUNDLER_URL=http://localhost:8080" >> .env
+          echo "ENDPOINTS=agents,anthropic,openAI,google,assistants" >> .env
+          echo "GOOGLE_MODELS=gemini-2.5-pro-preview-05-06,gemini-2.5-flash-preview-04-17,gemini-2.0-flash-001,gemini-2.0-flash-exp,gemini-2.0-flash-lite-001,gemini-1.5-pro-002,gemini-1.5-flash-002" >> .env
+          echo "ALLOW_EMAIL_LOGIN=true" >> .env
+          echo "ALLOW_SOCIAL_LOGIN=false" >> .env
+          echo "ALLOW_SHARED_LINKS=true" >> .env
+          echo "APP_TITLE=Agentis" >> .env
+          echo "NODE_ENV=CI" >> .env
+          # Real API Keys from secrets
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env
+          echo "GOOGLE_KEY=${{ secrets.GOOGLE_KEY }}" >> .env
+          echo "ASSISTANTS_API_KEY=${{ secrets.ASSISTANTS_API_KEY }}" >> .env
+          echo "IMAGE_GEN_OAI_API_KEY=${{ secrets.IMAGE_GEN_OAI_API_KEY }}" >> .env
+          echo "MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}" >> .env
+          echo "OPENROUTER_KEY=${{ secrets.OPENROUTER_KEY }}" >> .env
+          echo "OCR_API_KEY=${{ secrets.OCR_API_KEY }}" >> .env
+          echo "ARCADE_API_KEY=${{ secrets.ARCADE_API_KEY }}" >> .env
+          echo "COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY }}" >> .env
+          # Security keys
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> .env
+          echo "CREDS_KEY=${{ secrets.CREDS_KEY }}" >> .env
+          echo "CREDS_IV=${{ secrets.CREDS_IV }}" >> .env
+          # Google test credentials
+          echo "GOOGLE_TEST_ACCOUNT_1_EMAIL=agentis.test@gmail.com" >> .env
+          echo "GOOGLE_TEST_ACCOUNT_1_PASSWORD=KJHkh97HKH87jjfU" >> .env
 
       - name: Run E2E tests
         working-directory: ./LibreChat
