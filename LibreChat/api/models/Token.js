@@ -23,29 +23,31 @@ async function fixIndexes() {
     console.log('🔧 Environment check - ALLOW_REGISTRATION:', process.env.ALLOW_REGISTRATION);
     console.log('🔧 Environment check - REFRESH_TOKEN_EXPIRY:', process.env.REFRESH_TOKEN_EXPIRY);
     console.log('🔧 Environment check - MONGO_URI set:', !!process.env.MONGO_URI);
-    
+
     // Skip index fixes in test environments
-    const isTestEnvironment = 
+    const isTestEnvironment =
       process.env.NODE_ENV === 'CI' ||
       process.env.NODE_ENV === 'development' ||
       process.env.NODE_ENV === 'test' ||
       // Also skip if NODE_ENV is undefined AND we're in a test context
-      (!process.env.NODE_ENV && (
-        process.env.ALLOW_REGISTRATION === 'true' ||
-        process.env.SESSION_EXPIRY === '60000' ||
-        process.env.REFRESH_TOKEN_EXPIRY === '300000'
-      ));
-      
+      (!process.env.NODE_ENV &&
+        (process.env.ALLOW_REGISTRATION === 'true' ||
+          process.env.SESSION_EXPIRY === '60000' ||
+          process.env.REFRESH_TOKEN_EXPIRY === '300000'));
+
     if (isTestEnvironment) {
-      console.log('🔧 Skipping Token index fixes for environment:', process.env.NODE_ENV || 'undefined (test context)');
+      console.log(
+        '🔧 Skipping Token index fixes for environment:',
+        process.env.NODE_ENV || 'undefined (test context)',
+      );
       return;
     }
-    
+
     if (indexFixInProgress) {
       logger.debug('Token index fix already in progress, skipping...');
       return;
     }
-    
+
     indexFixInProgress = true;
     const indexes = await Token.collection.indexes();
     logger.debug('Existing Token Indexes:', JSON.stringify(indexes, null, 2));
