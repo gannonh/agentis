@@ -22,7 +22,11 @@ jobs:
           MONGO_INITDB_ROOT_USERNAME: admin
           MONGO_INITDB_ROOT_PASSWORD: password
           MONGO_INITDB_DATABASE: Agentis
-        options: --health-cmd="mongosh --eval 'db.runCommand({ping:1})'" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: >-
+          --health-cmd="mongosh --eval 'db.runCommand({ping:1})'" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
 
       meilisearch:
         image: getmeili/meilisearch:v1.12.3
@@ -48,13 +52,14 @@ jobs:
         ports:
           - 8000:8000
         env:
-          DB_HOST: localhost
+          DB_HOST: vectordb
           DB_PORT: 5432
           DB_USER: myuser
           DB_PASSWORD: mypassword
           DB_NAME: mydatabase
           RAG_PORT: 8000
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        options: --health-cmd="curl -f http://localhost:8000/health || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=90s
 
       sandpack:
         image: ghcr.io/gannonh/codesandbox-client/bundler:latest
@@ -65,13 +70,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -94,6 +92,36 @@ jobs:
       - name: Build packages
         working-directory: ./LibreChat
         run: npm run build:all
+      
+      - name: Build frontend for E2E tests
+        working-directory: ./LibreChat
+        run: npm run frontend
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to be ready..."
+          # Wait for MongoDB
+          until mongosh --host localhost:27017 --username admin --password password --authenticationDatabase admin --eval "db.runCommand({ping:1})" >/dev/null 2>&1; do
+            echo "Waiting for MongoDB..."
+            sleep 5
+          done
+          echo "✓ MongoDB is ready"
+          
+          # Wait for RAG API
+          until curl -f http://localhost:8000/health >/dev/null 2>&1; do
+            echo "Waiting for RAG API..."
+            sleep 5
+          done
+          echo "✓ RAG API is ready"
+          
+          # Wait for Meilisearch
+          until curl -f http://localhost:7700/health >/dev/null 2>&1; do
+            echo "Waiting for Meilisearch..."
+            sleep 5
+          done
+          echo "✓ Meilisearch is ready"
+          
+          echo "All services are ready!"
 
       - name: Run linting
         working-directory: ./LibreChat
@@ -122,8 +150,8 @@ jobs:
           echo "DOMAIN_CLIENT=http://localhost:3080" >> .env
           echo "DOMAIN_SERVER=http://localhost:3080" >> .env
           echo "ALLOW_REGISTRATION=true" >> .env
-          echo "SESSION_EXPIRY=60000" >> .env
-          echo "REFRESH_TOKEN_EXPIRY=300000" >> .env
+          echo "SESSION_EXPIRY=900000" >> .env
+          echo "REFRESH_TOKEN_EXPIRY=604800000" >> .env
           echo "SEARCH=true" >> .env
           echo "MEILI_HOST=http://localhost:7700" >> .env
           echo "MEILI_MASTER_KEY=${{ secrets.MEILI_MASTER_KEY }}" >> .env
@@ -136,6 +164,44 @@ jobs:
           echo "ALLOW_SHARED_LINKS=true" >> .env
           echo "APP_TITLE=Agentis" >> .env
           echo "NODE_ENV=CI" >> .env
+          echo "HOST=0.0.0.0" >> .env
+          echo "PORT=3080" >> .env
+          echo "TRUST_PROXY=1" >> .env
+          echo "CONSOLE_JSON=false" >> .env
+          echo "DEBUG_LOGGING=true" >> .env
+          echo "DEBUG_CONSOLE=false" >> .env
+          echo "DEBUG_OPENAI=false" >> .env
+          echo "NO_INDEX=true" >> .env
+          echo "MEILI_NO_ANALYTICS=true" >> .env
+          echo "ARCADE_CALLBACK_URL=http://localhost:3080/api/arcade/callback" >> .env
+          # Moderation and Security
+          echo "OPENAI_MODERATION=false" >> .env
+          echo "BAN_VIOLATIONS=true" >> .env
+          echo "BAN_DURATION=7200000" >> .env
+          echo "BAN_INTERVAL=20" >> .env
+          echo "LOGIN_VIOLATION_SCORE=1" >> .env
+          echo "REGISTRATION_VIOLATION_SCORE=1" >> .env
+          echo "CONCURRENT_VIOLATION_SCORE=1" >> .env
+          echo "MESSAGE_VIOLATION_SCORE=1" >> .env
+          echo "NON_BROWSER_VIOLATION_SCORE=20" >> .env
+          echo "LOGIN_MAX=7" >> .env
+          echo "LOGIN_WINDOW=5" >> .env
+          echo "REGISTER_MAX=5" >> .env
+          echo "REGISTER_WINDOW=60" >> .env
+          echo "LIMIT_CONCURRENT_MESSAGES=true" >> .env
+          echo "CONCURRENT_MESSAGE_MAX=2" >> .env
+          echo "LIMIT_MESSAGE_IP=true" >> .env
+          echo "MESSAGE_IP_MAX=40" >> .env
+          echo "MESSAGE_IP_WINDOW=1" >> .env
+          echo "LIMIT_MESSAGE_USER=false" >> .env
+          echo "MESSAGE_USER_MAX=40" >> .env
+          echo "MESSAGE_USER_WINDOW=1" >> .env
+          echo "ILLEGAL_MODEL_REQ_SCORE=5" >> .env
+          echo "ALLOW_PASSWORD_RESET=false" >> .env
+          echo "ALLOW_SOCIAL_REGISTRATION=false" >> .env
+          echo "ALLOW_UNVERIFIED_EMAIL_LOGIN=true" >> .env
+          echo "ALLOW_SHARED_LINKS_PUBLIC=true" >> .env
+          echo "HELP_AND_FAQ_URL=https://agentis.ai" >> .env
           # Real API Keys from secrets
           echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
           echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env
