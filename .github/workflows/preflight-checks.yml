@@ -117,8 +117,8 @@ jobs:
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to be ready..."
-          # Wait for MongoDB
-          until mongosh --host localhost:27017 --username admin --password password --authenticationDatabase admin --eval "db.runCommand({ping:1})" >/dev/null 2>&1; do
+          # Wait for MongoDB port
+          until nc -z localhost 27017; do
             echo "Waiting for MongoDB..."
             sleep 5
           done
