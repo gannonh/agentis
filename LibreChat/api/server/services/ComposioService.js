@@ -362,6 +362,7 @@ class ComposioService {
       googledocs: 'googledocs',
       gmail: 'gmail',
       googlecalendar: 'googlecalendar',
+      notion: 'notion',
     };
 
     const appName = serviceToAppMap[service];

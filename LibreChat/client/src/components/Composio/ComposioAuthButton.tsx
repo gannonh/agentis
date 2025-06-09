@@ -316,6 +316,7 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
       googledocs: 'Google Docs',
       gmail: 'Gmail',
       googlecalendar: 'Google Calendar',
+      notion: 'Notion',
     };
     return serviceNames[service] || service;
   };

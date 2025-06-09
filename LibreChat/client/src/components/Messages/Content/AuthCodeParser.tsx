@@ -26,6 +26,7 @@ export const AuthCodeParser: React.FC<AuthCodeParserProps> = ({
       googledocs: 'Google Docs',
       gmail: 'Gmail',
       googlecalendar: 'Google Calendar',
+      notion: 'Notion',
     };
     return serviceNames[service] || service;
   };
@@ -124,6 +125,8 @@ export const AuthCodeParser: React.FC<AuthCodeParserProps> = ({
       service = 'gmail';
     } else if (lowerContent.includes('google calendar')) {
       service = 'googlecalendar';
+    } else if (lowerContent.includes('notion')) {
+      service = 'notion';
     }
 
     const isAuthenticated = authenticatedServices.has(service);
