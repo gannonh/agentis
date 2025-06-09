@@ -147,12 +147,6 @@ test.describe('Google Calendar MCP Tests', () => {
     await page.getByTestId('send-button').click();
     logProgress('✅ Sent message to create calendar events');
 
-    // Wait for agent's initial response to complete (regenerate button appears - unique to agent messages)
-    // await expect(page.getByRole('button', { name: 'Regenerate' })).toBeVisible();
-    // logProgress('✅ Agent initial response completed - Regenerate button appeared');
-
-    // NOW authenticate after agent finished its initial response
-    // auth ---------------------------
     // Look for the proactive authentication UI that should appear automatically
     await expect(page.getByText('Authentication Required')).toBeVisible();
     logProgress('✅ Found proactive Authentication Required section');

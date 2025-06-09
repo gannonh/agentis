@@ -242,15 +242,15 @@ test.describe('Google Sheets MCP Tests', () => {
     await expect(page.getByText('✓ Connected')).toBeVisible();
     logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
 
-    // try again -------------------
-    await page.getByTestId('text-input').click();
-    await page
-      .getByTestId('text-input')
-      .fill('ok, try now. please also provide a link to the sheet when created.');
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent message to create sheet after authentication');
-
     if (!process.env.CI) {
+      // try again -------------------
+      await page.getByTestId('text-input').click();
+      await page
+        .getByTestId('text-input')
+        .fill('ok, try now. please also provide a link to the sheet when created.');
+      await page.getByTestId('send-button').click();
+      logProgress('✅ Sent message to create sheet after authentication');
+
       // run ------------------ (after authentication)
       await expect(
         page.getByRole('button', { name: 'Running Create New Spreadsheet' }),

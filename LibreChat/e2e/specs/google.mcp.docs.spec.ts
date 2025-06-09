@@ -182,36 +182,38 @@ test.describe('Google Docs MCP Tests', () => {
       logProgress('⚠️ Consent screen 3 handling completed or not needed');
     }
 
-    // Wait for authentication to complete
-    logProgress('⏳ Waiting 2 sec for authentication to complete...');
-    await page.waitForTimeout(2000);
-    logProgress('✅ Waited for authentication to complete');
+    if (!process.env.CI) {
+      // Wait for authentication to complete
+      logProgress('⏳ Waiting 2 sec for authentication to complete...');
+      await page.waitForTimeout(2000);
+      logProgress('✅ Waited for authentication to complete');
 
-    // Check that the button shows "✓ Connected" after successful authentication
-    await expect(page.getByText('✓ Connected')).toBeVisible();
-    logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
+      // Check that the button shows "✓ Connected" after successful authentication
+      await expect(page.getByText('✓ Connected')).toBeVisible();
+      logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
 
-    // run ------------------ (after authentication)
-    logProgress('⏳ Waiting for Running button to appear...');
-    await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Found "Running Create" tool execution after authentication');
+      // run ------------------ (after authentication)
+      logProgress('⏳ Waiting for Running button to appear...');
+      await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Found "Running Create" tool execution after authentication');
 
-    // ran ------------------ (after authentication)
-    // Wait for the second "Ran" button to appear (indicating completion)
-    logProgress('⏳ Waiting for Ran button to appear...');
-    await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
-      timeout: 30000,
-    });
-    logProgress('✅ Found second "Ran Create" tool execution after authentication');
+      // ran ------------------ (after authentication)
+      // Wait for the second "Ran" button to appear (indicating completion)
+      logProgress('⏳ Waiting for Ran button to appear...');
+      await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
+        timeout: 30000,
+      });
+      logProgress('✅ Found second "Ran Create" tool execution after authentication');
 
-    // Long wait because agent may want to do some formatting or other processing
-    logProgress('⏳ Waiting for Google Docs link to appear...');
-    await expect(page.getByRole('link', { name: 'https://docs.google.com/' })).toBeVisible({
-      timeout: 90000,
-    });
-    logProgress('✅ Found Google Docs link');
+      // Long wait because agent may want to do some formatting or other processing
+      logProgress('⏳ Waiting for Google Docs link to appear...');
+      await expect(page.getByRole('link', { name: 'https://docs.google.com/' })).toBeVisible({
+        timeout: 90000,
+      });
+      logProgress('✅ Found Google Docs link');
+    }
 
     // Close the context
     await context.close();

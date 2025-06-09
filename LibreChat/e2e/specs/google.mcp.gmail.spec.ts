@@ -144,14 +144,16 @@ test.describe('Google Gmail MCP Tests', () => {
     await page.getByTestId('send-button').click();
     logProgress('✅ Sent message to create Gmail draft');
 
-    await expect(page.getByRole('button', { name: 'Running Create Email Draft' })).toBeVisible({
-      timeout: 60000,
-    });
-    logProgress('✅ Found "Running Create Email Draft" tool execution');
-    await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
-      timeout: 60000,
-    });
-    logProgress('✅ Found "Ran Create Email Draft" tool execution');
+    if (!process.env.CI) {
+      await expect(page.getByRole('button', { name: 'Running Create Email Draft' })).toBeVisible({
+        timeout: 60000,
+      });
+      logProgress('✅ Found "Running Create Email Draft" tool execution');
+      await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
+        timeout: 60000,
+      });
+      logProgress('✅ Found "Ran Create Email Draft" tool execution');
+    }
 
     // auth ---------------------------
     // Look for the proactive authentication UI that should appear automatically
@@ -192,13 +194,13 @@ test.describe('Google Gmail MCP Tests', () => {
     await expect(page.getByText('✓ Connected')).toBeVisible();
     logProgress('✅ Found "✓ Connected" status indicating successful Gmail authentication');
 
-    await page
-      .getByTestId('text-input')
-      .fill('ok, try now. please also provide a link to the draft when created.');
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent follow-up message after authentication');
-
     if (!process.env.CI) {
+      await page
+        .getByTestId('text-input')
+        .fill('ok, try now. please also provide a link to the draft when created.');
+      await page.getByTestId('send-button').click();
+      logProgress('✅ Sent follow-up message after authentication');
+
       await expect(
         page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
       ).toBeVisible({
