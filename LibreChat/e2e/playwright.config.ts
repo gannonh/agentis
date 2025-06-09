@@ -45,17 +45,6 @@ export default defineConfig({
         // Worker-scoped storage state will be handled by fixtures
       },
     },
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    //   dependencies: ['setup'],
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    //   dependencies: ['setup'],
-    // },
   ],
 
   /* Run your local dev server before starting the tests */
