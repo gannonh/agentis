@@ -323,6 +323,6 @@ export const test = baseTest.extend<object, { fileStorageState: string }>({
       // TODO: Add retry logic for flaky authentication steps with exponential backoff
       // TODO: Consider adding performance metrics for authentication time tracking
     },
-    { scope: 'worker' },
+    { scope: 'file' },
   ],
 });
