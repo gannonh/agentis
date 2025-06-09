@@ -40,6 +40,12 @@ import { User } from '@librechat/backend/models';
 export * from '@playwright/test';
 
 /**
+ * Generate a unique UUID once per test file execution
+ * This ensures all tests in a file share the same user while maintaining isolation between files
+ */
+const fileUuid = crypto.randomUUID().substring(0, 8);
+
+/**
  * Test user interface for UUID-based unique users
  */
 interface TestUser {
@@ -236,14 +242,13 @@ export const test = baseTest.extend<object, { fileStorageState: string }>({
    */
   fileStorageState: [
     async ({ browser }, use, testInfo) => {
-      // Generate unique user for each test file
-      const uuid = crypto.randomUUID().substring(0, 8);
+      // Use the file-scoped UUID - same for all tests in this file, unique per file
       const user: TestUser = {
-        name: `Test User ${uuid}`,
-        email: `test-${uuid}@librechat.test`,
+        name: `Test User ${fileUuid}`,
+        email: `test-${fileUuid}@librechat.test`,
         password: 'TestPassword123!',
       };
-      const storageStatePath = path.join(__dirname, `storageState-${uuid}.json`);
+      const storageStatePath = path.join(__dirname, `storageState-${fileUuid}.json`);
       const testFileName = testInfo?.project?.name || 'unknown';
 
       console.log(`🔧 File ${testFileName}: Creating auth for unique user: ${user.email}`);

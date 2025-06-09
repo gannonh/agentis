@@ -307,40 +307,40 @@ Common test patterns:
 
 ## Test Isolation Pattern (DEFINITIVE)
 
-### Worker-to-File Mapping with Unique Users
+### File-Scoped Authentication with Unique Users
 
 **CRITICAL**: This pattern is set in stone and must be followed exactly for all E2E tests.
 
-Each test file gets its own unique user, ensuring complete test isolation between files while allowing data sharing within a file:
+Each test file gets its own unique user, ensuring complete test isolation between files while allowing data sharing within a file. This works regardless of worker count (workers=1 or workers=N).
 
 ```mermaid
 graph TD
-    A[Test File 1: google.mcp.calendar.spec.ts] --> B[Worker 1]
-    B --> C[UUID: abc123ef]
-    C --> D[User: test-abc123ef@librechat.test]
-    D --> E[Registration]
-    E --> F[Login]
-    F --> G[Accept TOS]
-    G --> H[Storage State: storageState-abc123ef.json]
-    H --> I[Test 1.1: Create Calendar Agent]
-    H --> J[Test 1.2: Use Calendar Agent]
+    A[Test File 1: google.mcp.calendar.spec.ts] --> B[File UUID: abc123ef]
+    B --> C[User: test-abc123ef@librechat.test]
+    C --> D[Registration]
+    D --> E[Login]
+    E --> F[Accept TOS]
+    F --> G[Storage State: storageState-abc123ef.json]
+    G --> H[Test 1.1: Create Calendar Agent]
+    G --> I[Test 1.2: Use Calendar Agent]
+    G --> J[Test 1.3: Chat with Agent]
     
-    K[Test File 2: google.mcp.docs.spec.ts] --> L[Worker 2]
-    L --> M[UUID: def456gh]
-    M --> N[User: test-def456gh@librechat.test]
-    N --> O[Registration]
-    O --> P[Login]
-    P --> Q[Accept TOS]
-    Q --> R[Storage State: storageState-def456gh.json]
-    R --> S[Test 2.1: Create Docs Agent]
-    R --> T[Test 2.2: Use Docs Agent]
+    K[Test File 2: google.mcp.docs.spec.ts] --> L[File UUID: def456gh]
+    L --> M[User: test-def456gh@librechat.test]
+    M --> N[Registration]
+    N --> O[Login]
+    O --> P[Accept TOS]
+    P --> Q[Storage State: storageState-def456gh.json]
+    Q --> R[Test 2.1: Create Docs Agent]
+    Q --> S[Test 2.2: Use Docs Agent]
+    Q --> T[Test 2.3: Chat with Agent]
     
     style A fill:#e1f5fe
     style K fill:#e8f5e8
-    style D fill:#fff3e0
-    style N fill:#fff3e0
-    style H fill:#f3e5f5
-    style R fill:#f3e5f5
+    style C fill:#fff3e0
+    style M fill:#fff3e0
+    style G fill:#f3e5f5
+    style Q fill:#f3e5f5
 ```
 
 ### Authentication Flow
@@ -378,23 +378,39 @@ sequenceDiagram
 
 ### Key Principles
 
-1. **One User Per Test File**: Each test file gets a UUID-based unique user
+1. **One User Per Test File**: Each test file gets a UUID-based unique user generated at module load time
 2. **Shared Storage State**: All tests within a file share the same authentication storage state  
 3. **Registration + Login + TOS Flow**: Always: Registration → Login → Accept TOS → Homepage
 4. **First Test Authenticates**: First test in file handles full auth flow, subsequent tests reuse storage state
 5. **Complete Isolation**: Different test files cannot see each other's data (users, agents, chats)
+6. **Worker-Independent**: Works with workers=1 (local dev) or workers=N (CI) seamlessly
 
 ### Implementation
 
+The implementation uses a simple file-scoped UUID that's generated once when the fixtures module loads:
+
 ```typescript
 // fixtures.ts - Creates unique user per test file
-const uuid = crypto.randomUUID().substring(0, 8);
-const user = {
-  name: `Test User ${uuid}`,
-  email: `test-${uuid}@librechat.test`, 
-  password: 'TestPassword123!'
-};
-const storageStatePath = path.join(__dirname, `storageState-${uuid}.json`);
+const fileUuid = crypto.randomUUID().substring(0, 8);
+
+export const test = baseTest.extend<object, { fileStorageState: string }>({
+  fileStorageState: [
+    async ({ browser }, use, testInfo) => {
+      // Use the file-scoped UUID - same for all tests in this file, unique per file
+      const user: TestUser = {
+        name: `Test User ${fileUuid}`,
+        email: `test-${fileUuid}@librechat.test`,
+        password: 'TestPassword123!',
+      };
+      const storageStatePath = path.join(__dirname, `storageState-${fileUuid}.json`);
+      
+      // ... authentication logic (registration, login, TOS)
+      
+      await use(storageStatePath);
+    },
+    { scope: 'worker' },
+  ],
+});
 ```
 
 **This pattern ensures**:
@@ -402,6 +418,8 @@ const storageStatePath = path.join(__dirname, `storageState-${uuid}.json`);
 - Data persistence within test file for sequential tests  
 - Predictable, repeatable test runs
 - Clear data ownership and cleanup
+- Works regardless of Playwright worker configuration
+- Simple implementation following KISS principle
 
 ## Writing New Tests
 
