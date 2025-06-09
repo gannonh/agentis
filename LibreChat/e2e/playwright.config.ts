@@ -34,7 +34,7 @@ export default defineConfig({
   expect: {
     timeout: 10000,
   },
-  timeout: 5 * 60 * 1000, // 5 minutes for Google tests
+  timeout: 5 * 60 * 1000, // 5 minutes
   /* Configure projects for major browsers */
   projects: [
     // Main test project with worker-scoped authentication
