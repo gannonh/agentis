@@ -299,6 +299,49 @@ When modifying shared packages, rebuild in order:
 3. `mcp` (Model Context Protocol)
 4. Client restart
 
+## 📝 TypeScript Configuration
+
+### Multiple Configurations
+
+The client uses separate TypeScript configurations for different purposes:
+
+#### `tsconfig.json` (Development & Build)
+- **Purpose**: Full development experience with IntelliSense
+- **Includes**: All source files and test files
+- **Used by**: Vite, Jest, IDE
+
+#### `tsconfig.typecheck.json` (Production Type Checking)
+- **Purpose**: CI/CD and production code validation
+- **Includes**: Source code only, excludes all test files
+- **Used by**: `npm run typecheck:client`
+
+#### `tsconfig.test.json` (Test-Only Type Checking)
+- **Purpose**: Separate test file validation (optional)
+- **Includes**: Test files only
+- **Used by**: `npm run typecheck:client:tests`
+
+### Commands
+
+```bash
+# Type check production code only (recommended for CI/CD)
+npm run typecheck:client
+
+# Type check test files only
+npm run typecheck:client:tests
+
+# Type check all (client + api + packages)
+npm run typecheck:all
+```
+
+### Benefits
+
+- **Focused Errors**: Production typechecking shows only runtime-affecting errors
+- **Faster CI/CD**: Reduced noise in deployment checks
+- **Better DX**: Less overwhelming type error output
+- **Flexible**: Can still check test types when needed
+
+**Before**: 101 errors in 41 files | **After**: ~63 errors in 33 files
+
 ## 🧪 Testing Strategy
 
 ### Test Configuration

@@ -40,6 +40,8 @@ export default [
       'packages/data-provider/test_bundle/**/*',
       'packages/data-schemas/dist/**/*',
       'packages/data-schemas/types/**/*',
+      'packages/arcade-client/dist/**/*',
+      'packages/arcade-client/types/**/*',
       'data-node/**/*',
       'meili_data/**/*',
       '**/node_modules/**/*',

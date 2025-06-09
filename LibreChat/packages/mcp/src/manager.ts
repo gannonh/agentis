@@ -12,6 +12,18 @@ export interface CallToolOptions extends RequestOptions {
   userId?: string;
 }
 
+class AuthenticationError extends McpError {
+  public authenticationRequired: boolean = true;
+  public serverName: string;
+  public service: string;
+
+  constructor(message: string, serverName: string) {
+    super(ErrorCode.InvalidRequest, message);
+    this.serverName = serverName;
+    this.service = serverName;
+  }
+}
+
 export class MCPManager {
   private static instance: MCPManager | null = null;
   /** App-level connections initialized at startup */
@@ -245,13 +257,20 @@ export class MCPManager {
       try {
         const connectedAccountId = await this.connectedAccountResolver(userId, serverName);
         if (connectedAccountId) {
-          this.logger.info(`[MCP][User: ${userId}][${serverName}] Using connected account: ${connectedAccountId}`);
+          this.logger.info(
+            `[MCP][User: ${userId}][${serverName}] Using connected account: ${connectedAccountId}`,
+          );
           config = resolveComposioPlaceholders(config, connectedAccountId);
         } else {
-          this.logger.warn(`[MCP][User: ${userId}][${serverName}] No connected account found, connection may fail`);
+          this.logger.warn(
+            `[MCP][User: ${userId}][${serverName}] No connected account found, connection may fail`,
+          );
         }
       } catch (error) {
-        this.logger.error(`[MCP][User: ${userId}][${serverName}] Failed to resolve connected account:`, error);
+        this.logger.error(
+          `[MCP][User: ${userId}][${serverName}] Failed to resolve connected account:`,
+          error,
+        );
         // Continue without connected account resolution - user may need to authenticate
       }
     }
@@ -474,36 +493,33 @@ export class MCPManager {
     try {
       if (userId) {
         this.updateUserLastActivity(userId);
-        
+
         // Check if this is a Composio server that requires authentication
         const config = this.mcpConfigs[serverName];
-        
+
         if (config && this.isComposioServer(config) && this.connectedAccountResolver) {
           try {
             const connectedAccountId = await this.connectedAccountResolver(userId, serverName);
-            
+
             if (!connectedAccountId) {
               // No connected account found - user needs to authenticate
-              const authenticationRequiredError = new McpError(
-                ErrorCode.InvalidRequest,
+              const authenticationRequiredError = new AuthenticationError(
                 `Authentication required for ${serverName}. Please connect your account to use ${serverName} tools.`,
+                serverName,
               );
-              (authenticationRequiredError as any).authenticationRequired = true;
-              (authenticationRequiredError as any).serverName = serverName;
-              (authenticationRequiredError as any).service = serverName;
               throw authenticationRequiredError;
             }
             this.logger.info(`${logPrefix} Using connected account: ${connectedAccountId}`);
           } catch (error) {
             // If it's already an authentication error, re-throw it
-            if ((error as any).authenticationRequired) {
+            if ((error as AuthenticationError).authenticationRequired) {
               throw error;
             }
             // For other errors, log and continue (may be transient)
             this.logger.warn(`${logPrefix} Failed to check authentication status:`, error);
           }
         }
-        
+
         // Get or create user-specific connection
         connection = await this.getUserConnection(userId, serverName);
       } else {

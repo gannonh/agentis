@@ -29,6 +29,38 @@ jest.mock('~/store', () => ({
   })),
 }));
 
+// Helper function for Date mocking
+function createDateMock() {
+  const OriginalDate = Date;
+  let callCount = 0;
+
+  const mockDate = jest.fn((...args: any[]) => {
+    if (args.length === 0) {
+      // Constructor called without arguments (new Date())
+      callCount++;
+      // Create dates 1 second apart
+      return new OriginalDate(1000000000000 + callCount * 1000);
+    }
+    // Pass through for other Date constructor calls
+    return new OriginalDate(...(args as ConstructorParameters<typeof Date>));
+  }) as any;
+
+  // Preserve static Date methods
+  Object.setPrototypeOf(mockDate, OriginalDate);
+  Object.getOwnPropertyNames(OriginalDate).forEach((prop) => {
+    if (prop !== 'prototype' && prop !== 'length' && prop !== 'name') {
+      (mockDate as any)[prop] = (OriginalDate as any)[prop];
+    }
+  });
+
+  return {
+    mockDate,
+    restore: () => {
+      global.Date = OriginalDate;
+    },
+  };
+}
+
 const mockAgent: Agent = {
   id: 'test-agent-1',
   name: 'Test Agent',
@@ -37,16 +69,34 @@ const mockAgent: Agent = {
   avatar: null,
   provider: 'openAI',
   model: 'gpt-4',
-  model_parameters: {},
+  model_parameters: {
+    temperature: 0.7,
+    maxContextTokens: 4096,
+    max_context_tokens: 4096,
+    max_output_tokens: 2048,
+    top_p: 1.0,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+  },
   tools: ['execute_code'],
   created_at: Date.now(),
   featured: true,
 };
 
 describe('useStartAgentChat Hook', () => {
+  let dateMockHelper: { mockDate: any; restore: () => void } | null = null;
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
+  });
+
+  afterEach(() => {
+    // Always restore Date mock if it was created
+    if (dateMockHelper) {
+      dateMockHelper.restore();
+      dateMockHelper = null;
+    }
   });
 
   it('should return a function to start chat with agent', () => {
@@ -92,8 +142,11 @@ describe('useStartAgentChat Hook', () => {
     expect(mockSetConversation).toHaveBeenCalledWith(
       expect.objectContaining({
         conversationId: null,
-        parentMessageId: null,
         messages: [],
+        agent_id: 'test-agent-1',
+        endpoint: 'agents',
+        model: 'gpt-4',
+        tools: ['execute_code'],
       }),
     );
   });
@@ -144,7 +197,12 @@ describe('useStartAgentChat Hook', () => {
       ...mockAgent,
       model_parameters: {
         temperature: 0.7,
-        max_tokens: 1000,
+        maxContextTokens: 4096,
+        max_context_tokens: 4096,
+        max_output_tokens: 1000,
+        top_p: 1.0,
+        frequency_penalty: 0,
+        presence_penalty: 0,
       },
     };
 
@@ -158,35 +216,37 @@ describe('useStartAgentChat Hook', () => {
         model: 'gpt-4',
         modelDisplayLabel: 'Test Agent',
         temperature: 0.7,
-        max_tokens: 1000,
+        max_output_tokens: 1000,
       }),
     );
   });
 
-  it('should generate unique conversation ID', () => {
+  it('should generate unique conversation setup', () => {
+    // Use the helper function to create Date mock
+    dateMockHelper = createDateMock();
+    global.Date = dateMockHelper.mockDate;
+
     const { result } = renderHook(() => useStartAgentChat());
 
-    // Mock Date.now to return different values
-    const originalDateNow = Date.now;
-    let callCount = 0;
-    Date.now = jest.fn(() => {
-      callCount++;
-      return originalDateNow() + callCount * 1000; // Ensure different timestamps
-    });
-
-    // Start multiple chats
+    // Start first chat
     result.current(mockAgent);
     const firstCall = mockSetConversation.mock.calls[0][0];
 
-    jest.clearAllMocks();
+    // Clear mocks but keep the Date mock
+    mockSetConversation.mockClear();
 
+    // Start second chat
     result.current(mockAgent);
     const secondCall = mockSetConversation.mock.calls[0][0];
 
-    // Each should have different conversation setup
-    expect(firstCall).not.toEqual(secondCall);
+    // Each should have different createdAt timestamps
+    expect(firstCall.createdAt).not.toEqual(secondCall.createdAt);
 
-    // Restore original Date.now
-    Date.now = originalDateNow;
+    // But same basic structure
+    expect(firstCall.conversationId).toBe(null);
+    expect(secondCall.conversationId).toBe(null);
+    expect(firstCall.agent_id).toBe(secondCall.agent_id);
+
+    // Date restoration will be handled by afterEach
   });
 });

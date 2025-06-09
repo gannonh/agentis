@@ -76,7 +76,7 @@ router.get('/connection-status/:service', requireJwtAuth, async (req, res) => {
     const userId = req.user.id;
 
     const hasConnection = await composioService.hasActiveConnection(userId, service);
-    
+
     res.json({
       success: true,
       service,
@@ -107,16 +107,25 @@ router.post('/wait-for-connection', requireJwtAuth, async (req, res) => {
       });
     }
 
-    logger.info(`[ComposioAuth] Waiting for connection ${connectedAccountId} to become active for user ${userId}, service ${service}`);
+    logger.info(
+      `[ComposioAuth] Waiting for connection ${connectedAccountId} to become active for user ${userId}, service ${service}`,
+    );
 
-    const isActive = await composioService.waitForConnectionActive(userId, service, connectedAccountId, timeoutSeconds);
-    
+    const result = await composioService.waitForConnectionActive(
+      userId,
+      service,
+      connectedAccountId,
+      timeoutSeconds,
+    );
+
     res.json({
       success: true,
       service,
-      connectedAccountId,
-      isActive,
-      message: isActive ? 'Connection is now active' : 'Connection did not become active within timeout',
+      connectedAccountId: result.connectedAccountId || connectedAccountId,
+      isActive: result.isActive,
+      message: result.isActive
+        ? 'Connection is now active'
+        : 'Connection did not become active within timeout',
     });
   } catch (error) {
     logger.error('[ComposioAuth] Failed to wait for connection:', error);
@@ -136,10 +145,10 @@ router.get('/connected-accounts', requireJwtAuth, async (req, res) => {
     const userId = req.user.id;
 
     const connectedAccounts = await composioService.getUserConnectedAccounts(userId);
-    
+
     res.json({
       success: true,
-      connectedAccounts: connectedAccounts.map(account => ({
+      connectedAccounts: connectedAccounts.map((account) => ({
         service: account.service,
         connectedAccountId: account.connectedAccountId,
         status: account.status,
@@ -165,7 +174,7 @@ router.delete('/connected-accounts/:service', requireJwtAuth, async (req, res) =
     const userId = req.user.id;
 
     await composioService.removeConnectedAccount(userId, service);
-    
+
     res.json({
       success: true,
       message: `Removed connected account for ${service}`,
@@ -205,9 +214,11 @@ router.post('/callback', async (req, res) => {
 
     // Complete the OAuth flow and store the connected account
     await composioService.completeOAuthFlow(userId, service, connectedAccountId);
-    
-    logger.info(`[ComposioAuth] OAuth callback processed successfully for user ${userId}, service ${service}`);
-    
+
+    logger.info(
+      `[ComposioAuth] OAuth callback processed successfully for user ${userId}, service ${service}`,
+    );
+
     res.json({
       success: true,
       message: 'OAuth callback processed successfully',
@@ -275,16 +286,18 @@ router.get('/callback', async (req, res) => {
     // At this point, Composio has handled the OAuth exchange
     // We need to wait for the connection to become active
     logger.info(`[ComposioAuth] OAuth completed, waiting for connection to become active...`);
-    
+
     // Get the connection ID from our database (we stored it during initiation)
     const dbRecord = await ComposioConnectedAccount.findOne({
       user: userId,
       service: service,
-      status: 'pending'
+      connectionStatus: { $in: ['PENDING', 'INITIATED'] },
     });
 
     if (!dbRecord) {
-      logger.error(`[ComposioAuth] Could not find pending connection for user ${userId}, service ${service}`);
+      logger.error(
+        `[ComposioAuth] Could not find pending connection for user ${userId}, service ${service}`,
+      );
       return res.status(400).send(`
         <html><body>
           <h1>Authentication Error</h1>
@@ -295,13 +308,23 @@ router.get('/callback', async (req, res) => {
     }
 
     const connectedAccountId = dbRecord.connectedAccountId;
-    
+
     // Wait for connection to become active (shorter timeout for callback)
-    const isActive = await composioService.waitForConnectionActive(userId, service, connectedAccountId, 30);
-    
-    if (isActive) {
-      logger.info(`[ComposioAuth] OAuth callback processed successfully for user ${userId}, service ${service}`);
-      
+    const result = await composioService.waitForConnectionActive(
+      userId,
+      service,
+      connectedAccountId,
+      30,
+    );
+
+    if (result.isActive) {
+      logger.info(
+        `[ComposioAuth] OAuth callback processed successfully for user ${userId}, service ${service}`,
+      );
+
+      const activeConnectionId = result.connectedAccountId || connectedAccountId;
+      logger.info(`[ComposioAuth] Using active connection ID: ${activeConnectionId}`);
+
       // Return a success page that closes the popup
       res.send(`
         <html><body>
@@ -313,7 +336,7 @@ router.get('/callback', async (req, res) => {
               window.opener.postMessage({
                 type: 'COMPOSIO_AUTH_SUCCESS',
                 service: '${service}',
-                connectedAccountId: '${connectedAccountId}'
+                connectedAccountId: '${activeConnectionId}'
               }, '*');
             }
             setTimeout(() => window.close(), 1000);
@@ -321,8 +344,11 @@ router.get('/callback', async (req, res) => {
         </body></html>
       `);
     } else {
-      logger.warn(`[ComposioAuth] Connection did not become active for user ${userId}, service ${service}`);
-      
+      logger.warn(
+        `[ComposioAuth] Connection did not become active for user ${userId}, service ${service}`,
+      );
+
+      // Still send back the UUID for pending connections
       res.send(`
         <html><body>
           <h1>Authentication In Progress</h1>

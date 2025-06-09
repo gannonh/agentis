@@ -86,7 +86,7 @@ services:
       - agentis_network
 
   rag_api:
-    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+    image: ghcr.io/gannonh/rag-api-lite:latest
     container_name: agentis-rag-api
     restart: unless-stopped
     depends_on:
@@ -103,15 +103,15 @@ services:
     networks:
       - agentis_network
 
-  # Optional: Sandpack for code execution
-  # sandpack:
-  #   image: ghcr.io/codesandbox/nodebox-runtime:latest
-  #   container_name: agentis-sandpack
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8080:8080"
-  #   networks:
-  #     - agentis_network
+  # Sandpack for code execution
+  sandpack:
+    image: ghcr.io/gannonh/codesandbox-client/bundler:latest
+    container_name: agentis-sandpack
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - agentis_network
 
 networks:
   agentis_network:

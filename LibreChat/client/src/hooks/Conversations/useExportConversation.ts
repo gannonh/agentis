@@ -91,7 +91,7 @@ export default function useExportConversation({
 
     if (content.type === ContentTypes.ERROR) {
       // ERROR
-      return [sender, content[ContentTypes.TEXT].value];
+      return [sender, typeof content.text === 'string' ? content.text : content.text?.value || ''];
     }
 
     if (content.type === ContentTypes.TEXT) {
@@ -169,10 +169,12 @@ export default function useExportConversation({
 
     if (Array.isArray(messages)) {
       for (const message of messages) {
-        data.push(message);
+        if (message && message.messageId) {
+          data.push(message as TMessage);
+        }
       }
-    } else {
-      data.push(messages);
+    } else if (messages && messages.messageId) {
+      data.push(messages as TMessage);
     }
 
     exportFromJSON({
@@ -245,17 +247,19 @@ export default function useExportConversation({
     data += '\n## History\n';
     if (Array.isArray(messages)) {
       for (const message of messages) {
-        data += `${getMessageText(message, 'md')}\n`;
-        if (message.error) {
-          data += '*(This is an error message)*\n';
+        if (message && message.messageId) {
+          data += `${getMessageText(message as TMessage, 'md')}\n`;
+          if (message.error) {
+            data += '*(This is an error message)*\n';
+          }
+          if (message.unfinished === true) {
+            data += '*(This is an unfinished message)*\n';
+          }
+          data += '\n\n';
         }
-        if (message.unfinished === true) {
-          data += '*(This is an unfinished message)*\n';
-        }
-        data += '\n\n';
       }
-    } else {
-      data += `${getMessageText(messages, 'md')}\n`;
+    } else if (messages && messages.messageId) {
+      data += `${getMessageText(messages as TMessage, 'md')}\n`;
       if (messages.error) {
         data += '*(This is an error message)*\n';
       }
@@ -301,17 +305,19 @@ export default function useExportConversation({
     data += '\nHistory\n########################\n';
     if (Array.isArray(messages)) {
       for (const message of messages) {
-        data += `${getMessageText(message)}\n`;
-        if (message.error) {
-          data += '(This is an error message)\n';
+        if (message && message.messageId) {
+          data += `${getMessageText(message as TMessage)}\n`;
+          if (message.error) {
+            data += '(This is an error message)\n';
+          }
+          if (message.unfinished === true) {
+            data += '(This is an unfinished message)\n';
+          }
+          data += '\n\n';
         }
-        if (message.unfinished === true) {
-          data += '(This is an unfinished message)\n';
-        }
-        data += '\n\n';
       }
-    } else {
-      data += `${getMessageText(messages)}\n`;
+    } else if (messages && messages.messageId) {
+      data += `${getMessageText(messages as TMessage)}\n`;
       if (messages.error) {
         data += '(This is an error message)\n';
       }

@@ -43,9 +43,9 @@ const PromptEditor: React.FC<Props> = ({ name, isEditing, setIsEditing }) => {
   }, [isEditing, prompt]);
 
   const rehypePlugins: PluggableList = [
-    [rehypeKatex],
+    [rehypeKatex as any],
     [
-      rehypeHighlight,
+      rehypeHighlight as any,
       {
         detect: true,
         ignoreMissing: true,

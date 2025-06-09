@@ -49,10 +49,7 @@ export default function AgentDiscovery({ onStartChat }: AgentDiscoveryProps) {
       </div>
 
       {/* Agent Grid */}
-      <div
-        data-testid="agent-discovery-grid"
-        className="flex flex-wrap justify-center gap-4"
-      >
+      <div data-testid="agent-discovery-grid" className="flex flex-wrap justify-center gap-4">
         {featuredAgents.map((agent) => (
           <AgentCTA key={agent.id} agent={agent} onStartChat={onStartChat} />
         ))}

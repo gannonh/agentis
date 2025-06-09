@@ -78,7 +78,7 @@ export async function diagnoseUserConnections(logger: Logger): Promise<void> {
 export async function diagnoseSpecificUser(
   userId: string,
   logger: Logger,
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown> | null> {
   try {
     const manager = MCPManager.getInstance(logger);
     logger.info(`[MCP-DIAGNOSTICS] Running diagnostics for user ${userId}`);

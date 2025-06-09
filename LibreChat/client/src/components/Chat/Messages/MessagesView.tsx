@@ -5,6 +5,7 @@ import type { TMessage } from 'librechat-data-provider';
 import { useScreenshot, useMessageScrolling, useLocalize } from '~/hooks';
 import ScrollToBottom from '~/components/Messages/ScrollToBottom';
 import MultiMessage from './MultiMessage';
+import ProactiveMCPAuth from './ProactiveMCPAuth';
 import { cn } from '~/utils';
 import store from '~/store';
 
@@ -30,6 +31,90 @@ export default function MessagesView({
 
   const { conversationId } = conversation ?? {};
 
+  // Helper function to determine if we should show ProactiveMCPAuth
+  const shouldShowProactiveMCPAuth = (_messagesTree: TMessage[] | null) => {
+    // console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth called with:', _messagesTree?.length || 0, 'messages');
+
+    if (!_messagesTree || _messagesTree.length === 0) {
+      // console.log('🔍 [MessagesView] No messages tree, returning false');
+      return false;
+    }
+
+    // Flatten the message tree to get all messages in order
+    const flatMessages: TMessage[] = [];
+    const flattenMessages = (messages: TMessage[]) => {
+      for (const message of messages) {
+        flatMessages.push(message);
+        if (message.children && message.children.length > 0) {
+          flattenMessages(message.children);
+        }
+      }
+    };
+    flattenMessages(_messagesTree);
+
+    // Check if we have at least one user message (simplified condition for testing)
+    const userMessages = flatMessages.filter((m) => m.isCreatedByUser === true);
+    const assistantMessages = flatMessages.filter((m) => m.isCreatedByUser === false);
+
+    const shouldShow = userMessages.length >= 1;
+    // console.log('🔍 [MessagesView] shouldShowProactiveMCPAuth result:', shouldShow, {
+    //   flatMessagesCount: flatMessages.length,
+    //   userMessagesCount: userMessages.length,
+    //   assistantMessagesCount: assistantMessages.length,
+    //   flatMessages: flatMessages.map(m => ({
+    //     isCreatedByUser: m.isCreatedByUser,
+    //     sender: m.sender,
+    //     content: typeof m.text === 'string' ? m.text.substring(0, 50) : String(m.text || '').substring(0, 50)
+    //   }))
+    // });
+
+    return shouldShow;
+  };
+
+  // Function to render messages with ProactiveMCPAuth inserted at the right position
+  const renderMessagesWithAuth = (_messagesTree: TMessage[] | null) => {
+    if (!_messagesTree || _messagesTree.length === 0) {
+      return (
+        <div
+          className={cn(
+            'flex w-full items-center justify-center p-3 text-text-secondary',
+            fontSize,
+          )}
+        >
+          {localize('com_ui_nothing_found')}
+        </div>
+      );
+    }
+
+    // Flatten the message tree to get all messages for auth detection
+    const flatMessages: TMessage[] = [];
+    const flattenMessages = (messages: TMessage[]) => {
+      for (const message of messages) {
+        flatMessages.push(message);
+        if (message.children && message.children.length > 0) {
+          flattenMessages(message.children);
+        }
+      }
+    };
+    flattenMessages(_messagesTree);
+
+    return (
+      <>
+        <div ref={screenshotTargetRef}>
+          {/* Show auth UI after first user message */}
+          <ProactiveMCPAuth messages={flatMessages} conversationId={conversationId ?? null} />
+          <MultiMessage
+            key={conversationId}
+            messagesTree={_messagesTree}
+            messageId={conversationId ?? null}
+            setCurrentEditId={setCurrentEditId}
+            currentEditId={currentEditId ?? null}
+          />
+        </div>
+      </>
+    );
+  };
+
   return (
     <>
       <div className="relative flex-1 overflow-hidden overflow-y-auto">
@@ -45,28 +130,7 @@ export default function MessagesView({
             }}
           >
             <div className="flex flex-col pb-9 dark:bg-transparent">
-              {(_messagesTree && _messagesTree.length == 0) || _messagesTree === null ? (
-                <div
-                  className={cn(
-                    'flex w-full items-center justify-center p-3 text-text-secondary',
-                    fontSize,
-                  )}
-                >
-                  {localize('com_ui_nothing_found')}
-                </div>
-              ) : (
-                <>
-                  <div ref={screenshotTargetRef}>
-                    <MultiMessage
-                      key={conversationId}
-                      messagesTree={_messagesTree}
-                      messageId={conversationId ?? null}
-                      setCurrentEditId={setCurrentEditId}
-                      currentEditId={currentEditId ?? null}
-                    />
-                  </div>
-                </>
-              )}
+              {renderMessagesWithAuth(_messagesTree ?? null)}
               <div
                 id="messages-end"
                 className="group h-0 w-full flex-shrink-0"

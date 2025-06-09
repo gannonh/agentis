@@ -13,9 +13,9 @@ import { langSubset } from '~/utils';
 const MarkdownLite = memo(
   ({ content = '', codeExecution = true }: { content?: string; codeExecution?: boolean }) => {
     const rehypePlugins: PluggableList = [
-      [rehypeKatex],
+      [rehypeKatex as any],
       [
-        rehypeHighlight,
+        rehypeHighlight as any,
         {
           detect: true,
           ignoreMissing: true,
@@ -32,7 +32,7 @@ const MarkdownLite = memo(
               /** @ts-ignore */
               supersub,
               remarkGfm,
-              [remarkMath, { singleDollarTextMath: true }],
+              [remarkMath as any, { singleDollarTextMath: true }],
             ]}
             /** @ts-ignore */
             rehypePlugins={rehypePlugins}

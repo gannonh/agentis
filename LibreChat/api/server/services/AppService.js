@@ -68,18 +68,21 @@ const AppService = async (app) => {
 
   if (config.mcpServers != null && process.env.NODE_ENV !== 'test') {
     const mcpManager = getMCPManager();
-    
+
     // Create connected account resolver for Composio
     const connectedAccountResolver = async (userId, service) => {
       try {
         const connectedAccountId = await composioService.getConnectedAccountId(userId, service);
         return connectedAccountId; // This will return null if no account exists, which triggers auth check
       } catch (error) {
-        console.error(`[AppService] Failed to resolve connected account for user ${userId}, service ${service}:`, error);
+        console.error(
+          `[AppService] Failed to resolve connected account for user ${userId}, service ${service}:`,
+          error,
+        );
         return null; // Return null to trigger auth check
       }
     };
-    
+
     await mcpManager.initializeMCP(config.mcpServers, processMCPEnv, connectedAccountResolver);
     await mcpManager.mapAvailableTools(availableTools);
   }

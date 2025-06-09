@@ -78,29 +78,43 @@ async function createMCPTool({ req, toolKey, provider: _provider }) {
         `[MCP][User: ${config?.configurable?.user_id}][${serverName}] Error calling "${toolName}" MCP tool:`,
         error,
       );
-      
+
       // Check if this is an authentication required error
       if (error?.authenticationRequired && error?.service) {
-        const serviceName = error.service === 'googlesheets' ? 'Google Sheets' 
-                          : error.service === 'googledrive' ? 'Google Drive'
-                          : error.service === 'googledocs' ? 'Google Docs'
-                          : error.service === 'gmail' ? 'Gmail'
-                          : error.service === 'googlecalendar' ? 'Google Calendar'
-                          : error.service;
-        
+        let serviceName;
+        switch (error.service) {
+          case 'googlesheets':
+            serviceName = 'Google Sheets';
+            break;
+          case 'googledrive':
+            serviceName = 'Google Drive';
+            break;
+          case 'googledocs':
+            serviceName = 'Google Docs';
+            break;
+          case 'gmail':
+            serviceName = 'Gmail';
+            break;
+          case 'googlecalendar':
+            serviceName = 'Google Calendar';
+            break;
+          default:
+            serviceName = error.service;
+        }
+
         // Return a successful response with authentication instructions and authCode for UI parsing
         // The authCode allows the frontend to render inline authentication buttons
         return [
           [
             {
               type: 'text',
-              text: `AUTHCODE:${error.service}:The user needs to authenticate with ${serviceName} to use ${serviceName} tools. Please ask them to use the authentication button that will appear below your response.`
-            }
+              text: `AUTHCODE:${error.service}:The user needs to authenticate with ${serviceName} to use ${serviceName} tools. Please ask them to use the authentication button.`,
+            },
           ],
-          null // No artifact
+          null, // No artifact
         ];
       }
-      
+
       throw new Error(
         `"${toolKey}" tool call failed${error?.message ? `: ${error?.message}` : '.'}`,
       );

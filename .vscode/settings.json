@@ -1,0 +1,6 @@
+{
+  "playwright.testDir": "LibreChat/e2e/specs",
+  "playwright.configFile": "LibreChat/e2e/playwright.config.ts",
+  "playwright.showTrace": false,
+  "playwright.reuseBrowser": false
+}

@@ -21,18 +21,18 @@ jest.mock('~/data-provider', () => ({
         name: 'Google Sheets',
         pluginKey: 'googlesheets',
         icon: '/assets/tools/google-sheets.svg',
-        description: 'Google Sheets tool'
+        description: 'Google Sheets tool',
       },
       {
         name: 'Gmail',
         pluginKey: 'gmail',
         icon: '/assets/tools/gmail.svg',
-        description: 'Gmail tool'
-      }
+        description: 'Gmail tool',
+      },
     ],
     isLoading: false,
-    error: null
-  })
+    error: null,
+  }),
 }));
 
 jest.mock('~/utils', () => ({
@@ -89,7 +89,9 @@ describe('AgentCTA Component', () => {
     expect(screen.getByText('Code Assistant')).toBeInTheDocument();
     expect(screen.getByText('Helps with coding tasks and debugging')).toBeInTheDocument();
     // Should show tool icons
-    expect(container.querySelector('img[src="/assets/tools/google-sheets.svg"]')).toBeInTheDocument();
+    expect(
+      container.querySelector('img[src="/assets/tools/google-sheets.svg"]'),
+    ).toBeInTheDocument();
   });
 
   it('should display single tool icon when agent has one tool', () => {
@@ -98,10 +100,14 @@ describe('AgentCTA Component', () => {
       tools: ['googlesheets'],
     };
 
-    const { container } = render(<AgentCTA agent={singleToolAgent} onStartChat={mockOnStartChat} />);
+    const { container } = render(
+      <AgentCTA agent={singleToolAgent} onStartChat={mockOnStartChat} />,
+    );
 
     // Should show the Google Sheets icon
-    expect(container.querySelector('img[src="/assets/tools/google-sheets.svg"]')).toBeInTheDocument();
+    expect(
+      container.querySelector('img[src="/assets/tools/google-sheets.svg"]'),
+    ).toBeInTheDocument();
   });
 
   it('should display multiple tool icons with count when agent has multiple tools', () => {
@@ -113,9 +119,11 @@ describe('AgentCTA Component', () => {
     const { container } = render(<AgentCTA agent={multiToolAgent} onStartChat={mockOnStartChat} />);
 
     // Should show unique tool icons
-    expect(container.querySelector('img[src="/assets/tools/google-sheets.svg"]')).toBeInTheDocument();
+    expect(
+      container.querySelector('img[src="/assets/tools/google-sheets.svg"]'),
+    ).toBeInTheDocument();
     expect(container.querySelector('img[src="/assets/tools/gmail.svg"]')).toBeInTheDocument();
-    // Should show tool count for additional tools  
+    // Should show tool count for additional tools
     expect(screen.getByText('+2 more tools')).toBeInTheDocument();
   });
 

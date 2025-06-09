@@ -66,9 +66,13 @@ function ChatView({ index = 0 }: { index?: number }) {
     (!messagesTree || messagesTree.length === 0) &&
     (conversationId === Constants.NEW_CONVO || !conversationId);
   const isNavigating = (!messagesTree || messagesTree.length === 0) && conversationId != null;
-  
+
   // Show CTAs whenever we're on /c/new (regardless of URL parameters)
-  console.log('ChatView Debug:', { conversationId, NEW_CONVO: Constants.NEW_CONVO, match: conversationId === Constants.NEW_CONVO });
+  console.log('ChatView Debug:', {
+    conversationId,
+    NEW_CONVO: Constants.NEW_CONVO,
+    match: conversationId === Constants.NEW_CONVO,
+  });
   const showAgentDiscovery = conversationId === Constants.NEW_CONVO;
 
   if (isLoading && conversationId !== Constants.NEW_CONVO) {

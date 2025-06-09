@@ -145,7 +145,7 @@ else
     "$(dirname "${BASH_SOURCE[0]}")/../LibreChat" \
     "$(dirname "${BASH_SOURCE[0]}")/LibreChat" \
     "$(dirname "${BASH_SOURCE[0]}")" \
-    "/Users/gannonhall/+DEV/agentis/LibreChat"; do
+    "/Users/gannonhall/dev/agentis/LibreChat"; do
     if [ -f "$possible_path/package.json" ]; then
       LIBRECHAT_DIR="$(cd "$possible_path" && pwd)"
       break

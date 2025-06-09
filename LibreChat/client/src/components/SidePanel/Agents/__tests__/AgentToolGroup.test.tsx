@@ -5,14 +5,14 @@ import AgentToolGroup from '../AgentToolGroup';
 // Mock the AgentTool component
 jest.mock('../AgentTool', () => ({
   __esModule: true,
-  default: ({ tool, onRemoveTool }) => (
-    <div data-testid={`agent-tool-${tool.pluginKey}`}>
-      {tool.displayName || tool.name || tool.pluginKey}
-      <button onClick={onRemoveTool} data-testid={`remove-tool-${tool.pluginKey}`}>
-        Remove Tool
-      </button>
-    </div>
-  ),
+  default: ({ tool }) => {
+    const currentTool = typeof tool === 'string' ? { pluginKey: tool, name: tool } : tool;
+    return (
+      <div data-testid={`agent-tool-${currentTool.pluginKey}`}>
+        {currentTool.displayName || currentTool.name || currentTool.pluginKey}
+      </div>
+    );
+  },
 }));
 
 // Mock localize hook
@@ -86,19 +86,5 @@ describe('AgentToolGroup', () => {
 
     // Check that onRemoveGroup was called
     expect(defaultProps.onRemoveGroup).toHaveBeenCalledTimes(1);
-  });
-
-  it("calls onRemoveTool when a tool's remove button is clicked", () => {
-    render(<AgentToolGroup {...defaultProps} />);
-
-    // Expand the group
-    fireEvent.click(screen.getByText('Google Sheets'));
-
-    // Find and click the remove button for the first tool
-    const removeButton = screen.getByTestId('remove-tool-create_sheet_mcp_googlesheets');
-    fireEvent.click(removeButton);
-
-    // Check that onRemoveTool was called with the correct tool key
-    expect(defaultProps.onRemoveTool).toHaveBeenCalledWith('create_sheet_mcp_googlesheets');
   });
 });

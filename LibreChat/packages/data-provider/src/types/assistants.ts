@@ -239,7 +239,12 @@ export type AgentCreateParams = {
   model_parameters: AgentModelParameters;
 } & Pick<
   Agent,
-  'agent_ids' | 'end_after_tools' | 'hide_sequential_outputs' | 'artifacts' | 'recursion_limit' | 'featured'
+  | 'agent_ids'
+  | 'end_after_tools'
+  | 'hide_sequential_outputs'
+  | 'artifacts'
+  | 'recursion_limit'
+  | 'featured'
 >;
 
 export type AgentUpdateParams = {
@@ -259,7 +264,12 @@ export type AgentUpdateParams = {
   featured?: boolean;
 } & Pick<
   Agent,
-  'agent_ids' | 'end_after_tools' | 'hide_sequential_outputs' | 'artifacts' | 'recursion_limit' | 'featured'
+  | 'agent_ids'
+  | 'end_after_tools'
+  | 'hide_sequential_outputs'
+  | 'artifacts'
+  | 'recursion_limit'
+  | 'featured'
 >;
 
 export type AgentListParams = {

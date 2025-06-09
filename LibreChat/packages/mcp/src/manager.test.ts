@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MCPManager } from './manager';
 import type { Logger } from 'winston';
 
@@ -41,13 +42,13 @@ describe('MCPManager', () => {
 
   it('should throw error for unknown servers in callTool', async () => {
     const manager = MCPManager.getInstance(mockLogger);
-    
+
     await expect(
       manager.callTool({
         serverName: 'unknown-server',
         toolName: 'test-tool',
-        provider: 'openAI'
-      })
+        provider: 'openAI',
+      }),
     ).rejects.toThrow();
   });
 });

@@ -213,12 +213,17 @@ export const useAvailableToolsQuery = <TData = t.TPlugin[]>(
       // Handle both array and object with tools property
       if (Array.isArray(response)) {
         return response;
-      } else if (response && typeof response === 'object' && Array.isArray(response.tools)) {
+      } else if (
+        response &&
+        typeof response === 'object' &&
+        'tools' in response &&
+        Array.isArray((response as any).tools)
+      ) {
         // Store MCP server configurations if available
-        if (response.mcpServers && window) {
-          window.__mcpServerConfigs = response.mcpServers;
+        if ('mcpServers' in response && (response as any).mcpServers && window) {
+          window.__mcpServerConfigs = (response as any).mcpServers;
         }
-        return response.tools;
+        return (response as any).tools;
       }
       console.warn('Unexpected response format from tools API:', response);
       return [];

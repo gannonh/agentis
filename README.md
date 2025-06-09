@@ -113,9 +113,38 @@ npm run e2e:a11y     # Run accessibility tests
 npm run lint         # Check for linting issues
 npm run lint:fix     # Fix linting issues automatically
 npm run format       # Format code with prettier
+
+# TypeScript
+npm run typecheck:client    # Check client production code types
+npm run typecheck:packages  # Check packages production code types
+npm run typecheck:all       # Check all production code types
 ```
 
+### TypeScript Configuration
+
+The project uses separate TypeScript configurations to improve developer experience:
+
+- **Production Type Checking**: `npm run typecheck:*` commands exclude test files, focusing on runtime-affecting errors
+- **Development**: IDEs use full configurations including test files for complete IntelliSense
+- **Benefits**: Reduced noise in CI/CD (63 vs 101 errors), faster type checking, better error focus
+
+Each component has multiple `tsconfig.json` files:
+- `tsconfig.json` - Full development configuration
+- `tsconfig.typecheck.json` - Production code only (used by CI/CD)
+- `tsconfig.test.json` - Test files only (optional)
+
 ## Docker Configuration
+
+### Self-Hosted Dependencies
+
+Agentis uses self-hosted Docker images for all external dependencies to ensure security, reliability, and control:
+
+- **RAG API**: `ghcr.io/gannonh/rag-api-lite:latest` - Document processing and retrieval
+- **Sandpack**: `ghcr.io/gannonh/codesandbox-client/bundler:latest` - Code execution environment
+
+These are maintained in separate repositories:
+- [rag_api](https://github.com/gannonh/rag_api) - Forked from danny-avila/rag_api
+- [codesandbox-client](https://github.com/gannonh/codesandbox-client) - Forked from LibreChat-AI/codesandbox-client
 
 ### Development Setup
 

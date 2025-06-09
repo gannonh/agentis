@@ -8,8 +8,10 @@ module.exports = {
     './test/__mocks__/logger.js',
     './test/__mocks__/fetchEventSource.js',
   ],
+  setupFilesAfterEnv: ['./test/jestTeardown.js'],
   moduleNameMapper: {
     '~/(.*)': '<rootDir>/$1',
     '~/data/auth.json': '<rootDir>/__mocks__/auth.mock.json',
   },
+  testTimeout: 30000,
 };

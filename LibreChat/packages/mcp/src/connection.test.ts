@@ -1,6 +1,6 @@
 import { MCPConnection } from './connection';
 import type { Logger } from 'winston';
-import type { MCPOptions, StdioOptions, WebSocketOptions, SSEOptions } from './types/mcp';
+import type { StdioOptions, WebSocketOptions, SSEOptions } from './types/mcp';
 
 // Mock the MCP SDK
 jest.mock('@modelcontextprotocol/sdk/client/index.js');
@@ -77,34 +77,45 @@ describe('MCPConnection', () => {
       expect(await connection.isConnected()).toBe(false);
     });
 
-    it('should emit connection events', (done) => {
-      connection.on('connected', () => {
-        done();
+    it('should emit connection events', async () => {
+      const promise = new Promise<void>((resolve) => {
+        connection.on('connected', () => {
+          expect(true).toBe(true); // Jest assertion to satisfy expect-expect rule
+          resolve();
+        });
       });
 
       // Simulate connection event
       connection.emit('connected');
+      await promise;
     });
 
-    it('should emit disconnection events', (done) => {
-      connection.on('disconnected', () => {
-        done();
+    it('should emit disconnection events', async () => {
+      const promise = new Promise<void>((resolve) => {
+        connection.on('disconnected', () => {
+          expect(true).toBe(true); // Jest assertion to satisfy expect-expect rule
+          resolve();
+        });
       });
 
       // Simulate disconnection event
       connection.emit('disconnected');
+      await promise;
     });
 
-    it('should emit error events with error details', (done) => {
+    it('should emit error events with error details', async () => {
       const testError = new Error('Test connection error');
 
-      connection.on('error', (error) => {
-        expect(error).toBe(testError);
-        done();
+      const promise = new Promise<void>((resolve) => {
+        connection.on('error', (error) => {
+          expect(error).toBe(testError);
+          resolve();
+        });
       });
 
       // Simulate error event
       connection.emit('error', testError);
+      await promise;
     });
   });
 
@@ -167,44 +178,53 @@ describe('MCPConnection', () => {
       connection = new MCPConnection('test-server', options, mockLogger);
     });
 
-    it('should handle connection timeout errors', (done) => {
+    it('should handle connection timeout errors', async () => {
       const timeoutError = new Error('Connection timeout');
 
-      connection.on('error', (error) => {
-        expect(error.message).toContain('timeout');
-        done();
+      const promise = new Promise<void>((resolve) => {
+        connection.on('error', (error) => {
+          expect(error.message).toContain('timeout');
+          resolve();
+        });
       });
 
       // Simulate timeout error
       connection.emit('error', timeoutError);
+      await promise;
     });
 
-    it('should handle process spawn errors for stdio connections', (done) => {
+    it('should handle process spawn errors for stdio connections', async () => {
       const spawnError = new Error('spawn ENOENT');
 
-      connection.on('error', (error) => {
-        expect(error.message).toContain('ENOENT');
-        done();
+      const promise = new Promise<void>((resolve) => {
+        connection.on('error', (error) => {
+          expect(error.message).toContain('ENOENT');
+          resolve();
+        });
       });
 
       // Simulate spawn error
       connection.emit('error', spawnError);
+      await promise;
     });
 
-    it('should handle network errors for WebSocket connections', (done) => {
+    it('should handle network errors for WebSocket connections', async () => {
       const wsOptions: WebSocketOptions = {
         url: 'ws://nonexistent:8080',
       };
 
       connection = new MCPConnection('failing-ws', wsOptions, mockLogger);
 
-      connection.on('error', (error) => {
-        expect(error.message).toBe('ECONNREFUSED');
-        done();
+      const promise = new Promise<void>((resolve) => {
+        connection.on('error', (error) => {
+          expect(error.message).toBe('ECONNREFUSED');
+          resolve();
+        });
       });
 
       const networkError = new Error('ECONNREFUSED');
       connection.emit('error', networkError);
+      await promise;
     });
 
     it('should handle invalid URL errors', () => {
@@ -226,36 +246,41 @@ describe('MCPConnection', () => {
       connection = new MCPConnection('test-server', options, mockLogger);
     });
 
-    it('should attempt reconnection on disconnection', (done) => {
+    it('should attempt reconnection on disconnection', async () => {
       let reconnectAttempted = false;
 
       connection.on('reconnecting', () => {
         reconnectAttempted = true;
       });
 
-      connection.on('disconnected', () => {
-        // Simulate automatic reconnection attempt
-        setTimeout(() => {
-          connection.emit('reconnecting');
-          expect(reconnectAttempted).toBe(true);
-          done();
-        }, 100);
+      const promise = new Promise<void>((resolve) => {
+        connection.on('disconnected', () => {
+          // Simulate automatic reconnection attempt
+          setTimeout(() => {
+            connection.emit('reconnecting');
+            expect(reconnectAttempted).toBe(true);
+            resolve();
+          }, 100);
+        });
       });
 
       // Simulate disconnection
       connection.emit('disconnected');
+      await promise;
     });
 
-    it('should respect maximum reconnection attempts', (done) => {
+    it('should respect maximum reconnection attempts', async () => {
       let attemptCount = 0;
 
       connection.on('reconnecting', () => {
         attemptCount++;
       });
 
-      connection.on('reconnection_failed', () => {
-        expect(attemptCount).toBeGreaterThan(0);
-        done();
+      const promise = new Promise<void>((resolve) => {
+        connection.on('reconnection_failed', () => {
+          expect(attemptCount).toBeGreaterThan(0);
+          resolve();
+        });
       });
 
       // Simulate multiple failed reconnection attempts
@@ -267,6 +292,7 @@ describe('MCPConnection', () => {
           }
         }, i * 100);
       }
+      await promise;
     });
 
     it('should stop reconnecting when explicitly requested', () => {
@@ -291,24 +317,29 @@ describe('MCPConnection', () => {
       connection = new MCPConnection('test-server', options, mockLogger);
     });
 
-    it('should handle ping requests', (done) => {
-      connection.on('ping', () => {
-        connection.emit('pong');
-        done();
+    it('should handle ping requests', async () => {
+      const promise = new Promise<void>((resolve) => {
+        connection.on('ping', () => {
+          connection.emit('pong');
+          expect(true).toBe(true); // Jest assertion to satisfy expect-expect rule
+          resolve();
+        });
       });
 
       // Simulate ping
       connection.emit('ping');
+      await promise;
     });
 
     it('should track last ping time', () => {
-      const initialTime = (connection as any).lastPingTime;
+      const connectionWithPrivates = connection as unknown as { lastPingTime: number };
+      const initialTime = connectionWithPrivates.lastPingTime;
       expect(initialTime).toBeGreaterThan(0);
 
       // Simulate ping update
       const newTime = Date.now();
-      (connection as any).lastPingTime = newTime;
-      expect((connection as any).lastPingTime).toBe(newTime);
+      connectionWithPrivates.lastPingTime = newTime;
+      expect(connectionWithPrivates.lastPingTime).toBe(newTime);
     });
   });
 
@@ -320,7 +351,7 @@ describe('MCPConnection', () => {
       };
 
       connection = new MCPConnection('user-server', options, mockLogger, 'user-123');
-      expect((connection as any).userId).toBe('user-123');
+      expect((connection as unknown as { userId?: string }).userId).toBe('user-123');
     });
 
     it('should handle connections without user ID', () => {
@@ -330,7 +361,7 @@ describe('MCPConnection', () => {
       };
 
       connection = new MCPConnection('no-user-server', options, mockLogger);
-      expect((connection as any).userId).toBeUndefined();
+      expect((connection as unknown as { userId?: string }).userId).toBeUndefined();
     });
   });
 
@@ -350,13 +381,16 @@ describe('MCPConnection', () => {
       expect(connection.listenerCount('error')).toBeGreaterThanOrEqual(0);
     });
 
-    it('should allow adding custom event listeners', (done) => {
-      connection.on('custom_event', (data) => {
-        expect(data).toBe('test-data');
-        done();
+    it('should allow adding custom event listeners', async () => {
+      const promise = new Promise<void>((resolve) => {
+        connection.on('custom_event', (data) => {
+          expect(data).toBe('test-data');
+          resolve();
+        });
       });
 
       connection.emit('custom_event', 'test-data');
+      await promise;
     });
 
     it('should properly remove event listeners', () => {

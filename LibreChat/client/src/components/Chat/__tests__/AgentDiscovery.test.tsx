@@ -15,18 +15,18 @@ jest.mock('~/data-provider', () => ({
         name: 'Google Sheets',
         pluginKey: 'googlesheets',
         icon: '/assets/tools/google-sheets.svg',
-        description: 'Google Sheets tool'
+        description: 'Google Sheets tool',
       },
       {
         name: 'Gmail',
         pluginKey: 'gmail',
         icon: '/assets/tools/gmail.svg',
-        description: 'Gmail tool'
-      }
+        description: 'Gmail tool',
+      },
     ],
     isLoading: false,
-    error: null
-  })
+    error: null,
+  }),
 }));
 
 // Mock other dependencies

@@ -30,23 +30,27 @@ export default function AgentCTA({ agent, onStartChat }: AgentCTAProps) {
     description.length > 120 ? description.substring(0, 120) + '...' : description;
 
   const toolKeys = agent.tools || [];
-  
+
   // Get actual tool objects with icons - SIMPLE approach
   const agentTools = toolKeys
-    .map(toolKey => allTools.find(tool => tool.pluginKey === toolKey || tool.name === toolKey))
+    .map((toolKey) =>
+      Array.isArray(allTools)
+        ? allTools.find((tool) => tool.pluginKey === toolKey || tool.name === toolKey)
+        : undefined,
+    )
     .filter((tool): tool is TPlugin => Boolean(tool));
-    
+
   // Deduplicate by icon - only show unique icons
   const uniqueTools = agentTools.reduce((acc: TPlugin[], tool: TPlugin) => {
     if (!tool.icon) return acc;
-    
-    const existingTool = acc.find(t => t.icon === tool.icon);
+
+    const existingTool = acc.find((t) => t.icon === tool.icon);
     if (!existingTool) {
       acc.push(tool);
     }
     return acc;
   }, []);
-  
+
   // Debug removed for production
 
   return (

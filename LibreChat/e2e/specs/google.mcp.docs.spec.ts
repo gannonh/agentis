@@ -1,8 +1,6 @@
-import { test, expect } from '@playwright/test';
-import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
+import { test, expect } from '../fixtures/fixtures';
 import { logProgress } from '../utils/testLogger';
-import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
-import { handleConditionalAuth } from '../utils/handleConditionalAuth';
+import { handleInitialAuth } from '../utils/googleAuth';
 
 test.use({
   viewport: {
@@ -11,16 +9,25 @@ test.use({
   },
 });
 
-test('Create Google Docs MCP', async ({ page }) => {
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
+
+test('Create Google Docs MCP', async ({ browser, fileStorageState }) => {
   logProgress('Starting Create Google Docs MCP test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('Verified on main chat page');
   //
 
-  // Create Google Sheets Agent
+  // Create Google Docs Agent
   await page.getByRole('button', { name: 'Controls' }).click();
   await page.getByRole('button', { name: 'Agent Builder' }).click();
   logProgress('Opened Agent Builder');
@@ -31,16 +38,15 @@ test('Create Google Docs MCP', async ({ page }) => {
     // Button might not exist, continue
     console.log('Create New Agent button not found, continuing...');
   }
-  //
-  //await page.pause();
-  //
+
   await page.getByRole('textbox', { name: 'Agent name' }).click();
   await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
   await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
   await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Docs Agent');
+  await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
   await page
     .getByRole('textbox', { name: 'Agent description' })
-    .fill('Sonnet 3.5 with access to Google Sheets');
+    .fill('Sonnet 3.7 with access to Google Docs');
   await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
   await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
   await page.getByRole('textbox', { name: 'Agent instructions' }).click();
@@ -51,17 +57,15 @@ test('Create Google Docs MCP', async ({ page }) => {
   await page
     .getByRole('textbox', { name: 'Agent instructions' })
     .fill(
-      'You possess expert-level Google Docs skills. Whenever you create a new spreadsheet or make spreadsheet edits for the user, please provide a link so they can access it conveniently.',
+      'You possess expert-level Google Docs skills. Whenever you create a new document or make document edits for the user, please provide a link so they can access it conveniently.',
     );
 
   await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
   await page.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByText('Anthropic').click();
   await page.getByRole('combobox', { name: 'Model' }).click();
-  //
 
-  //
-  await page.getByText('claude-3-5-sonnet-20241022').click();
+  await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
   await page.getByRole('button', { name: 'Create' }).click();
   logProgress('Created agent with basic settings');
   // add mcp tools
@@ -77,36 +81,51 @@ test('Create Google Docs MCP', async ({ page }) => {
   await page.getByRole('button', { name: 'Add Selected' }).click();
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
+
+  // Wait for save operation to complete
+  try {
+    await page.waitForTimeout(2000); // Give server time to save
+    logProgress('Waited for save operation to complete');
+  } catch (error) {
+    logProgress('⚠️ Save wait timeout, continuing...');
+  }
+
   logProgress('Saved agent configuration');
 
   // Assert MCP is created
   await expect(page.getByText('Google Docs', { exact: true })).toBeVisible();
   logProgress('Google Docs MCP created successfully');
   // open panel
-  //await page.pause();
+  await page.getByText('Google Docs', { exact: true }).click();
 
-  await page
-    .locator('div')
-    .filter({ hasText: /^Google Docs8 ToolsAdd ToolsAdd Actions$/ })
-    .getByRole('img')
-    .first()
-    .click();
   // assert mcp/tool
   await expect(page.getByText('Create Doc')).toBeVisible();
+
+  // Close the context
+  await context.close();
 });
 
-test('Use Google Docs Agent', async ({ page }) => {
+test('Use Google Docs Agent', async ({ browser, fileStorageState }) => {
   logProgress('Starting Use Google Docs Agent test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
-  // START
 
+  // Select the Google Docs Agent explicitly to avoid conflicts with other parallel tests
+  await page.getByRole('button', { name: 'Select a model' }).click();
+  await page.getByText('Agents', { exact: true }).first().click();
+  await page.getByLabel('Agents').getByText('Google Docs Agent').first().click();
+  logProgress('✅ Selected Google Docs Agent');
+
+  // Send first message to trigger proactive MCP auth
   await page
     .getByTestId('text-input')
     .fill('Create a 250 word doc about musician Carlos Alomar. Include a discography.');
@@ -114,70 +133,76 @@ test('Use Google Docs Agent', async ({ page }) => {
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create document');
 
-  // Wait for any MCP tool execution to start - could be Check Connection or Create Document
-  const firstToolSelector = page.locator('button').filter({
-    hasText: /^Running (Check Connection|Create Document)$/,
-  });
-  await expect(firstToolSelector).toBeVisible({ timeout: 15000 });
+  // auth ---------------------------
+  // Look for the proactive authentication UI that should appear automatically
+  await expect(page.getByText('Authentication Required')).toBeVisible();
+  logProgress('✅ Found proactive Authentication Required section');
 
-  const firstToolText = await firstToolSelector.textContent();
-  logProgress(`✅ First tool started: ${firstToolText}`);
+  // Verify the descriptive text about tools requiring authentication
+  await expect(
+    page.getByText('This conversation uses tools that require authentication:'),
+  ).toBeVisible();
+  logProgress('✅ Found descriptive text about authentication');
 
-  if (firstToolText?.includes('Check Connection')) {
-    // If it starts with Check Connection, wait for it to complete
-    await expect(page.getByRole('button', { name: 'Ran Check Connection' })).toBeVisible({
-      timeout: 15000,
-    });
-    logProgress('✅ Check Connection completed');
+  // Look for the Connect Google Docs button in the proactive auth UI
+  await expect(page.getByRole('button', { name: 'Connect Google Docs' })).toBeVisible();
+  logProgress('✅ Found Connect Google Docs button in proactive auth UI');
 
-    // Handle authentication when prompted
-    await handleGoogleOAuth(page, 'Google Docs', { timeout: 90000 });
+  // Handle the authentication
+  logProgress('✅ Starting Google Docs authentication');
+  const popup = await handleInitialAuth(page, 'Google Docs');
 
-    // Send follow-up message to try creating document now that we're authenticated
-    await page.getByTestId('text-input').fill('Ok, please try now');
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent follow-up message after authentication');
-
-    // Now wait for Create New Doc
-    await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
-      timeout: 60000,
-    });
-    logProgress('✅ Create New Doc started');
-
-    await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
-      timeout: 60000,
-    });
-    logProgress('✅ Create New Doc completed');
-  } else if (firstToolText?.includes('Create New Doc')) {
-    // If it goes directly to Create New Spreadsheet, wait for completion
-    await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
-      timeout: 15000,
-    });
-    logProgress('✅ Create New Doc completed (direct)');
-
-    // Handle authentication if it appears after the attempt
-    await handleGoogleOAuth(page, 'Google Docs');
-
-    // Send follow-up message to retry now that we're authenticated
-    await page.getByTestId('text-input').fill('Ok, please try now');
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent retry message after authentication');
-
-    // Wait for the retry execution
-    await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
-      timeout: 120000,
-    });
-    logProgress('✅ Create New Doc started (retry)');
-
-    await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
-      timeout: 10000,
-    });
-    logProgress('✅ Create New Doc completed (retry)');
+  // Handle the consent screens
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on first consent screen');
+  } catch (error) {
+    logProgress('⚠️ Consent screen 1 handling completed or not needed');
+  }
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on second consent screen');
+  } catch (error) {
+    logProgress('⚠️ Consent screen 2 handling completed or not needed');
+  }
+  try {
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on third consent screen');
+  } catch (error) {
+    logProgress('⚠️ Consent screen 3 handling completed or not needed');
   }
 
-  //await page.pause();
-  const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
-  await cleanupAgents(testUserEmail);
-  await cleanupChats(testUserEmail);
-  logProgress('✅ Cleaned up agents and chats for test user');
+  // Wait for authentication to complete
+  logProgress('⏳ Waiting 2 sec for authentication to complete...');
+  await page.waitForTimeout(2000);
+  logProgress('✅ Waited for authentication to complete');
+
+  // Check that the button shows "✓ Connected" after successful authentication
+  await expect(page.getByText('✓ Connected')).toBeVisible();
+  logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
+
+  // run ------------------ (after authentication)
+  logProgress('⏳ Waiting for Running button to appear...');
+  await expect(page.getByRole('button', { name: 'Running Create Markdown Doc' })).toBeVisible({
+    timeout: 30000,
+  });
+  logProgress('✅ Found "Running Create" tool execution after authentication');
+
+  // ran ------------------ (after authentication)
+  // Wait for the second "Ran" button to appear (indicating completion)
+  logProgress('⏳ Waiting for Ran button to appear...');
+  await expect(page.getByRole('button', { name: 'Ran Create Markdown Doc' })).toBeVisible({
+    timeout: 30000,
+  });
+  logProgress('✅ Found second "Ran Create" tool execution after authentication');
+
+  // Long wait because agent may want to do some formatting or other processing
+  logProgress('⏳ Waiting for Google Docs link to appear...');
+  await expect(page.getByRole('link', { name: 'https://docs.google.com/' })).toBeVisible({
+    timeout: 90000,
+  });
+  logProgress('✅ Found Google Docs link');
+
+  // Close the context
+  await context.close();
 });

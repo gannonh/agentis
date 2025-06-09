@@ -72,3 +72,33 @@ export async function cleanupChats(
     return { conversations: 0, messages: 0 };
   }
 }
+
+/**
+ * Delete all Composio connected accounts for a specific user
+ * @param userEmail - User email to filter connected accounts
+ */
+export async function cleanupConnections(userEmail: string): Promise<number> {
+  try {
+    console.log(`🔗: Cleaning up Composio connections for user: ${userEmail}`);
+    const db = await connectDb();
+    console.log('🔗:  ✅  Connected to Database');
+
+    const user = await User.findOne({ email: userEmail }).lean();
+    if (!user) {
+      console.log(`🔗:  ⚠️  No user found with email: ${userEmail}`);
+      return 0;
+    }
+
+    // Access the composioconnectedaccounts collection directly
+    const connectionsCollection = db.connection.collection('composioconnectedaccounts');
+    const result = await connectionsCollection.deleteMany({ user: user._id });
+
+    console.log(`🔗:  ✅  Deleted ${result.deletedCount} connected accounts for user ${userEmail}`);
+
+    await db.connection.close();
+    return result.deletedCount;
+  } catch (error) {
+    console.error('Error cleaning up connections:', error);
+    return 0;
+  }
+}

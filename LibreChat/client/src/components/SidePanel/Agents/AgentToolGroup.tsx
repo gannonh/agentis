@@ -65,7 +65,7 @@ function AgentToolGroup({
         <div className="space-y-2 border-t border-border-medium bg-surface-primary p-3">
           {tools.map((tool) => {
             // Enhance the tool with a display name if needed
-            if (!tool.displayName && tool.pluginKey) {
+            if (!(tool as any).displayName && tool.pluginKey) {
               // If it's an MCP tool, extract the server name and apply formatting
               if (tool.pluginKey.includes('_mcp_')) {
                 const parts = tool.pluginKey.split('_mcp_');
@@ -75,7 +75,7 @@ function AgentToolGroup({
                 tool = {
                   ...tool,
                   displayName: getToolDisplayName(toolName, toolServerName || serverName),
-                };
+                } as typeof tool & { displayName: string };
               }
             }
 
@@ -85,7 +85,6 @@ function AgentToolGroup({
                 tool={tool} // Pass the enhanced tool object
                 allTools={allTools}
                 agent_id={agent_id}
-                onRemoveTool={() => onRemoveTool(tool.pluginKey)}
               />
             );
           })}

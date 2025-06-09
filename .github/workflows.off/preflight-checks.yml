@@ -1,0 +1,283 @@
+name: Preflight Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password
+          MONGO_INITDB_DATABASE: Agentis
+        options: >-
+          --health-cmd="mongosh --eval 'db.runCommand({ping:1})'" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
+
+      meilisearch:
+        image: getmeili/meilisearch:v1.12.3
+        ports:
+          - 7700:7700
+        env:
+          MEILI_HOST: http://localhost:7700
+          MEILI_MASTER_KEY: ${{ secrets.MEILI_MASTER_KEY }}
+          MEILI_NO_ANALYTICS: true
+
+      vectordb:
+        image: ankane/pgvector:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: mydatabase
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword
+        options: --health-cmd="pg_isready -U myuser" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      rag_api:
+        image: ghcr.io/gannonh/rag-api-lite:latest
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 8000:8000
+        env:
+          DB_HOST: vectordb
+          DB_PORT: 5432
+          DB_USER: myuser
+          DB_PASSWORD: mypassword
+          DB_NAME: mydatabase
+          RAG_PORT: 8000
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        options: --health-cmd="nc -z localhost 8000 || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=90s
+
+      sandpack:
+        image: ghcr.io/gannonh/codesandbox-client/bundler:latest
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 8080:80
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Debug container status
+        run: |
+          echo "=== Docker Container Status ==="
+          docker ps -a
+          echo ""
+          echo "=== Docker Images ==="
+          docker images
+          echo ""
+          echo "=== Docker Network ==="
+          docker network ls
+          echo ""
+          echo "=== Container Logs ==="
+          docker logs $(docker ps -aq --filter "ancestor=ghcr.io/gannonh/rag-api-lite:latest") 2>&1 || echo "RAG API container not found"
+          docker logs $(docker ps -aq --filter "ancestor=ghcr.io/gannonh/codesandbox-client/bundler:latest") 2>&1 || echo "Sandpack container not found"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "./LibreChat/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ./LibreChat
+        run: |
+          npm ci --legacy-peer-deps
+
+      - name: Install Playwright browsers
+        working-directory: ./LibreChat
+        run: |
+          npx playwright install chromium
+          npx playwright install-deps chromium
+
+      - name: Build packages
+        working-directory: ./LibreChat
+        run: npm run build:all
+      
+      - name: Build frontend for E2E tests
+        working-directory: ./LibreChat
+        run: npm run frontend
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to be ready..."
+          # Wait for MongoDB
+          until mongosh --host localhost:27017 --username admin --password password --authenticationDatabase admin --eval "db.runCommand({ping:1})" >/dev/null 2>&1; do
+            echo "Waiting for MongoDB..."
+            sleep 5
+          done
+          echo "✓ MongoDB is ready"
+          
+          # Wait for RAG API
+          until curl -f http://localhost:8000/health >/dev/null 2>&1; do
+            echo "Waiting for RAG API..."
+            sleep 5
+          done
+          echo "✓ RAG API is ready"
+          
+          # Wait for Meilisearch
+          until curl -f http://localhost:7700/health >/dev/null 2>&1; do
+            echo "Waiting for Meilisearch..."
+            sleep 5
+          done
+          echo "✓ Meilisearch is ready"
+          
+          echo "All services are ready!"
+
+      - name: Run linting
+        working-directory: ./LibreChat
+        run: npm run lint
+
+      - name: Run formatting check
+        working-directory: ./LibreChat
+        run: npm run format
+
+      - name: Run type checking
+        working-directory: ./LibreChat
+        run: npm run typecheck:all
+
+      - name: Run unit tests
+        working-directory: ./LibreChat
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
+        run: npm run test:all
+
+      - name: Setup environment for E2E tests
+        working-directory: ./LibreChat
+        run: |
+          # Add test-specific environment variables
+          echo "MONGO_URI=mongodb://admin:password@localhost:27017/Agentis?authSource=admin" >> .env
+          echo "DOMAIN_CLIENT=http://localhost:3080" >> .env
+          echo "DOMAIN_SERVER=http://localhost:3080" >> .env
+          echo "ALLOW_REGISTRATION=true" >> .env
+          echo "SESSION_EXPIRY=900000" >> .env
+          echo "REFRESH_TOKEN_EXPIRY=604800000" >> .env
+          echo "SEARCH=true" >> .env
+          echo "MEILI_HOST=http://localhost:7700" >> .env
+          echo "MEILI_MASTER_KEY=${{ secrets.MEILI_MASTER_KEY }}" >> .env
+          echo "RAG_API_URL=http://localhost:8000" >> .env
+          echo "SANDPACK_BUNDLER_URL=http://localhost:8080" >> .env
+          echo "ENDPOINTS=agents,anthropic,openAI,google,assistants" >> .env
+          echo "GOOGLE_MODELS=gemini-2.5-pro-preview-05-06,gemini-2.5-flash-preview-04-17,gemini-2.0-flash-001,gemini-2.0-flash-exp,gemini-2.0-flash-lite-001,gemini-1.5-pro-002,gemini-1.5-flash-002" >> .env
+          echo "ALLOW_EMAIL_LOGIN=true" >> .env
+          echo "ALLOW_SOCIAL_LOGIN=false" >> .env
+          echo "ALLOW_SHARED_LINKS=true" >> .env
+          echo "APP_TITLE=Agentis" >> .env
+          echo "NODE_ENV=CI" >> .env
+          echo "HOST=0.0.0.0" >> .env
+          echo "PORT=3080" >> .env
+          echo "TRUST_PROXY=1" >> .env
+          echo "CONSOLE_JSON=false" >> .env
+          echo "DEBUG_LOGGING=true" >> .env
+          echo "DEBUG_CONSOLE=false" >> .env
+          echo "DEBUG_OPENAI=false" >> .env
+          echo "NO_INDEX=true" >> .env
+          echo "MEILI_NO_ANALYTICS=true" >> .env
+          echo "ARCADE_CALLBACK_URL=http://localhost:3080/api/arcade/callback" >> .env
+          # Moderation and Security
+          echo "OPENAI_MODERATION=false" >> .env
+          echo "BAN_VIOLATIONS=true" >> .env
+          echo "BAN_DURATION=7200000" >> .env
+          echo "BAN_INTERVAL=20" >> .env
+          echo "LOGIN_VIOLATION_SCORE=1" >> .env
+          echo "REGISTRATION_VIOLATION_SCORE=1" >> .env
+          echo "CONCURRENT_VIOLATION_SCORE=1" >> .env
+          echo "MESSAGE_VIOLATION_SCORE=1" >> .env
+          echo "NON_BROWSER_VIOLATION_SCORE=20" >> .env
+          echo "LOGIN_MAX=7" >> .env
+          echo "LOGIN_WINDOW=5" >> .env
+          echo "REGISTER_MAX=5" >> .env
+          echo "REGISTER_WINDOW=60" >> .env
+          echo "LIMIT_CONCURRENT_MESSAGES=true" >> .env
+          echo "CONCURRENT_MESSAGE_MAX=2" >> .env
+          echo "LIMIT_MESSAGE_IP=true" >> .env
+          echo "MESSAGE_IP_MAX=40" >> .env
+          echo "MESSAGE_IP_WINDOW=1" >> .env
+          echo "LIMIT_MESSAGE_USER=false" >> .env
+          echo "MESSAGE_USER_MAX=40" >> .env
+          echo "MESSAGE_USER_WINDOW=1" >> .env
+          echo "ILLEGAL_MODEL_REQ_SCORE=5" >> .env
+          echo "ALLOW_PASSWORD_RESET=false" >> .env
+          echo "ALLOW_SOCIAL_REGISTRATION=false" >> .env
+          echo "ALLOW_UNVERIFIED_EMAIL_LOGIN=true" >> .env
+          echo "ALLOW_SHARED_LINKS_PUBLIC=true" >> .env
+          echo "HELP_AND_FAQ_URL=https://agentis.ai" >> .env
+          # Real API Keys from secrets
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env
+          echo "GOOGLE_KEY=${{ secrets.GOOGLE_KEY }}" >> .env
+          echo "ASSISTANTS_API_KEY=${{ secrets.ASSISTANTS_API_KEY }}" >> .env
+          echo "IMAGE_GEN_OAI_API_KEY=${{ secrets.IMAGE_GEN_OAI_API_KEY }}" >> .env
+          echo "MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}" >> .env
+          echo "OPENROUTER_KEY=${{ secrets.OPENROUTER_KEY }}" >> .env
+          echo "OCR_API_KEY=${{ secrets.OCR_API_KEY }}" >> .env
+          echo "ARCADE_API_KEY=${{ secrets.ARCADE_API_KEY }}" >> .env
+          echo "COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY }}" >> .env
+          # Security keys
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> .env
+          echo "CREDS_KEY=${{ secrets.CREDS_KEY }}" >> .env
+          echo "CREDS_IV=${{ secrets.CREDS_IV }}" >> .env
+          # Google test credentials
+          echo "GOOGLE_TEST_ACCOUNT_1_EMAIL=agentis.test@gmail.com" >> .env
+          echo "GOOGLE_TEST_ACCOUNT_1_PASSWORD=KJHkh97HKH87jjfU" >> .env
+
+      - name: Run E2E tests
+        working-directory: ./LibreChat
+        env:
+          NODE_ENV: CI
+          CI: true
+        run: npm run e2e:ci
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: |
+            LibreChat/e2e/playwright-report/
+            LibreChat/e2e/specs/.test-results/
+            LibreChat/coverage/
+          retention-days: 7
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            LibreChat/api/coverage/
+            LibreChat/client/coverage/
+            LibreChat/packages/*/coverage/
+          retention-days: 7
+
+  # This job acts as a gate - it only passes if all checks pass
+  preflight-gate:
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preflight checks passed
+        run: echo "All preflight checks passed successfully!"

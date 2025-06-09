@@ -6,16 +6,13 @@ import { AuthCodeParser } from '../AuthCodeParser';
 jest.mock('~/components/Composio/ComposioAuthButton', () => ({
   ComposioAuthButton: ({ service, onAuthSuccess, onAuthError }: any) => (
     <div data-testid={`composio-auth-${service}`}>
-      <button 
+      <button
         onClick={() => onAuthSuccess?.(service, 'mock-account-id')}
         data-testid={`auth-button-${service}`}
       >
         Connect {service}
       </button>
-      <button 
-        onClick={() => onAuthError?.('Mock error')}
-        data-testid={`error-button-${service}`}
-      >
+      <button onClick={() => onAuthError?.('Mock error')} data-testid={`error-button-${service}`}>
         Trigger Error
       </button>
     </div>
@@ -39,12 +36,16 @@ describe('AuthCodeParser', () => {
   describe('AUTHCODE Pattern Parsing', () => {
     it('should parse AUTHCODE pattern and render authentication UI', () => {
       const content = 'AUTHCODE:googlesheets:Please authenticate with Google Sheets to continue.';
-      
+
       render(<AuthCodeParser content={content} />);
 
-      expect(screen.getByText('Please authenticate with Google Sheets to continue.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Please authenticate with Google Sheets to continue.'),
+      ).toBeInTheDocument();
       expect(screen.getByText('🔐 Authentication Required')).toBeInTheDocument();
-      expect(screen.getByText(/Connect your Google account to use Google Sheets tools/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Connect your Google account to use Google Sheets tools/),
+      ).toBeInTheDocument();
       expect(screen.getByTestId('composio-auth-googlesheets')).toBeInTheDocument();
     });
 
@@ -59,18 +60,20 @@ describe('AuthCodeParser', () => {
       services.forEach(({ service, expectedName }) => {
         const content = `AUTHCODE:${service}:Please authenticate with ${expectedName}.`;
         const { unmount } = render(<AuthCodeParser content={content} />);
-        
+
         expect(screen.getByText(`Please authenticate with ${expectedName}.`)).toBeInTheDocument();
-        expect(screen.getByText(new RegExp(`Connect your Google account to use ${expectedName} tools`))).toBeInTheDocument();
+        expect(
+          screen.getByText(new RegExp(`Connect your Google account to use ${expectedName} tools`)),
+        ).toBeInTheDocument();
         expect(screen.getByTestId(`composio-auth-${service}`)).toBeInTheDocument();
-        
+
         unmount();
       });
     });
 
     it('should show success state after authentication', () => {
       const content = 'AUTHCODE:googlesheets:Please authenticate with Google Sheets to continue.';
-      
+
       const { rerender } = render(<AuthCodeParser content={content} />);
 
       // Initially should show auth UI
@@ -91,7 +94,7 @@ describe('AuthCodeParser', () => {
   describe('Auth Message Detection', () => {
     it('should detect Google Sheets authentication messages', () => {
       const content = 'You need to authenticate with Google Sheets to access your spreadsheets.';
-      
+
       render(<AuthCodeParser content={content} isAuthMessage={true} />);
 
       expect(screen.getByText(content)).toBeInTheDocument();
@@ -101,25 +104,34 @@ describe('AuthCodeParser', () => {
 
     it('should detect different Google services in messages', () => {
       const testCases = [
-        { content: 'Please connect to Google Drive to access your files.', expectedService: 'googledrive' },
-        { content: 'Authentication required for Google Docs integration.', expectedService: 'googledocs' },
+        {
+          content: 'Please connect to Google Drive to access your files.',
+          expectedService: 'googledrive',
+        },
+        {
+          content: 'Authentication required for Google Docs integration.',
+          expectedService: 'googledocs',
+        },
         { content: 'Please authenticate with Gmail to send emails.', expectedService: 'gmail' },
-        { content: 'Connect to Google Calendar to manage events.', expectedService: 'googlecalendar' },
+        {
+          content: 'Connect to Google Calendar to manage events.',
+          expectedService: 'googlecalendar',
+        },
       ];
 
       testCases.forEach(({ content, expectedService }) => {
         const { unmount } = render(<AuthCodeParser content={content} isAuthMessage={true} />);
-        
+
         expect(screen.getByText(content)).toBeInTheDocument();
         expect(screen.getByTestId(`composio-auth-${expectedService}`)).toBeInTheDocument();
-        
+
         unmount();
       });
     });
 
     it('should default to Google Sheets for generic auth messages', () => {
       const content = 'Authentication is required to proceed.';
-      
+
       render(<AuthCodeParser content={content} isAuthMessage={true} />);
 
       expect(screen.getByTestId('composio-auth-googlesheets')).toBeInTheDocument();
@@ -127,7 +139,7 @@ describe('AuthCodeParser', () => {
 
     it('should not show auth UI for already authenticated services', () => {
       const content = 'AUTHCODE:googlesheets:Please authenticate with Google Sheets.';
-      
+
       const { rerender } = render(<AuthCodeParser content={content} />);
 
       // Authenticate the service
@@ -138,7 +150,7 @@ describe('AuthCodeParser', () => {
 
       // Rerender with same content - should show success state
       rerender(<AuthCodeParser content={content} />);
-      
+
       expect(screen.queryByText('🔐 Authentication Required')).not.toBeInTheDocument();
       expect(screen.getByText('✅ Google Sheets Connected')).toBeInTheDocument();
     });
@@ -147,7 +159,7 @@ describe('AuthCodeParser', () => {
   describe('Regular Content', () => {
     it('should render regular content without auth UI when not marked as auth message', () => {
       const content = 'This is just regular text content.';
-      
+
       render(<AuthCodeParser content={content} />);
 
       expect(screen.getByText(content)).toBeInTheDocument();
@@ -157,7 +169,7 @@ describe('AuthCodeParser', () => {
 
     it('should render content that looks like AUTHCODE but is malformed', () => {
       const content = 'AUTHCODE:invalid-format';
-      
+
       render(<AuthCodeParser content={content} />);
 
       expect(screen.getByText(content)).toBeInTheDocument();
@@ -169,7 +181,7 @@ describe('AuthCodeParser', () => {
     it('should call onAuthSuccess callback when authentication succeeds', () => {
       const onAuthSuccess = jest.fn();
       const content = 'AUTHCODE:googlesheets:Please authenticate.';
-      
+
       render(<AuthCodeParser content={content} onAuthSuccess={onAuthSuccess} />);
 
       const authButton = screen.getByTestId('auth-button-googlesheets');
@@ -182,11 +194,11 @@ describe('AuthCodeParser', () => {
 
     it('should handle authentication errors', () => {
       const content = 'AUTHCODE:googlesheets:Please authenticate.';
-      
+
       render(<AuthCodeParser content={content} />);
 
       const errorButton = screen.getByTestId('error-button-googlesheets');
-      
+
       act(() => {
         errorButton.click();
       });
@@ -197,22 +209,20 @@ describe('AuthCodeParser', () => {
 
     it('should log successful authentication', () => {
       const content = 'AUTHCODE:googlesheets:Please authenticate.';
-      
+
       render(<AuthCodeParser content={content} />);
 
       const authButton = screen.getByTestId('auth-button-googlesheets');
-      
+
       act(() => {
         authButton.click();
       });
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '✅ Authentication successful for googlesheets:',
-        'mock-account-id'
+        'mock-account-id',
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        '🎉 Google Sheets connected successfully!'
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith('🎉 Google Sheets connected successfully!');
     });
   });
 
@@ -229,9 +239,11 @@ describe('AuthCodeParser', () => {
       services.forEach(({ key, name }) => {
         const content = `AUTHCODE:${key}:Please authenticate.`;
         const { unmount } = render(<AuthCodeParser content={content} />);
-        
-        expect(screen.getByText(new RegExp(`Connect your Google account to use ${name} tools`))).toBeInTheDocument();
-        
+
+        expect(
+          screen.getByText(new RegExp(`Connect your Google account to use ${name} tools`)),
+        ).toBeInTheDocument();
+
         unmount();
       });
     });
@@ -240,12 +252,13 @@ describe('AuthCodeParser', () => {
   describe('Theme Integration', () => {
     it('should render with appropriate CSS classes for dark/light theme', () => {
       const content = 'AUTHCODE:googlesheets:Please authenticate.';
-      
+
       render(<AuthCodeParser content={content} />);
 
       // Check for theme-aware classes - find the container div that has the border/background classes
       // The structure is: space-y-3 div > auth container div (with border/bg classes) > auth content div
-      const authContainer = screen.getByText('🔐 Authentication Required').closest('div').parentElement.parentElement;
+      const authContainer = screen.getByText('🔐 Authentication Required').closest('div')
+        .parentElement.parentElement;
       expect(authContainer).toHaveClass('border', 'border-gray-200', 'dark:border-gray-600');
       expect(authContainer).toHaveClass('bg-gray-50', 'dark:bg-gray-800');
     });

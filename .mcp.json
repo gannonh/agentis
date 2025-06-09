@@ -22,16 +22,15 @@
             ]
         },
         "playwright": {
-            "command": "/Users/gannonhall/.local/bin/mcp-npx",
+            "command": "/Users/gannonhall/.local/bin/mcp-node-exec",
             "args": [
-                "-y",
-                "@playwright/mcp@latest"
+                "/Users/gannonhall/dev/oss/playwright-mcp/cli.js"
             ]
         },
         "perplexity-server": {
             "command": "/Users/gannonhall/.local/bin/mcp-node-exec",
             "args": [
-                "/Users/gannonhall/+DEV/MCP/perplexity-server/build/index.js"
+                "/Users/gannonhall/dev/MCP/perplexity-server/build/index.js"
             ],
             "env": {
                 "PERPLEXITY_API_KEY": "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"

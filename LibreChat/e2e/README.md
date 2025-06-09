@@ -69,25 +69,16 @@ e2e/
 ├── playwright.config.google.ts     # Google OAuth testing configuration
 ├── playwright.config.local.ts      # Local development testing configuration
 │
-├── setup/                          # Setup and teardown utilities
-│   ├── authenticate.ts             # Core authentication logic (register/login)
-│   ├── cleanupUser.ts             # Database cleanup utility
-│   ├── global-setup.ts            # Main test environment setup
-│   ├── global-setup.local.ts      # Local test environment setup
-│   ├── global-teardown.ts         # Main test environment teardown
-│   ├── global-teardown.local.ts   # Local test environment teardown
-│   ├── google-setup.ts            # Google OAuth specific setup
-│   └── google-teardown.ts         # Google OAuth specific teardown
+├── fixtures/                       # Playwright test fixtures
+│   └── fixtures.ts                # File-scoped authentication fixture with UUID isolation
 │
 ├── specs/                         # Test specifications
-│   ├── a11y.spec.ts              # WCAG accessibility compliance tests
-│   ├── google.mcp.spec.ts        # Google auth + MCP integration tests
-│   ├── keys.spec.ts              # API key management tests
-│   ├── landing.spec.ts           # Landing page and initial load tests
-│   ├── messages.spec.ts          # Chat message functionality tests
-│   ├── nav.spec.ts               # Navigation and routing tests
-│   ├── popup.spec.ts             # Modal and popup interaction tests
-│   └── settings.spec.ts          # User settings and preferences tests
+│   ├── agent-cta-display.spec.ts # Agent discovery and CTA display tests
+│   ├── google.mcp.calendar.spec.ts # Google Calendar MCP integration tests
+│   ├── google.mcp.docs.spec.ts   # Google Docs MCP integration tests
+│   ├── google.mcp.gmail.spec.ts  # Gmail MCP integration tests
+│   ├── google.mcp.multi.spec.ts  # Multi-service Google MCP tests
+│   └── google.mcp.sheets.spec.ts # Google Sheets MCP integration tests
 │
 ├── playwright-report/             # HTML test reports (gitignored)
 ├── playwright-report-google/      # Google-specific test reports (gitignored)
@@ -205,125 +196,253 @@ npx playwright test -g "navigation"
 npx playwright test --config=e2e/playwright.config.local.ts
 ```
 
-## Test Suites
+## Getting started with Playwright MCP test generation
 
-### Authentication Tests
+- You are a playwright test generator.
+- You are given a scenario and you need to generate a playwright test for it.
+- DO NOT generate test code based on the scenario alone. 
+- DO run steps one by one using the tools provided by the Playwright MCP.
+- Only after all steps are completed, emit a Playwright TypeScript test that uses @playwright/test based on message history
+- Save generated test file in the e2e specs directory: `./LibreChat/e2e/specs`
+- Execute the test file and iterate until the test passes
 
-#### Google MCP Tests (`google.mcp.spec.ts`)
-Tests Google OAuth flow and Agent Builder functionality:
-- Google account authentication
-- Terms of Service handling
-- Agent Builder navigation
-- Agent creation workflow
-- MCP tools integration (Google Sheets)
-- Session persistence
+**Best Practices for Playwright MCP Usage:**
 
-The test includes a complete Agent Builder workflow:
-```typescript
-test('Google MCP authentication and landing page', async ({ page }) => {
-  await page.goto('http://localhost:3080/');
-  
-  // Handle TOS modal if present
-  try {
-    await page.getByRole('button', { name: 'I accept' }).click({ timeout: 5000 });
-  } catch (e) {
-    console.log('No TOS modal found or could not click accept button');
-  }
-  
-  // Verify authentication success
-  await expect(page).toHaveURL(/.*\/c\/new/);
-  
-  // Test Agent Builder functionality
-  await page.getByRole('button', { name: 'Controls' }).click();
-  await page.getByRole('button', { name: 'Agent Builder' }).click();
-  await page.getByRole('button', { name: 'Create New Agent' }).click();
-  
-  // Configure Google Sheets Agent
-  await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Sheets Agent');
-  await page.getByRole('textbox', { name: 'Agent description' })
-    .fill('Claude 3.7 Agent with access to Google Sheets.');
-  
-  // Add Google Sheets tools
-  await page.getByRole('button', { name: 'Add Tools' }).click();
-  await page.getByRole('button', { name: 'Add Google Sheets' }).click();
-  await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-  await page.getByRole('button', { name: 'Add Selected' }).click();
-});
+1. **Always Use Accessibility Snapshots Over Screenshots**
+   - Use `mcp__playwright__browser_snapshot` to get structured page content
+   - Avoid `mcp__playwright__browser_take_screenshot` unless specifically requested
+   - Accessibility snapshots provide semantic element references (e.g., `ref=e26`) for reliable interactions
+
+2. **Element Interaction Pattern**
+   - First capture snapshot to see page structure
+   - Use element descriptions and ref IDs for precise targeting
+   - Example: `mcp__playwright__browser_click` with `element="Sign up link"` and `ref="e35"`
+
+3. **Form Testing Workflow**
+   - Fill forms systematically: `mcp__playwright__browser_type` with element description and ref
+   - Capture snapshots between interactions to verify state changes
+   - Test form validation by attempting submission with incomplete data
+
+4. **Navigation and State Management**
+   - Use `mcp__playwright__browser_navigate` for direct URLs
+   - Use `mcp__playwright__browser_navigate_back`/`forward` for browser navigation
+   - Tab management: `browser_tab_new`, `browser_tab_select`, `browser_tab_close`
+   - Window resizing: `browser_resize` for responsive testing
+
+5. **Debugging and Monitoring**
+   - Use `mcp__playwright__browser_console_messages` to check for errors/logs
+   - Network requests available but may be large - use carefully
+   - Hover effects: `mcp__playwright__browser_hover` for UI state testing
+
+6. **Key Benefits Over Traditional Automation**
+   - No visual processing delays
+   - Semantic element targeting (more reliable than CSS selectors)
+   - Real-time state capture in structured format
+   - Built-in accessibility compliance checking
+
+**Common Use Cases:**
+- E2E testing of web applications
+- Form validation testing
+- Theme/UI state verification
+- Multi-tab workflow testing
+- Responsive design testing
+
+
+
+## CRITICAL: Before Debugging Tests
+
+**ALWAYS read the complete test file first** before attempting any debugging or manual testing:
+
+1. **Read the entire test file** - Understand all tests, their sequence, and what each expects
+2. **Identify data dependencies** - Map which tests create data and which tests consume it
+3. **Understand the data contract** - What specific data does each test expect to exist?
+4. **Check test sequence** - Tests often have dependencies (Test 1 creates data, Tests 2-N use it, Last test cleans up)
+5. **Never manually create test data** - The tests themselves should create the data they need
+
+Common test patterns:
+- Test 1: Verify clean state (no data)
+- Test 2: Create test data (specific entities with specific names/properties)
+- Tests 3-N: Use the data created in Test 2
+- Last test: Clean up all test data
+
+**Manual testing through the UI is NOT equivalent to what automated tests expect.**
+
+## Things to remember
+
+  - Playwright tests **run** on port 3080 because Playwright uses its own webserver (config in `./LibreChat/e2e/playwright.config.ts`)
+  - This also means that e2e tests **will NOT** pick up changes to client app without building first. To ensure changes are picked up, do a full **clean rebuild when testing e2e** after making changes to packages or client: `./scripts/dev.sh --clean`.
+  - However, when using `playwright:browser_navigate (MCP)` to access the app to run through user flows, make sure the dev servers are running (`./scripts/dev.sh --all`), and access on **PORT 3090 (not 3080!)**.
+  - Here is a typical run command from package.json: `../scripts/dev.sh --stop && cross-env PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/agent-cta-display.spec.ts --headed0`
+  - Typically in a test suite, we set up the data in the first test and then cleanup in the last test. This allows the data to persist through all tests in the suite:
+    ```js
+    // Cleanup
+    const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
+    await cleanupAgents(testUserEmail);
+    await cleanupChats(testUserEmail);
+    logProgress('✅ Cleaned up test data');
+    ```
+
+### Setup & Teardown
+
+- Setup is automatically handled by the `fileStorageState` fixture in `fixtures/fixtures.ts`
+- Each test file gets a unique user with UUID-based isolation
+- Teardown is handled automatically by the fixture cleanup system
+
+### Auth Accounts
+
+- Create a new user when you need a fresh account, otherwise use an existing agentis test account:
+  - Test Account 1 (populated with several custom agents)
+    - gannonhall@gmail.com
+    - 999999999
+  - Test Account 2 (populated with some though fewer content)
+    - gannon@astro-labs.app
+    - 111111111
+  - Test Account 3 (best to use for destructive tests)
+    - test@test111.com
+    - 111111111
+  - Google Auth Accounts (use the follow to authenticate for Google service; these are also .env vars)
+    - GOOGLE_TEST_ACCOUNT_1_EMAIL="agentis.test@gmail.com"
+    - GOOGLE_TEST_ACCOUNT_1_PASSWORD="KJHkh97HKH87jjfU"
+
+
+## Test Isolation Pattern (DEFINITIVE)
+
+### Worker-to-File Mapping with Unique Users
+
+**CRITICAL**: This pattern is set in stone and must be followed exactly for all E2E tests.
+
+Each test file gets its own unique user, ensuring complete test isolation between files while allowing data sharing within a file:
+
+```mermaid
+graph TD
+    A[Test File 1: google.mcp.calendar.spec.ts] --> B[Worker 1]
+    B --> C[UUID: abc123ef]
+    C --> D[User: test-abc123ef@librechat.test]
+    D --> E[Registration]
+    E --> F[Login]
+    F --> G[Accept TOS]
+    G --> H[Storage State: storageState-abc123ef.json]
+    H --> I[Test 1.1: Create Calendar Agent]
+    H --> J[Test 1.2: Use Calendar Agent]
+    
+    K[Test File 2: google.mcp.docs.spec.ts] --> L[Worker 2]
+    L --> M[UUID: def456gh]
+    M --> N[User: test-def456gh@librechat.test]
+    N --> O[Registration]
+    O --> P[Login]
+    P --> Q[Accept TOS]
+    Q --> R[Storage State: storageState-def456gh.json]
+    R --> S[Test 2.1: Create Docs Agent]
+    R --> T[Test 2.2: Use Docs Agent]
+    
+    style A fill:#e1f5fe
+    style K fill:#e8f5e8
+    style D fill:#fff3e0
+    style N fill:#fff3e0
+    style H fill:#f3e5f5
+    style R fill:#f3e5f5
 ```
 
-### Core Functionality Tests
+### Authentication Flow
 
-#### Messages (`messages.spec.ts`)
-Comprehensive chat functionality testing:
-- Message sending and receiving
-- Real-time streaming responses
-- Message editing and regeneration
-- Stop/continue generation
-- Conversation management
-- Focus state management
+```mermaid
+sequenceDiagram
+    participant TF as Test File
+    participant F as Fixture
+    participant B as Browser
+    participant App as LibreChat App
+    participant DB as Database
+    
+    TF->>F: Request fileStorageState
+    F->>F: Generate UUID (abc123ef)
+    F->>F: Create user: test-abc123ef@librechat.test
+    F->>B: Create browser context
+    F->>App: Navigate to /register
+    F->>App: Fill registration form
+    App->>DB: Create user account
+    F->>App: Navigate to /login
+    F->>App: Fill login form
+    App->>DB: Authenticate user
+    App->>F: Redirect to /c/new
+    F->>App: Accept TOS modal
+    F->>F: Save storage state: storageState-abc123ef.json
+    F->>TF: Return storage state path
+    
+    Note over TF: First test uses fresh auth
+    Note over TF: Subsequent tests reuse storage state
+    
+    TF->>B: Create context with storage state
+    TF->>App: Already authenticated
+    TF->>TF: Run test scenarios
+```
 
-#### Navigation (`nav.spec.ts`)
-Application routing and navigation:
-- URL structure validation
-- Conversation switching
-- New chat creation
-- Browser history management
+### Key Principles
 
-#### Settings (`settings.spec.ts`)
-User preferences and configuration:
-- Profile management
-- Model selection
-- Theme switching
-- Data export/import
+1. **One User Per Test File**: Each test file gets a UUID-based unique user
+2. **Shared Storage State**: All tests within a file share the same authentication storage state  
+3. **Registration + Login + TOS Flow**: Always: Registration → Login → Accept TOS → Homepage
+4. **First Test Authenticates**: First test in file handles full auth flow, subsequent tests reuse storage state
+5. **Complete Isolation**: Different test files cannot see each other's data (users, agents, chats)
 
-### UI/UX Tests
+### Implementation
 
-#### Accessibility (`a11y.spec.ts`)
-WCAG 2.1 compliance testing using axe-core:
-- Landing page accessibility
-- Form input accessibility
-- Navigation accessibility
-- Color contrast validation
-- Keyboard navigation
+```typescript
+// fixtures.ts - Creates unique user per test file
+const uuid = crypto.randomUUID().substring(0, 8);
+const user = {
+  name: `Test User ${uuid}`,
+  email: `test-${uuid}@librechat.test`, 
+  password: 'TestPassword123!'
+};
+const storageStatePath = path.join(__dirname, `storageState-${uuid}.json`);
+```
 
-#### Popups (`popup.spec.ts`)
-Modal and dialog interactions:
-- Terms of Service modal
-- Confirmation dialogs
-- Error message displays
-- Loading states
+**This pattern ensures**:
+- No cross-contamination between test files
+- Data persistence within test file for sequential tests  
+- Predictable, repeatable test runs
+- Clear data ownership and cleanup
 
 ## Writing New Tests
 
 ### Test Structure
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/fixtures';
+import { logProgress } from '../utils/testLogger';
 
 // Configure viewport for consistent testing
 test.use({
   viewport: { width: 1600, height: 1700 }
 });
 
-// Describe test suite
-test.describe('Feature Name', () => {
-  // Setup before each test
-  test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3080/');
-  });
+// Tests run in order within the file, but with isolated users between files
+test.describe.configure({ mode: 'default' });
+
+// Individual test case using the fileStorageState fixture
+test('should perform specific action', async ({ browser, fileStorageState }) => {
+  logProgress('Starting test');
   
-  // Individual test case
-  test('should perform specific action', async ({ page }) => {
-    // Arrange - set up test state
+  // Create browser context with authenticated user
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
+  try {
+    // Navigate to app (already authenticated)
+    await page.goto('http://localhost:3080/');
+    await expect(page).toHaveURL(/.*\/c\/new/);
+    
+    // Perform test actions
     const message = 'Test message';
+    await page.getByTestId('text-input').fill(message);
+    await page.getByTestId('send-button').click();
     
-    // Act - perform actions
-    await page.locator('form').getByRole('textbox').fill(message);
-    await page.locator('form').getByRole('textbox').press('Enter');
-    
-    // Assert - verify results
-    await expect(page.locator('.message')).toContainText(message);
-  });
+    // Verify results
+    await expect(page.getByText(message)).toBeVisible();
+    logProgress('✅ Test completed successfully');
+  } finally {
+    await context.close();
+  }
 });
 ```
 
@@ -364,27 +483,31 @@ async function authenticateProvider(page: Page, provider: string) {
 
 ## Setup and Teardown
 
-### Authentication Flow
+### Authentication Flow (Current)
 
-1. **Setup Phase** (`authenticate.ts`):
-   - Check if user exists in database
-   - Register new user or use existing
+The authentication flow is now handled entirely by the `fileStorageState` fixture:
+
+1. **UUID Generation**: 
+   - Generate unique 8-character UUID for test file
+   - Create user: `test-{uuid}@librechat.test`
+
+2. **Storage State Check**:
+   - Check if valid storage state exists for this UUID
+   - Validate authentication by navigating to app
+   - Reuse valid state or recreate if expired
+
+3. **Fresh Authentication** (when needed):
+   - Clean up any existing user data
+   - Navigate to registration page
+   - Register new user account
    - Login with credentials
+   - Accept Terms of Service
    - Save browser storage state
-   - Set localStorage preferences
 
-2. **Test Execution**:
-   - Load saved storage state
-   - Navigate to application
-   - Execute test scenarios
-   - Capture screenshots/videos on failure
-
-3. **Teardown Phase** (`cleanupUser.ts`):
-   - Delete user conversations
-   - Delete user messages  
-   - Clear user sessions
-   - Remove user account
-   - Clean browser storage
+4. **Test Execution**:
+   - Load saved storage state for all tests in file
+   - All tests share same authenticated user
+   - Complete isolation between different test files
 
 ### Database Cleanup Process
 
@@ -403,11 +526,11 @@ The cleanup utility performs thorough database cleaning:
 
 ### Port Allocation
 
-| Service | Port | Usage |
-|---------|------|-------|
-| Dev API | 3080 | Development backend |
-| Dev Client | 3090 | Development frontend |
-| Test Server (main) | 3080 | CI/main tests |
+| Service             | Port | Usage                   |
+| ------------------- | ---- | ----------------------- |
+| Dev API             | 3080 | Development backend     |
+| Dev Client          | 3090 | Development frontend    |
+| Test Server (main)  | 3080 | CI/main tests           |
 | Test Server (local) | 3081 | Local development tests |
 
 ### Test Environment Variables

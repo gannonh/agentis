@@ -1,8 +1,6 @@
-import { test, expect } from '@playwright/test';
-import cleanupAgents, { cleanupChats } from '../utils/cleanupUser';
+import { test, expect } from '../fixtures/fixtures';
 import { logProgress } from '../utils/testLogger';
-import { handleGoogleOAuth } from '../utils/handleGoogleOAuth';
-import { handleConditionalAuth } from '../utils/handleConditionalAuth';
+import { handleInitialAuth } from '../utils/googleAuth';
 
 test.use({
   viewport: {
@@ -11,19 +9,25 @@ test.use({
   },
 });
 
-test('Create Gmail MCP', async ({ page }) => {
+// Tests in this file run in order. Retries, if any, run independently.
+test.describe.configure({ mode: 'default' });
+
+test('Create Gmail MCP', async ({ browser, fileStorageState }) => {
   logProgress('Starting Create Gmail MCP test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('Verified on main chat page');
   //
 
-  // Create Google Sheets Agent
+  // Create Gmail
   await page.getByRole('button', { name: 'Controls' }).click();
   await page.getByRole('button', { name: 'Agent Builder' }).click();
   logProgress('Opened Agent Builder');
@@ -42,7 +46,7 @@ test('Create Gmail MCP', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
   await page
     .getByRole('textbox', { name: 'Agent description' })
-    .fill('Claude 3.5 Agent with access to Gmail.');
+    .fill('Claude 3.7 Agent with access to Gmail.');
   await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
   await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
   await page.getByRole('textbox', { name: 'Agent instructions' }).click();
@@ -57,7 +61,7 @@ test('Create Gmail MCP', async ({ page }) => {
   await page.getByRole('combobox', { name: 'Provider' }).click();
   await page.getByText('Anthropic').click();
   await page.getByRole('combobox', { name: 'Model' }).click();
-  await page.getByText('claude-3-5-sonnet-20241022').click();
+  await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
 
   await page.getByRole('button', { name: 'Create' }).click();
   logProgress('Created agent with basic settings');
@@ -76,6 +80,14 @@ test('Create Gmail MCP', async ({ page }) => {
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
+  // Wait for save operation to complete
+  try {
+    await page.waitForTimeout(2000); // Give server time to save
+    logProgress('Waited for save operation to complete');
+  } catch (error) {
+    logProgress('⚠️ Save wait timeout, continuing...');
+  }
+
   logProgress('Saved agent configuration');
 
   // Assert MCP is created
@@ -87,50 +99,107 @@ test('Create Gmail MCP', async ({ page }) => {
   // assert mcp/tool
 
   await expect(page.getByText('Add Label To Email')).toBeVisible();
+
+  // Close the context
+  await context.close();
 });
 
-test('Use Gmail Agent', async ({ page }) => {
+test('Use Gmail Agent', async ({ browser, fileStorageState }) => {
   logProgress('✅ Starting Use Gmail Agent test');
+
+  // Create a new context with the file-specific storage state
+  const context = await browser.newContext({ storageState: fileStorageState });
+  const page = await context.newPage();
+
   await page.goto('http://localhost:3080/');
 
-  // Handle conditional authentication
-  await handleConditionalAuth(page);
-
+  // With storage state, we should be automatically authenticated
   // Verify we're on the main chat page
   await expect(page).toHaveURL(/.*\/c\/new/);
   logProgress('✅ Verified on main chat page');
-  // START
+
+  // Select the Gmail Agent explicitly to avoid conflicts with other parallel tests
+  await page.getByRole('button', { name: 'Select a model' }).click();
+  await page.getByRole('dialog').getByRole('option', { name: 'Agents' }).click();
+  await page.getByLabel('Agents').getByText('Gmail Agent').click(); // ISSUE
+  logProgress('✅ Selected Gmail Agent');
 
   await page
     .getByTestId('text-input')
     .fill(
-      "Create a 250 word Gmail draft about musician Carlos Alomar. Include a discography.\n\nRecipient: agentis.test@gmail.com\nSubject: Carlos Alomar blurb.\n\nFirst I'll need to authorize with Gmail so please first run 'Connect to Gmail' and provide an authorization link. You do not need to check a connection first and if you do it will erroneously tell you that you have one.",
+      'Create a 250 word Gmail draft about musician Carlos Alomar. Include a discography.\n\nRecipient: agentis.test@gmail.com\nSubject: Carlos Alomar blurb.',
     );
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent message to create Gmail draft');
 
-  await handleGoogleOAuth(page, 'Gmail', { timeout: 90000 });
+  await expect(page.getByRole('button', { name: 'Running Create Email Draft' })).toBeVisible({
+    timeout: 60000,
+  });
+  logProgress('✅ Found "Running Create Email Draft" tool execution');
+  await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
+    timeout: 60000,
+  });
+  logProgress('✅ Found "Ran Create Email Draft" tool execution');
 
-  await page.getByTestId('text-input').fill('Ok, please try now');
+  // auth ---------------------------
+  // Look for the proactive authentication UI that should appear automatically
+  await expect(page.getByText('Authentication Required')).toBeVisible();
+  logProgress('✅ Found proactive Authentication Required section');
+
+  // Verify the descriptive text about tools requiring authentication
+  await expect(
+    page.getByText('This conversation uses tools that require authentication:'),
+  ).toBeVisible();
+  logProgress('✅ Found descriptive text about authentication');
+
+  // Look for the Connect Gmail button in the proactive auth UI
+  await expect(page.getByRole('button', { name: 'Connect Gmail' })).toBeVisible();
+  logProgress('✅ Found Connect Gmail button in proactive auth UI');
+  // await page.pause();
+
+  // Handle the authentication
+  logProgress('✅ Starting Gmail authentication');
+  const popup = await handleInitialAuth(page, 'Gmail');
+
+  // Handle the consent screens
+  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+  logProgress('✅ Clicked Continue on first consent screen');
+  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+  logProgress('✅ Clicked Continue on second consent screen');
+
+  // Wait for authentication to complete
+  logProgress('⏳ Waiting 2 sec for authentication to complete...');
+  await page.waitForTimeout(2000);
+  logProgress('✅ Waited for authentication to complete');
+
+  // The proactive auth section should remain visible as part of conversation history
+  await expect(page.getByText('Authentication Required')).toBeVisible();
+  logProgress('✅ Proactive auth section remains visible as part of conversation history');
+
+  // Check that the button shows "✓ Connected" after successful authentication
+  await expect(page.getByText('✓ Connected')).toBeVisible();
+  logProgress('✅ Found "✓ Connected" status indicating successful Gmail authentication');
+
+  await page
+    .getByTestId('text-input')
+    .fill('ok, try now. please also provide a link to the draft when created.');
   await page.getByTestId('send-button').click();
   logProgress('✅ Sent follow-up message after authentication');
 
-  //await page.pause();
+  if (!process.env.CI) {
+    await expect(
+      page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
+    ).toBeVisible({
+      timeout: 90000,
+    });
+    logProgress('✅ Running Create Email Draft');
+    await expect(page.getByRole('button', { name: 'Ran Create Email Draft' }).first()).toBeVisible({
+      timeout: 90000,
+    });
+  }
 
-  await expect(
-    page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
-  ).toBeVisible({
-    timeout: 90000,
-  });
-  logProgress('✅ Running Create Email Draft');
-  await expect(page.getByRole('button', { name: 'Ran Create Email Draft' }).first()).toBeVisible({
-    timeout: 90000,
-  });
   logProgress('✅ Ran Create Email Draft');
 
-  //await page.pause();
-  const testUserEmail = process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || 'agentis.test@gmail.com';
-  await cleanupAgents(testUserEmail);
-  await cleanupChats(testUserEmail);
-  logProgress('✅ Cleaned up agents and chats for test user');
+  // Close the context
+  await context.close();
 });

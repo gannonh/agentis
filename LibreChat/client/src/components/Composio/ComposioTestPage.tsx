@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ComposioAuthButton } from './ComposioAuthButton';
 import { useAuthContext } from '~/hooks';
 
@@ -9,11 +9,7 @@ export const ComposioTestPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { token } = useAuthContext();
 
-  useEffect(() => {
-    checkAllConnectionStatuses();
-  }, []);
-
-  const checkAllConnectionStatuses = async () => {
+  const checkAllConnectionStatuses = useCallback(async () => {
     if (!token) return;
 
     setLoading(true);
@@ -34,7 +30,11 @@ export const ComposioTestPage: React.FC = () => {
 
     setConnectionStatuses(statuses);
     setLoading(false);
-  };
+  }, [token]);
+
+  useEffect(() => {
+    checkAllConnectionStatuses();
+  }, [checkAllConnectionStatuses]);
 
   const handleAuthSuccess = (service: string, connectedAccountId: string) => {
     console.log(`✅ Auth success for ${service}:`, connectedAccountId);
@@ -93,10 +93,10 @@ export const ComposioTestPage: React.FC = () => {
       <div className="mt-8 rounded-lg bg-gray-100 p-4">
         <h3 className="mb-2 font-semibold">How to Test:</h3>
         <ol className="list-inside list-decimal space-y-1 text-sm">
-          <li>Click "Connect" for any service you want to test</li>
+          <li>Click &quot;Connect&quot; for any service you want to test</li>
           <li>Complete the OAuth flow in the popup window</li>
           <li>Once connected, go to a chat and try using tools for that service</li>
-          <li>Example: "Create a new Google Sheet with my project tasks"</li>
+          <li>Example: &quot;Create a new Google Sheet with my project tasks&quot;</li>
         </ol>
       </div>
 
