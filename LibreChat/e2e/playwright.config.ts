@@ -54,7 +54,7 @@ export default defineConfig({
     stdout: 'pipe',
     ignoreHTTPSErrors: true,
     // url: 'http://localhost:3080',
-    timeout: 60_000, // More generous timeout for Google tests
+    timeout: 120_000, // Increased timeout for MCP initialization in CI
     reuseExistingServer: false, // Don't reuse to ensure clean state
     // SEE /Users/gannonhall/dev/agentis/LibreChat/e2e/fixtures/fixtures.ts
     env: {
