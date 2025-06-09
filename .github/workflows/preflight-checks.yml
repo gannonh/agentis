@@ -12,6 +12,9 @@ on:
 jobs:
   preflight:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     
     services:
       mongodb:
@@ -68,6 +71,13 @@ jobs:
         options: --health-cmd="curl -f http://localhost/ >/dev/null 2>&1 || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=60s
 
     steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
