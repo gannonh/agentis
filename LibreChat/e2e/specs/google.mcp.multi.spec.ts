@@ -120,7 +120,7 @@ test('Create Google Multi Agent', async ({ browser, fileStorageState }) => {
     try {
       await context.close();
     } catch (closeError) {
-      console.log('⚠️ Context close error:', closeError.message);
+      console.log('⚠️ Context close error:', closeError);
       // Don't throw here - we want the original test error to propagate
     }
   }
