@@ -19,7 +19,7 @@ export default defineConfig({
   retries: 0, // Set to 0 for Google tests to avoid issues
   /* Enable multiple workers for parallel execution */
   // TODO: Optimize worker count based on system resources and test performance
-  workers: process.env.CI ? 4 : 1, // 4 workers for CI, 1 for local development
+  workers: process.env.CI ? 1 : 1, // 4 workers for CI, 1 for local development
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { outputFolder: 'playwright-report' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -34,7 +34,7 @@ export default defineConfig({
   expect: {
     timeout: 10000,
   },
-  timeout: 5 * 60 * 1000, // 5 minutes for Google tests
+  timeout: 5 * 60 * 1000, // 5 minutes
   /* Configure projects for major browsers */
   projects: [
     // Main test project with worker-scoped authentication
@@ -45,17 +45,6 @@ export default defineConfig({
         // Worker-scoped storage state will be handled by fixtures
       },
     },
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    //   dependencies: ['setup'],
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    //   dependencies: ['setup'],
-    // },
   ],
 
   /* Run your local dev server before starting the tests */

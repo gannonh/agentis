@@ -1,6 +1,7 @@
-import { test, expect } from '../fixtures/fixtures';
+import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/googleAuth';
+import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
 
 test.use({
   viewport: {
@@ -12,194 +13,208 @@ test.use({
 // Tests in this file run in order. Retries, if any, run independently.
 test.describe.configure({ mode: 'default' });
 
-test('Create Gmail MCP', async ({ browser, fileStorageState }) => {
-  logProgress('Starting Create Gmail MCP test');
+test.describe('Google Gmail MCP Tests', () => {
+  let fileAuth: FileAuthConfig;
 
-  // Create a new context with the file-specific storage state
-  const context = await browser.newContext({ storageState: fileStorageState });
-  const page = await context.newPage();
-
-  await page.goto('http://localhost:3080/');
-
-  // With storage state, we should be automatically authenticated
-  // Verify we're on the main chat page
-  await expect(page).toHaveURL(/.*\/c\/new/);
-  logProgress('Verified on main chat page');
-  //
-
-  // Create Gmail
-  await page.getByRole('button', { name: 'Controls' }).click();
-  await page.getByRole('button', { name: 'Agent Builder' }).click();
-  logProgress('Opened Agent Builder');
-
-  try {
-    await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-  } catch (e) {
-    // Button might not exist, continue
-    console.log('Create New Agent button not found, continuing...');
-  }
-
-  await page.getByRole('textbox', { name: 'Agent name' }).click();
-  await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
-  await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
-  await page.getByRole('textbox', { name: 'Agent name' }).fill('Gmail Agent');
-  await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
-  await page
-    .getByRole('textbox', { name: 'Agent description' })
-    .fill('Claude 3.7 Agent with access to Gmail.');
-  await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
-  await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
-  await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-  await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-  await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-  await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
-  await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-  await page
-    .getByRole('textbox', { name: 'Agent instructions' })
-    .fill('You possess expert-level Gmail skills.');
-  await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
-  await page.getByRole('combobox', { name: 'Provider' }).click();
-  await page.getByText('Anthropic').click();
-  await page.getByRole('combobox', { name: 'Model' }).click();
-  await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
-
-  await page.getByRole('button', { name: 'Create' }).click();
-  logProgress('Created agent with basic settings');
-  // add mcp tools
-
-  await page
-    .getByLabel('Agent Builder')
-    .getByRole('button')
-    .filter({ hasText: /^$/ })
-    .first()
-    .click();
-  await page.getByRole('button', { name: 'Add Tools' }).click();
-  await page.getByRole('button', { name: 'Add Gmail' }).click();
-  await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-  await page.getByRole('button', { name: 'Add Selected' }).click();
-  await page.getByRole('button', { name: 'Close dialog' }).click();
-  await page.getByRole('button', { name: 'Save' }).click();
-
-  // Wait for save operation to complete
-  try {
-    await page.waitForTimeout(2000); // Give server time to save
-    logProgress('Waited for save operation to complete');
-  } catch (error) {
-    logProgress('⚠️ Save wait timeout, continuing...');
-  }
-
-  logProgress('Saved agent configuration');
-
-  // Assert MCP is created
-
-  await expect(page.getByLabel('Agent Builder').getByText('Gmail', { exact: true })).toBeVisible();
-  logProgress('✅ Gmail MCP created successfully');
-  await page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }).click();
-
-  // assert mcp/tool
-
-  await expect(page.getByText('Add Label To Email')).toBeVisible();
-
-  // Close the context
-  await context.close();
-});
-
-test('Use Gmail Agent', async ({ browser, fileStorageState }) => {
-  logProgress('✅ Starting Use Gmail Agent test');
-
-  // Create a new context with the file-specific storage state
-  const context = await browser.newContext({ storageState: fileStorageState });
-  const page = await context.newPage();
-
-  await page.goto('http://localhost:3080/');
-
-  // With storage state, we should be automatically authenticated
-  // Verify we're on the main chat page
-  await expect(page).toHaveURL(/.*\/c\/new/);
-  logProgress('✅ Verified on main chat page');
-
-  // Select the Gmail Agent explicitly to avoid conflicts with other parallel tests
-  await page.getByRole('button', { name: 'Select a model' }).click();
-  await page.getByRole('dialog').getByRole('option', { name: 'Agents' }).click();
-  await page.getByLabel('Agents').getByText('Gmail Agent').click(); // ISSUE
-  logProgress('✅ Selected Gmail Agent');
-
-  await page
-    .getByTestId('text-input')
-    .fill(
-      'Create a 250 word Gmail draft about musician Carlos Alomar. Include a discography.\n\nRecipient: agentis.test@gmail.com\nSubject: Carlos Alomar blurb.',
-    );
-  await page.getByTestId('send-button').click();
-  logProgress('✅ Sent message to create Gmail draft');
-
-  await expect(page.getByRole('button', { name: 'Running Create Email Draft' })).toBeVisible({
-    timeout: 60000,
+  test.beforeAll(async ({ browser }) => {
+    // Create file-scoped authentication for this test file
+    fileAuth = await createFileAuth(browser, 'google-gmail-mcp');
+    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
   });
-  logProgress('✅ Found "Running Create Email Draft" tool execution');
-  await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
-    timeout: 60000,
-  });
-  logProgress('✅ Found "Ran Create Email Draft" tool execution');
 
-  // auth ---------------------------
-  // Look for the proactive authentication UI that should appear automatically
-  await expect(page.getByText('Authentication Required')).toBeVisible();
-  logProgress('✅ Found proactive Authentication Required section');
+  test('Create Gmail MCP', async ({ browser }) => {
+    logProgress('Starting Create Gmail MCP test');
 
-  // Verify the descriptive text about tools requiring authentication
-  await expect(
-    page.getByText('This conversation uses tools that require authentication:'),
-  ).toBeVisible();
-  logProgress('✅ Found descriptive text about authentication');
+    // Create a new context with the file-specific storage state
+    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    const page = await context.newPage();
 
-  // Look for the Connect Gmail button in the proactive auth UI
-  await expect(page.getByRole('button', { name: 'Connect Gmail' })).toBeVisible();
-  logProgress('✅ Found Connect Gmail button in proactive auth UI');
-  // await page.pause();
+    await page.goto('http://localhost:3080/');
 
-  // Handle the authentication
-  logProgress('✅ Starting Gmail authentication');
-  const popup = await handleInitialAuth(page, 'Gmail');
+    // With storage state, we should be automatically authenticated
+    // Verify we're on the main chat page
+    await expect(page).toHaveURL(/.*\/c\/new/);
+    logProgress('Verified on main chat page');
+    //
 
-  // Handle the consent screens
-  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-  logProgress('✅ Clicked Continue on first consent screen');
-  await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-  logProgress('✅ Clicked Continue on second consent screen');
+    // Create Gmail
+    await page.getByRole('button', { name: 'Controls' }).click();
+    await page.getByRole('button', { name: 'Agent Builder' }).click();
+    logProgress('Opened Agent Builder');
 
-  // Wait for authentication to complete
-  logProgress('⏳ Waiting 2 sec for authentication to complete...');
-  await page.waitForTimeout(2000);
-  logProgress('✅ Waited for authentication to complete');
+    try {
+      await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
+    } catch (e) {
+      // Button might not exist, continue
+      console.log('Create New Agent button not found, continuing...');
+    }
 
-  // The proactive auth section should remain visible as part of conversation history
-  await expect(page.getByText('Authentication Required')).toBeVisible();
-  logProgress('✅ Proactive auth section remains visible as part of conversation history');
+    await page.getByRole('textbox', { name: 'Agent name' }).click();
+    await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
+    await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
+    await page.getByRole('textbox', { name: 'Agent name' }).fill('Gmail Agent');
+    await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
+    await page
+      .getByRole('textbox', { name: 'Agent description' })
+      .fill('Claude 3.7 Agent with access to Gmail.');
+    await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
+    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
+    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
+    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+    await page
+      .getByRole('textbox', { name: 'Agent instructions' })
+      .fill('You possess expert-level Gmail skills.');
+    await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
+    await page.getByRole('combobox', { name: 'Provider' }).click();
+    await page.getByText('Anthropic').click();
+    await page.getByRole('combobox', { name: 'Model' }).click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
 
-  // Check that the button shows "✓ Connected" after successful authentication
-  await expect(page.getByText('✓ Connected')).toBeVisible();
-  logProgress('✅ Found "✓ Connected" status indicating successful Gmail authentication');
+    await page.getByRole('button', { name: 'Create' }).click();
+    logProgress('Created agent with basic settings');
+    // add mcp tools
 
-  await page
-    .getByTestId('text-input')
-    .fill('ok, try now. please also provide a link to the draft when created.');
-  await page.getByTestId('send-button').click();
-  logProgress('✅ Sent follow-up message after authentication');
+    await page
+      .getByLabel('Agent Builder')
+      .getByRole('button')
+      .filter({ hasText: /^$/ })
+      .first()
+      .click();
+    await page.getByRole('button', { name: 'Add Tools' }).click();
+    await page.getByRole('button', { name: 'Add Gmail' }).click();
+    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+    await page.getByRole('button', { name: 'Add Selected' }).click();
+    await page.getByRole('button', { name: 'Close dialog' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
 
-  if (!process.env.CI) {
+    // Wait for save operation to complete
+    try {
+      await page.waitForTimeout(2000); // Give server time to save
+      logProgress('Waited for save operation to complete');
+    } catch (error) {
+      logProgress('⚠️ Save wait timeout, continuing...');
+    }
+
+    logProgress('Saved agent configuration');
+
+    // Assert MCP is created
+
     await expect(
-      page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
-    ).toBeVisible({
-      timeout: 90000,
-    });
-    logProgress('✅ Running Create Email Draft');
-    await expect(page.getByRole('button', { name: 'Ran Create Email Draft' }).first()).toBeVisible({
-      timeout: 90000,
-    });
-  }
+      page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }),
+    ).toBeVisible();
+    logProgress('✅ Gmail MCP created successfully');
+    await page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }).click();
 
-  logProgress('✅ Ran Create Email Draft');
+    // assert mcp/tool
 
-  // Close the context
-  await context.close();
-});
+    await expect(page.getByText('Add Label To Email')).toBeVisible();
+
+    // Close the context
+    await context.close();
+  });
+
+  test('Use Gmail Agent', async ({ browser }) => {
+    logProgress('✅ Starting Use Gmail Agent test');
+
+    // Create a new context with the file-specific storage state
+    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    const page = await context.newPage();
+
+    await page.goto('http://localhost:3080/');
+
+    // With storage state, we should be automatically authenticated
+    // Verify we're on the main chat page
+    await expect(page).toHaveURL(/.*\/c\/new/);
+    logProgress('✅ Verified on main chat page');
+
+    // Select the Gmail Agent explicitly to avoid conflicts with other parallel tests
+    await page.getByRole('button', { name: 'Select a model' }).click();
+    await page.getByRole('dialog').getByRole('option', { name: 'Agents' }).click();
+    await page.getByLabel('Agents').getByText('Gmail Agent').click(); // ISSUE
+    logProgress('✅ Selected Gmail Agent');
+
+    await page
+      .getByTestId('text-input')
+      .fill(
+        'Create a 250 word Gmail draft about musician Carlos Alomar. Include a discography.\n\nRecipient: agentis.test@gmail.com\nSubject: Carlos Alomar blurb.',
+      );
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent message to create Gmail draft');
+
+    await expect(page.getByRole('button', { name: 'Running Create Email Draft' })).toBeVisible({
+      timeout: 60000,
+    });
+    logProgress('✅ Found "Running Create Email Draft" tool execution');
+    await expect(page.getByRole('button', { name: 'Ran Create Email Draft' })).toBeVisible({
+      timeout: 60000,
+    });
+    logProgress('✅ Found "Ran Create Email Draft" tool execution');
+
+    // auth ---------------------------
+    // Look for the proactive authentication UI that should appear automatically
+    await expect(page.getByText('Authentication Required')).toBeVisible();
+    logProgress('✅ Found proactive Authentication Required section');
+
+    // Verify the descriptive text about tools requiring authentication
+    await expect(
+      page.getByText('This conversation uses tools that require authentication:'),
+    ).toBeVisible();
+    logProgress('✅ Found descriptive text about authentication');
+
+    // Look for the Connect Gmail button in the proactive auth UI
+    await expect(page.getByRole('button', { name: 'Connect Gmail' })).toBeVisible();
+    logProgress('✅ Found Connect Gmail button in proactive auth UI');
+    // await page.pause();
+
+    // Handle the authentication
+    logProgress('✅ Starting Gmail authentication');
+    const popup = await handleInitialAuth(page, 'Gmail');
+
+    // Handle the consent screens
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on first consent screen');
+    await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+    logProgress('✅ Clicked Continue on second consent screen');
+
+    // Wait for authentication to complete
+    logProgress('⏳ Waiting 2 sec for authentication to complete...');
+    await page.waitForTimeout(2000);
+    logProgress('✅ Waited for authentication to complete');
+
+    // The proactive auth section should remain visible as part of conversation history
+    await expect(page.getByText('Authentication Required')).toBeVisible();
+    logProgress('✅ Proactive auth section remains visible as part of conversation history');
+
+    // Check that the button shows "✓ Connected" after successful authentication
+    await expect(page.getByText('✓ Connected')).toBeVisible();
+    logProgress('✅ Found "✓ Connected" status indicating successful Gmail authentication');
+
+    await page
+      .getByTestId('text-input')
+      .fill('ok, try now. please also provide a link to the draft when created.');
+    await page.getByTestId('send-button').click();
+    logProgress('✅ Sent follow-up message after authentication');
+
+    if (!process.env.CI) {
+      await expect(
+        page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
+      ).toBeVisible({
+        timeout: 90000,
+      });
+      logProgress('✅ Running Create Email Draft');
+      await expect(
+        page.getByRole('button', { name: 'Ran Create Email Draft' }).first(),
+      ).toBeVisible({
+        timeout: 90000,
+      });
+    }
+
+    logProgress('✅ Ran Create Email Draft');
+
+    // Close the context
+    await context.close();
+  });
+}); // End of test.describe('Google Gmail MCP Tests')
