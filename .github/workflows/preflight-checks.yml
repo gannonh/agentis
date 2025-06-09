@@ -65,7 +65,7 @@ jobs:
           DB_NAME: mydatabase
           RAG_PORT: 8000
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        options: --health-cmd="curl -f http://localhost:8000/health || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=90s
+        options: --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=90s
 
       sandpack:
         image: ghcr.io/gannonh/codesandbox-client/bundler:latest
@@ -74,7 +74,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
         ports:
           - 8080:80
-        options: --health-cmd="curl -f http://localhost/ >/dev/null 2>&1 || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=60s
+        options: --health-cmd="wget --no-verbose --tries=1 --spider http://localhost/ || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=60s
 
     steps:
       - name: Checkout repository
