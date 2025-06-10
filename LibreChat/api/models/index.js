@@ -42,6 +42,8 @@ const Balance = require('./Balance');
 const User = require('./User');
 const Key = require('./Key');
 const ComposioConnectedAccount = require('./ComposioConnectedAccount');
+const Organization = require('./Organization');
+const Team = require('./Team');
 
 module.exports = {
   comparePassword,
@@ -96,4 +98,6 @@ module.exports = {
   Key,
   Balance,
   ComposioConnectedAccount,
+  Organization,
+  Team,
 };
