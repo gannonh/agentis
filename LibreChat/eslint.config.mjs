@@ -364,12 +364,33 @@ export default [
   {
     // **New Data-schemas configuration block**
     files: ['./packages/data-schemas/**/*.ts'],
+    ignores: [
+      './packages/data-schemas/**/*.test.ts',
+      './packages/data-schemas/**/*.spec.ts',
+      './packages/data-schemas/**/__tests__/**/*',
+    ],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: {
         project: './packages/data-schemas/tsconfig.json',
+      },
+    },
+  },
+  {
+    // **Data-schemas test files configuration block**
+    files: [
+      './packages/data-schemas/**/*.test.ts',
+      './packages/data-schemas/**/*.spec.ts',
+      './packages/data-schemas/**/__tests__/**/*',
+    ],
+    languageOptions: {
+      parser: tsParser,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parserOptions: {
+        project: './packages/data-schemas/tsconfig.test.json',
       },
     },
   },
