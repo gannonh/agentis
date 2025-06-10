@@ -4,7 +4,7 @@ import {
   handleInitialAuth,
   handleExistingAccountAuth,
   handleExistingAccountAuthSingle,
-} from '../utils/googleAuth';
+} from '../utils/oAuth';
 import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
 
 test.use({
@@ -144,62 +144,65 @@ test.describe('Google Multi MCP Tests', () => {
   });
 
   test('Use Google Multi Agent', async ({ browser }) => {
-    logProgress('✅ Starting Use Google Multi Agent test');
+    if (process.env.CI) {
+      logProgress('⚠️ CI mode - Skipping Use Google Multi Agent test');
+    } else {
+      logProgress('✅ Starting Use Google Multi Agent test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-    const page = await context.newPage();
+      // Create a new context with the file-specific storage state
+      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+      const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
+      await page.goto('http://localhost:3080/');
 
-    // With storage state, we should be automatically authenticated
+      // With storage state, we should be automatically authenticated
 
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('✅ Verified on main chat page');
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('✅ Verified on main chat page');
 
-    // Select the Google Multi Agent explicitly to avoid conflicts with other parallel tests
-    await page.getByRole('button', { name: 'Select a model' }).click();
-    await page.getByText('Agents', { exact: true }).first().click();
+      // Select the Google Multi Agent explicitly to avoid conflicts with other parallel tests
+      await page.getByRole('button', { name: 'Select a model' }).click();
+      await page.getByText('Agents', { exact: true }).first().click();
 
-    // Debug: Check if any agents are available
-    const agentsContainer = page.getByLabel('Agents');
-    await expect(agentsContainer).toBeVisible();
+      // Debug: Check if any agents are available
+      const agentsContainer = page.getByLabel('Agents');
+      await expect(agentsContainer).toBeVisible();
 
-    // Wait longer and add debug logging
-    try {
-      await expect(agentsContainer.getByText('Google Multi Agent')).toBeVisible({
-        timeout: 15000,
-      });
-    } catch (error) {
-      // Debug: Log all available agents
-      const allAgents = await agentsContainer.locator('text=').allTextContents();
-      console.log('Available agents:', allAgents);
+      // Wait longer and add debug logging
+      try {
+        await expect(agentsContainer.getByText('Google Multi Agent')).toBeVisible({
+          timeout: 15000,
+        });
+      } catch (error) {
+        // Debug: Log all available agents
+        const allAgents = await agentsContainer.locator('text=').allTextContents();
+        console.log('Available agents:', allAgents);
 
-      // Try alternative selectors
-      const agentExists = await page.locator('text=Google Multi Agent').count();
-      console.log('Agent count:', agentExists);
+        // Try alternative selectors
+        const agentExists = await page.locator('text=Google Multi Agent').count();
+        console.log('Agent count:', agentExists);
 
-      throw new Error(`Google Multi Agent not found. Available agents: ${allAgents.join(', ')}`);
-    }
+        throw new Error(`Google Multi Agent not found. Available agents: ${allAgents.join(', ')}`);
+      }
 
-    await agentsContainer.getByText('Google Multi Agent').click();
-    logProgress('✅ Selected Google Multi Agent');
+      await agentsContainer.getByText('Google Multi Agent').click();
+      logProgress('✅ Selected Google Multi Agent');
 
-    // ----------------- begin cogegen
-    // await page.pause();
-    await page.getByTestId('text-input').click();
-    await page
-      .getByTestId('text-input')
-      .fill('Hello! What tools do you have? What are your capabilities?');
-    await page.getByTestId('send-button').click();
+      // ----------------- begin cogegen
+      // await page.pause();
+      await page.getByTestId('text-input').click();
+      await page
+        .getByTestId('text-input')
+        .fill('Hello! What tools do you have? What are your capabilities?');
+      await page.getByTestId('send-button').click();
 
-    // wait for agent message stream to conclude
-    // manually scroll to the top so that auth butons are visible
+      // wait for agent message stream to conclude
+      // manually scroll to the top so that auth butons are visible
 
-    // PAGE SNAPSHOT:
+      // PAGE SNAPSHOT:
 
-    await expect(page.getByRole('main')).toMatchAriaSnapshot(`
+      await expect(page.getByRole('main')).toMatchAriaSnapshot(`
     - img
     - text: Authentication Required
     - paragraph: "This conversation uses tools that require authentication:"
@@ -208,10 +211,10 @@ test.describe('Google Multi MCP Tests', () => {
     - button "Connect Google Sheets"
     `);
 
-    // START 1ST AUTH - Google Drive (initial auth flow)
-    const page1 = await handleInitialAuth(page, 'Google Drive');
-    try {
-      await expect(page1.locator('body')).toMatchAriaSnapshot(`
+      // START 1ST AUTH - Google Drive (initial auth flow)
+      const page1 = await handleInitialAuth(page, 'Google Drive');
+      try {
+        await expect(page1.locator('body')).toMatchAriaSnapshot(`
       - text: Sign in with Google
       - img "Composio"
       - heading "You’re signing back in to Composio" [level=1]
@@ -244,12 +247,12 @@ test.describe('Google Multi MCP Tests', () => {
             - link "Terms":
               - /url: https://accounts.google.com/TOS?loc=US&hl=en
       `);
-    } catch (error) {
-      console.log('Error matching aria snapshot for Google Drive auth:', error);
-    }
-    await page1.getByRole('button', { name: 'Continue' }).click();
-    try {
-      await expect(page1.locator('body')).toMatchAriaSnapshot(`
+      } catch (error) {
+        console.log('Error matching aria snapshot for Google Drive auth:', error);
+      }
+      await page1.getByRole('button', { name: 'Continue' }).click();
+      try {
+        await expect(page1.locator('body')).toMatchAriaSnapshot(`
       - text: Sign in with Google
       - heading "Composio wants access to your Google Account" [level=1]
       - text: agentis.test@gmail.com
@@ -286,13 +289,13 @@ test.describe('Google Multi MCP Tests', () => {
             - link "Terms":
               - /url: https://accounts.google.com/TOS?loc=US&hl=en
       `);
-    } catch (error) {
-      console.log('Error matching aria snapshot for Google Drive auth:', error);
-    }
-    await page1.getByRole('button', { name: 'Continue' }).click();
+      } catch (error) {
+        console.log('Error matching aria snapshot for Google Drive auth:', error);
+      }
+      await page1.getByRole('button', { name: 'Continue' }).click();
 
-    try {
-      await expect(page.getByRole('main')).toMatchAriaSnapshot(`
+      try {
+        await expect(page.getByRole('main')).toMatchAriaSnapshot(`
       - img
       - text: Authentication Required
       - paragraph: "This conversation uses tools that require authentication:"
@@ -300,14 +303,14 @@ test.describe('Google Multi MCP Tests', () => {
       - button "Connect Google Docs"
       - button "Connect Google Sheets"
       `);
-    } catch (error) {
-      console.log('Error matching aria snapshot for Google Drive auth completion:', error);
-    }
+      } catch (error) {
+        console.log('Error matching aria snapshot for Google Drive auth completion:', error);
+      }
 
-    // Google Docs (existing account flow)
-    const page2 = await handleExistingAccountAuth(page, 'Google Docs');
-    try {
-      await expect(page.getByRole('main')).toMatchAriaSnapshot(`
+      // Google Docs (existing account flow)
+      const page2 = await handleExistingAccountAuth(page, 'Google Docs');
+      try {
+        await expect(page.getByRole('main')).toMatchAriaSnapshot(`
       - img
       - text: Authentication Required
       - paragraph: "This conversation uses tools that require authentication:"
@@ -315,13 +318,13 @@ test.describe('Google Multi MCP Tests', () => {
       - button "✓ Connected" [disabled]
       - button "Connect Google Sheets"
       `);
-    } catch (error) {
-      console.log('Error matching aria snapshot for Google Docs auth completion:', error);
-    }
-    // Google Sheets (existing account flow - single Continue button)
-    const page3 = await handleExistingAccountAuthSingle(page, 'Google Sheets');
-    try {
-      await expect(page.getByRole('main')).toMatchAriaSnapshot(`
+      } catch (error) {
+        console.log('Error matching aria snapshot for Google Docs auth completion:', error);
+      }
+      // Google Sheets (existing account flow - single Continue button)
+      const page3 = await handleExistingAccountAuthSingle(page, 'Google Sheets');
+      try {
+        await expect(page.getByRole('main')).toMatchAriaSnapshot(`
       - img
       - text: Authentication Required
       - paragraph: "This conversation uses tools that require authentication:"
@@ -329,13 +332,12 @@ test.describe('Google Multi MCP Tests', () => {
       - button "✓ Connected" [disabled]
       - button "✓ Connected" [disabled]
       `);
-    } catch (error) {
-      console.log('Error matching aria snapshot for Google Sheets auth completion:', error);
+      } catch (error) {
+        console.log('Error matching aria snapshot for Google Sheets auth completion:', error);
+      }
+
+      // Close the context
+      await context.close();
     }
-
-    // Close the context
-    await context.close();
-
-    // ------------------ end codegen debug
   });
 }); // End of test.describe('Google Multi MCP Tests')

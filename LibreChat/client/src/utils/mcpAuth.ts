@@ -17,6 +17,7 @@ const MCP_SERVER_AUTH_MAP: Record<string, string> = {
   googledrive: 'googledrive',
   gmail: 'gmail',
   googlecalendar: 'googlecalendar',
+  notion: 'notion',
   // Add more mappings as new providers are integrated
 };
 
@@ -152,6 +153,7 @@ export function getServiceDisplayName(service: string): string {
     googledrive: 'Google Drive',
     gmail: 'Gmail',
     googlecalendar: 'Google Calendar',
+    notion: 'Notion',
   };
 
   return serviceNames[service] || service;

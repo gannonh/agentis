@@ -1,5 +1,4 @@
 import { Page } from '@playwright/test';
-import { logProgress } from './testLogger';
 
 // Google test credentials - directly use the known test account
 export const GOOGLE_CREDS = {
@@ -13,7 +12,36 @@ export type GoogleService =
   | 'Google Docs'
   | 'Google Sheets'
   | 'Google Calendar'
-  | 'Gmail';
+  | 'Gmail'
+  | 'Notion';
+
+/**
+ * Simpler helper to just handle the initial popup and credentials
+ * Use this in your existing codegen flow rather than replacing everything
+ *
+ */
+export async function handleInitialNotionAuth(
+  page: Page,
+  serviceName: GoogleService,
+  credentials = GOOGLE_CREDS,
+): Promise<Page> {
+  const popupPromise = page.waitForEvent('popup');
+  await page.getByRole('button', { name: `Connect ${serviceName}` }).click();
+  const popup = await popupPromise;
+
+  const popup2Promise = popup.waitForEvent('popup');
+  await popup.getByRole('button', { name: 'Continue with Google' }).click();
+  const popup2 = await popup2Promise;
+
+  await popup2.getByRole('textbox', { name: 'Email or phone' }).fill(credentials.email);
+  await popup2.getByRole('button', { name: 'Next' }).click();
+  await popup2.getByRole('textbox', { name: 'Enter your password' }).fill(credentials.password);
+  await popup2.getByRole('button', { name: 'Next' }).click();
+  await popup.getByRole('button', { name: 'Select pages' }).click();
+  await popup.getByRole('button', { name: 'Allow access' }).click();
+
+  return popup;
+}
 
 /**
  * Simpler helper to just handle the initial popup and credentials

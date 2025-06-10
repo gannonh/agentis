@@ -19,7 +19,7 @@ export default defineConfig({
   retries: 0, // Set to 0 for Google tests to avoid issues
   /* Enable multiple workers for parallel execution */
   // TODO: Optimize worker count based on system resources and test performance
-  workers: process.env.CI ? 1 : 1, // 4 workers for CI, 1 for local development
+  workers: process.env.CI ? 2 : 1, // 4 workers for CI, 1 for local development
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { outputFolder: 'playwright-report' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -54,7 +54,7 @@ export default defineConfig({
     stdout: 'pipe',
     ignoreHTTPSErrors: true,
     // url: 'http://localhost:3080',
-    timeout: 60_000, // More generous timeout for Google tests
+    timeout: 120_000, // Increased timeout for MCP initialization in CI
     reuseExistingServer: false, // Don't reuse to ensure clean state
     // SEE /Users/gannonhall/dev/agentis/LibreChat/e2e/fixtures/fixtures.ts
     env: {

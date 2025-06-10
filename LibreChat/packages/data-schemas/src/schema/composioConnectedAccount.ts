@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IComposioConnectedAccount extends Document {
   user: Types.ObjectId;
-  service: string; // 'googlesheets', 'googledrive', 'googledocs', 'gmail', 'googlecalendar'
+  service: string; // 'googlesheets', 'googledrive', 'googledocs', 'gmail', 'googlecalendar', 'notion'
   connectedAccountId: string; // Composio's connected_account_id
   connectionStatus: 'PENDING' | 'INITIATED' | 'ACTIVE' | 'ERROR'; // Direct Composio status
   redirectUrl?: string; // OAuth redirect URL (only during flow)
@@ -20,7 +20,7 @@ const composioConnectedAccountSchema: Schema<IComposioConnectedAccount> = new Sc
     service: {
       type: String,
       required: true,
-      enum: ['googlesheets', 'googledrive', 'googledocs', 'gmail', 'googlecalendar'],
+      enum: ['googlesheets', 'googledrive', 'googledocs', 'gmail', 'googlecalendar', 'notion'],
     },
     connectedAccountId: {
       type: String,

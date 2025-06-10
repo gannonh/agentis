@@ -197,67 +197,191 @@ The client includes a comprehensive inline authentication system for Composio MC
 
 ### Adding New Auth Providers
 
-The inline authentication system is provider-agnostic and designed for easy extension. To add new OAuth providers (e.g., Notion, GitHub, Slack):
+The inline authentication system is provider-agnostic and designed for easy extension. To add new OAuth providers (e.g., Notion, GitHub, Slack), you need to update **6 specific locations** with service mappings.
 
-#### 1. Backend Service Updates
-Add service mapping in `ComposioService.js`:
+#### 1. Backend Service Mapping
+**File**: `/api/server/services/ComposioService.js` (lines ~358-373)
+
+Update the `getAppNameForService()` function:
 ```javascript
-getServiceFromIntegrationId(integrationId) {
-  const serviceMap = {
-    // Existing Google services...
-    'notion': 'notion',
-    'github': 'github', 
-    'slack': 'slack'
+getAppNameForService(service) {
+  const serviceToAppMap = {
+    googlesheets: 'googlesheets',
+    googledrive: 'googledrive',
+    googledocs: 'googledocs',
+    gmail: 'gmail',
+    googlecalendar: 'googlecalendar',
+    notion: 'notion',        // ← Add new service
+    github: 'github',        // ← Add new service
+    slack: 'slack'           // ← Add new service
   };
-  return serviceMap[integrationId] || integrationId;
+  
+  const appName = serviceToAppMap[service];
+  if (!appName) {
+    throw new Error(`Unsupported service: ${service}`);
+  }
+  return appName;
 }
 ```
 
-#### 2. Frontend Component Updates
-Update service detection and display names in:
+#### 2. Frontend Auth Button Component
+**File**: `/client/src/components/Composio/ComposioAuthButton.tsx` (lines ~312-321)
 
-**AuthCodeParser.tsx**:
+Update the `getServiceDisplayName()` function:
 ```typescript
 const getServiceDisplayName = (service: string) => {
   const serviceNames: Record<string, string> = {
-    // Existing services...
-    notion: 'Notion',
-    github: 'GitHub',
-    slack: 'Slack'
+    googlesheets: 'Google Sheets',
+    googledrive: 'Google Drive',
+    googledocs: 'Google Docs',
+    gmail: 'Gmail',
+    googlecalendar: 'Google Calendar',
+    notion: 'Notion',        // ← Add new service
+    github: 'GitHub',        // ← Add new service
+    slack: 'Slack'           // ← Add new service
   };
   return serviceNames[service] || service;
 };
+```
 
-// Add detection logic
-if (lowerContent.includes('notion')) {
-  service = 'notion';
+#### 3. Auth Code Parser Component
+**File**: `/client/src/components/Messages/Content/AuthCodeParser.tsx`
+
+Update the `getServiceDisplayName()` function (lines ~22-31):
+```typescript
+const getServiceDisplayName = (service: string) => {
+  const serviceNames: Record<string, string> = {
+    googlesheets: 'Google Sheets',
+    googledrive: 'Google Drive',
+    googledocs: 'Google Docs',
+    gmail: 'Gmail',
+    googlecalendar: 'Google Calendar',
+    notion: 'Notion',        // ← Add new service
+    github: 'GitHub',        // ← Add new service
+    slack: 'Slack'           // ← Add new service
+  };
+  return serviceNames[service] || service;
+};
+```
+
+Update the service detection logic (lines ~118-127):
+```typescript
+// Try to detect other services from the message content
+const lowerContent = content.toLowerCase();
+if (lowerContent.includes('google drive')) {
+  service = 'googledrive';
+} else if (lowerContent.includes('google docs')) {
+  service = 'googledocs';
+} else if (lowerContent.includes('gmail')) {
+  service = 'gmail';
+} else if (lowerContent.includes('google calendar')) {
+  service = 'googlecalendar';
+} else if (lowerContent.includes('notion')) {
+  service = 'notion';        // ← Add new service
 } else if (lowerContent.includes('github')) {
-  service = 'github';
+  service = 'github';        // ← Add new service
+} else if (lowerContent.includes('slack')) {
+  service = 'slack';         // ← Add new service
 }
 ```
 
-**ComposioAuthButton.tsx** - Same service name mapping as above.
+#### 4. MCP Auth Utilities
+**File**: `/client/src/utils/mcpAuth.ts`
 
-#### 3. MCP Server Configuration
-Add to `librechat.yaml`:
+Update the auth mapping (lines ~14-21):
+```typescript
+const MCP_SERVER_AUTH_MAP: Record<string, string> = {
+  googlesheets: 'googlesheets',
+  googledocs: 'googledocs',
+  googledrive: 'googledrive',
+  gmail: 'gmail',
+  googlecalendar: 'googlecalendar',
+  notion: 'notion',          // ← Add new service
+  github: 'github',          // ← Add new service
+  slack: 'slack'             // ← Add new service
+};
+```
+
+Update the display names function (lines ~149-157):
+```typescript
+export function getServiceDisplayName(service: string): string {
+  const serviceNames: Record<string, string> = {
+    googlesheets: 'Google Sheets',
+    googledocs: 'Google Docs',
+    googledrive: 'Google Drive',
+    gmail: 'Gmail',
+    googlecalendar: 'Google Calendar',
+    notion: 'Notion',        // ← Add new service
+    github: 'GitHub',        // ← Add new service
+    slack: 'Slack'           // ← Add new service
+  };
+  return serviceNames[service] || service;
+}
+```
+
+#### 5. Database Schema Update
+**File**: `/packages/data-schemas/src/schema/composioConnectedAccount.ts` (lines ~23 and ~5)
+
+Add new service to the MongoDB schema enum validation:
+```typescript
+// Update the interface comment
+service: string; // 'googlesheets', 'googledrive', 'googledocs', 'gmail', 'googlecalendar', 'notion'
+
+// Update the schema enum
+service: {
+  type: String,
+  required: true,
+  enum: ['googlesheets', 'googledrive', 'googledocs', 'gmail', 'googlecalendar', 'notion'],
+},
+```
+
+**Rebuild the package**: `npm run build:data-schemas`
+
+#### 6. MCP Server Configuration
+**File**: `/librechat.yaml`
+
+Add MCP server configuration:
 ```yaml
 mcpServers:
   notion:
-    type: sse
-    url: "https://mcp.composio.dev/composio/server/{uuid}/sse?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}"
+    type: streamable-http
+    url: "https://mcp.composio.dev/composio/server/{uuid}/mcp?user_id={{LIBRECHAT_USER_ID}}&connected_account_id={{COMPOSIO_CONNECTED_ACCOUNT_ID}}"
+    headers:
+      X-User-ID: "{{LIBRECHAT_USER_ID}}"
+      X-API-Key: "${COMPOSIO_API_KEY}"
+      X-Connection-ID: "{{LIBRECHAT_USER_ID}}-notion"
+    displayName: "Notion"
+    iconPath: "/assets/tools/notion.svg"
+    description: "Notion workspace tool for notes and collaboration"
+    toolDisplayNames:
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      COMPOSIO_INITIATE_CONNECTION: "Connect to Notion"
 ```
 
-#### 4. Test Coverage
-Add test cases following existing patterns in:
-- `AuthCodeParser.test.tsx`
-- `ComposioAuthButton.test.tsx`
-- New E2E specs: `e2e/specs/[service].mcp.spec.ts`
+#### Testing Your Changes
 
-#### 5. Benefits of This Architecture
-- **Minimal Code Changes**: Most logic is already generic
+1. **Rebuild packages**: `npm run build:data-schemas`
+2. **Restart backend**: `npm run backend:dev`
+3. **Test auth flow**:
+   - Create agent with new service tools
+   - Send message that triggers tool requiring auth
+   - Verify inline auth button appears
+   - Test OAuth popup flow
+   - Confirm connection persists
+
+#### Troubleshooting
+
+- **"is not a valid enum value" error**: Database schema not updated or package not rebuilt
+- **Auth button not showing**: Check console for service detection logs
+- **OAuth popup fails**: Verify Composio app configuration and API key
+- **Connection not persisting**: Check MongoDB for `ComposioConnectedAccount` records
+- **Service not detected**: Ensure all 6 locations are updated consistently
+
+#### Benefits of This Architecture
+- **Type Safety**: Prevents runtime errors with unknown services
 - **Consistent UX**: Same authentication flow for all providers
-- **Easy Testing**: Established test patterns
-- **Scalable**: No architectural changes needed
+- **Maintainable**: Clear service boundaries and explicit configuration
+- **Scalable**: No architectural changes needed for new providers
 
 The core authentication flow, UI components, backend services, and database schema work unchanged for any OAuth 2.0 provider that Composio supports.
 

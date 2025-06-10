@@ -19,6 +19,8 @@ function show_usage {
   echo -e "  --data     Rebuild data-schemas package only"
   echo -e "  --provider Rebuild data-provider package only"
   echo -e "  --mcp      Rebuild mcp package only"
+  echo -e "\nQuality Assurance Options:"
+  echo -e "  --preflight Full CI/CD preflight checks: clean + build + lint + format + typecheck + test:all + e2e"
   echo -e "\nServer Options:"
   echo -e "  --frontend Restart frontend dev server (logs to logs/frontend.log)"
   echo -e "  --backend  Restart backend dev server (logs to logs/backend.log)"
@@ -38,6 +40,7 @@ function show_usage {
   echo -e "  ./dev-rebuild.sh --clean              # Clean caches and rebuild frontend"
   echo -e "  ./dev-rebuild.sh --clean-all          # Nuclear cleanup and rebuild everything"
   echo -e "  ./dev-rebuild.sh --test-build         # Test complete build process from scratch"
+  echo -e "  ./dev-rebuild.sh --preflight          # Run full CI/CD preflight checks"
   echo -e "  ./dev-rebuild.sh --stop               # Stop all running servers"
   echo -e "\nNote: Server restarts log to files. Use 'tail -f logs/*.log' to monitor."
 }
@@ -59,6 +62,7 @@ DO_ALL=false
 DO_CLEAN=false
 DO_CLEAN_ALL=false
 TEST_BUILD=false
+PREFLIGHT=false
 KILL_ALL_NODE=false
 
 for arg in "$@"; do
@@ -119,6 +123,9 @@ for arg in "$@"; do
     ;;
   --test-build)
     TEST_BUILD=true
+    ;;
+  --preflight)
+    PREFLIGHT=true
     ;;
   --kill-all-node)
     KILL_ALL_NODE=true
@@ -292,7 +299,57 @@ if $STOP_SERVERS; then
   fi
 fi
 
-# Handle test-build request (highest priority)
+# Handle preflight request (highest priority)
+if $PREFLIGHT; then
+  echo -e "${GREEN}=== RUNNING PREFLIGHT CHECKS ===${NC}"
+  echo -e "${GREEN}This replicates the CI/CD pipeline checks locally${NC}"
+  
+  # Stop any running servers first
+  stop_all_servers
+  
+  echo -e "${GREEN}Step 1: Complete cleanup (like CI environment)${NC}"
+  # Remove build artifacts like CI does
+  rm -rf client/dist
+  rm -rf node_modules/
+  rm -rf packages/data-provider/dist
+  rm -rf packages/data-schemas/dist
+  rm -rf packages/mcp/dist
+  rm -rf packages/arcade-client/dist
+  rm -rf packages/*/node_modules/
+  rm -rf api/node_modules
+  rm -rf client/node_modules
+  
+  echo -e "${GREEN}Step 2: Clean install dependencies${NC}"
+  npm ci --legacy-peer-deps
+  
+  echo -e "${GREEN}Step 3: Build all packages${NC}"
+  npm run build:all
+  
+  echo -e "${GREEN}Step 4: Build frontend for E2E tests${NC}"
+  npm run frontend
+  
+  echo -e "${GREEN}Step 5: Run linting${NC}"
+  npm run lint
+  
+  echo -e "${GREEN}Step 6: Run formatting check${NC}"
+  npm run format
+  
+  echo -e "${GREEN}Step 7: Run type checking${NC}"
+  npm run typecheck:all
+  
+  echo -e "${GREEN}Step 8: Run all unit tests${NC}"
+  npm run test:all
+  
+  echo -e "${GREEN}Step 9: Run E2E tests${NC}"
+  npm run e2e:ci
+  
+  echo -e "${GREEN}=== PREFLIGHT CHECKS COMPLETE ===${NC}"
+  echo -e "${GREEN}✓ All CI/CD pipeline checks passed locally!${NC}"
+  echo -e "${YELLOW}Your code is ready for production deployment.${NC}"
+  exit 0
+fi
+
+# Handle test-build request (second priority)
 if $TEST_BUILD; then
   echo -e "${GREEN}=== TESTING COMPLETE BUILD PROCESS ===${NC}"
   echo -e "${GREEN}This will test the entire build process from scratch${NC}"

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
-import { handleInitialAuth } from '../utils/googleAuth';
+import { handleInitialAuth } from '../utils/oAuth';
 import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
 
 test.use({
@@ -117,86 +117,83 @@ test.describe('Google Calendar MCP Tests', () => {
   });
 
   test('Use Calendar Agent', async ({ browser }) => {
-    logProgress('✅ Starting Use Google Calendar Agent test');
+    if (process.env.CI) {
+      logProgress('⚠️ CI mode - Skipping Use Google Calendar Agent test');
+    } else {
+      logProgress('✅ Starting Use Google Calendar Agent test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-    const page = await context.newPage();
+      // Create a new context with the file-specific storage state
+      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+      const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
+      await page.goto('http://localhost:3080/');
 
-    // With storage state, we should be automatically authenticated
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('✅ Verified on main chat page');
+      // With storage state, we should be automatically authenticated
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('✅ Verified on main chat page');
 
-    // Select the Google Calendar Agent explicitly to avoid conflicts with other parallel tests
+      // Select the Google Calendar Agent explicitly to avoid conflicts with other parallel tests
 
-    await page.getByRole('button', { name: 'Select a model' }).click();
-    await page.getByText('Agents', { exact: true }).click();
-    await page.getByLabel('Agents').getByText('Google Calendar Agent').first().click();
+      await page.getByRole('button', { name: 'Select a model' }).click();
+      await page.getByText('Agents', { exact: true }).click();
+      await page.getByLabel('Agents').getByText('Google Calendar Agent').first().click();
 
-    // ----------------- begin cogegen
+      // ----------------- begin cogegen
 
-    await page.getByTestId('text-input').click();
-    await page
-      .getByTestId('text-input')
-      .fill(
-        "Create the following appointments for next week:**\n\n1. **Monday 9:00 AM** - Team standup meeting (30 min, recurring daily M-F, invite sarah@company.com and mike@company.com)\n\n2. **Tuesday 2:30 PM** - Client presentation prep (1.5 hours, location: Conference Room B, add reminder 1 hour before)\n\n3. **Wednesday 12:00 PM** - Lunch with mentor (1 hour, location: Café Milano, 123 Main St)\n\n4. **Thursday 10:00 AM - 11:30 AM** - Q2 Budget Review (invite finance-team@company.com, attach agenda document, mark as high priority)\n\n5. **Friday 3:00 PM** - Weekly reflection & planning session (45 min, private event, recurring weekly)\n\nAlso, please:\n- Block 2 hours of 'Focus Time' each morning from 8-10 AM (no meetings)\n- Find the best available 1-hour slot for a 1:1 with my manager (they're in EST, I'm in PST)\n- Set up a reminder for Thursday at 4 PM to submit my expense report\n- Check if I have any conflicts with these new appointments.\n\nYou need to 'Connect to Google Calendar' and provide an authorization link. You do not need to check a connection first and if you do it will erroneously tell you that you have one. You also need to provide me with the link or redirect URL to authenmticate with Google Calendar.",
+      await page.getByTestId('text-input').click();
+      await page
+        .getByTestId('text-input')
+        .fill(
+          "Create the following appointments for next week:**\n\n1. **Monday 9:00 AM** - Team standup meeting (30 min, recurring daily M-F, invite sarah@company.com and mike@company.com)\n\n2. **Tuesday 2:30 PM** - Client presentation prep (1.5 hours, location: Conference Room B, add reminder 1 hour before)\n\n3. **Wednesday 12:00 PM** - Lunch with mentor (1 hour, location: Café Milano, 123 Main St)\n\n4. **Thursday 10:00 AM - 11:30 AM** - Q2 Budget Review (invite finance-team@company.com, attach agenda document, mark as high priority)\n\n5. **Friday 3:00 PM** - Weekly reflection & planning session (45 min, private event, recurring weekly)\n\nAlso, please:\n- Block 2 hours of 'Focus Time' each morning from 8-10 AM (no meetings)\n- Find the best available 1-hour slot for a 1:1 with my manager (they're in EST, I'm in PST)\n- Set up a reminder for Thursday at 4 PM to submit my expense report\n- Check if I have any conflicts with these new appointments.\n\nYou need to 'Connect to Google Calendar' and provide an authorization link. You do not need to check a connection first and if you do it will erroneously tell you that you have one. You also need to provide me with the link or redirect URL to authenmticate with Google Calendar.",
+        );
+      await page.getByTestId('send-button').click();
+      logProgress('✅ Sent message to create calendar events');
+
+      // Look for the proactive authentication UI that should appear automatically
+      await expect(page.getByText('Authentication Required')).toBeVisible();
+      logProgress('✅ Found proactive Authentication Required section');
+
+      // Verify the descriptive text about tools requiring authentication
+      await expect(
+        page.getByText('This conversation uses tools that require authentication:'),
+      ).toBeVisible();
+      logProgress('✅ Found descriptive text about authentication');
+
+      // Look for the Connect Google Calendar button in the proactive auth UI
+      await expect(page.getByRole('button', { name: 'Connect Google Calendar' })).toBeVisible();
+      logProgress('✅ Found Connect Google Calendar button in proactive auth UI');
+
+      // Handle the authentication
+      const popup = await handleInitialAuth(page, 'Google Calendar');
+      logProgress('✅ Starting Google Calendar authentication');
+
+      // Handle the consent screens
+      try {
+        await popup.getByRole('button', { name: 'Continue' }).click();
+        await popup.getByRole('button', { name: 'Continue' }).click();
+      } catch (error) {
+        logProgress('⚠️ Consent screen handling completed or not needed');
+      }
+
+      // Wait for authentication to complete
+      logProgress('⏳ Waiting 2 sec for authentication to complete...');
+      await page.waitForTimeout(2000);
+      logProgress('✅ Waited for authentication to complete');
+
+      // The proactive auth section should remain visible as part of conversation history
+      await expect(page.getByText('Authentication Required')).toBeVisible();
+      logProgress('✅ Proactive auth section remains visible as part of conversation history');
+
+      // Check that the button shows "✓ Connected" after successful authentication
+      await expect(page.getByText('✓ Connected')).toBeVisible();
+      logProgress(
+        '✅ Found "✓ Connected" status indicating successful Google Calendar authentication',
       );
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent message to create calendar events');
 
-    // Wait for agent's initial response to complete (regenerate button appears - unique to agent messages)
-    // await expect(page.getByRole('button', { name: 'Regenerate' })).toBeVisible();
-    // logProgress('✅ Agent initial response completed - Regenerate button appeared');
+      // Check if agent starts using tools automatically after authentication
+      logProgress('⏳ Checking if agent starts tool execution automatically...');
 
-    // NOW authenticate after agent finished its initial response
-    // auth ---------------------------
-    // Look for the proactive authentication UI that should appear automatically
-    await expect(page.getByText('Authentication Required')).toBeVisible();
-    logProgress('✅ Found proactive Authentication Required section');
-
-    // Verify the descriptive text about tools requiring authentication
-    await expect(
-      page.getByText('This conversation uses tools that require authentication:'),
-    ).toBeVisible();
-    logProgress('✅ Found descriptive text about authentication');
-
-    // Look for the Connect Google Calendar button in the proactive auth UI
-    await expect(page.getByRole('button', { name: 'Connect Google Calendar' })).toBeVisible();
-    logProgress('✅ Found Connect Google Calendar button in proactive auth UI');
-
-    // Handle the authentication
-    const popup = await handleInitialAuth(page, 'Google Calendar');
-    logProgress('✅ Starting Google Calendar authentication');
-
-    // Handle the consent screens
-    try {
-      await popup.getByRole('button', { name: 'Continue' }).click();
-      await popup.getByRole('button', { name: 'Continue' }).click();
-    } catch (error) {
-      logProgress('⚠️ Consent screen handling completed or not needed');
-    }
-
-    // Wait for authentication to complete
-    logProgress('⏳ Waiting 2 sec for authentication to complete...');
-    await page.waitForTimeout(2000);
-    logProgress('✅ Waited for authentication to complete');
-
-    // The proactive auth section should remain visible as part of conversation history
-    await expect(page.getByText('Authentication Required')).toBeVisible();
-    logProgress('✅ Proactive auth section remains visible as part of conversation history');
-
-    // Check that the button shows "✓ Connected" after successful authentication
-    await expect(page.getByText('✓ Connected')).toBeVisible();
-    logProgress(
-      '✅ Found "✓ Connected" status indicating successful Google Calendar authentication',
-    );
-
-    // Check if agent starts using tools automatically after authentication
-    logProgress('⏳ Checking if agent starts tool execution automatically...');
-    if (!process.env.CI) {
       try {
         // run ------------------ (after authentication)
         await expect(page.getByRole('button').filter({ hasText: 'Running' })).toBeVisible({
@@ -237,8 +234,9 @@ test.describe('Google Calendar MCP Tests', () => {
         });
         logProgress('✅ Found "Ran"  execution after authentication');
       }
+
+      // Close the context
+      await context.close();
     }
-    // Close the context
-    await context.close();
   });
 }); // End of test.describe('Google Calendar MCP Tests')

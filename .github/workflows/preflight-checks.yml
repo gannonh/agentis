@@ -67,13 +67,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         options: --health-cmd="nc -z localhost 8000 || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=90s
 
-      sandpack:
-        image: ghcr.io/gannonh/codesandbox-client/bundler:latest
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 8080:80
+# Sandpack removed temporarily - requires built www directory that doesn't exist in CI
 
     steps:
       - name: Checkout repository
@@ -123,8 +117,8 @@ jobs:
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to be ready..."
-          # Wait for MongoDB
-          until mongosh --host localhost:27017 --username admin --password password --authenticationDatabase admin --eval "db.runCommand({ping:1})" >/dev/null 2>&1; do
+          # Wait for MongoDB port
+          until nc -z localhost 27017; do
             echo "Waiting for MongoDB..."
             sleep 5
           done
@@ -179,7 +173,8 @@ jobs:
           echo "MEILI_HOST=http://localhost:7700" >> .env
           echo "MEILI_MASTER_KEY=${{ secrets.MEILI_MASTER_KEY }}" >> .env
           echo "RAG_API_URL=http://localhost:8000" >> .env
-          echo "SANDPACK_BUNDLER_URL=http://localhost:8080" >> .env
+          # Sandpack disabled for preflight - requires built artifacts
+          # echo "SANDPACK_BUNDLER_URL=http://localhost:8080" >> .env
           echo "ENDPOINTS=agents,anthropic,openAI,google,assistants" >> .env
           echo "GOOGLE_MODELS=gemini-2.5-pro-preview-05-06,gemini-2.5-flash-preview-04-17,gemini-2.0-flash-001,gemini-2.0-flash-exp,gemini-2.0-flash-lite-001,gemini-1.5-pro-002,gemini-1.5-flash-002" >> .env
           echo "ALLOW_EMAIL_LOGIN=true" >> .env

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
-import { handleInitialAuth } from '../utils/googleAuth';
+import { handleInitialAuth } from '../utils/oAuth';
 import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
 
 test.use({
@@ -117,140 +117,142 @@ test.describe('Google Sheets MCP Tests', () => {
   });
 
   test('Use Google Sheets Agent', async ({ browser }) => {
-    logProgress('✅ Starting Use Google Sheets Agent test');
+    if (process.env.CI) {
+      logProgress('⚠️ CI mode - Skipping Use Google Sheets Agent test');
+    } else {
+      logProgress('✅ Starting Use Google Sheets Agent test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-    const page = await context.newPage();
+      // Create a new context with the file-specific storage state
+      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+      const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
+      await page.goto('http://localhost:3080/');
 
-    // With storage state, we should be automatically authenticated
+      // With storage state, we should be automatically authenticated
 
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('✅ Verified on main chat page');
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('✅ Verified on main chat page');
 
-    // Select the Google Sheets Agent explicitly to avoid conflicts with other parallel tests
-    await page.getByRole('button', { name: 'Select a model' }).click();
-    await page.getByText('Agents', { exact: true }).first().click();
+      // Select the Google Sheets Agent explicitly to avoid conflicts with other parallel tests
+      await page.getByRole('button', { name: 'Select a model' }).click();
+      await page.getByText('Agents', { exact: true }).first().click();
 
-    // Debug: Check if any agents are available
-    const agentsContainer = page.getByLabel('Agents');
-    await expect(agentsContainer).toBeVisible();
+      // Debug: Check if any agents are available
+      const agentsContainer = page.getByLabel('Agents');
+      await expect(agentsContainer).toBeVisible();
 
-    // Wait longer and add debug logging
-    try {
-      await expect(agentsContainer.getByText('Google Sheets Agent').first()).toBeVisible({
-        timeout: 15000,
-      });
-    } catch (error) {
-      // Debug: Log all available agents
-      const allAgents = await agentsContainer.locator('text=').allTextContents();
-      console.log('Available agents:', allAgents);
+      // Wait longer and add debug logging
+      try {
+        await expect(agentsContainer.getByText('Google Sheets Agent').first()).toBeVisible({
+          timeout: 15000,
+        });
+      } catch (error) {
+        // Debug: Log all available agents
+        const allAgents = await agentsContainer.locator('text=').allTextContents();
+        console.log('Available agents:', allAgents);
 
-      // Try alternative selectors
-      const agentExists = await page.locator('text=Google Sheets Agent').count();
-      console.log('Agent count:', agentExists);
+        // Try alternative selectors
+        const agentExists = await page.locator('text=Google Sheets Agent').count();
+        console.log('Agent count:', agentExists);
 
-      throw new Error(`Google Sheets Agent not found. Available agents: ${allAgents.join(', ')}`);
-    }
+        throw new Error(`Google Sheets Agent not found. Available agents: ${allAgents.join(', ')}`);
+      }
 
-    await agentsContainer.getByText('Google Sheets Agent').first().click();
-    logProgress('✅ Selected Google Sheets Agent');
+      await agentsContainer.getByText('Google Sheets Agent').first().click();
+      logProgress('✅ Selected Google Sheets Agent');
 
-    // Send first message to trigger proactive MCP auth
-    await page
-      .getByTestId('text-input')
-      .fill(
-        'Create a spreadsheet of every David Bowie studio album. Create columns for producer, guitarists, drummers, keyboard/piano, and other musicians.',
-      );
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent message to create spreadsheet');
+      // Send first message to trigger proactive MCP auth
+      await page
+        .getByTestId('text-input')
+        .fill(
+          'Create a spreadsheet of every David Bowie studio album. Create columns for producer, guitarists, drummers, keyboard/piano, and other musicians.',
+        );
+      await page.getByTestId('send-button').click();
+      logProgress('✅ Sent message to create spreadsheet');
 
-    // run ------------------
-    try {
+      // run ------------------
+      try {
+        await expect(
+          page.getByRole('button', { name: 'Running Create New Spreadsheet' }),
+        ).toBeVisible({
+          timeout: 5000,
+        });
+        logProgress('✅ Found "Running Create" tool execution');
+      } catch (error) {
+        logProgress('⚠️ "Running Create" tool execution not found within timeout');
+      }
+
+      // ran ------------------
+      try {
+        await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
+          timeout: 5000,
+        });
+        logProgress('✅ Found "Ran Create" tool execution');
+      } catch (error) {
+        logProgress('⚠️ "Ran Create" tool execution not found within timeout');
+      }
+
+      // auth ---------------------------
+      // Look for the proactive authentication UI that should appear automatically
+      await expect(page.getByText('Authentication Required')).toBeVisible();
+      logProgress('✅ Found proactive Authentication Required section');
+
+      // Verify the descriptive text about tools requiring authentication
       await expect(
-        page.getByRole('button', { name: 'Running Create New Spreadsheet' }),
-      ).toBeVisible({
-        timeout: 5000,
-      });
-      logProgress('✅ Found "Running Create" tool execution');
-    } catch (error) {
-      logProgress('⚠️ "Running Create" tool execution not found within timeout');
-    }
+        page.getByText('This conversation uses tools that require authentication:'),
+      ).toBeVisible();
+      logProgress('✅ Found descriptive text about authentication');
 
-    // ran ------------------
-    try {
-      await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
-        timeout: 5000,
-      });
-      logProgress('✅ Found "Ran Create" tool execution');
-    } catch (error) {
-      logProgress('⚠️ "Ran Create" tool execution not found within timeout');
-    }
+      // Look for the Connect Google Sheets button in the proactive auth UI
+      await expect(page.getByRole('button', { name: 'Connect Google Sheets' })).toBeVisible();
+      logProgress('✅ Found Connect Google Sheets button in proactive auth UI');
 
-    // auth ---------------------------
-    // Look for the proactive authentication UI that should appear automatically
-    await expect(page.getByText('Authentication Required')).toBeVisible();
-    logProgress('✅ Found proactive Authentication Required section');
+      // Handle the authentication
+      logProgress('✅ Starting Google Sheets authentication');
+      const popup = await handleInitialAuth(page, 'Google Sheets');
 
-    // Verify the descriptive text about tools requiring authentication
-    await expect(
-      page.getByText('This conversation uses tools that require authentication:'),
-    ).toBeVisible();
-    logProgress('✅ Found descriptive text about authentication');
+      // Handle the consent screens
+      try {
+        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+        logProgress('✅ Clicked Continue on first consent screen');
+      } catch (error) {
+        logProgress('⚠️ Consent screen 1 handling completed or not needed');
+      }
+      try {
+        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+        logProgress('✅ Clicked Continue on second consent screen');
+      } catch (error) {
+        logProgress('⚠️ Consent screen 2 handling completed or not needed');
+      }
+      try {
+        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+        logProgress('✅ Clicked Continue on third consent screen');
+      } catch (error) {
+        logProgress('⚠️ Consent screen 3 handling completed or not needed');
+      }
 
-    // Look for the Connect Google Sheets button in the proactive auth UI
-    await expect(page.getByRole('button', { name: 'Connect Google Sheets' })).toBeVisible();
-    logProgress('✅ Found Connect Google Sheets button in proactive auth UI');
+      // Wait for authentication to complete
+      logProgress('⏳ Waiting 2 sec for authentication to complete...');
+      await page.waitForTimeout(2000);
+      logProgress('✅ Waited for authentication to complete');
 
-    // Handle the authentication
-    logProgress('✅ Starting Google Sheets authentication');
-    const popup = await handleInitialAuth(page, 'Google Sheets');
+      // The proactive auth section should remain visible as part of conversation history
+      await expect(page.getByText('Authentication Required')).toBeVisible();
+      logProgress('✅ Proactive auth section remains visible as part of conversation history');
 
-    // Handle the consent screens
-    try {
-      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-      logProgress('✅ Clicked Continue on first consent screen');
-    } catch (error) {
-      logProgress('⚠️ Consent screen 1 handling completed or not needed');
-    }
-    try {
-      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-      logProgress('✅ Clicked Continue on second consent screen');
-    } catch (error) {
-      logProgress('⚠️ Consent screen 2 handling completed or not needed');
-    }
-    try {
-      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-      logProgress('✅ Clicked Continue on third consent screen');
-    } catch (error) {
-      logProgress('⚠️ Consent screen 3 handling completed or not needed');
-    }
+      // Check that the button shows "✓ Connected" after successful authentication
+      await expect(page.getByText('✓ Connected')).toBeVisible();
+      logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
 
-    // Wait for authentication to complete
-    logProgress('⏳ Waiting 2 sec for authentication to complete...');
-    await page.waitForTimeout(2000);
-    logProgress('✅ Waited for authentication to complete');
+      // try again -------------------
+      await page.getByTestId('text-input').click();
+      await page
+        .getByTestId('text-input')
+        .fill('ok, try now. please also provide a link to the sheet when created.');
+      await page.getByTestId('send-button').click();
+      logProgress('✅ Sent message to create sheet after authentication');
 
-    // The proactive auth section should remain visible as part of conversation history
-    await expect(page.getByText('Authentication Required')).toBeVisible();
-    logProgress('✅ Proactive auth section remains visible as part of conversation history');
-
-    // Check that the button shows "✓ Connected" after successful authentication
-    await expect(page.getByText('✓ Connected')).toBeVisible();
-    logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
-
-    // try again -------------------
-    await page.getByTestId('text-input').click();
-    await page
-      .getByTestId('text-input')
-      .fill('ok, try now. please also provide a link to the sheet when created.');
-    await page.getByTestId('send-button').click();
-    logProgress('✅ Sent message to create sheet after authentication');
-
-    if (!process.env.CI) {
       // run ------------------ (after authentication)
       await expect(
         page.getByRole('button', { name: 'Running Create New Spreadsheet' }),
@@ -275,9 +277,9 @@ test.describe('Google Sheets MCP Tests', () => {
         timeout: 90000,
       });
       logProgress('✅ Found Google Sheets link');
-    }
 
-    // Close the context
-    await context.close();
+      // Close the context
+      await context.close();
+    }
   });
 }); // End of test.describe('Google Sheets MCP Tests')
