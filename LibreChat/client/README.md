@@ -476,20 +476,107 @@ npm run test:ci
 # Development mode
 npm run test
 
+# Run specific test file
+npm run test:ci -- src/path/to/test.test.tsx
+
 # Coverage report
 open coverage/lcov-report/index.html
 ```
 
 ### Test Organization
+
+#### File Structure
+Tests follow a consistent directory structure:
+```
+src/
+├── components/
+│   └── Chat/
+│       └── Messages/
+│           ├── ProactiveMCPAuth.tsx
+│           └── __tests__/
+│               └── ProactiveMCPAuth.test.tsx
+├── utils/
+│   ├── mcpAuth.ts
+│   └── __tests__/
+│       └── mcpAuth.test.ts
+└── hooks/
+    ├── useStartAgentChat.ts
+    └── __tests__/
+        └── useStartAgentChat.test.ts
+```
+
+#### Test Categories
 - **Unit Tests**: Utilities, hooks, pure functions
 - **Component Tests**: UI behavior with React Testing Library
 - **Integration Tests**: API interactions and data flow
 
+#### Naming Conventions
+- **Test Files**: Use `*.test.tsx` for components, `*.test.ts` for utilities
+- **Test Directories**: Place tests in `__tests__` subdirectories alongside source code
+- **Test Structure**: Group tests by component/functionality with descriptive `describe` blocks
+
+### Testing Patterns
+
+#### Component Testing
+```typescript
+// Example: Component test with proper mocking
+describe('MyComponent', () => {
+  // Mock external dependencies
+  jest.mock('~/hooks/AuthContext');
+  jest.mock('~/data-provider/queries');
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Reset mocks to default state
+  });
+
+  it('should render correctly with props', () => {
+    render(<MyComponent {...mockProps} />);
+    expect(screen.getByText('Expected Text')).toBeInTheDocument();
+  });
+});
+```
+
+#### Complex Component Mocking
+For components with multiple dependencies (Context, Recoil, hooks):
+```typescript
+// Mock Recoil state
+jest.mock('recoil', () => ({
+  ...jest.requireActual('recoil'),
+  useRecoilValue: jest.fn(),
+}));
+
+// Wrap component with required providers
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(
+    <RecoilRoot>
+      <ChatContext.Provider value={mockChatContext}>
+        <AgentsMapContext.Provider value={mockAgentsMap}>
+          {ui}
+        </AgentsMapContext.Provider>
+      </ChatContext.Provider>
+    </RecoilRoot>
+  );
+};
+```
+
+#### Test Coverage Examples
+Recent component tests achieving 100% coverage:
+- **ProactiveMCPAuth**: 29 test cases, 100% coverage across all metrics
+- **AgentCTA**: Comprehensive rendering and interaction tests
+- **AgentDiscovery**: Integration testing with data providers
+
 ### Coverage Goals
-- Functions: 80%+
-- Lines: 80%+
-- Statements: 80%+
-- Branches: 80%+
+- Functions: 80%+ (achieving 100% on critical components)
+- Lines: 80%+ (achieving 100% on critical components)
+- Statements: 80%+ (achieving 100% on critical components)
+- Branches: 80%+ (achieving 100% on critical components)
+
+### Testing Tools
+- **Jest**: Test runner and assertion library
+- **React Testing Library**: Component testing utilities
+- **@testing-library/user-event**: User interaction simulation
+- **Mock Service Worker**: API mocking for integration tests
 
 ## 🏭 Production Build
 
