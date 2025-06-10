@@ -1,48 +1,25 @@
-Please analyze and begin GitHub issue: $ARGUMENTS.
+# TS Style Guide - LLM Compact
 
-Follow these steps (and add to your TODO list):
-
-1. View issue
-2. Understand the problem/task described in the issue
-3. Ask clarifying questions if needed
-4. Add more details to the issue if needed
-5. Break down the task into smaller tasks if needed
-6. Create a new branch for the task
-7. Search the codebase for relevant files
-8. Write failing test that reproduces the issue or practice TDD
-9. Implement the fix/feature
-10. Add JSDoc style comments
-11. Ensure code passes linting and type checking
-12. Update README documentation
-13. Commit, push and open PR
-
-
-Remember to use the GitHub CLI (`gh`) or GitHub MCP for all GitHub-related tasks.
-
-# CONVENTIONS:
-
-## TS Style Guide 
-
-### Core
+## Core
 - TS v5 + strict-type-checked
 - Prefer narrow types
 - Named exports only
 - Code by feature
 
-### Types
+## Types
 
-##### Inference
+### Inference
 ```ts
 // ❌ const x: string = 'admin'
 // ✅ const x = 'admin' // literal 'admin'
 // ✅ const x = new Map<string, number>() // when narrowing
 ```
 
-##### Immutability
+### Immutability
 - Use `ReadonlyArray<T>`, `Readonly<T>`
 - Return new objects/arrays, no mutations
 
-##### Objects
+### Objects
 - Prefer required props
 - Use discriminated unions for variants:
 ```ts
@@ -52,7 +29,7 @@ Remember to use the GitHub CLI (`gh`) or GitHub MCP for all GitHub-related tasks
 //   | { role: 'guest'; tempToken: string }
 ```
 
-##### Constants
+### Constants
 ```ts
 // Arrays
 const ROLES = ['admin', 'user'] as const satisfies ReadonlyArray<Role>
@@ -61,55 +38,55 @@ const ROLES = ['admin', 'user'] as const satisfies ReadonlyArray<Role>
 const CONFIG = { max: 100 } as const satisfies Config
 ```
 
-##### Templates
+### Templates
 ```ts
 type Route = `/api/${'users'|'posts'}`
 type Color = `${BaseColor}-${50|100|200}`
 ```
 
-##### Avoid
+### Avoid
 - `any` → use `unknown`
 - Type assertions `as T`
 - Non-null assertions `!`
 - `@ts-ignore` → `@ts-expect-error: reason`
 
-##### Misc
+### Misc
 - `type` not `interface`
 - `Array<T>` not `T[]`
 - `import type` separate
 
-### Functions
+## Functions
 - Single responsibility
 - Pure, no side effects
 - Single object arg (except 1 primitive)
 - Required > optional args
 - Discriminated args when needed
 
-### Variables
+## Variables
 - `as const` for constants
 - No enums → literal types/const arrays/objects
 - Union types > boolean flags
 - `null` = explicit empty, `undefined` = missing
 
-### Naming
+## Naming
 
-##### Case
+### Case
 - camelCase: vars, functions
 - PascalCase: types, components
 - UPPER_SNAKE: constants
 - Generic: `TRequest` not `T`
 
-##### React
+### React
 - Props: `ComponentNameProps`
 - Callbacks: `onEvent` + `handleEvent`
 - Hooks: `useX` returns `{data, error}`
 
-##### Misc
+### Misc
 - Booleans: `is/has/should` prefix
 - Acronyms: `Url` not `URL`
 - No abbreviations unless standard
 
-### Structure
+## Structure
 ```
 feature/
 ├─ api/
@@ -120,7 +97,7 @@ feature/
 - Relative imports within feature
 - Absolute imports across features
 
-### React
+## React
 - Required > optional props
 - Discriminated props for variants
 - No props→state (except `initialX`)
@@ -129,10 +106,9 @@ feature/
 - Compound: `<List><List.Item /></List>`
 - URL state > global state
 
-### Tests
+## Tests
 - AAA pattern
 - Test behavior not implementation
 - `it('should X when Y')`
 - No snapshots
 - Mock sparingly
-

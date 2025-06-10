@@ -171,13 +171,9 @@ test.describe('Notion MCP Tests', () => {
       const popup = await handleInitialNotionAuth(page, 'Notion');
       logProgress('✅ Notion authentication completed');
 
+      logProgress('⏳ Waiting up to 10 sec for authentication to complete...');
       // Wait for authentication to complete
-      logProgress('⏳ Waiting 2 sec for authentication to complete...');
-      await page.waitForTimeout(2000);
-      logProgress('✅ Waited for authentication to complete');
-
-      // Check that the button shows "✓ Connected" after successful authentication
-      await expect(page.getByText('✓ Connected')).toBeVisible();
+      await expect(page.getByText('✓ Connected')).toBeVisible({ timeout: 10000 });
       logProgress('✅ Found "✓ Connected" status indicating successful Notion authentication');
 
       logProgress('⏳ Waiting for Running button to appear...');
