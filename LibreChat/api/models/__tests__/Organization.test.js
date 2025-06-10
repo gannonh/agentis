@@ -7,7 +7,6 @@ const mongoose = require('mongoose');
 const Organization = require('../Organization');
 
 describe('Organization Model', () => {
-
   describe('Model Definition', () => {
     it('should exist and be a Mongoose model', () => {
       expect(Organization).toBeDefined();
@@ -28,7 +27,7 @@ describe('Organization Model', () => {
       };
 
       const organization = new Organization(orgData);
-      
+
       expect(organization.name).toBe(orgData.name);
       expect(organization.subdomain).toBe(orgData.subdomain);
       expect(organization.accountOwnerId).toEqual(orgData.accountOwnerId);
@@ -42,7 +41,7 @@ describe('Organization Model', () => {
       };
 
       const organization = new Organization(orgData);
-      
+
       expect(organization.settings.allowPublicTeams).toBe(true);
       expect(organization.settings.requireAdminApproval).toBe(false);
       expect(organization.settings.contentRetentionDays).toBe(365);
@@ -90,7 +89,7 @@ describe('Organization Model', () => {
 
     it('should have proper field types', () => {
       const schema = Organization.schema;
-      
+
       expect(schema.path('name').instance).toBe('String');
       expect(schema.path('subdomain').instance).toBe('String');
       expect(schema.path('domain').instance).toBe('String');

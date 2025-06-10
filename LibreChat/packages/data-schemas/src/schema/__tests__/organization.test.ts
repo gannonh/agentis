@@ -40,7 +40,7 @@ describe('Organization Schema', () => {
     it('should require name field', async () => {
       const org = new Organization({
         accountOwnerId: new mongoose.Types.ObjectId(),
-        subdomain: 'test-org'
+        subdomain: 'test-org',
       });
 
       await expect(org.validate()).rejects.toThrow(/name.*required/i);
@@ -49,7 +49,7 @@ describe('Organization Schema', () => {
     it('should require accountOwnerId field', async () => {
       const org = new Organization({
         name: 'Test Organization',
-        subdomain: 'test-org'
+        subdomain: 'test-org',
       });
 
       await expect(org.validate()).rejects.toThrow(/accountOwnerId.*required/i);
@@ -58,7 +58,7 @@ describe('Organization Schema', () => {
     it('should require subdomain field', async () => {
       const org = new Organization({
         name: 'Test Organization',
-        accountOwnerId: new mongoose.Types.ObjectId()
+        accountOwnerId: new mongoose.Types.ObjectId(),
       });
 
       await expect(org.validate()).rejects.toThrow(/subdomain.*required/i);
@@ -69,7 +69,7 @@ describe('Organization Schema', () => {
       const org = new Organization({
         name: longName,
         accountOwnerId: new mongoose.Types.ObjectId(),
-        subdomain: 'test-org'
+        subdomain: 'test-org',
       });
 
       await expect(org.validate()).rejects.toThrow(/name.*100/i);
@@ -77,8 +77,8 @@ describe('Organization Schema', () => {
 
     it('should validate subdomain uniqueness constraint', () => {
       const indexes = organizationSchema.indexes();
-      const hasUniqueSubdomain = indexes.some(index => 
-        index[0].subdomain && index[1]?.unique === true
+      const hasUniqueSubdomain = indexes.some(
+        (index) => index[0].subdomain && index[1]?.unique === true,
       );
       expect(hasUniqueSubdomain).toBe(true);
     });
@@ -88,7 +88,7 @@ describe('Organization Schema', () => {
         name: 'Test Organization',
         accountOwnerId: new mongoose.Types.ObjectId(),
         subdomain: 'test-org',
-        domain: 'invalid-domain'
+        domain: 'invalid-domain',
       });
 
       await expect(org.validate()).rejects.toThrow(/Domain.*invalid/i);
@@ -100,7 +100,7 @@ describe('Organization Schema', () => {
       const org = new Organization({
         name: 'Test Organization',
         accountOwnerId: new mongoose.Types.ObjectId(),
-        subdomain: 'test-org'
+        subdomain: 'test-org',
       });
 
       await org.validate();
@@ -113,7 +113,7 @@ describe('Organization Schema', () => {
       const org = new Organization({
         name: 'Test Organization',
         accountOwnerId: new mongoose.Types.ObjectId(),
-        subdomain: 'test-org'
+        subdomain: 'test-org',
       });
 
       await org.validate();
@@ -125,24 +125,21 @@ describe('Organization Schema', () => {
   describe('Indexes', () => {
     it('should have index on subdomain field', () => {
       const indexes = organizationSchema.indexes();
-      const subdomainIndex = indexes.find(index => 
-        index[0].subdomain !== undefined
-      );
+      const subdomainIndex = indexes.find((index) => index[0].subdomain !== undefined);
       expect(subdomainIndex).toBeDefined();
     });
 
     it('should have index on domain field', () => {
       const indexes = organizationSchema.indexes();
-      const domainIndex = indexes.find(index => 
-        index[0].domain !== undefined
-      );
+      const domainIndex = indexes.find((index) => index[0].domain !== undefined);
       expect(domainIndex).toBeDefined();
     });
   });
 
   describe('Timestamps', () => {
     it('should have timestamps enabled', () => {
-      const options = (organizationSchema as any).options;
+      const options = (organizationSchema as unknown as { options: { timestamps?: boolean } })
+        .options;
       expect(options.timestamps).toBe(true);
     });
   });
@@ -153,7 +150,7 @@ describe('Organization Schema', () => {
         name: 'Test Organization',
         accountOwnerId: new mongoose.Types.ObjectId(),
         subdomain: 'test-org',
-        domain: 'test.com'
+        domain: 'test.com',
       });
 
       await expect(validOrg.validate()).resolves.not.toThrow();
@@ -166,7 +163,7 @@ describe('Organization Schema', () => {
       const orgWithoutDomain = new Organization({
         name: 'Test Organization',
         accountOwnerId: new mongoose.Types.ObjectId(),
-        subdomain: 'test-org'
+        subdomain: 'test-org',
       });
 
       await expect(orgWithoutDomain.validate()).resolves.not.toThrow();

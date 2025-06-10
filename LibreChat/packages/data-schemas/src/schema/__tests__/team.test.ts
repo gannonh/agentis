@@ -152,40 +152,34 @@ describe('Team Schema', () => {
   describe('Indexes', () => {
     it('should have index on organizationId field', () => {
       const indexes = teamSchema.indexes();
-      const orgIndex = indexes.find(index => 
-        index[0].organizationId !== undefined
-      );
+      const orgIndex = indexes.find((index) => index[0].organizationId !== undefined);
       expect(orgIndex).toBeDefined();
     });
 
     it('should have compound index on organizationId and name', () => {
       const indexes = teamSchema.indexes();
-      const compoundIndex = indexes.find(index => 
-        index[0].organizationId !== undefined && index[0].name !== undefined
+      const compoundIndex = indexes.find(
+        (index) => index[0].organizationId !== undefined && index[0].name !== undefined,
       );
       expect(compoundIndex).toBeDefined();
     });
 
     it('should have index on ownerId field', () => {
       const indexes = teamSchema.indexes();
-      const ownerIndex = indexes.find(index => 
-        index[0].ownerId !== undefined
-      );
+      const ownerIndex = indexes.find((index) => index[0].ownerId !== undefined);
       expect(ownerIndex).toBeDefined();
     });
 
     it('should have index on memberIds field', () => {
       const indexes = teamSchema.indexes();
-      const memberIndex = indexes.find(index => 
-        index[0].memberIds !== undefined
-      );
+      const memberIndex = indexes.find((index) => index[0].memberIds !== undefined);
       expect(memberIndex).toBeDefined();
     });
   });
 
   describe('Timestamps', () => {
     it('should have timestamps enabled', () => {
-      const options = (teamSchema as any).options;
+      const options = (teamSchema as unknown as { options: { timestamps?: boolean } }).options;
       expect(options.timestamps).toBe(true);
     });
   });

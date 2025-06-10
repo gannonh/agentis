@@ -27,7 +27,7 @@ describe('Team Model', () => {
       };
 
       const team = new Team(teamData);
-      
+
       expect(team.organizationId).toEqual(teamData.organizationId);
       expect(team.name).toBe(teamData.name);
       expect(team.ownerId).toEqual(teamData.ownerId);
@@ -41,7 +41,7 @@ describe('Team Model', () => {
       };
 
       const team = new Team(teamData);
-      
+
       expect(team.isPublic).toBe(false);
       expect(team.memberIds).toEqual([]);
       expect(team.adminIds).toEqual([]);
@@ -110,35 +110,36 @@ describe('Team Model', () => {
     it('should have compound unique constraint on organizationId and name', () => {
       const schema = Team.schema;
       const indexes = schema.indexes();
-      
-      const compoundIndex = indexes.find(index => 
-        index[0].organizationId !== undefined && 
-        index[0].name !== undefined &&
-        index[1]?.unique === true
+
+      const compoundIndex = indexes.find(
+        (index) =>
+          index[0].organizationId !== undefined &&
+          index[0].name !== undefined &&
+          index[1]?.unique === true,
       );
-      
+
       expect(compoundIndex).toBeDefined();
     });
 
     it('should have references to correct models', () => {
       const schema = Team.schema;
-      
+
       const orgPath = schema.path('organizationId');
       expect(orgPath.options.ref).toBe('Organization');
-      
+
       const ownerPath = schema.path('ownerId');
       expect(ownerPath.options.ref).toBe('User');
-      
+
       const memberPath = schema.path('memberIds');
       expect(memberPath.options.ref).toBe('User');
-      
+
       const adminPath = schema.path('adminIds');
       expect(adminPath.options.ref).toBe('User');
     });
 
     it('should have proper field types', () => {
       const schema = Team.schema;
-      
+
       expect(schema.path('organizationId').instance).toBe('ObjectId');
       expect(schema.path('name').instance).toBe('String');
       expect(schema.path('description').instance).toBe('String');
@@ -156,17 +157,17 @@ describe('Team Model', () => {
     it('should have proper indexes for performance', () => {
       const schema = Team.schema;
       const indexes = schema.indexes();
-      
+
       // Check for organizationId index
-      const orgIndex = indexes.find(index => index[0].organizationId !== undefined);
+      const orgIndex = indexes.find((index) => index[0].organizationId !== undefined);
       expect(orgIndex).toBeDefined();
-      
+
       // Check for ownerId index
-      const ownerIndex = indexes.find(index => index[0].ownerId !== undefined);
+      const ownerIndex = indexes.find((index) => index[0].ownerId !== undefined);
       expect(ownerIndex).toBeDefined();
-      
+
       // Check for memberIds index
-      const memberIndex = indexes.find(index => index[0].memberIds !== undefined);
+      const memberIndex = indexes.find((index) => index[0].memberIds !== undefined);
       expect(memberIndex).toBeDefined();
     });
   });
