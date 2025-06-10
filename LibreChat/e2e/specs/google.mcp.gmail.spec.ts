@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
-import { handleInitialAuth } from '../utils/googleAuth';
+import { handleInitialAuth } from '../utils/oAuth';
 import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
 
 test.use({

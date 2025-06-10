@@ -4,7 +4,7 @@ import {
   handleInitialAuth,
   handleExistingAccountAuth,
   handleExistingAccountAuthSingle,
-} from '../utils/googleAuth';
+} from '../utils/oAuth';
 import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
 
 test.use({
