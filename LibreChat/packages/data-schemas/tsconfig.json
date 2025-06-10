@@ -12,15 +12,12 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*"],
   "exclude": [
     "node_modules",
-    "dist",
-    "tests",
-    "src/**/*.test.*",
-    "src/**/*.spec.*",
-    "src/**/__tests__/**/*"
+    "dist"
   ]
 }
