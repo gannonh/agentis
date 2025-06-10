@@ -1,7 +1,10 @@
 name: Deploy to Production
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Preflight Checks"]
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
@@ -11,57 +14,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Run preflight checks first
-  preflight:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: "./LibreChat/package-lock.json"
-
-      - name: Install dependencies
-        working-directory: ./LibreChat
-        run: npm ci --legacy-peer-deps
-
-      - name: Build packages
-        working-directory: ./LibreChat
-        run: npm run build:all
-
-      - name: Run linting
-        working-directory: ./LibreChat
-        run: npm run lint
-
-      - name: Run formatting check
-        working-directory: ./LibreChat
-        run: npm run format
-
-      - name: Run type checking
-        working-directory: ./LibreChat
-        run: npm run typecheck:all
-
-      - name: Start MongoDB for tests
-        uses: supercharge/mongodb-github-action@1.10.0
-        with:
-          mongodb-version: "7.0"
-          mongodb-replica-set: test-rs
-          mongodb-port: 27017
-
-      - name: Run unit tests
-        working-directory: ./LibreChat
-        env:
-          NODE_ENV: test
-          MONGO_URI: mongodb://127.0.0.1:27017/test?replicaSet=test-rs
-        run: npm run test:all
-
   build-and-push:
-    needs: preflight
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
