@@ -248,3 +248,14 @@ Recent component tests achieving 100% coverage:
 - **React Testing Library**: Component testing utilities
 - **@testing-library/user-event**: User interaction simulation
 - **Mock Service Worker**: API mocking for integration tests
+
+### Preflight Convenience Scripts
+`/Users/gannonhall/dev/agentis/LibreChat/package.json`
+```json
+"preflight": "../scripts/dev.sh --clean && npm run build:all && npm run check:all && npm run e2e:ci",
+"preflight:fix": "npm run build:all && npm run lint -- --fix && npm run format && npm run typecheck:all && npm run test:all && npm run e2e:ci",
+"check:client": "npm run lint:client && npm run typecheck:client && npm run format:client && npm run test:client",
+"check:api": "npm run lint:api && npm run format:api && npm run test:api",
+"check:packages": "npm run lint:packages && npm run typecheck:packages && npm run format:packages && npm run test:packages",
+"check:all": "npm run lint && npm run format && npm run typecheck:all && npm run test:all",
+```
