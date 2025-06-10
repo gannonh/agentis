@@ -65,6 +65,7 @@
     "e2e:google-mcp-calendar": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.calendar.spec.ts --headed",
     "e2e:google-mcp-multi": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.multi.spec.ts --headed",
     "e2e:agent-cta": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/agent-cta-display.spec.ts --headed",
+    "e2e:notion-mcp": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/notion.mcp.spec.ts --headed",
     "e2e:update": "playwright test --config=e2e/playwright.config.js --update-snapshots",
     "e2e:report": "npx playwright show-report e2e/playwright-report",
     "lint": "eslint --fix \"./client/src/**/*.{js,jsx,ts,tsx}\" \"./api/**/*.{js,jsx,ts,tsx}\" \"./packages/**/*.{js,jsx,ts,tsx}\"",
