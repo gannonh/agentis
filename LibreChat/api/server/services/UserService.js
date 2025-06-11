@@ -1,6 +1,6 @@
 const { ErrorTypes } = require('librechat-data-provider');
 const { encrypt, decrypt } = require('~/server/utils');
-const { updateUser, Key } = require('~/models');
+const { updateUser, Key, Organization, User } = require('~/models');
 const { logger } = require('~/config');
 
 /**
@@ -170,6 +170,98 @@ const checkUserKeyExpiry = (expiresAt, endpoint) => {
   }
 };
 
+/**
+ * Extracts domain from email address
+ * @param {string} email - The email address to extract domain from
+ * @returns {string} The domain part of the email
+ * @description Extracts and normalizes the domain from an email address
+ */
+const extractEmailDomain = (email) => {
+  if (!email || typeof email !== 'string') {
+    throw new Error('Valid email is required');
+  }
+  const domain = email.toLowerCase().split('@')[1];
+  if (!domain) {
+    throw new Error('Invalid email format');
+  }
+  return domain;
+};
+
+/**
+ * Finds an existing organization by email domain
+ * @param {string} email - Email address to match against organization domains
+ * @returns {Promise<Object|null>} Organization if found, null otherwise
+ * @description Searches for organizations with matching email domain for Slack-style team discovery
+ */
+const findOrganizationByEmailDomain = async (email) => {
+  try {
+    const domain = extractEmailDomain(email);
+    
+    // Find organization with matching domain
+    const organization = await Organization.findOne({ domain }).lean();
+    
+    if (organization) {
+      logger.debug(`[findOrganizationByEmailDomain] Found organization ${organization.name} for domain ${domain}`);
+      return organization;
+    }
+    
+    logger.debug(`[findOrganizationByEmailDomain] No organization found for domain ${domain}`);
+    return null;
+  } catch (error) {
+    logger.error('[findOrganizationByEmailDomain]', error);
+    throw error;
+  }
+};
+
+/**
+ * Finds existing coworkers in the same organization by email domain
+ * @param {string} email - Email address to find coworkers for
+ * @returns {Promise<Array>} Array of users in the same organization
+ * @description Finds users in organizations with matching email domain for team discovery
+ */
+const findCoworkersByEmailDomain = async (email) => {
+  try {
+    const organization = await findOrganizationByEmailDomain(email);
+    
+    if (!organization) {
+      return [];
+    }
+    
+    // Find all users in this organization
+    const coworkers = await User.find({ organizationId: organization._id })
+      .select('email name username')
+      .lean();
+    
+    logger.debug(`[findCoworkersByEmailDomain] Found ${coworkers.length} coworkers for domain ${extractEmailDomain(email)}`);
+    return coworkers;
+  } catch (error) {
+    logger.error('[findCoworkersByEmailDomain]', error);
+    throw error;
+  }
+};
+
+/**
+ * Determines if an email domain is a work domain or personal domain
+ * @param {string} email - Email address to check
+ * @returns {boolean} True if work domain, false if personal domain
+ * @description Identifies work vs personal domains for organization assignment logic
+ */
+const isWorkEmailDomain = (email) => {
+  const domain = extractEmailDomain(email);
+  const personalDomains = [
+    'gmail.com',
+    'yahoo.com',
+    'hotmail.com',
+    'outlook.com',
+    'icloud.com',
+    'aol.com',
+    'protonmail.com',
+    'mail.com',
+  ];
+  
+  return !personalDomains.includes(domain);
+};
+
 module.exports = {
   getUserKey,
   updateUserKey,
@@ -178,4 +270,8 @@ module.exports = {
   getUserKeyExpiry,
   checkUserKeyExpiry,
   updateUserPluginsService,
+  extractEmailDomain,
+  findOrganizationByEmailDomain,
+  findCoworkersByEmailDomain,
+  isWorkEmailDomain,
 };
