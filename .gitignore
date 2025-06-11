@@ -18,10 +18,14 @@ scratchpad.md
 LibreChat/packages/data-provider/rollup.config-1748544387798.cjs
 sym-links/
 logs/
+rag_api/
+LibreChat/data/violations.json
+LibreChat/e2e/data/violations.json
+LibreChat/e2e/data/logs.json
 # Other repos
 codesandbox-client/
 rag_api/
-LibreChat/data/violations.json
-.gitignore
-LibreChat/e2e/data/violations.json
-LibreChat/e2e/data/logs.json
+# site-starlight/
+site-starlight/.astro/
+site-starlight/.vscode/
+site-starlight/node_modules/

@@ -1,7 +1,7 @@
 Create a comprehensive README for the working directory: $ARGUMENTS. Firstly, add the following to your todos then execute.
 
 - Focus only on $ARGUMENTS and its sub-directories
-- If a README exists in the cwd `mv README.md README.md.bak`
+- If a README exists in the cwd, read it then back it up: `mv README.md README.md.bak`
 - Thoroughly examine the sourcode
 - Read any existing docs
 - Think deeply
