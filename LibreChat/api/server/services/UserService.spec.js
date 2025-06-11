@@ -6,6 +6,7 @@
 const {
   extractEmailDomain,
   isWorkEmailDomain,
+  generateOrganizationName,
 } = require('./UserService');
 
 describe('UserService - Email Domain Matching', () => {
@@ -55,6 +56,35 @@ describe('UserService - Email Domain Matching', () => {
     it('should be case insensitive', () => {
       expect(isWorkEmailDomain('USER@GMAIL.COM')).toBe(false);
       expect(isWorkEmailDomain('User@Company.Com')).toBe(true);
+    });
+  });
+
+  describe('generateOrganizationName', () => {
+    it('should generate company name for work domains', () => {
+      expect(generateOrganizationName('user@acme.com')).toBe('Acme');
+      expect(generateOrganizationName('employee@startupco.io')).toBe('Startupco');
+      expect(generateOrganizationName('admin@bigcorp.org')).toBe('Bigcorp');
+    });
+
+    it('should generate "Personal Organization" for personal domains', () => {
+      expect(generateOrganizationName('user@gmail.com')).toBe('Personal Organization');
+      expect(generateOrganizationName('test@yahoo.com')).toBe('Personal Organization');
+      expect(generateOrganizationName('person@hotmail.com')).toBe('Personal Organization');
+    });
+
+    it('should handle complex domain names', () => {
+      expect(generateOrganizationName('user@my-company.com')).toBe('My-company');
+      expect(generateOrganizationName('user@tech.startup.com')).toBe('Tech');
+    });
+
+    it('should capitalize first letter', () => {
+      expect(generateOrganizationName('user@lowercase.com')).toBe('Lowercase');
+      expect(generateOrganizationName('user@UPPERCASE.COM')).toBe('Uppercase');
+    });
+
+    it('should handle edge cases', () => {
+      expect(generateOrganizationName('user@a.com')).toBe('A');
+      expect(generateOrganizationName('user@123company.com')).toBe('123company');
     });
   });
 

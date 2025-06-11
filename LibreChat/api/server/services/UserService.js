@@ -262,6 +262,119 @@ const isWorkEmailDomain = (email) => {
   return !personalDomains.includes(domain);
 };
 
+/**
+ * Generates a unique subdomain for organization
+ * @param {string} baseName - Base name to generate subdomain from
+ * @returns {Promise<string>} Unique subdomain
+ * @description Creates URL-safe subdomain and ensures uniqueness
+ */
+const generateUniqueSubdomain = async (baseName) => {
+  // Convert to URL-safe format
+  let subdomain = baseName
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-') // Replace non-alphanumeric with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    .substring(0, 50); // Limit length
+
+  // Ensure it's not empty
+  if (!subdomain) {
+    subdomain = 'organization';
+  }
+
+  // Check for uniqueness and add number if needed
+  let counter = 0;
+  let finalSubdomain = subdomain;
+  
+  while (await Organization.findOne({ subdomain: finalSubdomain })) {
+    counter++;
+    finalSubdomain = `${subdomain}-${counter}`;
+  }
+  
+  return finalSubdomain;
+};
+
+/**
+ * Creates organization name from email domain
+ * @param {string} email - Email address to derive organization name from
+ * @returns {string} Generated organization name
+ * @description Creates human-readable organization name from email domain
+ */
+const generateOrganizationName = (email) => {
+  const domain = extractEmailDomain(email);
+  
+  if (isWorkEmailDomain(email)) {
+    // For work domains, use company name (remove .com, .org, etc.)
+    const companyName = domain.split('.')[0];
+    return companyName.charAt(0).toUpperCase() + companyName.slice(1);
+  } else {
+    // For personal domains, use "Personal Organization"
+    return 'Personal Organization';
+  }
+};
+
+/**
+ * Creates a new organization for a user
+ * @param {string} email - Email address of the user who will own the organization
+ * @param {string} userId - ID of the user who will own the organization
+ * @param {string} [orgName] - Optional custom organization name
+ * @returns {Promise<Object>} Created organization document
+ * @description Creates new organization and assigns user as account owner
+ */
+const createOrganizationForUser = async (email, userId, orgName = null) => {
+  try {
+    const domain = extractEmailDomain(email);
+    const name = orgName || generateOrganizationName(email);
+    const subdomain = await generateUniqueSubdomain(name);
+    
+    const organizationData = {
+      name,
+      subdomain,
+      accountOwnerId: userId,
+    };
+    
+    // Only set domain for work emails to enable team discovery
+    if (isWorkEmailDomain(email)) {
+      organizationData.domain = domain;
+    }
+    
+    const organization = await Organization.create(organizationData);
+    
+    logger.info(`[createOrganizationForUser] Created organization ${organization.name} (${organization.subdomain}) for user ${userId}`);
+    return organization;
+  } catch (error) {
+    logger.error('[createOrganizationForUser]', error);
+    throw error;
+  }
+};
+
+/**
+ * Finds or creates organization for user during registration
+ * @param {string} email - User's email address
+ * @param {string} userId - User's ID  
+ * @returns {Promise<{organization: Object, isExisting: boolean}>} Organization and whether it was existing
+ * @description Implements Slack-style organization discovery and auto-creation workflow
+ */
+const findOrCreateOrganizationForUser = async (email, userId) => {
+  try {
+    // First, try to find existing organization by domain
+    const existingOrganization = await findOrganizationByEmailDomain(email);
+    
+    if (existingOrganization) {
+      logger.info(`[findOrCreateOrganizationForUser] Found existing organization ${existingOrganization.name} for ${email}`);
+      return { organization: existingOrganization, isExisting: true };
+    }
+    
+    // No existing organization found, create new one
+    const newOrganization = await createOrganizationForUser(email, userId);
+    logger.info(`[findOrCreateOrganizationForUser] Created new organization ${newOrganization.name} for ${email}`);
+    return { organization: newOrganization, isExisting: false };
+  } catch (error) {
+    logger.error('[findOrCreateOrganizationForUser]', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getUserKey,
   updateUserKey,
@@ -274,4 +387,8 @@ module.exports = {
   findOrganizationByEmailDomain,
   findCoworkersByEmailDomain,
   isWorkEmailDomain,
+  generateUniqueSubdomain,
+  generateOrganizationName,
+  createOrganizationForUser,
+  findOrCreateOrganizationForUser,
 };
