@@ -5,13 +5,60 @@
 
 set -e
 
-PRODUCTION_HOST="${1:-}"
-PRODUCTION_USER="${2:-agentis}"
+# Parse arguments
+DOWN_FLAG=false
+PRODUCTION_HOST=""
+PRODUCTION_USER="agentis"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --down)
+            DOWN_FLAG=true
+            shift
+            ;;
+        *)
+            if [ -z "$PRODUCTION_HOST" ]; then
+                PRODUCTION_HOST="$1"
+            else
+                PRODUCTION_USER="$1"
+            fi
+            shift
+            ;;
+    esac
+done
 
 if [ -z "$PRODUCTION_HOST" ]; then
-    echo "Usage: $0 <production_host> [production_user]"
+    echo "Usage: $0 [--down] <production_host> [production_user]"
     echo "Example: $0 143.110.229.209 agentis"
+    echo "         $0 --down 143.110.229.209 agentis  # Bring down services"
     exit 1
+fi
+
+if [ "$DOWN_FLAG" = true ]; then
+    echo "🛑 Bringing down Agentis services on $PRODUCTION_HOST..."
+    echo "================================================="
+    echo ""
+    echo "You'll be prompted for the SSH password once."
+    echo ""
+    
+    # Bring down services
+    ssh "$PRODUCTION_USER@$PRODUCTION_HOST" << 'EOF'
+echo "Stopping all Agentis services..."
+cd /home/agentis/agentis-deploy
+docker compose -f docker-compose.prod.yml down
+
+echo ""
+echo "Checking that all containers are stopped..."
+docker ps --filter name=agentis
+
+echo ""
+echo "================================================="
+echo "All Agentis services have been stopped!"
+echo "To restart: deploy via GitHub Actions or manually run:"
+echo "  cd /home/agentis/agentis-deploy"
+echo "  docker compose -f docker-compose.prod.yml up -d"
+EOF
+    exit 0
 fi
 
 echo "🔍 Verifying Agentis deployment on $PRODUCTION_HOST..."

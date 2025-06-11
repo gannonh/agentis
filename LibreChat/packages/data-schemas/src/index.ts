@@ -69,3 +69,9 @@ export type { ITransaction } from './schema/transaction';
 
 export { default as userSchema } from './schema/user';
 export type { IUser } from './schema/user';
+
+export { default as organizationSchema } from './schema/organization';
+export type { IOrganization } from './schema/organization';
+
+export { default as teamSchema } from './schema/team';
+export type { ITeam } from './schema/team';

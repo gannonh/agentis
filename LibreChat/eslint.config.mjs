@@ -362,7 +362,7 @@ export default [
     },
   },
   {
-    // **New Data-schemas configuration block**
+    // **Data-schemas configuration block**
     files: ['./packages/data-schemas/**/*.ts'],
     languageOptions: {
       parser: tsParser,
