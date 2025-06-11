@@ -1,4 +1,4 @@
-import { Schema, Document } from 'mongoose';
+import { Schema, Document, type Types } from 'mongoose';
 import { SystemRoles } from 'librechat-data-provider';
 
 export interface IUser extends Document {
@@ -30,6 +30,8 @@ export interface IUser extends Document {
   }>;
   expiresAt?: Date;
   termsAccepted?: boolean;
+  organizationId?: Types.ObjectId;
+  orgRole?: 'account_owner' | 'member';
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -156,8 +158,20 @@ const User = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      index: true,
+    },
+    orgRole: {
+      type: String,
+      enum: ['account_owner', 'member'],
+    },
   },
   { timestamps: true },
 );
+
+// Create additional indexes for organization features
+User.index({ organizationId: 1, orgRole: 1 });
 
 export default User;
