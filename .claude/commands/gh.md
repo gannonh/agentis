@@ -250,7 +250,7 @@ Recent component tests achieving 100% coverage:
 - **Mock Service Worker**: API mocking for integration tests
 
 ### Preflight Convenience Scripts
-`/Users/gannonhall/dev/agentis/LibreChat/package.json`
+`<repo-root>/package.json`
 ```json
 "preflight": "../scripts/dev.sh --clean && npm run build:all && npm run check:all && npm run e2e:ci",
 "preflight:fix": "npm run build:all && npm run lint -- --fix && npm run format && npm run typecheck:all && npm run test:all && npm run e2e:ci",
