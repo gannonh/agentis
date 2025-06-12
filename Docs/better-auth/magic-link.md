@@ -1,0 +1,1 @@
+`, ensure that the returned string is hard to guess because it is used to verify who someone actually is in a confidential way. By default, we return a long and cryptographically secure string.
