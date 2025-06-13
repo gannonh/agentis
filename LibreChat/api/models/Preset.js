@@ -1,5 +1,5 @@
-const Preset = require('./schema/presetSchema');
-const { logger } = require('~/config');
+import Preset from './schema/presetSchema.js';
+import { logger } from '#config/index.js';
 
 const getPreset = async (user, presetId) => {
   try {
@@ -10,74 +10,76 @@ const getPreset = async (user, presetId) => {
   }
 };
 
-module.exports = {
-  Preset,
-  getPreset,
-  getPresets: async (user, filter) => {
-    try {
-      const presets = await Preset.find({ ...filter, user }).lean();
-      const defaultValue = 10000;
+export default Preset;
 
-      presets.sort((a, b) => {
-        let orderA = a.order !== undefined ? a.order : defaultValue;
-        let orderB = b.order !== undefined ? b.order : defaultValue;
+export const getPresets = async (user, filter) => {
+  try {
+    const presets = await Preset.find({ ...filter, user }).lean();
+    const defaultValue = 10000;
 
-        if (orderA !== orderB) {
-          return orderA - orderB;
-        }
+    presets.sort((a, b) => {
+      let orderA = a.order !== undefined ? a.order : defaultValue;
+      let orderB = b.order !== undefined ? b.order : defaultValue;
 
-        return b.updatedAt - a.updatedAt;
-      });
-
-      return presets;
-    } catch (error) {
-      logger.error('[getPresets] Error getting presets', error);
-      return { message: 'Error retrieving presets' };
-    }
-  },
-  savePreset: async (user, { presetId, newPresetId, defaultPreset, ...preset }) => {
-    try {
-      const setter = { $set: {} };
-      const { user: _, ...cleanPreset } = preset;
-      const update = { presetId, ...cleanPreset };
-      if (preset.tools && Array.isArray(preset.tools)) {
-        update.tools =
-          preset.tools
-            .map((tool) => tool?.pluginKey ?? tool)
-            .filter((toolName) => typeof toolName === 'string') ?? [];
-      }
-      if (newPresetId) {
-        update.presetId = newPresetId;
+      if (orderA !== orderB) {
+        return orderA - orderB;
       }
 
-      if (defaultPreset) {
-        update.defaultPreset = defaultPreset;
-        update.order = 0;
+      return b.updatedAt - a.updatedAt;
+    });
 
-        const currentDefault = await Preset.findOne({ defaultPreset: true, user });
-
-        if (currentDefault && currentDefault.presetId !== presetId) {
-          await Preset.findByIdAndUpdate(currentDefault._id, {
-            $unset: { defaultPreset: '', order: '' },
-          });
-        }
-      } else if (defaultPreset === false) {
-        update.defaultPreset = undefined;
-        update.order = undefined;
-        setter['$unset'] = { defaultPreset: '', order: '' };
-      }
-
-      setter.$set = update;
-      return await Preset.findOneAndUpdate({ presetId, user }, setter, { new: true, upsert: true });
-    } catch (error) {
-      logger.error('[savePreset] Error saving preset', error);
-      return { message: 'Error saving preset' };
-    }
-  },
-  deletePresets: async (user, filter) => {
-    // let toRemove = await Preset.find({ ...filter, user }).select('presetId');
-    // const ids = toRemove.map((instance) => instance.presetId);
-    let deleteCount = await Preset.deleteMany({ ...filter, user });
-    return deleteCount;
-  },
+    return presets;
+  } catch (error) {
+    logger.error('[getPresets] Error getting presets', error);
+    return { message: 'Error retrieving presets' };
+  }
 };
+
+export const savePreset = async (user, { presetId, newPresetId, defaultPreset, ...preset }) => {
+  try {
+    const setter = { $set: {} };
+    const { user: _, ...cleanPreset } = preset;
+    const update = { presetId, ...cleanPreset };
+    if (preset.tools && Array.isArray(preset.tools)) {
+      update.tools =
+        preset.tools
+          .map((tool) => tool?.pluginKey ?? tool)
+          .filter((toolName) => typeof toolName === 'string') ?? [];
+    }
+    if (newPresetId) {
+      update.presetId = newPresetId;
+    }
+
+    if (defaultPreset) {
+      update.defaultPreset = defaultPreset;
+      update.order = 0;
+
+      const currentDefault = await Preset.findOne({ defaultPreset: true, user });
+
+      if (currentDefault && currentDefault.presetId !== presetId) {
+        await Preset.findByIdAndUpdate(currentDefault._id, {
+          $unset: { defaultPreset: '', order: '' },
+        });
+      }
+    } else if (defaultPreset === false) {
+      update.defaultPreset = undefined;
+      update.order = undefined;
+      setter['$unset'] = { defaultPreset: '', order: '' };
+    }
+
+    setter.$set = update;
+    return await Preset.findOneAndUpdate({ presetId, user }, setter, { new: true, upsert: true });
+  } catch (error) {
+    logger.error('[savePreset] Error saving preset', error);
+    return { message: 'Error saving preset' };
+  }
+};
+
+export const deletePresets = async (user, filter) => {
+  // let toRemove = await Preset.find({ ...filter, user }).select('presetId');
+  // const ids = toRemove.map((instance) => instance.presetId);
+  let deleteCount = await Preset.deleteMany({ ...filter, user });
+  return deleteCount;
+};
+
+export { getPreset };

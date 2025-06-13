@@ -1,12 +1,12 @@
-const express = require('express');
-const { nanoid } = require('nanoid');
-const { actionDelimiter, EModelEndpoint, removeNullishValues } = require('librechat-data-provider');
-const { encryptMetadata, domainParser } = require('~/server/services/ActionService');
-const { getOpenAIClient } = require('~/server/controllers/assistants/helpers');
-const { updateAction, getActions, deleteAction } = require('~/models/Action');
-const { updateAssistantDoc, getAssistant } = require('~/models/Assistant');
-const { isActionDomainAllowed } = require('~/server/services/domains');
-const { logger } = require('~/config');
+import express from 'express';
+import {  nanoid  } from 'nanoid';
+import {  actionDelimiter, EModelEndpoint, removeNullishValues  } from 'librechat-data-provider';
+import {  encryptMetadata, domainParser  } from '#server/services/ActionService.js';
+import {  getOpenAIClient  } from '#server/controllers/assistants/helpers.js';
+import {  updateAction, getActions, deleteAction  } from '#models/Action.js';
+import {  updateAssistantDoc, getAssistant  } from '#models/Assistant.js';
+import {  isActionDomainAllowed  } from '#server/services/domains.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -202,4 +202,4 @@ router.delete('/:assistant_id/:action_id/:model', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

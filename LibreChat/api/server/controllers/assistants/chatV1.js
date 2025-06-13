@@ -1,5 +1,5 @@
-const { v4 } = require('uuid');
-const {
+import {  v4  } from 'uuid';
+import { 
   Time,
   Constants,
   RunStatus,
@@ -10,29 +10,29 @@ const {
   ImageVisionTool,
   checkOpenAIStorage,
   AssistantStreamEvents,
-} = require('librechat-data-provider');
-const {
+ } from 'librechat-data-provider';
+import { 
   initThread,
   recordUsage,
   saveUserMessage,
   checkMessageGaps,
   addThreadMetadata,
   saveAssistantMessage,
-} = require('~/server/services/Threads');
-const { sendResponse, sendMessage, sleep, countTokens } = require('~/server/utils');
-const { runAssistant, createOnTextProgress } = require('~/server/services/AssistantService');
-const validateAuthor = require('~/server/middleware/assistants/validateAuthor');
-const { formatMessage, createVisionPrompt } = require('~/app/clients/prompts');
-const { createRun, StreamRunManager } = require('~/server/services/Runs');
-const { addTitle } = require('~/server/services/Endpoints/assistants');
-const { createRunBody } = require('~/server/services/createRunBody');
-const { getTransactions } = require('~/models/Transaction');
-const { checkBalance } = require('~/models/balanceMethods');
-const { getConvo } = require('~/models/Conversation');
-const getLogStores = require('~/cache/getLogStores');
-const { getModelMaxTokens } = require('~/utils');
-const { getOpenAIClient } = require('./helpers');
-const { logger } = require('~/config');
+ } from '#server/services/Threads.js';
+import {  sendResponse, sendMessage, sleep, countTokens  } from '#server/utils.js';
+import {  runAssistant, createOnTextProgress  } from '#server/services/AssistantService.js';
+import validateAuthor from '#server/middleware/assistants/validateAuthor.js';
+import {  formatMessage, createVisionPrompt  } from '#app/clients/prompts.js';
+import {  createRun, StreamRunManager  } from '#server/services/Runs.js';
+import addTitle from "#server/services/Endpoints/assistants/title.js";
+import {  createRunBody  } from '#server/services/createRunBody.js';
+import {  getTransactions  } from '#models/Transaction.js';
+import {  checkBalance  } from '#models/balanceMethods.js';
+import {  getConvo  } from '#models/Conversation.js';
+import getLogStores from '#cache/getLogStores.js';
+import {  getModelMaxTokens  } from '#utils.js';
+import {  getOpenAIClient  } from './helpers.js';
+import {  logger  } from '#config.js';
 
 /**
  * @route POST /
@@ -635,4 +635,4 @@ const chatV1 = async (req, res) => {
   }
 };
 
-module.exports = chatV1;
+export default chatV1;

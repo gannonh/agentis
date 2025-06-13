@@ -1,6 +1,6 @@
-const { isEnabled } = require('~/server/utils');
-const getLogStores = require('./getLogStores');
-const banViolation = require('./banViolation');
+import { isEnabled } from '../server/utils/index.js';
+import getLogStores from './getLogStores.js';
+import banViolation from './banViolation.js';
 
 /**
  * Logs the violation.
@@ -36,4 +36,4 @@ const logViolation = async (req, res, type, errorMessage, score = 1) => {
   await logs.set(key, userLogs);
 };
 
-module.exports = logViolation;
+export default logViolation;

@@ -112,4 +112,4 @@ function truncateToolCallOutputs(_messages, maxContextTokens, getTokenCountForMe
   return { dbMessages: processedMessages.reverse(), editedIndices: Array.from(editedIndices) };
 }
 
-module.exports = { truncateText, smartTruncateText, truncateToolCallOutputs };
+export { truncateText, smartTruncateText, truncateToolCallOutputs };

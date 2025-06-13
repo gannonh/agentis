@@ -1,7 +1,7 @@
-const { z } = require('zod');
-const { Tool } = require('@langchain/core/tools');
-const { SearchClient, AzureKeyCredential } = require('@azure/search-documents');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import { Tool } from '@langchain/core/tools';
+import { SearchClient, AzureKeyCredential } from '@azure/search-documents';
+import { logger } from '#config/index.js';
 
 class AzureAISearch extends Tool {
   // Constants for default values
@@ -101,4 +101,4 @@ class AzureAISearch extends Tool {
   }
 }
 
-module.exports = AzureAISearch;
+export default AzureAISearch;

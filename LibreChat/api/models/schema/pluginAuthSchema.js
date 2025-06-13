@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const { pluginAuthSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { pluginAuthSchema } from '@librechat/data-schemas';
 
 const PluginAuth = mongoose.models.Plugin || mongoose.model('PluginAuth', pluginAuthSchema);
 
-module.exports = PluginAuth;
+export default PluginAuth;

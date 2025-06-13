@@ -1,12 +1,12 @@
-const express = require('express');
-const EditController = require('~/server/controllers/EditController');
-const { initializeClient } = require('~/server/services/Endpoints/google');
-const {
+import express from 'express';
+import EditController from '#server/controllers/EditController.js';
+import initializeClient from "#server/services/Endpoints/google/initialize.js";
+import { 
   setHeaders,
   validateModel,
   validateEndpoint,
   buildEndpointOption,
-} = require('~/server/middleware');
+ } from '#server/middleware.js';
 
 const router = express.Router();
 
@@ -21,4 +21,4 @@ router.post(
   },
 );
 
-module.exports = router;
+export default router;

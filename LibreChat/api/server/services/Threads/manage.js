@@ -1,16 +1,16 @@
-const path = require('path');
-const { v4 } = require('uuid');
-const {
+import path from 'path';
+import { v4 } from 'uuid';
+import {
   Constants,
   ContentTypes,
   AnnotationTypes,
   defaultOrderQuery,
-} = require('librechat-data-provider');
-const { retrieveAndProcessFile } = require('~/server/services/Files/process');
-const { recordMessage, getMessages } = require('~/models/Message');
-const { countTokens, escapeRegExp } = require('~/server/utils');
-const { spendTokens } = require('~/models/spendTokens');
-const { saveConvo } = require('~/models/Conversation');
+} from 'librechat-data-provider';
+import { retrieveAndProcessFile } from '../Files/process.js';
+import { recordMessage, getMessages } from '../../../models/Message.js';
+import { countTokens, escapeRegExp } from '../../utils/index.js';
+import { spendTokens } from '../../../models/spendTokens.js';
+import { saveConvo } from '../../../models/Conversation.js';
 
 /**
  * Initializes a new thread or adds messages to an existing thread.
@@ -681,7 +681,7 @@ async function processMessages({ openai, client, messages = [] }) {
   return { messages: sorted, text, edited };
 }
 
-module.exports = {
+export {
   initThread,
   recordUsage,
   processMessages,

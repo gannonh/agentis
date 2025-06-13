@@ -1,5 +1,5 @@
-const { encoding_for_model: encodingForModel, get_encoding: getEncoding } = require('tiktoken');
-const { logger } = require('~/config');
+import { encoding_for_model as encodingForModel, get_encoding as getEncoding } from 'tiktoken';
+import { logger } from '#config/index.js';
 
 class Tokenizer {
   constructor() {
@@ -61,4 +61,4 @@ class Tokenizer {
 
 const TokenizerSingleton = new Tokenizer();
 
-module.exports = TokenizerSingleton;
+export default TokenizerSingleton;

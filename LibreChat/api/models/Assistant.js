@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { assistantSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { assistantSchema } from '@librechat/data-schemas';
 
 const Assistant = mongoose.model('assistant', assistantSchema);
 
@@ -57,9 +57,6 @@ const deleteAssistant = async (searchParams) => {
   return await Assistant.findOneAndDelete(searchParams);
 };
 
-module.exports = {
-  updateAssistantDoc,
-  deleteAssistant,
-  getAssistants,
-  getAssistant,
-};
+export default Assistant;
+
+export { updateAssistantDoc, deleteAssistant, getAssistants, getAssistant };

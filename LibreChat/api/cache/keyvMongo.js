@@ -1,8 +1,8 @@
 // api/cache/keyvMongo.js
-const mongoose = require('mongoose');
-const EventEmitter = require('events');
-const { GridFSBucket } = require('mongodb');
-const { logger } = require('~/config');
+import mongoose from 'mongoose';
+import { EventEmitter } from 'events';
+import { GridFSBucket } from 'mongodb';
+import { logger } from '#config/index.js';
 
 const storeMap = new Map();
 
@@ -269,4 +269,4 @@ const keyvMongo = new KeyvMongoCustom({
 
 keyvMongo.on('error', (err) => logger.error('KeyvMongo connection error:', err));
 
-module.exports = keyvMongo;
+export default keyvMongo;

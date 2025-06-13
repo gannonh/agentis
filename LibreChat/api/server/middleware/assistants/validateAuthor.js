@@ -1,5 +1,5 @@
-const { SystemRoles } = require('librechat-data-provider');
-const { getAssistant } = require('~/models/Assistant');
+import { SystemRoles } from 'librechat-data-provider';
+import { getAssistant } from '#models/index.js';
 
 /**
  * Checks if the assistant is supported or excluded
@@ -40,4 +40,4 @@ const validateAuthor = async ({ req, openai, overrideEndpoint, overrideAssistant
   }
 };
 
-module.exports = validateAuthor;
+export default validateAuthor;

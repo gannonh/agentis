@@ -1,5 +1,5 @@
-const { getInvite } = require('~/models/inviteUser');
-const { deleteTokens } = require('~/models/Token');
+import { getInvite } from '#models/inviteUser.js';
+import { deleteTokens } from '#models/Token.js';
 
 async function checkInviteUser(req, res, next) {
   const token = req.body.token;
@@ -24,4 +24,4 @@ async function checkInviteUser(req, res, next) {
   }
 }
 
-module.exports = checkInviteUser;
+export default checkInviteUser;

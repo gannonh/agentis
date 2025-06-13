@@ -1,21 +1,21 @@
-const {
+import {
   parseCompactConvo,
   EModelEndpoint,
   isAgentsEndpoint,
   EndpointURLs,
-} = require('librechat-data-provider');
-const azureAssistants = require('~/server/services/Endpoints/azureAssistants');
-const { getModelsConfig } = require('~/server/controllers/ModelController');
-const assistants = require('~/server/services/Endpoints/assistants');
-const gptPlugins = require('~/server/services/Endpoints/gptPlugins');
-const { processFiles } = require('~/server/services/Files/process');
-const anthropic = require('~/server/services/Endpoints/anthropic');
-const bedrock = require('~/server/services/Endpoints/bedrock');
-const openAI = require('~/server/services/Endpoints/openAI');
-const agents = require('~/server/services/Endpoints/agents');
-const custom = require('~/server/services/Endpoints/custom');
-const google = require('~/server/services/Endpoints/google');
-const { handleError } = require('~/server/utils');
+} from 'librechat-data-provider';
+import * as azureAssistants from '#server/services/Endpoints/azureAssistants/index.js';
+import { getModelsConfig } from '#server/controllers/ModelController.js';
+import * as assistants from '#server/services/Endpoints/assistants/index.js';
+import * as gptPlugins from '#server/services/Endpoints/gptPlugins/index.js';
+import { processFiles } from '#server/services/Files/process.js';
+import * as anthropic from '#server/services/Endpoints/anthropic/index.js';
+import * as bedrock from '#server/services/Endpoints/bedrock/index.js';
+import * as openAI from '#server/services/Endpoints/openAI/index.js';
+import * as agents from '#server/services/Endpoints/agents/index.js';
+import * as custom from '#server/services/Endpoints/custom/index.js';
+import * as google from '#server/services/Endpoints/google/index.js';
+import { handleError } from '#server/utils/index.js';
 
 const buildFunction = {
   [EModelEndpoint.openAI]: openAI.buildOptions,
@@ -102,4 +102,4 @@ async function buildEndpointOption(req, res, next) {
   }
 }
 
-module.exports = buildEndpointOption;
+export default buildEndpointOption;

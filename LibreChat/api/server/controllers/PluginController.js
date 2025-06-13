@@ -1,9 +1,9 @@
-const { CacheKeys, AuthType } = require('librechat-data-provider');
-const { getToolkitKey } = require('~/server/services/ToolService');
-const { getCustomConfig } = require('~/server/services/Config');
-const { availableTools } = require('~/app/clients/tools');
-const { getMCPManager } = require('~/config');
-const { getLogStores } = require('~/cache');
+import {  CacheKeys, AuthType  } from 'librechat-data-provider';
+import {  getToolkitKey  } from '#server/services/ToolService.js';
+import {  getCustomConfig  } from '#server/services/Config.js';
+import {  availableTools  } from '#app/clients/tools.js';
+import {  getMCPManager  } from '#config.js';
+import {  getLogStores  } from '#cache.js';
 
 /**
  * Filters out duplicate plugins from the list of plugins.
@@ -148,7 +148,7 @@ const getAvailableTools = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getAvailableTools,
   getAvailablePluginsController,
 };

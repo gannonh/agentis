@@ -1,20 +1,22 @@
-const multer = require('multer');
-const express = require('express');
-const { CacheKeys, EModelEndpoint } = require('librechat-data-provider');
-const { getConvosByCursor, deleteConvos, getConvo, saveConvo } = require('~/models/Conversation');
-const { forkConversation, duplicateConversation } = require('~/server/utils/import/fork');
-const { storage, importFileFilter } = require('~/server/routes/files/multer');
-const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
-const { importConversations } = require('~/server/utils/import');
-const { createImportLimiters } = require('~/server/middleware');
-const { deleteToolCalls } = require('~/models/ToolCall');
-const { isEnabled, sleep } = require('~/server/utils');
-const getLogStores = require('~/cache/getLogStores');
-const { logger } = require('~/config');
+import multer from 'multer';
+import express from 'express';
+import {  CacheKeys, EModelEndpoint  } from 'librechat-data-provider';
+import {  getConvosByCursor, deleteConvos, getConvo, saveConvo  } from '#models/Conversation.js';
+import {  forkConversation, duplicateConversation  } from '#server/utils/import/fork.js';
+import {  storage, importFileFilter  } from '#server/routes/files/multer.js';
+import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
+import {  importConversations  } from '#server/utils/import.js';
+import {  createImportLimiters  } from '#server/middleware.js';
+import {  deleteToolCalls  } from '#models/ToolCall.js';
+import {  isEnabled, sleep  } from '#server/utils.js';
+import getLogStores from '#cache/getLogStores.js';
+import {  logger  } from '#config.js';
+import azureAssistantsEndpoint from '#server/services/Endpoints/azureAssistants/index.js';
+import assistantsEndpoint from '#server/services/Endpoints/assistants/index.js';
 
 const assistantClients = {
-  [EModelEndpoint.azureAssistants]: require('~/server/services/Endpoints/azureAssistants'),
-  [EModelEndpoint.assistants]: require('~/server/services/Endpoints/assistants'),
+  [EModelEndpoint.azureAssistants]: azureAssistantsEndpoint,
+  [EModelEndpoint.assistants]: assistantsEndpoint,
 };
 
 const router = express.Router();
@@ -220,4 +222,4 @@ router.post('/duplicate', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

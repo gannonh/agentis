@@ -1,6 +1,6 @@
-const cookies = require('cookie');
-const jwt = require('jsonwebtoken');
-const { logger } = require('~/config');
+import cookies from 'cookie';
+import jwt from 'jsonwebtoken';
+import { logger } from '#config/index.js';
 
 const OBJECT_ID_LENGTH = 24;
 const OBJECT_ID_PATTERN = /^[0-9a-f]{24}$/i;
@@ -66,4 +66,4 @@ function validateImageRequest(req, res, next) {
   }
 }
 
-module.exports = validateImageRequest;
+export default validateImageRequest;

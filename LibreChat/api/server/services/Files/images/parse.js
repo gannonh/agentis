@@ -1,5 +1,5 @@
-const URL = require('url').URL;
-const path = require('path');
+import { URL } from 'url';
+import path from 'path';
 
 const imageExtensionRegex = /\.(jpg|jpeg|png|gif|bmp|tiff|svg|webp)$/i;
 
@@ -39,7 +39,4 @@ function getFileBasename(urlString) {
   }
 }
 
-module.exports = {
-  getImageBasename,
-  getFileBasename,
-};
+export { getImageBasename, getFileBasename };

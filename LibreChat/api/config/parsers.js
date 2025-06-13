@@ -1,6 +1,6 @@
-const { klona } = require('klona');
-const winston = require('winston');
-const traverse = require('traverse');
+import { klona } from 'klona';
+import winston from 'winston';
+import traverse from 'traverse';
 
 const SPLAT_SYMBOL = Symbol.for('splat');
 const MESSAGE_SYMBOL = Symbol.for('message');
@@ -223,9 +223,4 @@ const jsonTruncateFormat = winston.format((info) => {
   return truncateObject(info);
 });
 
-module.exports = {
-  redactFormat,
-  redactMessage,
-  debugTraverse,
-  jsonTruncateFormat,
-};
+export { redactFormat, redactMessage, debugTraverse, jsonTruncateFormat };

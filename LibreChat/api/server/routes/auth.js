@@ -1,21 +1,21 @@
-const express = require('express');
-const {
+import express from 'express';
+import {
   refreshController,
   registrationController,
   resetPasswordController,
   resetPasswordRequestController,
-} = require('~/server/controllers/AuthController');
-const { loginController } = require('~/server/controllers/auth/LoginController');
-const { logoutController } = require('~/server/controllers/auth/LogoutController');
-const { verify2FAWithTempToken } = require('~/server/controllers/auth/TwoFactorAuthController');
-const {
+} from '#server/controllers/AuthController.js';
+import { loginController } from '#server/controllers/auth/LoginController.js';
+import { logoutController } from '#server/controllers/auth/LogoutController.js';
+import { verify2FAWithTempToken } from '#server/controllers/auth/TwoFactorAuthController.js';
+import {
   enable2FA,
   verify2FA,
   disable2FA,
   regenerateBackupCodes,
   confirm2FA,
-} = require('~/server/controllers/TwoFactorController');
-const {
+} from '#server/controllers/TwoFactorController.js';
+import {
   checkBan,
   logHeaders,
   loginLimiter,
@@ -28,7 +28,7 @@ const {
   resetPasswordLimiter,
   validateRegistration,
   validatePasswordReset,
-} = require('~/server/middleware');
+} from '#server/middleware/index.js';
 
 const router = express.Router();
 
@@ -69,4 +69,4 @@ router.post('/2fa/confirm', requireJwtAuth, confirm2FA);
 router.post('/2fa/disable', requireJwtAuth, disable2FA);
 router.post('/2fa/backup/regenerate', requireJwtAuth, regenerateBackupCodes);
 
-module.exports = router;
+export default router;

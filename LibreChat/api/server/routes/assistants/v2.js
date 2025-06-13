@@ -1,9 +1,9 @@
-const express = require('express');
-const v1 = require('~/server/controllers/assistants/v1');
-const v2 = require('~/server/controllers/assistants/v2');
-const documents = require('./documents');
-const actions = require('./actions');
-const tools = require('./tools');
+import express from 'express';
+import v1 from '#server/controllers/assistants/v1.js';
+import v2 from '#server/controllers/assistants/v2.js';
+import documents from './documents.js';
+import actions from './actions.js';
+import tools from './tools.js';
 
 const router = express.Router();
 
@@ -78,4 +78,4 @@ router.get('/', v1.listAssistants);
  */
 router.post('/avatar/:assistant_id', v1.uploadAssistantAvatar);
 
-module.exports = router;
+export default router;

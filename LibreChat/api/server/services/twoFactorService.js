@@ -1,6 +1,6 @@
-const { webcrypto } = require('node:crypto');
-const { decryptV3, decryptV2 } = require('../utils/crypto');
-const { hashBackupCode } = require('~/server/utils/crypto');
+import { webcrypto } from 'node:crypto';
+import { decryptV3, decryptV2 } from '#server/utils/crypto.js';
+import { hashBackupCode } from '#server/utils/crypto.js';
 
 // Base32 alphabet for TOTP secret encoding.
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -172,7 +172,7 @@ const verifyBackupCode = async ({ user, backupCode }) => {
         : codeObj,
     );
     // Update the user record with the marked backup code.
-    const { updateUser } = require('~/models');
+    const { updateUser } = await import('../../../models/index.js');
     await updateUser(user._id, { backupCodes: updatedBackupCodes });
     return true;
   }
@@ -208,12 +208,12 @@ const getTOTPSecret = async (storedSecret) => {
  * @param {string} userId
  * @returns {string}
  */
-const generate2FATempToken = (userId) => {
-  const { sign } = require('jsonwebtoken');
-  return sign({ userId, twoFAPending: true }, process.env.JWT_SECRET, { expiresIn: '5m' });
+const generate2FATempToken = async (userId) => {
+  const { sign } = await import('jsonwebtoken');
+  return sign.default({ userId, twoFAPending: true }, process.env.JWT_SECRET, { expiresIn: '5m' });
 };
 
-module.exports = {
+export {
   generateTOTPSecret,
   generateTOTP,
   verifyTOTP,

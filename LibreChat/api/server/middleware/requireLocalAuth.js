@@ -1,5 +1,5 @@
-const passport = require('passport');
-const { logger } = require('~/config');
+import passport from 'passport';
+import { logger } from '#config/index.js';
 
 const requireLocalAuth = (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
@@ -20,4 +20,4 @@ const requireLocalAuth = (req, res, next) => {
   })(req, res, next);
 };
 
-module.exports = requireLocalAuth;
+export default requireLocalAuth;

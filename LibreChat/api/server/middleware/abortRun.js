@@ -1,11 +1,11 @@
-const { CacheKeys, RunStatus, isUUID } = require('librechat-data-provider');
-const { initializeClient } = require('~/server/services/Endpoints/assistants');
-const { checkMessageGaps, recordUsage } = require('~/server/services/Threads');
-const { deleteMessages } = require('~/models/Message');
-const { getConvo } = require('~/models/Conversation');
-const getLogStores = require('~/cache/getLogStores');
-const { sendMessage } = require('~/server/utils');
-const { logger } = require('~/config');
+import { CacheKeys, RunStatus, isUUID } from 'librechat-data-provider';
+import { initializeClient } from '#server/services/Endpoints/assistants/index.js';
+import { checkMessageGaps, recordUsage } from '#server/services/Threads/index.js';
+import { deleteMessages } from '#models/Message.js';
+import { getConvo } from '#models/Conversation.js';
+import getLogStores from '#cache/getLogStores.js';
+import { sendMessage } from '#server/utils/index.js';
+import { logger } from '#config/index.js';
 
 const three_minutes = 1000 * 60 * 3;
 
@@ -99,6 +99,6 @@ async function abortRun(req, res) {
   res.json(finalEvent);
 }
 
-module.exports = {
+export {
   abortRun,
 };

@@ -1,13 +1,14 @@
 {
   "name": "librechat-mcp",
   "version": "1.2.2",
-  "type": "commonjs",
+  "type": "module",
   "description": "MCP services for LibreChat",
-  "main": "dist/index.js",
+  "main": "dist/index.es.js",
   "module": "dist/index.es.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
+      "import": "./dist/index.es.js",
       "require": "./dist/index.js",
       "types": "./dist/types/index.d.ts"
     },

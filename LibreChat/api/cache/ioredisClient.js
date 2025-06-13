@@ -1,7 +1,7 @@
-const fs = require('fs');
-const Redis = require('ioredis');
-const { isEnabled } = require('~/server/utils');
-const logger = require('~/config/winston');
+import fs from 'fs';
+import Redis from 'ioredis';
+import { isEnabled } from '../server/utils/index.js';
+import logger from '../config/winston.js';
 
 const { REDIS_URI, USE_REDIS, USE_REDIS_CLUSTER, REDIS_CA, REDIS_MAX_LISTENERS } = process.env;
 
@@ -89,4 +89,4 @@ if (REDIS_URI && isEnabled(USE_REDIS)) {
   logger.info('[Optional] IoRedis not initialized for rate limiters.');
 }
 
-module.exports = ioredisClient;
+export default ioredisClient;

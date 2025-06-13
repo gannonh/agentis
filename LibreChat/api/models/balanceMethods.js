@@ -1,9 +1,9 @@
-const { ViolationTypes } = require('librechat-data-provider');
-const { Transaction } = require('./Transaction');
-const { logViolation } = require('~/cache');
-const { getMultiplier } = require('./tx');
-const { logger } = require('~/config');
-const Balance = require('./Balance');
+import { ViolationTypes } from 'librechat-data-provider';
+import Transaction from './Transaction.js';
+import { logViolation } from '../cache/index.js';
+import { getMultiplier } from './tx.js';
+import { logger } from '#config/index.js';
+import Balance from './Balance.js';
 
 function isInvalidDate(date) {
   return isNaN(date);
@@ -151,6 +151,4 @@ const checkBalance = async ({ req, res, txData }) => {
   throw new Error(JSON.stringify(errorMessage));
 };
 
-module.exports = {
-  checkBalance,
-};
+export { checkBalance };

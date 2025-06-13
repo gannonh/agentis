@@ -1,6 +1,6 @@
-const { EModelEndpoint } = require('librechat-data-provider');
-const { isUserProvided } = require('~/server/utils');
-const { config } = require('./EndpointService');
+import { EModelEndpoint } from 'librechat-data-provider';
+import { isUserProvided } from '../../utils/index.js';
+import { config } from './EndpointService.js';
 
 const { openAIApiKey, azureOpenAIApiKey, useAzurePlugins, userProvidedOpenAI, googleKey } = config;
 
@@ -12,7 +12,10 @@ async function loadAsyncEndpoints(req) {
   let i = 0;
   let serviceKey, googleUserProvides;
   try {
-    serviceKey = require('~/data/auth.json');
+    const { default: authData } = await import('../../../data/auth.json', {
+      assert: { type: 'json' },
+    });
+    serviceKey = authData;
   } catch (e) {
     if (i === 0) {
       i++;
@@ -45,4 +48,4 @@ async function loadAsyncEndpoints(req) {
   return { google, gptPlugins };
 }
 
-module.exports = loadAsyncEndpoints;
+export default loadAsyncEndpoints;

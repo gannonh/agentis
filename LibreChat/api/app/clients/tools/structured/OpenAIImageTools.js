@@ -1,15 +1,15 @@
-const { z } = require('zod');
-const axios = require('axios');
-const { v4 } = require('uuid');
-const OpenAI = require('openai');
-const FormData = require('form-data');
-const { tool } = require('@langchain/core/tools');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const { ContentTypes, EImageOutputType } = require('librechat-data-provider');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { logAxiosError, extractBaseURL } = require('~/utils');
-const { getFiles } = require('~/models/File');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import axios from 'axios';
+import { v4 } from 'uuid';
+import OpenAI from 'openai';
+import FormData from 'form-data';
+import { tool } from '@langchain/core/tools';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { ContentTypes, EImageOutputType } from 'librechat-data-provider';
+import { getStrategyFunctions } from '#server/services/Files/strategies.js';
+import { logAxiosError, extractBaseURL } from '#utils/index.js';
+import { getFiles } from '#models/File.js';
+import { logger } from '#config/index.js';
 
 /** Default descriptions for image generation tool  */
 const DEFAULT_IMAGE_GEN_DESCRIPTION = `
@@ -515,4 +515,4 @@ Guidelines:
   return [imageGenTool, imageEditTool];
 }
 
-module.exports = createOpenAIImageTools;
+export default createOpenAIImageTools;

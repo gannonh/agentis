@@ -1,7 +1,7 @@
-const { createSocialUser, handleExistingUser } = require('./process');
-const { isEnabled } = require('~/server/utils');
-const { findUser } = require('~/models');
-const { logger } = require('~/config');
+import { createSocialUser, handleExistingUser } from './process.js';
+import { isEnabled } from '#server/utils/index.js';
+import { findUser } from '#models/index.js';
+import { logger } from '#config/index.js';
 
 const socialLogin =
   (provider, getProfileDetails) => async (accessToken, refreshToken, idToken, profile, cb) => {
@@ -38,4 +38,4 @@ const socialLogin =
     }
   };
 
-module.exports = socialLogin;
+export default socialLogin;

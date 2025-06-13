@@ -1,6 +1,6 @@
-const express = require('express');
-const { PermissionTypes, Permissions, SystemRoles } = require('librechat-data-provider');
-const {
+import express from 'express';
+import {  PermissionTypes, Permissions, SystemRoles  } from 'librechat-data-provider';
+import { 
   getPrompt,
   getPrompts,
   savePrompt,
@@ -13,9 +13,9 @@ const {
   getAllPromptGroups,
   // updatePromptLabels,
   makePromptProduction,
-} = require('~/models/Prompt');
-const { requireJwtAuth, generateCheckAccess } = require('~/server/middleware');
-const { logger } = require('~/config');
+ } from '#models/Prompt.js';
+import {  requireJwtAuth, generateCheckAccess  } from '#server/middleware.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -243,4 +243,4 @@ const deletePromptGroupController = async (req, res) => {
 router.delete('/:promptId', checkPromptCreate, deletePromptController);
 router.delete('/groups/:groupId', checkPromptCreate, deletePromptGroupController);
 
-module.exports = router;
+export default router;

@@ -1,6 +1,6 @@
-const { z } = require('zod');
-const { tool } = require('@langchain/core/tools');
-const { getApiKey } = require('./credentials');
+import { z } from 'zod';
+import { tool } from '@langchain/core/tools';
+import { getApiKey } from './credentials.js';
 
 function createTavilySearchTool(fields = {}) {
   const envVar = 'TAVILY_API_KEY';
@@ -67,4 +67,4 @@ function createTavilySearchTool(fields = {}) {
   );
 }
 
-module.exports = createTavilySearchTool;
+export default createTavilySearchTool;

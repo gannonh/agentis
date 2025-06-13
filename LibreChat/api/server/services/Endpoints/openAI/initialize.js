@@ -1,15 +1,15 @@
-const {
+import {
   ErrorTypes,
   EModelEndpoint,
   resolveHeaders,
   mapModelToAzureConfig,
-} = require('librechat-data-provider');
-const { getUserKeyValues, checkUserKeyExpiry } = require('~/server/services/UserService');
-const { getLLMConfig } = require('~/server/services/Endpoints/openAI/llm');
-const { createHandleLLMNewToken } = require('~/app/clients/generators');
-const { isEnabled, isUserProvided } = require('~/server/utils');
-const OpenAIClient = require('~/app/clients/OpenAIClient');
-const { getAzureCredentials } = require('~/utils');
+} from 'librechat-data-provider';
+import { getUserKeyValues, checkUserKeyExpiry } from '../../UserService.js';
+import { getLLMConfig } from './llm.js';
+import { createHandleLLMNewToken } from '../../../../app/clients/generators.js';
+import { isEnabled, isUserProvided } from '../../../utils/index.js';
+import OpenAIClient from '../../../../app/clients/OpenAIClient.js';
+import { getAzureCredentials } from '#utils/index.js';
 
 const initializeClient = async ({
   req,
@@ -160,4 +160,4 @@ const initializeClient = async ({
   };
 };
 
-module.exports = initializeClient;
+export default initializeClient;

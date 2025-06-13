@@ -1,12 +1,12 @@
-const axios = require('axios');
-const { Providers } = require('@librechat/agents');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const { EModelEndpoint, defaultModels, CacheKeys } = require('librechat-data-provider');
-const { inputSchema, logAxiosError, extractBaseURL, processModelData } = require('~/utils');
-const { OllamaClient } = require('~/app/clients/OllamaClient');
-const { isUserProvided } = require('~/server/utils');
-const getLogStores = require('~/cache/getLogStores');
-const { logger } = require('~/config');
+import axios from 'axios';
+import { Providers } from '@librechat/agents';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { EModelEndpoint, defaultModels, CacheKeys } from 'librechat-data-provider';
+import { inputSchema, logAxiosError, extractBaseURL, processModelData } from '../../utils/index.js';
+import { OllamaClient } from '../../app/clients/OllamaClient.js';
+import { isUserProvided } from '../utils/index.js';
+import getLogStores from '../../cache/getLogStores.js';
+import { logger } from '#config/index.js';
 
 /**
  * Splits a string by commas and trims each resulting value.
@@ -23,7 +23,8 @@ const splitAndTrim = (input) => {
     .filter(Boolean);
 };
 
-const { openAIApiKey, userProvidedOpenAI } = require('./Config/EndpointService').config;
+import { config } from './Config/EndpointService.js';
+const { openAIApiKey, userProvidedOpenAI } = config;
 
 /**
  * Fetches OpenAI models from the specified base API path or Azure, based on the provided configuration.
@@ -325,7 +326,7 @@ const getBedrockModels = () => {
   return models;
 };
 
-module.exports = {
+export {
   fetchModels,
   splitAndTrim,
   getOpenAIModels,

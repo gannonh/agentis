@@ -1,6 +1,6 @@
-const uap = require('ua-parser-js');
-const { handleError } = require('../utils');
-const { logViolation } = require('../../cache');
+import uap from 'ua-parser-js';
+import { handleError } from '../utils/index.js';
+import { logViolation } from '../../cache/index.js';
 
 /**
  * Middleware to parse User-Agent header and check if it's from a recognized browser.
@@ -28,4 +28,4 @@ async function uaParser(req, res, next) {
   next();
 }
 
-module.exports = uaParser;
+export default uaParser;

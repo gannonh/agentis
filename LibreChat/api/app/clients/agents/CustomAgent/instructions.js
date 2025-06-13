@@ -1,4 +1,4 @@
-module.exports = {
+const instructions = {
   'gpt3-v1': {
     prefix: `Objective: Understand human intentions using user input and available tools. Goal: Identify the most suitable actions to directly address user queries.
 
@@ -160,3 +160,6 @@ Final Answer: A conversational reply to the user's query, including your full an
 - Strive for efficient, minimal actions.`,
   },
 };
+
+export const gpt3 = instructions.gpt3;
+export const gpt4 = instructions.gpt4;

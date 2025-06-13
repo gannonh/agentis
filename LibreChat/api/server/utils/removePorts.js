@@ -1,1 +1,1 @@
-module.exports = (req) => req?.ip?.replace(/:\d+[^:]*$/, '');
+export default (req) => req?.ip?.replace(/:\d+[^:]*$/, '');

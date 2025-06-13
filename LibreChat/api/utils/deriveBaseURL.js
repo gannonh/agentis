@@ -1,4 +1,4 @@
-const { logger } = require('~/config');
+import { logger } from '#config/index.js';
 
 /**
  * Extracts the base URL from the provided URL.
@@ -25,4 +25,4 @@ function deriveBaseURL(fullURL) {
   }
 }
 
-module.exports = deriveBaseURL;
+export default deriveBaseURL;

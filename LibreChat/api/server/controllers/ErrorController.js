@@ -1,4 +1,4 @@
-const { logger } = require('~/config');
+import { logger } from '#config/index.js';
 
 //handle duplicates
 const handleDuplicateKeyError = (err, res) => {
@@ -24,7 +24,7 @@ const handleValidationError = (err, res) => {
   }
 };
 
-module.exports = (err, req, res, next) => {
+export default (err, req, res, next) => {
   try {
     if (err.name === 'ValidationError') {
       return (err = handleValidationError(err, res));

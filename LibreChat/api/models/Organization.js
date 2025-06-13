@@ -3,8 +3,8 @@
  * @description Organization model for multi-tenant architecture
  */
 
-const mongoose = require('mongoose');
-const { organizationSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { organizationSchema } from '@librechat/data-schemas';
 
 /**
  * Organization model
@@ -12,4 +12,4 @@ const { organizationSchema } = require('@librechat/data-schemas');
  */
 const Organization = mongoose.model('Organization', organizationSchema);
 
-module.exports = Organization;
+export default Organization;

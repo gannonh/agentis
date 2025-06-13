@@ -1,7 +1,10 @@
-const { Tiktoken } = require('tiktoken/lite');
+import { Tiktoken } from 'tiktoken/lite';
+import { createRequire } from 'module';
+import logger from '../../config/winston.js';
+
+const require = createRequire(import.meta.url);
 const p50k_base = require('tiktoken/encoders/p50k_base.json');
 const cl100k_base = require('tiktoken/encoders/cl100k_base.json');
-const logger = require('~/config/winston');
 
 /**
  * Counts the number of tokens in a given text using a specified encoding model.
@@ -34,4 +37,4 @@ const countTokens = async (text = '', modelName = 'gpt-3.5-turbo') => {
   }
 };
 
-module.exports = countTokens;
+export default countTokens;

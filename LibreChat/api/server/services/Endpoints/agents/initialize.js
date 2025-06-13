@@ -1,5 +1,5 @@
-const { createContentAggregator, Providers } = require('@librechat/agents');
-const {
+import { createContentAggregator, Providers } from '@librechat/agents';
+import {
   Constants,
   ErrorTypes,
   EModelEndpoint,
@@ -8,27 +8,26 @@ const {
   AgentCapabilities,
   replaceSpecialVars,
   providerEndpointMap,
-} = require('librechat-data-provider');
-const {
+} from 'librechat-data-provider';
+import {
   getDefaultHandlers,
   createToolEndCallback,
-} = require('~/server/controllers/agents/callbacks');
-const initAnthropic = require('~/server/services/Endpoints/anthropic/initialize');
-const getBedrockOptions = require('~/server/services/Endpoints/bedrock/options');
-const initOpenAI = require('~/server/services/Endpoints/openAI/initialize');
-const initCustom = require('~/server/services/Endpoints/custom/initialize');
-const initGoogle = require('~/server/services/Endpoints/google/initialize');
-const generateArtifactsPrompt = require('~/app/clients/prompts/artifacts');
-const { getCustomEndpointConfig } = require('~/server/services/Config');
-const { processFiles } = require('~/server/services/Files/process');
-const { loadAgentTools } = require('~/server/services/ToolService');
-const AgentClient = require('~/server/controllers/agents/client');
-const { getConvoFiles } = require('~/models/Conversation');
-const { getToolFilesByIds } = require('~/models/File');
-const { getModelMaxTokens } = require('~/utils');
-const { getAgent } = require('~/models/Agent');
-const { getFiles } = require('~/models/File');
-const { logger } = require('~/config');
+} from '../../../controllers/agents/callbacks.js';
+import initAnthropic from '../anthropic/initialize.js';
+import getBedrockOptions from '../bedrock/options.js';
+import initOpenAI from '../openAI/initialize.js';
+import initCustom from '../custom/initialize.js';
+import initGoogle from '../google/initialize.js';
+import generateArtifactsPrompt from '../../../../app/clients/prompts/artifacts.js';
+import { getCustomEndpointConfig } from '../../Config/index.js';
+import { processFiles } from '../../Files/process.js';
+import { loadAgentTools } from '../../ToolService.js';
+import AgentClient from '../../../controllers/agents/client.js';
+import { getConvoFiles } from '#models/Conversation.js';
+import { getToolFilesByIds, getFiles } from '#models/File.js';
+import { getModelMaxTokens } from '#utils/index.js';
+import { getAgent } from '#models/Agent.js';
+import { logger } from '#config/index.js';
 
 const providerConfigMap = {
   [Providers.XAI]: initCustom,
@@ -384,4 +383,4 @@ const initializeClient = async ({ req, res, endpointOption }) => {
   return { client };
 };
 
-module.exports = { initializeClient };
+export { initializeClient };

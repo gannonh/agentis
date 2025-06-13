@@ -1,15 +1,15 @@
-const express = require('express');
+import express from 'express';
 
-const {
+import { 
   getSharedLink,
   getSharedMessages,
   createSharedLink,
   updateSharedLink,
   getSharedLinks,
   deleteSharedLink,
-} = require('~/models/Share');
-const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
-const { isEnabled } = require('~/server/utils');
+ } from '#models/Share.js';
+import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
+import {  isEnabled  } from '#server/utils.js';
 const router = express.Router();
 
 /**
@@ -135,4 +135,4 @@ router.delete('/:shareId', requireJwtAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

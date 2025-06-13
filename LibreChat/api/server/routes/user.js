@@ -1,6 +1,6 @@
-const express = require('express');
-const { requireJwtAuth, canDeleteAccount, verifyEmailLimiter } = require('~/server/middleware');
-const {
+import express from 'express';
+import {  requireJwtAuth, canDeleteAccount, verifyEmailLimiter  } from '#server/middleware.js';
+import { 
   getUserController,
   deleteUserController,
   verifyEmailController,
@@ -8,7 +8,7 @@ const {
   resendVerificationController,
   getTermsStatusController,
   acceptTermsController,
-} = require('~/server/controllers/UserController');
+ } from '#server/controllers/UserController.js';
 
 const router = express.Router();
 
@@ -20,4 +20,4 @@ router.delete('/delete', requireJwtAuth, canDeleteAccount, deleteUserController)
 router.post('/verify', verifyEmailController);
 router.post('/verify/resend', verifyEmailLimiter, resendVerificationController);
 
-module.exports = router;
+export default router;

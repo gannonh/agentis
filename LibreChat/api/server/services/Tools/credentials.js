@@ -1,4 +1,4 @@
-const { getUserPluginAuthValue } = require('~/server/services/PluginService');
+import { getUserPluginAuthValue } from '../PluginService.js';
 
 /**
  *
@@ -51,6 +51,4 @@ const loadAuthValues = async ({ userId, authFields, optional, throwError = true 
   return authValues;
 };
 
-module.exports = {
-  loadAuthValues,
-};
+export { loadAuthValues };

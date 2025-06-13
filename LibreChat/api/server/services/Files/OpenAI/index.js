@@ -1,5 +1,3 @@
-const crud = require('./crud');
+import { uploadOpenAIFile, deleteOpenAIFile, getOpenAIFileStream } from './crud.js';
 
-module.exports = {
-  ...crud,
-};
+export { uploadOpenAIFile, deleteOpenAIFile, getOpenAIFileStream };

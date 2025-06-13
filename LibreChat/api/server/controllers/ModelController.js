@@ -1,7 +1,7 @@
-const { CacheKeys } = require('librechat-data-provider');
-const { loadDefaultModels, loadConfigModels } = require('~/server/services/Config');
-const { getLogStores } = require('~/cache');
-const { logger } = require('~/config');
+import {  CacheKeys  } from 'librechat-data-provider';
+import {  loadDefaultModels, loadConfigModels  } from '#server/services/Config.js';
+import {  getLogStores  } from '#cache.js';
+import {  logger  } from '#config.js';
 
 /**
  * @param {ServerRequest} req
@@ -46,4 +46,4 @@ async function modelController(req, res) {
   }
 }
 
-module.exports = { modelController, loadModels, getModelsConfig };
+export { modelController, loadModels, getModelsConfig };

@@ -1,8 +1,8 @@
-const fs = require('fs');
-const ioredis = require('ioredis');
-const KeyvRedis = require('@keyv/redis').default;
-const { isEnabled } = require('~/server/utils');
-const logger = require('~/config/winston');
+import fs from 'fs';
+import ioredis from 'ioredis';
+import KeyvRedis from '@keyv/redis';
+import { isEnabled } from '../server/utils/index.js';
+import logger from '../config/winston.js';
 
 const { REDIS_URI, USE_REDIS, USE_REDIS_CLUSTER, REDIS_CA, REDIS_KEY_PREFIX, REDIS_MAX_LISTENERS } =
   process.env;
@@ -106,4 +106,4 @@ if (REDIS_URI && isEnabled(USE_REDIS)) {
   logger.info('[Optional] Redis not initialized.');
 }
 
-module.exports = keyvRedis;
+export default keyvRedis;

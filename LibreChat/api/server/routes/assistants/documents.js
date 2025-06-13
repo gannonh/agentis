@@ -1,5 +1,5 @@
-const express = require('express');
-const controllers = require('~/server/controllers/assistants/v1');
+import express from 'express';
+import controllers from '#server/controllers/assistants/v1.js';
 
 const router = express.Router();
 
@@ -10,4 +10,4 @@ const router = express.Router();
  */
 router.get('/', controllers.getAssistantDocuments);
 
-module.exports = router;
+export default router;

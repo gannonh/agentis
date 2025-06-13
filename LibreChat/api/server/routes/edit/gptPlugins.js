@@ -1,6 +1,6 @@
-const express = require('express');
-const { getResponseSender } = require('librechat-data-provider');
-const {
+import express from 'express';
+import {  getResponseSender  } from 'librechat-data-provider';
+import { 
   setHeaders,
   moderateText,
   validateModel,
@@ -8,12 +8,12 @@ const {
   validateEndpoint,
   buildEndpointOption,
   createAbortController,
-} = require('~/server/middleware');
-const { sendMessage, createOnProgress, formatSteps, formatAction } = require('~/server/utils');
-const { initializeClient } = require('~/server/services/Endpoints/gptPlugins');
-const { saveMessage, updateMessage } = require('~/models');
-const { validateTools } = require('~/app');
-const { logger } = require('~/config');
+ } from '#server/middleware.js';
+import {  sendMessage, createOnProgress, formatSteps, formatAction  } from '#server/utils.js';
+import initializeClient from "#server/services/Endpoints/gptPlugins/initialize.js";
+import {  saveMessage, updateMessage  } from '#models.js';
+import { validateTools } from '#app/clients/tools/util/index.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -204,4 +204,4 @@ router.post(
   },
 );
 
-module.exports = router;
+export default router;

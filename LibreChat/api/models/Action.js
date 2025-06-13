@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { actionSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { actionSchema } from '@librechat/data-schemas';
 
 const Action = mongoose.model('action', actionSchema);
 
@@ -72,9 +72,6 @@ const deleteActions = async (searchParams) => {
   return result.deletedCount;
 };
 
-module.exports = {
-  getActions,
-  updateAction,
-  deleteAction,
-  deleteActions,
-};
+export default Action;
+
+export { getActions, updateAction, deleteAction, deleteActions };

@@ -1,4 +1,4 @@
-const { logger } = require('~/config');
+import { logger } from '#config/index.js';
 
 const options = [
   {
@@ -39,19 +39,17 @@ const options = [
   },
 ];
 
-module.exports = {
-  /**
-   * Retrieves the categories asynchronously.
-   * @returns {Promise<TGetCategoriesResponse>} An array of category objects.
-   * @throws {Error} If there is an error retrieving the categories.
-   */
-  getCategories: async () => {
-    try {
-      // const categories = await Categories.find();
-      return options;
-    } catch (error) {
-      logger.error('Error getting categories', error);
-      return [];
-    }
-  },
+/**
+ * Retrieves the categories asynchronously.
+ * @returns {Promise<TGetCategoriesResponse>} An array of category objects.
+ * @throws {Error} If there is an error retrieving the categories.
+ */
+export const getCategories = async () => {
+  try {
+    // const categories = await Categories.find();
+    return options;
+  } catch (error) {
+    logger.error('Error getting categories', error);
+    return [];
+  }
 };

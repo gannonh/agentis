@@ -1,8 +1,8 @@
 /* eslint-disable no-useless-escape */
-const axios = require('axios');
-const { z } = require('zod');
-const { Tool } = require('@langchain/core/tools');
-const { logger } = require('~/config');
+import axios from 'axios';
+import { z } from 'zod';
+import { Tool } from '@langchain/core/tools';
+import { logger } from '#config/index.js';
 
 class WolframAlphaAPI extends Tool {
   constructor(fields) {
@@ -92,4 +92,4 @@ class WolframAlphaAPI extends Tool {
   }
 }
 
-module.exports = WolframAlphaAPI;
+export default WolframAlphaAPI;

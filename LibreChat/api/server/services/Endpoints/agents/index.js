@@ -1,7 +1,7 @@
-const build = require('./build');
-const initialize = require('./initialize');
+import * as build from './build.js';
+import * as initialize from './initialize.js';
 
-module.exports = {
+export default {
   ...build,
   ...initialize,
 };

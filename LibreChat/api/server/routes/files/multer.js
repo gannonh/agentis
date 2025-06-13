@@ -1,10 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const multer = require('multer');
-const { fileConfig: defaultFileConfig, mergeFileConfig } = require('librechat-data-provider');
-const { sanitizeFilename } = require('~/server/utils/handleText');
-const { getCustomConfig } = require('~/server/services/Config');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import multer from 'multer';
+import {  fileConfig as defaultFileConfig, mergeFileConfig  } from 'librechat-data-provider';
+import {  sanitizeFilename  } from '#server/utils/handleText.js';
+import {  getCustomConfig  } from '#server/services/Config.js';
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -78,4 +78,4 @@ const createMulterInstance = async () => {
   });
 };
 
-module.exports = { createMulterInstance, storage, importFileFilter };
+export { createMulterInstance, storage, importFileFilter };

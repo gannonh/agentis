@@ -1,7 +1,4 @@
-const addImages = require('./addImages');
-const handleOutputs = require('./handleOutputs');
+import { addImages } from './addImages.js';
+import { buildErrorInput, buildPromptPrefix } from './handleOutputs.js';
 
-module.exports = {
-  addImages,
-  ...handleOutputs,
-};
+export { addImages, buildErrorInput, buildPromptPrefix };

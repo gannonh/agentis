@@ -1,6 +1,6 @@
-const fs = require('fs').promises;
-const { nanoid } = require('nanoid');
-const {
+import { promises as fs } from 'fs';
+import {  nanoid  } from 'nanoid';
+import { 
   Tools,
   Constants,
   FileContext,
@@ -8,22 +8,22 @@ const {
   SystemRoles,
   EToolResources,
   actionDelimiter,
-} = require('librechat-data-provider');
-const {
+ } from 'librechat-data-provider';
+import { 
   getAgent,
   createAgent,
   updateAgent,
   deleteAgent,
   getListAgents,
-} = require('~/models/Agent');
-const { uploadImageBuffer, filterFile } = require('~/server/services/Files/process');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { refreshS3Url } = require('~/server/services/Files/S3/crud');
-const { updateAction, getActions } = require('~/models/Action');
-const { updateAgentProjects } = require('~/models/Agent');
-const { getProjectByName } = require('~/models/Project');
-const { deleteFileByFilter } = require('~/models/File');
-const { logger } = require('~/config');
+ } from '#models/Agent.js';
+import {  uploadImageBuffer, filterFile  } from '#server/services/Files/process.js';
+import {  getStrategyFunctions  } from '#server/services/Files/strategies.js';
+import {  refreshS3Url  } from '#server/services/Files/S3/crud.js';
+import {  updateAction, getActions  } from '#models/Action.js';
+import {  updateAgentProjects  } from '#models/Agent.js';
+import {  getProjectByName  } from '#models/Project.js';
+import {  deleteFileByFilter  } from '#models/File.js';
+import {  logger  } from '#config.js';
 
 const systemTools = {
   [Tools.execute_code]: true,
@@ -411,7 +411,7 @@ const uploadAgentAvatarHandler = async (req, res) => {
   }
 };
 
-module.exports = {
+const agentsV1Controller = {
   createAgent: createAgentHandler,
   getAgent: getAgentHandler,
   updateAgent: updateAgentHandler,
@@ -420,3 +420,15 @@ module.exports = {
   getListAgents: getListAgentsHandler,
   uploadAgentAvatar: uploadAgentAvatarHandler,
 };
+
+export {
+  createAgentHandler as createAgent,
+  getAgentHandler as getAgent,
+  updateAgentHandler as updateAgent,
+  duplicateAgentHandler as duplicateAgent,
+  deleteAgentHandler as deleteAgent,
+  getListAgentsHandler as getListAgents,
+  uploadAgentAvatarHandler as uploadAgentAvatar,
+};
+
+export default agentsV1Controller;

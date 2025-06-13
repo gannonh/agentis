@@ -1,6 +1,7 @@
 {
   "name": "@librechat/backend",
   "version": "v0.1.0",
+  "type": "module",
   "description": "",
   "scripts": {
     "start": "echo 'please run this from the root directory'",
@@ -27,7 +28,15 @@
     "~": "."
   },
   "imports": {
-    "~/*": "./*"
+    "#*": "./*",
+    "#config/*": "./config/*",
+    "#models/*": "./models/*",
+    "#server/*": "./server/*",
+    "#utils/*": "./utils/*",
+    "#lib/*": "./lib/*",
+    "#strategies/*": "./strategies/*",
+    "#app/*": "./app/*",
+    "#cache/*": "./cache/*"
   },
   "bugs": {
     "url": "https://github.com/danny-avila/LibreChat/issues"

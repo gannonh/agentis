@@ -1,10 +1,10 @@
-const rateLimit = require('express-rate-limit');
-const { RedisStore } = require('rate-limit-redis');
-const denyRequest = require('~/server/middleware/denyRequest');
-const ioredisClient = require('~/cache/ioredisClient');
-const { isEnabled } = require('~/server/utils');
-const { logViolation } = require('~/cache');
-const { logger } = require('~/config');
+import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import denyRequest from '../denyRequest.js';
+import ioredisClient from '#cache/ioredisClient.js';
+import { isEnabled } from '#server/utils/index.js';
+import { logViolation } from '#cache/index.js';
+import { logger } from '#config/index.js';
 
 const {
   MESSAGE_IP_MAX = 40,
@@ -87,7 +87,7 @@ const messageIpLimiter = rateLimit(ipLimiterOptions);
  */
 const messageUserLimiter = rateLimit(userLimiterOptions);
 
-module.exports = {
+export {
   messageIpLimiter,
   messageUserLimiter,
 };

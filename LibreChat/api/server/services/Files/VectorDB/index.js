@@ -1,5 +1,3 @@
-const crud = require('./crud');
+import { deleteVectors, uploadVectors } from './crud.js';
 
-module.exports = {
-  ...crud,
-};
+export { deleteVectors, uploadVectors };

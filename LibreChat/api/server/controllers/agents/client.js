@@ -1,14 +1,15 @@
-// const { HttpsProxyAgent } = require('https-proxy-agent');
-// const {
+// import { HttpsProxyAgent } from 'https-proxy-agent';
+// import {
 // Constants,
 // ImageDetail,
 // EModelEndpoint,
 // resolveHeaders,
 // validateVisionModel,
 // mapModelToAzureConfig,
-// } = require('librechat-data-provider');
-require('events').EventEmitter.defaultMaxListeners = 100;
-const {
+// } from 'librechat-data-provider';
+import { EventEmitter } from 'events';
+EventEmitter.defaultMaxListeners = 100;
+import {
   Callback,
   GraphEvents,
   formatMessage,
@@ -16,8 +17,8 @@ const {
   formatContentStrings,
   getTokenCountForMessage,
   createMetadataAggregator,
-} = require('@librechat/agents');
-const {
+} from '@librechat/agents';
+import {
   Constants,
   VisionModes,
   ContentTypes,
@@ -27,17 +28,17 @@ const {
   AgentCapabilities,
   bedrockInputSchema,
   removeNullishValues,
-} = require('librechat-data-provider');
-const { getCustomEndpointConfig, checkCapability } = require('~/server/services/Config');
-const { addCacheControl, createContextHandlers } = require('~/app/clients/prompts');
-const { spendTokens, spendStructuredTokens } = require('~/models/spendTokens');
-const { getBufferString, HumanMessage } = require('@langchain/core/messages');
-const { encodeAndFormat } = require('~/server/services/Files/images/encode');
-const initOpenAI = require('~/server/services/Endpoints/openAI/initialize');
-const Tokenizer = require('~/server/services/Tokenizer');
-const BaseClient = require('~/app/clients/BaseClient');
-const { logger, sendEvent } = require('~/config');
-const { createRun } = require('./run');
+} from 'librechat-data-provider';
+import { getCustomEndpointConfig, checkCapability } from '#server/services/Config/index.js';
+import { addCacheControl, createContextHandlers } from '#app/clients/prompts/index.js';
+import { spendTokens, spendStructuredTokens } from '#models/spendTokens.js';
+import { getBufferString, HumanMessage } from '@langchain/core/messages';
+import { encodeAndFormat } from '#server/services/Files/images/encode.js';
+import initOpenAI from '#server/services/Endpoints/openAI/initialize.js';
+import Tokenizer from '#server/services/Tokenizer.js';
+import BaseClient from '#app/clients/BaseClient.js';
+import { logger, sendEvent } from '#config/index.js';
+import { createRun } from './run.js';
 
 /** @typedef {import('@librechat/agents').MessageContentComplex} MessageContentComplex */
 /** @typedef {import('@langchain/core/runnables').RunnableConfig} RunnableConfig */
@@ -1040,4 +1041,4 @@ class AgentClient extends BaseClient {
   }
 }
 
-module.exports = AgentClient;
+export default AgentClient;

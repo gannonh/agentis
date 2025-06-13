@@ -1,8 +1,8 @@
-const express = require('express');
-const { requireJwtAuth } = require('~/server/middleware');
-const composioService = require('~/server/services/ComposioService');
-const { ComposioConnectedAccount } = require('~/models');
-const { logger } = require('~/config');
+import express from 'express';
+import {  requireJwtAuth  } from '#server/middleware.js';
+import composioService from '#server/services/ComposioService.js';
+import {  ComposioConnectedAccount  } from '#models.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -386,4 +386,4 @@ router.get('/callback', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

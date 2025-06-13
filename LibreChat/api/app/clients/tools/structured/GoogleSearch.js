@@ -1,6 +1,6 @@
-const { z } = require('zod');
-const { Tool } = require('@langchain/core/tools');
-const { getEnvironmentVariable } = require('@langchain/core/utils/env');
+import { z } from 'zod';
+import { Tool } from '@langchain/core/tools';
+import { getEnvironmentVariable } from '@langchain/core/utils/env';
 
 class GoogleSearchResults extends Tool {
   static lc_name() {
@@ -69,4 +69,4 @@ class GoogleSearchResults extends Tool {
   }
 }
 
-module.exports = GoogleSearchResults;
+export default GoogleSearchResults;

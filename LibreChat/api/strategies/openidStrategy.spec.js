@@ -1,31 +1,31 @@
-const fetch = require('node-fetch');
-const jwtDecode = require('jsonwebtoken/decode');
-const { Issuer, Strategy: OpenIDStrategy } = require('openid-client');
-const { findUser, createUser, updateUser } = require('~/models/userMethods');
-const setupOpenId = require('./openidStrategy');
+import fetch from 'node-fetch';
+import jwtDecode from 'jsonwebtoken/decode';
+import { Issuer, Strategy as OpenIDStrategy } from 'openid-client';
+import { findUser, createUser, updateUser } from '#models/userMethods.js';
+import setupOpenId from './openidStrategy.js';
 
 // --- Mocks ---
 jest.mock('node-fetch');
 jest.mock('openid-client');
 jest.mock('jsonwebtoken/decode');
-jest.mock('~/server/services/Files/strategies', () => ({
+jest.mock('#server/services/Files/strategies.js', () => ({
   getStrategyFunctions: jest.fn(() => ({
     // You can modify this mock as needed (here returning a dummy function)
     saveBuffer: jest.fn().mockResolvedValue('/fake/path/to/avatar.png'),
   })),
 }));
-jest.mock('~/models/userMethods', () => ({
+jest.mock('#models/userMethods.js', () => ({
   findUser: jest.fn(),
   createUser: jest.fn(),
   updateUser: jest.fn(),
 }));
-jest.mock('~/server/utils/crypto', () => ({
+jest.mock('#server/utils/crypto.js', () => ({
   hashToken: jest.fn().mockResolvedValue('hashed-token'),
 }));
-jest.mock('~/server/utils', () => ({
+jest.mock('#server/utils/index.js', () => ({
   isEnabled: jest.fn(() => false), // default to false, override per test if needed
 }));
-jest.mock('~/config', () => ({
+jest.mock('#config/index.js', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),

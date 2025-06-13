@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const mime = require('mime');
-const { v4 } = require('uuid');
-const {
+import fs from 'fs';
+import path from 'path';
+import mime from 'mime';
+import { v4 } from 'uuid';
+import {
   isUUID,
   megabyte,
   FileContext,
@@ -17,23 +17,19 @@ const {
   removeNullishValues,
   hostImageNamePrefix,
   isAssistantsEndpoint,
-} = require('librechat-data-provider');
-const { EnvVar } = require('@librechat/agents');
-const {
-  convertImage,
-  resizeAndConvert,
-  resizeImageBuffer,
-} = require('~/server/services/Files/images');
-const { addResourceFileId, deleteResourceFileId } = require('~/server/controllers/assistants/v2');
-const { addAgentResourceFile, removeAgentResourceFiles } = require('~/models/Agent');
-const { getOpenAIClient } = require('~/server/controllers/assistants/helpers');
-const { createFile, updateFileUsage, deleteFiles } = require('~/models/File');
-const { loadAuthValues } = require('~/server/services/Tools/credentials');
-const { checkCapability } = require('~/server/services/Config');
-const { LB_QueueAsyncCall } = require('~/server/utils/queue');
-const { getStrategyFunctions } = require('./strategies');
-const { determineFileType } = require('~/server/utils');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { EnvVar } from '@librechat/agents';
+import { convertImage, resizeAndConvert, resizeImageBuffer } from './images/index.js';
+import { addResourceFileId, deleteResourceFileId } from '../../controllers/assistants/v2.js';
+import { addAgentResourceFile, removeAgentResourceFiles } from '../../../models/Agent.js';
+import { getOpenAIClient } from '../../controllers/assistants/helpers.js';
+import { createFile, updateFileUsage, deleteFiles } from '../../../models/File.js';
+import { loadAuthValues } from '../Tools/credentials.js';
+import { checkCapability } from '../Config/index.js';
+import { LB_QueueAsyncCall } from '../../utils/queue.js';
+import { getStrategyFunctions } from './strategies.js';
+import { determineFileType } from '../../utils/index.js';
+import { logger } from '#config/index.js';
 
 /**
  *
@@ -947,7 +943,7 @@ function filterFile({ req, image, isAvatar }) {
   }
 }
 
-module.exports = {
+export {
   filterFile,
   processFiles,
   processFileURL,

@@ -1,12 +1,12 @@
-const jwt = require('jsonwebtoken');
-const {
+import jwt from 'jsonwebtoken';
+import {
   verifyTOTP,
   verifyBackupCode,
   getTOTPSecret,
-} = require('~/server/services/twoFactorService');
-const { setAuthTokens } = require('~/server/services/AuthService');
-const { getUserById } = require('~/models/userMethods');
-const { logger } = require('~/config');
+} from '#server/services/twoFactorService.js';
+import { setAuthTokens } from '#server/services/AuthService.js';
+import { getUserById } from '#models/userMethods.js';
+import { logger } from '#config/index.js';
 
 /**
  * Verifies the 2FA code during login using a temporary token.
@@ -57,4 +57,4 @@ const verify2FAWithTempToken = async (req, res) => {
   }
 };
 
-module.exports = { verify2FAWithTempToken };
+export { verify2FAWithTempToken };

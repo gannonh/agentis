@@ -1,19 +1,19 @@
-const {
+import {
   CacheKeys,
   ErrorTypes,
   envVarRegex,
   FetchTokenConfig,
   extractEnvVariable,
-} = require('librechat-data-provider');
-const { Providers } = require('@librechat/agents');
-const { getUserKeyValues, checkUserKeyExpiry } = require('~/server/services/UserService');
-const { getLLMConfig } = require('~/server/services/Endpoints/openAI/llm');
-const { getCustomEndpointConfig } = require('~/server/services/Config');
-const { createHandleLLMNewToken } = require('~/app/clients/generators');
-const { fetchModels } = require('~/server/services/ModelService');
-const OpenAIClient = require('~/app/clients/OpenAIClient');
-const { isUserProvided } = require('~/server/utils');
-const getLogStores = require('~/cache/getLogStores');
+} from 'librechat-data-provider';
+import { Providers } from '@librechat/agents';
+import { getUserKeyValues, checkUserKeyExpiry } from '../../UserService.js';
+import { getLLMConfig } from '../openAI/llm.js';
+import { getCustomEndpointConfig } from '../../Config/index.js';
+import { createHandleLLMNewToken } from '../../../../app/clients/generators.js';
+import { fetchModels } from '../../ModelService.js';
+import OpenAIClient from '../../../../app/clients/OpenAIClient.js';
+import { isUserProvided } from '../../../utils/index.js';
+import getLogStores from '#cache/getLogStores.js';
 
 const { PROXY } = process.env;
 
@@ -172,4 +172,4 @@ const initializeClient = async ({ req, res, endpointOption, optionsOnly, overrid
   };
 };
 
-module.exports = initializeClient;
+export default initializeClient;

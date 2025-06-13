@@ -1,20 +1,20 @@
-const express = require('express');
-const { ContentTypes } = require('librechat-data-provider');
-const {
+import express from 'express';
+import {  ContentTypes  } from 'librechat-data-provider';
+import { 
   saveConvo,
   saveMessage,
   getMessage,
   getMessages,
   updateMessage,
   deleteMessages,
-} = require('~/models');
-const { findAllArtifacts, replaceArtifactContent } = require('~/server/services/Artifacts/update');
-const { requireJwtAuth, validateMessageReq } = require('~/server/middleware');
-const { cleanUpPrimaryKeyValue } = require('~/lib/utils/misc');
-const { getConvosQueried } = require('~/models/Conversation');
-const { countTokens } = require('~/server/utils');
-const { Message } = require('~/models/Message');
-const { logger } = require('~/config');
+ } from '#models.js';
+import {  findAllArtifacts, replaceArtifactContent  } from '#server/services/Artifacts/update.js';
+import {  requireJwtAuth, validateMessageReq  } from '#server/middleware.js';
+import {  cleanUpPrimaryKeyValue  } from '#lib/utils/misc.js';
+import {  getConvosQueried  } from '#models/Conversation.js';
+import {  countTokens  } from '#server/utils.js';
+import Message from '#models/Message.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 router.use(requireJwtAuth);
@@ -264,4 +264,4 @@ router.delete('/:conversationId/:messageId', validateMessageReq, async (req, res
   }
 });
 
-module.exports = router;
+export default router;

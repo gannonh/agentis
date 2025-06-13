@@ -39,4 +39,4 @@ function formatGoogleInputs(obj) {
   return { struct_val: formattedObj };
 }
 
-module.exports = formatGoogleInputs;
+export default formatGoogleInputs;

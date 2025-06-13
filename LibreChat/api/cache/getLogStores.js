@@ -1,9 +1,9 @@
-const { Keyv } = require('keyv');
-const { CacheKeys, ViolationTypes, Time } = require('librechat-data-provider');
-const { logFile, violationFile } = require('./keyvFiles');
-const { math, isEnabled } = require('~/server/utils');
-const keyvRedis = require('./keyvRedis');
-const keyvMongo = require('./keyvMongo');
+import { Keyv } from 'keyv';
+import { CacheKeys, ViolationTypes, Time } from 'librechat-data-provider';
+import { logFile, violationFile } from './keyvFiles.js';
+import { math, isEnabled } from '../server/utils/index.js';
+import keyvRedis from './keyvRedis.js';
+import keyvMongo from './keyvMongo.js';
 
 const { BAN_DURATION, USE_REDIS, DEBUG_MEMORY_CACHE, CI } = process.env ?? {};
 
@@ -268,4 +268,4 @@ const getLogStores = (key) => {
   return namespaces[key];
 };
 
-module.exports = getLogStores;
+export default getLogStores;

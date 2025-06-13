@@ -1,13 +1,13 @@
-const express = require('express');
-const AskController = require('~/server/controllers/AskController');
-const { initializeClient } = require('~/server/services/Endpoints/custom');
-const { addTitle } = require('~/server/services/Endpoints/openAI');
-const {
+import express from 'express';
+import AskController from '#server/controllers/AskController.js';
+import initializeClient from "#server/services/Endpoints/custom/initialize.js";
+import addTitle from "#server/services/Endpoints/openAI/title.js";
+import { 
   setHeaders,
   validateModel,
   validateEndpoint,
   buildEndpointOption,
-} = require('~/server/middleware');
+ } from '#server/middleware.js';
 
 const router = express.Router();
 
@@ -22,4 +22,4 @@ router.post(
   },
 );
 
-module.exports = router;
+export default router;

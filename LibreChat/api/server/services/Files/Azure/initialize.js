@@ -1,5 +1,5 @@
-const { BlobServiceClient } = require('@azure/storage-blob');
-const { logger } = require('~/config');
+import { BlobServiceClient } from '@azure/storage-blob';
+import { logger } from '../../../../config/index.js';
 
 let blobServiceClient = null;
 let azureWarningLogged = false;
@@ -9,9 +9,9 @@ let azureWarningLogged = false;
  * This function establishes a connection by checking if a connection string is provided.
  * If available, the connection string is used; otherwise, Managed Identity (via DefaultAzureCredential) is utilized.
  * Note: Container creation (and its public access settings) is handled later in the CRUD functions.
- * @returns {BlobServiceClient|null} The initialized client, or null if the required configuration is missing.
+ * @returns {Promise<BlobServiceClient|null>} The initialized client, or null if the required configuration is missing.
  */
-const initializeAzureBlobService = () => {
+const initializeAzureBlobService = async () => {
   if (blobServiceClient) {
     return blobServiceClient;
   }
@@ -20,7 +20,7 @@ const initializeAzureBlobService = () => {
     blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
     logger.info('Azure Blob Service initialized using connection string');
   } else {
-    const { DefaultAzureCredential } = require('@azure/identity');
+    const { DefaultAzureCredential } = await import('@azure/identity');
     const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
     if (!accountName) {
       if (!azureWarningLogged) {
@@ -49,7 +49,4 @@ const getAzureContainerClient = (containerName = process.env.AZURE_CONTAINER_NAM
   return serviceClient ? serviceClient.getContainerClient(containerName) : null;
 };
 
-module.exports = {
-  initializeAzureBlobService,
-  getAzureContainerClient,
-};
+export { initializeAzureBlobService, getAzureContainerClient };

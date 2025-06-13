@@ -1,4 +1,4 @@
-const { logger } = require('~/config');
+import { logger } from '#config/index.js';
 
 /**
  * The `addImages` function corrects any erroneous image URLs in the `responseMessage.text`
@@ -68,4 +68,4 @@ function addImages(intermediateSteps, responseMessage) {
   });
 }
 
-module.exports = addImages;
+export { addImages };

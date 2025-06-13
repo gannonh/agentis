@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
-const { getRandomValues, hashToken } = require('~/server/utils/crypto');
-const { createToken, findToken } = require('./Token');
-const logger = require('~/config/winston');
+import mongoose from 'mongoose';
+import { getRandomValues, hashToken } from '../server/utils/crypto.js';
+import { createToken, findToken } from './Token.js';
+import logger from '../config/winston.js';
 
 /**
  * @module inviteUser
@@ -63,7 +63,4 @@ const getInvite = async (encodedToken, email) => {
   }
 };
 
-module.exports = {
-  createInvite,
-  getInvite,
-};
+export { createInvite, getInvite };

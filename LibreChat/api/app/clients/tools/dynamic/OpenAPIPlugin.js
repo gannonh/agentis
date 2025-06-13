@@ -1,12 +1,12 @@
-require('dotenv').config();
-const fs = require('fs');
-const { z } = require('zod');
-const path = require('path');
-const yaml = require('js-yaml');
-const { createOpenAPIChain } = require('langchain/chains');
-const { DynamicStructuredTool } = require('@langchain/core/tools');
-const { ChatPromptTemplate, HumanMessagePromptTemplate } = require('@langchain/core/prompts');
-const { logger } = require('~/config');
+import 'dotenv/config';
+import fs from 'fs';
+import { z } from 'zod';
+import path from 'path';
+import yaml from 'js-yaml';
+import { createOpenAPIChain } from 'langchain/chains';
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { ChatPromptTemplate, HumanMessagePromptTemplate } from '@langchain/core/prompts';
+import { logger } from '#config/index.js';
 
 function addLinePrefix(text, prefix = '// ') {
   return text
@@ -177,8 +177,4 @@ async function createOpenAPIPlugin({ data, llm, user, message, memory, signal })
   });
 }
 
-module.exports = {
-  getSpec,
-  readSpecFile,
-  createOpenAPIPlugin,
-};
+export { getSpec, readSpecFile, createOpenAPIPlugin };

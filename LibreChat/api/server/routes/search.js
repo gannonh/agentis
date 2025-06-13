@@ -1,7 +1,7 @@
-const express = require('express');
-const { MeiliSearch } = require('meilisearch');
-const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
-const { isEnabled } = require('~/server/utils');
+import express from 'express';
+import {  MeiliSearch  } from 'meilisearch';
+import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
+import {  isEnabled  } from '#server/utils.js';
 
 const router = express.Router();
 
@@ -25,4 +25,4 @@ router.get('/enable', async function (req, res) {
   }
 });
 
-module.exports = router;
+export default router;

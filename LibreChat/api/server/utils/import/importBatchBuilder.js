@@ -1,8 +1,9 @@
-const { v4: uuidv4 } = require('uuid');
-const { EModelEndpoint, Constants, openAISettings } = require('librechat-data-provider');
-const { bulkSaveConvos } = require('~/models/Conversation');
-const { bulkSaveMessages } = require('~/models/Message');
-const { logger } = require('~/config');
+import { v4 as uuidv4 } from 'uuid';
+import { EModelEndpoint, Constants, openAISettings } from 'librechat-data-provider';
+import ConversationModel from '../../../models/Conversation.js';
+const { bulkSaveConvos } = ConversationModel;
+import { bulkSaveMessages } from '../../../models/Message.js';
+import { logger } from '#config/index.js';
 
 /**
  * Factory function for creating an instance of ImportBatchBuilder.
@@ -155,4 +156,4 @@ class ImportBatchBuilder {
   }
 }
 
-module.exports = { ImportBatchBuilder, createImportBatchBuilder };
+export { ImportBatchBuilder, createImportBatchBuilder };

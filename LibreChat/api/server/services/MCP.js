@@ -1,14 +1,14 @@
-const { z } = require('zod');
-const { tool } = require('@langchain/core/tools');
-const { normalizeServerName } = require('librechat-mcp');
-const { Constants: AgentConstants, Providers } = require('@librechat/agents');
-const {
+import { z } from 'zod';
+import { tool } from '@langchain/core/tools';
+import { Constants as AgentConstants, Providers } from '@librechat/agents';
+import { normalizeServerName } from 'librechat-mcp';
+import {
   Constants,
   ContentTypes,
   isAssistantsEndpoint,
   convertJsonSchemaToZod,
-} = require('librechat-data-provider');
-const { logger, getMCPManager } = require('~/config');
+} from 'librechat-data-provider';
+import { logger, getMCPManager } from '#config/index.js';
 
 /**
  * Creates a general tool for an entire action set.
@@ -131,6 +131,4 @@ async function createMCPTool({ req, toolKey, provider: _provider }) {
   return toolInstance;
 }
 
-module.exports = {
-  createMCPTool,
-};
+export { createMCPTool };

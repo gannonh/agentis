@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
-const Conversation = require('./schema/convoSchema');
-const logger = require('~/config/winston');
+import mongoose from 'mongoose';
+import Conversation from './schema/convoSchema.js';
+import logger from '../config/winston.js';
 
-const { conversationTagSchema } = require('@librechat/data-schemas');
+import { conversationTagSchema } from '@librechat/data-schemas';
 
 const ConversationTag = mongoose.model('ConversationTag', conversationTagSchema);
 
@@ -244,7 +244,9 @@ const updateTagsForConversation = async (user, conversationId, tags) => {
   }
 };
 
-module.exports = {
+export default ConversationTag;
+
+export {
   getConversationTags,
   createConversationTag,
   updateConversationTag,

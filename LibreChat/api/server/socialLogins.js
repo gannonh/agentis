@@ -1,19 +1,19 @@
-const { Keyv } = require('keyv');
-const passport = require('passport');
-const session = require('express-session');
-const MemoryStore = require('memorystore')(session);
-const RedisStore = require('connect-redis').default;
-const {
+import {  Keyv  } from 'keyv';
+import passport from 'passport';
+import session from 'express-session';
+import MemoryStore from 'memorystore';
+import RedisStore from 'connect-redis';
+import { 
   setupOpenId,
   googleLogin,
   githubLogin,
   discordLogin,
   facebookLogin,
   appleLogin,
-} = require('~/strategies');
-const { isEnabled } = require('~/server/utils');
-const keyvRedis = require('~/cache/keyvRedis');
-const { logger } = require('~/config');
+ } from '#strategies/index.js';
+import {  isEnabled  } from '#server/utils.js';
+import keyvRedis from '#cache/keyvRedis.js';
+import {  logger  } from '#config/index.js';
 
 /**
  *
@@ -56,7 +56,7 @@ const configureSocialLogins = (app) => {
       const client = keyv.opts.store.client;
       sessionOptions.store = new RedisStore({ client, prefix: 'openid_session' });
     } else {
-      sessionOptions.store = new MemoryStore({
+      sessionOptions.store = new (MemoryStore(session))({
         checkPeriod: 86400000, // prune expired entries every 24h
       });
     }
@@ -68,4 +68,4 @@ const configureSocialLogins = (app) => {
   }
 };
 
-module.exports = configureSocialLogins;
+export default configureSocialLogins;

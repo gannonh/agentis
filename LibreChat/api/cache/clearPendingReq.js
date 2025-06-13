@@ -1,6 +1,6 @@
-const { Time, CacheKeys } = require('librechat-data-provider');
-const { isEnabled } = require('~/server/utils');
-const getLogStores = require('./getLogStores');
+import { Time, CacheKeys } from 'librechat-data-provider';
+import { isEnabled } from '../server/utils/index.js';
+import getLogStores from './getLogStores.js';
 
 const { USE_REDIS, LIMIT_CONCURRENT_MESSAGES } = process.env ?? {};
 
@@ -46,4 +46,4 @@ const clearPendingReq = async ({ userId, cache: _cache }) => {
   }
 };
 
-module.exports = clearPendingReq;
+export default clearPendingReq;

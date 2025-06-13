@@ -1,9 +1,9 @@
-const multer = require('multer');
-const express = require('express');
-const { CacheKeys } = require('librechat-data-provider');
-const { getVoices, streamAudio, textToSpeech } = require('~/server/services/Files/Audio');
-const { getLogStores } = require('~/cache');
-const { logger } = require('~/config');
+import multer from 'multer';
+import express from 'express';
+import {  CacheKeys  } from 'librechat-data-provider';
+import {  getVoices, streamAudio, textToSpeech  } from '#server/services/Files/Audio.js';
+import {  getLogStores  } from '#cache.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 const upload = multer();
@@ -39,4 +39,4 @@ router.get('/voices', async (req, res) => {
   await getVoices(req, res);
 });
 
-module.exports = router;
+export default router;

@@ -1,4 +1,4 @@
-const { getCustomConfig } = require('~/server/services/Config');
+import { getCustomConfig } from './Config/index.js';
 
 /**
  * @param {string} email
@@ -106,4 +106,4 @@ async function isActionDomainAllowed(domain) {
   return false;
 }
 
-module.exports = { isEmailDomainAllowed, isActionDomainAllowed };
+export { isEmailDomainAllowed, isActionDomainAllowed };

@@ -1,20 +1,15 @@
-const fetch = require('node-fetch');
-const passport = require('passport');
-const jwtDecode = require('jsonwebtoken/decode');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const { Issuer, Strategy: OpenIDStrategy, custom } = require('openid-client');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { findUser, createUser, updateUser } = require('~/models/userMethods');
-const { hashToken } = require('~/server/utils/crypto');
-const { isEnabled } = require('~/server/utils');
-const { logger } = require('~/config');
+import fetch from 'node-fetch';
+import passport from 'passport';
+import jwtDecode from 'jsonwebtoken/decode.js';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { Issuer, Strategy as OpenIDStrategy, custom } from 'openid-client';
+import { getStrategyFunctions } from '#server/services/Files/strategies.js';
+import { findUser, createUser, updateUser } from '#models/userMethods.js';
+import { hashToken } from '#server/utils/crypto.js';
+import { isEnabled } from '#server/utils/index.js';
+import { logger } from '#config/index.js';
 
-let crypto;
-try {
-  crypto = require('node:crypto');
-} catch (err) {
-  logger.error('[openidStrategy] crypto support is disabled!', err);
-}
+import crypto from 'node:crypto';
 
 /**
  * Downloads an image from a URL using an access token.
@@ -271,4 +266,4 @@ async function setupOpenId() {
   }
 }
 
-module.exports = setupOpenId;
+export default setupOpenId;

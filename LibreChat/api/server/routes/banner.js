@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 
-const { getBanner } = require('~/models/Banner');
-const optionalJwtAuth = require('~/server/middleware/optionalJwtAuth');
+import {  getBanner  } from '#models/Banner.js';
+import optionalJwtAuth from '#server/middleware/optionalJwtAuth.js';
 const router = express.Router();
 
 router.get('/', optionalJwtAuth, async (req, res) => {
@@ -12,4 +12,4 @@ router.get('/', optionalJwtAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,12 +1,8 @@
-const {
-  EModelEndpoint,
-  mapModelToAzureConfig,
-  resolveHeaders,
-} = require('librechat-data-provider');
-const { getUserKeyValues, checkUserKeyExpiry } = require('~/server/services/UserService');
-const { isEnabled, isUserProvided } = require('~/server/utils');
-const { getAzureCredentials } = require('~/utils');
-const { PluginsClient } = require('~/app');
+import { EModelEndpoint, mapModelToAzureConfig, resolveHeaders } from 'librechat-data-provider';
+import { getUserKeyValues, checkUserKeyExpiry } from '../../UserService.js';
+import { isEnabled, isUserProvided } from '../../../utils/index.js';
+import { getAzureCredentials } from '#utils/index.js';
+import { PluginsClient } from '#app/clients/index.js';
 
 const initializeClient = async ({ req, res, endpointOption }) => {
   const {
@@ -132,4 +128,4 @@ const initializeClient = async ({ req, res, endpointOption }) => {
   };
 };
 
-module.exports = initializeClient;
+export default initializeClient;

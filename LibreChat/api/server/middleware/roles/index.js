@@ -1,7 +1,7 @@
-const checkAdmin = require('./checkAdmin');
-const { checkAccess, generateCheckAccess } = require('./generateCheckAccess');
+import checkAdmin from './checkAdmin.js';
+import { checkAccess, generateCheckAccess } from './generateCheckAccess.js';
 
-module.exports = {
+export {
   checkAdmin,
   checkAccess,
   generateCheckAccess,

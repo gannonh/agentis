@@ -1,11 +1,11 @@
-const { z } = require('zod');
-const axios = require('axios');
-const fetch = require('node-fetch');
-const { v4: uuidv4 } = require('uuid');
-const { Tool } = require('@langchain/core/tools');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const { FileContext, ContentTypes } = require('librechat-data-provider');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import axios from 'axios';
+import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
+import { Tool } from '@langchain/core/tools';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { FileContext, ContentTypes } from 'librechat-data-provider';
+import { logger } from '#config/index.js';
 
 const displayMessage =
   "Flux displayed an image. All generated images are already plainly visible, so don't repeat the descriptions in detail. Do not list download links as they are available in the UI already. The user may download the images by clicking on them, but do not mention anything about downloading to the user.";
@@ -551,4 +551,4 @@ class FluxAPI extends Tool {
   }
 }
 
-module.exports = FluxAPI;
+export default FluxAPI;

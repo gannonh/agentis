@@ -1,7 +1,7 @@
-const { CacheKeys, EModelEndpoint, orderEndpointsConfig } = require('librechat-data-provider');
-const loadDefaultEndpointsConfig = require('./loadDefaultEConfig');
-const loadConfigEndpoints = require('./loadConfigEndpoints');
-const getLogStores = require('~/cache/getLogStores');
+import { CacheKeys, EModelEndpoint, orderEndpointsConfig } from 'librechat-data-provider';
+import loadDefaultEndpointsConfig from './loadDefaultEConfig.js';
+import loadConfigEndpoints from './loadConfigEndpoints.js';
+import getLogStores from '../../../cache/getLogStores.js';
 
 /**
  *
@@ -85,4 +85,4 @@ const checkCapability = async (req, capability) => {
   return capabilities.includes(capability);
 };
 
-module.exports = { getEndpointsConfig, checkCapability };
+export { getEndpointsConfig, checkCapability };

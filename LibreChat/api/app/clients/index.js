@@ -1,17 +1,17 @@
-const ChatGPTClient = require('./ChatGPTClient');
-const OpenAIClient = require('./OpenAIClient');
-const PluginsClient = require('./PluginsClient');
-const GoogleClient = require('./GoogleClient');
-const TextStream = require('./TextStream');
-const AnthropicClient = require('./AnthropicClient');
-const toolUtils = require('./tools/util');
+import ChatGPTClient from './ChatGPTClient.js';
+import OpenAIClient from './OpenAIClient.js';
+import PluginsClient from './PluginsClient.js';
+import GoogleClient from './GoogleClient.js';
+import TextStream from './TextStream.js';
+import AnthropicClient from './AnthropicClient.js';
+import * as toolUtils from './tools/util/index.js';
 
-module.exports = {
+export {
   ChatGPTClient,
   OpenAIClient,
   PluginsClient,
   GoogleClient,
   TextStream,
   AnthropicClient,
-  ...toolUtils,
+  toolUtils,
 };

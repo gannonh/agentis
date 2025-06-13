@@ -1,9 +1,9 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const endpointController = require('~/server/controllers/EndpointController');
-const overrideController = require('~/server/controllers/OverrideController');
+import endpointController from '#server/controllers/EndpointController.js';
+import overrideController from '#server/controllers/OverrideController.js';
 
 router.get('/', endpointController);
 router.get('/config/override', overrideController);
 
-module.exports = router;
+export default router;

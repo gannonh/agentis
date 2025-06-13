@@ -1,6 +1,6 @@
-const Anthropic = require('@anthropic-ai/sdk');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const {
+import Anthropic from '@anthropic-ai/sdk';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import {
   Constants,
   ErrorTypes,
   EModelEndpoint,
@@ -8,29 +8,29 @@ const {
   anthropicSettings,
   getResponseSender,
   validateVisionModel,
-} = require('librechat-data-provider');
-const { SplitStreamHandler: _Handler } = require('@librechat/agents');
-const {
+} from 'librechat-data-provider';
+import { SplitStreamHandler as _Handler } from '@librechat/agents';
+import {
   truncateText,
   formatMessage,
   addCacheControl,
   titleFunctionPrompt,
   parseParamFromPrompt,
   createContextHandlers,
-} = require('./prompts');
-const {
+} from './prompts/index.js';
+import {
   getClaudeHeaders,
   configureReasoning,
   checkPromptCacheSupport,
-} = require('~/server/services/Endpoints/anthropic/helpers');
-const { getModelMaxTokens, getModelMaxOutputTokens, matchModelName } = require('~/utils');
-const { spendTokens, spendStructuredTokens } = require('~/models/spendTokens');
-const { encodeAndFormat } = require('~/server/services/Files/images/encode');
-const { createFetch, createStreamEventHandlers } = require('./generators');
-const Tokenizer = require('~/server/services/Tokenizer');
-const { sleep } = require('~/server/utils');
-const BaseClient = require('./BaseClient');
-const { logger } = require('~/config');
+} from '#server/services/Endpoints/anthropic/helpers.js';
+import { getModelMaxTokens, getModelMaxOutputTokens, matchModelName } from '#utils/index.js';
+import { spendTokens, spendStructuredTokens } from '#models/spendTokens.js';
+import { encodeAndFormat } from '#server/services/Files/images/encode.js';
+import { createFetch, createStreamEventHandlers } from './generators.js';
+import Tokenizer from '#server/services/Tokenizer.js';
+import { sleep } from '#server/utils/index.js';
+import BaseClient from './BaseClient.js';
+import { logger } from '#config/index.js';
 
 const HUMAN_PROMPT = '\n\nHuman:';
 const AI_PROMPT = '\n\nAssistant:';
@@ -984,4 +984,4 @@ class AnthropicClient extends BaseClient {
   }
 }
 
-module.exports = AnthropicClient;
+export default AnthropicClient;

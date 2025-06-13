@@ -1,5 +1,5 @@
-const { removeNullishValues } = require('librechat-data-provider');
-const { logger } = require('~/config');
+import { removeNullishValues } from 'librechat-data-provider';
+import { logger } from '#config/index.js';
 
 /**
  * Loads and maps the Cloudflare Turnstile configuration.
@@ -39,6 +39,4 @@ function loadTurnstileConfig(config, configDefaults) {
   return loadedTurnstile;
 }
 
-module.exports = {
-  loadTurnstileConfig,
-};
+export { loadTurnstileConfig };

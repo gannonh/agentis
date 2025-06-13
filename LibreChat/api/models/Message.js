@@ -1,6 +1,6 @@
-const { z } = require('zod');
-const Message = require('./schema/messageSchema');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import Message from './schema/messageSchema.js';
+import { logger } from '#config/index.js';
 
 const idSchema = z.string().uuid();
 
@@ -354,8 +354,9 @@ async function deleteMessages(filter) {
   }
 }
 
-module.exports = {
-  Message,
+export default Message;
+
+export {
   saveMessage,
   bulkSaveMessages,
   recordMessage,

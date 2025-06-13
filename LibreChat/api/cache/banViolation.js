@@ -1,8 +1,8 @@
-const { ViolationTypes } = require('librechat-data-provider');
-const { isEnabled, math, removePorts } = require('~/server/utils');
-const { deleteAllUserSessions } = require('~/models');
-const getLogStores = require('./getLogStores');
-const { logger } = require('~/config');
+import { ViolationTypes } from 'librechat-data-provider';
+import { isEnabled, math, removePorts } from '../server/utils/index.js';
+import { deleteAllUserSessions } from '../models/index.js';
+import getLogStores from './getLogStores.js';
+import { logger } from '#config/index.js';
 
 const { BAN_VIOLATIONS, BAN_INTERVAL } = process.env ?? {};
 const interval = math(BAN_INTERVAL, 20);
@@ -75,4 +75,4 @@ const banViolation = async (req, res, errorMessage) => {
   return;
 };
 
-module.exports = banViolation;
+export default banViolation;

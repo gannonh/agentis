@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { logger } = require('~/config');
+import mongoose from 'mongoose';
+import { logger } from '#config/index.js';
 
 const major = [0, 0];
 const minor = [0, 0];
@@ -66,21 +66,22 @@ configSchema.statics.updateByTag = async function (tag, update) {
 
 const Config = mongoose.models.Config || mongoose.model('Config', configSchema);
 
-module.exports = {
-  getConfigs: async (filter) => {
-    try {
-      return await Config.find(filter).lean();
-    } catch (error) {
-      logger.error('Error getting configs', error);
-      return { config: 'Error getting configs' };
-    }
-  },
-  deleteConfigs: async (filter) => {
-    try {
-      return await Config.deleteMany(filter);
-    } catch (error) {
-      logger.error('Error deleting configs', error);
-      return { config: 'Error deleting configs' };
-    }
-  },
+export default Config;
+
+export const getConfigs = async (filter) => {
+  try {
+    return await Config.find(filter).lean();
+  } catch (error) {
+    logger.error('Error getting configs', error);
+    return { config: 'Error getting configs' };
+  }
+};
+
+export const deleteConfigs = async (filter) => {
+  try {
+    return await Config.deleteMany(filter);
+  } catch (error) {
+    logger.error('Error deleting configs', error);
+    return { config: 'Error deleting configs' };
+  }
 };

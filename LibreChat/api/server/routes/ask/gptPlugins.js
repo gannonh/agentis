@@ -1,10 +1,10 @@
-const express = require('express');
-const { getResponseSender, Constants } = require('librechat-data-provider');
-const { initializeClient } = require('~/server/services/Endpoints/gptPlugins');
-const { sendMessage, createOnProgress } = require('~/server/utils');
-const { addTitle } = require('~/server/services/Endpoints/openAI');
-const { saveMessage, updateMessage } = require('~/models');
-const {
+import express from 'express';
+import {  getResponseSender, Constants  } from 'librechat-data-provider';
+import initializeClient from "#server/services/Endpoints/gptPlugins/initialize.js";
+import {  sendMessage, createOnProgress  } from '#server/utils.js';
+import addTitle from "#server/services/Endpoints/openAI/title.js";
+import {  saveMessage, updateMessage  } from '#models.js';
+import { 
   handleAbort,
   createAbortController,
   handleAbortError,
@@ -13,9 +13,9 @@ const {
   validateEndpoint,
   buildEndpointOption,
   moderateText,
-} = require('~/server/middleware');
-const { validateTools } = require('~/app');
-const { logger } = require('~/config');
+ } from '#server/middleware.js';
+import { validateTools } from '#app/clients/tools/util/index.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -238,4 +238,4 @@ router.post(
   },
 );
 
-module.exports = router;
+export default router;

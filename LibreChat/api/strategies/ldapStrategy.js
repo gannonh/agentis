@@ -1,10 +1,10 @@
-const fs = require('fs');
-const LdapStrategy = require('passport-ldapauth');
-const { SystemRoles } = require('librechat-data-provider');
-const { findUser, createUser, updateUser } = require('~/models/userMethods');
-const { countUsers } = require('~/models/userMethods');
-const { isEnabled } = require('~/server/utils');
-const logger = require('~/utils/logger');
+import fs from 'fs';
+import LdapStrategy from 'passport-ldapauth';
+import { SystemRoles } from 'librechat-data-provider';
+import { findUser, createUser, updateUser } from '#models/userMethods.js';
+import { countUsers } from '#models/userMethods.js';
+import { isEnabled } from '#server/utils/index.js';
+import logger from '#utils/logger.js';
 
 const {
   LDAP_URL,
@@ -22,9 +22,9 @@ const {
 } = process.env;
 
 // Check required environment variables
-if (!LDAP_URL || !LDAP_USER_SEARCH_BASE) {
-  module.exports = null;
-}
+let ldapLogin = null;
+
+if (LDAP_URL && LDAP_USER_SEARCH_BASE) {
 
 const searchAttributes = [
   'displayName',
@@ -80,7 +80,7 @@ const ldapOptions = {
   passwordField: 'password',
 };
 
-const ldapLogin = new LdapStrategy(ldapOptions, async (userinfo, done) => {
+ldapLogin = new LdapStrategy(ldapOptions, async (userinfo, done) => {
   if (!userinfo) {
     return done(null, false, { message: 'Invalid credentials' });
   }
@@ -144,4 +144,6 @@ const ldapLogin = new LdapStrategy(ldapOptions, async (userinfo, done) => {
   }
 });
 
-module.exports = ldapLogin;
+}
+
+export default ldapLogin;

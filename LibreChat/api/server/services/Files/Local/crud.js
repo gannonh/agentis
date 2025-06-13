@@ -1,10 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-const { EModelEndpoint } = require('librechat-data-provider');
-const { getBufferMetadata } = require('~/server/utils');
-const paths = require('~/config/paths');
-const { logger } = require('~/config');
+import fs from 'fs';
+import path from 'path';
+import axios from 'axios';
+import { EModelEndpoint } from 'librechat-data-provider';
+import { getBufferMetadata } from '../../../utils/index.js';
+import paths from '../../../../config/paths.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Saves a file to a specified output path with a new filename.
@@ -336,7 +336,7 @@ function getLocalFileStream(req, filepath) {
   }
 }
 
-module.exports = {
+export {
   saveLocalFile,
   saveLocalImage,
   saveLocalBuffer,

@@ -1,6 +1,6 @@
-const { EModelEndpoint, extractEnvVariable } = require('librechat-data-provider');
-const { isUserProvided, normalizeEndpointName } = require('~/server/utils');
-const { getCustomConfig } = require('./getCustomConfig');
+import { EModelEndpoint, extractEnvVariable } from 'librechat-data-provider';
+import { isUserProvided, normalizeEndpointName } from '../../utils/index.js';
+import { getCustomConfig } from './getCustomConfig.js';
 
 /**
  * Load config endpoints from the cached configuration object
@@ -62,4 +62,4 @@ async function loadConfigEndpoints(req) {
   return endpointsConfig;
 }
 
-module.exports = loadConfigEndpoints;
+export default loadConfigEndpoints;

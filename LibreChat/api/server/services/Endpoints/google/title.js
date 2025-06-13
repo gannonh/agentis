@@ -1,8 +1,8 @@
-const { EModelEndpoint, CacheKeys, Constants, googleSettings } = require('librechat-data-provider');
-const getLogStores = require('~/cache/getLogStores');
-const initializeClient = require('./initialize');
-const { isEnabled } = require('~/server/utils');
-const { saveConvo } = require('~/models');
+import { EModelEndpoint, CacheKeys, Constants, googleSettings } from 'librechat-data-provider';
+import getLogStores from '#cache/getLogStores.js';
+import initializeClient from './initialize.js';
+import { isEnabled } from '../../../utils/index.js';
+import { saveConvo } from '#models/index.js';
 
 const addTitle = async (req, { text, response, client }) => {
   const { TITLE_CONVO = 'true' } = process.env ?? {};
@@ -56,4 +56,4 @@ const addTitle = async (req, { text, response, client }) => {
   );
 };
 
-module.exports = addTitle;
+export default addTitle;

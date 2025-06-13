@@ -1,7 +1,7 @@
-const express = require('express');
-const { callTool, verifyToolAuth, getToolCalls } = require('~/server/controllers/tools');
-const { getAvailableTools } = require('~/server/controllers/PluginController');
-const { toolCallLimiter } = require('~/server/middleware/limiters');
+import express from 'express';
+import {  callTool, verifyToolAuth, getToolCalls  } from '#server/controllers/tools.js';
+import {  getAvailableTools  } from '#server/controllers/PluginController.js';
+import {  toolCallLimiter  } from '#server/middleware/limiters/index.js';
 
 const router = express.Router();
 
@@ -36,4 +36,4 @@ router.get('/:toolId/auth', verifyToolAuth);
  */
 router.post('/:toolId/call', toolCallLimiter, callTool);
 
-module.exports = router;
+export default router;

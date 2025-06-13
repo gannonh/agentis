@@ -1,19 +1,15 @@
-const OpenAI = require('openai');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const {
+import OpenAI from 'openai';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import {
   ErrorTypes,
   EModelEndpoint,
   resolveHeaders,
   mapModelToAzureConfig,
-} = require('librechat-data-provider');
-const {
-  getUserKeyValues,
-  getUserKeyExpiry,
-  checkUserKeyExpiry,
-} = require('~/server/services/UserService');
-const OpenAIClient = require('~/app/clients/OpenAIClient');
-const { isUserProvided } = require('~/server/utils');
-const { constructAzureURL } = require('~/utils');
+} from 'librechat-data-provider';
+import { getUserKeyValues, getUserKeyExpiry, checkUserKeyExpiry } from '../../UserService.js';
+import OpenAIClient from '../../../../app/clients/OpenAIClient.js';
+import { isUserProvided } from '../../../utils/index.js';
+import { constructAzureURL } from '#utils/index.js';
 
 class Files {
   constructor(client) {
@@ -198,4 +194,4 @@ const initializeClient = async ({ req, res, version, endpointOption, initAppClie
   };
 };
 
-module.exports = initializeClient;
+export default initializeClient;

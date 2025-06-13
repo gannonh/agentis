@@ -1,9 +1,9 @@
-const express = require('express');
-const { PermissionTypes, Permissions } = require('librechat-data-provider');
-const { requireJwtAuth, generateCheckAccess } = require('~/server/middleware');
-const v1 = require('~/server/controllers/agents/v1');
-const actions = require('./actions');
-const tools = require('./tools');
+import express from 'express';
+import {  PermissionTypes, Permissions  } from 'librechat-data-provider';
+import {  requireJwtAuth, generateCheckAccess  } from '#server/middleware.js';
+import v1 from '#server/controllers/agents/v1.js';
+import actions from './actions.js';
+import tools from './tools.js';
 
 const router = express.Router();
 const avatar = express.Router();
@@ -96,4 +96,4 @@ router.get('/', checkAgentAccess, v1.getListAgents);
  */
 avatar.post('/:agent_id/avatar/', checkAgentAccess, v1.uploadAgentAvatar);
 
-module.exports = { v1: router, avatar };
+export { router as v1, avatar };

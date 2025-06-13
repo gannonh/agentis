@@ -46,4 +46,16 @@ const cjsBuild = {
   plugins,
 };
 
-export default cjsBuild;
+const esmBuild = {
+  input: 'src/index.ts',
+  output: {
+    file: pkg.module,
+    format: 'es',
+    sourcemap: true,
+  },
+  external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.devDependencies || {})],
+  preserveSymlinks: true,
+  plugins,
+};
+
+export default [cjsBuild, esmBuild];

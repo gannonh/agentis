@@ -1,10 +1,10 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const { getCustomConfigSpeech } = require('~/server/services/Files/Audio');
+import {  getCustomConfigSpeech  } from '#server/services/Files/Audio.js';
 
 router.get('/get', async (req, res) => {
   await getCustomConfigSpeech(req, res);
 });
 
-module.exports = router;
+export default router;

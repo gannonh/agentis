@@ -1,6 +1,6 @@
-const { getBalanceConfig } = require('~/server/services/Config');
-const Balance = require('~/models/Balance');
-const { logger } = require('~/config');
+import { getBalanceConfig } from '#server/services/Config/index.js';
+import Balance from '#models/Balance.js';
+import { logger } from '#config/index.js';
 
 /**
  * Middleware to synchronize user balance settings with current balance configuration.
@@ -88,4 +88,4 @@ function buildUpdateFields(config, userRecord) {
   return updateFields;
 }
 
-module.exports = setBalanceConfig;
+export default setBalanceConfig;

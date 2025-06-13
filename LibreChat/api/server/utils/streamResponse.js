@@ -1,8 +1,10 @@
-const crypto = require('crypto');
-const { parseConvo } = require('librechat-data-provider');
-const { saveMessage, getMessages } = require('~/models/Message');
-const { getConvo } = require('~/models/Conversation');
-const { logger } = require('~/config');
+import crypto from 'crypto';
+import { parseConvo } from 'librechat-data-provider';
+import { saveMessage, getMessages } from '../../models/Message.js';
+import ConversationModel from '../../models/Conversation.js';
+import { logger } from '#config/index.js';
+
+const { getConvo } = ConversationModel;
 
 /**
  * Sends error data in Server Sent Events format and ends the response.
@@ -123,9 +125,4 @@ const sendResponse = (req, res, data, errorMessage) => {
   return sendMessage(res, data);
 };
 
-module.exports = {
-  sendResponse,
-  handleError,
-  sendMessage,
-  sendError,
-};
+export { sendResponse, handleError, sendMessage, sendError };

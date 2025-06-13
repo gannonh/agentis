@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
-const { resizeImageBuffer } = require('../images/resize');
-const { updateUser } = require('~/models/userMethods');
-const { saveBufferToFirebase } = require('./crud');
-const { updateFile } = require('~/models/File');
-const { logger } = require('~/config');
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+import { resizeImageBuffer } from '../images/resize.js';
+import { updateUser } from '#models/userMethods.js';
+import { saveBufferToFirebase } from './crud.js';
+import { updateFile } from '#models/File.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Converts an image file to the target format. The function first resizes the image based on the specified
@@ -109,4 +109,4 @@ async function processFirebaseAvatar({ buffer, userId, manual }) {
   }
 }
 
-module.exports = { uploadImageToFirebase, prepareImageURL, processFirebaseAvatar };
+export { uploadImageToFirebase, prepareImageURL, processFirebaseAvatar };

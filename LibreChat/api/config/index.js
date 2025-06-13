@@ -1,8 +1,8 @@
-const axios = require('axios');
-const { EventSource } = require('eventsource');
-const { Time, CacheKeys } = require('librechat-data-provider');
-const { MCPManager, FlowStateManager } = require('librechat-mcp');
-const logger = require('./winston');
+import axios from 'axios';
+import { EventSource } from 'eventsource';
+import { Time, CacheKeys } from 'librechat-data-provider';
+import { MCPManager, FlowStateManager } from 'librechat-mcp';
+import logger from './winston.js';
 
 global.EventSource = EventSource;
 
@@ -87,10 +87,4 @@ function createAxiosInstance() {
   return instance;
 }
 
-module.exports = {
-  logger,
-  sendEvent,
-  getMCPManager,
-  createAxiosInstance,
-  getFlowStateManager,
-};
+export { logger, sendEvent, getMCPManager, createAxiosInstance, getFlowStateManager };

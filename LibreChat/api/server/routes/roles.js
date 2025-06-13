@@ -1,13 +1,13 @@
-const express = require('express');
-const {
+import express from 'express';
+import { 
   promptPermissionsSchema,
   agentPermissionsSchema,
   PermissionTypes,
   roleDefaults,
   SystemRoles,
-} = require('librechat-data-provider');
-const { checkAdmin, requireJwtAuth } = require('~/server/middleware');
-const { updateRoleByName, getRoleByName } = require('~/models/Role');
+ } from 'librechat-data-provider';
+import {  checkAdmin, requireJwtAuth  } from '#server/middleware.js';
+import {  updateRoleByName, getRoleByName  } from '#models/Role.js';
 
 const router = express.Router();
 router.use(requireJwtAuth);
@@ -118,4 +118,4 @@ router.put('/:roleName/agents', checkAdmin, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

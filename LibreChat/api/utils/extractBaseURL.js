@@ -1,4 +1,4 @@
-const { CohereConstants } = require('librechat-data-provider');
+import { CohereConstants } from 'librechat-data-provider';
 
 /**
  * Extracts a valid OpenAI baseURL from a given string, matching "url/v1," followed by an optional suffix.
@@ -87,4 +87,4 @@ function extractBaseURL(url) {
   return baseUrl;
 }
 
-module.exports = extractBaseURL; // Export the function for use in your test file.
+export default extractBaseURL; // Export the function for use in your test file.

@@ -1,6 +1,6 @@
-const axios = require('axios');
-const { isEnabled } = require('~/server/utils');
-const { logger } = require('~/config');
+import axios from 'axios';
+import { isEnabled } from '#server/utils/index.js';
+import { logger } from '#config/index.js';
 
 const footer = `Use the context as your learned knowledge to better answer the user.
 
@@ -157,4 +157,4 @@ function createContextHandlers(req, userMessageContent) {
   };
 }
 
-module.exports = createContextHandlers;
+export default createContextHandlers;

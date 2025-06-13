@@ -1,5 +1,5 @@
-const { Strategy: DiscordStrategy } = require('passport-discord');
-const socialLogin = require('./socialLogin');
+import { Strategy as DiscordStrategy } from 'passport-discord';
+import socialLogin from './socialLogin.js';
 
 const getProfileDetails = ({ profile }) => {
   let avatarUrl;
@@ -23,7 +23,7 @@ const getProfileDetails = ({ profile }) => {
 
 const discordLogin = socialLogin('discord', getProfileDetails);
 
-module.exports = () =>
+export default () =>
   new DiscordStrategy(
     {
       clientID: process.env.DISCORD_CLIENT_ID,

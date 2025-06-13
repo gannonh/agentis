@@ -1,11 +1,12 @@
-const mongoose = require('mongoose');
-const { nanoid } = require('nanoid');
-const { Constants } = require('librechat-data-provider');
-const { Conversation } = require('~/models/Conversation');
-const { shareSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { nanoid } from 'nanoid';
+import { Constants } from 'librechat-data-provider';
+import Conversation from './Conversation.js';
+import { shareSchema } from '@librechat/data-schemas';
+import { getMessages } from './Message.js';
+import logger from '../config/winston.js';
+
 const SharedLink = mongoose.model('SharedLink', shareSchema);
-const { getMessages } = require('./Message');
-const logger = require('~/config/winston');
 
 class ShareServiceError extends Error {
   constructor(message, code) {
@@ -339,8 +340,9 @@ async function deleteSharedLink(user, shareId) {
   }
 }
 
-module.exports = {
-  SharedLink,
+export default SharedLink;
+
+export {
   getSharedLink,
   getSharedLinks,
   createSharedLink,

@@ -1,14 +1,14 @@
-const axios = require('axios');
-const {
+import axios from 'axios';
+import {
   FileSources,
   VisionModes,
   ImageDetail,
   ContentTypes,
   EModelEndpoint,
-} = require('librechat-data-provider');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { logAxiosError } = require('~/utils');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { getStrategyFunctions } from '../strategies.js';
+import { logAxiosError } from '#utils/index.js';
+import { logger } from '#config/index.js';
 
 /**
  * Converts a readable stream to a base64 encoded string.
@@ -217,6 +217,4 @@ async function encodeAndFormat(req, files, endpoint, mode) {
   return { ...result };
 }
 
-module.exports = {
-  encodeAndFormat,
-};
+export { encodeAndFormat };

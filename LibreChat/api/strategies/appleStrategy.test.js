@@ -1,30 +1,30 @@
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const jwt = require('jsonwebtoken');
-const { Strategy: AppleStrategy } = require('passport-apple');
-const socialLogin = require('./socialLogin');
-const User = require('~/models/User');
-const { logger } = require('~/config');
-const { createSocialUser, handleExistingUser } = require('./process');
-const { isEnabled } = require('~/server/utils');
-const { findUser } = require('~/models');
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import jwt from 'jsonwebtoken';
+import { Strategy as AppleStrategy } from 'passport-apple';
+import socialLogin from './socialLogin.js';
+import User from '#models/User.js';
+import { logger } from '#config/index.js';
+import { createSocialUser, handleExistingUser } from './process.js';
+import { isEnabled } from '#server/utils/index.js';
+import { findUser } from '#models/index.js';
 
 // Mocking external dependencies
 jest.mock('jsonwebtoken');
-jest.mock('~/config', () => ({
+jest.mock('#config/index.js', () => ({
   logger: {
     error: jest.fn(),
     debug: jest.fn(),
   },
 }));
-jest.mock('./process', () => ({
+jest.mock('./process.js', () => ({
   createSocialUser: jest.fn(),
   handleExistingUser: jest.fn(),
 }));
-jest.mock('~/server/utils', () => ({
+jest.mock('#server/utils/index.js', () => ({
   isEnabled: jest.fn(),
 }));
-jest.mock('~/models', () => ({
+jest.mock('#models/index.js', () => ({
   findUser: jest.fn(),
 }));
 

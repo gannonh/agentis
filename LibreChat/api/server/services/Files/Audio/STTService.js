@@ -1,11 +1,11 @@
-const axios = require('axios');
-const fs = require('fs').promises;
-const FormData = require('form-data');
-const { Readable } = require('stream');
-const { extractEnvVariable, STTProviders } = require('librechat-data-provider');
-const { getCustomConfig } = require('~/server/services/Config');
-const { genAzureEndpoint } = require('~/utils');
-const { logger } = require('~/config');
+import axios from 'axios';
+import { promises as fs } from 'fs';
+import FormData from 'form-data';
+import { Readable } from 'stream';
+import { extractEnvVariable, STTProviders } from 'librechat-data-provider';
+import { getCustomConfig } from '../../Config/index.js';
+import { genAzureEndpoint } from '#utils/index.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Maps MIME types to their corresponding file extensions for audio files.
@@ -325,4 +325,4 @@ async function speechToText(req, res) {
   await sttService.processTextToSpeech(req, res);
 }
 
-module.exports = { speechToText };
+export { speechToText };

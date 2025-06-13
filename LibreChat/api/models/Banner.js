@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const logger = require('~/config/winston');
-const { bannerSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import logger from '../config/winston.js';
+import { bannerSchema } from '@librechat/data-schemas';
 
 const Banner = mongoose.model('Banner', bannerSchema);
 
@@ -28,4 +28,6 @@ const getBanner = async (user) => {
   }
 };
 
-module.exports = { Banner, getBanner };
+export default Banner;
+
+export { getBanner };

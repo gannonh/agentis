@@ -1,17 +1,17 @@
-const express = require('express');
+import express from 'express';
 
 const router = express.Router();
-const {
+import { 
   setHeaders,
   handleAbort,
   moderateText,
   // validateModel,
   // validateEndpoint,
   buildEndpointOption,
-} = require('~/server/middleware');
-const { initializeClient } = require('~/server/services/Endpoints/bedrock');
-const AgentController = require('~/server/controllers/agents/request');
-const addTitle = require('~/server/services/Endpoints/agents/title');
+ } from '#server/middleware.js';
+import { initializeClient } from '#server/services/Endpoints/bedrock/initialize.js';
+import AgentController from '#server/controllers/agents/request.js';
+import addTitle from '#server/services/Endpoints/agents/title.js';
 
 router.use(moderateText);
 
@@ -34,4 +34,4 @@ router.post(
   },
 );
 
-module.exports = router;
+export default router;

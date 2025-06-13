@@ -1,7 +1,4 @@
-const runTitleChain = require('./runTitleChain');
-const predictNewSummary = require('./predictNewSummary');
+import runTitleChain from './runTitleChain.js';
+import predictNewSummary from './predictNewSummary.js';
 
-module.exports = {
-  runTitleChain,
-  predictNewSummary,
-};
+export { runTitleChain, predictNewSummary };

@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
-const { resizeImageBuffer } = require('../images/resize');
-const { updateUser } = require('~/models/userMethods');
-const { updateFile } = require('~/models/File');
-const { logger } = require('~/config');
-const { saveBufferToAzure } = require('./crud');
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+import { resizeImageBuffer } from '../images/resize.js';
+import { updateUser } from '#models/userMethods.js';
+import { updateFile } from '#models/File.js';
+import { logger } from '../../../../config/index.js';
+import { saveBufferToAzure } from './crud.js';
 
 /**
  * Uploads an image file to Azure Blob Storage.
@@ -117,8 +117,4 @@ async function processAzureAvatar({ buffer, userId, manual, basePath = 'images',
   }
 }
 
-module.exports = {
-  uploadImageToAzure,
-  prepareAzureImageURL,
-  processAzureAvatar,
-};
+export { uploadImageToAzure, prepareAzureImageURL, processAzureAvatar };

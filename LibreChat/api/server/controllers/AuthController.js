@@ -1,13 +1,13 @@
-const cookies = require('cookie');
-const jwt = require('jsonwebtoken');
-const {
+import cookies from 'cookie';
+import jwt from 'jsonwebtoken';
+import {
   registerUser,
   resetPassword,
   setAuthTokens,
   requestPasswordReset,
-} = require('~/server/services/AuthService');
-const { findSession, getUserById, deleteAllUserSessions } = require('~/models');
-const { logger } = require('~/config');
+} from '#server/services/AuthService.js';
+import { findSession, getUserById, deleteAllUserSessions } from '#models/index.js';
+import { logger } from '#config/index.js';
 
 const registrationController = async (req, res) => {
   try {
@@ -93,7 +93,7 @@ const refreshController = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   refreshController,
   registrationController,
   resetPasswordController,

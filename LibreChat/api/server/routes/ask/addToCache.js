@@ -1,6 +1,6 @@
-const { Keyv } = require('keyv');
-const { KeyvFile } = require('keyv-file');
-const { logger } = require('~/config');
+import {  Keyv  } from 'keyv';
+import {  KeyvFile  } from 'keyv-file';
+import {  logger  } from '#config.js';
 
 const addToCache = async ({ endpoint, endpointOption, userMessage, responseMessage }) => {
   try {
@@ -60,4 +60,4 @@ const addToCache = async ({ endpoint, endpointOption, userMessage, responseMessa
   }
 };
 
-module.exports = addToCache;
+export default addToCache;

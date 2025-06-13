@@ -1,28 +1,28 @@
-const {
+import {
   FileSources,
   EModelEndpoint,
   loadOCRConfig,
   processMCPEnv,
   getConfigDefaults,
-} = require('librechat-data-provider');
-const { checkVariables, checkHealth, checkConfig, checkAzureVariables } = require('./start/checks');
-const { azureAssistantsDefaults, assistantsConfigSetup } = require('./start/assistants');
-const { initializeAzureBlobService } = require('./Files/Azure/initialize');
-const { initializeFirebase } = require('./Files/Firebase/initialize');
-const loadCustomConfig = require('./Config/loadCustomConfig');
-const handleRateLimits = require('./Config/handleRateLimits');
-const { loadDefaultInterface } = require('./start/interface');
-const { loadTurnstileConfig } = require('./start/turnstile');
-const { azureConfigSetup } = require('./start/azureOpenAI');
-const { processModelSpecs } = require('./start/modelSpecs');
-const { initializeS3 } = require('./Files/S3/initialize');
-const { loadAndFormatTools } = require('./ToolService');
-const { agentsConfigSetup } = require('./start/agents');
-const { initializeRoles } = require('~/models/Role');
-const { isEnabled } = require('~/server/utils');
-const { getMCPManager } = require('~/config');
-const composioService = require('./ComposioService');
-const paths = require('~/config/paths');
+} from 'librechat-data-provider';
+import { checkVariables, checkHealth, checkConfig, checkAzureVariables } from './start/checks.js';
+import { azureAssistantsDefaults, assistantsConfigSetup } from './start/assistants.js';
+import { initializeAzureBlobService } from './Files/Azure/initialize.js';
+import { initializeFirebase } from './Files/Firebase/initialize.js';
+import loadCustomConfig from './Config/loadCustomConfig.js';
+import handleRateLimits from './Config/handleRateLimits.js';
+import { loadDefaultInterface } from './start/interface.js';
+import { loadTurnstileConfig } from './start/turnstile.js';
+import { azureConfigSetup } from './start/azureOpenAI.js';
+import { processModelSpecs } from './start/modelSpecs.js';
+import { initializeS3 } from './Files/S3/initialize.js';
+import { loadAndFormatTools } from './ToolService.js';
+import { agentsConfigSetup } from './start/agents.js';
+import { initializeRoles } from '../../models/Role.js';
+import { isEnabled } from '../utils/index.js';
+import { getMCPManager } from '#config/index.js';
+import composioService from './ComposioService.js';
+import paths from '../../config/paths.js';
 
 /**
  * Loads custom config and initializes app-wide variables.
@@ -169,4 +169,4 @@ const AppService = async (app) => {
   };
 };
 
-module.exports = AppService;
+export default AppService;

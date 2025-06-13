@@ -1,9 +1,9 @@
-const { z } = require('zod');
-const axios = require('axios');
-const { tool } = require('@langchain/core/tools');
-const { Tools, EToolResources } = require('librechat-data-provider');
-const { getFiles } = require('~/models/File');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import axios from 'axios';
+import { tool } from '@langchain/core/tools';
+import { Tools, EToolResources } from 'librechat-data-provider';
+import { getFiles } from '#models/File.js';
+import { logger } from '#config/index.js';
 
 /**
  *
@@ -142,4 +142,4 @@ const createFileSearchTool = async ({ req, files, entity_id }) => {
   );
 };
 
-module.exports = { createFileSearchTool, primeFiles };
+export { createFileSearchTool, primeFiles };

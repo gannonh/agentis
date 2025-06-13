@@ -1,11 +1,11 @@
 // ~/server/services/Files/MistralOCR/crud.js
-const fs = require('fs');
-const path = require('path');
-const FormData = require('form-data');
-const { FileSources, envVarRegex, extractEnvVariable } = require('librechat-data-provider');
-const { loadAuthValues } = require('~/server/services/Tools/credentials');
-const { logger, createAxiosInstance } = require('~/config');
-const { logAxiosError } = require('~/utils/axios');
+import fs from 'fs';
+import path from 'path';
+import FormData from 'form-data';
+import { FileSources, envVarRegex, extractEnvVariable } from 'librechat-data-provider';
+import { loadAuthValues } from '../../Tools/credentials.js';
+import { logger, createAxiosInstance } from '../../../../config/index.js';
+import { logAxiosError } from '#utils/axios.js';
 
 const axios = createAxiosInstance();
 
@@ -222,9 +222,4 @@ const uploadMistralOCR = async ({ req, file, file_id, entity_id }) => {
   }
 };
 
-module.exports = {
-  uploadDocumentToMistral,
-  uploadMistralOCR,
-  getSignedUrl,
-  performOCR,
-};
+export { uploadDocumentToMistral, uploadMistralOCR, getSignedUrl, performOCR };

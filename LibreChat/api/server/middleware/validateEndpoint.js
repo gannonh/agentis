@@ -1,4 +1,4 @@
-const { handleError } = require('../utils');
+import { handleError } from '../utils/index.js';
 
 function validateEndpoint(req, res, next) {
   const { endpoint: _endpoint, endpointType } = req.body;
@@ -17,4 +17,4 @@ function validateEndpoint(req, res, next) {
   next();
 }
 
-module.exports = validateEndpoint;
+export default validateEndpoint;

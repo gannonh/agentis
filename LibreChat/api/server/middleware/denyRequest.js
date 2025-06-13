@@ -1,7 +1,7 @@
-const crypto = require('crypto');
-const { getResponseSender, Constants } = require('librechat-data-provider');
-const { sendMessage, sendError } = require('~/server/utils');
-const { saveMessage } = require('~/models');
+import crypto from 'crypto';
+import { getResponseSender, Constants } from 'librechat-data-provider';
+import { sendMessage, sendError } from '#server/utils/index.js';
+import { saveMessage } from '#models/index.js';
 
 /**
  * Denies a request by sending an error message and optionally saves the user's message.
@@ -59,4 +59,4 @@ const denyRequest = async (req, res, errorMessage) => {
   });
 };
 
-module.exports = denyRequest;
+export default denyRequest;

@@ -1,9 +1,9 @@
-const { SerpAPI } = require('@langchain/community/tools/serpapi');
-const { Calculator } = require('@langchain/community/tools/calculator');
-const { createCodeExecutionTool, EnvVar } = require('@librechat/agents');
-const { Tools, Constants, EToolResources } = require('librechat-data-provider');
-const { getUserPluginAuthValue } = require('~/server/services/PluginService');
-const {
+import { SerpAPI } from '@langchain/community/tools/serpapi';
+import { Calculator } from '@langchain/community/tools/calculator';
+import { createCodeExecutionTool, EnvVar } from '@librechat/agents';
+import { Tools, Constants, EToolResources } from 'librechat-data-provider';
+import { getUserPluginAuthValue } from '#server/services/PluginService.js';
+import {
   availableTools,
   manifestToolMap,
   // Basic Tools
@@ -19,12 +19,12 @@ const {
   createYouTubeTools,
   TavilySearchResults,
   createOpenAIImageTools,
-} = require('../');
-const { primeFiles: primeCodeFiles } = require('~/server/services/Files/Code/process');
-const { createFileSearchTool, primeFiles: primeSearchFiles } = require('./fileSearch');
-const { loadAuthValues } = require('~/server/services/Tools/credentials');
-const { createMCPTool } = require('~/server/services/MCP');
-const { logger } = require('~/config');
+} from '../index.js';
+import { primeFiles as primeCodeFiles } from '#server/services/Files/Code/process.js';
+import { createFileSearchTool, primeFiles as primeSearchFiles } from './fileSearch.js';
+import { loadAuthValues } from '#server/services/Tools/credentials.js';
+import { createMCPTool } from '#server/services/MCP.js';
+import { logger } from '#config/index.js';
 
 const mcpToolPattern = new RegExp(`^.+${Constants.mcp_delimiter}.+$`);
 
@@ -313,8 +313,4 @@ const loadTools = async ({
   return { loadedTools, toolContextMap };
 };
 
-module.exports = {
-  loadToolWithAuth,
-  validateTools,
-  loadTools,
-};
+export { loadToolWithAuth, validateTools, loadTools };

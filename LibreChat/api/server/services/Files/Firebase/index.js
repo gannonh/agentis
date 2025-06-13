@@ -1,9 +1,26 @@
-const crud = require('./crud');
-const images = require('./images');
-const initialize = require('./initialize');
+import {
+  deleteFile,
+  getFirebaseURL,
+  saveURLToFirebase,
+  deleteFirebaseFile,
+  uploadFileToFirebase,
+  saveBufferToFirebase,
+  getFirebaseFileStream,
+} from './crud.js';
+import { uploadImageToFirebase, prepareImageURL, processFirebaseAvatar } from './images.js';
+import { initializeFirebase, getFirebaseStorage } from './initialize.js';
 
-module.exports = {
-  ...crud,
-  ...images,
-  ...initialize,
+export {
+  deleteFile,
+  getFirebaseURL,
+  saveURLToFirebase,
+  deleteFirebaseFile,
+  uploadFileToFirebase,
+  saveBufferToFirebase,
+  getFirebaseFileStream,
+  uploadImageToFirebase,
+  prepareImageURL,
+  processFirebaseAvatar,
+  initializeFirebase,
+  getFirebaseStorage,
 };

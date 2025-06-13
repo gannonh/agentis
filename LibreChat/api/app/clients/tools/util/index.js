@@ -1,8 +1,4 @@
-const { validateTools, loadTools } = require('./handleTools');
-const handleOpenAIErrors = require('./handleOpenAIErrors');
+import { validateTools, loadTools } from './handleTools.js';
+import handleOpenAIErrors from './handleOpenAIErrors.js';
 
-module.exports = {
-  handleOpenAIErrors,
-  validateTools,
-  loadTools,
-};
+export { handleOpenAIErrors, validateTools, loadTools };

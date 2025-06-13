@@ -1,7 +1,7 @@
-const fetch = require('node-fetch');
-const { GraphEvents } = require('@librechat/agents');
-const { logger, sendEvent } = require('~/config');
-const { sleep } = require('~/server/utils');
+import fetch from 'node-fetch';
+import { GraphEvents } from '@librechat/agents';
+import { logger, sendEvent } from '#config/index.js';
+import { sleep } from '#server/utils/index.js';
 
 /**
  * Makes a function to make HTTP request and logs the process.
@@ -64,8 +64,4 @@ function createHandleLLMNewToken(streamRate) {
   };
 }
 
-module.exports = {
-  createFetch,
-  createHandleLLMNewToken,
-  createStreamEventHandlers,
-};
+export { createFetch, createHandleLLMNewToken, createStreamEventHandlers };

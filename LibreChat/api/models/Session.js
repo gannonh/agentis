@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
-const signPayload = require('~/server/services/signPayload');
-const { hashToken } = require('~/server/utils/crypto');
-const { sessionSchema } = require('@librechat/data-schemas');
-const { logger } = require('~/config');
+import mongoose from 'mongoose';
+import signPayload from '../server/services/signPayload.js';
+import { hashToken } from '../server/utils/crypto.js';
+import { sessionSchema } from '@librechat/data-schemas';
+import { logger } from '#config/index.js';
 
 const Session = mongoose.model('Session', sessionSchema);
 
@@ -263,7 +263,9 @@ const countActiveSessions = async (userId) => {
   }
 };
 
-module.exports = {
+export default Session;
+
+export {
   createSession,
   findSession,
   updateExpiration,

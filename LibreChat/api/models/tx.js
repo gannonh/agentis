@@ -1,4 +1,4 @@
-const { matchModelName } = require('../utils');
+import { matchModelName } from '../utils/index.js';
 const defaultRate = 6;
 
 /**
@@ -300,7 +300,7 @@ const getCacheMultiplier = ({ valueKey, cacheType, model, endpoint, endpointToke
   return cacheTokenValues[valueKey]?.[cacheType] ?? null;
 };
 
-module.exports = {
+export {
   tokenValues,
   getValueKey,
   getMultiplier,

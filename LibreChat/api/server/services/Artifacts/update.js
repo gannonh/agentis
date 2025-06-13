@@ -101,9 +101,4 @@ const replaceArtifactContent = (originalText, artifact, original, updated) => {
   return updatedText.replace(/\n+(?=```\n:::)/g, '\n');
 };
 
-module.exports = {
-  ARTIFACT_START,
-  ARTIFACT_END,
-  findAllArtifacts,
-  replaceArtifactContent,
-};
+export { ARTIFACT_START, ARTIFACT_END, findAllArtifacts, replaceArtifactContent };

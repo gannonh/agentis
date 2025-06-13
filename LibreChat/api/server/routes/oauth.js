@@ -1,15 +1,15 @@
 // file deepcode ignore NoRateLimitingForLogin: Rate limiting is handled by the `loginLimiter` middleware
-const express = require('express');
-const passport = require('passport');
-const {
+import express from 'express';
+import passport from 'passport';
+import { 
   checkBan,
   logHeaders,
   loginLimiter,
   setBalanceConfig,
   checkDomainAllowed,
-} = require('~/server/middleware');
-const { setAuthTokens } = require('~/server/services/AuthService');
-const { logger } = require('~/config');
+ } from '#server/middleware.js';
+import {  setAuthTokens  } from '#server/services/AuthService.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -179,4 +179,4 @@ router.post(
   oauthHandler,
 );
 
-module.exports = router;
+export default router;

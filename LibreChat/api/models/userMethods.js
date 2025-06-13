@@ -1,8 +1,8 @@
-const bcrypt = require('bcryptjs');
-const { getBalanceConfig } = require('~/server/services/Config');
-const signPayload = require('~/server/services/signPayload');
-const Balance = require('./Balance');
-const User = require('./User');
+import bcrypt from 'bcryptjs';
+import { getBalanceConfig } from '../server/services/Config/index.js';
+import signPayload from '../server/services/signPayload.js';
+import Balance from './Balance.js';
+import User from './User.js';
 
 /**
  * Retrieve a user by ID and convert the found user document to a plain object.
@@ -177,7 +177,7 @@ const comparePassword = async (user, candidatePassword) => {
   });
 };
 
-module.exports = {
+export {
   comparePassword,
   deleteUserById,
   generateToken,

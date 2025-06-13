@@ -1,13 +1,13 @@
 // abortMiddleware.js
-const { isAssistantsEndpoint, ErrorTypes } = require('librechat-data-provider');
-const { sendMessage, sendError, countTokens, isEnabled } = require('~/server/utils');
-const { truncateText, smartTruncateText } = require('~/app/clients/prompts');
-const clearPendingReq = require('~/cache/clearPendingReq');
-const { spendTokens } = require('~/models/spendTokens');
-const abortControllers = require('./abortControllers');
-const { saveMessage, getConvo } = require('~/models');
-const { abortRun } = require('./abortRun');
-const { logger } = require('~/config');
+import { isAssistantsEndpoint, ErrorTypes } from 'librechat-data-provider';
+import { sendMessage, sendError, countTokens, isEnabled } from '#server/utils/index.js';
+import { truncateText, smartTruncateText } from '#app/clients/prompts/index.js';
+import clearPendingReq from '#cache/clearPendingReq.js';
+import { spendTokens } from '#models/spendTokens.js';
+import abortControllers from './abortControllers.js';
+import { saveMessage, getConvo } from '#models/index.js';
+import { abortRun } from './abortRun.js';
+import { logger } from '#config/index.js';
 
 const abortDataMap = new WeakMap();
 
@@ -388,7 +388,7 @@ const handleAbortError = async (res, req, error, data) => {
   }
 };
 
-module.exports = {
+export {
   handleAbort,
   handleAbortError,
   createAbortController,

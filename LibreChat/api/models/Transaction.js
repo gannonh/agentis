@@ -1,9 +1,9 @@
-const mongoose = require('mongoose');
-const { transactionSchema } = require('@librechat/data-schemas');
-const { getBalanceConfig } = require('~/server/services/Config');
-const { getMultiplier, getCacheMultiplier } = require('./tx');
-const { logger } = require('~/config');
-const Balance = require('./Balance');
+import mongoose from 'mongoose';
+import { transactionSchema } from '@librechat/data-schemas';
+import { getBalanceConfig } from '../server/services/Config/index.js';
+import { getMultiplier, getCacheMultiplier } from './tx.js';
+import { logger } from '#config/index.js';
+import Balance from './Balance.js';
 
 const cancelRate = 1.15;
 
@@ -340,4 +340,6 @@ async function getTransactions(filter) {
   }
 }
 
-module.exports = { Transaction, getTransactions };
+export default Transaction;
+
+export { Transaction, getTransactions };

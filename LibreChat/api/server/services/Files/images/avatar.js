@@ -1,9 +1,9 @@
-const sharp = require('sharp');
-const fs = require('fs').promises;
-const fetch = require('node-fetch');
-const { EImageOutputType } = require('librechat-data-provider');
-const { resizeAndConvert } = require('./resize');
-const { logger } = require('~/config');
+import sharp from 'sharp';
+import { promises as fs } from 'fs';
+import fetch from 'node-fetch';
+import { EImageOutputType } from 'librechat-data-provider';
+import { resizeAndConvert } from './resize.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Uploads an avatar image for a user. This function can handle various types of input (URL, Buffer, or File object),
@@ -66,4 +66,4 @@ async function resizeAvatar({ userId, input, desiredFormat = EImageOutputType.PN
   }
 }
 
-module.exports = { resizeAvatar };
+export default resizeAvatar;

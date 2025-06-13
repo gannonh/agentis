@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-const fetch = require('node-fetch');
-const { ref, uploadBytes, getDownloadURL, deleteObject } = require('firebase/storage');
-const { getBufferMetadata } = require('~/server/utils');
-const { getFirebaseStorage } = require('./initialize');
-const { logger } = require('~/config');
+import fs from 'fs';
+import path from 'path';
+import axios from 'axios';
+import fetch from 'node-fetch';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getBufferMetadata } from '../../../utils/index.js';
+import { getFirebaseStorage } from './initialize.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Deletes a file from Firebase Storage.
@@ -248,7 +248,7 @@ async function getFirebaseFileStream(_req, filepath) {
   }
 }
 
-module.exports = {
+export {
   deleteFile,
   getFirebaseURL,
   saveURLToFirebase,

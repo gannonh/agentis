@@ -1,5 +1,5 @@
-const OpenAI = require('openai');
-const { logger } = require('~/config');
+import OpenAI from 'openai';
+import { logger } from '#config/index.js';
 
 /**
  * Handles errors that may occur when making requests to OpenAI's API.
@@ -30,4 +30,4 @@ async function handleOpenAIErrors(err, errorCallback, context = 'stream') {
   }
 }
 
-module.exports = handleOpenAIErrors;
+export default handleOpenAIErrors;

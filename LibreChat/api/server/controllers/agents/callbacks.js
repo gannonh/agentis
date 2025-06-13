@@ -1,6 +1,6 @@
-const { nanoid } = require('nanoid');
-const { Tools, StepTypes, FileContext } = require('librechat-data-provider');
-const {
+import {  nanoid  } from 'nanoid';
+import {  Tools, StepTypes, FileContext  } from 'librechat-data-provider';
+import { 
   EnvVar,
   Providers,
   GraphEvents,
@@ -8,11 +8,11 @@ const {
   ToolEndHandler,
   handleToolCalls,
   ChatModelStreamHandler,
-} = require('@librechat/agents');
-const { processCodeOutput } = require('~/server/services/Files/Code/process');
-const { loadAuthValues } = require('~/server/services/Tools/credentials');
-const { saveBase64Image } = require('~/server/services/Files/process');
-const { logger, sendEvent } = require('~/config');
+ } from '@librechat/agents';
+import {  processCodeOutput  } from '#server/services/Files/Code/process.js';
+import {  loadAuthValues  } from '#server/services/Tools/credentials.js';
+import {  saveBase64Image  } from '#server/services/Files/process.js';
+import {  logger, sendEvent  } from '#config.js';
 
 class ModelEndHandler {
   /**
@@ -331,7 +331,7 @@ function createToolEndCallback({ req, res, artifactPromises }) {
   };
 }
 
-module.exports = {
+export {
   getDefaultHandlers,
   createToolEndCallback,
 };

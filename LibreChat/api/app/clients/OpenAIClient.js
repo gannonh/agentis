@@ -1,7 +1,7 @@
-const { OllamaClient } = require('./OllamaClient');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const { SplitStreamHandler, CustomOpenAIClient: OpenAI } = require('@librechat/agents');
-const {
+import { OllamaClient } from './OllamaClient.js';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { SplitStreamHandler, CustomOpenAIClient as OpenAI } from '@librechat/agents';
+import {
   Constants,
   ImageDetail,
   ContentTypes,
@@ -15,34 +15,34 @@ const {
   getResponseSender,
   validateVisionModel,
   mapModelToAzureConfig,
-} = require('librechat-data-provider');
-const {
+} from 'librechat-data-provider';
+import {
   extractBaseURL,
   constructAzureURL,
   getModelMaxTokens,
   genAzureChatCompletion,
   getModelMaxOutputTokens,
-} = require('~/utils');
-const {
+} from '#utils/index.js';
+import {
   truncateText,
   formatMessage,
   CUT_OFF_PROMPT,
   titleInstruction,
   createContextHandlers,
-} = require('./prompts');
-const { encodeAndFormat } = require('~/server/services/Files/images/encode');
-const { createFetch, createStreamEventHandlers } = require('./generators');
-const { addSpaceIfNeeded, isEnabled, sleep } = require('~/server/utils');
-const Tokenizer = require('~/server/services/Tokenizer');
-const { spendTokens } = require('~/models/spendTokens');
-const { handleOpenAIErrors } = require('./tools/util');
-const { createLLM, RunManager } = require('./llm');
-const ChatGPTClient = require('./ChatGPTClient');
-const { summaryBuffer } = require('./memory');
-const { runTitleChain } = require('./chains');
-const { tokenSplit } = require('./document');
-const BaseClient = require('./BaseClient');
-const { logger } = require('~/config');
+} from './prompts/index.js';
+import { encodeAndFormat } from '#server/services/Files/images/encode.js';
+import { createFetch, createStreamEventHandlers } from './generators.js';
+import { addSpaceIfNeeded, isEnabled, sleep } from '#server/utils/index.js';
+import Tokenizer from '#server/services/Tokenizer.js';
+import { spendTokens } from '#models/spendTokens.js';
+import { handleOpenAIErrors } from './tools/util/index.js';
+import { createLLM, RunManager } from './llm/index.js';
+import ChatGPTClient from './ChatGPTClient.js';
+import { summaryBuffer } from './memory/index.js';
+import { runTitleChain } from './chains/index.js';
+import { tokenSplit } from './document/index.js';
+import BaseClient from './BaseClient.js';
+import { logger } from '#config/index.js';
 
 class OpenAIClient extends BaseClient {
   constructor(apiKey, options = {}) {
@@ -1579,4 +1579,4 @@ ${convo}
   }
 }
 
-module.exports = OpenAIClient;
+export default OpenAIClient;

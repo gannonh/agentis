@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
-const { resizeImageBuffer } = require('./resize');
-const { getStrategyFunctions } = require('../strategies');
-const { logger } = require('~/config');
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+import { resizeImageBuffer } from './resize.js';
+import { getStrategyFunctions } from '../strategies.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Converts an image file or buffer to target output type with specified resolution.
@@ -67,4 +67,4 @@ async function convertImage(req, file, resolution = 'high', basename = '') {
   }
 }
 
-module.exports = { convertImage };
+export { convertImage };

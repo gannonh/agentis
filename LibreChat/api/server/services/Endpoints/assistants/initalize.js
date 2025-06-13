@@ -1,13 +1,9 @@
-const OpenAI = require('openai');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const { ErrorTypes, EModelEndpoint } = require('librechat-data-provider');
-const {
-  getUserKeyValues,
-  getUserKeyExpiry,
-  checkUserKeyExpiry,
-} = require('~/server/services/UserService');
-const OpenAIClient = require('~/app/clients/OpenAIClient');
-const { isUserProvided } = require('~/server/utils');
+import OpenAI from 'openai';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { ErrorTypes, EModelEndpoint } from 'librechat-data-provider';
+import { getUserKeyValues, getUserKeyExpiry, checkUserKeyExpiry } from '../../UserService.js';
+import OpenAIClient from '../../../../app/clients/OpenAIClient.js';
+import { isUserProvided } from '../../../utils/index.js';
 
 const initializeClient = async ({ req, res, endpointOption, version, initAppClient = false }) => {
   const { PROXY, OPENAI_ORGANIZATION, ASSISTANTS_API_KEY, ASSISTANTS_BASE_URL } = process.env;
@@ -90,4 +86,4 @@ const initializeClient = async ({ req, res, endpointOption, version, initAppClie
   };
 };
 
-module.exports = initializeClient;
+export default initializeClient;

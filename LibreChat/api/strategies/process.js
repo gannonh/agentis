@@ -1,7 +1,7 @@
-const { FileSources } = require('librechat-data-provider');
-const { createUser, updateUser, getUserById } = require('~/models/userMethods');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { resizeAvatar } = require('~/server/services/Files/images/avatar');
+import { FileSources } from 'librechat-data-provider';
+import { createUser, updateUser, getUserById } from '#models/userMethods.js';
+import { getStrategyFunctions } from '#server/services/Files/strategies.js';
+import resizeAvatar from '#server/services/Files/images/avatar.js';
 
 /**
  * Updates the avatar URL of an existing user. If the user's avatar URL does not include the query parameter
@@ -95,7 +95,7 @@ const createSocialUser = async ({
   return await getUserById(newUserId);
 };
 
-module.exports = {
+export {
   handleExistingUser,
   createSocialUser,
 };

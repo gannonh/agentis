@@ -1,10 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const mime = require('mime');
-const axios = require('axios');
-const fetch = require('node-fetch');
-const { logger } = require('~/config');
-const { getAzureContainerClient } = require('./initialize');
+import fs from 'fs';
+import path from 'path';
+import mime from 'mime';
+import axios from 'axios';
+import fetch from 'node-fetch';
+import { logger } from '../../../../config/index.js';
+import { getAzureContainerClient } from './initialize.js';
 
 const defaultBasePath = 'images';
 const { AZURE_STORAGE_PUBLIC_ACCESS = 'true', AZURE_CONTAINER_NAME = 'files' } = process.env;
@@ -243,7 +243,7 @@ async function getAzureFileStream(_req, fileURL) {
   }
 }
 
-module.exports = {
+export {
   saveBufferToAzure,
   saveURLToAzure,
   getAzureURL,

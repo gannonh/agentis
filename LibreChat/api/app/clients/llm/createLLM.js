@@ -1,6 +1,6 @@
-const { ChatOpenAI } = require('@langchain/openai');
-const { sanitizeModelName, constructAzureURL } = require('~/utils');
-const { isEnabled } = require('~/server/utils');
+import { ChatOpenAI } from '@langchain/openai';
+import { sanitizeModelName, constructAzureURL } from '#utils/index.js';
+import { isEnabled } from '#server/utils/index.js';
 
 /**
  * Creates a new instance of a language model (LLM) for chat interactions.
@@ -79,4 +79,4 @@ function createLLM({
   );
 }
 
-module.exports = createLLM;
+export default createLLM;

@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
-const { resizeImageBuffer } = require('../images/resize');
-const { updateUser } = require('~/models/userMethods');
-const { saveBufferToS3 } = require('./crud');
-const { updateFile } = require('~/models/File');
-const { logger } = require('~/config');
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+import { resizeImageBuffer } from '../images/resize.js';
+import { updateUser } from '#models/userMethods.js';
+import { saveBufferToS3 } from './crud.js';
+import { updateFile } from '#models/File.js';
+import { logger } from '../../../../config/index.js';
 
 const defaultBasePath = 'images';
 
@@ -111,8 +111,4 @@ async function processS3Avatar({ buffer, userId, manual, basePath = defaultBaseP
   }
 }
 
-module.exports = {
-  uploadImageToS3,
-  prepareImageURLS3,
-  processS3Avatar,
-};
+export { uploadImageToS3, prepareImageURLS3, processS3Avatar };

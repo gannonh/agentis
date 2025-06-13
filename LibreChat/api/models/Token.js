@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
-const { encryptV2 } = require('~/server/utils/crypto');
-const { tokenSchema } = require('@librechat/data-schemas');
-const { logger } = require('~/config');
+import mongoose from 'mongoose';
+import { encryptV2 } from '../server/utils/crypto.js';
+import { tokenSchema } from '@librechat/data-schemas';
+import { logger } from '#config/index.js';
 
 /**
  * Token model.
@@ -221,10 +221,6 @@ async function handleOAuthToken({
   }
 }
 
-module.exports = {
-  findToken,
-  createToken,
-  updateToken,
-  deleteTokens,
-  handleOAuthToken,
-};
+export default Token;
+
+export { findToken, createToken, updateToken, deleteTokens, handleOAuthToken };

@@ -1,5 +1,5 @@
-const { CohereConstants } = require('librechat-data-provider');
-const { titleInstruction } = require('../prompts/titlePrompts');
+import { CohereConstants } from 'librechat-data-provider';
+import { titleInstruction } from '../prompts/index.js';
 
 // Mapping OpenAI roles to Cohere roles
 const roleMap = {
@@ -82,4 +82,4 @@ function createCoherePayload({ modelOptions }) {
   };
 }
 
-module.exports = createCoherePayload;
+export default createCoherePayload;

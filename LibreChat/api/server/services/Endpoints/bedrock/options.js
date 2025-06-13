@@ -1,14 +1,14 @@
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const {
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import {
   AuthType,
   Constants,
   EModelEndpoint,
   bedrockInputParser,
   bedrockOutputParser,
   removeNullishValues,
-} = require('librechat-data-provider');
-const { getUserKey, checkUserKeyExpiry } = require('~/server/services/UserService');
-const { createHandleLLMNewToken } = require('~/app/clients/generators');
+} from 'librechat-data-provider';
+import { getUserKey, checkUserKeyExpiry } from '../../UserService.js';
+import { createHandleLLMNewToken } from '../../../../app/clients/generators.js';
 
 const getOptions = async ({ req, overrideModel, endpointOption }) => {
   const {
@@ -101,4 +101,4 @@ const getOptions = async ({ req, overrideModel, endpointOption }) => {
   };
 };
 
-module.exports = getOptions;
+export default getOptions;

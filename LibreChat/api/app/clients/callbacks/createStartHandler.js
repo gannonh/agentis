@@ -1,9 +1,9 @@
-const { promptTokensEstimate } = require('openai-chat-tokens');
-const { EModelEndpoint, supportsBalanceCheck } = require('librechat-data-provider');
-const { formatFromLangChain } = require('~/app/clients/prompts');
-const { getBalanceConfig } = require('~/server/services/Config');
-const { checkBalance } = require('~/models/balanceMethods');
-const { logger } = require('~/config');
+import { promptTokensEstimate } from 'openai-chat-tokens';
+import { EModelEndpoint, supportsBalanceCheck } from 'librechat-data-provider';
+import { formatFromLangChain } from '#app/clients/prompts/index.js';
+import { getBalanceConfig } from '#server/services/Config/index.js';
+import { checkBalance } from '#models/balanceMethods.js';
+import { logger } from '#config/index.js';
 
 const createStartHandler = ({
   context,
@@ -92,4 +92,4 @@ const createStartHandler = ({
   };
 };
 
-module.exports = createStartHandler;
+export default createStartHandler;

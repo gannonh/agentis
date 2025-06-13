@@ -1,5 +1,4 @@
-const manage = require('./manage');
+import * as manage from './manage.js';
 
-module.exports = {
-  ...manage,
-};
+export * from './manage.js';
+export { manage };

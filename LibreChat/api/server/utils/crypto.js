@@ -1,15 +1,28 @@
-require('dotenv').config();
-const crypto = require('node:crypto');
+import 'dotenv/config';
+import crypto from 'node:crypto';
 const { webcrypto } = crypto;
 
 // Use hex decoding for both key and IV for legacy methods.
-const key = Buffer.from(process.env.CREDS_KEY, 'hex');
-const iv = Buffer.from(process.env.CREDS_IV, 'hex');
+const getKey = () => {
+  if (!process.env.CREDS_KEY) {
+    throw new Error('CREDS_KEY environment variable is not set');
+  }
+  return Buffer.from(process.env.CREDS_KEY, 'hex');
+};
+
+const getIV = () => {
+  if (!process.env.CREDS_IV) {
+    throw new Error('CREDS_IV environment variable is not set');
+  }
+  return Buffer.from(process.env.CREDS_IV, 'hex');
+};
 const algorithm = 'AES-CBC';
 
 // --- Legacy v1/v2 Setup: AES-CBC with fixed key and IV ---
 
 async function encrypt(value) {
+  const key = getKey();
+  const iv = getIV();
   const cryptoKey = await webcrypto.subtle.importKey('raw', key, { name: algorithm }, false, [
     'encrypt',
   ]);
@@ -24,6 +37,8 @@ async function encrypt(value) {
 }
 
 async function decrypt(encryptedValue) {
+  const key = getKey();
+  const iv = getIV();
   const cryptoKey = await webcrypto.subtle.importKey('raw', key, { name: algorithm }, false, [
     'decrypt',
   ]);
@@ -40,6 +55,7 @@ async function decrypt(encryptedValue) {
 // --- v2: AES-CBC with a random IV per encryption ---
 
 async function encryptV2(value) {
+  const key = getKey();
   const gen_iv = webcrypto.getRandomValues(new Uint8Array(16));
   const cryptoKey = await webcrypto.subtle.importKey('raw', key, { name: algorithm }, false, [
     'encrypt',
@@ -55,6 +71,7 @@ async function encryptV2(value) {
 }
 
 async function decryptV2(encryptedValue) {
+  const key = getKey();
   const parts = encryptedValue.split(':');
   if (parts.length === 1) {
     return parts[0];
@@ -85,6 +102,7 @@ const algorithm_v3 = 'aes-256-ctr';
  * @returns {string} The encrypted string with a "v3:" prefix.
  */
 function encryptV3(value) {
+  const key = getKey();
   if (key.length !== 32) {
     throw new Error(`Invalid key length: expected 32 bytes, got ${key.length} bytes`);
   }
@@ -95,6 +113,7 @@ function encryptV3(value) {
 }
 
 function decryptV3(encryptedValue) {
+  const key = getKey();
   const parts = encryptedValue.split(':');
   if (parts[0] !== 'v3') {
     throw new Error('Not a v3 encrypted value');
@@ -134,7 +153,7 @@ async function hashBackupCode(input) {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-module.exports = {
+export {
   encrypt,
   decrypt,
   encryptV2,

@@ -1,9 +1,9 @@
-const _ = require('lodash');
-const mongoose = require('mongoose');
-const { MeiliSearch } = require('meilisearch');
-const { parseTextParts, ContentTypes } = require('librechat-data-provider');
-const { cleanUpPrimaryKeyValue } = require('~/lib/utils/misc');
-const logger = require('~/config/meiliLogger');
+import _ from 'lodash';
+import mongoose from 'mongoose';
+import { MeiliSearch } from 'meilisearch';
+import { parseTextParts, ContentTypes } from 'librechat-data-provider';
+import { cleanUpPrimaryKeyValue } from '../../lib/utils/misc.js';
+import logger from '../../config/meiliLogger.js';
 
 // Environment flags
 /**
@@ -346,7 +346,7 @@ const createMeiliMongooseModel = function ({ index, attributesToIndex }) {
  * @param {string} options.indexName - The name of the MeiliSearch index.
  * @param {string} options.primaryKey - The primary key field for indexing.
  */
-module.exports = function mongoMeili(schema, options) {
+export default function mongoMeili(schema, options) {
   validateOptions(options);
 
   // Add _meiliIndex field to the schema to track if a document has been indexed in MeiliSearch.
@@ -472,4 +472,4 @@ module.exports = function mongoMeili(schema, options) {
     // Otherwise, trigger a post-save hook to synchronize the document.
     doc.postSaveHook();
   });
-};
+}

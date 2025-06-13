@@ -1,20 +1,20 @@
-const { nanoid } = require('nanoid');
-const { EnvVar } = require('@librechat/agents');
-const {
+import {  nanoid  } from 'nanoid';
+import {  EnvVar  } from '@librechat/agents';
+import { 
   Tools,
   AuthType,
   Permissions,
   ToolCallTypes,
   PermissionTypes,
-} = require('librechat-data-provider');
-const { processFileURL, uploadImageBuffer } = require('~/server/services/Files/process');
-const { processCodeOutput } = require('~/server/services/Files/Code/process');
-const { createToolCall, getToolCallsByConvo } = require('~/models/ToolCall');
-const { loadAuthValues } = require('~/server/services/Tools/credentials');
-const { loadTools } = require('~/app/clients/tools/util');
-const { checkAccess } = require('~/server/middleware');
-const { getMessage } = require('~/models/Message');
-const { logger } = require('~/config');
+ } from 'librechat-data-provider';
+import {  processFileURL, uploadImageBuffer  } from '#server/services/Files/process.js';
+import {  processCodeOutput  } from '#server/services/Files/Code/process.js';
+import {  createToolCall, getToolCallsByConvo  } from '#models/ToolCall.js';
+import {  loadAuthValues  } from '#server/services/Tools/credentials.js';
+import {  loadTools  } from '#app/clients/tools/util.js';
+import {  checkAccess  } from '#server/middleware.js';
+import {  getMessage  } from '#models/Message.js';
+import {  logger  } from '#config.js';
 
 const fieldsMap = {
   [Tools.execute_code]: [EnvVar.CODE_API_KEY],
@@ -201,7 +201,7 @@ const getToolCalls = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   callTool,
   getToolCalls,
   verifyToolAuth,

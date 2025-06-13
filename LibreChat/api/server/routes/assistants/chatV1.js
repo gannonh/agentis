@@ -1,16 +1,16 @@
-const express = require('express');
+import express from 'express';
 
 const router = express.Router();
-const {
+import { 
   setHeaders,
   handleAbort,
   validateModel,
   // validateEndpoint,
   buildEndpointOption,
-} = require('~/server/middleware');
-const validateConvoAccess = require('~/server/middleware/validate/convoAccess');
-const validateAssistant = require('~/server/middleware/assistants/validate');
-const chatController = require('~/server/controllers/assistants/chatV1');
+ } from '#server/middleware.js';
+import validateConvoAccess from '#server/middleware/validate/convoAccess.js';
+import validateAssistant from '#server/middleware/assistants/validate.js';
+import chatController from '#server/controllers/assistants/chatV1.js';
 
 router.post('/abort', handleAbort());
 
@@ -32,4 +32,4 @@ router.post(
   chatController,
 );
 
-module.exports = router;
+export default router;

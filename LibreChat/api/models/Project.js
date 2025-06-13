@@ -1,6 +1,8 @@
-const { model } = require('mongoose');
-const { GLOBAL_PROJECT_NAME } = require('librechat-data-provider').Constants;
-const { projectSchema } = require('@librechat/data-schemas');
+import { model } from 'mongoose';
+import { Constants } from 'librechat-data-provider';
+import { projectSchema } from '@librechat/data-schemas';
+
+const { GLOBAL_PROJECT_NAME } = Constants;
 
 const Project = model('Project', projectSchema);
 
@@ -122,7 +124,9 @@ const removeAgentFromAllProjects = async (agentId) => {
   await Project.updateMany({}, { $pull: { agentIds: agentId } });
 };
 
-module.exports = {
+export default Project;
+
+export {
   getProjectById,
   getProjectByName,
   /* prompts */

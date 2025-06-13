@@ -1,15 +1,15 @@
-const OpenAIClient = require('./OpenAIClient');
-const { CallbackManager } = require('@langchain/core/callbacks/manager');
-const { BufferMemory, ChatMessageHistory } = require('langchain/memory');
-const { addImages, buildErrorInput, buildPromptPrefix } = require('./output_parsers');
-const { initializeCustomAgent, initializeFunctionsAgent } = require('./agents');
-const { processFileURL } = require('~/server/services/Files/process');
-const { EModelEndpoint } = require('librechat-data-provider');
-const { checkBalance } = require('~/models/balanceMethods');
-const { formatLangChainMessages } = require('./prompts');
-const { extractBaseURL } = require('~/utils');
-const { loadTools } = require('./tools/util');
-const { logger } = require('~/config');
+import OpenAIClient from './OpenAIClient.js';
+import { CallbackManager } from '@langchain/core/callbacks/manager';
+import { BufferMemory, ChatMessageHistory } from 'langchain/memory';
+import { addImages, buildErrorInput, buildPromptPrefix } from './output_parsers/index.js';
+import { initializeCustomAgent, initializeFunctionsAgent } from './agents/index.js';
+import { processFileURL } from '#server/services/Files/process.js';
+import { EModelEndpoint } from 'librechat-data-provider';
+import { checkBalance } from '#models/balanceMethods.js';
+import { formatLangChainMessages } from './prompts/index.js';
+import { extractBaseURL } from '#utils/index.js';
+import { loadTools } from './tools/util/index.js';
+import { logger } from '#config/index.js';
 
 class PluginsClient extends OpenAIClient {
   constructor(apiKey, options = {}) {
@@ -539,4 +539,4 @@ class PluginsClient extends OpenAIClient {
   }
 }
 
-module.exports = PluginsClient;
+export default PluginsClient;

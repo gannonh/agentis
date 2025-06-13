@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
-const { keySchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { keySchema } from '@librechat/data-schemas';
 
-module.exports = mongoose.model('Key', keySchema);
+export default mongoose.model('Key', keySchema);

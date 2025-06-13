@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const nodemailer = require('nodemailer');
-const handlebars = require('handlebars');
-const { isEnabled } = require('~/server/utils/handleText');
-const logger = require('~/config/winston');
+import fs from 'fs';
+import path from 'path';
+import nodemailer from 'nodemailer';
+import handlebars from 'handlebars';
+import { isEnabled } from './handleText.js';
+import logger from '../../config/winston.js';
 
 /**
  * Sends an email using the specified template, subject, and payload.
@@ -95,4 +95,4 @@ const sendEmail = async ({ email, subject, payload, template, throwError = true 
   }
 };
 
-module.exports = sendEmail;
+export default sendEmail;

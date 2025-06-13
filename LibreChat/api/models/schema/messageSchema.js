@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const mongoMeili = require('~/models/plugins/mongoMeili');
-const { messageSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import mongoMeili from '../plugins/mongoMeili.js';
+import { messageSchema } from '@librechat/data-schemas';
 
 if (process.env.MEILI_HOST && process.env.MEILI_MASTER_KEY) {
   messageSchema.plugin(mongoMeili, {
@@ -13,4 +13,4 @@ if (process.env.MEILI_HOST && process.env.MEILI_MASTER_KEY) {
 
 const Message = mongoose.models.Message || mongoose.model('Message', messageSchema);
 
-module.exports = Message;
+export default Message;

@@ -1,8 +1,8 @@
-const { MeiliSearch } = require('meilisearch');
-const { Conversation } = require('~/models/Conversation');
-const { Message } = require('~/models/Message');
-const { isEnabled } = require('~/server/utils');
-const { logger } = require('~/config');
+import { MeiliSearch } from 'meilisearch';
+import Conversation from '../../models/Conversation.js';
+import Message from '../../models/Message.js';
+import { isEnabled } from '../../server/utils/index.js';
+import { logger } from '#config/index.js';
 
 const searchEnabled = isEnabled(process.env.SEARCH);
 const indexingDisabled = isEnabled(process.env.MEILI_NO_SYNC);
@@ -86,4 +86,4 @@ process.on('exit', () => {
   clearTimeout(currentTimeout);
 });
 
-module.exports = indexSync;
+export default indexSync;

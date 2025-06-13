@@ -1,5 +1,3 @@
-const crud = require('./crud');
+import { uploadDocumentToMistral, uploadMistralOCR, getSignedUrl, performOCR } from './crud.js';
 
-module.exports = {
-  ...crud,
-};
+export { uploadDocumentToMistral, uploadMistralOCR, getSignedUrl, performOCR };

@@ -1,9 +1,9 @@
-const {
+import {
   Capabilities,
   assistantEndpointSchema,
   defaultAssistantsVersion,
-} = require('librechat-data-provider');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { logger } from '#config/index.js';
 
 /**
  * Sets up the minimum, default Assistants configuration if Azure OpenAI Assistants option is enabled.
@@ -55,4 +55,4 @@ function assistantsConfigSetup(config, assistantsEndpoint, prevConfig = {}) {
   };
 }
 
-module.exports = { azureAssistantsDefaults, assistantsConfigSetup };
+export { azureAssistantsDefaults, assistantsConfigSetup };

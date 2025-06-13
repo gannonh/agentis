@@ -1,4 +1,4 @@
-const sharp = require('sharp');
+import sharp from 'sharp';
 
 /**
  * Determines the file type of a buffer
@@ -44,4 +44,4 @@ const getBufferMetadata = async (buffer) => {
   };
 };
 
-module.exports = { determineFileType, getBufferMetadata };
+export { determineFileType, getBufferMetadata };

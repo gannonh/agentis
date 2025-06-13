@@ -1,5 +1,5 @@
-const { S3Client } = require('@aws-sdk/client-s3');
-const { logger } = require('~/config');
+import { S3Client } from '@aws-sdk/client-s3';
+import { logger } from '../../../../config/index.js';
 
 let s3 = null;
 
@@ -50,4 +50,4 @@ const initializeS3 = () => {
   return s3;
 };
 
-module.exports = { initializeS3 };
+export { initializeS3 };

@@ -1,6 +1,6 @@
-const crypto = require('crypto');
-const fetch = require('node-fetch');
-const {
+import crypto from 'crypto';
+import fetch from 'node-fetch';
+import {
   supportsBalanceCheck,
   isAgentsEndpoint,
   isParamEndpoint,
@@ -9,14 +9,14 @@ const {
   excludedKeys,
   ErrorTypes,
   Constants,
-} = require('librechat-data-provider');
-const { getMessages, saveMessage, updateMessage, saveConvo, getConvo } = require('~/models');
-const { checkBalance } = require('~/models/balanceMethods');
-const { truncateToolCallOutputs } = require('./prompts');
-const { addSpaceIfNeeded } = require('~/server/utils');
-const { getFiles } = require('~/models/File');
-const TextStream = require('./TextStream');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { getMessages, saveMessage, updateMessage, saveConvo, getConvo } from '#models/index.js';
+import { checkBalance } from '#models/balanceMethods.js';
+import { truncateToolCallOutputs } from './prompts/index.js';
+import { addSpaceIfNeeded } from '#server/utils/index.js';
+import { getFiles } from '#models/File.js';
+import TextStream from './TextStream.js';
+import { logger } from '#config/index.js';
 
 class BaseClient {
   constructor(apiKey, options = {}) {
@@ -1175,4 +1175,4 @@ class BaseClient {
   }
 }
 
-module.exports = BaseClient;
+export default BaseClient;

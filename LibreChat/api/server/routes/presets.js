@@ -1,8 +1,8 @@
-const express = require('express');
-const crypto = require('crypto');
-const { getPresets, savePreset, deletePresets } = require('~/models');
-const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
-const { logger } = require('~/config');
+import express from 'express';
+import crypto from 'crypto';
+import {  getPresets, savePreset, deletePresets  } from '#models.js';
+import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 router.use(requireJwtAuth);
@@ -45,4 +45,4 @@ router.post('/delete', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

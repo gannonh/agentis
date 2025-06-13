@@ -1,19 +1,22 @@
-const { config } = require('./EndpointService');
-const getCustomConfig = require('./getCustomConfig');
-const loadCustomConfig = require('./loadCustomConfig');
-const loadConfigModels = require('./loadConfigModels');
-const loadDefaultModels = require('./loadDefaultModels');
-const getEndpointsConfig = require('./getEndpointsConfig');
-const loadOverrideConfig = require('./loadOverrideConfig');
-const loadAsyncEndpoints = require('./loadAsyncEndpoints');
+import { config } from './EndpointService.js';
+import { getCustomConfig, getBalanceConfig, getCustomEndpointConfig } from './getCustomConfig.js';
+import loadCustomConfig from './loadCustomConfig.js';
+import loadConfigModels from './loadConfigModels.js';
+import loadDefaultModels from './loadDefaultModels.js';
+import { getEndpointsConfig, checkCapability } from './getEndpointsConfig.js';
+import loadOverrideConfig from './loadOverrideConfig.js';
+import loadAsyncEndpoints from './loadAsyncEndpoints.js';
 
-module.exports = {
+export {
   config,
   loadCustomConfig,
   loadConfigModels,
   loadDefaultModels,
   loadOverrideConfig,
   loadAsyncEndpoints,
-  ...getCustomConfig,
-  ...getEndpointsConfig,
+  getCustomConfig,
+  getBalanceConfig,
+  getCustomEndpointConfig,
+  getEndpointsConfig,
+  checkCapability,
 };

@@ -1,6 +1,6 @@
-const firebase = require('firebase/app');
-const { getStorage } = require('firebase/storage');
-const { logger } = require('~/config');
+import { initializeApp } from 'firebase/app';
+import { getStorage } from 'firebase/storage';
+import { logger } from '../../../../config/index.js';
 
 let i = 0;
 let firebaseApp = null;
@@ -26,7 +26,7 @@ const initializeFirebase = () => {
     return null;
   }
 
-  firebaseApp = firebase.initializeApp(firebaseConfig);
+  firebaseApp = initializeApp(firebaseConfig);
   logger.info('Firebase CDN initialized');
   return firebaseApp;
 };
@@ -36,4 +36,4 @@ const getFirebaseStorage = () => {
   return app ? getStorage(app) : null;
 };
 
-module.exports = { initializeFirebase, getFirebaseStorage };
+export { initializeFirebase, getFirebaseStorage };

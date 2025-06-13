@@ -1,6 +1,6 @@
-const path = require('path');
-const crypto = require('crypto');
-const {
+import path from 'path';
+import crypto from 'crypto';
+import {
   Capabilities,
   EModelEndpoint,
   isAgentsEndpoint,
@@ -8,10 +8,10 @@ const {
   isAssistantsEndpoint,
   defaultRetrievalModels,
   defaultAssistantsVersion,
-} = require('librechat-data-provider');
-const { Providers } = require('@librechat/agents');
-const partialRight = require('lodash/partialRight');
-const { sendMessage } = require('./streamResponse');
+} from 'librechat-data-provider';
+import { Providers } from '@librechat/agents';
+import partialRight from 'lodash/partialRight.js';
+import { sendMessage } from './streamResponse.js';
 
 /** Helper function to escape special characters in regex
  * @param {string} string - The string to escape.
@@ -258,7 +258,7 @@ function sanitizeFilename(inputName) {
   return name;
 }
 
-module.exports = {
+export {
   isEnabled,
   handleText,
   formatSteps,

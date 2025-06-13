@@ -1,17 +1,24 @@
-const availableTools = require('./manifest.json');
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // Structured Tools
-const DALLE3 = require('./structured/DALLE3');
-const FluxAPI = require('./structured/FluxAPI');
-const OpenWeather = require('./structured/OpenWeather');
-const StructuredWolfram = require('./structured/Wolfram');
-const createYouTubeTools = require('./structured/YouTube');
-const StructuredACS = require('./structured/AzureAISearch');
-const StructuredSD = require('./structured/StableDiffusion');
-const GoogleSearchAPI = require('./structured/GoogleSearch');
-const TraversaalSearch = require('./structured/TraversaalSearch');
-const createOpenAIImageTools = require('./structured/OpenAIImageTools');
-const TavilySearchResults = require('./structured/TavilySearchResults');
+import DALLE3 from './structured/DALLE3.js';
+import FluxAPI from './structured/FluxAPI.js';
+import OpenWeather from './structured/OpenWeather.js';
+import StructuredWolfram from './structured/Wolfram.js';
+import createYouTubeTools from './structured/YouTube.js';
+import StructuredACS from './structured/AzureAISearch.js';
+import StructuredSD from './structured/StableDiffusion.js';
+import GoogleSearchAPI from './structured/GoogleSearch.js';
+import TraversaalSearch from './structured/TraversaalSearch.js';
+import createOpenAIImageTools from './structured/OpenAIImageTools.js';
+import TavilySearchResults from './structured/TavilySearchResults.js';
+
+// Load manifest.json using fs since JSON imports may need assertion
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const availableTools = JSON.parse(readFileSync(join(__dirname, 'manifest.json'), 'utf8'));
 
 /** @type {Record<string, TPlugin | undefined>} */
 const manifestToolMap = {};
@@ -26,7 +33,7 @@ availableTools.forEach((tool) => {
   }
 });
 
-module.exports = {
+export {
   toolkits,
   availableTools,
   manifestToolMap,

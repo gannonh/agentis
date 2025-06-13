@@ -1,4 +1,4 @@
-const validateConvoAccess = require('./convoAccess');
-module.exports = {
+import validateConvoAccess from './convoAccess.js';
+export {
   validateConvoAccess,
 };

@@ -1,4 +1,4 @@
-const { logger } = require('~/config');
+import { logger } from '#config/index.js';
 
 // WeakMap to hold temporary data associated with requests
 const requestDataMap = new WeakMap();
@@ -379,7 +379,7 @@ function processReqData(data = {}, context) {
   };
 }
 
-module.exports = {
+export {
   disposeClient,
   requestDataMap,
   clientRegistry,

@@ -1,16 +1,16 @@
-const fs = require('fs');
-const path = require('path');
-const fetch = require('node-fetch');
-const { FileSources } = require('librechat-data-provider');
-const {
+import fs from 'fs';
+import path from 'path';
+import fetch from 'node-fetch';
+import { FileSources } from 'librechat-data-provider';
+import {
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   DeleteObjectCommand,
-} = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { initializeS3 } = require('./initialize');
-const { logger } = require('~/config');
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { initializeS3 } from './initialize.js';
+import { logger } from '../../../../config/index.js';
 
 const bucketName = process.env.AWS_BUCKET_NAME;
 const defaultBasePath = 'images';
@@ -453,7 +453,7 @@ async function refreshS3Url(fileObj, bufferSeconds = 3600) {
   }
 }
 
-module.exports = {
+export {
   saveBufferToS3,
   saveURLToS3,
   getS3URL,

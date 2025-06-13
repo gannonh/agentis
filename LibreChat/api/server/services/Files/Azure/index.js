@@ -1,9 +1,24 @@
-const crud = require('./crud');
-const images = require('./images');
-const initialize = require('./initialize');
+import {
+  saveBufferToAzure,
+  saveURLToAzure,
+  getAzureURL,
+  deleteFileFromAzure,
+  uploadFileToAzure,
+  getAzureFileStream,
+} from './crud.js';
+import { uploadImageToAzure, prepareAzureImageURL, processAzureAvatar } from './images.js';
+import { initializeAzureBlobService, getAzureContainerClient } from './initialize.js';
 
-module.exports = {
-  ...crud,
-  ...images,
-  ...initialize,
+export {
+  saveBufferToAzure,
+  saveURLToAzure,
+  getAzureURL,
+  deleteFileFromAzure,
+  uploadFileToAzure,
+  getAzureFileStream,
+  uploadImageToAzure,
+  prepareAzureImageURL,
+  processAzureAvatar,
+  initializeAzureBlobService,
+  getAzureContainerClient,
 };

@@ -1,10 +1,10 @@
-const { z } = require('zod');
-const axios = require('axios');
-const { Ollama } = require('ollama');
-const { Constants } = require('librechat-data-provider');
-const { deriveBaseURL, logAxiosError } = require('~/utils');
-const { sleep } = require('~/server/utils');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import axios from 'axios';
+import { Ollama } from 'ollama';
+import { Constants } from 'librechat-data-provider';
+import { deriveBaseURL, logAxiosError } from '../../utils/index.js';
+import { sleep } from '../../server/utils/index.js';
+import { logger } from '#config/index.js';
 
 const ollamaPayloadSchema = z.object({
   mirostat: z.number().optional(),
@@ -158,4 +158,4 @@ class OllamaClient {
   }
 }
 
-module.exports = { OllamaClient, ollamaPayloadSchema };
+export { OllamaClient, ollamaPayloadSchema };

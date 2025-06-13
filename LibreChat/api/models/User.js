@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const { userSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { userSchema } from '@librechat/data-schemas';
 
 const User = mongoose.model('User', userSchema);
 
-module.exports = User;
+export default User;

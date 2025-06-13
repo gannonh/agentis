@@ -1,10 +1,10 @@
-const { google } = require('googleapis');
-const { concat } = require('@langchain/core/utils/stream');
-const { ChatVertexAI } = require('@langchain/google-vertexai');
-const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
-const { GoogleGenerativeAI: GenAI } = require('@google/generative-ai');
-const { HumanMessage, SystemMessage } = require('@langchain/core/messages');
-const {
+import { google } from 'googleapis';
+import { concat } from '@langchain/core/utils/stream';
+import { ChatVertexAI } from '@langchain/google-vertexai';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { GoogleGenerativeAI as GenAI } from '@google/generative-ai';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import {
   googleGenConfigSchema,
   validateVisionModel,
   getResponseSender,
@@ -16,21 +16,21 @@ const {
   ErrorTypes,
   Constants,
   AuthKeys,
-} = require('librechat-data-provider');
-const { getSafetySettings } = require('~/server/services/Endpoints/google/llm');
-const { encodeAndFormat } = require('~/server/services/Files/images');
-const Tokenizer = require('~/server/services/Tokenizer');
-const { spendTokens } = require('~/models/spendTokens');
-const { getModelMaxTokens } = require('~/utils');
-const { sleep } = require('~/server/utils');
-const { logger } = require('~/config');
-const {
+} from 'librechat-data-provider';
+import { getSafetySettings } from '#server/services/Endpoints/google/llm.js';
+import { encodeAndFormat } from '#server/services/Files/images/index.js';
+import Tokenizer from '#server/services/Tokenizer.js';
+import { spendTokens } from '#models/spendTokens.js';
+import { getModelMaxTokens } from '#utils/index.js';
+import { sleep } from '#server/utils/index.js';
+import { logger } from '#config/index.js';
+import {
   formatMessage,
   createContextHandlers,
   titleInstruction,
   truncateText,
-} = require('./prompts');
-const BaseClient = require('./BaseClient');
+} from './prompts/index.js';
+import BaseClient from './BaseClient.js';
 
 const loc = process.env.GOOGLE_LOC || 'us-central1';
 const publisher = 'google';
@@ -978,4 +978,4 @@ class GoogleClient extends BaseClient {
   }
 }
 
-module.exports = GoogleClient;
+export default GoogleClient;

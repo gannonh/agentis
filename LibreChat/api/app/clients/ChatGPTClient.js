@@ -1,20 +1,20 @@
-const { Keyv } = require('keyv');
-const crypto = require('crypto');
-const { CohereClient } = require('cohere-ai');
-const { fetchEventSource } = require('@waylaidwanderer/fetch-event-source');
-const { encoding_for_model: encodingForModel, get_encoding: getEncoding } = require('tiktoken');
-const {
+import { Keyv } from 'keyv';
+import crypto from 'crypto';
+import { CohereClient } from 'cohere-ai';
+import { fetchEventSource } from '@waylaidwanderer/fetch-event-source';
+import { encoding_for_model as encodingForModel, get_encoding as getEncoding } from 'tiktoken';
+import {
   ImageDetail,
   EModelEndpoint,
   resolveHeaders,
   CohereConstants,
   mapModelToAzureConfig,
-} = require('librechat-data-provider');
-const { extractBaseURL, constructAzureURL, genAzureChatCompletion } = require('~/utils');
-const { createContextHandlers } = require('./prompts');
-const { createCoherePayload } = require('./llm');
-const BaseClient = require('./BaseClient');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { extractBaseURL, constructAzureURL, genAzureChatCompletion } from '#utils/index.js';
+import { createContextHandlers } from './prompts/index.js';
+import { createCoherePayload } from './llm/index.js';
+import BaseClient from './BaseClient.js';
+import { logger } from '#config/index.js';
 
 const CHATGPT_MODEL = 'gpt-3.5-turbo';
 const tokenizersCache = {};
@@ -800,4 +800,4 @@ ${botMessage.message}
   }
 }
 
-module.exports = ChatGPTClient;
+export default ChatGPTClient;

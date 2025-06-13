@@ -1,7 +1,7 @@
-const bcrypt = require('bcryptjs');
-const { webcrypto } = require('node:crypto');
-const { SystemRoles, errorsToString } = require('librechat-data-provider');
-const {
+import bcrypt from 'bcryptjs';
+import { webcrypto } from 'node:crypto';
+import { SystemRoles, errorsToString } from 'librechat-data-provider';
+import {
   findUser,
   countUsers,
   createUser,
@@ -9,8 +9,8 @@ const {
   getUserById,
   generateToken,
   deleteUserById,
-} = require('~/models/userMethods');
-const {
+} from '#models/userMethods.js';
+import {
   createToken,
   findToken,
   deleteTokens,
@@ -18,11 +18,12 @@ const {
   deleteSession,
   createSession,
   generateRefreshToken,
-} = require('~/models');
-const { isEnabled, checkEmailConfig, sendEmail } = require('~/server/utils');
-const { isEmailDomainAllowed } = require('~/server/services/domains');
-const { registerSchema } = require('~/strategies/validators');
-const { logger } = require('~/config');
+} from '#models/index.js';
+import { isEnabled } from '#server/utils/index.js';
+import { checkEmailConfig, sendEmail } from '#server/utils/index.js';
+import { isEmailDomainAllowed } from './domains.js';
+import { registerSchema } from '#strategies/validators.js';
+import { logger } from '#config/index.js';
 
 const domains = {
   client: process.env.DOMAIN_CLIENT,
@@ -444,7 +445,7 @@ const resendVerificationEmail = async (req) => {
   }
 };
 
-module.exports = {
+export {
   logoutUser,
   verifyEmail,
   registerUser,

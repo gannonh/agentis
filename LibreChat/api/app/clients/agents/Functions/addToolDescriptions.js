@@ -11,4 +11,4 @@ const addToolDescriptions = (prefix, tools) => {
   return `${prefix}\n${text}`;
 };
 
-module.exports = addToolDescriptions;
+export default addToolDescriptions;

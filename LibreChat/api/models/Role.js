@@ -1,15 +1,15 @@
-const mongoose = require('mongoose');
-const {
+import mongoose from 'mongoose';
+import {
   CacheKeys,
   SystemRoles,
   roleDefaults,
   PermissionTypes,
   permissionsSchema,
   removeNullishValues,
-} = require('librechat-data-provider');
-const getLogStores = require('~/cache/getLogStores');
-const { roleSchema } = require('@librechat/data-schemas');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { roleSchema } from '@librechat/data-schemas';
+import { logger } from '#config/index.js';
+import getLogStores from '../cache/getLogStores.js';
 
 const Role = mongoose.model('Role', roleSchema);
 
@@ -281,8 +281,9 @@ const migrateRoleSchema = async function (roleName) {
   }
 };
 
-module.exports = {
-  Role,
+export default Role;
+
+export {
   getRoleByName,
   initializeRoles,
   updateRoleByName,

@@ -1,7 +1,7 @@
-const fs = require('fs');
-const { FilePurpose } = require('librechat-data-provider');
-const { sleep } = require('~/server/utils');
-const { logger } = require('~/config');
+import fs from 'fs';
+import { FilePurpose } from 'librechat-data-provider';
+import { sleep } from '../../../utils/index.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Uploads a file that can be used across various OpenAI services.
@@ -78,4 +78,4 @@ async function getOpenAIFileStream(file_id, openai) {
   }
 }
 
-module.exports = { uploadOpenAIFile, deleteOpenAIFile, getOpenAIFileStream };
+export { uploadOpenAIFile, deleteOpenAIFile, getOpenAIFileStream };

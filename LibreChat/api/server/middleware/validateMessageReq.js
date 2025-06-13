@@ -1,4 +1,4 @@
-const { getConvo } = require('~/models');
+import { getConvo } from '#models/index.js';
 
 // Middleware to validate conversationId and user relationship
 const validateMessageReq = async (req, res, next) => {
@@ -25,4 +25,4 @@ const validateMessageReq = async (req, res, next) => {
   next();
 };
 
-module.exports = validateMessageReq;
+export default validateMessageReq;

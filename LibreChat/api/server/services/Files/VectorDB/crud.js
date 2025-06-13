@@ -1,9 +1,9 @@
-const fs = require('fs');
-const axios = require('axios');
-const FormData = require('form-data');
-const { FileSources } = require('librechat-data-provider');
-const { logAxiosError } = require('~/utils');
-const { logger } = require('~/config');
+import fs from 'fs';
+import axios from 'axios';
+import FormData from 'form-data';
+import { FileSources } from 'librechat-data-provider';
+import { logAxiosError } from '#utils/index.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Deletes a file from the vector database. This function takes a file object, constructs the full path, and
@@ -114,7 +114,4 @@ async function uploadVectors({ req, file, file_id, entity_id }) {
   }
 }
 
-module.exports = {
-  deleteVectors,
-  uploadVectors,
-};
+export { deleteVectors, uploadVectors };

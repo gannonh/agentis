@@ -26,4 +26,4 @@ function merge(leftArr, rightArr, compareFn) {
   return result.concat(leftArr.slice(leftIndex)).concat(rightArr.slice(rightIndex));
 }
 
-module.exports = mergeSort;
+export default mergeSort;

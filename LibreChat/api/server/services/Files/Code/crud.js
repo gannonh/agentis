@@ -1,7 +1,7 @@
-const FormData = require('form-data');
-const { getCodeBaseURL } = require('@librechat/agents');
-const { createAxiosInstance } = require('~/config');
-const { logAxiosError } = require('~/utils');
+import FormData from 'form-data';
+import { getCodeBaseURL } from '@librechat/agents';
+import { createAxiosInstance } from '../../../../config/index.js';
+import { logAxiosError } from '#utils/index.js';
 
 const axios = createAxiosInstance();
 
@@ -99,4 +99,4 @@ async function uploadCodeEnvFile({ req, stream, filename, apiKey, entity_id = ''
   }
 }
 
-module.exports = { getCodeOutputDownloadStream, uploadCodeEnvFile };
+export { getCodeOutputDownloadStream, uploadCodeEnvFile };

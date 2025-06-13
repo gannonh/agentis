@@ -1,8 +1,7 @@
-const jwt = require('jsonwebtoken');
-const { nanoid } = require('nanoid');
-const { tool } = require('@langchain/core/tools');
-const { GraphEvents, sleep } = require('@librechat/agents');
-const {
+import jwt from 'jsonwebtoken';
+import { nanoid } from 'nanoid';
+import { tool } from '@langchain/core/tools';
+import {
   Time,
   CacheKeys,
   StepTypes,
@@ -11,15 +10,19 @@ const {
   actionDelimiter,
   isImageVisionTool,
   actionDomainSeparator,
-} = require('librechat-data-provider');
-const { refreshAccessToken } = require('~/server/services/TokenService');
-const { logger, getFlowStateManager, sendEvent } = require('~/config');
-const { encryptV2, decryptV2 } = require('~/server/utils/crypto');
-const { getActions, deleteActions } = require('~/models/Action');
-const { deleteAssistant } = require('~/models/Assistant');
-const { findToken } = require('~/models/Token');
-const { logAxiosError } = require('~/utils');
-const { getLogStores } = require('~/cache');
+} from 'librechat-data-provider';
+import { refreshAccessToken } from './TokenService.js';
+import { logger, getFlowStateManager, sendEvent } from '#config/index.js';
+import { encryptV2, decryptV2 } from '#server/utils/crypto.js';
+import { getActions, deleteActions } from '../../models/Action.js';
+import { deleteAssistant } from '../../models/Assistant.js';
+import { findToken } from '../../models/Token.js';
+import { logAxiosError } from '../../utils/index.js';
+import { getLogStores } from '../../cache/index.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { GraphEvents, sleep } = require('@librechat/agents');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const toolNameRegex = /^[a-zA-Z0-9_-]+$/;
@@ -424,7 +427,7 @@ const deleteAssistantActions = async ({ req, assistant_id }) => {
   }
 };
 
-module.exports = {
+export {
   deleteAssistantActions,
   validateAndUpdateTool,
   createActionTool,

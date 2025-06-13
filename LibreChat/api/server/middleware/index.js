@@ -1,34 +1,37 @@
-const validatePasswordReset = require('./validatePasswordReset');
-const validateRegistration = require('./validateRegistration');
-const validateImageRequest = require('./validateImageRequest');
-const buildEndpointOption = require('./buildEndpointOption');
-const validateMessageReq = require('./validateMessageReq');
-const checkDomainAllowed = require('./checkDomainAllowed');
-const concurrentLimiter = require('./concurrentLimiter');
-const validateEndpoint = require('./validateEndpoint');
-const requireLocalAuth = require('./requireLocalAuth');
-const canDeleteAccount = require('./canDeleteAccount');
-const setBalanceConfig = require('./setBalanceConfig');
-const requireLdapAuth = require('./requireLdapAuth');
-const abortMiddleware = require('./abortMiddleware');
-const checkInviteUser = require('./checkInviteUser');
-const requireJwtAuth = require('./requireJwtAuth');
-const validateModel = require('./validateModel');
-const moderateText = require('./moderateText');
-const logHeaders = require('./logHeaders');
-const setHeaders = require('./setHeaders');
-const validate = require('./validate');
-const limiters = require('./limiters');
-const uaParser = require('./uaParser');
-const checkBan = require('./checkBan');
-const noIndex = require('./noIndex');
-const roles = require('./roles');
+import validatePasswordReset from './validatePasswordReset.js';
+import validateRegistration from './validateRegistration.js';
+import validateImageRequest from './validateImageRequest.js';
+import buildEndpointOption from './buildEndpointOption.js';
+import validateMessageReq from './validateMessageReq.js';
+import checkDomainAllowed from './checkDomainAllowed.js';
+import concurrentLimiter from './concurrentLimiter.js';
+import validateEndpoint from './validateEndpoint.js';
+import requireLocalAuth from './requireLocalAuth.js';
+import canDeleteAccount from './canDeleteAccount.js';
+import setBalanceConfig from './setBalanceConfig.js';
+import requireLdapAuth from './requireLdapAuth.js';
+import * as abortMiddleware from './abortMiddleware.js';
+import checkInviteUser from './checkInviteUser.js';
+import requireJwtAuth from './requireJwtAuth.js';
+import validateModel from './validateModel.js';
+import moderateText from './moderateText.js';
+import logHeaders from './logHeaders.js';
+import setHeaders from './setHeaders.js';
+import * as validate from './validate/index.js';
+import * as limiters from './limiters/index.js';
+import uaParser from './uaParser.js';
+import checkBan from './checkBan.js';
+import noIndex from './noIndex.js';
+import * as roles from './roles/index.js';
 
-module.exports = {
-  ...abortMiddleware,
-  ...validate,
-  ...limiters,
-  ...roles,
+// Re-export all individual exports from namespace imports
+export * from './abortMiddleware.js';
+export * from './validate/index.js';
+export * from './limiters/index.js';
+export * from './roles/index.js';
+
+// Re-export individual imports
+export {
   noIndex,
   checkBan,
   uaParser,

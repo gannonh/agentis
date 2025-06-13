@@ -1,9 +1,9 @@
-const { z } = require('zod');
-const { tool } = require('@langchain/core/tools');
-const { youtube } = require('@googleapis/youtube');
-const { YoutubeTranscript } = require('youtube-transcript');
-const { getApiKey } = require('./credentials');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import { tool } from '@langchain/core/tools';
+import { youtube } from '@googleapis/youtube';
+import { YoutubeTranscript } from 'youtube-transcript';
+import { getApiKey } from './credentials.js';
+import { logger } from '#config/index.js';
 
 function extractVideoId(url) {
   const rawIdRegex = /^[a-zA-Z0-9_-]{11}$/;
@@ -200,4 +200,4 @@ Example: url="https://youtube.com/watch?v=abc123"`,
   return [searchTool, infoTool, commentsTool, transcriptTool];
 }
 
-module.exports = createYouTubeTools;
+export default createYouTubeTools;

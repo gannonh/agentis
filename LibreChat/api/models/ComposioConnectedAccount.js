@@ -1,9 +1,9 @@
-const mongoose = require('mongoose');
-const { composioConnectedAccountSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { composioConnectedAccountSchema } from '@librechat/data-schemas';
 
 const ComposioConnectedAccount = mongoose.model(
   'ComposioConnectedAccount',
   composioConnectedAccountSchema,
 );
 
-module.exports = ComposioConnectedAccount;
+export default ComposioConnectedAccount;

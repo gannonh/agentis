@@ -1,14 +1,14 @@
-const { z } = require('zod');
-const path = require('path');
-const OpenAI = require('openai');
-const fetch = require('node-fetch');
-const { v4: uuidv4 } = require('uuid');
-const { Tool } = require('@langchain/core/tools');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-const { FileContext, ContentTypes } = require('librechat-data-provider');
-const { getImageBasename } = require('~/server/services/Files/images');
-const extractBaseURL = require('~/utils/extractBaseURL');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import path from 'path';
+import OpenAI from 'openai';
+import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
+import { Tool } from '@langchain/core/tools';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { FileContext, ContentTypes } from 'librechat-data-provider';
+import { getImageBasename } from '#server/services/Files/images/index.js';
+import extractBaseURL from '#utils/extractBaseURL.js';
+import { logger } from '#config/index.js';
 
 const displayMessage =
   "DALL-E displayed an image. All generated images are already plainly visible, so don't repeat the descriptions in detail. Do not list download links as they are available in the UI already. The user may download the images by clicking on them, but do not mention anything about downloading to the user.";
@@ -225,4 +225,4 @@ Error Message: ${error.message}`);
   }
 }
 
-module.exports = DALLE3;
+export default DALLE3;

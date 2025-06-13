@@ -1,10 +1,10 @@
-const rateLimit = require('express-rate-limit');
-const { RedisStore } = require('rate-limit-redis');
-const { ViolationTypes } = require('librechat-data-provider');
-const ioredisClient = require('~/cache/ioredisClient');
-const logViolation = require('~/cache/logViolation');
-const { isEnabled } = require('~/server/utils');
-const { logger } = require('~/config');
+import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import { ViolationTypes } from 'librechat-data-provider';
+import ioredisClient from '#cache/ioredisClient.js';
+import logViolation from '#cache/logViolation.js';
+import { isEnabled } from '#server/utils/index.js';
+import { logger } from '#config/index.js';
 
 const getEnvironmentVariables = () => {
   const STT_IP_MAX = parseInt(process.env.STT_IP_MAX) || 100;
@@ -87,4 +87,4 @@ const createSTTLimiters = () => {
   return { sttIpLimiter, sttUserLimiter };
 };
 
-module.exports = createSTTLimiters;
+export default createSTTLimiters;

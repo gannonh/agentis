@@ -1,8 +1,8 @@
-const express = require('express');
-const { MCPManager } = require('librechat-mcp');
-const { requireJwtAuth, checkAccess } = require('~/server/middleware');
-const { Permissions, PermissionTypes } = require('librechat-data-provider');
-const { logger } = require('~/config');
+import express from 'express';
+import { MCPManager } from 'librechat-mcp';
+import {  requireJwtAuth, checkAccess  } from '#server/middleware.js';
+import {  Permissions, PermissionTypes  } from 'librechat-data-provider';
+import {  logger  } from '#config/index.js';
 
 const router = express.Router();
 
@@ -224,4 +224,4 @@ router.get('/user/:userId', requireJwtAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

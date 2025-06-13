@@ -1,15 +1,15 @@
-const express = require('express');
-const {
+import express from 'express';
+import { 
   uaParser,
   checkBan,
   requireJwtAuth,
   messageIpLimiter,
   concurrentLimiter,
   messageUserLimiter,
-} = require('~/server/middleware');
-const { isEnabled } = require('~/server/utils');
-const { v1 } = require('./v1');
-const chat = require('./chat');
+ } from '#server/middleware.js';
+import {  isEnabled  } from '#server/utils.js';
+import {  v1  } from './v1.js';
+import chat from './chat.js';
 
 const { LIMIT_CONCURRENT_MESSAGES, LIMIT_MESSAGE_IP, LIMIT_MESSAGE_USER } = process.env ?? {};
 
@@ -37,4 +37,4 @@ if (isEnabled(LIMIT_MESSAGE_USER)) {
 chatRouter.use('/', chat);
 router.use('/chat', chatRouter);
 
-module.exports = router;
+export default router;

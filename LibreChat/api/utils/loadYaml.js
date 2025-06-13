@@ -1,5 +1,5 @@
-const fs = require('fs');
-const yaml = require('js-yaml');
+import fs from 'fs';
+import yaml from 'js-yaml';
 
 function loadYaml(filepath) {
   try {
@@ -10,4 +10,4 @@ function loadYaml(filepath) {
   }
 }
 
-module.exports = loadYaml;
+export default loadYaml;

@@ -1,8 +1,8 @@
-const axios = require('axios');
-const { ErrorTypes } = require('librechat-data-provider');
-const { isEnabled } = require('~/server/utils');
-const denyRequest = require('./denyRequest');
-const { logger } = require('~/config');
+import axios from 'axios';
+import { ErrorTypes } from 'librechat-data-provider';
+import { isEnabled } from '#server/utils/index.js';
+import denyRequest from './denyRequest.js';
+import { logger } from '#config/index.js';
 
 async function moderateText(req, res, next) {
   if (!isEnabled(process.env.OPENAI_MODERATION)) {
@@ -40,4 +40,4 @@ async function moderateText(req, res, next) {
   next();
 }
 
-module.exports = moderateText;
+export default moderateText;

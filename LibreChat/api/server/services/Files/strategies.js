@@ -1,5 +1,5 @@
-const { FileSources } = require('librechat-data-provider');
-const {
+import { FileSources } from 'librechat-data-provider';
+import {
   getFirebaseURL,
   prepareImageURL,
   saveURLToFirebase,
@@ -9,8 +9,8 @@ const {
   uploadImageToFirebase,
   processFirebaseAvatar,
   getFirebaseFileStream,
-} = require('./Firebase');
-const {
+} from './Firebase/index.js';
+import {
   uploadLocalFile,
   getLocalFileURL,
   saveFileFromURL,
@@ -20,8 +20,8 @@ const {
   prepareImagesLocal,
   processLocalAvatar,
   getLocalFileStream,
-} = require('./Local');
-const {
+} from './Local/index.js';
+import {
   getS3URL,
   saveURLToS3,
   saveBufferToS3,
@@ -31,8 +31,8 @@ const {
   deleteFileFromS3,
   processS3Avatar,
   uploadFileToS3,
-} = require('./S3');
-const {
+} from './S3/index.js';
+import {
   saveBufferToAzure,
   saveURLToAzure,
   getAzureURL,
@@ -42,11 +42,11 @@ const {
   uploadImageToAzure,
   prepareAzureImageURL,
   processAzureAvatar,
-} = require('./Azure');
-const { uploadOpenAIFile, deleteOpenAIFile, getOpenAIFileStream } = require('./OpenAI');
-const { getCodeOutputDownloadStream, uploadCodeEnvFile } = require('./Code');
-const { uploadVectors, deleteVectors } = require('./VectorDB');
-const { uploadMistralOCR } = require('./MistralOCR');
+} from './Azure/index.js';
+import { uploadOpenAIFile, deleteOpenAIFile, getOpenAIFileStream } from './OpenAI/index.js';
+import { getCodeOutputDownloadStream, uploadCodeEnvFile } from './Code/index.js';
+import { uploadVectors, deleteVectors } from './VectorDB/index.js';
+import { uploadMistralOCR } from './MistralOCR/index.js';
 
 /**
  * Firebase Storage Strategy Functions
@@ -227,6 +227,4 @@ const getStrategyFunctions = (fileSource) => {
   }
 };
 
-module.exports = {
-  getStrategyFunctions,
-};
+export { getStrategyFunctions };

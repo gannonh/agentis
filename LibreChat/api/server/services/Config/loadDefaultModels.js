@@ -1,12 +1,14 @@
-const { EModelEndpoint } = require('librechat-data-provider');
-const { useAzurePlugins } = require('~/server/services/Config/EndpointService').config;
-const {
+import { EModelEndpoint } from 'librechat-data-provider';
+import { config } from './EndpointService.js';
+import {
   getOpenAIModels,
   getGoogleModels,
   getBedrockModels,
   getAnthropicModels,
-} = require('~/server/services/ModelService');
-const { logger } = require('~/config');
+} from '../ModelService.js';
+import { logger } from '#config/index.js';
+
+const { useAzurePlugins } = config;
 
 /**
  * Loads the default models for the application.
@@ -79,4 +81,4 @@ async function loadDefaultModels(req) {
   }
 }
 
-module.exports = loadDefaultModels;
+export default loadDefaultModels;

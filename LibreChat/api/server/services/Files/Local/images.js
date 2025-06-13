@@ -1,9 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
-const { resizeImageBuffer } = require('../images/resize');
-const { updateUser } = require('~/models/userMethods');
-const { updateFile } = require('~/models/File');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import sharp from 'sharp';
+import { resizeImageBuffer } from '../images/resize.js';
+import { updateUser } from '#models/userMethods.js';
+import { updateFile } from '#models/File.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Converts an image file to the target format. The function first resizes the image based on the specified
@@ -147,4 +151,4 @@ async function processLocalAvatar({ buffer, userId, manual }) {
   return url;
 }
 
-module.exports = { uploadLocalImage, encodeImage, prepareImagesLocal, processLocalAvatar };
+export { uploadLocalImage, encodeImage, prepareImagesLocal, processLocalAvatar };

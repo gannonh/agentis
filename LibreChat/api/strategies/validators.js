@@ -1,4 +1,4 @@
-const { z } = require('zod');
+import { z } from 'zod';
 
 const allowedCharactersRegex = new RegExp(
   '^[' +
@@ -72,7 +72,7 @@ const registerSchema = z
     }
   });
 
-module.exports = {
+export {
   loginSchema,
   registerSchema,
 };

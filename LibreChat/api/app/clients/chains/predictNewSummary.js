@@ -1,5 +1,5 @@
-const { LLMChain } = require('langchain/chains');
-const { getBufferString } = require('langchain/memory');
+import { LLMChain } from 'langchain/chains';
+import { getBufferString } from 'langchain/memory';
 
 /**
  * Predicts a new summary for the conversation given the existing messages
@@ -22,4 +22,4 @@ async function predictNewSummary({ messages, previous_summary, memory, signal })
   return result.text;
 }
 
-module.exports = predictNewSummary;
+export default predictNewSummary;

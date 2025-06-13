@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
-const { balanceSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { balanceSchema } from '@librechat/data-schemas';
 
-module.exports = mongoose.model('Balance', balanceSchema);
+export default mongoose.model('Balance', balanceSchema);

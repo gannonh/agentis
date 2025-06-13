@@ -1,7 +1,7 @@
-const { Tool } = require('@langchain/core/tools');
-const { z } = require('zod');
-const { getEnvironmentVariable } = require('@langchain/core/utils/env');
-const fetch = require('node-fetch');
+import { Tool } from '@langchain/core/tools';
+import { z } from 'zod';
+import { getEnvironmentVariable } from '@langchain/core/utils/env';
+import fetch from 'node-fetch';
 
 /**
  * Map user-friendly units to OpenWeather units.
@@ -314,4 +314,4 @@ class OpenWeather extends Tool {
   }
 }
 
-module.exports = OpenWeather;
+export default OpenWeather;

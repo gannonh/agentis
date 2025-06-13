@@ -1,7 +1,7 @@
-const { z } = require('zod');
-const { langPrompt, createTitlePrompt, escapeBraces, getSnippet } = require('../prompts');
-const { createStructuredOutputChainFromZod } = require('langchain/chains/openai_functions');
-const { logger } = require('~/config');
+import { z } from 'zod';
+import { langPrompt, createTitlePrompt, escapeBraces, getSnippet } from '../prompts/index.js';
+import { createStructuredOutputChainFromZod } from 'langchain/chains/openai_functions';
+import { logger } from '#config/index.js';
 
 const langSchema = z.object({
   language: z.string().describe('The language of the input text (full noun, no abbreviations).'),
@@ -39,4 +39,4 @@ const runTitleChain = async ({ llm, text, convo, signal, callbacks }) => {
   return (await titleChain.call({ language, signal })).output.title;
 };
 
-module.exports = runTitleChain;
+export default runTitleChain;

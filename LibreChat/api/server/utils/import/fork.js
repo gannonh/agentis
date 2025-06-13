@@ -1,10 +1,11 @@
-const { v4: uuidv4 } = require('uuid');
-const { EModelEndpoint, Constants, ForkOptions } = require('librechat-data-provider');
-const { createImportBatchBuilder } = require('./importBatchBuilder');
-const BaseClient = require('~/app/clients/BaseClient');
-const { getConvo } = require('~/models/Conversation');
-const { getMessages } = require('~/models/Message');
-const logger = require('~/config/winston');
+import { v4 as uuidv4 } from 'uuid';
+import { EModelEndpoint, Constants, ForkOptions } from 'librechat-data-provider';
+import { createImportBatchBuilder } from './importBatchBuilder.js';
+import BaseClient from '../../../app/clients/BaseClient.js';
+import ConversationModel from '../../../models/Conversation.js';
+const { getConvo } = ConversationModel;
+import { getMessages } from '../../../models/Message.js';
+import logger from '../../../config/winston.js';
 
 /**
  * Helper function to clone messages with proper parent-child relationships and timestamps
@@ -405,7 +406,7 @@ async function duplicateConversation({ userId, conversationId }) {
   };
 }
 
-module.exports = {
+export {
   forkConversation,
   splitAtTargetLevel,
   duplicateConversation,

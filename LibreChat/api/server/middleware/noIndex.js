@@ -8,4 +8,4 @@ const noIndex = (req, res, next) => {
   next();
 };
 
-module.exports = noIndex;
+export default noIndex;

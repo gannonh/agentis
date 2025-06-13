@@ -1,11 +1,9 @@
-const handle = require('./handle');
-const methods = require('./methods');
-const RunManager = require('./RunManager');
-const StreamRunManager = require('./StreamRunManager');
+import * as handle from './handle.js';
+import * as methods from './methods.js';
+import RunManager from './RunManager.js';
+import StreamRunManager from './StreamRunManager.js';
 
-module.exports = {
-  ...handle,
-  ...methods,
-  RunManager,
-  StreamRunManager,
-};
+export { handle, methods, RunManager, StreamRunManager };
+
+export * from './handle.js';
+export * from './methods.js';

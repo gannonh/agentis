@@ -1,6 +1,6 @@
-const { createStartHandler } = require('~/app/clients/callbacks');
-const { spendTokens } = require('~/models/spendTokens');
-const { logger } = require('~/config');
+import { createStartHandler } from '#app/clients/callbacks/index.js';
+import { spendTokens } from '#models/spendTokens.js';
+import { logger } from '#config/index.js';
 
 class RunManager {
   constructor(fields) {
@@ -102,4 +102,4 @@ class RunManager {
   }
 }
 
-module.exports = RunManager;
+export default RunManager;

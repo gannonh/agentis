@@ -1,6 +1,6 @@
-const { Composio } = require('composio-core');
-const { ComposioConnectedAccount } = require('~/models');
-const { logger } = require('~/config');
+import { Composio } from 'composio-core';
+import { ComposioConnectedAccount } from '../../models/index.js';
+import { logger } from '#config/index.js';
 
 /**
  * Service for managing Composio connected accounts and integrations
@@ -721,4 +721,4 @@ class ComposioService {
 
 // Export singleton instance
 const composioService = new ComposioService();
-module.exports = composioService;
+export default composioService;

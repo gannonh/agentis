@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
-const { EToolResources } = require('librechat-data-provider');
-const { fileSchema } = require('@librechat/data-schemas');
-const { logger } = require('~/config');
+import mongoose from 'mongoose';
+import { EToolResources } from 'librechat-data-provider';
+import { fileSchema } from '@librechat/data-schemas';
+import { logger } from '#config/index.js';
 
 const File = mongoose.model('File', fileSchema);
 
@@ -168,8 +168,9 @@ async function batchUpdateFiles(updates) {
   logger.info(`Updated ${result.modifiedCount} files with new S3 URLs`);
 }
 
-module.exports = {
-  File,
+export default File;
+
+export {
   findFileById,
   getFiles,
   getToolFilesByIds,

@@ -10,7 +10,6 @@ const {
 } = require('./UserService');
 
 describe('UserService - Email Domain Matching', () => {
-
   describe('extractEmailDomain', () => {
     it('should extract domain from valid email', () => {
       expect(extractEmailDomain('user@company.com')).toBe('company.com');
@@ -87,5 +86,4 @@ describe('UserService - Email Domain Matching', () => {
       expect(generateOrganizationName('user@123company.com')).toBe('123company');
     });
   });
-
 });

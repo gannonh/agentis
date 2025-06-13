@@ -1,9 +1,9 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const { CacheKeys } = require('librechat-data-provider');
-const { getAccessToken } = require('~/server/services/TokenService');
-const { logger, getFlowStateManager } = require('~/config');
-const { getLogStores } = require('~/cache');
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import {  CacheKeys  } from 'librechat-data-provider';
+import {  getAccessToken  } from '#server/services/TokenService.js';
+import {  logger, getFlowStateManager  } from '#config.js';
+import {  getLogStores  } from '#cache.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -134,4 +134,4 @@ router.get('/:action_id/oauth/callback', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

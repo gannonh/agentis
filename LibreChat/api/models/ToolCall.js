@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { toolCallSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { toolCallSchema } from '@librechat/data-schemas';
 const ToolCall = mongoose.model('ToolCall', toolCallSchema);
 
 /**
@@ -88,7 +88,9 @@ async function deleteToolCalls(userId, conversationId) {
   }
 }
 
-module.exports = {
+export default ToolCall;
+
+export {
   createToolCall,
   updateToolCall,
   deleteToolCalls,

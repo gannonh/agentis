@@ -1,7 +1,7 @@
-const { SystemRoles } = require('librechat-data-provider');
-const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
-const { getUserById, updateUser } = require('~/models');
-const { logger } = require('~/config');
+import { SystemRoles } from 'librechat-data-provider';
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import { getUserById, updateUser } from '#models/index.js';
+import { logger } from '#config/index.js';
 
 // JWT strategy
 const jwtLogin = async () =>
@@ -30,4 +30,4 @@ const jwtLogin = async () =>
     },
   );
 
-module.exports = jwtLogin;
+export default jwtLogin;

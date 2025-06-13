@@ -1,13 +1,13 @@
-const path = require('path');
-const fs = require('fs').promises;
-const express = require('express');
-const { isAgentsEndpoint } = require('librechat-data-provider');
-const {
+import path from 'path';
+import { promises as fs } from 'fs';
+import express from 'express';
+import {  isAgentsEndpoint  } from 'librechat-data-provider';
+import { 
   filterFile,
   processImageFile,
   processAgentFileUpload,
-} = require('~/server/services/Files/process');
-const { logger } = require('~/config');
+ } from '#server/services/Files/process.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -49,4 +49,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

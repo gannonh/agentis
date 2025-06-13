@@ -1,10 +1,10 @@
-const { ToolCallTypes } = require('librechat-data-provider');
-const validateAuthor = require('~/server/middleware/assistants/validateAuthor');
-const { validateAndUpdateTool } = require('~/server/services/ActionService');
-const { updateAssistantDoc } = require('~/models/Assistant');
-const { manifestToolMap } = require('~/app/clients/tools');
-const { getOpenAIClient } = require('./helpers');
-const { logger } = require('~/config');
+import { ToolCallTypes } from 'librechat-data-provider';
+import validateAuthor from '../../middleware/assistants/validateAuthor.js';
+import { validateAndUpdateTool } from '../../services/ActionService.js';
+import { updateAssistantDoc } from '../../../models/Assistant.js';
+import { manifestToolMap } from '../../../app/clients/tools/index.js';
+import { getOpenAIClient } from './helpers.js';
+import { logger } from '#config/index.js';
 
 /**
  * Create an assistant.
@@ -286,10 +286,20 @@ const patchAssistant = async (req, res) => {
   }
 };
 
-module.exports = {
+const assistantsV2Controller = {
   patchAssistant,
   createAssistant,
   updateAssistant,
   addResourceFileId,
   deleteResourceFileId,
 };
+
+export {
+  patchAssistant,
+  createAssistant,
+  updateAssistant,
+  addResourceFileId,
+  deleteResourceFileId,
+};
+
+export default assistantsV2Controller;

@@ -1,7 +1,7 @@
-const { CacheKeys, EModelEndpoint } = require('librechat-data-provider');
-const { normalizeEndpointName, isEnabled } = require('~/server/utils');
-const loadCustomConfig = require('./loadCustomConfig');
-const getLogStores = require('~/cache/getLogStores');
+import { CacheKeys, EModelEndpoint } from 'librechat-data-provider';
+import { normalizeEndpointName, isEnabled } from '../../utils/index.js';
+import loadCustomConfig from './loadCustomConfig.js';
+import getLogStores from '../../../cache/getLogStores.js';
 
 /**
  * Retrieves the configuration object
@@ -60,4 +60,6 @@ const getCustomEndpointConfig = async (endpoint) => {
   );
 };
 
-module.exports = { getCustomConfig, getBalanceConfig, getCustomEndpointConfig };
+export default { getCustomConfig, getBalanceConfig, getCustomEndpointConfig };
+
+export { getCustomConfig, getBalanceConfig, getCustomEndpointConfig };

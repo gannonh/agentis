@@ -3,8 +3,8 @@
  * @description Team model for multi-tenant team management
  */
 
-const mongoose = require('mongoose');
-const { teamSchema } = require('@librechat/data-schemas');
+import mongoose from 'mongoose';
+import { teamSchema } from '@librechat/data-schemas';
 
 /**
  * Team model
@@ -12,4 +12,4 @@ const { teamSchema } = require('@librechat/data-schemas');
  */
 const Team = mongoose.model('Team', teamSchema);
 
-module.exports = Team;
+export default Team;

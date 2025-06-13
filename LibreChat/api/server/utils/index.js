@@ -1,12 +1,4 @@
-const streamResponse = require('./streamResponse');
-const removePorts = require('./removePorts');
-const countTokens = require('./countTokens');
-const handleText = require('./handleText');
-const sendEmail = require('./sendEmail');
-const cryptoUtils = require('./crypto');
-const queue = require('./queue');
-const files = require('./files');
-const math = require('./math');
+// All imports are handled via re-exports below
 
 /**
  * Check if email configuration is set
@@ -21,15 +13,18 @@ function checkEmailConfig() {
   );
 }
 
-module.exports = {
-  ...streamResponse,
-  checkEmailConfig,
-  ...cryptoUtils,
-  ...handleText,
-  countTokens,
-  removePorts,
-  sendEmail,
-  ...files,
-  ...queue,
-  math,
-};
+// Re-export all named exports from individual modules
+export * from './streamResponse.js';
+export * from './crypto.js';
+export * from './handleText.js';
+export * from './files.js';
+export * from './queue.js';
+
+// Re-export default exports with specific names
+export { default as countTokens } from './countTokens.js';
+export { default as removePorts } from './removePorts.js';
+export { default as sendEmail } from './sendEmail.js';
+export { default as math } from './math.js';
+
+// Export the local function
+export { checkEmailConfig };

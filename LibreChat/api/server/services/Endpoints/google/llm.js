@@ -1,6 +1,6 @@
-const { Providers } = require('@librechat/agents');
-const { AuthKeys } = require('librechat-data-provider');
-const { isEnabled } = require('~/server/utils');
+import { Providers } from '@librechat/agents';
+import { AuthKeys } from 'librechat-data-provider';
+import { isEnabled } from '../../../utils/index.js';
 
 function getThresholdMapping(model) {
   const gemini1Pattern = /gemini-(1\.0|1\.5|pro$|1\.0-pro|1\.5-pro|1\.5-flash-001)/;
@@ -174,7 +174,4 @@ function getLLMConfig(credentials, options = {}) {
   };
 }
 
-module.exports = {
-  getLLMConfig,
-  getSafetySettings,
-};
+export { getLLMConfig, getSafetySettings };

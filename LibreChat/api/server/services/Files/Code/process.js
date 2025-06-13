@@ -1,19 +1,19 @@
-const path = require('path');
-const { v4 } = require('uuid');
-const axios = require('axios');
-const { getCodeBaseURL } = require('@librechat/agents');
-const {
+import path from 'path';
+import { v4 } from 'uuid';
+import axios from 'axios';
+import { getCodeBaseURL } from '@librechat/agents';
+import {
   Tools,
   FileContext,
   FileSources,
   imageExtRegex,
   EToolResources,
-} = require('librechat-data-provider');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { convertImage } = require('~/server/services/Files/images/convert');
-const { createFile, getFiles, updateFile } = require('~/models/File');
-const { logAxiosError } = require('~/utils');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { getStrategyFunctions } from '../strategies.js';
+import { convertImage } from '../images/convert.js';
+import { createFile, getFiles, updateFile } from '#models/File.js';
+import { logAxiosError } from '#utils/index.js';
+import { logger } from '../../../../config/index.js';
 
 /**
  * Process OpenAI image files, convert to target format, save and return file metadata.
@@ -245,7 +245,4 @@ const primeFiles = async (options, apiKey) => {
   return { files, toolContext };
 };
 
-module.exports = {
-  primeFiles,
-  processCodeOutput,
-};
+export { primeFiles, processCodeOutput };

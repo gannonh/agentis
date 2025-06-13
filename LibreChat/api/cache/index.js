@@ -1,5 +1,8 @@
-const keyvFiles = require('./keyvFiles');
-const getLogStores = require('./getLogStores');
-const logViolation = require('./logViolation');
+import * as keyvFiles from './keyvFiles.js';
+import getLogStores from './getLogStores.js';
+import logViolation from './logViolation.js';
+import clearPendingReq from './clearPendingReq.js';
+import banViolation from './banViolation.js';
 
-module.exports = { ...keyvFiles, getLogStores, logViolation };
+export { getLogStores, logViolation, clearPendingReq, banViolation };
+export * from './keyvFiles.js';

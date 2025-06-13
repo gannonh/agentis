@@ -35,7 +35,7 @@ describe('User Schema', () => {
 
     it('should validate orgRole enum values', async () => {
       const organizationId = new Types.ObjectId();
-      
+
       // Valid roles: account_owner and member
       const validRoles = ['account_owner', 'member'];
       for (const role of validRoles) {
@@ -71,7 +71,7 @@ describe('User Schema', () => {
       });
 
       await user.validate();
-      
+
       // teamMemberships field is not part of this schema version
       expect(user.teamMemberships).toBeUndefined();
     });
@@ -105,7 +105,7 @@ describe('User Schema', () => {
 
       const user = new User(userData);
       await expect(user.validate()).resolves.not.toThrow();
-      
+
       // Verify all existing fields are preserved
       expect(user.email).toBe(userData.email);
       expect(user.name).toBe(userData.name);
@@ -168,27 +168,21 @@ describe('User Schema', () => {
   describe('Database Indexes', () => {
     it('should have index on organizationId', () => {
       const indexes = userSchema.indexes();
-      const orgIndex = indexes.find(index => 
-        index[0] && index[0].organizationId
-      );
+      const orgIndex = indexes.find((index) => index[0] && index[0].organizationId);
       expect(orgIndex).toBeDefined();
     });
 
     it('should have compound index on organizationId and orgRole', () => {
       const indexes = userSchema.indexes();
-      const compoundIndex = indexes.find(index => 
-        index[0] && 
-        index[0].organizationId && 
-        index[0].orgRole
+      const compoundIndex = indexes.find(
+        (index) => index[0] && index[0].organizationId && index[0].orgRole,
       );
       expect(compoundIndex).toBeDefined();
     });
 
     it('should preserve existing email index', () => {
       const indexes = userSchema.indexes();
-      const emailIndex = indexes.find(index => 
-        index[0] && index[0].email
-      );
+      const emailIndex = indexes.find((index) => index[0] && index[0].email);
       expect(emailIndex).toBeDefined();
     });
   });
@@ -196,23 +190,21 @@ describe('User Schema', () => {
   describe('Data Integrity', () => {
     it('should have email index for uniqueness constraint (tested at DB level)', () => {
       const indexes = userSchema.indexes();
-      const emailIndex = indexes.find(index => 
-        index[0] && index[0].email
-      );
+      const emailIndex = indexes.find((index) => index[0] && index[0].email);
       expect(emailIndex).toBeDefined();
       // Note: Actual uniqueness is enforced by MongoDB, not schema validation
     });
 
     it('should allow multiple users in same organization', async () => {
       const organizationId = new Types.ObjectId();
-      
+
       const owner = new User({
         email: 'owner@company.com',
         emailVerified: true,
         organizationId,
         orgRole: 'account_owner',
       });
-      
+
       const member = new User({
         email: 'member@company.com',
         emailVerified: true,

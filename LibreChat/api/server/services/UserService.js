@@ -1,7 +1,7 @@
-const { ErrorTypes } = require('librechat-data-provider');
-const { encrypt, decrypt } = require('~/server/utils');
-const { updateUser, Key, Organization, User } = require('~/models');
-const { logger } = require('~/config');
+import { ErrorTypes } from 'librechat-data-provider';
+import { encrypt, decrypt } from '#server/utils/index.js';
+import { updateUser, Key, Organization, User } from '#models/index.js';
+import { logger } from '#config/index.js';
 
 /**
  * Updates the plugins for a user based on the action specified (install/uninstall).
@@ -196,15 +196,17 @@ const extractEmailDomain = (email) => {
 const findOrganizationByEmailDomain = async (email) => {
   try {
     const domain = extractEmailDomain(email);
-    
+
     // Find organization with matching domain
     const organization = await Organization.findOne({ domain }).lean();
-    
+
     if (organization) {
-      logger.debug(`[findOrganizationByEmailDomain] Found organization ${organization.name} for domain ${domain}`);
+      logger.debug(
+        `[findOrganizationByEmailDomain] Found organization ${organization.name} for domain ${domain}`,
+      );
       return organization;
     }
-    
+
     logger.debug(`[findOrganizationByEmailDomain] No organization found for domain ${domain}`);
     return null;
   } catch (error) {
@@ -222,17 +224,19 @@ const findOrganizationByEmailDomain = async (email) => {
 const findCoworkersByEmailDomain = async (email) => {
   try {
     const organization = await findOrganizationByEmailDomain(email);
-    
+
     if (!organization) {
       return [];
     }
-    
+
     // Find all users in this organization
     const coworkers = await User.find({ organizationId: organization._id })
       .select('email name username')
       .lean();
-    
-    logger.debug(`[findCoworkersByEmailDomain] Found ${coworkers.length} coworkers for domain ${extractEmailDomain(email)}`);
+
+    logger.debug(
+      `[findCoworkersByEmailDomain] Found ${coworkers.length} coworkers for domain ${extractEmailDomain(email)}`,
+    );
     return coworkers;
   } catch (error) {
     logger.error('[findCoworkersByEmailDomain]', error);
@@ -258,7 +262,7 @@ const isWorkEmailDomain = (email) => {
     'protonmail.com',
     'mail.com',
   ];
-  
+
   return !personalDomains.includes(domain);
 };
 
@@ -285,12 +289,12 @@ const generateUniqueSubdomain = async (baseName) => {
   // Check for uniqueness and add number if needed
   let counter = 0;
   let finalSubdomain = subdomain;
-  
+
   while (await Organization.findOne({ subdomain: finalSubdomain })) {
     counter++;
     finalSubdomain = `${subdomain}-${counter}`;
   }
-  
+
   return finalSubdomain;
 };
 
@@ -302,7 +306,7 @@ const generateUniqueSubdomain = async (baseName) => {
  */
 const generateOrganizationName = (email) => {
   const domain = extractEmailDomain(email);
-  
+
   if (isWorkEmailDomain(email)) {
     // For work domains, use company name (remove .com, .org, etc.)
     const companyName = domain.split('.')[0];
@@ -326,21 +330,23 @@ const createOrganizationForUser = async (email, userId, orgName = null) => {
     const domain = extractEmailDomain(email);
     const name = orgName || generateOrganizationName(email);
     const subdomain = await generateUniqueSubdomain(name);
-    
+
     const organizationData = {
       name,
       subdomain,
       accountOwnerId: userId,
     };
-    
+
     // Only set domain for work emails to enable team discovery
     if (isWorkEmailDomain(email)) {
       organizationData.domain = domain;
     }
-    
+
     const organization = await Organization.create(organizationData);
-    
-    logger.info(`[createOrganizationForUser] Created organization ${organization.name} (${organization.subdomain}) for user ${userId}`);
+
+    logger.info(
+      `[createOrganizationForUser] Created organization ${organization.name} (${organization.subdomain}) for user ${userId}`,
+    );
     return organization;
   } catch (error) {
     logger.error('[createOrganizationForUser]', error);
@@ -351,7 +357,7 @@ const createOrganizationForUser = async (email, userId, orgName = null) => {
 /**
  * Finds or creates organization for user during registration
  * @param {string} email - User's email address
- * @param {string} userId - User's ID  
+ * @param {string} userId - User's ID
  * @returns {Promise<{organization: Object, isExisting: boolean}>} Organization and whether it was existing
  * @description Implements Slack-style organization discovery and auto-creation workflow
  */
@@ -359,15 +365,19 @@ const findOrCreateOrganizationForUser = async (email, userId) => {
   try {
     // First, try to find existing organization by domain
     const existingOrganization = await findOrganizationByEmailDomain(email);
-    
+
     if (existingOrganization) {
-      logger.info(`[findOrCreateOrganizationForUser] Found existing organization ${existingOrganization.name} for ${email}`);
+      logger.info(
+        `[findOrCreateOrganizationForUser] Found existing organization ${existingOrganization.name} for ${email}`,
+      );
       return { organization: existingOrganization, isExisting: true };
     }
-    
+
     // No existing organization found, create new one
     const newOrganization = await createOrganizationForUser(email, userId);
-    logger.info(`[findOrCreateOrganizationForUser] Created new organization ${newOrganization.name} for ${email}`);
+    logger.info(
+      `[findOrCreateOrganizationForUser] Created new organization ${newOrganization.name} for ${email}`,
+    );
     return { organization: newOrganization, isExisting: false };
   } catch (error) {
     logger.error('[findOrCreateOrganizationForUser]', error);
@@ -375,7 +385,7 @@ const findOrCreateOrganizationForUser = async (email, userId) => {
   }
 };
 
-module.exports = {
+export {
   getUserKey,
   updateUserKey,
   deleteUserKey,

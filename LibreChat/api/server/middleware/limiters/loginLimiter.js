@@ -1,9 +1,9 @@
-const rateLimit = require('express-rate-limit');
-const { RedisStore } = require('rate-limit-redis');
-const { removePorts, isEnabled } = require('~/server/utils');
-const ioredisClient = require('~/cache/ioredisClient');
-const { logViolation } = require('~/cache');
-const { logger } = require('~/config');
+import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import { removePorts, isEnabled } from '#server/utils/index.js';
+import ioredisClient from '#cache/ioredisClient.js';
+import { logViolation } from '#cache/index.js';
+import { logger } from '#config/index.js';
 
 const { LOGIN_WINDOW = 5, LOGIN_MAX = 7, LOGIN_VIOLATION_SCORE: score } = process.env;
 const windowMs = LOGIN_WINDOW * 60 * 1000;
@@ -41,4 +41,4 @@ if (isEnabled(process.env.USE_REDIS) && ioredisClient) {
 
 const loginLimiter = rateLimit(limiterOptions);
 
-module.exports = loginLimiter;
+export default loginLimiter;

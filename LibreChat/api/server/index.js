@@ -1,26 +1,28 @@
-require('dotenv').config();
-const path = require('path');
-require('module-alias')({ base: path.resolve(__dirname, '..') });
-const cors = require('cors');
-const axios = require('axios');
-const express = require('express');
-const compression = require('compression');
-const passport = require('passport');
-const mongoSanitize = require('express-mongo-sanitize');
-const fs = require('fs');
-const cookieParser = require('cookie-parser');
-const { jwtLogin, passportLogin } = require('~/strategies');
-const { connectDb, indexSync } = require('~/lib/db');
-const { isEnabled } = require('~/server/utils');
-const { ldapLogin } = require('~/strategies');
-const { logger } = require('~/config');
-const validateImageRequest = require('./middleware/validateImageRequest');
-const errorController = require('./controllers/ErrorController');
-const configureSocialLogins = require('./socialLogins');
-const AppService = require('./services/AppService');
-const staticCache = require('./utils/staticCache');
-const noIndex = require('./middleware/noIndex');
-const routes = require('./routes');
+import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+import axios from 'axios';
+import express from 'express';
+import compression from 'compression';
+import passport from 'passport';
+import mongoSanitize from 'express-mongo-sanitize';
+import fs from 'fs';
+import cookieParser from 'cookie-parser';
+import { jwtLogin, passportLogin, ldapLogin } from '../strategies/index.js';
+import { connectDb, indexSync } from '../lib/db/index.js';
+import { isEnabled } from './utils/index.js';
+import { logger } from '#config/index.js';
+import validateImageRequest from './middleware/validateImageRequest.js';
+import errorController from './controllers/ErrorController.js';
+import configureSocialLogins from './socialLogins.js';
+import AppService from './services/AppService.js';
+import staticCache from './utils/staticCache.js';
+import noIndex from './middleware/noIndex.js';
+import * as routes from './routes/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const { PORT, HOST, ALLOW_SOCIAL_LOGIN, DISABLE_COMPRESSION, TRUST_PROXY } = process.env ?? {};
 
@@ -185,4 +187,4 @@ process.on('uncaughtException', (err) => {
 });
 
 // export app for easier testing purposes
-module.exports = app;
+export default app;

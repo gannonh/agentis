@@ -1,14 +1,14 @@
-const fs = require('fs').promises;
-const { FileContext } = require('librechat-data-provider');
-const { uploadImageBuffer, filterFile } = require('~/server/services/Files/process');
-const validateAuthor = require('~/server/middleware/assistants/validateAuthor');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { deleteAssistantActions } = require('~/server/services/ActionService');
-const { updateAssistantDoc, getAssistants } = require('~/models/Assistant');
-const { getOpenAIClient, fetchAssistants } = require('./helpers');
-const { manifestToolMap } = require('~/app/clients/tools');
-const { deleteFileByFilter } = require('~/models/File');
-const { logger } = require('~/config');
+import { promises as fs } from 'fs';
+import {  FileContext  } from 'librechat-data-provider';
+import {  uploadImageBuffer, filterFile  } from '#server/services/Files/process.js';
+import validateAuthor from '#server/middleware/assistants/validateAuthor.js';
+import {  getStrategyFunctions  } from '#server/services/Files/strategies.js';
+import {  deleteAssistantActions  } from '#server/services/ActionService.js';
+import {  updateAssistantDoc, getAssistants  } from '#models/Assistant.js';
+import {  getOpenAIClient, fetchAssistants  } from './helpers.js';
+import {  manifestToolMap  } from '#app/clients/tools.js';
+import {  deleteFileByFilter  } from '#models/File.js';
+import {  logger  } from '#config.js';
 
 /**
  * Create an assistant.
@@ -367,7 +367,7 @@ const uploadAssistantAvatar = async (req, res) => {
   }
 };
 
-module.exports = {
+const assistantsV1Controller = {
   createAssistant,
   retrieveAssistant,
   patchAssistant,
@@ -376,3 +376,15 @@ module.exports = {
   getAssistantDocuments,
   uploadAssistantAvatar,
 };
+
+export {
+  createAssistant,
+  retrieveAssistant,
+  patchAssistant,
+  deleteAssistant,
+  listAssistants,
+  getAssistantDocuments,
+  uploadAssistantAvatar,
+};
+
+export default assistantsV1Controller;

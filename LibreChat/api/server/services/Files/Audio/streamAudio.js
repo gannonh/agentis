@@ -1,12 +1,12 @@
-const {
+import {
   Time,
   CacheKeys,
   SEPARATORS,
   parseTextParts,
   findLastSeparatorIndex,
-} = require('librechat-data-provider');
-const { getMessage } = require('~/models/Message');
-const { getLogStores } = require('~/cache');
+} from 'librechat-data-provider';
+import { getMessage } from '#models/Message.js';
+import { getLogStores } from '#cache/index.js';
 
 /**
  * @param {string[]} voiceIds - Array of voice IDs
@@ -203,7 +203,7 @@ async function* llmMessageSource(llmStream) {
   }
 }
 
-module.exports = {
+export {
   findLastSeparatorIndex,
   createChunkProcessor,
   splitTextIntoChunks,

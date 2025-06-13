@@ -1,4 +1,4 @@
-const { logger } = require('~/config');
+import { logger } from '#config/index.js';
 
 /**
  * Middleware to log Forwarded Headers
@@ -29,4 +29,4 @@ const logHeaders = (req, res, next) => {
   next();
 };
 
-module.exports = logHeaders;
+export default logHeaders;

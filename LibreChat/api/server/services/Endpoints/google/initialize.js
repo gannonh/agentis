@@ -1,8 +1,8 @@
-const { EModelEndpoint, AuthKeys } = require('librechat-data-provider');
-const { getUserKey, checkUserKeyExpiry } = require('~/server/services/UserService');
-const { getLLMConfig } = require('~/server/services/Endpoints/google/llm');
-const { isEnabled } = require('~/server/utils');
-const { GoogleClient } = require('~/app');
+import { EModelEndpoint, AuthKeys } from 'librechat-data-provider';
+import { getUserKey, checkUserKeyExpiry } from '../../UserService.js';
+import { getLLMConfig } from './llm.js';
+import { isEnabled } from '../../../utils/index.js';
+import { GoogleClient } from '#app/clients/index.js';
 
 const initializeClient = async ({ req, res, endpointOption, overrideModel, optionsOnly }) => {
   const { GOOGLE_KEY, GOOGLE_REVERSE_PROXY, GOOGLE_AUTH_HEADER, PROXY } = process.env;
@@ -17,7 +17,8 @@ const initializeClient = async ({ req, res, endpointOption, overrideModel, optio
 
   let serviceKey = {};
   try {
-    serviceKey = require('~/data/auth.json');
+    const authModule = await import('../../../../data/auth.json', { with: { type: 'json' } });
+    serviceKey = authModule.default;
   } catch (e) {
     // Do nothing
   }
@@ -76,4 +77,4 @@ const initializeClient = async ({ req, res, endpointOption, overrideModel, optio
   };
 };
 
-module.exports = initializeClient;
+export default initializeClient;

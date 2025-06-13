@@ -1,7 +1,9 @@
-const buildOptions = require('./build');
-const initializeClient = require('./initialize');
+import buildOptions from './build.js';
+import initializeClient from './initialize.js';
 
-module.exports = {
+export { buildOptions, initializeClient };
+
+export default {
   buildOptions,
   initializeClient,
 };

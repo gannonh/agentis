@@ -1,5 +1,5 @@
-const { klona } = require('klona');
-const {
+import { klona } from 'klona';
+import {
   StepTypes,
   RunStatus,
   StepStatus,
@@ -8,14 +8,14 @@ const {
   imageGenTools,
   EModelEndpoint,
   defaultOrderQuery,
-} = require('librechat-data-provider');
-const { retrieveAndProcessFile } = require('~/server/services/Files/process');
-const { processRequiredActions } = require('~/server/services/ToolService');
-const { createOnProgress, sendMessage, sleep } = require('~/server/utils');
-const { RunManager, waitForRun } = require('~/server/services/Runs');
-const { processMessages } = require('~/server/services/Threads');
-const { TextStream } = require('~/app/clients');
-const { logger } = require('~/config');
+} from 'librechat-data-provider';
+import { retrieveAndProcessFile } from './Files/process.js';
+import { processRequiredActions } from './ToolService.js';
+import { createOnProgress, sendMessage, sleep } from '../utils/index.js';
+import { RunManager, waitForRun } from './Runs/index.js';
+import { processMessages } from './Threads/index.js';
+import { TextStream } from '../../app/clients/index.js';
+import { logger } from '#config/index.js';
 
 /**
  * Sorts, processes, and flattens messages to a single string.
@@ -448,8 +448,4 @@ async function runAssistant({
   });
 }
 
-module.exports = {
-  getResponse,
-  runAssistant,
-  createOnTextProgress,
-};
+export { getResponse, runAssistant, createOnTextProgress };

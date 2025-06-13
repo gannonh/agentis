@@ -1,5 +1,5 @@
-const sharp = require('sharp');
-const { EModelEndpoint } = require('librechat-data-provider');
+import sharp from 'sharp';
+import { EModelEndpoint } from 'librechat-data-provider';
 
 /**
  * Resizes an image from a given buffer based on the specified resolution.
@@ -90,4 +90,4 @@ async function resizeAndConvert({ inputBuffer, desiredFormat, width = 150 }) {
   };
 }
 
-module.exports = { resizeImageBuffer, resizeAndConvert };
+export { resizeImageBuffer, resizeAndConvert };

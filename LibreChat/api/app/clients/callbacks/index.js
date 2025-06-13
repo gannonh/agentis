@@ -1,5 +1,3 @@
-const createStartHandler = require('./createStartHandler');
+import createStartHandler from './createStartHandler.js';
 
-module.exports = {
-  createStartHandler,
-};
+export { createStartHandler };

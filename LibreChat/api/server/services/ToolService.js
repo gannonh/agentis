@@ -1,9 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const { zodToJsonSchema } = require('zod-to-json-schema');
-const { tool: toolFn, Tool, DynamicStructuredTool } = require('@langchain/core/tools');
-const { Calculator } = require('@langchain/community/tools/calculator');
-const {
+import fs from 'fs';
+import path from 'path';
+import { createRequire } from 'module';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import { tool as toolFn, Tool, DynamicStructuredTool } from '@langchain/core/tools';
+import { Calculator } from '@langchain/community/tools/calculator';
+
+const require = createRequire(import.meta.url);
+import {
   Tools,
   ErrorTypes,
   ContentTypes,
@@ -15,27 +18,27 @@ const {
   openapiToFunction,
   AgentCapabilities,
   validateAndParseOpenAPISpec,
-} = require('librechat-data-provider');
-const {
+} from 'librechat-data-provider';
+import {
   createActionTool,
   decryptMetadata,
   loadActionSets,
   domainParser,
-} = require('./ActionService');
-const {
+} from './ActionService.js';
+import {
   createOpenAIImageTools,
   createYouTubeTools,
   manifestToolMap,
   toolkits,
-} = require('~/app/clients/tools');
-const { processFileURL, uploadImageBuffer } = require('~/server/services/Files/process');
-const { isActionDomainAllowed } = require('~/server/services/domains');
-const { getEndpointsConfig } = require('~/server/services/Config');
-const { recordUsage } = require('~/server/services/Threads');
-const { loadTools } = require('~/app/clients/tools/util');
-const { redactMessage } = require('~/config/parsers');
-const { sleep } = require('~/server/utils');
-const { logger } = require('~/config');
+} from '../../app/clients/tools/index.js';
+import { processFileURL, uploadImageBuffer } from './Files/process.js';
+import { isActionDomainAllowed } from './domains.js';
+import { getEndpointsConfig } from './Config/index.js';
+import { recordUsage } from './Threads/index.js';
+import { loadTools } from '../../app/clients/tools/util/index.js';
+import { redactMessage } from '../../config/parsers.js';
+import { sleep } from '#server/utils/queue.js';
+import { logger } from '#config/index.js';
 
 /**
  * @param {string} toolName
@@ -704,7 +707,7 @@ async function loadAgentTools({ req, res, agent, tool_resources, openAIApiKey })
   };
 }
 
-module.exports = {
+export {
   getToolkitKey,
   loadAgentTools,
   loadAndFormatTools,

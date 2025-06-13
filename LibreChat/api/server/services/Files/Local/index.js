@@ -1,7 +1,26 @@
-const images = require('./images');
-const crud = require('./crud');
+import { uploadLocalImage, encodeImage, prepareImagesLocal, processLocalAvatar } from './images.js';
+import {
+  saveLocalFile,
+  saveLocalImage,
+  saveLocalBuffer,
+  saveFileFromURL,
+  getLocalFileURL,
+  deleteLocalFile,
+  uploadLocalFile,
+  getLocalFileStream,
+} from './crud.js';
 
-module.exports = {
-  ...crud,
-  ...images,
+export {
+  saveLocalFile,
+  saveLocalImage,
+  saveLocalBuffer,
+  saveFileFromURL,
+  getLocalFileURL,
+  deleteLocalFile,
+  uploadLocalFile,
+  getLocalFileStream,
+  uploadLocalImage,
+  encodeImage,
+  prepareImagesLocal,
+  processLocalAvatar,
 };

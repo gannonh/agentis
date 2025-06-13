@@ -1,13 +1,13 @@
-const { Constants } = require('librechat-data-provider');
-const {
+import {  Constants  } from 'librechat-data-provider';
+import { 
   handleAbortError,
   createAbortController,
   cleanupAbortController,
-} = require('~/server/middleware');
-const { disposeClient, clientRegistry, requestDataMap } = require('~/server/cleanup');
-const { sendMessage } = require('~/server/utils');
-const { saveMessage } = require('~/models');
-const { logger } = require('~/config');
+ } from '#server/middleware.js';
+import {  disposeClient, clientRegistry, requestDataMap  } from '#server/cleanup.js';
+import {  sendMessage  } from '#server/utils.js';
+import {  saveMessage  } from '#models.js';
+import {  logger  } from '#config.js';
 
 const AgentController = async (req, res, next, initializeClient, addTitle) => {
   let {
@@ -270,4 +270,4 @@ const AgentController = async (req, res, next, initializeClient, addTitle) => {
   }
 };
 
-module.exports = AgentController;
+export default AgentController;

@@ -1,9 +1,9 @@
-const fs = require('fs').promises;
-const express = require('express');
-const { getStrategyFunctions } = require('~/server/services/Files/strategies');
-const { resizeAvatar } = require('~/server/services/Files/images/avatar');
-const { filterFile } = require('~/server/services/Files/process');
-const { logger } = require('~/config');
+import { promises as fs } from 'fs';
+import express from 'express';
+import {  getStrategyFunctions  } from '#server/services/Files/strategies.js';
+import resizeAvatar from '#server/services/Files/images/avatar.js';
+import {  filterFile  } from '#server/services/Files/process.js';
+import {  logger  } from '#config.js';
 
 const router = express.Router();
 
@@ -44,4 +44,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

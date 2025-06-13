@@ -42,4 +42,4 @@ function addCacheControl(messages) {
   return updatedMessages;
 }
 
-module.exports = addCacheControl;
+export default addCacheControl;

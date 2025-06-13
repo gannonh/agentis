@@ -1,4 +1,4 @@
-const { EModelEndpoint, agentsEndpointSChema } = require('librechat-data-provider');
+import { EModelEndpoint, agentsEndpointSChema } from 'librechat-data-provider';
 
 /**
  * Sets up the Agents configuration from the config (`librechat.yaml`) file.
@@ -11,4 +11,4 @@ function agentsConfigSetup(config) {
   return parsedConfig;
 }
 
-module.exports = { agentsConfigSetup };
+export { agentsConfigSetup };

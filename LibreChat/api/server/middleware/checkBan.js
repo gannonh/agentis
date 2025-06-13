@@ -1,12 +1,12 @@
-const { Keyv } = require('keyv');
-const uap = require('ua-parser-js');
-const { ViolationTypes } = require('librechat-data-provider');
-const { isEnabled, removePorts } = require('~/server/utils');
-const keyvMongo = require('~/cache/keyvMongo');
-const denyRequest = require('./denyRequest');
-const { getLogStores } = require('~/cache');
-const { findUser } = require('~/models');
-const { logger } = require('~/config');
+import { Keyv } from 'keyv';
+import uap from 'ua-parser-js';
+import { ViolationTypes } from 'librechat-data-provider';
+import { isEnabled, removePorts } from '#server/utils/index.js';
+import keyvMongo from '#cache/keyvMongo.js';
+import denyRequest from './denyRequest.js';
+import { getLogStores } from '#cache/index.js';
+import { findUser } from '#models/index.js';
+import { logger } from '#config/index.js';
 
 const banCache = new Keyv({ store: keyvMongo, namespace: ViolationTypes.BAN, ttl: 0 });
 const message = 'Your account has been temporarily banned due to violations of our service.';
@@ -138,4 +138,4 @@ const checkBan = async (req, res, next = () => {}) => {
   }
 };
 
-module.exports = checkBan;
+export default checkBan;

@@ -1,4 +1,4 @@
-const connectDb = require('./connectDb');
-const indexSync = require('./indexSync');
+import connectDb from './connectDb.js';
+import indexSync from './indexSync.js';
 
-module.exports = { connectDb, indexSync };
+export { connectDb, indexSync };
