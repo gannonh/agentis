@@ -202,15 +202,23 @@ const unlinkFile = async (filepath) => {
 const deleteLocalFile = async (req, file) => {
   const { publicPath, uploads } = req.app.locals.paths;
   if (file.embedded && process.env.RAG_API_URL) {
-    const jwtToken = req.headers.authorization.split(' ')[1];
-    axios.delete(`${process.env.RAG_API_URL}/documents`, {
-      headers: {
-        Authorization: `Bearer ${jwtToken}`,
-        'Content-Type': 'application/json',
-        accept: 'application/json',
-      },
-      data: [file.file_id],
-    });
+    // Better Auth uses session-based authentication, so we need to get a token
+    // For now, we'll pass the user ID - the RAG API will need to be updated to handle this
+    const userId = req.user?.id;
+    if (userId) {
+      // Create a temporary token based on user ID for RAG API compatibility
+      // TODO: Update RAG API to handle Better Auth sessions properly
+      const userToken = Buffer.from(JSON.stringify({ userId, timestamp: Date.now() })).toString('base64');
+      
+      axios.delete(`${process.env.RAG_API_URL}/documents`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+          accept: 'application/json',
+        },
+        data: [file.file_id],
+      });
+    }
   }
 
   if (file.filepath.startsWith(`/uploads/${req.user.id}`)) {

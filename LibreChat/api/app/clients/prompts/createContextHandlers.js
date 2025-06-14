@@ -18,14 +18,25 @@ function createContextHandlers(req, userMessageContent) {
   const queryPromises = [];
   const processedFiles = [];
   const processedIds = new Set();
-  const jwtToken = req.headers.authorization.split(' ')[1];
+  
+  // Better Auth uses session-based authentication, so we need to get a token
+  // For now, we'll pass the user ID - the RAG API will need to be updated to handle this
+  const userId = req.user?.id;
+  if (!userId) {
+    logger.error('User ID not found in request for RAG context');
+    return;
+  }
+  
+  // Create a temporary token based on user ID for RAG API compatibility
+  // TODO: Update RAG API to handle Better Auth sessions properly
+  const userToken = Buffer.from(JSON.stringify({ userId, timestamp: Date.now() })).toString('base64');
   const useFullContext = isEnabled(process.env.RAG_USE_FULL_CONTEXT);
 
   const query = async (file) => {
     if (useFullContext) {
       return axios.get(`${process.env.RAG_API_URL}/documents/${file.file_id}/context`, {
         headers: {
-          Authorization: `Bearer ${jwtToken}`,
+          Authorization: `Bearer ${userToken}`,
         },
       });
     }
@@ -39,7 +50,7 @@ function createContextHandlers(req, userMessageContent) {
       },
       {
         headers: {
-          Authorization: `Bearer ${jwtToken}`,
+          Authorization: `Bearer ${userToken}`,
           'Content-Type': 'application/json',
         },
       },

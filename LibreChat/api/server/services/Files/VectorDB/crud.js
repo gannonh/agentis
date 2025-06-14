@@ -23,10 +23,20 @@ const deleteVectors = async (req, file) => {
     return;
   }
   try {
-    const jwtToken = req.headers.authorization.split(' ')[1];
+    // Better Auth uses session-based authentication, so we need to get a token
+    // For now, we'll pass the user ID - the RAG API will need to be updated to handle this
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+    
+    // Create a temporary token based on user ID for RAG API compatibility
+    // TODO: Update RAG API to handle Better Auth sessions properly
+    const userToken = Buffer.from(JSON.stringify({ userId, timestamp: Date.now() })).toString('base64');
+    
     return await axios.delete(`${process.env.RAG_API_URL}/documents`, {
       headers: {
-        Authorization: `Bearer ${jwtToken}`,
+        Authorization: `Bearer ${userToken}`,
         'Content-Type': 'application/json',
         accept: 'application/json',
       },
@@ -70,7 +80,17 @@ async function uploadVectors({ req, file, file_id, entity_id }) {
   }
 
   try {
-    const jwtToken = req.headers.authorization.split(' ')[1];
+    // Better Auth uses session-based authentication, so we need to get a token
+    // For now, we'll pass the user ID - the RAG API will need to be updated to handle this
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+    
+    // Create a temporary token based on user ID for RAG API compatibility
+    // TODO: Update RAG API to handle Better Auth sessions properly
+    const userToken = Buffer.from(JSON.stringify({ userId, timestamp: Date.now() })).toString('base64');
+    
     const formData = new FormData();
     formData.append('file_id', file_id);
     formData.append('file', fs.createReadStream(file.path));
@@ -82,7 +102,7 @@ async function uploadVectors({ req, file, file_id, entity_id }) {
 
     const response = await axios.post(`${process.env.RAG_API_URL}/embed`, formData, {
       headers: {
-        Authorization: `Bearer ${jwtToken}`,
+        Authorization: `Bearer ${userToken}`,
         accept: 'application/json',
         ...formHeaders,
       },
