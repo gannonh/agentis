@@ -453,15 +453,20 @@ export default function mongoMeili(schema, options) {
     let meiliDoc;
     // For conversation documents, try to fetch the document from the "convos" index.
     if (doc.messages) {
-      try {
-        meiliDoc = await client.index('convos').getDocument(doc.conversationId);
-      } catch (error) {
-        logger.debug(
-          '[MeiliMongooseModel.findOneAndUpdate] Convo not found in MeiliSearch and will index ' +
-            doc.conversationId,
-          error,
-        );
+      // Only check MeiliSearch if the document is already marked as indexed
+      // This prevents errors when creating new conversations
+      if (doc._meiliIndex === true) {
+        try {
+          meiliDoc = await client.index('convos').getDocument(doc.conversationId);
+        } catch (error) {
+          logger.debug(
+            '[MeiliMongooseModel.findOneAndUpdate] Indexed convo not found in MeiliSearch: ' +
+              doc.conversationId,
+            error,
+          );
+        }
       }
+      // If not indexed yet, skip the MeiliSearch check - postSaveHook will handle indexing
     }
 
     // If the MeiliSearch document exists and the title is unchanged, do nothing.
