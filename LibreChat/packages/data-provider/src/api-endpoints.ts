@@ -111,22 +111,25 @@ export const models = () => '/api/models';
 
 export const tokenizer = () => '/api/tokenizer';
 
-export const login = () => '/api/auth/login';
+// Better Auth endpoints
+export const login = () => '/api/auth/sign-in/email';
 
-export const logout = () => '/api/auth/logout';
+export const logout = () => '/api/auth/sign-out';
 
-export const register = () => '/api/auth/register';
+export const register = () => '/api/auth/sign-up/email';
 
-export const loginFacebook = () => '/api/auth/facebook';
+export const session = () => '/api/auth/get-session';
 
-export const loginGoogle = () => '/api/auth/google';
+export const loginFacebook = () => '/api/auth/sign-in/facebook';
+
+export const loginGoogle = () => '/api/auth/sign-in/google';
 
 export const refreshToken = (retry?: boolean) =>
   `/api/auth/refresh${retry === true ? '?retry=true' : ''}`;
 
-export const requestPasswordReset = () => '/api/auth/requestPasswordReset';
+export const requestPasswordReset = () => '/api/auth/reset-password';
 
-export const resetPassword = () => '/api/auth/resetPassword';
+export const resetPassword = () => '/api/auth/reset-password';
 
 export const verifyEmail = () => '/api/user/verify';
 
