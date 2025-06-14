@@ -73,47 +73,47 @@ api/
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/login` | Authenticate user |
-| POST | `/api/auth/register` | Create account |
-| POST | `/api/auth/logout` | End session |
-| POST | `/api/auth/refresh` | Refresh token |
+| Method | Endpoint             | Description       |
+| ------ | -------------------- | ----------------- |
+| POST   | `/api/auth/login`    | Authenticate user |
+| POST   | `/api/auth/register` | Create account    |
+| POST   | `/api/auth/logout`   | End session       |
+| POST   | `/api/auth/refresh`  | Refresh token     |
 
 ### Conversations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/conversations` | List conversations |
-| POST | `/api/conversations` | Create conversation |
-| GET | `/api/conversations/:id` | Get conversation |
-| PUT | `/api/conversations/:id` | Update conversation |
+| Method | Endpoint                 | Description         |
+| ------ | ------------------------ | ------------------- |
+| GET    | `/api/conversations`     | List conversations  |
+| POST   | `/api/conversations`     | Create conversation |
+| GET    | `/api/conversations/:id` | Get conversation    |
+| PUT    | `/api/conversations/:id` | Update conversation |
 | DELETE | `/api/conversations/:id` | Delete conversation |
 
 ### Messages
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/ask/:endpoint` | Send message |
-| POST | `/api/edit` | Edit message |
-| GET | `/api/messages/:conversationId` | Get messages |
+| Method | Endpoint                        | Description  |
+| ------ | ------------------------------- | ------------ |
+| POST   | `/api/ask/:endpoint`            | Send message |
+| POST   | `/api/edit`                     | Edit message |
+| GET    | `/api/messages/:conversationId` | Get messages |
 
 ### Files
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/files/upload` | Upload file |
-| GET | `/api/files` | List files |
-| GET | `/api/files/:id` | Download file |
-| DELETE | `/api/files/:id` | Delete file |
+| Method | Endpoint            | Description   |
+| ------ | ------------------- | ------------- |
+| POST   | `/api/files/upload` | Upload file   |
+| GET    | `/api/files`        | List files    |
+| GET    | `/api/files/:id`    | Download file |
+| DELETE | `/api/files/:id`    | Delete file   |
 
 ### Configuration
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/models` | Available models |
-| GET | `/api/endpoints` | Endpoint config |
-| GET | `/api/config` | App settings |
+| Method | Endpoint         | Description      |
+| ------ | ---------------- | ---------------- |
+| GET    | `/api/models`    | Available models |
+| GET    | `/api/endpoints` | Endpoint config  |
+| GET    | `/api/config`    | App settings     |
 
 ## Configuration
 
@@ -194,6 +194,9 @@ node --inspect server/index.js
 npm run lint:api      # ESLint
 npm run format        # Prettier
 ```
+## Testing
+
+- See [README.testing.md](./README.testing.md)
 
 ## Deployment
 
