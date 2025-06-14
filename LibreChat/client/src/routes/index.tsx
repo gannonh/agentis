@@ -38,6 +38,10 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     children: [
       {
+        index: true,
+        element: <Navigate to="/login" replace={true} />,
+      },
+      {
         path: 'register',
         element: <Registration />,
       },

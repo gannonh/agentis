@@ -407,7 +407,7 @@ export type TResError = {
 
 export type TAuthContext = {
   user: t.TUser | undefined;
-  token: string | undefined;
+  session: t.TBetterAuthSession | undefined;
   isAuthenticated: boolean;
   error: string | undefined;
   login: (data: t.TLoginUser) => void;
@@ -418,7 +418,8 @@ export type TAuthContext = {
 
 export type TUserContext = {
   user?: t.TUser | undefined;
-  token: string | undefined;
+  session?: t.TBetterAuthSession | undefined;
+  token?: string | undefined; // Legacy support during transition
   isAuthenticated: boolean;
   redirect?: string;
 };
