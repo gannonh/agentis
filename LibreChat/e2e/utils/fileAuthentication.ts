@@ -8,6 +8,11 @@
 import { Browser } from '@playwright/test';
 import path from 'path';
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import cleanupAgents, { cleanupChats, cleanupConnections } from './cleanupUser';
 import connectDb from '@librechat/backend/lib/db/connectDb';
 import { User } from '@librechat/backend/models';
@@ -25,7 +30,7 @@ export interface FileAuthConfig {
 /**
  * Performs user registration in the LibreChat application
  */
-async function performRegistration(page: any, user: FileAuthConfig['user'], testFileName: string): Promise<void> {
+async function performRegistration(page: any, user: FileAuthConfig['user'], testFileName: string): Promise<boolean> {
   console.log(`🔧 File ${testFileName}: Starting user registration`);
 
   await page.goto('http://localhost:3080/');
@@ -42,7 +47,8 @@ async function performRegistration(page: any, user: FileAuthConfig['user'], test
   // Handle registration response
   try {
     await page.waitForURL('/c/new', { timeout: 6000 });
-    console.log(`🔧 File ${testFileName}: ✔️ Registration successful`);
+    console.log(`🔧 File ${testFileName}: ✔️ Registration successful - auto-authenticated`);
+    return true; // Indicate registration was successful and user is authenticated
   } catch (error) {
     console.log(`🔧 File ${testFileName}: Registration may have failed, will try login...`);
 
@@ -50,6 +56,7 @@ async function performRegistration(page: any, user: FileAuthConfig['user'], test
     if (!page.url().includes('/login')) {
       await page.goto('http://localhost:3080/login');
     }
+    return false; // Indicate registration failed, need to login
   }
 }
 
@@ -165,8 +172,13 @@ export async function createFileAuth(browser: Browser, testFileName: string): Pr
     });
 
     // Perform complete authentication flow
-    await performRegistration(page, user, testFileName);
-    await performLogin(page, user, testFileName);
+    const registrationSuccessful = await performRegistration(page, user, testFileName);
+    
+    if (!registrationSuccessful) {
+      // Only perform login if registration didn't auto-authenticate
+      await performLogin(page, user, testFileName);
+    }
+    
     await handleTermsOfService(page, testFileName);
 
     // Verify final authentication state
