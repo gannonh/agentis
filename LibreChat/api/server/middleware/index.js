@@ -13,6 +13,8 @@ import requireLdapAuth from './requireLdapAuth.js';
 import * as abortMiddleware from './abortMiddleware.js';
 import checkInviteUser from './checkInviteUser.js';
 import requireJwtAuth from './requireJwtAuth.js';
+import requireBetterAuth from './requireBetterAuth.js';
+import optionalBetterAuth from './optionalBetterAuth.js';
 import validateModel from './validateModel.js';
 import moderateText from './moderateText.js';
 import logHeaders from './logHeaders.js';
@@ -40,6 +42,8 @@ export {
   moderateText,
   validateModel,
   requireJwtAuth,
+  requireBetterAuth,
+  optionalBetterAuth,
   checkInviteUser,
   requireLdapAuth,
   requireLocalAuth,

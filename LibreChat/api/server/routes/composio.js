@@ -1,5 +1,5 @@
 import express from 'express';
-import {  requireJwtAuth  } from '#server/middleware.js';
+import { requireBetterAuth } from '#server/middleware.js';
 import composioService from '#server/services/ComposioService.js';
 import {  ComposioConnectedAccount  } from '#models.js';
 import {  logger  } from '#config.js';
@@ -10,7 +10,7 @@ const router = express.Router();
  * POST /api/composio/auth/:service
  * Start authentication flow for a Composio service following proper OAuth flow
  */
-router.post('/auth/:service', requireJwtAuth, async (req, res) => {
+router.post('/auth/:service', requireBetterAuth, async (req, res) => {
   try {
     const { service } = req.params;
     const userId = req.user.id;
@@ -41,7 +41,7 @@ router.post('/auth/:service', requireJwtAuth, async (req, res) => {
  * GET /api/composio/auth/:service (backwards compatibility)
  * Start authentication flow for a Composio service
  */
-router.get('/auth/:service', requireJwtAuth, async (req, res) => {
+router.get('/auth/:service', requireBetterAuth, async (req, res) => {
   try {
     const { service } = req.params;
     const userId = req.user.id;
@@ -70,7 +70,7 @@ router.get('/auth/:service', requireJwtAuth, async (req, res) => {
  * GET /api/composio/connection-status/:service
  * Check if user has an active connection for a service
  */
-router.get('/connection-status/:service', requireJwtAuth, async (req, res) => {
+router.get('/connection-status/:service', requireBetterAuth, async (req, res) => {
   try {
     const { service } = req.params;
     const userId = req.user.id;
@@ -95,7 +95,7 @@ router.get('/connection-status/:service', requireJwtAuth, async (req, res) => {
  * POST /api/composio/wait-for-connection
  * Wait for a connection to become active after OAuth
  */
-router.post('/wait-for-connection', requireJwtAuth, async (req, res) => {
+router.post('/wait-for-connection', requireBetterAuth, async (req, res) => {
   try {
     const { service, connectedAccountId, timeoutSeconds = 180 } = req.body;
     const userId = req.user.id;
@@ -140,7 +140,7 @@ router.post('/wait-for-connection', requireJwtAuth, async (req, res) => {
  * GET /api/composio/connected-accounts
  * List all connected accounts for the current user
  */
-router.get('/connected-accounts', requireJwtAuth, async (req, res) => {
+router.get('/connected-accounts', requireBetterAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -168,7 +168,7 @@ router.get('/connected-accounts', requireJwtAuth, async (req, res) => {
  * DELETE /api/composio/connected-accounts/:service
  * Remove a connected account for a service
  */
-router.delete('/connected-accounts/:service', requireJwtAuth, async (req, res) => {
+router.delete('/connected-accounts/:service', requireBetterAuth, async (req, res) => {
   try {
     const { service } = req.params;
     const userId = req.user.id;

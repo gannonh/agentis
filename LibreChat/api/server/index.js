@@ -106,8 +106,12 @@ const startServer = async () => {
   }
   
   app.use('/oauth', routes.oauth);
+  
+  /* Better Auth Handler */
+  app.all('/api/auth/*', toNodeHandler(getAuth()));
+  
   /* API Endpoints */
-  // app.use('/api/auth', routes.auth); // Temporarily disabled for Better Auth
+  // app.use('/api/auth', routes.auth); // Disabled - using Better Auth instead
   app.use('/api/actions', routes.actions);
   app.use('/api/keys', routes.keys);
   app.use('/api/user', routes.user);
