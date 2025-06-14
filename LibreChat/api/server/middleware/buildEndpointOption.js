@@ -21,7 +21,7 @@ const buildFunction = {
   [EModelEndpoint.openAI]: openAI.buildOptions,
   [EModelEndpoint.google]: google.buildOptions,
   [EModelEndpoint.custom]: custom.buildOptions,
-  [EModelEndpoint.agents]: agents.buildOptions,
+  [EModelEndpoint.agents]: agents.default.buildOptions,
   [EModelEndpoint.bedrock]: bedrock.buildOptions,
   [EModelEndpoint.azureOpenAI]: openAI.buildOptions,
   [EModelEndpoint.anthropic]: anthropic.buildOptions,
@@ -84,7 +84,14 @@ async function buildEndpointOption(req, res, next) {
   try {
     const isAgents =
       isAgentsEndpoint(endpoint) || req.baseUrl.startsWith(EndpointURLs[EModelEndpoint.agents]);
-    const endpointFn = buildFunction[isAgents ? EModelEndpoint.agents : (endpointType ?? endpoint)];
+    const lookupKey = isAgents ? EModelEndpoint.agents : (endpointType ?? endpoint);
+    const endpointFn = buildFunction[lookupKey];
+    
+    if (!endpointFn) {
+      console.error('[buildEndpointOption] No endpoint function found for:', lookupKey);
+      return handleError(res, { text: `No handler for endpoint: ${lookupKey}` });
+    }
+    
     const builder = isAgents ? (...args) => endpointFn(req, ...args) : endpointFn;
 
     // TODO: use object params
@@ -98,6 +105,13 @@ async function buildEndpointOption(req, res, next) {
     }
     next();
   } catch (error) {
+    console.error('[buildEndpointOption] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      endpoint,
+      endpointType,
+      userId: req.user?.id
+    });
     return handleError(res, { text: 'Error building endpoint option' });
   }
 }
