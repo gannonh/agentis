@@ -1,5 +1,5 @@
 import express from 'express';
-import {  requireJwtAuth, canDeleteAccount, verifyEmailLimiter  } from '#server/middleware.js';
+import {  requireBetterAuth, canDeleteAccount, verifyEmailLimiter  } from '#server/middleware.js';
 import { 
   getUserController,
   deleteUserController,
@@ -12,11 +12,11 @@ import {
 
 const router = express.Router();
 
-router.get('/', requireJwtAuth, getUserController);
-router.get('/terms', requireJwtAuth, getTermsStatusController);
-router.post('/terms/accept', requireJwtAuth, acceptTermsController);
-router.post('/plugins', requireJwtAuth, updateUserPluginsController);
-router.delete('/delete', requireJwtAuth, canDeleteAccount, deleteUserController);
+router.get('/', requireBetterAuth, getUserController);
+router.get('/terms', requireBetterAuth, getTermsStatusController);
+router.post('/terms/accept', requireBetterAuth, acceptTermsController);
+router.post('/plugins', requireBetterAuth, updateUserPluginsController);
+router.delete('/delete', requireBetterAuth, canDeleteAccount, deleteUserController);
 router.post('/verify', verifyEmailController);
 router.post('/verify/resend', verifyEmailLimiter, resendVerificationController);
 

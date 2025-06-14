@@ -6,11 +6,11 @@ import {
   roleDefaults,
   SystemRoles,
  } from 'librechat-data-provider';
-import {  checkAdmin, requireJwtAuth  } from '#server/middleware.js';
+import { requireBetterAuth, checkAdmin } from '#server/middleware.js';
 import {  updateRoleByName, getRoleByName  } from '#models/Role.js';
 
 const router = express.Router();
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 
 /**
  * GET /api/roles/:roleName

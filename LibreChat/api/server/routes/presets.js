@@ -1,11 +1,11 @@
 import express from 'express';
 import crypto from 'crypto';
 import {  getPresets, savePreset, deletePresets  } from '#models.js';
-import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
+import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
 import {  logger  } from '#config.js';
 
 const router = express.Router();
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 
 router.get('/', async (req, res) => {
   const presets = (await getPresets(req.user.id)).map((preset) => preset);

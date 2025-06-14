@@ -2,7 +2,7 @@ import express from 'express';
 import { 
   uaParser,
   checkBan,
-  requireJwtAuth,
+  requireBetterAuth,
   messageIpLimiter,
   concurrentLimiter,
   messageUserLimiter,
@@ -15,7 +15,7 @@ const { LIMIT_CONCURRENT_MESSAGES, LIMIT_MESSAGE_IP, LIMIT_MESSAGE_USER } = proc
 
 const router = express.Router();
 
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 router.use(checkBan);
 router.use(uaParser);
 

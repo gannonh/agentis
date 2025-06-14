@@ -1,11 +1,11 @@
 import express from 'express';
 import {  MeiliSearch  } from 'meilisearch';
-import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
+import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
 import {  isEnabled  } from '#server/utils.js';
 
 const router = express.Router();
 
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 
 router.get('/enable', async function (req, res) {
   if (!isEnabled(process.env.SEARCH)) {

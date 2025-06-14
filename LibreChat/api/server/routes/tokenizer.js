@@ -1,10 +1,10 @@
 import express from 'express';
 const router = express.Router();
-import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
+import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
 import {  countTokens  } from '#server/utils.js';
 import {  logger  } from '#config.js';
 
-router.post('/', requireJwtAuth, async (req, res) => {
+router.post('/', requireBetterAuth, async (req, res) => {
   try {
     const { arg } = req.body;
     const count = await countTokens(arg?.text ?? arg);

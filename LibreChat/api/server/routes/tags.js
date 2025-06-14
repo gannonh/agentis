@@ -7,14 +7,14 @@ import {
   deleteConversationTag,
   updateTagsForConversation,
  } from '#models/ConversationTag.js';
-import {  requireJwtAuth, generateCheckAccess  } from '#server/middleware.js';
+import { requireBetterAuth, generateCheckAccess } from '#server/middleware.js';
 import {  logger  } from '#config.js';
 
 const router = express.Router();
 
 const checkBookmarkAccess = generateCheckAccess(PermissionTypes.BOOKMARKS, [Permissions.USE]);
 
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 router.use(checkBookmarkAccess);
 
 /**

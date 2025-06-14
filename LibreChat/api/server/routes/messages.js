@@ -9,7 +9,7 @@ import {
   deleteMessages,
  } from '#models.js';
 import {  findAllArtifacts, replaceArtifactContent  } from '#server/services/Artifacts/update.js';
-import {  requireJwtAuth, validateMessageReq  } from '#server/middleware.js';
+import { requireBetterAuth, checkBan, uaParser, validateMessageReq } from '#server/middleware.js';
 import {  cleanUpPrimaryKeyValue  } from '#lib/utils/misc.js';
 import {  getConvosQueried  } from '#models/Conversation.js';
 import {  countTokens  } from '#server/utils.js';
@@ -17,7 +17,7 @@ import Message from '#models/Message.js';
 import {  logger  } from '#config.js';
 
 const router = express.Router();
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 
 router.get('/', async (req, res) => {
   try {

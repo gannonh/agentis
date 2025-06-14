@@ -1,8 +1,8 @@
 import express from 'express';
 const router = express.Router();
 import controller from '../controllers/Balance.js';
-import {  requireJwtAuth  } from '../middleware/index.js';
+import { requireBetterAuth } from '../middleware/index.js';
 
-router.get('/', requireJwtAuth, controller);
+router.get('/', requireBetterAuth, controller);
 
 export default router;
