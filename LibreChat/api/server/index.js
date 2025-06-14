@@ -9,6 +9,8 @@ import passport from 'passport';
 import mongoSanitize from 'express-mongo-sanitize';
 import fs from 'fs';
 import cookieParser from 'cookie-parser';
+import { toNodeHandler } from 'better-auth/node';
+import { getAuth } from '#auth.js';
 import { jwtLogin, passportLogin, ldapLogin } from '../strategies/index.js';
 import { connectDb, indexSync } from '../lib/db/index.js';
 import { isEnabled } from './utils/index.js';
@@ -51,6 +53,20 @@ const startServer = async () => {
 
   app.get('/health', (_req, res) => res.status(200).send('OK'));
 
+  /**
+   * Better Auth Handler
+   * IMPORTANT: Must be mounted BEFORE express.json() middleware
+   * Handles all authentication endpoints:
+   * - POST /api/auth/sign-up/email - Create new user account
+   * - POST /api/auth/sign-in/email - Authenticate user
+   * - GET  /api/auth/get-session - Get current session
+   * - GET  /api/auth/ok - Health check for auth service
+   */
+  app.all('/api/auth/*', (req, res, next) => {
+    const authInstance = getAuth();
+    return toNodeHandler(authInstance)(req, res, next);
+  });
+
   /* Middleware */
   app.use(noIndex);
   app.use(errorController);
@@ -88,10 +104,10 @@ const startServer = async () => {
   if (isEnabled(ALLOW_SOCIAL_LOGIN)) {
     configureSocialLogins(app);
   }
-
+  
   app.use('/oauth', routes.oauth);
   /* API Endpoints */
-  app.use('/api/auth', routes.auth);
+  // app.use('/api/auth', routes.auth); // Temporarily disabled for Better Auth
   app.use('/api/actions', routes.actions);
   app.use('/api/keys', routes.keys);
   app.use('/api/user', routes.user);

@@ -25,7 +25,10 @@ This directory contains local copies of Better Auth documentation for the Agenti
 - [Admin](./admin.md) - User CRUD, roles, bans, impersonation, and access control
 - [Stripe](./stripe.md) - Customer creation, subscription management, webhooks, team plans, and reference IDs for org billing
 
-### 5. Release Notes
+### 5. Integrations
+- [Express](./express.md) - Express.js integration with Better Auth, including CORS and session handling
+
+### 6. Release Notes
 - [1.2 Release](./1-2-release.md) - Stripe, teams, captcha, API keys, and other new features
 
 ## Key Implementation Notes
@@ -39,6 +42,12 @@ This directory contains local copies of Better Auth documentation for the Agenti
 - Always use `authSource=admin` in MongoDB connection strings when using Docker
 - Specify database name explicitly (e.g., `/Agentis`) to avoid using default "test" database
 - Example: `mongodb://admin:password@localhost:27017/Agentis?authSource=admin`
+
+### Express Integration
+- Use ES modules (ESM) - CommonJS is not supported
+- Mount handler before `express.json()` middleware to avoid client API hanging
+- Use `toNodeHandler` for request handling and `fromNodeHeaders` for session retrieval
+- Configure CORS with `credentials: true` for authentication cookies
 
 ### Multi-Tenancy (Organizations/Teams)
 - Organizations can have teams/sub-organizations as of v1.2
@@ -71,7 +80,77 @@ npx @better-auth/cli migrate
 npx @better-auth/cli init
 ```
 
+## Common Configuration Examples
 
+### Basic Auth Setup with MongoDB
+```typescript
+import { betterAuth } from "better-auth"
+import { MongoClient } from "mongodb"
+
+const client = new MongoClient(process.env.MONGODB_URI!)
+const db = client.db("Agentis")
+
+export const auth = betterAuth({
+    database: {
+        provider: "mongodb",
+        db: db
+    },
+    emailAndPassword: {
+        enabled: true
+    }
+})
+```
+
+### Express Server Setup
+```typescript
+import express from "express";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth";
+
+const app = express();
+
+// Mount Better Auth handler BEFORE express.json()
+app.all("/api/auth/*", toNodeHandler(auth));
+
+// Apply express.json() after Better Auth
+app.use(express.json());
+
+app.listen(3000, () => {
+    console.log("Server running on port 3000");
+});
+```
+
+### Organization with Stripe
+```typescript
+import { organization } from "better-auth/plugins"
+import { stripe } from "@better-auth/stripe"
+
+export const auth = betterAuth({
+    plugins: [
+        organization({
+            teams: {
+                enabled: true
+            }
+        }),
+        stripe({
+            createCustomerOnSignup: true,
+            subscription: {
+                enabled: true,
+                authorizeReference: async ({ user, referenceId, action }) => {
+                    // Check if user can manage org subscriptions
+                    const member = await db.members.findFirst({
+                        where: {
+                            userId: user.id,
+                            organizationId: referenceId
+                        }
+                    });
+                    return member?.role === "owner" || member?.role === "admin";
+                }
+            }
+        })
+    ]
+})
+```
 
 ## Additional Resources
 

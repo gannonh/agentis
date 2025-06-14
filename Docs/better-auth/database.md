@@ -2,11 +2,7 @@
 
 ## Adapters
 
-Better Auth requires a database connection to store data. It comes with a query builder called [Kysely](https://kysely.dev/) to manage and query your database. The database will be used to store data such as users, sessions, and more. Plugins can also define their own database tables to store data.
-
-You can pass a database connection to Better Auth by passing a supported database instance, a dialect instance or a Kysely instance in the database options.
-
-You can learn more about supported Kysely dialects in the [Other relational databases](/docs/adapters/other-relational-databases) documentation. Or if you're using an ORM, you can find our supported ORM adapters in that same category on the documentation sidebar.
+Better Auth requires a database connection to store data. [MongoDB](./mongodb-adapter.md)
 
 ## CLI
 
@@ -100,63 +96,63 @@ Better Auth requires the following tables to be present in the database. The typ
 
 Table Name: `user`
 
-| Field Name | Type | Key | Description |
-| --- | --- | --- | --- |
-| id | string | PK | Unique identifier for each user |
-| name | string | - | User's chosen display name |
-| email | string | - | User's email address for communication and login |
-| emailVerified | boolean | - | Whether the user's email is verified |
-| image | string | ? | User's image url |
-| createdAt | Date | - | Timestamp of when the user account was created |
-| updatedAt | Date | - | Timestamp of the last update to the user's information |
+| Field Name    | Type    | Key | Description                                            |
+| ------------- | ------- | --- | ------------------------------------------------------ |
+| id            | string  | PK  | Unique identifier for each user                        |
+| name          | string  | -   | User's chosen display name                             |
+| email         | string  | -   | User's email address for communication and login       |
+| emailVerified | boolean | -   | Whether the user's email is verified                   |
+| image         | string  | ?   | User's image url                                       |
+| createdAt     | Date    | -   | Timestamp of when the user account was created         |
+| updatedAt     | Date    | -   | Timestamp of the last update to the user's information |
 
 ### Session
 
 Table Name: `session`
 
-| Field Name | Type | Key | Description |
-| --- | --- | --- | --- |
-| id | string | PK | Unique identifier for each session |
-| userId | string | FK | The ID of the user |
-| token | string | - | The unique session token |
-| expiresAt | Date | - | The time when the session expires |
-| ipAddress | string | ? | The IP address of the device |
-| userAgent | string | ? | The user agent information of the device |
-| createdAt | Date | - | Timestamp of when the session was created |
-| updatedAt | Date | - | Timestamp of when the session was updated |
+| Field Name | Type   | Key | Description                               |
+| ---------- | ------ | --- | ----------------------------------------- |
+| id         | string | PK  | Unique identifier for each session        |
+| userId     | string | FK  | The ID of the user                        |
+| token      | string | -   | The unique session token                  |
+| expiresAt  | Date   | -   | The time when the session expires         |
+| ipAddress  | string | ?   | The IP address of the device              |
+| userAgent  | string | ?   | The user agent information of the device  |
+| createdAt  | Date   | -   | Timestamp of when the session was created |
+| updatedAt  | Date   | -   | Timestamp of when the session was updated |
 
 ### Account
 
 Table Name: `account`
 
-| Field Name | Type | Key | Description |
-| --- | --- | --- | --- |
-| id | string | PK | Unique identifier for each account |
-| userId | string | FK | The ID of the user |
-| accountId | string | - | The ID of the account as provided by the SSO or equal to userId for credential accounts |
-| providerId | string | - | The ID of the provider |
-| accessToken | string | ? | The access token of the account. Returned by the provider |
-| refreshToken | string | ? | The refresh token of the account. Returned by the provider |
-| accessTokenExpiresAt | Date | ? | The time when the access token expires |
-| refreshTokenExpiresAt | Date | ? | The time when the refresh token expires |
-| scope | string | ? | The scope of the account. Returned by the provider |
-| idToken | string | ? | The ID token returned from the provider |
-| password | string | ? | The password of the account. Mainly used for email and password authentication |
-| createdAt | Date | - | Timestamp of when the account was created |
-| updatedAt | Date | - | Timestamp of when the account was updated |
+| Field Name            | Type   | Key | Description                                                                             |
+| --------------------- | ------ | --- | --------------------------------------------------------------------------------------- |
+| id                    | string | PK  | Unique identifier for each account                                                      |
+| userId                | string | FK  | The ID of the user                                                                      |
+| accountId             | string | -   | The ID of the account as provided by the SSO or equal to userId for credential accounts |
+| providerId            | string | -   | The ID of the provider                                                                  |
+| accessToken           | string | ?   | The access token of the account. Returned by the provider                               |
+| refreshToken          | string | ?   | The refresh token of the account. Returned by the provider                              |
+| accessTokenExpiresAt  | Date   | ?   | The time when the access token expires                                                  |
+| refreshTokenExpiresAt | Date   | ?   | The time when the refresh token expires                                                 |
+| scope                 | string | ?   | The scope of the account. Returned by the provider                                      |
+| idToken               | string | ?   | The ID token returned from the provider                                                 |
+| password              | string | ?   | The password of the account. Mainly used for email and password authentication          |
+| createdAt             | Date   | -   | Timestamp of when the account was created                                               |
+| updatedAt             | Date   | -   | Timestamp of when the account was updated                                               |
 
 ### Verification
 
 Table Name: `verification`
 
-| Field Name | Type | Key | Description |
-| --- | --- | --- | --- |
-| id | string | PK | Unique identifier for each verification |
-| identifier | string | - | The identifier for the verification request |
-| value | string | - | The value to be verified |
-| expiresAt | Date | - | The time when the verification request expires |
-| createdAt | Date | - | Timestamp of when the verification request was created |
-| updatedAt | Date | - | Timestamp of when the verification request was updated |
+| Field Name | Type   | Key | Description                                            |
+| ---------- | ------ | --- | ------------------------------------------------------ |
+| id         | string | PK  | Unique identifier for each verification                |
+| identifier | string | -   | The identifier for the verification request            |
+| value      | string | -   | The value to be verified                               |
+| expiresAt  | Date   | -   | The time when the verification request expires         |
+| createdAt  | Date   | -   | Timestamp of when the verification request was created |
+| updatedAt  | Date   | -   | Timestamp of when the verification request was updated |
 
 ## Custom Tables
 
