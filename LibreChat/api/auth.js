@@ -30,13 +30,47 @@ mongoose.connection.once('open', () => {
     const client = mongoose.connection.getClient();
     const db = client.db('Agentis');
     
-    authInstance = betterAuth({
+    // Debug Google OAuth credentials
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    logger.debug('Google OAuth credentials check:', {
+      clientId: googleClientId ? 'present' : 'missing',
+      clientSecret: googleClientSecret ? 'present' : 'missing'
+    });
+    
+    if (!googleClientId || !googleClientSecret) {
+      logger.warn('Google OAuth credentials missing - Google provider will not be available');
+    }
+    
+    const config = {
       database: mongodbAdapter(db),
       secret: process.env.BETTER_AUTH_SECRET,
       ...betterAuthConfig,
-    });
+      socialProviders: googleClientId && googleClientSecret ? {
+        google: {
+          clientId: googleClientId,
+          clientSecret: googleClientSecret,
+          redirectURI: `${betterAuthConfig.baseURL}/api/auth/callback/google`,
+        },
+      } : undefined,
+    };
     
+    if (googleClientId && googleClientSecret) {
+      logger.info('Google OAuth provider configured');
+    } else {
+      logger.warn('Google OAuth provider not configured - missing credentials');
+    }
+    
+    authInstance = betterAuth(config);
+    
+    // Debug auth instance
     logger.info('Better Auth initialized successfully');
+    
+    // Log available routes
+    if (authInstance.handler) {
+      logger.info('Better Auth handler is available');
+    }
   } catch (error) {
     logger.error('Failed to initialize Better Auth:', error);
     throw error;
