@@ -22,7 +22,7 @@ import {
 import { isEnabled } from '#server/utils/index.js';
 import { checkEmailConfig, sendEmail } from '#server/utils/index.js';
 import { isEmailDomainAllowed } from './domains.js';
-import { registerSchema } from '#strategies/validators.js';
+import { registerSchema } from '#server/utils/validators.js';
 import { logger } from '#config/index.js';
 
 const domains = {
