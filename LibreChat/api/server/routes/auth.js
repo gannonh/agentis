@@ -91,4 +91,10 @@ router.all('/session', (req, res) => {
   return auth.handler(req, res);
 });
 
+// Handle all other Better Auth routes (OAuth callbacks, etc.)
+router.all('/*', (req, res) => {
+  const auth = getAuth();
+  return auth.handler(req, res);
+});
+
 export default router;
