@@ -3,18 +3,20 @@ import '@testing-library/jest-dom/extend-expect';
 import { render, fireEvent } from 'test/layout-test-utils';
 import AutoTranscribeAudioSwitch from '../AutoTranscribeAudioSwitch';
 import { RecoilRoot } from 'recoil';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+
 
 describe('AutoTranscribeAudioSwitch', () => {
   /**
    * Mock function to set the auto-send-text state.
    */
   let mockSetAutoTranscribeAudio:
-    | jest.Mock<void, [boolean]>
+    | vi.Mock<void, [boolean]>
     | ((value: boolean) => void)
     | undefined;
 
   beforeEach(() => {
-    mockSetAutoTranscribeAudio = jest.fn();
+    mockSetAutoTranscribeAudio = vi.fn();
   });
 
   it('renders correctly', () => {

@@ -1,5 +1,6 @@
 import { EModelEndpoint } from 'librechat-data-provider';
 import type { TEndpointsConfig, TConfig } from 'librechat-data-provider';
+import { describe, expect, it } from 'vitest';
 import {
   getEndpointField,
   getAvailableEndpoints,

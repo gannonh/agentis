@@ -1,21 +1,29 @@
 // useQueryParams.spec.ts
-jest.mock('recoil', () => {
-  const originalModule = jest.requireActual('recoil');
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
+
+vi.mock('recoil', () => {
+  const originalModule = vi.importActual('recoil');
   return {
     ...originalModule,
-    atom: jest.fn().mockImplementation((config) => ({
+    atom: vi.fn().mockImplementation((config) => ({
       key: config.key,
       default: config.default,
     })),
-    useRecoilValue: jest.fn(),
+    useRecoilValue: vi.fn(),
   };
 });
 
 // Move mock store definition after the mocks
-jest.mock('~/store', () => ({
-  modularChat: { key: 'modularChat', default: false },
-  availableTools: { key: 'availableTools', default: [] },
-}));
+vi.mock('~/store', async () => {
+  return {
+    default: {
+      modularChat: { key: 'modularChat', default: false },
+      availableTools: { key: 'availableTools', default: [] },
+    },
+    modularChat: { key: 'modularChat', default: false },
+    availableTools: { key: 'availableTools', default: [] },
+  };
+});
 
 import { renderHook, act } from '@testing-library/react';
 import { useSearchParams } from 'react-router-dom';
@@ -28,31 +36,31 @@ import useDefaultConvo from '~/hooks/Conversations/useDefaultConvo';
 import store from '~/store';
 
 // Other mocks
-jest.mock('react-router-dom', () => ({
-  useSearchParams: jest.fn(),
+vi.mock('react-router-dom', () => ({
+  useSearchParams: vi.fn(),
 }));
 
-jest.mock('@tanstack/react-query', () => ({
-  useQueryClient: jest.fn(),
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: vi.fn(),
 }));
 
-jest.mock('~/Providers', () => ({
-  useChatContext: jest.fn(),
-  useChatFormContext: jest.fn(),
+vi.mock('~/Providers', () => ({
+  useChatContext: vi.fn(),
+  useChatFormContext: vi.fn(),
 }));
 
-jest.mock('~/hooks/Messages/useSubmitMessage', () => ({
+vi.mock('~/hooks/Messages/useSubmitMessage', () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
-jest.mock('~/hooks/Conversations/useDefaultConvo', () => ({
+vi.mock('~/hooks/Conversations/useDefaultConvo', () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
-jest.mock('~/utils', () => ({
-  getConvoSwitchLogic: jest.fn(() => ({
+vi.mock('~/utils', () => ({
+  getConvoSwitchLogic: vi.fn(() => ({
     template: {},
     shouldSwitch: false,
     isNewModular: false,
@@ -60,24 +68,24 @@ jest.mock('~/utils', () => ({
     isCurrentModular: false,
     isExistingConversation: false,
   })),
-  getModelSpecIconURL: jest.fn(() => 'icon-url'),
-  removeUnavailableTools: jest.fn((preset) => preset),
-  logger: { log: jest.fn() },
+  getModelSpecIconURL: vi.fn(() => 'icon-url'),
+  removeUnavailableTools: vi.fn((preset) => preset),
+  logger: { log: vi.fn() },
 }));
 
 // Mock the tQueryParamsSchema
-jest.mock('librechat-data-provider', () => ({
-  ...jest.requireActual('librechat-data-provider'),
+vi.mock('librechat-data-provider', () => ({
+  ...vi.importActual('librechat-data-provider'),
   tQueryParamsSchema: {
     shape: {
-      model: { parse: jest.fn((value) => value) },
-      endpoint: { parse: jest.fn((value) => value) },
-      temperature: { parse: jest.fn((value) => value) },
+      model: { parse: vi.fn((value) => value) },
+      endpoint: { parse: vi.fn((value) => value) },
+      temperature: { parse: vi.fn((value) => value) },
       // Add other schema shapes as needed
     },
   },
-  isAgentsEndpoint: jest.fn(() => false),
-  isAssistantsEndpoint: jest.fn(() => false),
+  isAgentsEndpoint: vi.fn(() => false),
+  isAssistantsEndpoint: vi.fn(() => false),
   QueryKeys: { startupConfig: 'startupConfig', endpoints: 'endpoints' },
   EModelEndpoint: { custom: 'custom', assistants: 'assistants', agents: 'agents' },
 }));
@@ -85,11 +93,11 @@ jest.mock('librechat-data-provider', () => ({
 // Mock global window.history
 global.window = Object.create(window);
 global.window.history = {
-  replaceState: jest.fn(),
-  pushState: jest.fn(),
-  go: jest.fn(),
-  back: jest.fn(),
-  forward: jest.fn(),
+  replaceState: vi.fn(),
+  pushState: vi.fn(),
+  go: vi.fn(),
+  back: vi.fn(),
+  forward: vi.fn(),
   length: 1,
   scrollRestoration: 'auto',
   state: null,
@@ -98,17 +106,17 @@ global.window.history = {
 describe('useQueryParams', () => {
   // Setup common mocks before each test
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     // Reset mock for window.history.replaceState
-    jest.spyOn(window.history, 'replaceState').mockClear();
+    vi.spyOn(window.history, 'replaceState').mockClear();
 
     // Create mocks for all dependencies
     const mockSearchParams = new URLSearchParams();
-    (useSearchParams as jest.Mock).mockReturnValue([mockSearchParams, jest.fn()]);
+    (useSearchParams as vi.Mock).mockReturnValue([mockSearchParams, vi.fn()]);
 
     const mockQueryClient = {
-      getQueryData: jest.fn().mockImplementation((key) => {
+      getQueryData: vi.fn().mockImplementation((key) => {
         if (key === 'startupConfig') {
           return { modelSpecs: { list: [] } };
         }
@@ -118,40 +126,40 @@ describe('useQueryParams', () => {
         return null;
       }),
     };
-    (useQueryClient as jest.Mock).mockReturnValue(mockQueryClient);
+    (useQueryClient as vi.Mock).mockReturnValue(mockQueryClient);
 
-    (useRecoilValue as jest.Mock).mockImplementation((atom) => {
+    (useRecoilValue as vi.Mock).mockImplementation((atom) => {
       if (atom === store.modularChat) return false;
       if (atom === store.availableTools) return [];
       return null;
     });
 
     const mockConversation = { model: null, endpoint: null };
-    const mockNewConversation = jest.fn();
-    (useChatContext as jest.Mock).mockReturnValue({
+    const mockNewConversation = vi.fn();
+    (useChatContext as vi.Mock).mockReturnValue({
       conversation: mockConversation,
       newConversation: mockNewConversation,
     });
 
     const mockMethods = {
-      setValue: jest.fn(),
-      getValues: jest.fn().mockReturnValue(''),
-      handleSubmit: jest.fn((callback) => () => callback({ text: 'test message' })),
+      setValue: vi.fn(),
+      getValues: vi.fn().mockReturnValue(''),
+      handleSubmit: vi.fn((callback) => () => callback({ text: 'test message' })),
     };
-    (useChatFormContext as jest.Mock).mockReturnValue(mockMethods);
+    (useChatFormContext as vi.Mock).mockReturnValue(mockMethods);
 
-    const mockSubmitMessage = jest.fn();
-    (useSubmitMessage as jest.Mock).mockReturnValue({
+    const mockSubmitMessage = vi.fn();
+    (useSubmitMessage as vi.Mock).mockReturnValue({
       submitMessage: mockSubmitMessage,
     });
 
-    const mockGetDefaultConversation = jest.fn().mockReturnValue({});
-    (useDefaultConvo as jest.Mock).mockReturnValue(mockGetDefaultConversation);
+    const mockGetDefaultConversation = vi.fn().mockReturnValue({});
+    (useDefaultConvo as vi.Mock).mockReturnValue(mockGetDefaultConversation);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.useRealTimers();
+    vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   // Helper function to set URL parameters for testing
@@ -160,29 +168,29 @@ describe('useQueryParams', () => {
     Object.entries(params).forEach(([key, value]) => {
       searchParams.set(key, value);
     });
-    (useSearchParams as jest.Mock).mockReturnValue([searchParams, jest.fn()]);
+    (useSearchParams as vi.Mock).mockReturnValue([searchParams, vi.fn()]);
   };
 
   // Test cases remain the same
   it('should process query parameters on initial render', () => {
     // Setup
-    const mockSetValue = jest.fn();
+    const mockSetValue = vi.fn();
     const mockTextAreaRef = {
       current: {
-        focus: jest.fn(),
-        setSelectionRange: jest.fn(),
+        focus: vi.fn(),
+        setSelectionRange: vi.fn(),
       } as unknown as HTMLTextAreaElement,
     };
 
-    (useChatFormContext as jest.Mock).mockReturnValue({
+    (useChatFormContext as vi.Mock).mockReturnValue({
       setValue: mockSetValue,
-      getValues: jest.fn().mockReturnValue(''),
-      handleSubmit: jest.fn((callback) => () => callback({ text: 'test message' })),
+      getValues: vi.fn().mockReturnValue(''),
+      handleSubmit: vi.fn((callback) => () => callback({ text: 'test message' })),
     });
 
     // Mock startup config to allow processing
-    (useQueryClient as jest.Mock).mockReturnValue({
-      getQueryData: jest.fn().mockReturnValue({ modelSpecs: { list: [] } }),
+    (useQueryClient as vi.Mock).mockReturnValue({
+      getQueryData: vi.fn().mockReturnValue({ modelSpecs: { list: [] } }),
     });
 
     setUrlParams({ q: 'hello world' });
@@ -192,7 +200,7 @@ describe('useQueryParams', () => {
 
     // Advance timer to trigger interval
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     // Assert
@@ -206,29 +214,29 @@ describe('useQueryParams', () => {
 
   it('should auto-submit message when submit=true and no settings to apply', () => {
     // Setup
-    const mockSetValue = jest.fn();
-    const mockHandleSubmit = jest.fn((callback) => () => callback({ text: 'test message' }));
-    const mockSubmitMessage = jest.fn();
+    const mockSetValue = vi.fn();
+    const mockHandleSubmit = vi.fn((callback) => () => callback({ text: 'test message' }));
+    const mockSubmitMessage = vi.fn();
     const mockTextAreaRef = {
       current: {
-        focus: jest.fn(),
-        setSelectionRange: jest.fn(),
+        focus: vi.fn(),
+        setSelectionRange: vi.fn(),
       } as unknown as HTMLTextAreaElement,
     };
 
-    (useChatFormContext as jest.Mock).mockReturnValue({
+    (useChatFormContext as vi.Mock).mockReturnValue({
       setValue: mockSetValue,
-      getValues: jest.fn().mockReturnValue(''),
+      getValues: vi.fn().mockReturnValue(''),
       handleSubmit: mockHandleSubmit,
     });
 
-    (useSubmitMessage as jest.Mock).mockReturnValue({
+    (useSubmitMessage as vi.Mock).mockReturnValue({
       submitMessage: mockSubmitMessage,
     });
 
     // Mock startup config to allow processing
-    (useQueryClient as jest.Mock).mockReturnValue({
-      getQueryData: jest.fn().mockReturnValue({ modelSpecs: { list: [] } }),
+    (useQueryClient as vi.Mock).mockReturnValue({
+      getQueryData: vi.fn().mockReturnValue({ modelSpecs: { list: [] } }),
     });
 
     setUrlParams({ q: 'hello world', submit: 'true' });
@@ -238,7 +246,7 @@ describe('useQueryParams', () => {
 
     // Advance timer to trigger interval
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     // Assert
@@ -253,19 +261,19 @@ describe('useQueryParams', () => {
 
   it('should defer submission when settings need to be applied first', () => {
     // Setup
-    const mockSetValue = jest.fn();
-    const mockHandleSubmit = jest.fn((callback) => () => callback({ text: 'test message' }));
-    const mockSubmitMessage = jest.fn();
-    const mockNewConversation = jest.fn();
+    const mockSetValue = vi.fn();
+    const mockHandleSubmit = vi.fn((callback) => () => callback({ text: 'test message' }));
+    const mockSubmitMessage = vi.fn();
+    const mockNewConversation = vi.fn();
     const mockTextAreaRef = {
       current: {
-        focus: jest.fn(),
-        setSelectionRange: jest.fn(),
+        focus: vi.fn(),
+        setSelectionRange: vi.fn(),
       } as unknown as HTMLTextAreaElement,
     };
 
     // Mock getQueryData to return array format for startupConfig
-    const mockGetQueryData = jest.fn().mockImplementation((key) => {
+    const mockGetQueryData = vi.fn().mockImplementation((key) => {
       if (Array.isArray(key) && key[0] === 'startupConfig') {
         return { modelSpecs: { list: [] } };
       }
@@ -275,22 +283,22 @@ describe('useQueryParams', () => {
       return null;
     });
 
-    (useChatFormContext as jest.Mock).mockReturnValue({
+    (useChatFormContext as vi.Mock).mockReturnValue({
       setValue: mockSetValue,
-      getValues: jest.fn().mockReturnValue(''),
+      getValues: vi.fn().mockReturnValue(''),
       handleSubmit: mockHandleSubmit,
     });
 
-    (useSubmitMessage as jest.Mock).mockReturnValue({
+    (useSubmitMessage as vi.Mock).mockReturnValue({
       submitMessage: mockSubmitMessage,
     });
 
-    (useChatContext as jest.Mock).mockReturnValue({
+    (useChatContext as vi.Mock).mockReturnValue({
       conversation: { model: null, endpoint: null },
       newConversation: mockNewConversation,
     });
 
-    (useQueryClient as jest.Mock).mockReturnValue({
+    (useQueryClient as vi.Mock).mockReturnValue({
       getQueryData: mockGetQueryData,
     });
 
@@ -301,7 +309,7 @@ describe('useQueryParams', () => {
 
     // First interval tick should process params but not submit
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     // Assert initial state
@@ -310,7 +318,7 @@ describe('useQueryParams', () => {
     expect(mockSubmitMessage).not.toHaveBeenCalled(); // Not submitted yet
 
     // Now mock conversation update to trigger settings application check
-    (useChatContext as jest.Mock).mockReturnValue({
+    (useChatContext as vi.Mock).mockReturnValue({
       conversation: { model: 'gpt-4', endpoint: null },
       newConversation: mockNewConversation,
     });
@@ -330,35 +338,35 @@ describe('useQueryParams', () => {
 
   it('should submit after timeout if settings never get applied', () => {
     // Setup
-    const mockSetValue = jest.fn();
-    const mockHandleSubmit = jest.fn((callback) => () => callback({ text: 'test message' }));
-    const mockSubmitMessage = jest.fn();
-    const mockNewConversation = jest.fn();
+    const mockSetValue = vi.fn();
+    const mockHandleSubmit = vi.fn((callback) => () => callback({ text: 'test message' }));
+    const mockSubmitMessage = vi.fn();
+    const mockNewConversation = vi.fn();
     const mockTextAreaRef = {
       current: {
-        focus: jest.fn(),
-        setSelectionRange: jest.fn(),
+        focus: vi.fn(),
+        setSelectionRange: vi.fn(),
       } as unknown as HTMLTextAreaElement,
     };
 
-    (useChatFormContext as jest.Mock).mockReturnValue({
+    (useChatFormContext as vi.Mock).mockReturnValue({
       setValue: mockSetValue,
-      getValues: jest.fn().mockReturnValue(''),
+      getValues: vi.fn().mockReturnValue(''),
       handleSubmit: mockHandleSubmit,
     });
 
-    (useSubmitMessage as jest.Mock).mockReturnValue({
+    (useSubmitMessage as vi.Mock).mockReturnValue({
       submitMessage: mockSubmitMessage,
     });
 
-    (useChatContext as jest.Mock).mockReturnValue({
+    (useChatContext as vi.Mock).mockReturnValue({
       conversation: { model: null, endpoint: null },
       newConversation: mockNewConversation,
     });
 
     // Mock startup config to allow processing
-    (useQueryClient as jest.Mock).mockReturnValue({
-      getQueryData: jest.fn().mockImplementation((key) => {
+    (useQueryClient as vi.Mock).mockReturnValue({
+      getQueryData: vi.fn().mockImplementation((key) => {
         if (Array.isArray(key) && key[0] === 'startupConfig') {
           return { modelSpecs: { list: [] } };
         }
@@ -376,7 +384,7 @@ describe('useQueryParams', () => {
 
     // First interval tick should process params but not submit
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     // Assert initial state
@@ -385,7 +393,7 @@ describe('useQueryParams', () => {
     // Let the timeout happen naturally
     act(() => {
       // Advance timer to trigger the timeout in the hook
-      jest.advanceTimersByTime(3000); // MAX_SETTINGS_WAIT_MS
+      vi.advanceTimersByTime(3000); // MAX_SETTINGS_WAIT_MS
     });
 
     // Now the message should be submitted due to timeout
@@ -394,29 +402,29 @@ describe('useQueryParams', () => {
 
   it('should mark as submitted when no submit parameter is present', () => {
     // Setup
-    const mockSetValue = jest.fn();
-    const mockHandleSubmit = jest.fn((callback) => () => callback({ text: 'test message' }));
-    const mockSubmitMessage = jest.fn();
+    const mockSetValue = vi.fn();
+    const mockHandleSubmit = vi.fn((callback) => () => callback({ text: 'test message' }));
+    const mockSubmitMessage = vi.fn();
     const mockTextAreaRef = {
       current: {
-        focus: jest.fn(),
-        setSelectionRange: jest.fn(),
+        focus: vi.fn(),
+        setSelectionRange: vi.fn(),
       } as unknown as HTMLTextAreaElement,
     };
 
-    (useChatFormContext as jest.Mock).mockReturnValue({
+    (useChatFormContext as vi.Mock).mockReturnValue({
       setValue: mockSetValue,
-      getValues: jest.fn().mockReturnValue(''),
+      getValues: vi.fn().mockReturnValue(''),
       handleSubmit: mockHandleSubmit,
     });
 
-    (useSubmitMessage as jest.Mock).mockReturnValue({
+    (useSubmitMessage as vi.Mock).mockReturnValue({
       submitMessage: mockSubmitMessage,
     });
 
     // Mock startup config to allow processing
-    (useQueryClient as jest.Mock).mockReturnValue({
-      getQueryData: jest.fn().mockReturnValue({ modelSpecs: { list: [] } }),
+    (useQueryClient as vi.Mock).mockReturnValue({
+      getQueryData: vi.fn().mockReturnValue({ modelSpecs: { list: [] } }),
     });
 
     setUrlParams({ model: 'gpt-4' }); // No submit=true
@@ -426,7 +434,7 @@ describe('useQueryParams', () => {
 
     // First interval tick should process params
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     // Assert initial state - submission should be marked as handled
@@ -434,7 +442,7 @@ describe('useQueryParams', () => {
 
     // Try to advance timer past the timeout
     act(() => {
-      jest.advanceTimersByTime(4000);
+      vi.advanceTimersByTime(4000);
     });
 
     // Submission still shouldn't happen
@@ -443,33 +451,33 @@ describe('useQueryParams', () => {
 
   it('should handle empty query parameters', () => {
     // Setup
-    const mockSetValue = jest.fn();
-    const mockHandleSubmit = jest.fn();
-    const mockSubmitMessage = jest.fn();
+    const mockSetValue = vi.fn();
+    const mockHandleSubmit = vi.fn();
+    const mockSubmitMessage = vi.fn();
 
     // Force replaceState to be called
-    window.history.replaceState = jest.fn();
+    window.history.replaceState = vi.fn();
 
-    (useChatFormContext as jest.Mock).mockReturnValue({
+    (useChatFormContext as vi.Mock).mockReturnValue({
       setValue: mockSetValue,
-      getValues: jest.fn().mockReturnValue(''),
+      getValues: vi.fn().mockReturnValue(''),
       handleSubmit: mockHandleSubmit,
     });
 
-    (useSubmitMessage as jest.Mock).mockReturnValue({
+    (useSubmitMessage as vi.Mock).mockReturnValue({
       submitMessage: mockSubmitMessage,
     });
 
     // Mock startup config to allow processing
-    (useQueryClient as jest.Mock).mockReturnValue({
-      getQueryData: jest.fn().mockReturnValue({ modelSpecs: { list: [] } }),
+    (useQueryClient as vi.Mock).mockReturnValue({
+      getQueryData: vi.fn().mockReturnValue({ modelSpecs: { list: [] } }),
     });
 
     setUrlParams({}); // Empty params
     const mockTextAreaRef = {
       current: {
-        focus: jest.fn(),
-        setSelectionRange: jest.fn(),
+        focus: vi.fn(),
+        setSelectionRange: vi.fn(),
       } as unknown as HTMLTextAreaElement,
     };
 
@@ -477,7 +485,7 @@ describe('useQueryParams', () => {
     renderHook(() => useQueryParams({ textAreaRef: mockTextAreaRef }));
 
     act(() => {
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
     });
 
     // Assert

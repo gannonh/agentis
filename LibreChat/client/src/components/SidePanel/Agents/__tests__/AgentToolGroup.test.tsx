@@ -3,7 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import AgentToolGroup from '../AgentToolGroup';
 
 // Mock the AgentTool component
-jest.mock('../AgentTool', () => ({
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../AgentTool', () => ({
   __esModule: true,
   default: ({ tool }) => {
     const currentTool = typeof tool === 'string' ? { pluginKey: tool, name: tool } : tool;
@@ -16,7 +18,7 @@ jest.mock('../AgentTool', () => ({
 }));
 
 // Mock localize hook
-jest.mock('~/hooks', () => ({
+vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => {
     if (key === 'com_ui_tools') return 'tools';
     if (key === 'com_ui_remove_all') return 'Remove all';
@@ -43,8 +45,8 @@ describe('AgentToolGroup', () => {
     tools: mockTools,
     allTools: [...mockTools],
     agent_id: 'agent-123',
-    onRemoveTool: jest.fn(),
-    onRemoveGroup: jest.fn(),
+    onRemoveTool: vi.fn(),
+    onRemoveGroup: vi.fn(),
   };
 
   it('renders correctly with collapsed state', () => {

@@ -12,7 +12,9 @@ import { ChatContext } from '~/Providers/ChatContext';
 import { AgentsMapContext } from '~/Providers/AgentsMapContext';
 
 // Mock the ComposioAuthButton component
-jest.mock('~/components/Composio/ComposioAuthButton', () => ({
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+
+vi.mock('~/components/Composio/ComposioAuthButton', () => ({
   __esModule: true,
   default: ({ service, inline }: { service: string; inline?: boolean }) => (
     <button data-testid={`auth-button-${service}`} className="auth-button">
@@ -22,29 +24,32 @@ jest.mock('~/components/Composio/ComposioAuthButton', () => ({
 }));
 
 // Mock utilities
-jest.mock('~/utils/mcpAuth');
-const mockedMcpAuth = mcpAuth as jest.Mocked<typeof mcpAuth>;
+vi.mock('~/utils/mcpAuth');
+const mockedMcpAuth = mcpAuth as vi.Mocked<typeof mcpAuth>;
 
 // Mock hooks
-jest.mock('~/hooks/AuthContext');
-const mockedAuthHooks = authHooks as jest.Mocked<typeof authHooks>;
+vi.mock('~/hooks/AuthContext');
+const mockedAuthHooks = authHooks as vi.Mocked<typeof authHooks>;
 
 // Mock store selectors
-jest.mock('recoil', () => ({
-  ...jest.requireActual('recoil'),
-  useRecoilValue: jest.fn((atom) => {
-    // Return null for ephemeral agents by default
-    return null;
-  }),
-}));
+vi.mock('recoil', async () => {
+  const actual = await vi.importActual('recoil');
+  return {
+    ...actual,
+    useRecoilValue: vi.fn((atom) => {
+      // Return null for ephemeral agents by default
+      return null;
+    }),
+  };
+});
 
 // Mock agent queries
-jest.mock('~/data-provider/Agents/queries');
-const mockedAgentQueries = agentQueries as jest.Mocked<typeof agentQueries>;
+vi.mock('~/data-provider/Agents/queries');
+const mockedAgentQueries = agentQueries as vi.Mocked<typeof agentQueries>;
 
 // Get reference to the mocked useRecoilValue
 import { useRecoilValue } from 'recoil';
-const mockUseRecoilValue = useRecoilValue as jest.MockedFunction<typeof useRecoilValue>;
+const mockUseRecoilValue = useRecoilValue as vi.MockedFunction<typeof useRecoilValue>;
 
 describe('ProactiveMCPAuth Component', () => {
   const mockMessages: TMessage[] = [
@@ -88,7 +93,7 @@ describe('ProactiveMCPAuth Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Reset the useRecoilValue mock to default behavior
     mockUseRecoilValue.mockReturnValue(null);
@@ -98,10 +103,10 @@ describe('ProactiveMCPAuth Component', () => {
       isAuthenticated: true,
       user: { id: 'user-1' } as any,
       token: 'mock-token',
-      logout: jest.fn(),
-      login: jest.fn(),
+      logout: vi.fn(),
+      login: vi.fn(),
       error: undefined,
-      setError: jest.fn(),
+      setError: vi.fn(),
     });
 
     mockedAgentQueries.useAvailableAgentToolsQuery.mockReturnValue({
@@ -110,7 +115,7 @@ describe('ProactiveMCPAuth Component', () => {
       error: null,
       isError: false,
       isSuccess: true,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     } as any);
 
     mockedMcpAuth.getConversationAuthServices.mockReturnValue(['googlesheets', 'googledocs']);
@@ -448,7 +453,7 @@ describe('ProactiveMCPAuth Component', () => {
         error: null,
         isError: false,
         isSuccess: false,
-        refetch: jest.fn(),
+        refetch: vi.fn(),
       } as any);
 
       // Should still attempt to render based on other data
@@ -464,7 +469,7 @@ describe('ProactiveMCPAuth Component', () => {
         error: new Error('Failed to load tools'),
         isError: true,
         isSuccess: false,
-        refetch: jest.fn(),
+        refetch: vi.fn(),
       } as any);
 
       renderWithProviders(<ProactiveMCPAuth {...defaultProps} />);
@@ -484,10 +489,10 @@ describe('ProactiveMCPAuth Component', () => {
         isAuthenticated: false,
         user: undefined,
         token: undefined,
-        logout: jest.fn(),
-        login: jest.fn(),
+        logout: vi.fn(),
+        login: vi.fn(),
         error: undefined,
-        setError: jest.fn(),
+        setError: vi.fn(),
       });
 
       renderWithProviders(<ProactiveMCPAuth {...defaultProps} />);

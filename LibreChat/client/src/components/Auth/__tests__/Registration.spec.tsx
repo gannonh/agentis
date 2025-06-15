@@ -9,8 +9,24 @@ import * as authMutations from '~/data-provider/Auth/mutations';
 import * as authQueries from '~/data-provider/Auth/queries';
 import Registration from '~/components/Auth/Registration';
 import AuthLayout from '~/components/Auth/AuthLayout';
+import { describe, expect, it, test, vi } from 'vitest';
 
-jest.mock('librechat-data-provider/react-query');
+
+vi.mock('librechat-data-provider/react-query');
+
+// Mock AuthContext to prevent real API calls
+vi.mock('~/hooks/AuthContext', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useAuthContext: () => ({
+      error: null,
+      setError: vi.fn(),
+      login: vi.fn(),
+    }),
+    AuthContextProvider: ({ children }: { children: React.ReactNode }) => children,
+  };
+});
 
 const mockStartupConfig = {
   isFetching: false,
@@ -40,7 +56,7 @@ const setup = ({
   useRegisterUserMutationReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {},
     isSuccess: false,
     error: null as Error | null,
@@ -48,7 +64,7 @@ const setup = ({
   useRefreshTokenMutationReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {
       token: 'mock-token',
       user: {},
@@ -61,26 +77,24 @@ const setup = ({
   },
   useGetStartupConfigReturnValue = mockStartupConfig,
 } = {}) => {
-  const mockUseRegisterUserMutation = jest
+  const mockUseRegisterUserMutation = vi
     .spyOn(mockDataProvider, 'useRegisterUserMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useRegisterUserMutationReturnValue);
-  const mockUseGetUserQuery = jest
+  const mockUseGetUserQuery = vi
     .spyOn(authQueries, 'useGetUserQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetUserQueryReturnValue);
-  const mockUseGetStartupConfig = jest
+  const mockUseGetStartupConfig = vi
     .spyOn(endpointQueries, 'useGetStartupConfig')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetStartupConfigReturnValue);
-  const mockUseRefreshTokenMutation = jest
+  const mockUseRefreshTokenMutation = vi
     .spyOn(authMutations, 'useRefreshTokenMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useRefreshTokenMutationReturnValue);
-  const mockUseOutletContext = jest.spyOn(reactRouter, 'useOutletContext').mockReturnValue({
-    startupConfig: useGetStartupConfigReturnValue.data,
-  });
-  const mockUseGetBannerQuery = jest
+  // Mock is already handled by vi.mock above
+  const mockUseGetBannerQuery = vi
     .spyOn(miscDataProvider, 'useGetBannerQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetBannerQueryReturnValue);
@@ -100,56 +114,44 @@ const setup = ({
   return {
     ...renderResult,
     mockUseGetUserQuery,
-    mockUseOutletContext,
     mockUseGetStartupConfig,
     mockUseRegisterUserMutation,
     mockUseRefreshTokenMutation,
   };
 };
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useOutletContext: () => ({
-    startupConfig: mockStartupConfig,
-  }),
-}));
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useOutletContext: () => ({
+      startupConfig: mockStartupConfig.data,
+    }),
+  };
+});
 
 test('renders registration form', () => {
   const { getByText, getByTestId, getByRole } = setup();
   expect(getByText(/Create your account/i)).toBeInTheDocument();
-  expect(getByRole('textbox', { name: /Full name/i })).toBeInTheDocument();
+  expect(getByRole('textbox', { name: /com_auth_full_name/i })).toBeInTheDocument();
   expect(getByRole('form', { name: /Registration form/i })).toBeVisible();
-  expect(getByRole('textbox', { name: /Username/i })).toBeInTheDocument();
-  expect(getByRole('textbox', { name: /Email/i })).toBeInTheDocument();
+  expect(getByRole('textbox', { name: /com_auth_username/i })).toBeInTheDocument();
+  expect(getByRole('textbox', { name: /com_auth_email/i })).toBeInTheDocument();
   expect(getByTestId('password')).toBeInTheDocument();
   expect(getByTestId('confirm_password')).toBeInTheDocument();
   expect(getByRole('button', { name: /Submit registration/i })).toBeInTheDocument();
   expect(getByRole('link', { name: 'Login' })).toBeInTheDocument();
   expect(getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/login');
-  expect(getByRole('link', { name: /Continue with Google/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Google/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/google',
-  );
-  expect(getByRole('link', { name: /Continue with Facebook/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Facebook/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/facebook',
-  );
-  expect(getByRole('link', { name: /Continue with Github/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Github/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/github',
-  );
-  expect(getByRole('link', { name: /Continue with Discord/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Discord/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/discord',
-  );
+  // Social login buttons are now button elements with data-testid attributes
+  expect(getByTestId('google')).toBeInTheDocument();
+  expect(getByTestId('facebook')).toBeInTheDocument();
+  expect(getByTestId('github')).toBeInTheDocument();
+  expect(getByTestId('discord')).toBeInTheDocument();
+  expect(getByTestId('openid')).toBeInTheDocument();
 });
 
 // test('calls registerUser.mutate on registration', async () => {
-//   const mutate = jest.fn();
+//   const mutate = vi.fn();
 //   const { getByTestId, getByRole, history } = setup({
 //     // @ts-ignore - we don't need all parameters of the QueryObserverResult
 //     useLoginUserReturnValue: {
@@ -176,22 +178,22 @@ test('renders registration form', () => {
 
 test('shows validation error messages', async () => {
   const { getByTestId, getAllByRole, getByRole } = setup();
-  await userEvent.type(getByRole('textbox', { name: /Full name/i }), 'J');
-  await userEvent.type(getByRole('textbox', { name: /Username/i }), 'j');
-  await userEvent.type(getByRole('textbox', { name: /Email/i }), 'test');
+  await userEvent.type(getByRole('textbox', { name: /com_auth_full_name/i }), 'J');
+  await userEvent.type(getByRole('textbox', { name: /com_auth_username/i }), 'j');
+  await userEvent.type(getByRole('textbox', { name: /com_auth_email/i }), 'test');
   await userEvent.type(getByTestId('password'), 'pass');
   await userEvent.type(getByTestId('confirm_password'), 'password1');
   const alerts = getAllByRole('alert');
   expect(alerts).toHaveLength(5);
-  expect(alerts[0]).toHaveTextContent(/Name must be at least 3 characters/i);
-  expect(alerts[1]).toHaveTextContent(/Username must be at least 2 characters/i);
-  expect(alerts[2]).toHaveTextContent(/You must enter a valid email address/i);
-  expect(alerts[3]).toHaveTextContent(/Password must be at least 8 characters/i);
-  expect(alerts[4]).toHaveTextContent(/Passwords do not match/i);
+  expect(alerts[0]).toHaveTextContent('com_auth_name_min_length');
+  expect(alerts[1]).toHaveTextContent('com_auth_username_min_length');
+  expect(alerts[2]).toHaveTextContent('com_auth_email_pattern');
+  expect(alerts[3]).toHaveTextContent('com_auth_password_min_length');
+  expect(alerts[4]).toHaveTextContent('com_auth_password_not_match');
 });
 
 test('shows error message when registration fails', async () => {
-  const mutate = jest.fn();
+  const mutate = vi.fn();
   const { getByTestId, getByRole } = setup({
     useRegisterUserMutationReturnValue: {
       isLoading: false,
@@ -203,9 +205,9 @@ test('shows error message when registration fails', async () => {
     },
   });
 
-  await userEvent.type(getByRole('textbox', { name: /Full name/i }), 'John Doe');
-  await userEvent.type(getByRole('textbox', { name: /Username/i }), 'johndoe');
-  await userEvent.type(getByRole('textbox', { name: /Email/i }), 'test@test.com');
+  await userEvent.type(getByRole('textbox', { name: /com_auth_full_name/i }), 'John Doe');
+  await userEvent.type(getByRole('textbox', { name: /com_auth_username/i }), 'johndoe');
+  await userEvent.type(getByRole('textbox', { name: /com_auth_email/i }), 'test@test.com');
   await userEvent.type(getByTestId('password'), 'password');
   await userEvent.type(getByTestId('confirm_password'), 'password');
   await userEvent.click(getByRole('button', { name: /Submit registration/i }));

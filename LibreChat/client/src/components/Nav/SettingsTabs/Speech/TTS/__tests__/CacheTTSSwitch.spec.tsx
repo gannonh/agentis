@@ -3,15 +3,17 @@ import '@testing-library/jest-dom/extend-expect';
 import { render, fireEvent } from 'test/layout-test-utils';
 import CacheTTSSwitch from '../CacheTTSSwitch';
 import { RecoilRoot } from 'recoil';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+
 
 describe('CacheTTSSwitch', () => {
   /**
    * Mock function to set the cache-tts state.
    */
-  let mockSetCacheTTS: jest.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
+  let mockSetCacheTTS: vi.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
 
   beforeEach(() => {
-    mockSetCacheTTS = jest.fn();
+    mockSetCacheTTS = vi.fn();
   });
 
   it('renders correctly', () => {

@@ -3,7 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import MCPServerCard from '../MCPServerCard';
 
 // Mock localize hook
-jest.mock('~/hooks', () => ({
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string, args?: { [key: string]: unknown }) => {
     if (key === 'com_ui_logo') return `Logo for ${args?.[0]}`;
     if (key === 'com_ui_add') return 'Add';
@@ -30,7 +32,7 @@ describe('MCPServerCard', () => {
     serverName: 'Google Sheets',
     description: 'Google Sheets integration with multiple tools',
     tools: mockTools,
-    onAddServer: jest.fn(),
+    onAddServer: vi.fn(),
   };
 
   it('renders correctly with provided data', () => {

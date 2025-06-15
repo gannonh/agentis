@@ -6,8 +6,10 @@ import { Agent } from 'librechat-data-provider';
 import AgentDiscovery from '../AgentDiscovery';
 
 // Mock the agents query hook
-const mockUseListAgentsQuery = jest.fn();
-jest.mock('~/data-provider', () => ({
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mockUseListAgentsQuery = vi.fn();
+vi.mock('~/data-provider', () => ({
   useListAgentsQuery: () => mockUseListAgentsQuery(),
   useAvailableToolsQuery: () => ({
     data: [
@@ -30,7 +32,7 @@ jest.mock('~/data-provider', () => ({
 }));
 
 // Mock other dependencies
-jest.mock('~/hooks', () => ({
+vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => {
     const translations: Record<string, string> = {
       com_agents_discovery_title: 'Discover Agents',
@@ -108,7 +110,7 @@ const mockAgents: Agent[] = [
   },
 ];
 
-const mockOnStartChat = jest.fn();
+const mockOnStartChat = vi.fn();
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -126,7 +128,7 @@ const createWrapper = () => {
 
 describe('AgentDiscovery Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render loading state when agents are being fetched', () => {

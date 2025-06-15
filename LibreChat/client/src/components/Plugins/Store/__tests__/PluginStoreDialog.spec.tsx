@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event';
 import * as mockDataProvider from 'librechat-data-provider/react-query';
 import * as authMutations from '~/data-provider/Auth/mutations';
 import * as authQueries from '~/data-provider/Auth/queries';
+import { describe, expect, it, test, vi } from 'vitest';
 
-jest.mock('librechat-data-provider/react-query');
+
+vi.mock('librechat-data-provider/react-query');
 
 class ResizeObserver {
   observe() {
@@ -118,7 +120,7 @@ const setup = ({
   useRefreshTokenMutationReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {
       token: 'mock-token',
       user: {},
@@ -132,27 +134,27 @@ const setup = ({
   useUpdateUserPluginsMutationReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {},
   },
 } = {}) => {
-  const mockUseAvailablePluginsQuery = jest
+  const mockUseAvailablePluginsQuery = vi
     .spyOn(mockDataProvider, 'useAvailablePluginsQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useAvailablePluginsQueryReturnValue);
-  const mockUseUpdateUserPluginsMutation = jest
+  const mockUseUpdateUserPluginsMutation = vi
     .spyOn(mockDataProvider, 'useUpdateUserPluginsMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useUpdateUserPluginsMutationReturnValue);
-  const mockUseGetUserQuery = jest
+  const mockUseGetUserQuery = vi
     .spyOn(authQueries, 'useGetUserQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetUserQueryReturnValue);
-  const mockUseRefreshTokenMutation = jest
+  const mockUseRefreshTokenMutation = vi
     .spyOn(authMutations, 'useRefreshTokenMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useRefreshTokenMutationReturnValue);
-  const mockSetIsOpen = jest.fn();
+  const mockSetIsOpen = vi.fn();
   const renderResult = render(<PluginStoreDialog isOpen={true} setIsOpen={mockSetIsOpen} />);
 
   return {
@@ -167,18 +169,18 @@ const setup = ({
 
 test('renders plugin store dialog with plugins from the available plugins query and shows install/uninstall buttons based on user plugins', () => {
   const { getByText, getByRole } = setup();
-  expect(getByText(/Plugin Store/i)).toBeInTheDocument();
+  expect(getByText(/com_nav_plugin_store/i)).toBeInTheDocument();
   expect(getByText(/Use Google Search to find information/i)).toBeInTheDocument();
-  expect(getByRole('button', { name: 'Install Google' })).toBeInTheDocument();
-  expect(getByRole('button', { name: 'Uninstall Wolfram' })).toBeInTheDocument();
+  expect(getByRole('button', { name: /Install Google/i })).toBeInTheDocument();
+  expect(getByRole('button', { name: /Uninstall Wolfram/i })).toBeInTheDocument();
 });
 
 test('Displays the plugin auth form when installing a plugin with auth', async () => {
   const { getByRole, getByText } = setup();
-  const googleButton = getByRole('button', { name: 'Install Google' });
+  const googleButton = getByRole('button', { name: /Install Google/i });
   await userEvent.click(googleButton);
   expect(getByText(/Google CSE ID/i)).toBeInTheDocument();
-  expect(getByRole('button', { name: 'Save' })).toBeInTheDocument();
+  expect(getByRole('button', { name: 'com_ui_save' })).toBeInTheDocument();
 });
 
 test('allows the user to navigate between pages', async () => {
@@ -208,7 +210,7 @@ test('allows the user to navigate between pages', async () => {
 test('allows the user to search for plugins', async () => {
   setup();
 
-  const searchInput = screen.getByPlaceholderText('Search plugins');
+  const searchInput = screen.getByPlaceholderText('com_nav_plugin_search');
   fireEvent.change(searchInput, { target: { value: 'Google' } });
 
   expect(screen.getByText('Google')).toBeInTheDocument();

@@ -4,37 +4,47 @@ import { Agent } from 'librechat-data-provider';
 import useStartAgentChat from '../useStartAgentChat';
 
 // Mock dependencies
-jest.mock('react-router-dom', () => ({
-  useNavigate: jest.fn(),
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest';
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: vi.fn(),
 }));
 
-const mockNavigate = jest.fn();
-const mockSetConversation = jest.fn();
-const mockSetSubmission = jest.fn();
+const mockNavigate = vi.fn();
+const mockSetConversation = vi.fn();
+const mockSetSubmission = vi.fn();
 
-jest.mock('recoil', () => ({
-  useSetRecoilState: jest.fn(() => mockSetSubmission),
+vi.mock('recoil', () => ({
+  useSetRecoilState: vi.fn(() => mockSetSubmission),
 }));
 
-jest.mock('~/Providers', () => ({
+vi.mock('~/Providers', () => ({
   useSetConvoContext: () => ({
     setConversation: mockSetConversation,
   }),
 }));
 
-jest.mock('~/store', () => ({
-  submission: {},
-  useCreateConversationAtom: jest.fn(() => ({
-    setConversation: mockSetConversation,
-  })),
-}));
+vi.mock('~/store', async () => {
+  return {
+    default: {
+      submission: {},
+      useCreateConversationAtom: vi.fn(() => ({
+        setConversation: mockSetConversation,
+      })),
+    },
+    submission: {},
+    useCreateConversationAtom: vi.fn(() => ({
+      setConversation: mockSetConversation,
+    })),
+  };
+});
 
 // Helper function for Date mocking
 function createDateMock() {
   const OriginalDate = Date;
   let callCount = 0;
 
-  const mockDate = jest.fn((...args: any[]) => {
+  const mockDate = vi.fn((...args: any[]) => {
     if (args.length === 0) {
       // Constructor called without arguments (new Date())
       callCount++;
@@ -87,8 +97,8 @@ describe('useStartAgentChat Hook', () => {
   let dateMockHelper: { mockDate: any; restore: () => void } | null = null;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
+    vi.clearAllMocks();
+    (useNavigate as vi.Mock).mockReturnValue(mockNavigate);
   });
 
   afterEach(() => {

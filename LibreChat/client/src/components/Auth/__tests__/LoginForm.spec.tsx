@@ -6,10 +6,12 @@ import * as miscDataProvider from '~/data-provider/Misc/queries';
 import * as authMutations from '~/data-provider/Auth/mutations';
 import * as authQueries from '~/data-provider/Auth/queries';
 import Login from '../LoginForm';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-jest.mock('librechat-data-provider/react-query');
 
-const mockLogin = jest.fn();
+vi.mock('librechat-data-provider/react-query');
+
+const mockLogin = vi.fn();
 
 const mockStartupConfig: TStartupConfig = {
   socialLogins: ['google', 'facebook', 'openid', 'github', 'discord'],
@@ -44,14 +46,14 @@ const setup = ({
   useLoginUserReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {},
     isSuccess: false,
   },
   useRefreshTokenMutationReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {
       token: 'mock-token',
       user: {},
@@ -68,23 +70,23 @@ const setup = ({
     data: {},
   },
 } = {}) => {
-  const mockUseLoginUser = jest
+  const mockUseLoginUser = vi
     .spyOn(authMutations, 'useLoginUserMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useLoginUserReturnValue);
-  const mockUseGetUserQuery = jest
+  const mockUseGetUserQuery = vi
     .spyOn(authQueries, 'useGetUserQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetUserQueryReturnValue);
-  const mockUseGetStartupConfig = jest
+  const mockUseGetStartupConfig = vi
     .spyOn(endpointQueries, 'useGetStartupConfig')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetStartupConfigReturnValue);
-  const mockUseRefreshTokenMutation = jest
+  const mockUseRefreshTokenMutation = vi
     .spyOn(authMutations, 'useRefreshTokenMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useRefreshTokenMutationReturnValue);
-  const mockUseGetBannerQuery = jest
+  const mockUseGetBannerQuery = vi
     .spyOn(miscDataProvider, 'useGetBannerQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetBannerQueryReturnValue);
@@ -136,6 +138,6 @@ test('displays validation error messages', async () => {
   await userEvent.type(passwordInput, 'pass');
   await userEvent.click(submitButton);
 
-  expect(getByText(/You must enter a valid email address/i)).toBeInTheDocument();
-  expect(getByText(/Password must be at least 8 characters/i)).toBeInTheDocument();
+  expect(getByText('com_auth_email_pattern')).toBeInTheDocument();
+  expect(getByText('com_auth_password_min_length')).toBeInTheDocument();
 });

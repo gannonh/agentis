@@ -4,6 +4,8 @@ import i18n from './i18n';
 import English from './en/translation.json';
 import French from './fr/translation.json';
 import Spanish from './es/translation.json';
+import { beforeAll, describe, expect, it } from 'vitest';
+
 
 describe('i18next translation tests', () => {
   // Ensure i18next is initialized before any tests run

@@ -3,18 +3,20 @@ import '@testing-library/jest-dom/extend-expect';
 import { render, fireEvent } from 'test/layout-test-utils';
 import CloudBrowserVoicesSwitch from '../CloudBrowserVoicesSwitch';
 import { RecoilRoot } from 'recoil';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+
 
 describe('CloudBrowserVoicesSwitch', () => {
   /**
    * Mock function to set the cache-tts state.
    */
   let mockSetCloudBrowserVoices:
-    | jest.Mock<void, [boolean]>
+    | vi.Mock<void, [boolean]>
     | ((value: boolean) => void)
     | undefined;
 
   beforeEach(() => {
-    mockSetCloudBrowserVoices = jest.fn();
+    mockSetCloudBrowserVoices = vi.fn();
   });
 
   it('renders correctly', () => {

@@ -1,4 +1,4 @@
-// No need to import describe, it, expect with Jest as they are globally available
+import { describe, expect, it } from 'vitest';
 import {
   groupMCPToolsByServer,
   groupAgentToolsByServer,
