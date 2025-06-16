@@ -2,8 +2,8 @@ import { Page } from '@playwright/test';
 
 // Google test credentials - directly use the known test account
 export const GOOGLE_CREDS = {
-  email: 'agentis.test@gmail.com',
-  password: 'KJHkh97HKH87jjfU',
+  email: process.env.GOOGLE_TEST_ACCOUNT_1_EMAIL || '',
+  password: process.env.GOOGLE_TEST_ACCOUNT_1_PASSWORD || '',
 } as const;
 
 // Google service types
