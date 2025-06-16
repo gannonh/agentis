@@ -54,10 +54,12 @@ const startServer = async () => {
   app.get('/health', (_req, res) => res.status(200).send('OK'));
 
   /* CORS must be applied before Better Auth */
-  app.use(cors({
-    origin: ['http://localhost:3090', 'http://localhost:3000', 'https://agentis.ai'],
-    credentials: true,
-  }));
+  app.use(
+    cors({
+      origin: ['http://localhost:3090', 'http://localhost:3000', 'https://agentis.ai'],
+      credentials: true,
+    }),
+  );
 
   /**
    * Better Auth Handler
@@ -103,7 +105,7 @@ const startServer = async () => {
   if (isEnabled(ALLOW_SOCIAL_LOGIN)) {
     configureSocialLogins(app);
   }
-  
+
   /* API Endpoints */
   // Legacy auth routes removed - using Better Auth handler above
   app.use('/api/actions', routes.actions);

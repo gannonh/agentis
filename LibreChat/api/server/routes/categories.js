@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 import { requireBetterAuth } from '#server/middleware.js';
-import {  getCategories  } from '#models/Categories.js';
+import { getCategories } from '#models/Categories.js';
 
 router.get('/', requireBetterAuth, async (req, res) => {
   try {

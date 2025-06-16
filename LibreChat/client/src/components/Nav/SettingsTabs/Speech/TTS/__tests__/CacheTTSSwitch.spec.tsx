@@ -5,7 +5,6 @@ import CacheTTSSwitch from '../CacheTTSSwitch';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('CacheTTSSwitch', () => {
   /**
    * Mock function to set the cache-tts state.

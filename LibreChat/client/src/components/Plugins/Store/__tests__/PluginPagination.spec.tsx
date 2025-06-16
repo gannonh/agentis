@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import PluginPagination from '../PluginPagination';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('PluginPagination', () => {
   const onChangePage = vi.fn();
 

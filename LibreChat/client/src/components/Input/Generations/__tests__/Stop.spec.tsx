@@ -2,7 +2,6 @@ import { render, fireEvent } from 'test/layout-test-utils';
 import Stop from '../Stop';
 import { describe, expect, it, test, vi } from 'vitest';
 
-
 describe('Stop', () => {
   it('should render the Stop button', () => {
     const { getByText } = render(

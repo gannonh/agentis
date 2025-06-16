@@ -63,38 +63,38 @@ describe('ComposioAuthButton', () => {
   describe('Basic Rendering', () => {
     it('should render button element', () => {
       render(<ComposioAuthButton service="googlesheets" inline={true} />);
-      
+
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
     it('should show service display name for Google Sheets', () => {
       render(<ComposioAuthButton service="googlesheets" inline={false} />);
-      
+
       expect(screen.getByText('Google Sheets')).toBeInTheDocument();
     });
 
     it('should show service display name for Google Drive', () => {
       render(<ComposioAuthButton service="googledrive" inline={false} />);
-      
+
       expect(screen.getByText('Google Drive')).toBeInTheDocument();
     });
 
     it('should show service display name for Google Docs', () => {
       render(<ComposioAuthButton service="googledocs" inline={false} />);
-      
+
       expect(screen.getByText('Google Docs')).toBeInTheDocument();
     });
 
     it('should show service display name for Gmail', () => {
       render(<ComposioAuthButton service="gmail" inline={false} />);
-      
+
       expect(screen.getByText('Gmail')).toBeInTheDocument();
     });
 
     it('should show service display name for Google Calendar', () => {
       render(<ComposioAuthButton service="googlecalendar" inline={false} />);
-      
+
       expect(screen.getByText('Google Calendar')).toBeInTheDocument();
     });
   });
@@ -102,7 +102,7 @@ describe('ComposioAuthButton', () => {
   describe('Initial Loading State', () => {
     it('should show checking state initially', () => {
       render(<ComposioAuthButton service="googlesheets" inline={true} />);
-      
+
       const button = screen.getByRole('button');
       expect(button).toBeDisabled();
       expect(screen.getByText('Checking...')).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe('ComposioAuthButton', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
           'Failed to check connection status:',
-          expect.any(Error)
+          expect.any(Error),
         );
       });
 
@@ -197,7 +197,7 @@ describe('ComposioAuthButton', () => {
       expect(mockOpen).toHaveBeenCalledWith(
         'https://oauth.example.com',
         'composio-oauth',
-        'width=600,height=700,scrollbars=yes,resizable=yes'
+        'width=600,height=700,scrollbars=yes,resizable=yes',
       );
     });
 
@@ -306,7 +306,7 @@ describe('ComposioAuthButton', () => {
       });
 
       const messageHandler = mockAddEventListener.mock.calls.find(
-        (call) => call[0] === 'message'
+        (call) => call[0] === 'message',
       )?.[1];
 
       // Simulate error message

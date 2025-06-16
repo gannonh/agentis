@@ -1,5 +1,5 @@
-import {  FileSources  } from 'librechat-data-provider';
-import { 
+import { FileSources } from 'librechat-data-provider';
+import {
   Balance,
   getFiles,
   updateUser,
@@ -9,17 +9,17 @@ import {
   deleteMessages,
   deleteUserById,
   deleteAllUserSessions,
- } from '#models.js';
+} from '#models.js';
 import User from '#models/User.js';
-import {  updateUserPluginAuth, deleteUserPluginAuth  } from '#server/services/PluginService.js';
-import {  updateUserPluginsService, deleteUserKey  } from '#server/services/UserService.js';
-import {  verifyEmail, resendVerificationEmail  } from '#server/services/AuthService.js';
-import {  needsRefresh, getNewS3URL  } from '#server/services/Files/S3/crud.js';
-import {  processDeleteRequest  } from '#server/services/Files/process.js';
-import {  deleteAllSharedLinks  } from '#models/Share.js';
-import {  deleteToolCalls  } from '#models/ToolCall.js';
-import {  Transaction  } from '#models/Transaction.js';
-import {  logger  } from '#config.js';
+import { updateUserPluginAuth, deleteUserPluginAuth } from '#server/services/PluginService.js';
+import { updateUserPluginsService, deleteUserKey } from '#server/services/UserService.js';
+import { verifyEmail, resendVerificationEmail } from '#server/services/AuthService.js';
+import { needsRefresh, getNewS3URL } from '#server/services/Files/S3/crud.js';
+import { processDeleteRequest } from '#server/services/Files/process.js';
+import { deleteAllSharedLinks } from '#models/Share.js';
+import { deleteToolCalls } from '#models/ToolCall.js';
+import { Transaction } from '#models/Transaction.js';
+import { logger } from '#config.js';
 
 const getUserController = async (req, res) => {
   /** @type {MongoUser} */

@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import PluginAuthForm from '../PluginAuthForm';
 import { describe, expect, it, test, vi } from 'vitest';
 
-
 describe('PluginAuthForm', () => {
   const plugin = {
     pluginKey: 'test-plugin',

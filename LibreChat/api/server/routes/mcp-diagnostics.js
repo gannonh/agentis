@@ -1,8 +1,8 @@
 import express from 'express';
 import { MCPManager } from 'librechat-mcp';
-import { requireBetterAuth } from '#server/middleware.js';
-import {  Permissions, PermissionTypes  } from 'librechat-data-provider';
-import {  logger  } from '#config/index.js';
+import { requireBetterAuth, checkAccess } from '#server/middleware.js';
+import { Permissions, PermissionTypes } from 'librechat-data-provider';
+import { logger } from '#config/index.js';
 
 const router = express.Router();
 

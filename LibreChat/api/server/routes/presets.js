@@ -1,8 +1,8 @@
 import express from 'express';
 import crypto from 'crypto';
-import {  getPresets, savePreset, deletePresets  } from '#models.js';
+import { getPresets, savePreset, deletePresets } from '#models.js';
 import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
-import {  logger  } from '#config.js';
+import { logger } from '#config.js';
 
 const router = express.Router();
 router.use(requireBetterAuth);

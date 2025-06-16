@@ -128,13 +128,13 @@ describe('Better Auth Configuration', () => {
 
     test('should have valid session timing relationships', () => {
       const { expiresIn, updateAge, cookieAge } = betterAuthConfig.session;
-      
+
       // Update age should be less than or equal to expiration time
       expect(updateAge).toBeLessThanOrEqual(expiresIn);
-      
+
       // Cookie age should match session expiration for consistency
       expect(cookieAge).toBe(expiresIn);
-      
+
       // All values should be positive
       expect(expiresIn).toBeGreaterThan(0);
       expect(updateAge).toBeGreaterThan(0);
@@ -146,11 +146,11 @@ describe('Better Auth Configuration', () => {
     test('should have secure default values', () => {
       // Password requirements should meet basic security standards
       expect(betterAuthConfig.emailAndPassword.minPasswordLength).toBeGreaterThanOrEqual(8);
-      
+
       // Session should not be too long (max 30 days for security)
       const thirtyDaysInSeconds = 60 * 60 * 24 * 30;
       expect(betterAuthConfig.session.expiresIn).toBeLessThanOrEqual(thirtyDaysInSeconds);
-      
+
       // Session should not be too short (min 1 hour for usability)
       const oneHourInSeconds = 60 * 60;
       expect(betterAuthConfig.session.expiresIn).toBeGreaterThanOrEqual(oneHourInSeconds);
@@ -160,7 +160,7 @@ describe('Better Auth Configuration', () => {
       // Email verification should be consistently disabled
       expect(betterAuthConfig.emailVerification.enabled).toBe(false);
       expect(betterAuthConfig.emailVerification.sendOnSignUp).toBe(false);
-      
+
       // Session timing should be consistent
       expect(betterAuthConfig.session.expiresIn).toBe(betterAuthConfig.session.cookieAge);
     });
@@ -169,17 +169,17 @@ describe('Better Auth Configuration', () => {
       const checkObject = (obj, path = '') => {
         Object.entries(obj).forEach(([key, value]) => {
           const currentPath = path ? `${path}.${key}` : key;
-          
+
           if (value === null || value === undefined) {
             throw new Error(`Configuration has null/undefined value at ${currentPath}`);
           }
-          
+
           if (typeof value === 'object' && !Array.isArray(value)) {
             checkObject(value, currentPath);
           }
         });
       };
-      
+
       expect(() => checkObject(betterAuthConfig)).not.toThrow();
     });
   });
@@ -189,14 +189,14 @@ describe('Better Auth Configuration', () => {
       // Note: This test assumes the config is exported as a const
       // In practice, you might want to freeze the object for immutability
       const originalBasePath = betterAuthConfig.basePath;
-      
+
       // Attempt to modify (this might not throw in non-strict mode)
       try {
         betterAuthConfig.basePath = '/different/path';
       } catch (error) {
         // Expected in strict mode or with frozen objects
       }
-      
+
       // Config should remain unchanged or be easily detectable
       expect(betterAuthConfig.basePath).toBeDefined();
     });
@@ -227,7 +227,7 @@ describe('Better Auth Configuration', () => {
         Object.entries(expected).forEach(([key, expectedType]) => {
           const actualValue = actual[key];
           const currentPath = path ? `${path}.${key}` : key;
-          
+
           if (typeof expectedType === 'object') {
             expect(actualValue).toBeDefined();
             expect(typeof actualValue).toBe('object');

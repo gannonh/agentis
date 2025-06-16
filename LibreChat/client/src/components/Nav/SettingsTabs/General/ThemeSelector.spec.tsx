@@ -7,7 +7,6 @@ import { ThemeSelector } from './General';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('ThemeSelector', () => {
   let mockOnChange;
 

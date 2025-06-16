@@ -1,6 +1,6 @@
 import express from 'express';
 
-import {  getBanner  } from '#models/Banner.js';
+import { getBanner } from '#models/Banner.js';
 import optionalBetterAuth from '#server/middleware/optionalBetterAuth.js';
 const router = express.Router();
 

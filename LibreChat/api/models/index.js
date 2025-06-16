@@ -54,7 +54,12 @@ import Message from './Message.js';
 import File from './File.js';
 import Session from './Session.js';
 import Role from './Role.js';
-import Assistant, { updateAssistantDoc, deleteAssistant, getAssistants, getAssistant } from './Assistant.js';
+import Assistant, {
+  updateAssistantDoc,
+  deleteAssistant,
+  getAssistants,
+  getAssistant,
+} from './Assistant.js';
 import Agent from './Agent.js';
 import Action from './Action.js';
 import Banner from './Banner.js';

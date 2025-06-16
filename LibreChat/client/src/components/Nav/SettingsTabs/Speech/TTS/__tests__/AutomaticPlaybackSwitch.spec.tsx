@@ -5,7 +5,6 @@ import AutomaticPlaybackSwitch from '../AutomaticPlaybackSwitch';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('AutomaticPlaybackSwitch', () => {
   /**
    * Mock function to set the text-to-speech state.

@@ -5,7 +5,6 @@ import { LangSelector } from './General';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('LangSelector', () => {
   let mockOnChange;
 

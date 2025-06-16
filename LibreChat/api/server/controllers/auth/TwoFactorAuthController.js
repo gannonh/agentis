@@ -1,9 +1,5 @@
 import jwt from 'jsonwebtoken';
-import {
-  verifyTOTP,
-  verifyBackupCode,
-  getTOTPSecret,
-} from '#server/services/twoFactorService.js';
+import { verifyTOTP, verifyBackupCode, getTOTPSecret } from '#server/services/twoFactorService.js';
 import { setAuthTokens } from '#server/services/AuthService.js';
 import { getUserById } from '#models/userMethods.js';
 import { logger } from '#config/index.js';

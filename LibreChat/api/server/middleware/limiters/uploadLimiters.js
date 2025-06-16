@@ -92,6 +92,4 @@ const createFileLimiters = () => {
   return { fileUploadIpLimiter, fileUploadUserLimiter };
 };
 
-export {
-  createFileLimiters,
-};
+export { createFileLimiters };

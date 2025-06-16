@@ -2,7 +2,6 @@ import { render, fireEvent } from '@testing-library/react';
 import Button from '../Button';
 import { describe, expect, it, vi } from 'vitest';
 
-
 describe('Button', () => {
   it('renders with the correct type and children', () => {
     const { getByTestId, getByText } = render(

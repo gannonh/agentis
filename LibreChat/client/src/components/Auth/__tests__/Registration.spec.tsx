@@ -11,7 +11,6 @@ import Registration from '~/components/Auth/Registration';
 import AuthLayout from '~/components/Auth/AuthLayout';
 import { describe, expect, it, test, vi } from 'vitest';
 
-
 vi.mock('librechat-data-provider/react-query');
 
 // Mock AuthContext to prevent real API calls

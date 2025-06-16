@@ -1,12 +1,12 @@
 import express from 'express';
 import EditController from '#server/controllers/EditController.js';
-import initializeClient from "#server/services/Endpoints/google/initialize.js";
-import { 
+import initializeClient from '#server/services/Endpoints/google/initialize.js';
+import {
   setHeaders,
   validateModel,
   validateEndpoint,
   buildEndpointOption,
- } from '#server/middleware.js';
+} from '#server/middleware.js';
 
 const router = express.Router();
 

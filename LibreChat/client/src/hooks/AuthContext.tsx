@@ -53,14 +53,14 @@ const AuthContextProvider = ({
       setUser(user);
       setSession(session);
       setIsAuthenticated(isAuthenticated);
-      
+
       // Legacy token support for backward compatibility during transition
       if (token && !session) {
         // If we still have a token but no session, we're in legacy mode
         // This ensures compatibility during the Better Auth migration
         console.warn('Using legacy token mode - Better Auth session not available');
       }
-      
+
       // Use a custom redirect if set
       const finalRedirect = logoutRedirectRef.current || redirect;
       // Clear the stored redirect
@@ -87,7 +87,7 @@ const AuthContextProvider = ({
         return;
       }
       setError(undefined);
-      
+
       // Better Auth uses session-based authentication
       if (session && user) {
         setUserContext({ session, isAuthenticated: true, user, redirect: '/c/new' });
@@ -148,10 +148,10 @@ const AuthContextProvider = ({
   // Handle session query results
   useEffect(() => {
     if (sessionQuery.data?.session && sessionQuery.data?.user) {
-      setUserContext({ 
-        session: sessionQuery.data.session, 
-        isAuthenticated: true, 
-        user: sessionQuery.data.user 
+      setUserContext({
+        session: sessionQuery.data.session,
+        isAuthenticated: true,
+        user: sessionQuery.data.user,
       });
     } else if (sessionQuery.isError) {
       console.log('Session check error:', sessionQuery.error);
@@ -164,7 +164,14 @@ const AuthContextProvider = ({
         navigate('/login');
       }
     }
-  }, [sessionQuery.data, sessionQuery.isError, sessionQuery.error, authConfig?.test, navigate, setUserContext]);
+  }, [
+    sessionQuery.data,
+    sessionQuery.isError,
+    sessionQuery.error,
+    authConfig?.test,
+    navigate,
+    setUserContext,
+  ]);
 
   const login = useCallback(
     (data: t.TLoginUser) => {
@@ -178,7 +185,7 @@ const AuthContextProvider = ({
       console.log('Test mode. Skipping session check.');
       return;
     }
-    
+
     // Trigger session refetch
     if (sessionQuery.refetch) {
       sessionQuery.refetch();

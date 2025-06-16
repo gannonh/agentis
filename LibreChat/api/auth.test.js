@@ -57,10 +57,10 @@ vi.mock('mongoose', () => ({
 
 describe('Better Auth Integration', () => {
   let getAuth;
-  
+
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock successful auth instance
     const mockAuthInstance = {
       handler: vi.fn(),
@@ -68,10 +68,10 @@ describe('Better Auth Integration', () => {
       signIn: vi.fn(),
       signOut: vi.fn(),
     };
-    
+
     mockBetterAuth.mockReturnValue(mockAuthInstance);
     mockMongodbAdapter.mockReturnValue('mock-adapter');
-    
+
     // Set environment variables
     process.env.BETTER_AUTH_SECRET = 'test-secret-key';
   });
@@ -80,7 +80,7 @@ describe('Better Auth Integration', () => {
     vi.resetModules();
     vi.clearAllMocks();
     delete process.env.BETTER_AUTH_SECRET;
-    
+
     // Reset mocks to clean state
     mockBetterAuth.mockReturnValue({
       handler: vi.fn(),
@@ -101,7 +101,7 @@ describe('Better Auth Integration', () => {
     test('should return temporary handler when auth not initialized', async () => {
       const { getAuth } = await import('./auth.js');
       const auth = getAuth();
-      
+
       expect(auth).toHaveProperty('handler');
       expect(typeof auth.handler).toBe('function');
     });
@@ -109,18 +109,18 @@ describe('Better Auth Integration', () => {
     test('should send 503 response when auth not ready', async () => {
       const { getAuth } = await import('./auth.js');
       const auth = getAuth();
-      
+
       const mockReq = {};
       const mockRes = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
       };
-      
+
       auth.handler(mockReq, mockRes);
-      
+
       expect(mockRes.status).toHaveBeenCalledWith(503);
       expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Authentication service is starting up. Please try again in a moment.'
+        error: 'Authentication service is starting up. Please try again in a moment.',
       });
     });
   });
@@ -133,13 +133,13 @@ describe('Better Auth Integration', () => {
 
     test('should initialize Better Auth when MongoDB connection opens', async () => {
       await import('./auth.js');
-      
+
       // Get the callback function passed to connection.once
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       // Simulate MongoDB connection opening
       connectionCallback();
-      
+
       expect(mockLogger.info).toHaveBeenCalledWith('Initializing Better Auth with MongoDB adapter');
       expect(mockConnection.getClient).toHaveBeenCalled();
       expect(mockClient.db).toHaveBeenCalledWith('Agentis');
@@ -159,9 +159,9 @@ describe('Better Auth Integration', () => {
       });
 
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       expect(() => connectionCallback()).toThrow(testError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize Better Auth:', testError);
     });
@@ -174,27 +174,27 @@ describe('Better Auth Integration', () => {
         signUp: vi.fn(),
         signIn: vi.fn(),
       };
-      
+
       mockBetterAuth.mockReturnValue(mockAuthInstance);
-      
+
       const { getAuth } = await import('./auth.js');
-      
+
       // Simulate MongoDB connection opening
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       const auth = getAuth();
       expect(auth).toBe(mockAuthInstance);
     });
 
     test('should handle missing secret environment variable', async () => {
       delete process.env.BETTER_AUTH_SECRET;
-      
+
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       expect(mockBetterAuth).toHaveBeenCalledWith({
         database: 'mock-adapter',
         secret: undefined,
@@ -206,10 +206,10 @@ describe('Better Auth Integration', () => {
   describe('Configuration Integration', () => {
     test('should use correct betterAuthConfig settings', async () => {
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       const expectedConfig = {
         database: 'mock-adapter',
         secret: 'test-secret-key',
@@ -220,16 +220,16 @@ describe('Better Auth Integration', () => {
           maxPasswordLength: 128,
         },
       };
-      
+
       expect(mockBetterAuth).toHaveBeenCalledWith(expectedConfig);
     });
 
     test('should use correct database name for MongoDB adapter', async () => {
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       expect(mockClient.db).toHaveBeenCalledWith('Agentis');
     });
   });
@@ -242,9 +242,9 @@ describe('Better Auth Integration', () => {
       });
 
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       expect(() => connectionCallback()).toThrow(authError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize Better Auth:', authError);
     });
@@ -256,11 +256,14 @@ describe('Better Auth Integration', () => {
       });
 
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       expect(() => connectionCallback()).toThrow(adapterError);
-      expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize Better Auth:', adapterError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to initialize Better Auth:',
+        adapterError,
+      );
     });
 
     test('should handle database connection failure', async () => {
@@ -270,9 +273,9 @@ describe('Better Auth Integration', () => {
       });
 
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       expect(() => connectionCallback()).toThrow(dbError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize Better Auth:', dbError);
     });
@@ -284,14 +287,14 @@ describe('Better Auth Integration', () => {
       process.env.BETTER_AUTH_SECRET = testSecret;
 
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       expect(mockBetterAuth).toHaveBeenCalledWith(
         expect.objectContaining({
           secret: testSecret,
-        })
+        }),
       );
     });
 
@@ -299,14 +302,14 @@ describe('Better Auth Integration', () => {
       delete process.env.BETTER_AUTH_SECRET;
 
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       expect(mockBetterAuth).toHaveBeenCalledWith(
         expect.objectContaining({
           secret: undefined,
-        })
+        }),
       );
     });
   });
@@ -314,19 +317,19 @@ describe('Better Auth Integration', () => {
   describe('Logging', () => {
     test('should log initialization start', async () => {
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       expect(mockLogger.info).toHaveBeenCalledWith('Initializing Better Auth with MongoDB adapter');
     });
 
     test('should log successful initialization', async () => {
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       expect(mockLogger.info).toHaveBeenCalledWith('Better Auth initialized successfully');
     });
 
@@ -337,9 +340,9 @@ describe('Better Auth Integration', () => {
       });
 
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       expect(() => connectionCallback()).toThrow(testError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize Better Auth:', testError);
     });
@@ -348,10 +351,10 @@ describe('Better Auth Integration', () => {
   describe('Mongoose Integration', () => {
     test('should reuse existing mongoose connection', async () => {
       await import('./auth.js');
-      
+
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       // Should use existing connection, not create a new one
       expect(mockConnection.getClient).toHaveBeenCalled();
       expect(mockClient.db).toHaveBeenCalledWith('Agentis');
@@ -359,16 +362,16 @@ describe('Better Auth Integration', () => {
 
     test('should wait for MongoDB connection before initializing', async () => {
       const { getAuth } = await import('./auth.js');
-      
+
       // Before connection opens, should return temporary handler
       const authBeforeConnection = getAuth();
       expect(authBeforeConnection).toHaveProperty('handler');
       expect(typeof authBeforeConnection.handler).toBe('function');
-      
+
       // After connection opens, should initialize properly
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
-      
+
       const authAfterConnection = getAuth();
       expect(authAfterConnection).not.toEqual(authBeforeConnection);
       expect(mockBetterAuth).toHaveBeenCalled();

@@ -12,7 +12,7 @@ import { SystemRoles } from 'librechat-data-provider';
 /**
  * Middleware for optional Better Auth session authentication
  * Populates req.user if session exists, but allows request to continue if not
- * 
+ *
  * @param {import('express').Request} req - Express request object
  * @param {import('express').Response} res - Express response object
  * @param {import('express').NextFunction} next - Express next function
@@ -20,7 +20,7 @@ import { SystemRoles } from 'librechat-data-provider';
 const optionalBetterAuth = async (req, res, next) => {
   try {
     const auth = getAuth();
-    
+
     // Check if Better Auth is initialized (not in startup mode)
     if (typeof auth.handler === 'function' && !auth.api) {
       // Continue without authentication if service is starting up

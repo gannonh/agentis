@@ -2,7 +2,6 @@ import { render, fireEvent } from 'test/layout-test-utils';
 import Regenerate from '../Regenerate';
 import { describe, expect, it, test, vi } from 'vitest';
 
-
 describe('Regenerate', () => {
   it('should render the Regenerate button', () => {
     const { getByText } = render(

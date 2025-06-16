@@ -2,7 +2,7 @@ import express from 'express';
 import { requireBetterAuth, uaParser, checkBan, createFileLimiters } from '#server/middleware.js';
 import { avatar as asstAvatarRouter } from '#server/routes/assistants/v1.js';
 import { avatar as agentAvatarRouter } from '#server/routes/agents/v1.js';
-import {  createMulterInstance  } from './multer.js';
+import { createMulterInstance } from './multer.js';
 
 import files from './files.js';
 import images from './images.js';

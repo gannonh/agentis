@@ -35,7 +35,7 @@ describe('AuthGuard', () => {
     return render(
       <MemoryRouter>
         <AuthGuard />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   };
 
@@ -251,7 +251,7 @@ describe('AuthGuard', () => {
   describe('Session Query Configuration', () => {
     it('disables session query when already authenticated', () => {
       mockUseAuthContext.mockReturnValue({ isAuthenticated: true });
-      
+
       renderAuthGuard();
 
       expect(mockUseGetSessionQuery).toHaveBeenCalledWith({
@@ -263,7 +263,7 @@ describe('AuthGuard', () => {
 
     it('enables session query when not authenticated', () => {
       mockUseAuthContext.mockReturnValue({ isAuthenticated: false });
-      
+
       renderAuthGuard();
 
       expect(mockUseGetSessionQuery).toHaveBeenCalledWith({
@@ -275,25 +275,25 @@ describe('AuthGuard', () => {
 
     it('sets correct staleTime for session query', () => {
       mockUseAuthContext.mockReturnValue({ isAuthenticated: false });
-      
+
       renderAuthGuard();
 
       expect(mockUseGetSessionQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           staleTime: 5 * 60 * 1000, // 5 minutes
-        })
+        }),
       );
     });
 
     it('disables retry for session query', () => {
       mockUseAuthContext.mockReturnValue({ isAuthenticated: false });
-      
+
       renderAuthGuard();
 
       expect(mockUseGetSessionQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           retry: false,
-        })
+        }),
       );
     });
   });
@@ -303,7 +303,7 @@ describe('AuthGuard', () => {
       const { rerender } = render(
         <MemoryRouter>
           <AuthGuard />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
       // Start with unauthenticated
@@ -316,7 +316,7 @@ describe('AuthGuard', () => {
       rerender(
         <MemoryRouter>
           <AuthGuard />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
       // Change to authenticated
@@ -329,7 +329,7 @@ describe('AuthGuard', () => {
       rerender(
         <MemoryRouter>
           <AuthGuard />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
 
       await waitFor(() => {

@@ -5,7 +5,6 @@ import ConversationModeSwitch from './ConversationModeSwitch';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('ConversationModeSwitch', () => {
   /**
    * Mock function to set the auto-send-text state.

@@ -388,9 +388,4 @@ const handleAbortError = async (res, req, error, data) => {
   }
 };
 
-export {
-  handleAbort,
-  handleAbortError,
-  createAbortController,
-  cleanupAbortController,
-};
+export { handleAbort, handleAbortError, createAbortController, cleanupAbortController };

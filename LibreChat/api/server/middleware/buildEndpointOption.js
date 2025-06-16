@@ -86,12 +86,12 @@ async function buildEndpointOption(req, res, next) {
       isAgentsEndpoint(endpoint) || req.baseUrl.startsWith(EndpointURLs[EModelEndpoint.agents]);
     const lookupKey = isAgents ? EModelEndpoint.agents : (endpointType ?? endpoint);
     const endpointFn = buildFunction[lookupKey];
-    
+
     if (!endpointFn) {
       console.error('[buildEndpointOption] No endpoint function found for:', lookupKey);
       return handleError(res, { text: `No handler for endpoint: ${lookupKey}` });
     }
-    
+
     const builder = isAgents ? (...args) => endpointFn(req, ...args) : endpointFn;
 
     // TODO: use object params
@@ -110,7 +110,7 @@ async function buildEndpointOption(req, res, next) {
       stack: error.stack,
       endpoint,
       endpointType,
-      userId: req.user?.id
+      userId: req.user?.id,
     });
     return handleError(res, { text: 'Error building endpoint option' });
   }

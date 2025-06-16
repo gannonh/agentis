@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import express from 'express';
-import {  EnvVar  } from '@librechat/agents';
-import { 
+import { EnvVar } from '@librechat/agents';
+import {
   Time,
   isUUID,
   CacheKeys,
@@ -9,22 +9,22 @@ import {
   EModelEndpoint,
   isAgentsEndpoint,
   checkOpenAIStorage,
- } from 'librechat-data-provider';
-import { 
+} from 'librechat-data-provider';
+import {
   filterFile,
   processFileUpload,
   processDeleteRequest,
   processAgentFileUpload,
- } from '#server/services/Files/process.js';
-import {  getStrategyFunctions  } from '#server/services/Files/strategies.js';
-import {  getOpenAIClient  } from '#server/controllers/assistants/helpers.js';
-import {  loadAuthValues  } from '#server/services/Tools/credentials.js';
-import {  refreshS3FileUrls  } from '#server/services/Files/S3/crud.js';
-import {  getFiles, batchUpdateFiles  } from '#models/File.js';
-import {  getAssistant  } from '#models/Assistant.js';
-import {  getAgent  } from '#models/Agent.js';
-import {  getLogStores  } from '#cache.js';
-import {  logger  } from '#config.js';
+} from '#server/services/Files/process.js';
+import { getStrategyFunctions } from '#server/services/Files/strategies.js';
+import { getOpenAIClient } from '#server/controllers/assistants/helpers.js';
+import { loadAuthValues } from '#server/services/Tools/credentials.js';
+import { refreshS3FileUrls } from '#server/services/Files/S3/crud.js';
+import { getFiles, batchUpdateFiles } from '#models/File.js';
+import { getAssistant } from '#models/Assistant.js';
+import { getAgent } from '#models/Agent.js';
+import { getLogStores } from '#cache.js';
+import { logger } from '#config.js';
 
 const router = express.Router();
 

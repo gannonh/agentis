@@ -10,7 +10,7 @@ import { useGetSessionQuery } from '~/data-provider';
 export default function AuthGuard() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthContext();
-  
+
   // Check session status without refetching if already authenticated
   const { data: sessionData, isLoading } = useGetSessionQuery({
     enabled: !isAuthenticated,

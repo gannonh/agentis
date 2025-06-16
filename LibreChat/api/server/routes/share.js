@@ -1,15 +1,15 @@
 import express from 'express';
 
-import { 
+import {
   getSharedLink,
   getSharedMessages,
   createSharedLink,
   updateSharedLink,
   getSharedLinks,
   deleteSharedLink,
- } from '#models/Share.js';
+} from '#models/Share.js';
 import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
-import {  isEnabled  } from '#server/utils.js';
+import { isEnabled } from '#server/utils.js';
 const router = express.Router();
 
 /**

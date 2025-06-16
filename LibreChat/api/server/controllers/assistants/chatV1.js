@@ -1,5 +1,5 @@
-import {  v4  } from 'uuid';
-import { 
+import { v4 } from 'uuid';
+import {
   Time,
   Constants,
   RunStatus,
@@ -10,29 +10,29 @@ import {
   ImageVisionTool,
   checkOpenAIStorage,
   AssistantStreamEvents,
- } from 'librechat-data-provider';
-import { 
+} from 'librechat-data-provider';
+import {
   initThread,
   recordUsage,
   saveUserMessage,
   checkMessageGaps,
   addThreadMetadata,
   saveAssistantMessage,
- } from '#server/services/Threads.js';
-import {  sendResponse, sendMessage, sleep, countTokens  } from '#server/utils.js';
-import {  runAssistant, createOnTextProgress  } from '#server/services/AssistantService.js';
+} from '#server/services/Threads.js';
+import { sendResponse, sendMessage, sleep, countTokens } from '#server/utils.js';
+import { runAssistant, createOnTextProgress } from '#server/services/AssistantService.js';
 import validateAuthor from '#server/middleware/assistants/validateAuthor.js';
-import {  formatMessage, createVisionPrompt  } from '#app/clients/prompts.js';
-import {  createRun, StreamRunManager  } from '#server/services/Runs.js';
-import addTitle from "#server/services/Endpoints/assistants/title.js";
-import {  createRunBody  } from '#server/services/createRunBody.js';
-import {  getTransactions  } from '#models/Transaction.js';
-import {  checkBalance  } from '#models/balanceMethods.js';
-import {  getConvo  } from '#models/Conversation.js';
+import { formatMessage, createVisionPrompt } from '#app/clients/prompts.js';
+import { createRun, StreamRunManager } from '#server/services/Runs.js';
+import addTitle from '#server/services/Endpoints/assistants/title.js';
+import { createRunBody } from '#server/services/createRunBody.js';
+import { getTransactions } from '#models/Transaction.js';
+import { checkBalance } from '#models/balanceMethods.js';
+import { getConvo } from '#models/Conversation.js';
 import getLogStores from '#cache/getLogStores.js';
-import {  getModelMaxTokens  } from '#utils.js';
-import {  getOpenAIClient  } from './helpers.js';
-import {  logger  } from '#config.js';
+import { getModelMaxTokens } from '#utils.js';
+import { getOpenAIClient } from './helpers.js';
+import { logger } from '#config.js';
 
 /**
  * @route POST /

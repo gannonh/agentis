@@ -2,7 +2,6 @@ import { render, fireEvent } from 'test/layout-test-utils';
 import Continue from '../Continue';
 import { describe, expect, it, test, vi } from 'vitest';
 
-
 describe('Continue', () => {
   it('should render the Continue button', () => {
     const { getByText } = render(

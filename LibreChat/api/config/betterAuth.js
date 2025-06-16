@@ -28,11 +28,7 @@
 export const betterAuthConfig = {
   basePath: '/api/auth',
   baseURL: process.env.NODE_ENV === 'production' ? 'https://agentis.ai' : 'http://localhost:3090',
-  trustedOrigins: [
-    'http://localhost:3090',
-    'http://localhost:3000', 
-    'https://agentis.ai'
-  ],
+  trustedOrigins: ['http://localhost:3090', 'http://localhost:3000', 'https://agentis.ai'],
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,

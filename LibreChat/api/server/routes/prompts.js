@@ -1,6 +1,6 @@
 import express from 'express';
-import {  PermissionTypes, Permissions, SystemRoles  } from 'librechat-data-provider';
-import { 
+import { PermissionTypes, Permissions, SystemRoles } from 'librechat-data-provider';
+import {
   getPrompt,
   getPrompts,
   savePrompt,
@@ -13,9 +13,9 @@ import {
   getAllPromptGroups,
   // updatePromptLabels,
   makePromptProduction,
- } from '#models/Prompt.js';
+} from '#models/Prompt.js';
 import { requireBetterAuth, generateCheckAccess } from '#server/middleware.js';
-import {  logger  } from '#config.js';
+import { logger } from '#config.js';
 
 const router = express.Router();
 

@@ -25,6 +25,4 @@ const loginController = async (req, res) => {
   }
 };
 
-export {
-  loginController,
-};
+export { loginController };

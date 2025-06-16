@@ -1,6 +1,6 @@
 import express from 'express';
-import {  requireBetterAuth, canDeleteAccount, verifyEmailLimiter  } from '#server/middleware.js';
-import { 
+import { requireBetterAuth, canDeleteAccount, verifyEmailLimiter } from '#server/middleware.js';
+import {
   getUserController,
   deleteUserController,
   verifyEmailController,
@@ -8,7 +8,7 @@ import {
   resendVerificationController,
   getTermsStatusController,
   acceptTermsController,
- } from '#server/controllers/UserController.js';
+} from '#server/controllers/UserController.js';
 
 const router = express.Router();
 

@@ -1,5 +1,5 @@
 import express from 'express';
-import {  speechToText  } from '#server/services/Files/Audio.js';
+import { speechToText } from '#server/services/Files/Audio.js';
 
 const router = express.Router();
 

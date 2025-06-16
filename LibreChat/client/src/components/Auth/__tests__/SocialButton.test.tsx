@@ -33,29 +33,27 @@ describe('SocialButton', () => {
   describe('Rendering Behavior', () => {
     it('renders button when enabled is true', () => {
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button', { name: /continue with google/i });
       expect(button).toBeInTheDocument();
     });
 
     it('returns null when enabled is false', () => {
-      const { container } = render(
-        <SocialButton {...defaultProps} enabled={false} />
-      );
-      
+      const { container } = render(<SocialButton {...defaultProps} enabled={false} />);
+
       expect(container.firstChild).toBeNull();
     });
 
     it('displays correct icon and label', () => {
       render(<SocialButton {...defaultProps} />);
-      
+
       expect(screen.getByTestId('google-icon')).toBeInTheDocument();
       expect(screen.getByText('Continue with Google')).toBeInTheDocument();
     });
 
     it('has proper accessibility attributes', () => {
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       expect(button).toHaveAttribute('aria-label', 'Continue with Google');
       expect(button).toHaveAttribute('data-testid', 'google-login');
@@ -63,7 +61,7 @@ describe('SocialButton', () => {
 
     it('applies correct CSS classes', () => {
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       expect(button).toHaveClass(
         'flex',
@@ -79,7 +77,7 @@ describe('SocialButton', () => {
         'text-text-primary',
         'transition-colors',
         'duration-200',
-        'hover:bg-surface-tertiary'
+        'hover:bg-surface-tertiary',
       );
     });
   });
@@ -94,21 +92,18 @@ describe('SocialButton', () => {
       });
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3080/api/auth/sign-in/social',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ provider: 'google' }),
-          credentials: 'include',
-        }
-      );
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3080/api/auth/sign-in/social', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ provider: 'google' }),
+        credentials: 'include',
+      });
     });
 
     it('sends correct provider in request body', async () => {
@@ -123,7 +118,7 @@ describe('SocialButton', () => {
       };
 
       render(<SocialButton {...githubProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -131,7 +126,7 @@ describe('SocialButton', () => {
         expect.any(String),
         expect.objectContaining({
           body: JSON.stringify({ provider: 'github' }),
-        })
+        }),
       );
     });
 
@@ -141,7 +136,7 @@ describe('SocialButton', () => {
       });
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -152,7 +147,7 @@ describe('SocialButton', () => {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-        })
+        }),
       );
     });
 
@@ -166,7 +161,7 @@ describe('SocialButton', () => {
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -185,7 +180,7 @@ describe('SocialButton', () => {
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -206,7 +201,7 @@ describe('SocialButton', () => {
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -233,7 +228,7 @@ describe('SocialButton', () => {
       mockFetch.mockRejectedValueOnce(fetchError);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -246,7 +241,7 @@ describe('SocialButton', () => {
       mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -264,15 +259,12 @@ describe('SocialButton', () => {
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
       await waitFor(() => {
-        expect(console.error).toHaveBeenCalledWith(
-          'Social login error:',
-          expect.any(Error)
-        );
+        expect(console.error).toHaveBeenCalledWith('Social login error:', expect.any(Error));
       });
     });
 
@@ -283,7 +275,7 @@ describe('SocialButton', () => {
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -304,7 +296,7 @@ describe('SocialButton', () => {
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -324,7 +316,7 @@ describe('SocialButton', () => {
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
@@ -339,11 +331,11 @@ describe('SocialButton', () => {
       });
 
       render(<SocialButton {...defaultProps} />);
-      
+
       const button = screen.getByRole('button');
       const clickEvent = new MouseEvent('click', { bubbles: true });
       const preventDefaultSpy = vi.spyOn(clickEvent, 'preventDefault');
-      
+
       fireEvent(button, clickEvent);
 
       expect(preventDefaultSpy).toHaveBeenCalled();
@@ -375,7 +367,7 @@ describe('SocialButton', () => {
         };
 
         render(<SocialButton {...props} />);
-        
+
         const button = screen.getByRole('button', { name: label });
         await userEvent.click(button);
 
@@ -383,7 +375,7 @@ describe('SocialButton', () => {
           expect.any(String),
           expect.objectContaining({
             body: JSON.stringify({ provider: oauthPath }),
-          })
+          }),
         );
       });
     });
@@ -401,13 +393,13 @@ describe('SocialButton', () => {
       };
 
       render(<SocialButton {...customProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/api/auth/sign-in/social',
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -422,13 +414,13 @@ describe('SocialButton', () => {
       };
 
       render(<SocialButton {...customProps} />);
-      
+
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com//api/auth/sign-in/social',
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });

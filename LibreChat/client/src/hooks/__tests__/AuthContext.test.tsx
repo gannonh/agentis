@@ -50,9 +50,7 @@ describe('AuthContext', () => {
       <QueryClientProvider client={queryClient}>
         <RecoilRoot>
           <MemoryRouter>
-            <AuthContextProvider authConfig={authConfig}>
-              {children}
-            </AuthContextProvider>
+            <AuthContextProvider authConfig={authConfig}>{children}</AuthContextProvider>
           </MemoryRouter>
         </RecoilRoot>
       </QueryClientProvider>
@@ -61,20 +59,20 @@ describe('AuthContext', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockNavigate.mockReturnValue(navigate);
     mockUseGetRole.mockReturnValue({ data: null });
-    mockUseGetUserQuery.mockReturnValue({ 
-      data: null, 
-      isError: false, 
-      error: null 
+    mockUseGetUserQuery.mockReturnValue({
+      data: null,
+      isError: false,
+      error: null,
     });
-    mockUseLoginUserMutation.mockReturnValue({ 
+    mockUseLoginUserMutation.mockReturnValue({
       mutate: loginMutate,
       isLoading: false,
       error: null,
     });
-    mockUseLogoutUserMutation.mockReturnValue({ 
+    mockUseLogoutUserMutation.mockReturnValue({
       mutate: logoutMutate,
       isLoading: false,
       error: null,
@@ -163,7 +161,7 @@ describe('AuthContext', () => {
       expect(mockUseGetSessionQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           enabled: expect.any(Boolean),
-        })
+        }),
       );
     });
 
@@ -195,7 +193,7 @@ describe('AuthContext', () => {
           enabled: true,
           retry: false,
           staleTime: 5 * 60 * 1000,
-        })
+        }),
       );
     });
 
@@ -239,9 +237,9 @@ describe('AuthContext', () => {
         result.current.login({ email: 'test@test.com', password: 'password' });
       });
 
-      expect(loginMutate).toHaveBeenCalledWith({ 
-        email: 'test@test.com', 
-        password: 'password' 
+      expect(loginMutate).toHaveBeenCalledWith({
+        email: 'test@test.com',
+        password: 'password',
       });
 
       // Simulate successful login
@@ -487,10 +485,7 @@ describe('AuthContext', () => {
 
       unmount();
 
-      expect(removeEventListenerSpy).toHaveBeenCalledWith(
-        'sessionUpdated',
-        expect.any(Function)
-      );
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('sessionUpdated', expect.any(Function));
     });
   });
 
@@ -507,7 +502,7 @@ describe('AuthContext', () => {
       });
 
       expect(typeof result.current.setError).toBe('function');
-      
+
       act(() => {
         result.current.setError('Test error message');
       });
@@ -525,7 +520,7 @@ describe('AuthContext', () => {
       });
 
       expect(result.current.error).toBe('Test error message');
-      
+
       // The error should remain set until explicitly cleared
       expect(result.current.error).toBe('Test error message');
     });

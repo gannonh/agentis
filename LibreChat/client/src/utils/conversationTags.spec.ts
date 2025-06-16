@@ -2,7 +2,6 @@ import type { TConversationTagsResponse } from 'librechat-data-provider';
 import { updateConversationTag } from './conversationTags';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-
 describe('ConversationTag Utilities', () => {
   let conversations: TConversationTagsResponse;
 

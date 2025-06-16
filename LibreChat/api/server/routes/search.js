@@ -1,7 +1,7 @@
 import express from 'express';
-import {  MeiliSearch  } from 'meilisearch';
+import { MeiliSearch } from 'meilisearch';
 import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
-import {  isEnabled  } from '#server/utils.js';
+import { isEnabled } from '#server/utils.js';
 
 const router = express.Router();
 

@@ -5,15 +5,11 @@ import AutoTranscribeAudioSwitch from '../AutoTranscribeAudioSwitch';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('AutoTranscribeAudioSwitch', () => {
   /**
    * Mock function to set the auto-send-text state.
    */
-  let mockSetAutoTranscribeAudio:
-    | vi.Mock<void, [boolean]>
-    | ((value: boolean) => void)
-    | undefined;
+  let mockSetAutoTranscribeAudio: vi.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
 
   beforeEach(() => {
     mockSetAutoTranscribeAudio = vi.fn();

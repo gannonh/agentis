@@ -133,14 +133,14 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 test('renders login form', () => {
   const { getByLabelText, getByRole, getByTestId } = setup();
-  
+
   // Check if login form is rendered
   expect(getByLabelText(/com_auth_email/i)).toBeInTheDocument();
   expect(getByLabelText(/com_auth_password/i)).toBeInTheDocument();
   expect(getByTestId('login-button')).toBeInTheDocument();
   expect(getByRole('link', { name: /com_auth_sign_up/i })).toBeInTheDocument();
   expect(getByRole('link', { name: /com_auth_sign_up/i })).toHaveAttribute('href', '/register');
-  
+
   // Social login buttons are now button elements with aria-labels
   expect(getByTestId('google')).toBeInTheDocument();
   expect(getByTestId('facebook')).toBeInTheDocument();

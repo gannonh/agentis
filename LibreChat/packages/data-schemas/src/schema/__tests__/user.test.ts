@@ -8,6 +8,7 @@ import { Types } from 'mongoose';
 import userSchema from '../user';
 
 describe('User Schema', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let User: mongoose.Model<any>;
 
   beforeAll(() => {

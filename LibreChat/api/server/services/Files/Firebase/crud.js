@@ -171,8 +171,10 @@ const deleteFirebaseFile = async (req, file) => {
     if (userId) {
       // Create a temporary token based on user ID for RAG API compatibility
       // TODO: Update RAG API to handle Better Auth sessions properly
-      const userToken = Buffer.from(JSON.stringify({ userId, timestamp: Date.now() })).toString('base64');
-      
+      const userToken = Buffer.from(JSON.stringify({ userId, timestamp: Date.now() })).toString(
+        'base64',
+      );
+
       axios.delete(`${process.env.RAG_API_URL}/documents`, {
         headers: {
           Authorization: `Bearer ${userToken}`,

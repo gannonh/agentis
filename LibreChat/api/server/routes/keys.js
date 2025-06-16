@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import {  updateUserKey, deleteUserKey, getUserKeyExpiry  } from '../services/UserService.js';
+import { updateUserKey, deleteUserKey, getUserKeyExpiry } from '../services/UserService.js';
 import { requireBetterAuth } from '../middleware/index.js';
 
 router.put('/', requireBetterAuth, async (req, res) => {

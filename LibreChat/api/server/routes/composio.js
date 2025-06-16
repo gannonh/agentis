@@ -1,8 +1,8 @@
 import express from 'express';
 import { requireBetterAuth } from '#server/middleware.js';
 import composioService from '#server/services/ComposioService.js';
-import {  ComposioConnectedAccount  } from '#models.js';
-import {  logger  } from '#config.js';
+import { ComposioConnectedAccount } from '#models.js';
+import { logger } from '#config.js';
 
 const router = express.Router();
 

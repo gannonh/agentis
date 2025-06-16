@@ -351,15 +351,11 @@ export const useGetCustomConfigSpeechQuery = (
 export const useGetSessionQuery = (
   config?: UseQueryOptions<t.TLoginResponse>,
 ): QueryObserverResult<t.TLoginResponse> => {
-  return useQuery<t.TLoginResponse>(
-    [QueryKeys.session],
-    () => dataService.getSession(),
-    {
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMount: false,
-      retry: false,
-      ...config,
-    },
-  );
+  return useQuery<t.TLoginResponse>([QueryKeys.session], () => dataService.getSession(), {
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    retry: false,
+    ...config,
+  });
 };

@@ -1,4 +1,4 @@
-import {  getEndpointsConfig  } from '#server/services/Config.js';
+import { getEndpointsConfig } from '#server/services/Config.js';
 
 async function endpointController(req, res) {
   const endpointsConfig = await getEndpointsConfig(req);

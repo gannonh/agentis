@@ -2,7 +2,7 @@ import express from 'express';
 const router = express.Router();
 import { requireBetterAuth, checkBan, uaParser } from '#server/middleware.js';
 
-import {  v1  } from './v1.js';
+import { v1 } from './v1.js';
 import chatV1 from './chatV1.js';
 import v2 from './v2.js';
 import chatV2 from './chatV2.js';

@@ -32,7 +32,7 @@ export default function Root() {
     enabled: !isAuthenticated,
     retry: false,
   });
-  
+
   const assistantsMap = useAssistantsMap({ isAuthenticated });
   const agentsMap = useAgentsMap({ isAuthenticated });
   const fileMap = useFileMap({ isAuthenticated });

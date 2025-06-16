@@ -6,7 +6,6 @@ import * as authMutations from '~/data-provider/Auth/mutations';
 import * as authQueries from '~/data-provider/Auth/queries';
 import { describe, expect, it, test, vi } from 'vitest';
 
-
 vi.mock('librechat-data-provider/react-query');
 
 class ResizeObserver {

@@ -4,7 +4,6 @@ import { TPlugin } from 'librechat-data-provider';
 import PluginStoreItem from '../PluginStoreItem';
 import { describe, expect, it, test, vi } from 'vitest';
 
-
 const mockPlugin = {
   name: 'Test Plugin',
   description: 'This is a test plugin',

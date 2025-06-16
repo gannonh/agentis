@@ -1,13 +1,13 @@
 import express from 'express';
 
 const router = express.Router();
-import { 
+import {
   setHeaders,
   handleAbort,
   validateModel,
   // validateEndpoint,
   buildEndpointOption,
- } from '#server/middleware.js';
+} from '#server/middleware.js';
 import validateConvoAccess from '#server/middleware/validate/convoAccess.js';
 import validateAssistant from '#server/middleware/assistants/validate.js';
 import chatController from '#server/controllers/assistants/chatV2.js';

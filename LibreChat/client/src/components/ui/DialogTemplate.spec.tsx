@@ -6,7 +6,6 @@ import { Dialog } from '@radix-ui/react-dialog';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('DialogTemplate', () => {
   let mockSelectHandler;
 

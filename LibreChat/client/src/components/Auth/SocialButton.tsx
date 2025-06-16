@@ -7,7 +7,7 @@ const SocialButton = ({ id, enabled, serverDomain, oauthPath, Icon, label }) => 
 
   const handleSocialLogin = async (e) => {
     e.preventDefault();
-    
+
     try {
       const response = await fetch(`${serverDomain}/api/auth/sign-in/social`, {
         method: 'POST',
@@ -17,9 +17,9 @@ const SocialButton = ({ id, enabled, serverDomain, oauthPath, Icon, label }) => 
         body: JSON.stringify({ provider: oauthPath }),
         credentials: 'include',
       });
-      
+
       const data = await response.json();
-      
+
       if (data.redirect && data.url) {
         window.location.href = data.url;
       }

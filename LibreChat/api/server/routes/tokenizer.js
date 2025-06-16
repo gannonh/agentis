@@ -1,8 +1,8 @@
 import express from 'express';
 const router = express.Router();
 import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
-import {  countTokens  } from '#server/utils.js';
-import {  logger  } from '#config.js';
+import { countTokens } from '#server/utils.js';
+import { logger } from '#config.js';
 
 router.post('/', requireBetterAuth, async (req, res) => {
   try {

@@ -8,7 +8,6 @@ import * as authQueries from '~/data-provider/Auth/queries';
 import Login from '../LoginForm';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 vi.mock('librechat-data-provider/react-query');
 
 const mockLogin = vi.fn();

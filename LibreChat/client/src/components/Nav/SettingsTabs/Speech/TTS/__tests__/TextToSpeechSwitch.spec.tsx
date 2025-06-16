@@ -5,7 +5,6 @@ import TextToSpeechSwitch from '../TextToSpeechSwitch';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('TextToSpeechSwitch', () => {
   /**
    * Mock function to set the text-to-speech state.

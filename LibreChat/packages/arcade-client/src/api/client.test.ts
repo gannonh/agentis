@@ -124,13 +124,13 @@ describe('ArcadeClient', () => {
     it('should handle errors and return unhealthy status', async () => {
       // Suppress console.error for this test
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      
+
       mockGet.mockRejectedValueOnce(new Error('Network error'));
 
       const result = await client.health();
 
       expect(result).toEqual({ healthy: false });
-      
+
       consoleSpy.mockRestore();
     });
   });

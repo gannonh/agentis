@@ -108,13 +108,15 @@ const loadAgent = async ({ req, agent_id, endpoint, model_parameters }) => {
   logger.debug('[loadAgent] Checking agent access:', {
     agentId: agent._id?.toString(),
     agentAuthor: agent.author?.toString(),
-    reqUser: req.user ? {
-      id: req.user.id,
-      _id: req.user._id?.toString(),
-      email: req.user.email
-    } : 'undefined',
+    reqUser: req.user
+      ? {
+          id: req.user.id,
+          _id: req.user._id?.toString(),
+          email: req.user.email,
+        }
+      : 'undefined',
     hasReqUser: !!req.user,
-    hasReqUserId: !!req.user?.id
+    hasReqUserId: !!req.user?.id,
   });
 
   if (!req.user || !req.user.id) {

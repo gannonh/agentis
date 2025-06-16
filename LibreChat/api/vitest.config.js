@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     // Test environment
     environment: 'node',
-    
+
     // Only include our new ESM tests - be very specific
     include: [
       // Only our new Better Auth tests for now
@@ -19,7 +19,7 @@ export default defineConfig({
       // Pattern for future ESM tests we'll add (use .vitest.js for new tests)
       '**/*.vitest.{js,mjs,ts}',
     ],
-    
+
     // Exclude all legacy CommonJS tests by specific paths
     exclude: [
       'node_modules/**',
@@ -28,7 +28,7 @@ export default defineConfig({
       // Legacy test directories and files
       'app/clients/specs/**',
       'app/clients/tools/**/*.test.js',
-      'app/clients/tools/**/*.spec.js', 
+      'app/clients/tools/**/*.spec.js',
       'app/clients/document/**/*.spec.js',
       'app/clients/prompts/**/*.spec.js',
       'app/clients/output_parsers/**/*.spec.js',
@@ -44,15 +44,13 @@ export default defineConfig({
       'test/jestSetup.js',
       'test/jestTeardown.js',
     ],
-    
+
     // Setup files (will convert these to ESM)
-    setupFiles: [
-      './test/vitestSetup.js',
-    ],
-    
+    setupFiles: ['./test/vitestSetup.js'],
+
     // Test timeout
     testTimeout: 30000,
-    
+
     // Coverage configuration
     coverage: {
       provider: 'v8',
@@ -63,14 +61,14 @@ export default defineConfig({
         // Add more files as we write tests for them
       ],
     },
-    
+
     // Globals (for describe, it, expect, etc.)
     globals: true,
-    
+
     // Clear mocks between tests
     clearMocks: true,
   },
-  
+
   // Path resolution for imports
   resolve: {
     alias: {
@@ -87,7 +85,7 @@ export default defineConfig({
       '~': resolve(process.cwd(), '.'),
     },
   },
-  
+
   // Define for environment variables and globals
   define: {
     // Test environment flags

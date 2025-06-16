@@ -1,5 +1,5 @@
 import express from 'express';
-import {  PermissionTypes, Permissions  } from 'librechat-data-provider';
+import { PermissionTypes, Permissions } from 'librechat-data-provider';
 import { requireBetterAuth, generateCheckAccess } from '#server/middleware.js';
 import v1 from '#server/controllers/agents/v1.js';
 import actions from './actions.js';

@@ -5,15 +5,11 @@ import CloudBrowserVoicesSwitch from '../CloudBrowserVoicesSwitch';
 import { RecoilRoot } from 'recoil';
 import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-
 describe('CloudBrowserVoicesSwitch', () => {
   /**
    * Mock function to set the cache-tts state.
    */
-  let mockSetCloudBrowserVoices:
-    | vi.Mock<void, [boolean]>
-    | ((value: boolean) => void)
-    | undefined;
+  let mockSetCloudBrowserVoices: vi.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
 
   beforeEach(() => {
     mockSetCloudBrowserVoices = vi.fn();
