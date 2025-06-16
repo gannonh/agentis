@@ -152,7 +152,7 @@ const AuthContextProvider = ({
       isError: sessionQuery.isError,
       data: sessionQuery.data,
       error: sessionQuery.error,
-      authConfigTest: authConfig?.test
+      authConfigTest: authConfig?.test,
     });
 
     if (sessionQuery.data?.session && sessionQuery.data?.user) {
