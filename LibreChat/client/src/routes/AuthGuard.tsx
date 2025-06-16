@@ -12,7 +12,11 @@ export default function AuthGuard() {
   const { isAuthenticated } = useAuthContext();
 
   // Check session status without refetching if already authenticated
-  const { data: sessionData, isLoading, isError } = useGetSessionQuery({
+  const {
+    data: sessionData,
+    isLoading,
+    isError,
+  } = useGetSessionQuery({
     enabled: !isAuthenticated,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -20,7 +24,7 @@ export default function AuthGuard() {
 
   useEffect(() => {
     console.log('AuthGuard effect:', { isAuthenticated, isLoading, isError, sessionData });
-    
+
     // If we're already authenticated, go to chat
     if (isAuthenticated) {
       console.log('AuthGuard: User authenticated, redirecting to chat');

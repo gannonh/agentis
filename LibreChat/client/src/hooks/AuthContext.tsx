@@ -147,7 +147,16 @@ const AuthContextProvider = ({
 
   // Handle session query results
   useEffect(() => {
+    console.log('SessionQuery state:', {
+      isLoading: sessionQuery.isLoading,
+      isError: sessionQuery.isError,
+      data: sessionQuery.data,
+      error: sessionQuery.error,
+      authConfigTest: authConfig?.test
+    });
+
     if (sessionQuery.data?.session && sessionQuery.data?.user) {
+      console.log('Valid session found, setting authenticated');
       setUserContext({
         session: sessionQuery.data.session,
         isAuthenticated: true,
@@ -156,11 +165,13 @@ const AuthContextProvider = ({
     } else if (sessionQuery.isError) {
       console.log('Session check error:', sessionQuery.error);
       if (authConfig?.test !== true) {
+        console.log('Redirecting to login due to error');
         navigate('/login');
       }
-    } else if (sessionQuery.data && !sessionQuery.data.session) {
+    } else if (sessionQuery.data === null || (sessionQuery.data && !sessionQuery.data.session)) {
       console.log('No valid session found. User is not authenticated.');
       if (authConfig?.test !== true) {
+        console.log('Redirecting to login due to no session');
         navigate('/login');
       }
     }
