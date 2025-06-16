@@ -1,6 +1,6 @@
 import { useResetRecoilState, useSetRecoilState } from 'recoil';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { MutationKeys, QueryKeys, dataService, request } from 'librechat-data-provider';
+import { MutationKeys, QueryKeys, dataService } from 'librechat-data-provider';
 import type { UseMutationResult } from '@tanstack/react-query';
 import type * as t from 'librechat-data-provider';
 import useClearStates from '~/hooks/Config/useClearStates';
@@ -57,7 +57,11 @@ export const useRefreshTokenMutation = (
 ): UseMutationResult<t.TRefreshTokenResponse | undefined, unknown, undefined, unknown> => {
   const queryClient = useQueryClient();
   return useMutation([MutationKeys.refreshToken], {
-    mutationFn: () => request.refreshToken(),
+    mutationFn: async (): Promise<t.TRefreshTokenResponse | undefined> => {
+      // Better Auth uses cookies, so no token refresh is needed
+      // Return undefined to indicate this operation is not applicable
+      return undefined;
+    },
     ...(options || {}),
     onMutate: (vars) => {
       queryClient.removeQueries();

@@ -47,6 +47,8 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+
+        // channel: 'chrome', // Use Google Chrome instead of Chromium
         // Worker-scoped storage state will be handled by fixtures
       },
     },

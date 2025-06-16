@@ -3,7 +3,6 @@ import { v4 } from 'uuid';
 import { SSE } from 'sse.js';
 import { useSetRecoilState } from 'recoil';
 import {
-  request,
   Constants,
   /* @ts-ignore */
   createPayload,
@@ -49,7 +48,7 @@ export default function useSSE(
   const genTitle = useGenTitleMutation();
   const setActiveRunId = useSetRecoilState(store.activeRunFamily(runIndex));
 
-  const { token, isAuthenticated } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
   const [completed, setCompleted] = useState(new Set());
   const setAbortScroll = useSetRecoilState(store.abortScrollFamily(runIndex));
   const setShowStopButton = useSetRecoilState(store.showStopButtonByIndex(runIndex));
@@ -108,7 +107,8 @@ export default function useSSE(
 
     const sse = new SSE(payloadData.server, {
       payload: JSON.stringify(payload),
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
     });
 
     sse.addEventListener('attachment', (e: MessageEvent) => {
@@ -202,25 +202,12 @@ export default function useSSE(
     sse.addEventListener('error', async (e: MessageEvent) => {
       /* @ts-ignore */
       if (e.responseCode === 401) {
-        /* token expired, refresh and retry */
-        try {
-          const refreshResponse = await request.refreshToken();
-          const token = refreshResponse?.token ?? '';
-          if (!token) {
-            throw new Error('Token refresh failed.');
-          }
-          sse.headers = {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          };
-
-          request.dispatchTokenUpdatedEvent(token);
-          sse.stream();
-          return;
-        } catch (error) {
-          /* token refresh failed, continue handling the original 401 */
-          console.log(error);
+        /* Session expired - redirect to login */
+        console.warn('SSE 401 error - session expired, redirecting to login');
+        if (!window.location.href.includes('share/')) {
+          window.location.href = '/login';
         }
+        return;
       }
 
       console.log('error in server stream.');

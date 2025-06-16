@@ -35,14 +35,17 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <AuthGuard />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: '/',
     element: <StartupLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
+      {
+        index: true,
+        element: (
+          <AuthContextProvider>
+            <AuthGuard />
+          </AuthContextProvider>
+        ),
+      },
       {
         path: 'register',
         element: <Registration />,

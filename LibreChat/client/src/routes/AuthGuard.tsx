@@ -12,21 +12,25 @@ export default function AuthGuard() {
   const { isAuthenticated } = useAuthContext();
 
   // Check session status without refetching if already authenticated
-  const { data: sessionData, isLoading } = useGetSessionQuery({
+  const { data: sessionData, isLoading, isError } = useGetSessionQuery({
     enabled: !isAuthenticated,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   useEffect(() => {
+    console.log('AuthGuard effect:', { isAuthenticated, isLoading, isError, sessionData });
+    
     // If we're already authenticated, go to chat
     if (isAuthenticated) {
+      console.log('AuthGuard: User authenticated, redirecting to chat');
       navigate('/c/new', { replace: true });
       return;
     }
 
-    // If session query is complete and user is not authenticated, go to login
-    if (!isLoading && (!sessionData?.session || !sessionData?.user)) {
+    // If session query errored or completed without valid session, go to login
+    if ((isError || !isLoading) && (!sessionData?.session || !sessionData?.user)) {
+      console.log('AuthGuard: Not authenticated, redirecting to login');
       navigate('/login', { replace: true });
       return;
     }
@@ -34,10 +38,11 @@ export default function AuthGuard() {
     // If session exists but context hasn't updated yet, wait for context update
     // The AuthContext will handle setting isAuthenticated to true
     if (sessionData?.session && sessionData?.user && !isAuthenticated) {
+      console.log('AuthGuard: Session exists but context not updated, waiting...');
       // Context update is in progress, do nothing - let AuthContext handle it
       return;
     }
-  }, [isAuthenticated, sessionData, isLoading, navigate]);
+  }, [isAuthenticated, sessionData, isLoading, isError, navigate]);
 
   // Show loading state while checking authentication
   return (
