@@ -56,7 +56,7 @@
     "test:all": "npm run test:client && npm run test:api && npm run test:mcp && npm run test:data-provider && npm run test:data-schemas",
     "e2e:codegen": "npx playwright codegen --viewport-size=1600,1700 http://localhost:3090/",
     "e2e": "npx playwright test --config=e2e/playwright.config.ts",
-    "e2e:headed": "npx playwright test --config=e2e/playwright.config.ts --headed",
+    "e2e:headed": "../scripts/dev.sh --stop && npx playwright test --config=e2e/playwright.config.ts --headed",
     "e2e:ci": "CI=true npx playwright test --config=e2e/playwright.config.ts",
     "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
     "e2e:google-mcp-sheets": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.sheets.spec.ts --headed",
