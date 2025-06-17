@@ -140,24 +140,24 @@ jobs:
 
           echo "All services are ready!"
 
-      # - name: Run linting
-      #   working-directory: ./LibreChat
-      #   run: npm run lint
+      - name: Run linting
+        working-directory: ./LibreChat
+        run: npm run lint
 
-      # - name: Run formatting check
-      #   working-directory: ./LibreChat
-      #   run: npm run format
+      - name: Run formatting check
+        working-directory: ./LibreChat
+        run: npm run format
 
-      # - name: Run type checking
-      #   working-directory: ./LibreChat
-      #   run: npm run typecheck:all
+      - name: Run type checking
+        working-directory: ./LibreChat
+        run: npm run typecheck:all
 
-      # - name: Run unit tests
-      #   working-directory: ./LibreChat
-      #   env:
-      #     NODE_ENV: test
-      #     MONGO_URI: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
-      #   run: npm run test:all
+      - name: Run unit tests
+        working-directory: ./LibreChat
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
+        run: npm run test:all
 
       - name: Setup environment for E2E tests
         working-directory: ./LibreChat

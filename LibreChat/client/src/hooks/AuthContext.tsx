@@ -178,6 +178,7 @@ const AuthContextProvider = ({
   }, [
     sessionQuery.data,
     sessionQuery.isError,
+    sessionQuery.isLoading,
     sessionQuery.error,
     authConfig?.test,
     navigate,

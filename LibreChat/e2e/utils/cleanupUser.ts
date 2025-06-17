@@ -55,7 +55,8 @@ export async function cleanupChats(
     );
 
     // Delete any orphaned messages
-    const { deletedCount: orphanedMessages } = await deleteMessages({ user: user._id });
+    const orphanedResult = await deleteMessages({ user: user._id }) as { deletedCount: number };
+    const orphanedMessages = orphanedResult.deletedCount;
     const totalMessages = messageCount.deletedCount + orphanedMessages;
     if (orphanedMessages > 0) {
       console.log(`🤖:  ✅  Deleted ${orphanedMessages} orphaned messages`);
