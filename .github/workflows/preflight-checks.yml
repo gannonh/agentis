@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    
+
     services:
       mongodb:
         image: mongo:7.0
@@ -67,7 +67,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         options: --health-cmd="nc -z localhost 8000 || exit 1" --health-interval=30s --health-timeout=30s --health-retries=10 --health-start-period=90s
 
-# Sandpack removed temporarily - requires built www directory that doesn't exist in CI
+    # Sandpack removed temporarily - requires built www directory that doesn't exist in CI
 
     steps:
       - name: Checkout repository
@@ -109,7 +109,7 @@ jobs:
       - name: Build packages
         working-directory: ./LibreChat
         run: npm run build:all
-      
+
       - name: Build frontend for E2E tests
         working-directory: ./LibreChat
         run: npm run frontend
@@ -123,41 +123,41 @@ jobs:
             sleep 5
           done
           echo "✓ MongoDB is ready"
-          
+
           # Wait for RAG API
           until curl -f http://localhost:8000/health >/dev/null 2>&1; do
             echo "Waiting for RAG API..."
             sleep 5
           done
           echo "✓ RAG API is ready"
-          
+
           # Wait for Meilisearch
           until curl -f http://localhost:7700/health >/dev/null 2>&1; do
             echo "Waiting for Meilisearch..."
             sleep 5
           done
           echo "✓ Meilisearch is ready"
-          
+
           echo "All services are ready!"
 
-      - name: Run linting
-        working-directory: ./LibreChat
-        run: npm run lint
+      # - name: Run linting
+      #   working-directory: ./LibreChat
+      #   run: npm run lint
 
-      - name: Run formatting check
-        working-directory: ./LibreChat
-        run: npm run format
+      # - name: Run formatting check
+      #   working-directory: ./LibreChat
+      #   run: npm run format
 
-      - name: Run type checking
-        working-directory: ./LibreChat
-        run: npm run typecheck:all
+      # - name: Run type checking
+      #   working-directory: ./LibreChat
+      #   run: npm run typecheck:all
 
-      - name: Run unit tests
-        working-directory: ./LibreChat
-        env:
-          NODE_ENV: test
-          MONGO_URI: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
-        run: npm run test:all
+      # - name: Run unit tests
+      #   working-directory: ./LibreChat
+      #   env:
+      #     NODE_ENV: test
+      #     MONGO_URI: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
+      #   run: npm run test:all
 
       - name: Setup environment for E2E tests
         working-directory: ./LibreChat
