@@ -3,7 +3,7 @@
  * @module server/services/OrganizationService
  */
 
-import { getAuth } from '#/auth.js';
+import { getAuth } from '../../auth.js';
 import { logger } from '#config/index.js';
 import {
   extractEmailDomain,
