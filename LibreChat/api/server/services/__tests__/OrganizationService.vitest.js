@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { organizationService } from '../OrganizationService.js';
 
 // Mock the auth module
-vi.mock('#/auth.js', () => ({
+vi.mock('~/auth.js', () => ({
   getAuth: vi.fn(),
 }));
 

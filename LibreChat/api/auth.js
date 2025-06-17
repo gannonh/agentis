@@ -50,6 +50,7 @@ mongoose.connection.once('open', () => {
       secret: process.env.BETTER_AUTH_SECRET,
       ...betterAuthConfig,
       plugins: [
+        ...(betterAuthConfig.plugins || []),
         organization({
           // Allow any user to create organization (auto-created based on email domain)
           allowUserToCreateOrganization: true,

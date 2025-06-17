@@ -82,20 +82,55 @@ class OrganizationService {
 
       logger.info('Creating organization for new domain:', { domain, name, slug });
 
-      const organization = await this.auth.api.createOrganization({
-        body: {
-          name,
-          slug,
-          metadata: {
-            domain,
-            autoCreated: true,
-            createdFromEmail: email,
+      // Attempt to create organization with retry mechanism for slug collisions
+      let organization;
+      try {
+        organization = await this.auth.api.createOrganization({
+          body: {
+            name,
+            slug,
+            metadata: {
+              domain,
+              autoCreated: true,
+              createdFromEmail: email,
+            },
           },
-        },
-        headers: {
-          'user-id': userId,
-        },
-      });
+          headers: {
+            'user-id': userId,
+          },
+        });
+      } catch (createError) {
+        // Check if this is a 409 duplicate error (slug collision)
+        const isDuplicateError =
+          createError.status === 409 ||
+          createError.statusCode === 409 ||
+          (createError.message && createError.message.toLowerCase().includes('duplicate')) ||
+          (createError.message && createError.message.toLowerCase().includes('already exists'));
+
+        if (isDuplicateError) {
+          logger.info('Organization slug collision detected, fetching existing organization:', {
+            domain,
+            slug,
+          });
+
+          // Fetch the existing organization instead of failing
+          organization = await this.findOrganizationByEmailDomain(email);
+
+          if (!organization) {
+            logger.error('Slug collision occurred but could not find existing organization');
+            throw createError;
+          }
+
+          logger.info('Successfully found existing organization after collision:', {
+            id: organization.id,
+            name: organization.name,
+            domain,
+          });
+        } else {
+          // Re-throw non-duplicate errors
+          throw createError;
+        }
+      }
 
       logger.info('Successfully created organization:', {
         id: organization.id,
@@ -178,14 +213,36 @@ class OrganizationService {
         });
       } else {
         // Step 3: Add user to existing organization as member
-        await this.addUserToOrganization(userId, organization.id, 'member');
-        memberRole = 'member';
+        try {
+          await this.addUserToOrganization(userId, organization.id, 'member');
+          memberRole = 'member';
 
-        logger.info('User joined existing organization as member:', {
-          userId,
-          organizationId: organization.id,
-          email,
-        });
+          logger.info('User joined existing organization as member:', {
+            userId,
+            organizationId: organization.id,
+            email,
+          });
+        } catch (error) {
+          // Check if error indicates user is already a member
+          if (
+            error.message &&
+            (error.message.includes('already exists') ||
+              error.message.includes('already a member') ||
+              error.message.includes('duplicate') ||
+              error.code === 'MEMBER_EXISTS')
+          ) {
+            // User is already a member, this is expected behavior
+            memberRole = 'member';
+            logger.info('User is already a member of organization:', {
+              userId,
+              organizationId: organization.id,
+              email,
+            });
+          } else {
+            // Re-throw unexpected errors
+            throw error;
+          }
+        }
       }
 
       return {

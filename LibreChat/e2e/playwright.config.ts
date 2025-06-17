@@ -1,12 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
-import path from 'path';
+import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import * as dotenv from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const absolutePath = path.resolve(__dirname, '../api/server/index.js');
-import dotenv from 'dotenv';
 
 // Simple env loading - try the most common path first
 dotenv.config({ path: path.resolve(__dirname, '../.env') });

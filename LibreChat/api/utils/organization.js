@@ -45,17 +45,20 @@ export function generateOrganizationName(domain) {
 /**
  * Generates a unique organization slug from an email domain
  * @param {string} domain - The email domain
+ * @param {number} suffix - Optional suffix number for uniqueness
  * @returns {string} The generated organization slug
  * @example
  * generateOrganizationSlug('company.com') // returns 'company'
+ * generateOrganizationSlug('company.com', 1) // returns 'company-1'
  */
-export function generateOrganizationSlug(domain) {
+export function generateOrganizationSlug(domain, suffix = null) {
   if (!domain || typeof domain !== 'string') {
     throw new Error('Valid domain string is required');
   }
 
   // Use the domain name part (without TLD) as slug
-  return domain.split('.')[0].toLowerCase();
+  const baseSlug = domain.split('.')[0].toLowerCase();
+  return suffix ? `${baseSlug}-${suffix}` : baseSlug;
 }
 
 /**
@@ -99,39 +102,72 @@ export async function findOrganizationByEmailDomain(auth, email) {
  * @param {Object} auth - Better Auth instance
  * @param {string} email - The user's email
  * @param {string} userId - The user's ID
+ * @param {number} maxRetries - Maximum number of retry attempts for slug collisions
  * @returns {Promise<Object>} The created organization
  */
-export async function createOrganizationForUser(auth, email, userId) {
-  try {
-    const domain = extractEmailDomain(email);
-    const name = generateOrganizationName(domain);
-    const slug = generateOrganizationSlug(domain);
+export async function createOrganizationForUser(auth, email, userId, maxRetries = 5) {
+  const domain = extractEmailDomain(email);
+  const baseName = generateOrganizationName(domain);
 
-    logger.info('Creating new organization for domain:', domain);
+  let attempt = 0;
+  let lastError;
 
-    // Create organization using Better Auth API
-    const organization = await auth.api.createOrganization({
-      body: {
-        name,
-        slug,
-        metadata: {
-          domain,
-          createdFromEmail: email,
-          autoCreated: true,
+  while (attempt <= maxRetries) {
+    try {
+      const name = attempt === 0 ? baseName : `${baseName} ${attempt}`;
+      const slug = generateOrganizationSlug(domain, attempt > 0 ? attempt : null);
+
+      logger.info(
+        `Creating new organization for domain: ${domain} (attempt ${attempt + 1}/${maxRetries + 1})`,
+      );
+
+      // Create organization using Better Auth API
+      const organization = await auth.api.createOrganization({
+        body: {
+          name,
+          slug,
+          metadata: {
+            domain,
+            createdFromEmail: email,
+            autoCreated: true,
+          },
         },
-      },
-      headers: {
-        'user-id': userId, // This will be set by auth middleware
-      },
-    });
+        headers: {
+          'user-id': userId, // This will be set by auth middleware
+        },
+      });
 
-    logger.info('Created organization:', organization.name, 'for domain:', domain);
+      logger.info('Created organization:', organization.name, 'for domain:', domain);
+      return organization;
+    } catch (error) {
+      lastError = error;
 
-    return organization;
-  } catch (error) {
-    logger.error('Error creating organization for user:', error);
-    throw error;
+      // Check if this is a slug collision error (409 Conflict)
+      const isSlugCollision =
+        error.status === 409 ||
+        error.statusCode === 409 ||
+        (error.message && error.message.toLowerCase().includes('duplicate')) ||
+        (error.message && error.message.toLowerCase().includes('already exists'));
+
+      if (isSlugCollision && attempt < maxRetries) {
+        logger.warn(
+          `Slug collision detected for domain ${domain}, retrying with suffix (attempt ${attempt + 2}/${maxRetries + 1})`,
+        );
+        attempt++;
+        continue;
+      }
+
+      // If not a slug collision or we've exhausted retries, throw the error
+      logger.error('Error creating organization for user:', error);
+      throw error;
+    }
   }
+
+  // This should never be reached, but just in case
+  logger.error(
+    `Failed to create organization after ${maxRetries + 1} attempts for domain: ${domain}`,
+  );
+  throw lastError || new Error('Failed to create organization: maximum retries exceeded');
 }
 
 /**

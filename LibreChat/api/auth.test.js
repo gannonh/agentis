@@ -144,11 +144,19 @@ describe('Better Auth Integration', () => {
       expect(mockConnection.getClient).toHaveBeenCalled();
       expect(mockClient.db).toHaveBeenCalledWith('Agentis');
       expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
-      expect(mockBetterAuth).toHaveBeenCalledWith({
-        database: 'mock-adapter',
-        secret: 'test-secret-key',
-        ...mockBetterAuthConfig,
-      });
+      expect(mockBetterAuth).toHaveBeenCalledWith(
+        expect.objectContaining({
+          database: 'mock-adapter',
+          secret: 'test-secret-key',
+          ...mockBetterAuthConfig,
+          plugins: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'organization',
+            }),
+          ]),
+          socialProviders: undefined,
+        }),
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('Better Auth initialized successfully');
     });
 
@@ -195,11 +203,19 @@ describe('Better Auth Integration', () => {
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
-      expect(mockBetterAuth).toHaveBeenCalledWith({
-        database: 'mock-adapter',
-        secret: undefined,
-        ...mockBetterAuthConfig,
-      });
+      expect(mockBetterAuth).toHaveBeenCalledWith(
+        expect.objectContaining({
+          database: 'mock-adapter',
+          secret: undefined,
+          ...mockBetterAuthConfig,
+          plugins: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'organization',
+            }),
+          ]),
+          socialProviders: undefined,
+        }),
+      );
     });
   });
 
@@ -210,18 +226,24 @@ describe('Better Auth Integration', () => {
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
-      const expectedConfig = {
-        database: 'mock-adapter',
-        secret: 'test-secret-key',
-        basePath: '/api/auth',
-        emailAndPassword: {
-          enabled: true,
-          minPasswordLength: 8,
-          maxPasswordLength: 128,
-        },
-      };
-
-      expect(mockBetterAuth).toHaveBeenCalledWith(expectedConfig);
+      expect(mockBetterAuth).toHaveBeenCalledWith(
+        expect.objectContaining({
+          database: 'mock-adapter',
+          secret: 'test-secret-key',
+          basePath: '/api/auth',
+          emailAndPassword: {
+            enabled: true,
+            minPasswordLength: 8,
+            maxPasswordLength: 128,
+          },
+          plugins: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'organization',
+            }),
+          ]),
+          socialProviders: undefined,
+        }),
+      );
     });
 
     test('should use correct database name for MongoDB adapter', async () => {

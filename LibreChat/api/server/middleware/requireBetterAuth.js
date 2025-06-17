@@ -55,12 +55,18 @@ const requireBetterAuth = async (req, res, next) => {
           session.user.email,
           session.user.id,
         );
-        logger.info('Organization assignment completed for new user:', {
-          userId: session.user.id,
-          organizationId: organizationInfo.organization.id,
-          role: organizationInfo.memberRole,
-          isNewOrg: organizationInfo.isNewOrganization,
-        });
+        if (organizationInfo) {
+          logger.info('Organization assignment completed for new user:', {
+            userId: session.user.id,
+            organizationId: organizationInfo.organization.id,
+            role: organizationInfo.memberRole,
+            isNewOrg: organizationInfo.isNewOrganization,
+          });
+        } else {
+          logger.info('No organization assigned to new user:', {
+            userId: session.user.id,
+          });
+        }
       } catch (error) {
         logger.error('Failed to assign organization to new user:', error);
         // Continue without organization assignment - user can be assigned later

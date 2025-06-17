@@ -9,7 +9,7 @@ Follow these steps (and add to your TODO list):
 5. Break down the task into smaller tasks if needed
 6. Create a new branch for the task
 7. Search the codebase for relevant files
-8. Write failing test that reproduces the issue or practice TDD
+8. Write failing test that reproduces the issue/tests the feature
 9. Implement the fix/feature
 10. Add JSDoc style comments
 11. Ensure code passes linting and type checking
