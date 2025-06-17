@@ -137,6 +137,7 @@ const startServer = async () => {
   app.use('/api/tags', routes.tags);
   app.use('/api/composio', routes.composio);
   app.use('/api/mcp/diagnostics', routes.mcpDiagnostics);
+  app.use('/api', routes.invitations);
 
   app.use((req, res) => {
     res.set({

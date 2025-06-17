@@ -56,6 +56,52 @@ mongoose.connection.once('open', () => {
           allowUserToCreateOrganization: true,
           // Set creator role as account_owner (equivalent to owner)
           creatorRole: 'owner',
+          // Invitation configuration
+          invitationExpiresIn: 604800, // 7 days in seconds
+          cancelPendingInvitationsOnReInvite: true,
+          // Email invitation handler
+          sendInvitationEmail: async ({ email, invitationId, organizationName, inviterName }) => {
+            try {
+              logger.info('Sending organization invitation email', {
+                email,
+                invitationId,
+                organizationName,
+                inviterName,
+              });
+
+              const { default: sendEmail } = await import('#server/utils/sendEmail.js');
+              
+              // Create invitation link
+              const baseURL = process.env.DOMAIN_CLIENT || process.env.DOMAIN_SERVER || 'http://localhost:3090';
+              const inviteLink = `${baseURL}/accept-invitation?token=${invitationId}`;
+
+              await sendEmail({
+                email,
+                subject: `Invitation to join ${organizationName} on ${process.env.APP_TITLE || 'Agentis'}`,
+                template: 'organizationInvite.handlebars',
+                payload: {
+                  name: email.split('@')[0], // Use email prefix as name fallback
+                  appName: process.env.APP_TITLE || 'Agentis',
+                  organizationName,
+                  inviterName,
+                  inviteLink,
+                  year: new Date().getFullYear(),
+                },
+              });
+
+              logger.info('Organization invitation email sent successfully', {
+                email,
+                organizationName,
+              });
+            } catch (error) {
+              logger.error('Failed to send organization invitation email', {
+                error: error.message,
+                email,
+                organizationName,
+              });
+              throw error;
+            }
+          },
           // Organization creation hooks for email domain-based logic
           organizationCreation: {
             beforeCreate: async ({ organization, user }) => {
@@ -85,6 +131,35 @@ mongoose.connection.once('open', () => {
                 userId: user.id,
                 userEmail: user.email,
                 role: member.role,
+              });
+            },
+          },
+          // Invitation hooks
+          invitation: {
+            beforeCreate: async ({ invitation, organization, inviter }) => {
+              logger.debug('Before invitation creation hook triggered', {
+                email: invitation.email,
+                organizationName: organization.name,
+                inviterEmail: inviter.email,
+              });
+
+              return {
+                data: {
+                  ...invitation,
+                  metadata: {
+                    ...invitation.metadata,
+                    inviterEmail: inviter.email,
+                    organizationDomain: organization.metadata?.domain,
+                  },
+                },
+              };
+            },
+            afterCreate: async ({ invitation, organization, inviter }) => {
+              logger.info('Organization invitation created successfully', {
+                invitationId: invitation.id,
+                email: invitation.email,
+                organizationName: organization.name,
+                inviterEmail: inviter.email,
               });
             },
           },

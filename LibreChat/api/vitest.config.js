@@ -60,6 +60,7 @@ export default defineConfig({
         'config/betterAuth.js',
         'utils/organization.js',
         'server/services/OrganizationService.js',
+        'server/services/InvitationService.js',
         // Add more files as we write tests for them
       ],
     },

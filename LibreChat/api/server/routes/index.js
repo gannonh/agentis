@@ -28,6 +28,7 @@ import user from './user.js';
 import ask from './ask/index.js';
 import composio from './composio.js';
 import mcpDiagnostics from './mcp-diagnostics.js';
+import invitations from './invitations.js';
 
 export {
   ask,
@@ -59,4 +60,5 @@ export {
   staticRoute,
   composio,
   mcpDiagnostics,
+  invitations,
 };

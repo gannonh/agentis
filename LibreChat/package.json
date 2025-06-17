@@ -59,7 +59,7 @@
     "e2e:headed": "../scripts/dev.sh --stop && npx playwright test --config=e2e/playwright.config.ts --headed",
     "e2e:ci": "CI=true npx playwright test --config=e2e/playwright.config.ts",
     "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
-    "e2e:google-mcp-sheets": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.sheets.spec.ts --headed",
+    "e2e:google-mcp-sheets": "../scripts/dev.sh --stop && PWDEBUG=1 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.sheets.spec.ts --headed",
     "e2e:google-mcp-docs": "../scripts/dev.sh --stop && PWDEBUG=1 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.docs.spec.ts --headed",
     "e2e:google-mcp-gmail": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.gmail.spec.ts --headed",
     "e2e:google-mcp-calendar": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --config=e2e/playwright.config.ts e2e/specs/google.mcp.calendar.spec.ts --headed",
