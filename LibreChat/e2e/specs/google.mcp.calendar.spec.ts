@@ -67,7 +67,7 @@ test.describe('Google Calendar MCP Tests', () => {
     await page.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     await page
       .getByLabel('Agent Builder')
@@ -136,7 +136,7 @@ test.describe('Google Calendar MCP Tests', () => {
       // Select the Google Calendar Agent explicitly to avoid conflicts with other parallel tests
 
       await page.getByRole('button', { name: 'Select a model' }).click();
-      await page.getByText('Agents', { exact: true }).click();
+      await page.getByText('Agents', { exact: true }).first().click();
       await page.getByLabel('Agents').getByText('Google Calendar Agent').first().click();
 
       // ----------------- begin cogegen

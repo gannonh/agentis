@@ -71,7 +71,7 @@ test.describe('Google Multi MCP Tests', () => {
     await page.getByRole('combobox', { name: 'Model' }).click();
     // toggle featured
 
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
     await page.getByRole('button', { name: 'Create', exact: true }).click();
 
     await page

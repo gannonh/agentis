@@ -55,7 +55,7 @@
     "test:packages": "npm run test:mcp && npm run test:data-provider && npm run test:data-schemas && npm run test:arcade-client",
     "test:all": "npm run test:client && npm run test:api && npm run test:mcp && npm run test:data-provider && npm run test:data-schemas",
     "e2e:codegen": "npx playwright codegen --browser=chromium --channel=chrome --viewport-size=1600,1700 http://localhost:3090/",
-    "e2e": "npx playwright test --config=e2e/playwright.config.ts",
+    "e2e": "../scripts/dev.sh --stop && npx playwright test --config=e2e/playwright.config.ts",
     "e2e:headed": "../scripts/dev.sh --stop && npx playwright test --config=e2e/playwright.config.ts --headed",
     "e2e:ci": "CI=true npx playwright test --config=e2e/playwright.config.ts",
     "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
