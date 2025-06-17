@@ -18,6 +18,7 @@ import ShareRoute from './ShareRoute';
 import ChatRoute from './ChatRoute';
 import Search from './Search';
 import Root from './Root';
+import AuthGuard from './AuthGuard';
 
 const AuthLayout = () => (
   <AuthContextProvider>
@@ -37,6 +38,14 @@ export const router = createBrowserRouter([
     element: <StartupLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
+      {
+        index: true,
+        element: (
+          <AuthContextProvider>
+            <AuthGuard />
+          </AuthContextProvider>
+        ),
+      },
       {
         path: 'register',
         element: <Registration />,

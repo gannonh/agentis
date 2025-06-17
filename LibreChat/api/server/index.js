@@ -11,7 +11,7 @@ import fs from 'fs';
 import cookieParser from 'cookie-parser';
 import { toNodeHandler } from 'better-auth/node';
 import { getAuth } from '#auth.js';
-import { jwtLogin, passportLogin, ldapLogin } from '../strategies/index.js';
+// Legacy strategies removed - using Better Auth now
 import { connectDb, indexSync } from '../lib/db/index.js';
 import { isEnabled } from './utils/index.js';
 import { logger } from '#config/index.js';
@@ -53,6 +53,14 @@ const startServer = async () => {
 
   app.get('/health', (_req, res) => res.status(200).send('OK'));
 
+  /* CORS must be applied before Better Auth */
+  app.use(
+    cors({
+      origin: ['http://localhost:3090', 'http://localhost:3000', 'https://agentis.ai'],
+      credentials: true,
+    }),
+  );
+
   /**
    * Better Auth Handler
    * IMPORTANT: Must be mounted BEFORE express.json() middleware
@@ -73,7 +81,6 @@ const startServer = async () => {
   app.use(express.json({ limit: '3mb' }));
   app.use(express.urlencoded({ extended: true, limit: '3mb' }));
   app.use(mongoSanitize());
-  app.use(cors());
   app.use(cookieParser());
 
   if (!isEnabled(DISABLE_COMPRESSION)) {
@@ -91,23 +98,16 @@ const startServer = async () => {
     console.warn('Social logins are disabled. Set ALLOW_SOCIAL_LOGIN=true to enable them.');
   }
 
-  /* OAUTH */
+  /* Passport.js for legacy auth (JWT/local/LDAP only) */
   app.use(passport.initialize());
-  passport.use(await jwtLogin());
-  passport.use(passportLogin());
-
-  /* LDAP Auth */
-  if (process.env.LDAP_URL && process.env.LDAP_USER_SEARCH_BASE) {
-    passport.use(ldapLogin);
-  }
+  // Note: JWT, local, and LDAP strategies need to be restored if needed
 
   if (isEnabled(ALLOW_SOCIAL_LOGIN)) {
     configureSocialLogins(app);
   }
-  
-  app.use('/oauth', routes.oauth);
+
   /* API Endpoints */
-  // app.use('/api/auth', routes.auth); // Temporarily disabled for Better Auth
+  // Legacy auth routes removed - using Better Auth handler above
   app.use('/api/actions', routes.actions);
   app.use('/api/keys', routes.keys);
   app.use('/api/user', routes.user);

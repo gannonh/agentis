@@ -1,10 +1,12 @@
-const mockNavigate = jest.fn();
-const mockTextAreaRef = { current: { focus: jest.fn() } };
-let mockLog: jest.SpyInstance;
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-jest.mock('react-router-dom', () => ({
-  useLocation: jest.fn(),
-  useNavigate: jest.fn(),
+const mockNavigate = vi.fn();
+const mockTextAreaRef = { current: { focus: vi.fn() } };
+let mockLog: vi.SpyInstance;
+
+vi.mock('react-router-dom', () => ({
+  useLocation: vi.fn(),
+  useNavigate: vi.fn(),
 }));
 
 // Import the component under test and its dependencies
@@ -16,24 +18,24 @@ import { logger } from '~/utils';
 describe('useFocusChatEffect', () => {
   // Reset mocks before each test
   beforeEach(() => {
-    mockLog = jest.spyOn(logger, 'log').mockImplementation(() => {});
-    jest.clearAllMocks();
-    (useNavigate as jest.Mock).mockReturnValue(mockNavigate);
+    mockLog = vi.spyOn(logger, 'log').mockImplementation(() => {});
+    vi.clearAllMocks();
+    (useNavigate as vi.Mock).mockReturnValue(mockNavigate);
 
     // Mock window.matchMedia
-    window.matchMedia = jest.fn().mockImplementation(() => ({
+    window.matchMedia = vi.fn().mockImplementation(() => ({
       matches: false,
       media: '',
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     }));
 
     // Set default location mock
-    (useLocation as jest.Mock).mockReturnValue({
+    (useLocation as vi.Mock).mockReturnValue({
       pathname: '/c/new',
       search: '',
       state: { focusChat: true },
@@ -62,7 +64,7 @@ describe('useFocusChatEffect', () => {
     });
 
     test('should not focus textarea when location.state.focusChat is false', () => {
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: '',
         state: { focusChat: false },
@@ -83,15 +85,15 @@ describe('useFocusChatEffect', () => {
     });
 
     test('should not focus textarea on touchscreen devices', () => {
-      window.matchMedia = jest.fn().mockImplementation(() => ({
+      window.matchMedia = vi.fn().mockImplementation(() => ({
         matches: true, // This indicates a touchscreen
         media: '',
         onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
       }));
 
       renderHook(() => useFocusChatEffect(mockTextAreaRef as any));
@@ -125,7 +127,7 @@ describe('useFocusChatEffect', () => {
         });
 
         // Mock React Router's location
-        (useLocation as jest.Mock).mockReturnValue({
+        (useLocation as vi.Mock).mockReturnValue({
           pathname: '/c/new',
           search: reactRouterSearch,
           state: { focusChat: true },
@@ -152,7 +154,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: '?endpoint=openAI&model=gpt-4o-mini',
         state: { focusChat: true },
@@ -231,7 +233,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: '?endpoint=openAI&model=gpt-4',
         state: { focusChat: true },
@@ -247,7 +249,7 @@ describe('useFocusChatEffect', () => {
         }),
       );
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       Object.defineProperty(window, 'location', {
         value: {
@@ -257,7 +259,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new_changed',
         search: '?endpoint=openAI&model=gpt-4',
         state: { focusChat: true },
@@ -283,7 +285,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: undefined,
         state: { focusChat: true },
@@ -299,7 +301,7 @@ describe('useFocusChatEffect', () => {
         }),
       );
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       Object.defineProperty(window, 'location', {
         value: {
@@ -309,7 +311,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: null,
         state: { focusChat: true },
@@ -335,7 +337,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: '?endpoint=openAI&model=gpt-4',
         state: null,
@@ -356,7 +358,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: '?endpoint=openAI&model=gpt-4',
         state: { someOtherProp: true },
@@ -377,7 +379,7 @@ describe('useFocusChatEffect', () => {
         writable: true,
       });
 
-      (useLocation as jest.Mock).mockReturnValue({
+      (useLocation as vi.Mock).mockReturnValue({
         pathname: '/c/new',
         search: '',
         state: { focusChat: true },

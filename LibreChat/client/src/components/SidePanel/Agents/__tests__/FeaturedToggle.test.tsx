@@ -6,19 +6,24 @@ import FeaturedToggle from '../FeaturedToggle';
 import type { AgentForm } from '~/common';
 
 // Mock react-hook-form methods
-const mockSetValue = jest.fn();
-const mockWatch = jest.fn();
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
-jest.mock('react-hook-form', () => ({
-  ...jest.requireActual('react-hook-form'),
-  useFormContext: () => ({
-    setValue: mockSetValue,
-    watch: mockWatch,
-  }),
-}));
+const mockSetValue = vi.fn();
+const mockWatch = vi.fn();
+
+vi.mock('react-hook-form', async () => {
+  const actual = await vi.importActual('react-hook-form');
+  return {
+    ...actual,
+    useFormContext: () => ({
+      setValue: mockSetValue,
+      watch: mockWatch,
+    }),
+  };
+});
 
 // Mock UI components
-jest.mock('~/components/ui', () => ({
+vi.mock('~/components/ui', () => ({
   Switch: ({ checked, onCheckedChange, 'data-testid': testId, id }: any) => (
     <button
       data-testid={testId || id}
@@ -36,20 +41,20 @@ jest.mock('~/components/ui', () => ({
 }));
 
 // Mock SVG components
-jest.mock('~/components/svg', () => ({
+vi.mock('~/components/svg', () => ({
   CircleHelpIcon: (props: any) => <div data-testid="help-icon" {...props} />,
 }));
 
 // Mock common constants
-jest.mock('~/common', () => ({
-  ...jest.requireActual('~/common'),
+vi.mock('~/common', () => ({
+  ...vi.importActual('~/common'),
   ESide: {
     Top: 'top',
   },
 }));
 
 // Mock localization
-jest.mock('~/hooks', () => ({
+vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => {
     const translations: Record<string, string> = {
       com_agents_featured: 'Featured',
@@ -82,7 +87,7 @@ const TestWrapper: React.FC<{ children: React.ReactNode; defaultValues?: Partial
 
 describe('FeaturedToggle Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render the featured toggle with label and help icon', () => {

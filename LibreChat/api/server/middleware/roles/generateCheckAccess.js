@@ -72,7 +72,4 @@ const generateCheckAccess = (permissionType, permissions, bodyProps = {}) => {
   };
 };
 
-export {
-  checkAccess,
-  generateCheckAccess,
-};
+export { checkAccess, generateCheckAccess };

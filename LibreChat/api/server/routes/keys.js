@@ -1,20 +1,20 @@
 import express from 'express';
 const router = express.Router();
-import {  updateUserKey, deleteUserKey, getUserKeyExpiry  } from '../services/UserService.js';
-import {  requireJwtAuth  } from '../middleware/index.js';
+import { updateUserKey, deleteUserKey, getUserKeyExpiry } from '../services/UserService.js';
+import { requireBetterAuth } from '../middleware/index.js';
 
-router.put('/', requireJwtAuth, async (req, res) => {
+router.put('/', requireBetterAuth, async (req, res) => {
   await updateUserKey({ userId: req.user.id, ...req.body });
   res.status(201).send();
 });
 
-router.delete('/:name', requireJwtAuth, async (req, res) => {
+router.delete('/:name', requireBetterAuth, async (req, res) => {
   const { name } = req.params;
   await deleteUserKey({ userId: req.user.id, name });
   res.status(204).send();
 });
 
-router.delete('/', requireJwtAuth, async (req, res) => {
+router.delete('/', requireBetterAuth, async (req, res) => {
   const { all } = req.query;
 
   if (all !== 'true') {
@@ -26,7 +26,7 @@ router.delete('/', requireJwtAuth, async (req, res) => {
   res.status(204).send();
 });
 
-router.get('/', requireJwtAuth, async (req, res) => {
+router.get('/', requireBetterAuth, async (req, res) => {
   const { name } = req.query;
   const response = await getUserKeyExpiry({ userId: req.user.id, name });
   res.status(200).send(response);

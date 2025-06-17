@@ -1,9 +1,9 @@
-import {  CacheKeys, AuthType  } from 'librechat-data-provider';
-import {  getToolkitKey  } from '#server/services/ToolService.js';
-import {  getCustomConfig  } from '#server/services/Config.js';
-import {  availableTools  } from '#app/clients/tools.js';
-import {  getMCPManager  } from '#config.js';
-import {  getLogStores  } from '#cache.js';
+import { CacheKeys, AuthType } from 'librechat-data-provider';
+import { getToolkitKey } from '#server/services/ToolService.js';
+import { getCustomConfig } from '#server/services/Config.js';
+import { availableTools } from '#app/clients/tools.js';
+import { getMCPManager } from '#config.js';
+import { getLogStores } from '#cache.js';
 
 /**
  * Filters out duplicate plugins from the list of plugins.
@@ -148,7 +148,4 @@ const getAvailableTools = async (req, res) => {
   }
 };
 
-export {
-  getAvailableTools,
-  getAvailablePluginsController,
-};
+export { getAvailableTools, getAvailablePluginsController };

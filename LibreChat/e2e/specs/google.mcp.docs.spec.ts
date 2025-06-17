@@ -75,7 +75,7 @@ test.describe('Google Docs MCP Tests', () => {
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
 
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     logProgress('Created agent with basic settings');
     // add mcp tools

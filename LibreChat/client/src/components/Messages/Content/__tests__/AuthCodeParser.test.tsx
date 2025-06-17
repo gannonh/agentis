@@ -3,7 +3,9 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import { AuthCodeParser } from '../AuthCodeParser';
 
 // Mock the ComposioAuthButton component
-jest.mock('~/components/Composio/ComposioAuthButton', () => ({
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('~/components/Composio/ComposioAuthButton', () => ({
   ComposioAuthButton: ({ service, onAuthSuccess, onAuthError }: any) => (
     <div data-testid={`composio-auth-${service}`}>
       <button
@@ -20,12 +22,12 @@ jest.mock('~/components/Composio/ComposioAuthButton', () => ({
 }));
 
 describe('AuthCodeParser', () => {
-  let consoleLogSpy: jest.SpyInstance;
-  let consoleErrorSpy: jest.SpyInstance;
+  let consoleLogSpy: vi.SpyInstance;
+  let consoleErrorSpy: vi.SpyInstance;
 
   beforeEach(() => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
   });
 
   afterEach(() => {
@@ -179,7 +181,7 @@ describe('AuthCodeParser', () => {
 
   describe('Authentication Callbacks', () => {
     it('should call onAuthSuccess callback when authentication succeeds', () => {
-      const onAuthSuccess = jest.fn();
+      const onAuthSuccess = vi.fn();
       const content = 'AUTHCODE:googlesheets:Please authenticate.';
 
       render(<AuthCodeParser content={content} onAuthSuccess={onAuthSuccess} />);

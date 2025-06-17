@@ -379,9 +379,4 @@ function processReqData(data = {}, context) {
   };
 }
 
-export {
-  disposeClient,
-  requestDataMap,
-  clientRegistry,
-  processReqData,
-};
+export { disposeClient, requestDataMap, clientRegistry, processReqData };

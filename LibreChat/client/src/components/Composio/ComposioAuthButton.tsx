@@ -17,21 +17,19 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>('unknown');
   const [isChecking, setIsChecking] = useState(true); // Add loading state for initial check
-  const { token } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
 
   // Check connection status when component mounts and poll for updates
   useEffect(() => {
     const checkConnectionStatus = async () => {
-      if (!token) {
+      if (!isAuthenticated) {
         setIsChecking(false);
         return;
       }
 
       try {
         const response = await fetch(`/api/composio/connection-status/${service}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: 'include', // Include session cookies for Better Auth
         });
 
         if (response.ok) {
@@ -67,10 +65,10 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
         clearInterval(pollInterval);
       }
     };
-  }, [service, token, isAuthenticating]);
+  }, [service, isAuthenticated, isAuthenticating]);
 
   const handleAuthenticate = async () => {
-    if (!token) {
+    if (!isAuthenticated) {
       onAuthError?.('Not authenticated');
       return;
     }
@@ -83,9 +81,9 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
       const response = await fetch(`/api/composio/auth/${service}`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include session cookies for Better Auth
       });
 
       if (!response.ok) {
@@ -126,9 +124,9 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           fetch(`/api/composio/wait-for-connection`, {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
+            credentials: 'include', // Include session cookies for Better Auth
             body: JSON.stringify({
               service: service,
               connectedAccountId: event.data.connectedAccountId,
@@ -176,9 +174,9 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           fetch(`/api/composio/wait-for-connection`, {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
+            credentials: 'include', // Include session cookies for Better Auth
             body: JSON.stringify({
               service: service,
               connectedAccountId: event.data.connectedAccountId,
@@ -221,9 +219,9 @@ export const ComposioAuthButton: React.FC<ComposioAuthButtonProps> = ({
           const pollResponse = await fetch(`/api/composio/wait-for-connection`, {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
+            credentials: 'include', // Include session cookies for Better Auth
             body: JSON.stringify({
               service: service,
               connectedAccountId: data.connectedAccountId,

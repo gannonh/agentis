@@ -109,7 +109,10 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       logProgress('✅ Basic agent created');
 
@@ -171,7 +174,10 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -210,7 +216,10 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -249,7 +258,10 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -288,7 +300,10 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')

@@ -1,20 +1,20 @@
 import express from 'express';
-import {  PermissionTypes, Permissions  } from 'librechat-data-provider';
-import { 
+import { PermissionTypes, Permissions } from 'librechat-data-provider';
+import {
   getConversationTags,
   updateConversationTag,
   createConversationTag,
   deleteConversationTag,
   updateTagsForConversation,
- } from '#models/ConversationTag.js';
-import {  requireJwtAuth, generateCheckAccess  } from '#server/middleware.js';
-import {  logger  } from '#config.js';
+} from '#models/ConversationTag.js';
+import { requireBetterAuth, generateCheckAccess } from '#server/middleware.js';
+import { logger } from '#config.js';
 
 const router = express.Router();
 
 const checkBookmarkAccess = generateCheckAccess(PermissionTypes.BOOKMARKS, [Permissions.USE]);
 
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 router.use(checkBookmarkAccess);
 
 /**

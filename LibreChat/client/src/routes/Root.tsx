@@ -15,7 +15,7 @@ import {
   SetConvoProvider,
 } from '~/Providers';
 import TermsAndConditionsModal from '~/components/ui/TermsAndConditionsModal';
-import { useUserTermsQuery, useGetStartupConfig } from '~/data-provider';
+import { useUserTermsQuery, useGetStartupConfig, useGetSessionQuery } from '~/data-provider';
 import { Nav, MobileNav } from '~/components/Nav';
 import { Banner } from '~/components/Banners';
 
@@ -28,6 +28,11 @@ export default function Root() {
   });
 
   const { isAuthenticated, logout } = useAuthContext();
+  const { isLoading: sessionLoading } = useGetSessionQuery({
+    enabled: !isAuthenticated,
+    retry: false,
+  });
+
   const assistantsMap = useAssistantsMap({ isAuthenticated });
   const agentsMap = useAgentsMap({ isAuthenticated });
   const fileMap = useFileMap({ isAuthenticated });
@@ -54,8 +59,27 @@ export default function Root() {
     logout('/login?redirect=false');
   };
 
+  if (sessionLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"></div>
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    return null;
+    // Let AuthContext handle the redirect, show loading while redirecting
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"></div>
+          <div className="text-gray-600">Redirecting to login...</div>
+        </div>
+      </div>
+    );
   }
 
   return (

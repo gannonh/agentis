@@ -1,8 +1,8 @@
-import 'test/matchMedia.mock';
 import { render, screen } from 'test/layout-test-utils';
 import userEvent from '@testing-library/user-event';
 import { TPlugin } from 'librechat-data-provider';
 import PluginStoreItem from '../PluginStoreItem';
+import { describe, expect, it, test, vi } from 'vitest';
 
 const mockPlugin = {
   name: 'Test Plugin',
@@ -28,7 +28,7 @@ describe('PluginStoreItem', () => {
   });
 
   it('calls onInstall when the install button is clicked', async () => {
-    const onInstall = jest.fn();
+    const onInstall = vi.fn();
     render(
       <PluginStoreItem
         plugin={mockPlugin as TPlugin}
@@ -38,12 +38,12 @@ describe('PluginStoreItem', () => {
         }}
       />,
     );
-    await userEvent.click(screen.getByText('Install'));
+    await userEvent.click(screen.getByText('com_nav_plugin_install'));
     expect(onInstall).toHaveBeenCalled();
   });
 
   it('calls onUninstall when the uninstall button is clicked', async () => {
-    const onUninstall = jest.fn();
+    const onUninstall = vi.fn();
     render(
       <PluginStoreItem
         plugin={mockPlugin as TPlugin}
@@ -54,7 +54,7 @@ describe('PluginStoreItem', () => {
         isInstalled
       />,
     );
-    await userEvent.click(screen.getByText('Uninstall'));
+    await userEvent.click(screen.getByText('com_nav_plugin_uninstall'));
     expect(onUninstall).toHaveBeenCalled();
   });
 });

@@ -1,3 +1,5 @@
+import { describe, expect, it, test } from 'vitest';
+
 /**
  * Unit tests for MCP authentication utility functions
  */

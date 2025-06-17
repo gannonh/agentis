@@ -1,9 +1,9 @@
 import express from 'express';
 const router = express.Router();
-import {  requireJwtAuth  } from '#server/middleware.js';
-import {  getCategories  } from '#models/Categories.js';
+import { requireBetterAuth } from '#server/middleware.js';
+import { getCategories } from '#models/Categories.js';
 
-router.get('/', requireJwtAuth, async (req, res) => {
+router.get('/', requireBetterAuth, async (req, res) => {
   try {
     const categories = await getCategories();
     res.status(200).send(categories);

@@ -5,7 +5,9 @@ import { Agent } from 'librechat-data-provider';
 import AgentCTA from '../AgentCTA';
 
 // Mock dependencies
-jest.mock('~/hooks', () => ({
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+
+vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => {
     const translations: Record<string, string> = {
       com_agents_start_chat: 'Start chat with',
@@ -14,7 +16,7 @@ jest.mock('~/hooks', () => ({
   },
 }));
 
-jest.mock('~/data-provider', () => ({
+vi.mock('~/data-provider', () => ({
   useAvailableToolsQuery: () => ({
     data: [
       {
@@ -35,11 +37,11 @@ jest.mock('~/data-provider', () => ({
   }),
 }));
 
-jest.mock('~/utils', () => ({
+vi.mock('~/utils', () => ({
   getIconKey: (provider: string) => provider,
 }));
 
-jest.mock('~/hooks/Endpoint/Icons', () => ({
+vi.mock('~/hooks/Endpoint/Icons', () => ({
   icons: {
     openAI: ({ className }: { className?: string }) => (
       <div className={className} data-testid="openai-icon">
@@ -76,11 +78,11 @@ const mockAgent: Agent = {
   featured: true,
 };
 
-const mockOnStartChat = jest.fn();
+const mockOnStartChat = vi.fn();
 
 describe('AgentCTA Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render agent CTA with name, description, and tools', () => {

@@ -32,7 +32,6 @@ import useAttachmentHandler from '~/hooks/SSE/useAttachmentHandler';
 import useContentHandler from '~/hooks/SSE/useContentHandler';
 import store, { useApplyNewAgentTemplate } from '~/store';
 import useStepHandler from '~/hooks/SSE/useStepHandler';
-import { useAuthContext } from '~/hooks/AuthContext';
 import { MESSAGE_UPDATE_INTERVAL } from '~/common';
 import { useLiveAnnouncer } from '~/Providers';
 
@@ -178,7 +177,6 @@ export default function useEventHandlers({
 
   const lastAnnouncementTimeRef = useRef(Date.now());
   const { conversationId: paramId } = useParams();
-  const { token } = useAuthContext();
 
   const contentHandler = useContentHandler({ setMessages, getMessages });
   const stepHandler = useStepHandler({
@@ -688,8 +686,8 @@ export default function useEventHandlers({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
+          credentials: 'include',
           body: JSON.stringify({
             abortKey: runAbortKey,
             endpoint,
@@ -735,15 +733,7 @@ export default function useEventHandlers({
         setIsSubmitting(false);
       }
     },
-    [
-      finalHandler,
-      newConversation,
-      setIsSubmitting,
-      token,
-      cancelHandler,
-      getMessages,
-      setMessages,
-    ],
+    [finalHandler, newConversation, setIsSubmitting, cancelHandler, getMessages, setMessages],
   );
 
   return {

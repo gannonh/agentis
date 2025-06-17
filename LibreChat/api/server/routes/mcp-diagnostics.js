@@ -1,8 +1,8 @@
 import express from 'express';
 import { MCPManager } from 'librechat-mcp';
-import {  requireJwtAuth, checkAccess  } from '#server/middleware.js';
-import {  Permissions, PermissionTypes  } from 'librechat-data-provider';
-import {  logger  } from '#config/index.js';
+import { requireBetterAuth, checkAccess } from '#server/middleware.js';
+import { Permissions, PermissionTypes } from 'librechat-data-provider';
+import { logger } from '#config/index.js';
 
 const router = express.Router();
 
@@ -138,7 +138,7 @@ async function diagnoseSpecificUser(userId, logger) {
  * @description Get diagnostics for all MCP connections (admin only)
  * @access Private/Admin
  */
-router.get('/', requireJwtAuth, async (req, res) => {
+router.get('/', requireBetterAuth, async (req, res) => {
   try {
     // Check if user has admin permissions
     const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.ADMIN]);
@@ -164,7 +164,7 @@ router.get('/', requireJwtAuth, async (req, res) => {
  * @description Get diagnostics for the current user's MCP connections
  * @access Private
  */
-router.get('/user', requireJwtAuth, async (req, res) => {
+router.get('/user', requireBetterAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     logger.info(`[MCP-DIAGNOSTICS] Running user self-diagnostics for ${userId}`);
@@ -194,7 +194,7 @@ router.get('/user', requireJwtAuth, async (req, res) => {
  * @description Get diagnostics for a specific user's MCP connections (admin only)
  * @access Private/Admin
  */
-router.get('/user/:userId', requireJwtAuth, async (req, res) => {
+router.get('/user/:userId', requireBetterAuth, async (req, res) => {
   try {
     // Check if user has admin permissions
     const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.ADMIN]);

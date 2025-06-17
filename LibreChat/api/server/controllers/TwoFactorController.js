@@ -129,10 +129,4 @@ const regenerateBackupCodes = async (req, res) => {
   }
 };
 
-export {
-  enable2FA,
-  verify2FA,
-  confirm2FA,
-  disable2FA,
-  regenerateBackupCodes,
-};
+export { enable2FA, verify2FA, confirm2FA, disable2FA, regenerateBackupCodes };

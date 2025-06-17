@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const absolutePath = path.resolve(__dirname, '../api/server/index.js');
 import dotenv from 'dotenv';
 
@@ -19,7 +24,7 @@ export default defineConfig({
   retries: 0, // Set to 0 for Google tests to avoid issues
   /* Enable multiple workers for parallel execution */
   // TODO: Optimize worker count based on system resources and test performance
-  workers: process.env.CI ? 4 : 1, // 4 workers for CI, 1 for local development
+  workers: process.env.CI ? 4 : 2, // 4 workers for CI, 2 for local development to avoid llm rate limiting
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { outputFolder: 'playwright-report' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -42,6 +47,8 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+
+        // channel: 'chrome', // Use Google Chrome instead of Chromium
         // Worker-scoped storage state will be handled by fixtures
       },
     },

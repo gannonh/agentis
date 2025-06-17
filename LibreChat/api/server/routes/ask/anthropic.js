@@ -1,14 +1,14 @@
 import express from 'express';
 import AskController from '#server/controllers/AskController.js';
-import initializeClient from "#server/services/Endpoints/anthropic/initialize.js";
-import addTitle from "#server/services/Endpoints/anthropic/title.js";
-import { 
+import initializeClient from '#server/services/Endpoints/anthropic/initialize.js';
+import addTitle from '#server/services/Endpoints/anthropic/title.js';
+import {
   setHeaders,
   handleAbort,
   validateModel,
   validateEndpoint,
   buildEndpointOption,
- } from '#server/middleware.js';
+} from '#server/middleware.js';
 
 const router = express.Router();
 

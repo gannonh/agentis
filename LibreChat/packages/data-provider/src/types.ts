@@ -293,8 +293,9 @@ export type TRegisterUserResponse = {
 export type TRegisterUser = {
   name: string;
   email: string;
-  username: string;
   password: string;
+  // Optional fields
+  username?: string;
   confirm_password?: string;
   token?: string;
 };
@@ -302,13 +303,25 @@ export type TRegisterUser = {
 export type TLoginUser = {
   email: string;
   password: string;
+  rememberMe?: boolean;
   token?: string;
   backupCode?: string;
 };
 
+export type TBetterAuthSession = {
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 export type TLoginResponse = {
-  token?: string;
   user?: TUser;
+  session?: TBetterAuthSession;
+  // Legacy support for JWT-based systems
+  token?: string;
   twoFAPending?: boolean;
   tempToken?: string;
 };

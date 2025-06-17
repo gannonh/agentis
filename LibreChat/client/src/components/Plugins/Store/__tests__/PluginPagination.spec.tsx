@@ -1,14 +1,14 @@
-import 'test/matchMedia.mock';
 import React from 'react';
 import { render, screen } from 'test/layout-test-utils';
 import userEvent from '@testing-library/user-event';
 import PluginPagination from '../PluginPagination';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 describe('PluginPagination', () => {
-  const onChangePage = jest.fn();
+  const onChangePage = vi.fn();
 
   beforeEach(() => {
-    onChangePage.mockClear();
+    vi.clearAllMocks();
   });
 
   it('should render the previous button as enabled when not on the first page', () => {

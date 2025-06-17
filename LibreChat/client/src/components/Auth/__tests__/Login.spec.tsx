@@ -8,8 +8,23 @@ import * as authMutations from '~/data-provider/Auth/mutations';
 import * as authQueries from '~/data-provider/Auth/queries';
 import AuthLayout from '~/components/Auth/AuthLayout';
 import Login from '~/components/Auth/Login';
+import { describe, expect, it, test, vi } from 'vitest';
 
-jest.mock('librechat-data-provider/react-query');
+vi.mock('librechat-data-provider/react-query');
+
+// Mock AuthContext to prevent real API calls
+vi.mock('~/hooks/AuthContext', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useAuthContext: () => ({
+      error: null,
+      setError: vi.fn(),
+      login: vi.fn(),
+    }),
+    AuthContextProvider: ({ children }: { children: React.ReactNode }) => children,
+  };
+});
 
 const mockStartupConfig = {
   isFetching: false,
@@ -43,14 +58,14 @@ const setup = ({
   useLoginUserReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {},
     isSuccess: false,
   },
   useRefreshTokenMutationReturnValue = {
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     data: {
       token: 'mock-token',
       user: {},
@@ -63,29 +78,27 @@ const setup = ({
     data: {},
   },
 } = {}) => {
-  const mockUseLoginUser = jest
+  const mockUseLoginUser = vi
     .spyOn(authMutations, 'useLoginUserMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useLoginUserReturnValue);
-  const mockUseGetUserQuery = jest
+  const mockUseGetUserQuery = vi
     .spyOn(authQueries, 'useGetUserQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetUserQueryReturnValue);
-  const mockUseGetStartupConfig = jest
+  const mockUseGetStartupConfig = vi
     .spyOn(endpointQueries, 'useGetStartupConfig')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetStartupConfigReturnValue);
-  const mockUseRefreshTokenMutation = jest
+  const mockUseRefreshTokenMutation = vi
     .spyOn(authMutations, 'useRefreshTokenMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useRefreshTokenMutationReturnValue);
-  const mockUseGetBannerQuery = jest
+  const mockUseGetBannerQuery = vi
     .spyOn(miscDataProvider, 'useGetBannerQuery')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useGetBannerQueryReturnValue);
-  const mockUseOutletContext = jest.spyOn(reactRouter, 'useOutletContext').mockReturnValue({
-    startupConfig: useGetStartupConfigReturnValue.data,
-  });
+  // Mock is already handled by vi.mock above
   const renderResult = render(
     <AuthLayout
       startupConfig={useGetStartupConfigReturnValue.data as TStartupConfig}
@@ -102,51 +115,42 @@ const setup = ({
     ...renderResult,
     mockUseLoginUser,
     mockUseGetUserQuery,
-    mockUseOutletContext,
     mockUseGetStartupConfig,
     mockUseRefreshTokenMutation,
     mockUseGetBannerQuery,
   };
 };
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useOutletContext: () => ({
-    startupConfig: mockStartupConfig,
-  }),
-}));
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useOutletContext: () => ({
+      startupConfig: mockStartupConfig.data,
+    }),
+  };
+});
 
 test('renders login form', () => {
-  const { getByLabelText, getByRole } = setup();
-  expect(getByLabelText(/email/i)).toBeInTheDocument();
-  expect(getByLabelText(/password/i)).toBeInTheDocument();
-  expect(getByTestId(document.body, 'login-button')).toBeInTheDocument();
-  expect(getByRole('link', { name: /Sign up/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Sign up/i })).toHaveAttribute('href', '/register');
-  expect(getByRole('link', { name: /Continue with Google/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Google/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/google',
-  );
-  expect(getByRole('link', { name: /Continue with Facebook/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Facebook/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/facebook',
-  );
-  expect(getByRole('link', { name: /Continue with Github/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Github/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/github',
-  );
-  expect(getByRole('link', { name: /Continue with Discord/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /Continue with Discord/i })).toHaveAttribute(
-    'href',
-    'mock-server/oauth/discord',
-  );
+  const { getByLabelText, getByRole, getByTestId } = setup();
+
+  // Check if login form is rendered
+  expect(getByLabelText(/com_auth_email/i)).toBeInTheDocument();
+  expect(getByLabelText(/com_auth_password/i)).toBeInTheDocument();
+  expect(getByTestId('login-button')).toBeInTheDocument();
+  expect(getByRole('link', { name: /com_auth_sign_up/i })).toBeInTheDocument();
+  expect(getByRole('link', { name: /com_auth_sign_up/i })).toHaveAttribute('href', '/register');
+
+  // Social login buttons are now button elements with aria-labels
+  expect(getByTestId('google')).toBeInTheDocument();
+  expect(getByTestId('facebook')).toBeInTheDocument();
+  expect(getByTestId('github')).toBeInTheDocument();
+  expect(getByTestId('discord')).toBeInTheDocument();
+  expect(getByTestId('openid')).toBeInTheDocument();
 });
 
 test('calls loginUser.mutate on login', async () => {
-  const mutate = jest.fn();
+  const mutate = vi.fn();
   const { getByLabelText } = setup({
     // @ts-ignore - we don't need all parameters of the QueryObserverResult
     useLoginUserReturnValue: {
@@ -156,8 +160,8 @@ test('calls loginUser.mutate on login', async () => {
     },
   });
 
-  const emailInput = getByLabelText(/email/i);
-  const passwordInput = getByLabelText(/password/i);
+  const emailInput = getByLabelText(/com_auth_email/i);
+  const passwordInput = getByLabelText(/com_auth_password/i);
   const submitButton = getByTestId(document.body, 'login-button');
 
   await userEvent.type(emailInput, 'test@test.com');
@@ -172,7 +176,7 @@ test('Navigates to / on successful login', async () => {
     // @ts-ignore - we don't need all parameters of the QueryObserverResult
     useLoginUserReturnValue: {
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isError: false,
       isSuccess: true,
     },
@@ -186,8 +190,8 @@ test('Navigates to / on successful login', async () => {
     },
   });
 
-  const emailInput = getByLabelText(/email/i);
-  const passwordInput = getByLabelText(/password/i);
+  const emailInput = getByLabelText(/com_auth_email/i);
+  const passwordInput = getByLabelText(/com_auth_password/i);
   const submitButton = getByTestId(document.body, 'login-button');
 
   await userEvent.type(emailInput, 'test@test.com');

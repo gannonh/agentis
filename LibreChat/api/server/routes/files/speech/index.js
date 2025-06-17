@@ -1,5 +1,5 @@
 import express from 'express';
-import {  createTTSLimiters, createSTTLimiters  } from '#server/middleware.js';
+import { createTTSLimiters, createSTTLimiters } from '#server/middleware.js';
 
 import stt from './stt.js';
 import tts from './tts.js';

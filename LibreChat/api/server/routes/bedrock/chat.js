@@ -1,14 +1,14 @@
 import express from 'express';
 
 const router = express.Router();
-import { 
+import {
   setHeaders,
   handleAbort,
   moderateText,
   // validateModel,
   // validateEndpoint,
   buildEndpointOption,
- } from '#server/middleware.js';
+} from '#server/middleware.js';
 import { initializeClient } from '#server/services/Endpoints/bedrock/initialize.js';
 import AgentController from '#server/controllers/agents/request.js';
 import addTitle from '#server/services/Endpoints/agents/title.js';

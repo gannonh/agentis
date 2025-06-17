@@ -1,13 +1,13 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import express from 'express';
-import {  isAgentsEndpoint  } from 'librechat-data-provider';
-import { 
+import { isAgentsEndpoint } from 'librechat-data-provider';
+import {
   filterFile,
   processImageFile,
   processAgentFileUpload,
- } from '#server/services/Files/process.js';
-import {  logger  } from '#config.js';
+} from '#server/services/Files/process.js';
+import { logger } from '#config.js';
 
 const router = express.Router();
 

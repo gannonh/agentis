@@ -10,14 +10,14 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { setTokenHeader, SystemRoles } from 'librechat-data-provider';
+import { SystemRoles } from 'librechat-data-provider';
 import type * as t from 'librechat-data-provider';
 import {
   useGetRole,
   useGetUserQuery,
   useLoginUserMutation,
   useLogoutUserMutation,
-  useRefreshTokenMutation,
+  useGetSessionQuery,
 } from '~/data-provider';
 import { TAuthConfig, TUserContext, TAuthContext, TResError } from '~/common';
 import useTimeout from './useTimeout';
@@ -33,9 +33,9 @@ const AuthContextProvider = ({
   children: ReactNode;
 }) => {
   const [user, setUser] = useRecoilState(store.user);
-  const [token, setToken] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [session, setSession] = useState<t.TBetterAuthSession | undefined>(undefined);
   const logoutRedirectRef = useRef<string | undefined>(undefined);
 
   const { data: userRole = null } = useGetRole(SystemRoles.USER, {
@@ -49,12 +49,18 @@ const AuthContextProvider = ({
 
   const setUserContext = useCallback(
     (userContext: TUserContext) => {
-      const { token, isAuthenticated, user, redirect } = userContext;
+      const { session, isAuthenticated, user, redirect, token } = userContext;
       setUser(user);
-      setToken(token);
-      //@ts-ignore - ok for token to be undefined initially
-      setTokenHeader(token);
+      setSession(session);
       setIsAuthenticated(isAuthenticated);
+
+      // Legacy token support for backward compatibility during transition
+      if (token && !session) {
+        // If we still have a token but no session, we're in legacy mode
+        // This ensures compatibility during the Better Auth migration
+        console.warn('Using legacy token mode - Better Auth session not available');
+      }
+
       // Use a custom redirect if set
       const finalRedirect = logoutRedirectRef.current || redirect;
       // Clear the stored redirect
@@ -74,14 +80,23 @@ const AuthContextProvider = ({
 
   const loginUser = useLoginUserMutation({
     onSuccess: (data: t.TLoginResponse) => {
-      const { user, token, twoFAPending, tempToken } = data;
+      const { user, session, token, twoFAPending, tempToken } = data;
       if (twoFAPending) {
         // Redirect to the two-factor authentication route.
         navigate(`/login/2fa?tempToken=${tempToken}`, { replace: true });
         return;
       }
       setError(undefined);
-      setUserContext({ token, isAuthenticated: true, user, redirect: '/c/new' });
+
+      // Better Auth uses session-based authentication
+      if (session && user) {
+        setUserContext({ session, isAuthenticated: true, user, redirect: '/c/new' });
+      } else if (token && user) {
+        // Fallback to legacy token mode if session not available
+        setUserContext({ token, isAuthenticated: true, user, redirect: '/c/new' });
+      } else {
+        doSetError('Authentication failed - no session or token received');
+      }
     },
     onError: (error: TResError | unknown) => {
       const resError = error as TResError;
@@ -92,6 +107,7 @@ const AuthContextProvider = ({
   const logoutUser = useLogoutUserMutation({
     onSuccess: (data) => {
       setUserContext({
+        session: undefined,
         token: undefined,
         isAuthenticated: false,
         user: undefined,
@@ -101,6 +117,7 @@ const AuthContextProvider = ({
     onError: (error) => {
       doSetError((error as Error).message);
       setUserContext({
+        session: undefined,
         token: undefined,
         isAuthenticated: false,
         user: undefined,
@@ -108,7 +125,13 @@ const AuthContextProvider = ({
       });
     },
   });
-  const refreshToken = useRefreshTokenMutation();
+
+  // Replace token refresh with session checking
+  const sessionQuery = useGetSessionQuery({
+    enabled: !isAuthenticated,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const logout = useCallback(
     (redirect?: string) => {
@@ -120,7 +143,47 @@ const AuthContextProvider = ({
     [logoutUser],
   );
 
-  const userQuery = useGetUserQuery({ enabled: !!(token ?? '') });
+  const userQuery = useGetUserQuery({ enabled: !!isAuthenticated });
+
+  // Handle session query results
+  useEffect(() => {
+    console.log('SessionQuery state:', {
+      isLoading: sessionQuery.isLoading,
+      isError: sessionQuery.isError,
+      data: sessionQuery.data,
+      error: sessionQuery.error,
+      authConfigTest: authConfig?.test,
+    });
+
+    if (sessionQuery.data?.session && sessionQuery.data?.user) {
+      console.log('Valid session found, setting authenticated');
+      setUserContext({
+        session: sessionQuery.data.session,
+        isAuthenticated: true,
+        user: sessionQuery.data.user,
+      });
+    } else if (sessionQuery.isError) {
+      console.log('Session check error:', sessionQuery.error);
+      if (authConfig?.test !== true) {
+        console.log('Redirecting to login due to error');
+        navigate('/login');
+      }
+    } else if (sessionQuery.data === null || (sessionQuery.data && !sessionQuery.data.session)) {
+      console.log('No valid session found. User is not authenticated.');
+      if (authConfig?.test !== true) {
+        console.log('Redirecting to login due to no session');
+        navigate('/login');
+      }
+    }
+  }, [
+    sessionQuery.data,
+    sessionQuery.isError,
+    sessionQuery.isLoading,
+    sessionQuery.error,
+    authConfig?.test,
+    navigate,
+    setUserContext,
+  ]);
 
   const login = useCallback(
     (data: t.TLoginUser) => {
@@ -129,33 +192,17 @@ const AuthContextProvider = ({
     [loginUser],
   );
 
-  const silentRefresh = useCallback(() => {
+  const checkSession = useCallback(() => {
     if (authConfig?.test === true) {
-      console.log('Test mode. Skipping silent refresh.');
+      console.log('Test mode. Skipping session check.');
       return;
     }
-    refreshToken.mutate(undefined, {
-      onSuccess: (data: t.TRefreshTokenResponse | undefined) => {
-        const { user, token = '' } = data ?? {};
-        if (token) {
-          setUserContext({ token, isAuthenticated: true, user });
-        } else {
-          console.log('Token is not present. User is not authenticated.');
-          if (authConfig?.test === true) {
-            return;
-          }
-          navigate('/login');
-        }
-      },
-      onError: (error) => {
-        console.log('refreshToken mutation error:', error);
-        if (authConfig?.test === true) {
-          return;
-        }
-        navigate('/login');
-      },
-    });
-  }, [authConfig?.test, navigate, refreshToken, setUserContext]);
+
+    // Trigger session refetch
+    if (sessionQuery.refetch) {
+      sessionQuery.refetch();
+    }
+  }, [authConfig?.test, sessionQuery]);
 
   useEffect(() => {
     if (userQuery.data) {
@@ -167,28 +214,28 @@ const AuthContextProvider = ({
     if (error != null && error && isAuthenticated) {
       doSetError(undefined);
     }
-    if (token == null || !token || !isAuthenticated) {
-      silentRefresh();
+    if (session == null || !session || !isAuthenticated) {
+      checkSession();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, isAuthenticated, userQuery.data, userQuery.isError, userQuery.error, error]);
+  }, [session, isAuthenticated, userQuery.data, userQuery.isError, userQuery.error, error]);
   // Note: silentRefresh, setUser, navigate, doSetError intentionally excluded to prevent circular dependencies
 
   useEffect(() => {
-    const handleTokenUpdate = (event) => {
-      console.log('tokenUpdated event received event');
-      const newToken = event.detail;
+    const handleSessionUpdate = (event) => {
+      console.log('sessionUpdated event received');
+      const newSession = event.detail;
       setUserContext({
-        token: newToken,
+        session: newSession,
         isAuthenticated: true,
         user: user,
       });
     };
 
-    window.addEventListener('tokenUpdated', handleTokenUpdate);
+    window.addEventListener('sessionUpdated', handleSessionUpdate);
 
     return () => {
-      window.removeEventListener('tokenUpdated', handleTokenUpdate);
+      window.removeEventListener('sessionUpdated', handleSessionUpdate);
     };
   }, [setUserContext, user]);
 
@@ -196,7 +243,7 @@ const AuthContextProvider = ({
   const memoedValue = useMemo(
     () => ({
       user,
-      token,
+      session,
       error,
       login,
       logout,
@@ -208,7 +255,7 @@ const AuthContextProvider = ({
       isAuthenticated,
     }),
 
-    [user, error, isAuthenticated, token, userRole, adminRole, login, logout],
+    [user, error, isAuthenticated, session, userRole, adminRole, login, logout],
   );
 
   return <AuthContext.Provider value={memoedValue}>{children}</AuthContext.Provider>;

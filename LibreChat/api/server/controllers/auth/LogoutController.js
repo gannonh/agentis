@@ -33,6 +33,4 @@ const logoutController = async (req, res) => {
   }
 };
 
-export {
-  logoutController,
-};
+export { logoutController };

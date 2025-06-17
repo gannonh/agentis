@@ -99,6 +99,4 @@ async function abortRun(req, res) {
   res.json(finalEvent);
 }
 
-export {
-  abortRun,
-};
+export { abortRun };

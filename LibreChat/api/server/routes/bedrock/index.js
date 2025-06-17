@@ -1,20 +1,20 @@
 import express from 'express';
-import { 
+import {
   uaParser,
   checkBan,
-  requireJwtAuth,
+  requireBetterAuth,
   messageIpLimiter,
   concurrentLimiter,
   messageUserLimiter,
- } from '#server/middleware.js';
-import {  isEnabled  } from '#server/utils.js';
+} from '#server/middleware.js';
+import { isEnabled } from '#server/utils.js';
 import chat from './chat.js';
 
 const { LIMIT_CONCURRENT_MESSAGES, LIMIT_MESSAGE_IP, LIMIT_MESSAGE_USER } = process.env ?? {};
 
 const router = express.Router();
 
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 router.use(checkBan);
 router.use(uaParser);
 

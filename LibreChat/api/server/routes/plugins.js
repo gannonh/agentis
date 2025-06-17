@@ -1,9 +1,9 @@
 import express from 'express';
-import {  getAvailablePluginsController  } from '../controllers/PluginController.js';
-import requireJwtAuth from '../middleware/requireJwtAuth.js';
+import { getAvailablePluginsController } from '../controllers/PluginController.js';
+import requireBetterAuth from '../middleware/requireBetterAuth.js';
 
 const router = express.Router();
 
-router.get('/', requireJwtAuth, getAvailablePluginsController);
+router.get('/', requireBetterAuth, getAvailablePluginsController);
 
 export default router;

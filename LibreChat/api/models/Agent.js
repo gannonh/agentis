@@ -8,6 +8,7 @@ import {
   removeAgentFromAllProjects,
 } from './Project.js';
 import getLogStores from '../cache/getLogStores.js';
+import { logger } from '../config/index.js';
 
 const { GLOBAL_PROJECT_NAME, EPHEMERAL_AGENT_ID, mcp_delimiter } = Constants;
 const { CONFIG_STORE, STARTUP_CONFIG } = CacheKeys;
@@ -103,7 +104,27 @@ const loadAgent = async ({ req, agent_id, endpoint, model_parameters }) => {
     return null;
   }
 
-  if (agent.author.toString() === req.user.id) {
+  // Debug logging for Better Auth integration
+  logger.debug('[loadAgent] Checking agent access:', {
+    agentId: agent._id?.toString(),
+    agentAuthor: agent.author?.toString(),
+    reqUser: req.user
+      ? {
+          id: req.user.id,
+          _id: req.user._id?.toString(),
+          email: req.user.email,
+        }
+      : 'undefined',
+    hasReqUser: !!req.user,
+    hasReqUserId: !!req.user?.id,
+  });
+
+  if (!req.user || !req.user.id) {
+    logger.error('[loadAgent] Missing user context - req.user or req.user.id is undefined');
+    return null;
+  }
+
+  if (agent.author.toString() === req.user.id.toString()) {
     return agent;
   }
 

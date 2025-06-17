@@ -1,13 +1,13 @@
 import express from 'express';
-import {  PermissionTypes, Permissions  } from 'librechat-data-provider';
-import { 
+import { PermissionTypes, Permissions } from 'librechat-data-provider';
+import {
   setHeaders,
   moderateText,
   // validateModel,
   generateCheckAccess,
   validateConvoAccess,
   buildEndpointOption,
- } from '#server/middleware.js';
+} from '#server/middleware.js';
 import { initializeClient } from '#server/services/Endpoints/agents/initialize.js';
 import AgentController from '#server/controllers/agents/request.js';
 import addTitle from '#server/services/Endpoints/agents/title.js';

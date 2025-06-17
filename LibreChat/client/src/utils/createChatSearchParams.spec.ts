@@ -1,6 +1,7 @@
 import { EModelEndpoint, Constants } from 'librechat-data-provider';
 import type { TConversation, TPreset } from 'librechat-data-provider';
 import createChatSearchParams from './createChatSearchParams';
+import { describe, expect, it } from 'vitest';
 
 describe('createChatSearchParams', () => {
   describe('conversation inputs', () => {

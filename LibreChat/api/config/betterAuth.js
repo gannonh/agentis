@@ -18,6 +18,7 @@
  * @property {number} session.expiresIn - Session expiration in seconds (7 days)
  * @property {boolean} session.updateAge - Update session on activity
  * @property {number} session.cookieAge - Cookie max age in seconds
+ * @property {Object} socialProviders - OAuth provider configurations
  */
 
 /**
@@ -26,6 +27,13 @@
  */
 export const betterAuthConfig = {
   basePath: '/api/auth',
+  baseURL: process.env.NODE_ENV === 'production' ? 'https://agentis.ai' : 'http://localhost:3080',
+  trustedOrigins: [
+    'http://localhost:3090',
+    'http://localhost:3080',
+    'http://localhost:3000',
+    'https://agentis.ai',
+  ],
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
@@ -40,4 +48,5 @@ export const betterAuthConfig = {
     updateAge: 60 * 60 * 24, // Update session if older than 1 day
     cookieAge: 60 * 60 * 24 * 7, // 7 days
   },
+  // Social providers are configured directly in auth.js
 };

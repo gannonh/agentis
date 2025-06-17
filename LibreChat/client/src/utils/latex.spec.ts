@@ -1,4 +1,5 @@
 import { processLaTeX, preprocessLaTeX } from './latex';
+import { describe, expect, it, test } from 'vitest';
 
 describe('processLaTeX', () => {
   test('returns the same string if no LaTeX patterns are found', () => {

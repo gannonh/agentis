@@ -1,14 +1,14 @@
 import { promises as fs } from 'fs';
-import {  FileContext  } from 'librechat-data-provider';
-import {  uploadImageBuffer, filterFile  } from '#server/services/Files/process.js';
+import { FileContext } from 'librechat-data-provider';
+import { uploadImageBuffer, filterFile } from '#server/services/Files/process.js';
 import validateAuthor from '#server/middleware/assistants/validateAuthor.js';
-import {  getStrategyFunctions  } from '#server/services/Files/strategies.js';
-import {  deleteAssistantActions  } from '#server/services/ActionService.js';
-import {  updateAssistantDoc, getAssistants  } from '#models/Assistant.js';
-import {  getOpenAIClient, fetchAssistants  } from './helpers.js';
-import {  manifestToolMap  } from '#app/clients/tools.js';
-import {  deleteFileByFilter  } from '#models/File.js';
-import {  logger  } from '#config.js';
+import { getStrategyFunctions } from '#server/services/Files/strategies.js';
+import { deleteAssistantActions } from '#server/services/ActionService.js';
+import { updateAssistantDoc, getAssistants } from '#models/Assistant.js';
+import { getOpenAIClient, fetchAssistants } from './helpers.js';
+import { manifestToolMap } from '#app/clients/tools.js';
+import { deleteFileByFilter } from '#models/File.js';
+import { logger } from '#config.js';
 
 /**
  * Create an assistant.

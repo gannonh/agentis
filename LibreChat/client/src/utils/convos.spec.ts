@@ -1,5 +1,6 @@
 import { QueryClient, InfiniteData } from '@tanstack/react-query';
 import type { TConversation } from 'librechat-data-provider';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 import {
   dateKeys,
   storeEndpointSettings,
@@ -16,11 +17,11 @@ import {
 } from './convos';
 import { normalizeData } from './collection';
 
-jest.mock('date-fns', () => {
-  const actual = jest.requireActual('date-fns');
+vi.mock('date-fns', async () => {
+  const actual = await vi.importActual('date-fns');
   return {
     ...actual,
-    startOfToday: jest.fn(() => new Date('2023-07-15T00:00:00Z')),
+    startOfToday: vi.fn(() => new Date('2023-07-15T00:00:00Z')),
   };
 });
 

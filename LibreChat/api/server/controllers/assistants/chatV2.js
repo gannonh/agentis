@@ -1,5 +1,5 @@
-import {  v4  } from 'uuid';
-import { 
+import { v4 } from 'uuid';
+import {
   Time,
   Constants,
   RunStatus,
@@ -9,28 +9,28 @@ import {
   EModelEndpoint,
   retrievalMimeTypes,
   AssistantStreamEvents,
- } from 'librechat-data-provider';
-import { 
+} from 'librechat-data-provider';
+import {
   initThread,
   recordUsage,
   saveUserMessage,
   addThreadMetadata,
   saveAssistantMessage,
- } from '#server/services/Threads.js';
-import {  runAssistant, createOnTextProgress  } from '#server/services/AssistantService.js';
-import {  createErrorHandler  } from '#server/controllers/assistants/errors.js';
+} from '#server/services/Threads.js';
+import { runAssistant, createOnTextProgress } from '#server/services/AssistantService.js';
+import { createErrorHandler } from '#server/controllers/assistants/errors.js';
 import validateAuthor from '#server/middleware/assistants/validateAuthor.js';
-import {  createRun, StreamRunManager  } from '#server/services/Runs.js';
-import addTitle from "#server/services/Endpoints/assistants/title.js";
-import {  sendMessage, sleep, countTokens  } from '#server/utils.js';
-import {  createRunBody  } from '#server/services/createRunBody.js';
-import {  getTransactions  } from '#models/Transaction.js';
-import {  checkBalance  } from '#models/balanceMethods.js';
-import {  getConvo  } from '#models/Conversation.js';
+import { createRun, StreamRunManager } from '#server/services/Runs.js';
+import addTitle from '#server/services/Endpoints/assistants/title.js';
+import { sendMessage, sleep, countTokens } from '#server/utils.js';
+import { createRunBody } from '#server/services/createRunBody.js';
+import { getTransactions } from '#models/Transaction.js';
+import { checkBalance } from '#models/balanceMethods.js';
+import { getConvo } from '#models/Conversation.js';
 import getLogStores from '#cache/getLogStores.js';
-import {  getModelMaxTokens  } from '#utils.js';
-import {  getOpenAIClient  } from './helpers.js';
-import {  logger  } from '#config.js';
+import { getModelMaxTokens } from '#utils.js';
+import { getOpenAIClient } from './helpers.js';
+import { logger } from '#config.js';
 
 /**
  * @route POST /

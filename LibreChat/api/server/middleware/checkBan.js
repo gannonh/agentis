@@ -53,7 +53,10 @@ const checkBan = async (req, res, next = () => {}) => {
       return next();
     }
 
-    req.ip = removePorts(req);
+    // Get IP address, handling read-only property
+    const clientIP = removePorts(req);
+    // Store in custom property since req.ip is read-only
+    req.clientIP = clientIP;
     let userId = req.user?.id ?? req.user?._id ?? null;
 
     if (!userId && req?.body?.email) {
@@ -61,7 +64,7 @@ const checkBan = async (req, res, next = () => {}) => {
       userId = user?._id ? user._id.toString() : userId;
     }
 
-    if (!userId && !req.ip) {
+    if (!userId && !req.clientIP) {
       return next();
     }
 
@@ -71,8 +74,8 @@ const checkBan = async (req, res, next = () => {}) => {
     let ipKey = '';
     let userKey = '';
 
-    if (req.ip) {
-      ipKey = isEnabled(process.env.USE_REDIS) ? `ban_cache:ip:${req.ip}` : req.ip;
+    if (req.clientIP) {
+      ipKey = isEnabled(process.env.USE_REDIS) ? `ban_cache:ip:${req.clientIP}` : req.clientIP;
       cachedIPBan = await banCache.get(ipKey);
     }
 
@@ -98,8 +101,8 @@ const checkBan = async (req, res, next = () => {}) => {
     let ipBan;
     let userBan;
 
-    if (req.ip) {
-      ipBan = await banLogs.get(req.ip);
+    if (req.clientIP) {
+      ipBan = await banLogs.get(req.clientIP);
     }
 
     if (userId) {

@@ -87,7 +87,4 @@ const messageIpLimiter = rateLimit(ipLimiterOptions);
  */
 const messageUserLimiter = rateLimit(userLimiterOptions);
 
-export {
-  messageIpLimiter,
-  messageUserLimiter,
-};
+export { messageIpLimiter, messageUserLimiter };

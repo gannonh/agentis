@@ -1,6 +1,7 @@
 import { render, screen } from 'test/layout-test-utils';
 import userEvent from '@testing-library/user-event';
 import PluginAuthForm from '../PluginAuthForm';
+import { describe, expect, it, test, vi } from 'vitest';
 
 describe('PluginAuthForm', () => {
   const plugin = {
@@ -17,7 +18,7 @@ describe('PluginAuthForm', () => {
     ],
   };
 
-  const onSubmit = jest.fn();
+  const onSubmit = vi.fn();
 
   it('renders the form with the correct fields', () => {
     //@ts-ignore - dont need all props of plugin
@@ -33,7 +34,7 @@ describe('PluginAuthForm', () => {
 
     await userEvent.type(screen.getByLabelText('Key'), '1234567890');
     await userEvent.type(screen.getByLabelText('Secret'), '1234567890');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await userEvent.click(screen.getByRole('button', { name: 'com_ui_save' }));
     expect(onSubmit).toHaveBeenCalledWith({
       pluginKey: 'test-plugin',
       action: 'install',

@@ -7,10 +7,10 @@ const COMPOSIO_SERVICES = ['googlesheets', 'googledrive', 'googledocs', 'gmail',
 export const ComposioTestPage: React.FC = () => {
   const [connectionStatuses, setConnectionStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const { token } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
 
   const checkAllConnectionStatuses = useCallback(async () => {
-    if (!token) return;
+    if (!isAuthenticated) return;
 
     setLoading(true);
     const statuses: Record<string, boolean> = {};
@@ -18,7 +18,7 @@ export const ComposioTestPage: React.FC = () => {
     for (const service of COMPOSIO_SERVICES) {
       try {
         const response = await fetch(`/api/composio/connection-status/${service}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
         });
         const data = await response.json();
         statuses[service] = data.hasActiveConnection;
@@ -30,7 +30,7 @@ export const ComposioTestPage: React.FC = () => {
 
     setConnectionStatuses(statuses);
     setLoading(false);
-  }, [token]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     checkAllConnectionStatuses();

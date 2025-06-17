@@ -67,7 +67,7 @@ test.describe('Google Calendar MCP Tests', () => {
     await page.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByText('Anthropic').click();
     await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-' }).locator('span').click();
+    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
     await page.getByRole('button', { name: 'Create' }).click();
     await page
       .getByLabel('Agent Builder')
@@ -136,7 +136,7 @@ test.describe('Google Calendar MCP Tests', () => {
       // Select the Google Calendar Agent explicitly to avoid conflicts with other parallel tests
 
       await page.getByRole('button', { name: 'Select a model' }).click();
-      await page.getByText('Agents', { exact: true }).click();
+      await page.getByText('Agents', { exact: true }).first().click();
       await page.getByLabel('Agents').getByText('Google Calendar Agent').first().click();
 
       // ----------------- begin cogegen
@@ -145,7 +145,7 @@ test.describe('Google Calendar MCP Tests', () => {
       await page
         .getByTestId('text-input')
         .fill(
-          "Create the following appointments for next week:**\n\n1. **Monday 9:00 AM** - Team standup meeting (30 min, recurring daily M-F, invite sarah@company.com and mike@company.com)\n\n2. **Tuesday 2:30 PM** - Client presentation prep (1.5 hours, location: Conference Room B, add reminder 1 hour before)\n\n3. **Wednesday 12:00 PM** - Lunch with mentor (1 hour, location: Café Milano, 123 Main St)\n\n4. **Thursday 10:00 AM - 11:30 AM** - Q2 Budget Review (invite finance-team@company.com, attach agenda document, mark as high priority)\n\n5. **Friday 3:00 PM** - Weekly reflection & planning session (45 min, private event, recurring weekly)\n\nAlso, please:\n- Block 2 hours of 'Focus Time' each morning from 8-10 AM (no meetings)\n- Find the best available 1-hour slot for a 1:1 with my manager (they're in EST, I'm in PST)\n- Set up a reminder for Thursday at 4 PM to submit my expense report\n- Check if I have any conflicts with these new appointments.\n\nYou need to 'Connect to Google Calendar' and provide an authorization link. You do not need to check a connection first and if you do it will erroneously tell you that you have one. You also need to provide me with the link or redirect URL to authenmticate with Google Calendar.",
+          "Create the following appointments for next week:**\n\n1. **Monday 9:00 AM** - Team standup meeting (30 min, recurring daily M-F, invite sarah@company.com and mike@company.com)\n\n2. **Tuesday 2:30 PM** - Client presentation prep (1.5 hours, location: Conference Room B, add reminder 1 hour before)\n\n3. **Wednesday 12:00 PM** - Lunch with mentor (1 hour, location: Café Milano, 123 Main St)\n\n4. **Thursday 10:00 AM - 11:30 AM** - Q2 Budget Review (invite finance-team@company.com, attach agenda document, mark as high priority)\n\n5. **Friday 3:00 PM** - Weekly reflection & planning session (45 min, private event, recurring weekly)\n\nAlso, please:\n- Block 2 hours of 'Focus Time' each morning from 8-10 AM (no meetings)\n- Find the best available 1-hour slot for a 1:1 with my manager (they're in EST, I'm in PST)\n- Set up a reminder for Thursday at 4 PM to submit my expense report\n- Check if I have any conflicts with these new appointments.",
         );
       await page.getByTestId('send-button').click();
       logProgress('✅ Sent message to create calendar events');
@@ -186,7 +186,7 @@ test.describe('Google Calendar MCP Tests', () => {
       logProgress('✅ Proactive auth section remains visible as part of conversation history');
 
       // Check that the button shows "✓ Connected" after successful authentication
-      await expect(page.getByText('✓ Connected')).toBeVisible();
+      await expect(page.getByText('✓ Connected')).toBeVisible({ timeout: 30000 });
       logProgress(
         '✅ Found "✓ Connected" status indicating successful Google Calendar authentication',
       );

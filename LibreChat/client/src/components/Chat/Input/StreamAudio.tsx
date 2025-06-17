@@ -20,7 +20,7 @@ const promiseTimeoutMessage = 'Reader promise timed out';
 const maxPromiseTime = 15000;
 
 export default function StreamAudio({ index = 0 }) {
-  const { token } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
 
   const cacheTTS = useRecoilValue(store.cacheTTS);
   const playbackRate = useRecoilValue(store.playbackRate);
@@ -51,7 +51,7 @@ export default function StreamAudio({ index = 0 }) {
     const latestText = getLatestText(latestMessage);
 
     const shouldFetch = !!(
-      token != null &&
+      isAuthenticated &&
       automaticPlayback &&
       !isSubmitting &&
       latestMessage &&
@@ -95,7 +95,8 @@ export default function StreamAudio({ index = 0 }) {
         logger.log('Fetching audio...', navigator.userAgent);
         const response = await fetch('/api/files/speech/tts', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ messageId: latestMessage?.messageId, runId: activeRunId, voice }),
         });
 
@@ -190,7 +191,7 @@ export default function StreamAudio({ index = 0 }) {
     cacheTTS,
     audioRef,
     voice,
-    token,
+    isAuthenticated,
   ]);
 
   useEffect(() => {

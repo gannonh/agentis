@@ -3,7 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import MCPServerToolSelect from '../MCPServerToolSelect';
 
 // Mock localize hook
-jest.mock('~/hooks', () => ({
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string, args?: { [key: string]: unknown }) => {
     if (key === 'com_ui_select_tools_for') return `Select tools for ${args?.[0]}`;
     if (key === 'com_ui_select_tools_description')
@@ -43,11 +45,11 @@ describe('MCPServerToolSelect', () => {
 
   const defaultProps = {
     isOpen: true,
-    setIsOpen: jest.fn(),
+    setIsOpen: vi.fn(),
     serverName: 'Google Sheets',
     tools: mockTools,
     helperTools: mockHelperTools,
-    onConfirm: jest.fn(),
+    onConfirm: vi.fn(),
   };
 
   it('renders correctly when open', () => {

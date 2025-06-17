@@ -1,16 +1,16 @@
 import multer from 'multer';
 import express from 'express';
-import {  CacheKeys, EModelEndpoint  } from 'librechat-data-provider';
-import {  getConvosByCursor, deleteConvos, getConvo, saveConvo  } from '#models/Conversation.js';
-import {  forkConversation, duplicateConversation  } from '#server/utils/import/fork.js';
-import {  storage, importFileFilter  } from '#server/routes/files/multer.js';
-import requireJwtAuth from '#server/middleware/requireJwtAuth.js';
-import {  importConversations  } from '#server/utils/import.js';
-import {  createImportLimiters  } from '#server/middleware.js';
-import {  deleteToolCalls  } from '#models/ToolCall.js';
-import {  isEnabled, sleep  } from '#server/utils.js';
+import { CacheKeys, EModelEndpoint } from 'librechat-data-provider';
+import { getConvosByCursor, deleteConvos, getConvo, saveConvo } from '#models/Conversation.js';
+import { forkConversation, duplicateConversation } from '#server/utils/import/fork.js';
+import { storage, importFileFilter } from '#server/routes/files/multer.js';
+import requireBetterAuth from '#server/middleware/requireBetterAuth.js';
+import { importConversations } from '#server/utils/import.js';
+import { createImportLimiters } from '#server/middleware.js';
+import { deleteToolCalls } from '#models/ToolCall.js';
+import { isEnabled, sleep } from '#server/utils.js';
 import getLogStores from '#cache/getLogStores.js';
-import {  logger  } from '#config.js';
+import { logger } from '#config.js';
 import azureAssistantsEndpoint from '#server/services/Endpoints/azureAssistants/index.js';
 import assistantsEndpoint from '#server/services/Endpoints/assistants/index.js';
 
@@ -20,7 +20,7 @@ const assistantClients = {
 };
 
 const router = express.Router();
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 
 router.get('/', async (req, res) => {
   const limit = parseInt(req.query.limit, 10) || 25;

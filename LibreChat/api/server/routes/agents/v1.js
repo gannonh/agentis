@@ -1,6 +1,6 @@
 import express from 'express';
-import {  PermissionTypes, Permissions  } from 'librechat-data-provider';
-import {  requireJwtAuth, generateCheckAccess  } from '#server/middleware.js';
+import { PermissionTypes, Permissions } from 'librechat-data-provider';
+import { requireBetterAuth, generateCheckAccess } from '#server/middleware.js';
 import v1 from '#server/controllers/agents/v1.js';
 import actions from './actions.js';
 import tools from './tools.js';
@@ -22,7 +22,7 @@ const checkGlobalAgentShare = generateCheckAccess(
   },
 );
 
-router.use(requireJwtAuth);
+router.use(requireBetterAuth);
 router.use(checkAgentAccess);
 
 /**

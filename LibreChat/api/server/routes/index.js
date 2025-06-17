@@ -17,7 +17,7 @@ import convos from './convos.js';
 import config from './config.js';
 import agents from './agents/index.js';
 import roles from './roles.js';
-import oauth from './oauth.js';
+// oauth routes removed - using Better Auth instead
 import * as files from './files/index.js';
 import share from './share.js';
 import tags from './tags.js';
@@ -37,7 +37,6 @@ export {
   user,
   tags,
   roles,
-  oauth,
   files,
   share,
   banner,

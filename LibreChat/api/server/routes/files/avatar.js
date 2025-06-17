@@ -1,9 +1,9 @@
 import { promises as fs } from 'fs';
 import express from 'express';
-import {  getStrategyFunctions  } from '#server/services/Files/strategies.js';
+import { getStrategyFunctions } from '#server/services/Files/strategies.js';
 import resizeAvatar from '#server/services/Files/images/avatar.js';
-import {  filterFile  } from '#server/services/Files/process.js';
-import {  logger  } from '#config.js';
+import { filterFile } from '#server/services/Files/process.js';
+import { logger } from '#config.js';
 
 const router = express.Router();
 

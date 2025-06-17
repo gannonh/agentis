@@ -113,6 +113,10 @@ export const register = (payload: t.TRegisterUser) => {
   return request.post(endpoints.register(), payload);
 };
 
+export const getSession = (): Promise<t.TLoginResponse> => {
+  return request.get(endpoints.session());
+};
+
 export const userKeyQuery = (name: string): Promise<t.TCheckUserKeyResponse> =>
   request.get(endpoints.userKeyQuery(name));
 

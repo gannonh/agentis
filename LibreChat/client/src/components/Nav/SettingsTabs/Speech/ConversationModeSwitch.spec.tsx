@@ -3,15 +3,16 @@ import '@testing-library/jest-dom/extend-expect';
 import { render, fireEvent } from 'test/layout-test-utils';
 import ConversationModeSwitch from './ConversationModeSwitch';
 import { RecoilRoot } from 'recoil';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 describe('ConversationModeSwitch', () => {
   /**
    * Mock function to set the auto-send-text state.
    */
-  let mockSetConversationMode: jest.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
+  let mockSetConversationMode: vi.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
 
   beforeEach(() => {
-    mockSetConversationMode = jest.fn();
+    mockSetConversationMode = vi.fn();
   });
 
   it('renders correctly', () => {

@@ -3,15 +3,16 @@ import '@testing-library/jest-dom/extend-expect';
 import { render, fireEvent } from 'test/layout-test-utils';
 import AutomaticPlaybackSwitch from '../AutomaticPlaybackSwitch';
 import { RecoilRoot } from 'recoil';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
 describe('AutomaticPlaybackSwitch', () => {
   /**
    * Mock function to set the text-to-speech state.
    */
-  let mockSetAutomaticPlayback: jest.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
+  let mockSetAutomaticPlayback: vi.Mock<void, [boolean]> | ((value: boolean) => void) | undefined;
 
   beforeEach(() => {
-    mockSetAutomaticPlayback = jest.fn();
+    mockSetAutomaticPlayback = vi.fn();
   });
 
   it('renders correctly', () => {
