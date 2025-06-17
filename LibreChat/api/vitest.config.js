@@ -58,6 +58,8 @@ export default defineConfig({
       include: [
         'auth.js',
         'config/betterAuth.js',
+        'utils/organization.js',
+        'server/services/OrganizationService.js',
         // Add more files as we write tests for them
       ],
     },

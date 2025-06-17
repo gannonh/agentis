@@ -8,6 +8,7 @@ import { logger } from '#config/index.js';
 import { User } from '../../models/index.js';
 import { SystemRoles } from 'librechat-data-provider';
 import { getAuth } from '../../auth.js';
+import { organizationService } from '#server/services/OrganizationService.js';
 
 /**
  * Middleware to require Better Auth session authentication
@@ -46,6 +47,25 @@ const requireBetterAuth = async (req, res, next) => {
     // If user doesn't exist in our collection, sync from Better Auth
     if (!user) {
       logger.info(`Syncing user ${session.user.id} from Better Auth to LibreChat`);
+
+      // Handle organization assignment for new user
+      let organizationInfo = null;
+      try {
+        organizationInfo = await organizationService.handleUserOrganizationAssignment(
+          session.user.email,
+          session.user.id,
+        );
+        logger.info('Organization assignment completed for new user:', {
+          userId: session.user.id,
+          organizationId: organizationInfo.organization.id,
+          role: organizationInfo.memberRole,
+          isNewOrg: organizationInfo.isNewOrganization,
+        });
+      } catch (error) {
+        logger.error('Failed to assign organization to new user:', error);
+        // Continue without organization assignment - user can be assigned later
+      }
+
       const newUser = new User({
         _id: session.user.id, // Use Better Auth user ID
         name: session.user.name,
@@ -54,6 +74,11 @@ const requireBetterAuth = async (req, res, next) => {
         provider: 'local', // Default provider
         role: SystemRoles.USER,
         termsAccepted: true, // Assume terms accepted if they can log in
+        // Add organization fields if assignment was successful
+        ...(organizationInfo && {
+          organizationId: organizationInfo.organization.id,
+          orgRole: organizationInfo.memberRole,
+        }),
       });
       await newUser.save();
       user = newUser.toObject();

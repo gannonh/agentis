@@ -8,9 +8,11 @@
 
 import { betterAuth } from 'better-auth';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
+import { organization } from 'better-auth/plugins';
 import mongoose from 'mongoose';
 import { logger } from '#config/index.js';
 import { betterAuthConfig } from '#config/betterAuth.js';
+import { handleOrganizationAssignment } from '#utils/organization.js';
 
 /**
  * Better Auth instance, initialized after MongoDB connection
@@ -47,6 +49,46 @@ mongoose.connection.once('open', () => {
       database: mongodbAdapter(db),
       secret: process.env.BETTER_AUTH_SECRET,
       ...betterAuthConfig,
+      plugins: [
+        organization({
+          // Allow any user to create organization (auto-created based on email domain)
+          allowUserToCreateOrganization: true,
+          // Set creator role as account_owner (equivalent to owner)
+          creatorRole: 'owner',
+          // Organization creation hooks for email domain-based logic
+          organizationCreation: {
+            beforeCreate: async ({ organization, user }) => {
+              logger.debug('Before organization creation hook triggered', {
+                orgName: organization.name,
+                userEmail: user.email,
+              });
+
+              // Add email domain to metadata
+              const domain = user.email.split('@')[1];
+              return {
+                data: {
+                  ...organization,
+                  metadata: {
+                    ...organization.metadata,
+                    domain,
+                    autoCreated: true,
+                    createdFromEmail: user.email,
+                  },
+                },
+              };
+            },
+            afterCreate: async ({ organization, member, user }) => {
+              logger.info('Organization created successfully', {
+                orgId: organization.id,
+                orgName: organization.name,
+                userId: user.id,
+                userEmail: user.email,
+                role: member.role,
+              });
+            },
+          },
+        }),
+      ],
       socialProviders:
         googleClientId && googleClientSecret
           ? {
