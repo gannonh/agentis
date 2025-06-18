@@ -1,24 +1,36 @@
 /**
  * @fileoverview Better Auth client configuration for React frontend
  * @module config/betterAuth
+ * 
+ * This module provides a comprehensive Better Auth client setup with:
+ * - Organization management capabilities
+ * - Admin functionality for platform management
+ * - TypeScript type definitions for all auth-related interfaces
+ * - Helper functions for common auth operations
  */
 
 import { createAuthClient } from 'better-auth/react';
-import { organizationClient } from 'better-auth/client/plugins';
-import { adminClient } from 'better-auth/client/plugins';
+import { organizationClient, adminClient } from 'better-auth/client/plugins';
 
 /**
- * Better Auth client configuration
- * Connects to the backend Better Auth server with organization and admin support
+ * Base URL for the Better Auth backend server
+ * Uses VITE_API_HOST environment variable or defaults to localhost
  */
 const baseURL = import.meta.env.VITE_API_HOST || 'http://localhost:3080';
 
 /**
  * Better Auth React client instance
- * Configured for organization support, admin functionality, and Google OAuth
+ * Configured with organization and admin plugins for multi-tenant functionality
+ * 
+ * Features:
+ * - Email/password authentication
+ * - Google OAuth integration
+ * - Organization membership management
+ * - Role-based access control
+ * - Admin platform management
  */
 export const authClient = createAuthClient({
-  baseURL: baseURL,
+  baseURL,
   basePath: '/api/auth',
   plugins: [organizationClient(), adminClient()],
 });
@@ -167,3 +179,142 @@ export interface CreateUserData {
   emailVerified?: boolean;
   data?: Record<string, any>;
 }
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Type guards for role checking
+ */
+export const roleCheckers = {
+  /**
+   * Check if user has organization owner role
+   */
+  isOwner: (role: UserRole): role is 'owner' => role === 'owner',
+  
+  /**
+   * Check if user has organization admin role
+   */
+  isOrgAdmin: (role: UserRole): role is 'admin' => role === 'admin',
+  
+  /**
+   * Check if user has organization member role
+   */
+  isMember: (role: UserRole): role is 'member' => role === 'member',
+  
+  /**
+   * Check if user has platform admin role
+   */
+  isPlatformAdmin: (role: AdminRole): role is 'admin' => role === 'admin',
+  
+  /**
+   * Check if user can manage organization (owner or admin)
+   */
+  canManageOrganization: (role: UserRole): boolean => 
+    role === 'owner' || role === 'admin',
+  
+  /**
+   * Check if user can invite members (owner or admin)
+   */
+  canInviteMembers: (role: UserRole): boolean => 
+    role === 'owner' || role === 'admin',
+  
+  /**
+   * Check if user can manage members (owner only)
+   */
+  canManageMembers: (role: UserRole): boolean => 
+    role === 'owner',
+} as const;
+
+/**
+ * Auth utility functions
+ */
+export const authUtils = {
+  /**
+   * Get display name for user role
+   */
+  getRoleDisplayName: (role: UserRole): string => {
+    const roleNames: Record<UserRole, string> = {
+      owner: 'Owner',
+      admin: 'Admin',
+      member: 'Member',
+    };
+    return roleNames[role];
+  },
+  
+  /**
+   * Get user's initials for avatar display
+   */
+  getUserInitials: (name: string): string => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  },
+  
+  /**
+   * Check if email belongs to a specific domain
+   */
+  getEmailDomain: (email: string): string => {
+    return email.split('@')[1]?.toLowerCase() || '';
+  },
+  
+  /**
+   * Generate organization slug from name
+   */
+  generateSlug: (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  },
+  
+  /**
+   * Check if invitation is expired
+   */
+  isInvitationExpired: (expiresAt: Date): boolean => {
+    return new Date() > new Date(expiresAt);
+  },
+} as const;
+
+/**
+ * Constants for auth configuration
+ */
+export const AUTH_CONSTANTS = {
+  /**
+   * Default session timeout (in milliseconds)
+   */
+  SESSION_TIMEOUT: 24 * 60 * 60 * 1000, // 24 hours
+  
+  /**
+   * Invitation expiry time (in milliseconds)
+   */
+  INVITATION_EXPIRY: 7 * 24 * 60 * 60 * 1000, // 7 days
+  
+  /**
+   * Maximum organization name length
+   */
+  MAX_ORG_NAME_LENGTH: 50,
+  
+  /**
+   * Maximum user name length
+   */
+  MAX_USER_NAME_LENGTH: 100,
+  
+  /**
+   * Minimum password length
+   */
+  MIN_PASSWORD_LENGTH: 8,
+  
+  /**
+   * Valid user roles
+   */
+  USER_ROLES: ['owner', 'admin', 'member'] as const,
+  
+  /**
+   * Valid admin roles
+   */
+  ADMIN_ROLES: ['admin', 'user'] as const,
+} as const;

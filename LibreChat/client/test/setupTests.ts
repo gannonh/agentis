@@ -1,4 +1,4 @@
-import { beforeEach, vi } from 'vitest';
+import { beforeEach, afterEach, vi } from 'vitest';
 
 /* This file is automatically executed before running tests
  * Vitest setup for React components and utilities
@@ -60,8 +60,30 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Suppress console.log, console.warn, console.error during tests to reduce noise
+// Only show console output if needed for debugging specific tests
+const originalConsoleLog = console.log;
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  
+  // Suppress console output during tests unless DEBUG_TESTS is set
+  if (!process.env.DEBUG_TESTS) {
+    console.log = vi.fn();
+    console.warn = vi.fn();
+    console.error = vi.fn();
+  }
+});
+
+// Restore console output after tests if suppressed
+afterEach(() => {
+  if (!process.env.DEBUG_TESTS) {
+    console.log = originalConsoleLog;
+    console.warn = originalConsoleWarn;
+    console.error = originalConsoleError;
+  }
 });
 
 vi.mock('react-i18next', () => {
