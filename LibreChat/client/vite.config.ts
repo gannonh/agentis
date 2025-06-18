@@ -150,6 +150,14 @@ export default defineConfig({
         if (warning.message.includes('Error when using sourcemap')) {
           return;
         }
+        // Suppress PostCSS transformation warnings for complex selectors
+        if (warning.plugin === 'postcss' && warning.message.includes('can not be transformed')) {
+          return;
+        }
+        // Also suppress warnings that come through as general messages
+        if (warning.message.includes('[vite:css][postcss]') && warning.message.includes('Complex selectors')) {
+          return;
+        }
         warn(warning);
       },
     },
@@ -158,7 +166,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '~': path.join(__dirname, 'src/'),
-      $fonts: resolve('public/fonts'),
+      $fonts: '/fonts',
     },
   },
 });
