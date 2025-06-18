@@ -19,15 +19,15 @@ const QUERY_PATTERNS = {
       description: 'Find organization by email domain',
       frequency: 'Every user login/registration',
       currentPerformance: 'O(n) table scan - SLOW',
-      targetPerformance: '<10ms with index'
+      targetPerformance: '<10ms with index',
     },
     {
-      collection: 'organization', 
+      collection: 'organization',
       query: { slug: 1 },
       description: 'Find organization by slug',
       frequency: 'Organization creation with collision handling',
       currentPerformance: 'O(n) table scan',
-      targetPerformance: '<5ms with unique index'
+      targetPerformance: '<5ms with unique index',
     },
     {
       collection: 'member',
@@ -35,7 +35,7 @@ const QUERY_PATTERNS = {
       description: 'Check user membership in organization',
       frequency: 'Every permission check, every API request',
       currentPerformance: 'O(n) table scan - CRITICAL',
-      targetPerformance: '<2ms with compound index'
+      targetPerformance: '<2ms with compound index',
     },
     {
       collection: 'member',
@@ -43,7 +43,7 @@ const QUERY_PATTERNS = {
       description: 'List user organizations',
       frequency: 'Session initialization, dashboard loading',
       currentPerformance: 'O(n) table scan',
-      targetPerformance: '<5ms with index'
+      targetPerformance: '<5ms with index',
     },
     {
       collection: 'member',
@@ -51,8 +51,8 @@ const QUERY_PATTERNS = {
       description: 'Find organization admins/owners',
       frequency: 'Permission checks, invitation management',
       currentPerformance: 'O(n) table scan',
-      targetPerformance: '<5ms with compound index'
-    }
+      targetPerformance: '<5ms with compound index',
+    },
   ],
 
   // Medium frequency queries
@@ -63,7 +63,7 @@ const QUERY_PATTERNS = {
       description: 'List organization invitations by status',
       frequency: 'Admin dashboard, invitation management',
       currentPerformance: 'O(n) table scan',
-      targetPerformance: '<10ms with compound index'
+      targetPerformance: '<10ms with compound index',
     },
     {
       collection: 'invitation',
@@ -71,7 +71,7 @@ const QUERY_PATTERNS = {
       description: 'Check existing invitations for email',
       frequency: 'Preventing duplicate invitations',
       currentPerformance: 'O(n) table scan',
-      targetPerformance: '<5ms with compound index'
+      targetPerformance: '<5ms with compound index',
     },
     {
       collection: 'invitation',
@@ -79,8 +79,8 @@ const QUERY_PATTERNS = {
       description: 'Cleanup expired invitations',
       frequency: 'Background cleanup jobs',
       currentPerformance: 'O(n) table scan',
-      targetPerformance: 'Automatic with TTL index'
-    }
+      targetPerformance: 'Automatic with TTL index',
+    },
   ],
 
   // Low frequency but important for data integrity
@@ -91,9 +91,9 @@ const QUERY_PATTERNS = {
       description: 'Organization creation analytics',
       frequency: 'Reports and analytics',
       currentPerformance: 'Acceptable without index',
-      targetPerformance: '<20ms with index for large datasets'
-    }
-  ]
+      targetPerformance: '<20ms with index for large datasets',
+    },
+  ],
 };
 
 /**
@@ -105,73 +105,73 @@ const INDEX_STRATEGY = {
     {
       name: 'organization_slug_unique',
       spec: { slug: 1 },
-      options: { 
+      options: {
         unique: true,
         background: true,
-        name: 'organization_slug_unique'
+        name: 'organization_slug_unique',
       },
-      rationale: 'Ensure slug uniqueness and fast organization lookups'
+      rationale: 'Ensure slug uniqueness and fast organization lookups',
     },
     {
       name: 'organization_domain_lookup',
       spec: { 'metadata.domain': 1 },
-      options: { 
+      options: {
         background: true,
         sparse: true, // Only index documents that have metadata.domain
-        name: 'organization_domain_lookup'
+        name: 'organization_domain_lookup',
       },
-      rationale: 'Fast domain-based organization discovery during user registration/login'
+      rationale: 'Fast domain-based organization discovery during user registration/login',
     },
     {
       name: 'organization_created_analytics',
       spec: { createdAt: 1 },
-      options: { 
+      options: {
         background: true,
-        name: 'organization_created_analytics'
+        name: 'organization_created_analytics',
       },
-      rationale: 'Support analytics queries and organization listing with date sorting'
-    }
+      rationale: 'Support analytics queries and organization listing with date sorting',
+    },
   ],
 
-  // Member collection indexes  
+  // Member collection indexes
   member: [
     {
       name: 'member_user_org_unique',
       spec: { userId: 1, organizationId: 1 },
-      options: { 
+      options: {
         unique: true,
         background: true,
-        name: 'member_user_org_unique'
+        name: 'member_user_org_unique',
       },
-      rationale: 'CRITICAL: Prevent duplicate memberships and enable fast permission checks'
+      rationale: 'CRITICAL: Prevent duplicate memberships and enable fast permission checks',
     },
     {
       name: 'member_user_lookup',
       spec: { userId: 1 },
-      options: { 
+      options: {
         background: true,
-        name: 'member_user_lookup'
+        name: 'member_user_lookup',
       },
-      rationale: 'Fast user organization listing for session initialization'
+      rationale: 'Fast user organization listing for session initialization',
     },
     {
       name: 'member_org_role_lookup',
       spec: { organizationId: 1, role: 1 },
-      options: { 
+      options: {
         background: true,
-        name: 'member_org_role_lookup'
+        name: 'member_org_role_lookup',
       },
-      rationale: 'Fast admin/owner lookups for permission checks and invitation management'
+      rationale: 'Fast admin/owner lookups for permission checks and invitation management',
     },
     {
       name: 'member_org_lookup',
       spec: { organizationId: 1 },
-      options: { 
+      options: {
         background: true,
-        name: 'member_org_lookup'
+        name: 'member_org_lookup',
       },
-      rationale: 'List all organization members efficiently'
-    }
+      rationale: 'List all organization members efficiently',
+    },
   ],
 
   // Invitation collection indexes
@@ -179,41 +179,41 @@ const INDEX_STRATEGY = {
     {
       name: 'invitation_org_status_lookup',
       spec: { organizationId: 1, status: 1 },
-      options: { 
+      options: {
         background: true,
-        name: 'invitation_org_status_lookup'
+        name: 'invitation_org_status_lookup',
       },
-      rationale: 'Fast invitation listing by organization and status filtering'
+      rationale: 'Fast invitation listing by organization and status filtering',
     },
     {
       name: 'invitation_email_status_lookup',
       spec: { email: 1, status: 1 },
-      options: { 
+      options: {
         background: true,
-        name: 'invitation_email_status_lookup'
+        name: 'invitation_email_status_lookup',
       },
-      rationale: 'Prevent duplicate invitations and check invitation status by email'
+      rationale: 'Prevent duplicate invitations and check invitation status by email',
     },
     {
       name: 'invitation_expiration_ttl',
       spec: { expiresAt: 1 },
-      options: { 
+      options: {
         expireAfterSeconds: 0, // TTL index - documents expire based on expiresAt field
         background: true,
-        name: 'invitation_expiration_ttl'
+        name: 'invitation_expiration_ttl',
       },
-      rationale: 'Automatic cleanup of expired invitations without manual intervention'
+      rationale: 'Automatic cleanup of expired invitations without manual intervention',
     },
     {
       name: 'invitation_org_lookup',
       spec: { organizationId: 1 },
-      options: { 
+      options: {
         background: true,
-        name: 'invitation_org_lookup'
+        name: 'invitation_org_lookup',
       },
-      rationale: 'List all invitations for an organization efficiently'
-    }
-  ]
+      rationale: 'List all invitations for an organization efficiently',
+    },
+  ],
 };
 
 /**
@@ -222,7 +222,7 @@ const INDEX_STRATEGY = {
 const PERFORMANCE_TARGETS = {
   // Response time targets (95th percentile)
   organizationLookupByDomain: '< 10ms',
-  organizationLookupBySlug: '< 5ms', 
+  organizationLookupBySlug: '< 5ms',
   userMembershipCheck: '< 2ms',
   userOrganizationList: '< 5ms',
   organizationMemberList: '< 10ms',
@@ -234,11 +234,11 @@ const PERFORMANCE_TARGETS = {
   maxUsers: 100000,
   maxMemberships: 1000000,
   maxInvitations: 100000,
-  
+
   // Concurrency targets
   concurrentUserLogins: 1000,
   concurrentPermissionChecks: 5000,
-  concurrentInvitationCreation: 100
+  concurrentInvitationCreation: 100,
 };
 
 /**
@@ -247,50 +247,54 @@ const PERFORMANCE_TARGETS = {
  */
 export async function createOrganizationIndexes() {
   logger.info('Starting organization database index creation');
-  
+
   try {
     await connectDb();
     const db = mongoose.connection.db;
     const results = {
       created: [],
       skipped: [],
-      errors: []
+      errors: [],
     };
 
     // Create indexes for each collection
     for (const [collectionName, indexes] of Object.entries(INDEX_STRATEGY)) {
       logger.info(`Creating indexes for ${collectionName} collection`);
-      
+
       const collection = db.collection(collectionName);
-      
+
       for (const indexDef of indexes) {
         try {
           const indexName = await collection.createIndex(indexDef.spec, indexDef.options);
-          
+
           results.created.push({
             collection: collectionName,
             name: indexDef.name,
             spec: indexDef.spec,
             indexName,
-            rationale: indexDef.rationale
+            rationale: indexDef.rationale,
           });
-          
+
           logger.info(`✅ Created index: ${indexDef.name} on ${collectionName}`);
         } catch (error) {
-          if (error.code === 85) { // Index already exists
+          if (error.code === 85) {
+            // Index already exists
             results.skipped.push({
               collection: collectionName,
               name: indexDef.name,
-              reason: 'Index already exists'
+              reason: 'Index already exists',
             });
             logger.info(`⏭️  Skipped existing index: ${indexDef.name} on ${collectionName}`);
           } else {
             results.errors.push({
               collection: collectionName,
               name: indexDef.name,
-              error: error.message
+              error: error.message,
             });
-            logger.error(`❌ Failed to create index: ${indexDef.name} on ${collectionName}:`, error);
+            logger.error(
+              `❌ Failed to create index: ${indexDef.name} on ${collectionName}:`,
+              error,
+            );
           }
         }
       }
@@ -299,7 +303,7 @@ export async function createOrganizationIndexes() {
     logger.info('Organization database index creation completed', {
       created: results.created.length,
       skipped: results.skipped.length,
-      errors: results.errors.length
+      errors: results.errors.length,
     });
 
     return results;
@@ -315,36 +319,40 @@ export async function createOrganizationIndexes() {
  */
 export async function dropOrganizationIndexes() {
   logger.warn('Dropping organization database indexes');
-  
+
   try {
     await connectDb();
     const db = mongoose.connection.db;
     const results = {
       dropped: [],
-      errors: []
+      errors: [],
     };
 
     for (const [collectionName, indexes] of Object.entries(INDEX_STRATEGY)) {
       const collection = db.collection(collectionName);
-      
+
       for (const indexDef of indexes) {
         try {
           await collection.dropIndex(indexDef.name);
           results.dropped.push({
             collection: collectionName,
-            name: indexDef.name
+            name: indexDef.name,
           });
           logger.info(`🗑️  Dropped index: ${indexDef.name} from ${collectionName}`);
         } catch (error) {
-          if (error.code === 27) { // Index doesn't exist
+          if (error.code === 27) {
+            // Index doesn't exist
             logger.info(`⏭️  Index doesn't exist: ${indexDef.name} on ${collectionName}`);
           } else {
             results.errors.push({
               collection: collectionName,
               name: indexDef.name,
-              error: error.message
+              error: error.message,
             });
-            logger.error(`❌ Failed to drop index: ${indexDef.name} from ${collectionName}:`, error);
+            logger.error(
+              `❌ Failed to drop index: ${indexDef.name} from ${collectionName}:`,
+              error,
+            );
           }
         }
       }
@@ -363,7 +371,7 @@ export async function dropOrganizationIndexes() {
  */
 export async function analyzeIndexUsage() {
   logger.info('Analyzing organization index usage');
-  
+
   try {
     await connectDb();
     const db = mongoose.connection.db;
@@ -371,25 +379,25 @@ export async function analyzeIndexUsage() {
 
     for (const collectionName of Object.keys(INDEX_STRATEGY)) {
       const collection = db.collection(collectionName);
-      
+
       // Get current indexes
       const indexes = await collection.indexes();
-      
+
       // Get collection stats
       const stats = await collection.stats();
-      
+
       analysis[collectionName] = {
         documentCount: stats.count,
         totalSize: stats.size,
         avgDocumentSize: stats.avgObjSize,
-        indexes: indexes.map(idx => ({
+        indexes: indexes.map((idx) => ({
           name: idx.name,
           key: idx.key,
           unique: idx.unique || false,
           sparse: idx.sparse || false,
           ttl: idx.expireAfterSeconds !== undefined,
-          size: idx.indexSizes?.[idx.name] || 'unknown'
-        }))
+          size: idx.indexSizes?.[idx.name] || 'unknown',
+        })),
       };
     }
 
@@ -404,8 +412,4 @@ export async function analyzeIndexUsage() {
 /**
  * Exports the analysis data for external use
  */
-export {
-  QUERY_PATTERNS,
-  INDEX_STRATEGY,
-  PERFORMANCE_TARGETS
-};
+export { QUERY_PATTERNS, INDEX_STRATEGY, PERFORMANCE_TARGETS };

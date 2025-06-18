@@ -51,14 +51,14 @@ describe('InvitationService', () => {
         role: 'member',
         status: 'pending',
       };
-      
+
       mockAuth.api.createInvitation.mockResolvedValue(mockInvitation);
 
       const result = await invitationService.createInvitation(
         'org123',
         'user@company.com',
         'member',
-        'user123'
+        'user123',
       );
 
       expect(result).toEqual(mockInvitation);
@@ -78,7 +78,7 @@ describe('InvitationService', () => {
       mockAuth.api.createInvitation.mockRejectedValue(new Error('User already invited'));
 
       await expect(
-        invitationService.createInvitation('org123', 'user@company.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'user@company.com', 'member', 'user123'),
       ).rejects.toThrow('User already invited');
     });
   });
@@ -99,7 +99,7 @@ describe('InvitationService', () => {
           status: 'pending',
         },
       ];
-      
+
       mockAuth.api.listInvitations.mockResolvedValue(mockInvitations);
 
       const result = await invitationService.listInvitations('org123', 'user123');
@@ -126,9 +126,9 @@ describe('InvitationService', () => {
     it('should handle listing errors', async () => {
       mockAuth.api.listInvitations.mockRejectedValue(new Error('Access denied'));
 
-      await expect(
-        invitationService.listInvitations('org123', 'user123')
-      ).rejects.toThrow('Access denied');
+      await expect(invitationService.listInvitations('org123', 'user123')).rejects.toThrow(
+        'Access denied',
+      );
     });
   });
 
@@ -153,9 +153,9 @@ describe('InvitationService', () => {
     it('should handle cancellation errors', async () => {
       mockAuth.api.cancelInvitation.mockRejectedValue(new Error('Invitation not found'));
 
-      await expect(
-        invitationService.cancelInvitation('inv123', 'user123')
-      ).rejects.toThrow('Invitation not found');
+      await expect(invitationService.cancelInvitation('inv123', 'user123')).rejects.toThrow(
+        'Invitation not found',
+      );
     });
   });
 
@@ -166,7 +166,7 @@ describe('InvitationService', () => {
         role: 'member',
         success: true,
       };
-      
+
       mockAuth.api.acceptInvitation.mockResolvedValue(mockResult);
 
       const result = await invitationService.acceptInvitation('inv123', 'user123');
@@ -185,9 +185,9 @@ describe('InvitationService', () => {
     it('should handle acceptance errors', async () => {
       mockAuth.api.acceptInvitation.mockRejectedValue(new Error('Invitation expired'));
 
-      await expect(
-        invitationService.acceptInvitation('inv123', 'user123')
-      ).rejects.toThrow('Invitation expired');
+      await expect(invitationService.acceptInvitation('inv123', 'user123')).rejects.toThrow(
+        'Invitation expired',
+      );
     });
   });
 
@@ -212,9 +212,9 @@ describe('InvitationService', () => {
     it('should handle rejection errors', async () => {
       mockAuth.api.rejectInvitation.mockRejectedValue(new Error('Invitation not found'));
 
-      await expect(
-        invitationService.rejectInvitation('inv123', 'user123')
-      ).rejects.toThrow('Invitation not found');
+      await expect(invitationService.rejectInvitation('inv123', 'user123')).rejects.toThrow(
+        'Invitation not found',
+      );
     });
   });
 
@@ -227,7 +227,7 @@ describe('InvitationService', () => {
         role: 'member',
         status: 'pending',
       };
-      
+
       mockAuth.api.getInvitation.mockResolvedValue(mockInvitation);
 
       const result = await invitationService.getInvitation('inv123', 'user123');
@@ -246,9 +246,9 @@ describe('InvitationService', () => {
     it('should handle get invitation errors', async () => {
       mockAuth.api.getInvitation.mockRejectedValue(new Error('Invitation not found'));
 
-      await expect(
-        invitationService.getInvitation('inv123', 'user123')
-      ).rejects.toThrow('Invitation not found');
+      await expect(invitationService.getInvitation('inv123', 'user123')).rejects.toThrow(
+        'Invitation not found',
+      );
     });
   });
 
@@ -260,7 +260,7 @@ describe('InvitationService', () => {
         status: 'pending',
       };
       const mockResult = { success: true };
-      
+
       mockAuth.api.getInvitation.mockResolvedValue(mockInvitation);
       mockAuth.api.updateInvitation.mockResolvedValue(mockResult);
 
@@ -285,36 +285,36 @@ describe('InvitationService', () => {
         email: 'user@company.com',
         status: 'accepted',
       };
-      
+
       mockAuth.api.getInvitation.mockResolvedValue(mockInvitation);
 
-      await expect(
-        invitationService.resendInvitation('inv123', 'user123')
-      ).rejects.toThrow('Cannot resend invitation with status: accepted');
+      await expect(invitationService.resendInvitation('inv123', 'user123')).rejects.toThrow(
+        'Cannot resend invitation with status: accepted',
+      );
     });
 
     it('should handle resend errors', async () => {
       mockAuth.api.getInvitation.mockRejectedValue(new Error('Invitation not found'));
 
-      await expect(
-        invitationService.resendInvitation('inv123', 'user123')
-      ).rejects.toThrow('Invitation not found');
+      await expect(invitationService.resendInvitation('inv123', 'user123')).rejects.toThrow(
+        'Invitation not found',
+      );
     });
   });
 
   describe('hasInvitationPermission', () => {
-    it('should return true for organization owner', async () => {
+    it('should return {ok: true, hasPermission: true} for organization owner', async () => {
       const mockMember = {
         role: 'owner',
         organizationId: 'org123',
         userId: 'user123',
       };
-      
+
       mockAuth.api.getMember.mockResolvedValue(mockMember);
 
       const result = await invitationService.hasInvitationPermission('org123', 'user123');
 
-      expect(result).toBe(true);
+      expect(result).toEqual({ ok: true, hasPermission: true });
       expect(mockAuth.api.getMember).toHaveBeenCalledWith({
         body: {
           organizationId: 'org123',
@@ -326,48 +326,48 @@ describe('InvitationService', () => {
       });
     });
 
-    it('should return true for organization admin', async () => {
+    it('should return {ok: true, hasPermission: true} for organization admin', async () => {
       const mockMember = {
         role: 'admin',
         organizationId: 'org123',
         userId: 'user123',
       };
-      
+
       mockAuth.api.getMember.mockResolvedValue(mockMember);
 
       const result = await invitationService.hasInvitationPermission('org123', 'user123');
 
-      expect(result).toBe(true);
+      expect(result).toEqual({ ok: true, hasPermission: true });
     });
 
-    it('should return false for regular member', async () => {
+    it('should return {ok: true, hasPermission: false} for regular member', async () => {
       const mockMember = {
         role: 'member',
         organizationId: 'org123',
         userId: 'user123',
       };
-      
+
       mockAuth.api.getMember.mockResolvedValue(mockMember);
 
       const result = await invitationService.hasInvitationPermission('org123', 'user123');
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ ok: true, hasPermission: false });
     });
 
-    it('should return false for non-member', async () => {
+    it('should return {ok: true, hasPermission: false} for non-member', async () => {
       mockAuth.api.getMember.mockResolvedValue(null);
 
       const result = await invitationService.hasInvitationPermission('org123', 'user123');
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ ok: true, hasPermission: false });
     });
 
-    it('should return false on errors', async () => {
+    it('should return {ok: false, error} on service errors', async () => {
       mockAuth.api.getMember.mockRejectedValue(new Error('Access denied'));
 
       const result = await invitationService.hasInvitationPermission('org123', 'user123');
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ ok: false, error: 'Access denied' });
     });
   });
 });

@@ -78,7 +78,7 @@
     "format:client": "npx prettier --write \"./client/src/**/*.{js,jsx,ts,tsx}\"",
     "format:api": "npx prettier --write \"./api/**/*.{js,jsx,ts,tsx}\"",
     "format:packages": "npx prettier --write \"./packages/**/*.{js,jsx,ts,tsx}\"",
-    "typecheck": "npm run typecheck:client && npm run typecheck:packages",
+    "typecheck:all": "npm run typecheck:client && npm run typecheck:packages",
     "typecheck:client": "cd client && npx tsc --project tsconfig.typecheck.json --noEmit",
     "typecheck:client:tests": "cd client && npx tsc --project tsconfig.test.json --noEmit",
     "typecheck:packages": "cd packages/data-provider && npx tsc --project tsconfig.typecheck.json --noEmit && cd ../mcp && npx tsc --project tsconfig.typecheck.json --noEmit && cd ../data-schemas && npx tsc --project tsconfig.typecheck.json --noEmit && cd ../arcade-client && npx tsc --project tsconfig.typecheck.json --noEmit",

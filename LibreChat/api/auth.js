@@ -70,9 +70,10 @@ mongoose.connection.once('open', () => {
               });
 
               const { default: sendEmail } = await import('#server/utils/sendEmail.js');
-              
+
               // Create invitation link
-              const baseURL = process.env.DOMAIN_CLIENT || process.env.DOMAIN_SERVER || 'http://localhost:3090';
+              const baseURL =
+                process.env.DOMAIN_CLIENT || process.env.DOMAIN_SERVER || 'http://localhost:3090';
               const inviteLink = `${baseURL}/accept-invitation?token=${invitationId}`;
 
               await sendEmail({

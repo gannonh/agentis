@@ -329,7 +329,8 @@ class InvitationService {
    * Check if a user has permission to manage invitations for an organization
    * @param {string} organizationId - The ID of the organization
    * @param {string} userId - ID of the user to check permissions for
-   * @returns {Promise<boolean>} True if user has permission, false otherwise
+   * @returns {Promise<{ok: boolean, hasPermission?: boolean, error?: string}>}
+   *   Result object with ok indicating success, hasPermission for authorization result, error for service errors
    */
   async hasInvitationPermission(organizationId, userId) {
     try {
@@ -355,14 +356,22 @@ class InvitationService {
         hasPermission: !!hasPermission,
       });
 
-      return !!hasPermission;
+      return {
+        ok: true,
+        hasPermission: !!hasPermission,
+      };
     } catch (error) {
       logger.error('Error checking invitation permission', {
         error: error.message,
         organizationId,
         userId,
       });
-      return false;
+
+      // Re-throw service errors instead of conflating them with authorization failures
+      return {
+        ok: false,
+        error: error.message,
+      };
     }
   }
 }

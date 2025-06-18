@@ -36,8 +36,17 @@ router.post('/:organizationId/invitations', requireBetterAuth, async (req, res) 
     }
 
     // Check if user has permission to invite members
-    const hasPermission = await invitationService.hasInvitationPermission(organizationId, userId);
-    if (!hasPermission) {
+    const permissionResult = await invitationService.hasInvitationPermission(
+      organizationId,
+      userId,
+    );
+    if (!permissionResult.ok) {
+      return res.status(500).json({
+        error: 'Failed to check invitation permissions',
+        message: permissionResult.error,
+      });
+    }
+    if (!permissionResult.hasPermission) {
       return res.status(403).json({
         error: 'You do not have permission to invite members to this organization',
       });
@@ -58,14 +67,14 @@ router.post('/:organizationId/invitations', requireBetterAuth, async (req, res) 
     });
   } catch (error) {
     logger.error('Error creating invitation', error);
-    
+
     // Handle specific error cases
     if (error.message?.includes('already a member')) {
       return res.status(409).json({
         error: 'User is already a member of this organization',
       });
     }
-    
+
     if (error.message?.includes('already invited')) {
       return res.status(409).json({
         error: 'User has already been invited to this organization',
@@ -90,8 +99,17 @@ router.get('/:organizationId/invitations', requireBetterAuth, async (req, res) =
     const userId = req.user.id;
 
     // Check if user has permission to view invitations
-    const hasPermission = await invitationService.hasInvitationPermission(organizationId, userId);
-    if (!hasPermission) {
+    const permissionResult = await invitationService.hasInvitationPermission(
+      organizationId,
+      userId,
+    );
+    if (!permissionResult.ok) {
+      return res.status(500).json({
+        error: 'Failed to check invitation permissions',
+        message: permissionResult.error,
+      });
+    }
+    if (!permissionResult.hasPermission) {
       return res.status(403).json({
         error: 'You do not have permission to view invitations for this organization',
       });
@@ -124,13 +142,19 @@ router.delete('/invitations/:invitationId', requireBetterAuth, async (req, res) 
 
     // Get invitation details to check organization permission
     const invitation = await invitationService.getInvitation(invitationId, userId);
-    
+
     // Check if user has permission to cancel invitations for this organization
-    const hasPermission = await invitationService.hasInvitationPermission(
+    const permissionResult = await invitationService.hasInvitationPermission(
       invitation.organizationId,
       userId,
     );
-    if (!hasPermission) {
+    if (!permissionResult.ok) {
+      return res.status(500).json({
+        error: 'Failed to check invitation permissions',
+        message: permissionResult.error,
+      });
+    }
+    if (!permissionResult.hasPermission) {
       return res.status(403).json({
         error: 'You do not have permission to cancel this invitation',
       });
@@ -170,14 +194,14 @@ router.post('/invitations/:invitationId/accept', requireBetterAuth, async (req, 
     });
   } catch (error) {
     logger.error('Error accepting invitation', error);
-    
+
     // Handle specific error cases
     if (error.message?.includes('not found')) {
       return res.status(404).json({
         error: 'Invitation not found or has expired',
       });
     }
-    
+
     if (error.message?.includes('already accepted')) {
       return res.status(409).json({
         error: 'Invitation has already been accepted',
@@ -209,7 +233,7 @@ router.post('/invitations/:invitationId/reject', requireBetterAuth, async (req, 
     });
   } catch (error) {
     logger.error('Error rejecting invitation', error);
-    
+
     if (error.message?.includes('not found')) {
       return res.status(404).json({
         error: 'Invitation not found or has expired',
@@ -241,7 +265,7 @@ router.get('/invitations/:invitationId', requireBetterAuth, async (req, res) => 
     });
   } catch (error) {
     logger.error('Error getting invitation details', error);
-    
+
     if (error.message?.includes('not found')) {
       return res.status(404).json({
         error: 'Invitation not found',
@@ -267,13 +291,19 @@ router.post('/invitations/:invitationId/resend', requireBetterAuth, async (req, 
 
     // Get invitation details to check organization permission
     const invitation = await invitationService.getInvitation(invitationId, userId);
-    
+
     // Check if user has permission to resend invitations for this organization
-    const hasPermission = await invitationService.hasInvitationPermission(
+    const permissionResult = await invitationService.hasInvitationPermission(
       invitation.organizationId,
       userId,
     );
-    if (!hasPermission) {
+    if (!permissionResult.ok) {
+      return res.status(500).json({
+        error: 'Failed to check invitation permissions',
+        message: permissionResult.error,
+      });
+    }
+    if (!permissionResult.hasPermission) {
       return res.status(403).json({
         error: 'You do not have permission to resend this invitation',
       });
@@ -287,7 +317,7 @@ router.post('/invitations/:invitationId/resend', requireBetterAuth, async (req, 
     });
   } catch (error) {
     logger.error('Error resending invitation', error);
-    
+
     if (error.message?.includes('Cannot resend')) {
       return res.status(400).json({
         error: error.message,
