@@ -32,49 +32,55 @@ class OrganizationPerformanceMonitor {
     return async (...args) => {
       const startTime = process.hrtime.bigint();
       const operationId = `${operationName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       try {
         logger.debug(`🚀 [${operationId}] Starting ${operationName}`, context);
-        
+
         const result = await operation(...args);
-        
+
         const endTime = process.hrtime.bigint();
         const durationMs = Number(endTime - startTime) / 1000000;
-        
+
         // Record metrics
         this.recordMetric(operationName, durationMs, true, context);
-        
+
         // Log performance
         if (durationMs > this.slowQueryThreshold) {
-          logger.warn(`🐌 [${operationId}] SLOW QUERY ${operationName}: ${durationMs.toFixed(2)}ms`, {
-            operation: operationName,
-            duration: durationMs,
-            context,
-            threshold: this.slowQueryThreshold
-          });
+          logger.warn(
+            `🐌 [${operationId}] SLOW QUERY ${operationName}: ${durationMs.toFixed(2)}ms`,
+            {
+              operation: operationName,
+              duration: durationMs,
+              context,
+              threshold: this.slowQueryThreshold,
+            },
+          );
         } else {
-          logger.debug(`✅ [${operationId}] Completed ${operationName}: ${durationMs.toFixed(2)}ms`, {
-            operation: operationName,
-            duration: durationMs,
-            context
-          });
+          logger.debug(
+            `✅ [${operationId}] Completed ${operationName}: ${durationMs.toFixed(2)}ms`,
+            {
+              operation: operationName,
+              duration: durationMs,
+              context,
+            },
+          );
         }
-        
+
         return result;
       } catch (error) {
         const endTime = process.hrtime.bigint();
         const durationMs = Number(endTime - startTime) / 1000000;
-        
+
         // Record failed metric
         this.recordMetric(operationName, durationMs, false, context);
-        
+
         logger.error(`❌ [${operationId}] Failed ${operationName}: ${durationMs.toFixed(2)}ms`, {
           operation: operationName,
           duration: durationMs,
           context,
-          error: error.message
+          error: error.message,
         });
-        
+
         throw error;
       }
     };
@@ -97,23 +103,23 @@ class OrganizationPerformanceMonitor {
         avgTime: 0,
         successCount: 0,
         errorCount: 0,
-        slowQueryCount: 0
+        slowQueryCount: 0,
       });
     }
-    
+
     const metric = this.metrics.get(operationName);
     metric.count++;
     metric.totalTime += durationMs;
     metric.minTime = Math.min(metric.minTime, durationMs);
     metric.maxTime = Math.max(metric.maxTime, durationMs);
     metric.avgTime = metric.totalTime / metric.count;
-    
+
     if (success) {
       metric.successCount++;
     } else {
       metric.errorCount++;
     }
-    
+
     if (durationMs > this.slowQueryThreshold) {
       metric.slowQueryCount++;
     }
@@ -125,15 +131,15 @@ class OrganizationPerformanceMonitor {
    */
   getMetrics() {
     const metrics = {};
-    
+
     for (const [operationName, metric] of this.metrics.entries()) {
       metrics[operationName] = {
         ...metric,
-        successRate: (metric.successCount / metric.count * 100).toFixed(2) + '%',
-        slowQueryRate: (metric.slowQueryCount / metric.count * 100).toFixed(2) + '%'
+        successRate: ((metric.successCount / metric.count) * 100).toFixed(2) + '%',
+        slowQueryRate: ((metric.slowQueryCount / metric.count) * 100).toFixed(2) + '%',
       };
     }
-    
+
     return metrics;
   }
 
@@ -159,19 +165,21 @@ class OrganizationPerformanceMonitor {
    */
   logPerformanceSummary() {
     const metrics = this.getMetrics();
-    
+
     logger.info('📊 ORGANIZATION PERFORMANCE SUMMARY');
-    logger.info('=' .repeat(50));
-    
+    logger.info('='.repeat(50));
+
     if (Object.keys(metrics).length === 0) {
       logger.info('No performance data collected yet');
       return;
     }
-    
+
     for (const [operationName, metric] of Object.entries(metrics)) {
       logger.info(`📈 ${operationName}:`);
       logger.info(`   Calls: ${metric.count} | Success Rate: ${metric.successRate}`);
-      logger.info(`   Avg: ${metric.avgTime.toFixed(2)}ms | Min: ${metric.minTime.toFixed(2)}ms | Max: ${metric.maxTime.toFixed(2)}ms`);
+      logger.info(
+        `   Avg: ${metric.avgTime.toFixed(2)}ms | Min: ${metric.minTime.toFixed(2)}ms | Max: ${metric.maxTime.toFixed(2)}ms`,
+      );
       logger.info(`   Slow Queries: ${metric.slowQueryCount} (${metric.slowQueryRate})`);
     }
   }
@@ -187,11 +195,11 @@ const performanceMonitor = new OrganizationPerformanceMonitor();
  * @returns {Function} Method decorator
  */
 export function monitorPerformance(operationName, context = {}) {
-  return function(target, propertyKey, descriptor) {
+  return function (target, propertyKey, descriptor) {
     const originalMethod = descriptor.value;
-    
+
     descriptor.value = performanceMonitor.monitor(operationName, originalMethod, context);
-    
+
     return descriptor;
   };
 }
@@ -222,17 +230,17 @@ export class MongoPerformanceProfiler {
   async enableProfiling(slowMs = 100) {
     try {
       const db = mongoose.connection.db;
-      
+
       // Set profiling level to 1 (slow operations only)
-      await db.command({ 
-        profile: 1, 
+      await db.command({
+        profile: 1,
         slowms: slowMs,
-        sampleRate: 1.0 // Profile all slow operations
+        sampleRate: 1.0, // Profile all slow operations
       });
-      
+
       this.enabled = true;
       logger.info(`🔍 MongoDB profiling enabled for queries > ${slowMs}ms`);
-      
+
       // Create index on system.profile for better query performance
       try {
         await db.collection('system.profile').createIndex({ ts: 1 });
@@ -241,7 +249,6 @@ export class MongoPerformanceProfiler {
         // Index might already exist, which is fine
         logger.debug('📂 Index on system.profile already exists or creation failed');
       }
-      
     } catch (error) {
       logger.error('❌ Failed to enable MongoDB profiling:', error);
       throw error;
@@ -254,10 +261,10 @@ export class MongoPerformanceProfiler {
   async disableProfiling() {
     try {
       const db = mongoose.connection.db;
-      
+
       // Set profiling level to 0 (off)
       await db.command({ profile: 0 });
-      
+
       this.enabled = false;
       logger.info('🔍 MongoDB profiling disabled');
     } catch (error) {
@@ -274,20 +281,21 @@ export class MongoPerformanceProfiler {
   async getSlowQueries(limit = 100) {
     try {
       const db = mongoose.connection.db;
-      
-      const slowQueries = await db.collection('system.profile')
+
+      const slowQueries = await db
+        .collection('system.profile')
         .find({})
         .sort({ ts: -1 })
         .limit(limit)
         .toArray();
-      
-      return slowQueries.map(query => ({
+
+      return slowQueries.map((query) => ({
         timestamp: query.ts,
         operation: query.op,
         collection: query.ns,
         duration: query.millis,
         command: query.command,
-        executionStats: query.execStats
+        executionStats: query.execStats,
       }));
     } catch (error) {
       logger.error('❌ Failed to get slow queries:', error);
@@ -302,46 +310,44 @@ export class MongoPerformanceProfiler {
   async analyzeOrganizationSlowQueries() {
     try {
       const slowQueries = await this.getSlowQueries(1000);
-      
+
       // Filter for organization-related collections
       const orgCollections = ['organization', 'member', 'invitation'];
-      const orgSlowQueries = slowQueries.filter(query => 
-        orgCollections.some(col => query.collection?.includes(col))
+      const orgSlowQueries = slowQueries.filter((query) =>
+        orgCollections.some((col) => query.collection?.includes(col)),
       );
-      
+
       // Group by collection and operation
       const analysis = {
         totalSlowQueries: orgSlowQueries.length,
         byCollection: {},
         byOperation: {},
-        slowestQueries: orgSlowQueries
-          .sort((a, b) => b.duration - a.duration)
-          .slice(0, 10)
+        slowestQueries: orgSlowQueries.sort((a, b) => b.duration - a.duration).slice(0, 10),
       };
-      
-      orgSlowQueries.forEach(query => {
+
+      orgSlowQueries.forEach((query) => {
         const collection = query.collection?.split('.').pop();
         const operation = query.operation;
-        
+
         if (collection) {
           if (!analysis.byCollection[collection]) {
             analysis.byCollection[collection] = { count: 0, totalTime: 0, avgTime: 0 };
           }
           analysis.byCollection[collection].count++;
           analysis.byCollection[collection].totalTime += query.duration;
-          analysis.byCollection[collection].avgTime = 
+          analysis.byCollection[collection].avgTime =
             analysis.byCollection[collection].totalTime / analysis.byCollection[collection].count;
         }
-        
+
         if (!analysis.byOperation[operation]) {
           analysis.byOperation[operation] = { count: 0, totalTime: 0, avgTime: 0 };
         }
         analysis.byOperation[operation].count++;
         analysis.byOperation[operation].totalTime += query.duration;
-        analysis.byOperation[operation].avgTime = 
+        analysis.byOperation[operation].avgTime =
           analysis.byOperation[operation].totalTime / analysis.byOperation[operation].count;
       });
-      
+
       return analysis;
     } catch (error) {
       logger.error('❌ Failed to analyze slow queries:', error);
@@ -371,6 +377,8 @@ const mongoProfiler = new MongoPerformanceProfiler();
  * Comprehensive performance monitoring setup for organization operations
  */
 export class OrganizationPerformanceSetup {
+  // Store interval ID for cleanup
+  static reportingIntervalId = null;
   /**
    * Initializes performance monitoring for organization operations
    * @param {Object} options - Configuration options
@@ -379,14 +387,14 @@ export class OrganizationPerformanceSetup {
     const {
       slowQueryThreshold = 100,
       enableMongoProfiling = true,
-      mongoSlowThreshold = 100
+      mongoSlowThreshold = 100,
     } = options;
-    
+
     logger.info('🚀 Initializing organization performance monitoring');
-    
+
     // Configure application-level monitoring
     performanceMonitor.setSlowQueryThreshold(slowQueryThreshold);
-    
+
     // Enable MongoDB profiling
     if (enableMongoProfiling) {
       try {
@@ -395,14 +403,19 @@ export class OrganizationPerformanceSetup {
         logger.warn('⚠️  MongoDB profiling setup failed - continuing without it:', error.message);
       }
     }
-    
+
     // Set up periodic reporting
     if (process.env.NODE_ENV !== 'test') {
-      setInterval(() => {
+      // Clear any existing interval before setting a new one
+      if (this.reportingIntervalId) {
+        clearInterval(this.reportingIntervalId);
+      }
+
+      this.reportingIntervalId = setInterval(() => {
         performanceMonitor.logPerformanceSummary();
       }, 300000); // Every 5 minutes
     }
-    
+
     logger.info('✅ Organization performance monitoring initialized');
   }
 
@@ -415,9 +428,9 @@ export class OrganizationPerformanceSetup {
       timestamp: new Date().toISOString(),
       applicationMetrics: performanceMonitor.getMetrics(),
       mongoSlowQueries: null,
-      mongoAnalysis: null
+      mongoAnalysis: null,
     };
-    
+
     try {
       if (mongoProfiler.enabled) {
         report.mongoSlowQueries = await mongoProfiler.getSlowQueries(50);
@@ -426,7 +439,7 @@ export class OrganizationPerformanceSetup {
     } catch (error) {
       logger.warn('⚠️  Failed to get MongoDB performance data:', error.message);
     }
-    
+
     return report;
   }
 
@@ -436,48 +449,61 @@ export class OrganizationPerformanceSetup {
   static async logPerformanceReport() {
     try {
       const report = await this.getPerformanceReport();
-      
+
       logger.info('📊 COMPREHENSIVE PERFORMANCE REPORT');
-      logger.info('=' .repeat(60));
+      logger.info('='.repeat(60));
       logger.info(`📅 Generated: ${report.timestamp}`);
-      
+
       // Application metrics
       logger.info('\n🚀 APPLICATION METRICS:');
       if (Object.keys(report.applicationMetrics).length > 0) {
         for (const [operation, metrics] of Object.entries(report.applicationMetrics)) {
-          logger.info(`   ${operation}: ${metrics.count} calls, ${metrics.avgTime.toFixed(2)}ms avg, ${metrics.successRate} success`);
+          logger.info(
+            `   ${operation}: ${metrics.count} calls, ${metrics.avgTime.toFixed(2)}ms avg, ${metrics.successRate} success`,
+          );
         }
       } else {
         logger.info('   No application metrics collected');
       }
-      
+
       // MongoDB analysis
       if (report.mongoAnalysis) {
         logger.info('\n🔍 MONGODB SLOW QUERY ANALYSIS:');
         logger.info(`   Total slow queries: ${report.mongoAnalysis.totalSlowQueries}`);
-        
+
         if (Object.keys(report.mongoAnalysis.byCollection).length > 0) {
           logger.info('   By collection:');
           for (const [collection, stats] of Object.entries(report.mongoAnalysis.byCollection)) {
-            logger.info(`     ${collection}: ${stats.count} queries, ${stats.avgTime.toFixed(2)}ms avg`);
+            logger.info(
+              `     ${collection}: ${stats.count} queries, ${stats.avgTime.toFixed(2)}ms avg`,
+            );
           }
         }
-        
+
         if (report.mongoAnalysis.slowestQueries.length > 0) {
           logger.info('   Slowest queries:');
           report.mongoAnalysis.slowestQueries.slice(0, 3).forEach((query, index) => {
-            logger.info(`     ${index + 1}. ${query.operation} on ${query.collection}: ${query.duration}ms`);
+            logger.info(
+              `     ${index + 1}. ${query.operation} on ${query.collection}: ${query.duration}ms`,
+            );
           });
         }
       }
-      
     } catch (error) {
       logger.error('❌ Failed to generate performance report:', error);
     }
   }
+
+  /**
+   * Cleanup method to stop periodic reporting and free resources
+   */
+  static cleanup() {
+    if (this.reportingIntervalId) {
+      clearInterval(this.reportingIntervalId);
+      this.reportingIntervalId = null;
+      logger.info('🧹 Performance monitoring cleanup completed');
+    }
+  }
 }
 
-export {
-  performanceMonitor,
-  mongoProfiler
-};
+export { performanceMonitor, mongoProfiler };
