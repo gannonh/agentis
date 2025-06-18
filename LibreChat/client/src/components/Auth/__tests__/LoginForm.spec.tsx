@@ -31,8 +31,12 @@ const mockStartupConfig: TStartupConfig = {
     enabled: false,
   },
   emailEnabled: false,
-  checkBalance: false,
   showBirthdayIcon: false,
+  sharedLinksEnabled: false,
+  publicSharedLinksEnabled: false,
+  openidAutoRedirect: false,
+  appleLoginEnabled: false,
+  instanceProjectId: '',
   helpAndFaqURL: '',
 };
 
@@ -104,15 +108,25 @@ beforeEach(() => {
 
 test('renders login form', () => {
   const { getByLabelText } = render(
-    <Login onSubmit={mockLogin} startupConfig={mockStartupConfig} />,
+    <Login 
+      onSubmit={mockLogin} 
+      startupConfig={mockStartupConfig} 
+      error={undefined} 
+      setError={vi.fn()} 
+    />,
   );
   expect(getByLabelText(/email/i)).toBeInTheDocument();
   expect(getByLabelText(/password/i)).toBeInTheDocument();
 });
 
 test('submits login form', async () => {
-  const { getByLabelText, getByRole } = render(
-    <Login onSubmit={mockLogin} startupConfig={mockStartupConfig} />,
+  const { getByLabelText } = render(
+    <Login 
+      onSubmit={mockLogin} 
+      startupConfig={mockStartupConfig} 
+      error={undefined} 
+      setError={vi.fn()} 
+    />,
   );
   const emailInput = getByLabelText(/email/i);
   const passwordInput = getByLabelText(/password/i);
@@ -126,8 +140,13 @@ test('submits login form', async () => {
 });
 
 test('displays validation error messages', async () => {
-  const { getByLabelText, getByRole, getByText } = render(
-    <Login onSubmit={mockLogin} startupConfig={mockStartupConfig} />,
+  const { getByLabelText, getByText } = render(
+    <Login 
+      onSubmit={mockLogin} 
+      startupConfig={mockStartupConfig} 
+      error={undefined} 
+      setError={vi.fn()} 
+    />,
   );
   const emailInput = getByLabelText(/email/i);
   const passwordInput = getByLabelText(/password/i);

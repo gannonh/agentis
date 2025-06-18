@@ -15,7 +15,7 @@ vi.mock('librechat-data-provider/react-query');
 
 // Mock AuthContext to prevent real API calls
 vi.mock('~/hooks/AuthContext', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal() as Record<string, unknown>;
   return {
     ...actual,
     useAuthContext: () => ({
@@ -120,7 +120,7 @@ const setup = ({
 };
 
 vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal() as Record<string, unknown>;
   return {
     ...actual,
     useOutletContext: () => ({
