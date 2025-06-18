@@ -25,6 +25,8 @@ export default defineConfig({
       'node_modules/**',
       'dist/**',
       'coverage/**',
+      // Integration tests (run separately)
+      '**/*.integration.vitest.js',
       // Legacy test directories and files
       'app/clients/specs/**',
       'app/clients/tools/**/*.test.js',
