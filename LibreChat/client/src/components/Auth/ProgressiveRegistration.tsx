@@ -18,7 +18,6 @@ import { cn } from '~/utils';
 
 interface StepFormData {
   email?: string;
-  verificationCode?: string;
   name?: string;
   username?: string;
   password?: string;
@@ -142,10 +141,9 @@ export const ProgressiveRegistration: React.FC = () => {
 
         case RegistrationStep.VERIFICATION:
           try {
-            await authClient.signUp.email({
+            await authClient.sendVerificationEmail({
               email: state?.email || '',
-              name: '',
-              password: '',
+              callbackURL: '/c/new', // Redirect after verification
             });
             updateState({ emailVerified: true });
             goToNextStep();
@@ -250,20 +248,9 @@ export const ProgressiveRegistration: React.FC = () => {
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold">Verify your email</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              We&apos;ve sent a verification code to {state?.email || ''}
+              Click continue to send a verification email to {state?.email || ''}. You&apos;ll need
+              to click the link in the email to verify your account.
             </p>
-            <input
-              {...register('verificationCode', {
-                required: 'Verification code is required',
-              })}
-              type="text"
-              aria-label="Verification code"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800"
-              placeholder="Enter verification code"
-            />
-            {errors.verificationCode && (
-              <span className="text-sm text-red-500">{errors.verificationCode.message}</span>
-            )}
           </div>
         );
 
@@ -446,19 +433,21 @@ export const ProgressiveRegistration: React.FC = () => {
           </div>
         </div>
         <div className="mt-4 flex justify-between">
-          {['Email', 'Verification', 'Organization', 'Profile', 'Welcome'].map((step, index) => (
-            <span
-              key={step}
-              className={cn(
-                'text-xs',
-                index < progress.current
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-gray-400 dark:text-gray-600',
-              )}
-            >
-              {step}
-            </span>
-          ))}
+          {['Email', 'Send Verification', 'Organization', 'Profile', 'Welcome'].map(
+            (step, index) => (
+              <span
+                key={step}
+                className={cn(
+                  'text-xs',
+                  index < progress.current
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-400 dark:text-gray-600',
+                )}
+              >
+                {step}
+              </span>
+            ),
+          )}
         </div>
       </div>
     );

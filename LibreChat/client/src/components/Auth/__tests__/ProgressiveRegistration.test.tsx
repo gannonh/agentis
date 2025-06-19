@@ -15,8 +15,8 @@ vi.mock('~/config/betterAuth', () => ({
   authClient: {
     signUp: {
       email: vi.fn(),
-      verify: vi.fn(),
     },
+    sendVerificationEmail: vi.fn(),
     organization: {
       create: vi.fn(),
       inviteMember: vi.fn(),
@@ -414,7 +414,7 @@ describe('ProgressiveRegistration', () => {
       render(<ProgressiveRegistration />, { wrapper });
 
       expect(screen.getByText('Email')).toBeInTheDocument();
-      expect(screen.getByText('Verification')).toBeInTheDocument();
+      expect(screen.getByText('Send Verification')).toBeInTheDocument();
       expect(screen.getByText('Organization')).toBeInTheDocument();
       expect(screen.getByText('Profile')).toBeInTheDocument();
       expect(screen.getByText('Welcome')).toBeInTheDocument();
@@ -459,7 +459,9 @@ describe('ProgressiveRegistration', () => {
       // The error handling works functionally, but test assertion fails
       // May need to check ErrorMessage component structure or use different query method
       const user = userEvent.setup();
-      vi.mocked(authClient.signUp.email).mockRejectedValueOnce(new Error('Email already exists'));
+      vi.mocked(authClient.sendVerificationEmail).mockRejectedValueOnce(
+        new Error('Email verification failed'),
+      );
 
       // Set state to verification step
       const verificationState = {
@@ -482,7 +484,7 @@ describe('ProgressiveRegistration', () => {
       await user.click(screen.getByRole('button', { name: 'Continue' }));
 
       await waitFor(() => {
-        expect(screen.getByText('Email already exists')).toBeInTheDocument();
+        expect(screen.getByText('Email verification failed')).toBeInTheDocument();
       });
     });
 
