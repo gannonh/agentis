@@ -14,7 +14,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:ci": "vitest --run --coverage",
+    "test:ci": "vitest --run",
     "b:test": "NODE_ENV=test bunx vitest --watch",
     "b:build": "NODE_ENV=production bun --bun vite build",
     "b:dev": "NODE_ENV=development bunx vite"

@@ -95,11 +95,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   // Determine user role in current organization
   const userRole = useMemo(() => {
-    if (!session?.user?.id || !members.length) return null;
+    if (!activeOrganization || !session?.user?.id || !members.length) return null;
 
     const memberRecord = members.find((member) => member.userId === session.user.id);
     return memberRecord?.role || null;
-  }, [session?.user?.id, members]);
+  }, [activeOrganization, session?.user?.id, members]);
 
   // Permission checks based on user role
   const permissions = useMemo(() => {

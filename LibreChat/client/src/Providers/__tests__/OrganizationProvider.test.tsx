@@ -30,18 +30,18 @@ vi.mock('~/config/betterAuth', () => ({
 }));
 
 // Mock @tanstack/react-query
+const mockQueryClient = {
+  invalidateQueries: vi.fn(),
+};
+
 vi.mock('@tanstack/react-query', async () => {
   const actual = await vi.importActual('@tanstack/react-query');
   return {
     ...actual,
     useQuery: vi.fn(),
     useMutation: vi.fn(),
-    useQueryClient: () => ({
-      invalidateQueries: vi.fn(),
-    }),
-    QueryClient: vi.fn().mockImplementation(() => ({
-      invalidateQueries: vi.fn(),
-    })),
+    useQueryClient: () => mockQueryClient,
+    QueryClient: vi.fn().mockImplementation(() => mockQueryClient),
     QueryClientProvider: ({ children }: any) => children,
   };
 });
@@ -299,12 +299,23 @@ describe('OrganizationProvider', () => {
       error: null,
     });
     
-    // Mock mutations
-    const mockMutation = {
-      mutateAsync: vi.fn().mockResolvedValue({}),
-    };
-    
-    vi.mocked(useMutation).mockReturnValue(mockMutation);
+    // Mock mutations to execute the mutation function
+    vi.mocked(useMutation).mockImplementation((config) => {
+      const mutation = {
+        mutateAsync: vi.fn().mockImplementation(async (args) => {
+          // Execute the mutation function
+          if (config.mutationFn) {
+            await config.mutationFn(args);
+          }
+          // Execute onSuccess callback
+          if (config.onSuccess) {
+            config.onSuccess({}, args, {});
+          }
+          return {};
+        }),
+      };
+      return mutation;
+    });
     
     // Mock organization API methods
     vi.mocked(authClient.organization.inviteMember).mockResolvedValue({});
@@ -819,8 +830,22 @@ describe('useOrganizationPermissions Hook', () => {
       error: null,
     });
     
-    vi.mocked(useMutation).mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({}),
+    // Mock mutations to execute the mutation function
+    vi.mocked(useMutation).mockImplementation((config) => {
+      const mutation = {
+        mutateAsync: vi.fn().mockImplementation(async (args) => {
+          // Execute the mutation function
+          if (config.mutationFn) {
+            await config.mutationFn(args);
+          }
+          // Execute onSuccess callback
+          if (config.onSuccess) {
+            config.onSuccess({}, args, {});
+          }
+          return {};
+        }),
+      };
+      return mutation;
     });
   });
 
@@ -920,8 +945,22 @@ describe('useOrganizationMembers Hook', () => {
       error: null,
     });
     
-    vi.mocked(useMutation).mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({}),
+    // Mock mutations to execute the mutation function
+    vi.mocked(useMutation).mockImplementation((config) => {
+      const mutation = {
+        mutateAsync: vi.fn().mockImplementation(async (args) => {
+          // Execute the mutation function
+          if (config.mutationFn) {
+            await config.mutationFn(args);
+          }
+          // Execute onSuccess callback
+          if (config.onSuccess) {
+            config.onSuccess({}, args, {});
+          }
+          return {};
+        }),
+      };
+      return mutation;
     });
   });
 
@@ -997,8 +1036,22 @@ describe('useOrganizationInvitations Hook', () => {
       error: null,
     });
     
-    vi.mocked(useMutation).mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({}),
+    // Mock mutations to execute the mutation function
+    vi.mocked(useMutation).mockImplementation((config) => {
+      const mutation = {
+        mutateAsync: vi.fn().mockImplementation(async (args) => {
+          // Execute the mutation function
+          if (config.mutationFn) {
+            await config.mutationFn(args);
+          }
+          // Execute onSuccess callback
+          if (config.onSuccess) {
+            config.onSuccess({}, args, {});
+          }
+          return {};
+        }),
+      };
+      return mutation;
     });
   });
 
