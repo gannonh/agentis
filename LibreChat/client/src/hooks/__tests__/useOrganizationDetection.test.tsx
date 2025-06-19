@@ -62,7 +62,9 @@ describe('useOrganizationDetection', () => {
       const { result } = renderHook(() => useOrganizationDetection('user@acme.com'), { wrapper });
 
       await waitFor(() => {
-        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({ email: 'user@acme.com' });
+        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({
+          email: 'user@acme.com',
+        });
         expect(result.current.organization).toEqual(mockResponse.organization);
         expect(result.current.isNewDomain).toBe(false);
       });
@@ -83,7 +85,9 @@ describe('useOrganizationDetection', () => {
 
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce(mockResponse);
 
-      const { result } = renderHook(() => useOrganizationDetection('employee@tech.com'), { wrapper });
+      const { result } = renderHook(() => useOrganizationDetection('employee@tech.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.organization).toEqual(mockResponse.organization);
@@ -99,7 +103,9 @@ describe('useOrganizationDetection', () => {
 
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce(mockResponse);
 
-      const { result } = renderHook(() => useOrganizationDetection('founder@startup.com'), { wrapper });
+      const { result } = renderHook(() => useOrganizationDetection('founder@startup.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.organization).toBeNull();
@@ -118,7 +124,9 @@ describe('useOrganizationDetection', () => {
 
       vi.mocked(authClient.organization.checkDomain).mockReturnValueOnce(promise as any);
 
-      const { result } = renderHook(() => useOrganizationDetection('user@example.com'), { wrapper });
+      const { result } = renderHook(() => useOrganizationDetection('user@example.com'), {
+        wrapper,
+      });
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.organization).toBeUndefined();
@@ -151,7 +159,9 @@ describe('useOrganizationDetection', () => {
     it('should handle malformed API responses', async () => {
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce({} as any);
 
-      const { result } = renderHook(() => useOrganizationDetection('user@malformed.com'), { wrapper });
+      const { result } = renderHook(() => useOrganizationDetection('user@malformed.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.organization).toBeUndefined();
@@ -174,14 +184,18 @@ describe('useOrganizationDetection', () => {
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce(mockResponse);
 
       // First render
-      const { result: result1 } = renderHook(() => useOrganizationDetection('user@cached.com'), { wrapper });
+      const { result: result1 } = renderHook(() => useOrganizationDetection('user@cached.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result1.current.organization).toEqual(mockResponse.organization);
       });
 
       // Second render with same email
-      const { result: result2 } = renderHook(() => useOrganizationDetection('user@cached.com'), { wrapper });
+      const { result: result2 } = renderHook(() => useOrganizationDetection('user@cached.com'), {
+        wrapper,
+      });
 
       // Should use cached data, not call API again
       expect(authClient.organization.checkDomain).toHaveBeenCalledTimes(1);
@@ -201,14 +215,18 @@ describe('useOrganizationDetection', () => {
         .mockResolvedValueOnce(mockResponse2);
 
       // First email
-      const { result: result1 } = renderHook(() => useOrganizationDetection('user@corp1.com'), { wrapper });
+      const { result: result1 } = renderHook(() => useOrganizationDetection('user@corp1.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result1.current.organization).toEqual(mockResponse1.organization);
       });
 
       // Different email
-      const { result: result2 } = renderHook(() => useOrganizationDetection('user@corp2.com'), { wrapper });
+      const { result: result2 } = renderHook(() => useOrganizationDetection('user@corp2.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result2.current.organization).toEqual(mockResponse2.organization);
@@ -230,10 +248,14 @@ describe('useOrganizationDetection', () => {
 
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce(mockResponse);
 
-      const { result } = renderHook(() => useOrganizationDetection('user@mail.company.com'), { wrapper });
+      const { result } = renderHook(() => useOrganizationDetection('user@mail.company.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
-        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({ email: 'user@mail.company.com' });
+        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({
+          email: 'user@mail.company.com',
+        });
         expect(result.current.organization).toEqual(mockResponse.organization);
       });
     });
@@ -241,26 +263,28 @@ describe('useOrganizationDetection', () => {
     it('should handle special characters in email', async () => {
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce({ organization: null });
 
-      const { result } = renderHook(
-        () => useOrganizationDetection('user+tag@example.com'),
-        { wrapper }
-      );
+      const { result } = renderHook(() => useOrganizationDetection('user+tag@example.com'), {
+        wrapper,
+      });
 
       await waitFor(() => {
-        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({ email: 'user+tag@example.com' });
+        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({
+          email: 'user+tag@example.com',
+        });
       });
     });
 
     it('should handle case sensitivity', async () => {
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce({ organization: null });
 
-      const { result } = renderHook(
-        () => useOrganizationDetection('USER@EXAMPLE.COM'),
-        { wrapper }
-      );
+      const { result } = renderHook(() => useOrganizationDetection('USER@EXAMPLE.COM'), {
+        wrapper,
+      });
 
       await waitFor(() => {
-        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({ email: 'USER@EXAMPLE.COM' });
+        expect(authClient.organization.checkDomain).toHaveBeenCalledWith({
+          email: 'USER@EXAMPLE.COM',
+        });
       });
     });
   });
@@ -269,7 +293,9 @@ describe('useOrganizationDetection', () => {
     it('should provide extracted domain information', async () => {
       vi.mocked(authClient.organization.checkDomain).mockResolvedValueOnce({ organization: null });
 
-      const { result } = renderHook(() => useOrganizationDetection('newuser@newcompany.io'), { wrapper });
+      const { result } = renderHook(() => useOrganizationDetection('newuser@newcompany.io'), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.domain).toBe('newcompany.io');
@@ -277,4 +303,4 @@ describe('useOrganizationDetection', () => {
       });
     });
   });
-}); 
+});

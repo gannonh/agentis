@@ -43,12 +43,12 @@ export function useOrganizationDetection(email: string): OrganizationDetectionRe
     async () => {
       // For now, we'll simulate the API call since checkDomain might not exist yet
       // TODO: Replace with actual API call once backend endpoint is available
-      
+
       // Temporary mock implementation until backend endpoint exists
       if ((authClient.organization as any).checkDomain) {
         return await (authClient.organization as any).checkDomain({ email });
       }
-      
+
       // Fallback mock response for testing
       return { organization: null } as CheckDomainResponse;
     },
@@ -57,7 +57,7 @@ export function useOrganizationDetection(email: string): OrganizationDetectionRe
       staleTime: 5 * 60 * 1000, // Cache for 5 minutes
       cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (gcTime in v5)
       retry: 1, // Only retry once on failure
-    }
+    },
   );
 
   const { data, isLoading, error } = queryResult;
@@ -70,4 +70,4 @@ export function useOrganizationDetection(email: string): OrganizationDetectionRe
     error: error as Error | null,
     domain,
   };
-} 
+}
