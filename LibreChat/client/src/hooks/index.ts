@@ -36,3 +36,4 @@ export { default as useSpeechToText } from './Input/useSpeechToText';
 export { default as useTextToSpeech } from './Input/useTextToSpeech';
 export { default as useGenerationsByLatest } from './useGenerationsByLatest';
 export { default as useStartAgentChat } from './useStartAgentChat';
+export { useOrganizationDetection } from './useOrganizationDetection';
