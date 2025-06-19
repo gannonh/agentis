@@ -37,3 +37,5 @@ export { default as useTextToSpeech } from './Input/useTextToSpeech';
 export { default as useGenerationsByLatest } from './useGenerationsByLatest';
 export { default as useStartAgentChat } from './useStartAgentChat';
 export { useOrganizationDetection } from './useOrganizationDetection';
+export { useRegistrationState, RegistrationStep, UserRole } from './useRegistrationState';
+export type { RegistrationState, OrganizationData } from './useRegistrationState';
