@@ -16,7 +16,7 @@ vi.mock('better-auth/react', () => ({
     signIn: vi.fn(),
     signOut: vi.fn(),
     signUp: vi.fn(),
-    
+
     // Organization plugin methods
     useActiveOrganization: vi.fn(),
     useListOrganizationMembers: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('better-auth/react', () => ({
       removeMember: vi.fn(),
       cancelInvitation: vi.fn(),
     },
-    
+
     // Admin plugin methods
     admin: {
       createUser: vi.fn(),

@@ -1,7 +1,7 @@
 /**
  * @fileoverview Better Auth client configuration for React frontend
  * @module config/betterAuth
- * 
+ *
  * This module provides a comprehensive Better Auth client setup with:
  * - Organization management capabilities
  * - Admin functionality for platform management
@@ -21,7 +21,7 @@ const baseURL = import.meta.env.VITE_API_HOST || 'http://localhost:3080';
 /**
  * Better Auth React client instance
  * Configured with organization and admin plugins for multi-tenant functionality
- * 
+ *
  * Features:
  * - Email/password authentication
  * - Google OAuth integration
@@ -192,39 +192,36 @@ export const roleCheckers = {
    * Check if user has organization owner role
    */
   isOwner: (role: UserRole): role is 'owner' => role === 'owner',
-  
+
   /**
    * Check if user has organization admin role
    */
   isOrgAdmin: (role: UserRole): role is 'admin' => role === 'admin',
-  
+
   /**
    * Check if user has organization member role
    */
   isMember: (role: UserRole): role is 'member' => role === 'member',
-  
+
   /**
    * Check if user has platform admin role
    */
   isPlatformAdmin: (role: AdminRole): role is 'admin' => role === 'admin',
-  
+
   /**
    * Check if user can manage organization (owner or admin)
    */
-  canManageOrganization: (role: UserRole): boolean => 
-    role === 'owner' || role === 'admin',
-  
+  canManageOrganization: (role: UserRole): boolean => role === 'owner' || role === 'admin',
+
   /**
    * Check if user can invite members (owner or admin)
    */
-  canInviteMembers: (role: UserRole): boolean => 
-    role === 'owner' || role === 'admin',
-  
+  canInviteMembers: (role: UserRole): boolean => role === 'owner' || role === 'admin',
+
   /**
    * Check if user can manage members (owner only)
    */
-  canManageMembers: (role: UserRole): boolean => 
-    role === 'owner',
+  canManageMembers: (role: UserRole): boolean => role === 'owner',
 } as const;
 
 /**
@@ -242,25 +239,25 @@ export const authUtils = {
     };
     return roleNames[role];
   },
-  
+
   /**
    * Get user's initials for avatar display
    */
   getUserInitials: (name: string): string => {
     return name
       .split(' ')
-      .map(word => word.charAt(0).toUpperCase())
+      .map((word) => word.charAt(0).toUpperCase())
       .slice(0, 2)
       .join('');
   },
-  
+
   /**
    * Check if email belongs to a specific domain
    */
   getEmailDomain: (email: string): string => {
     return email.split('@')[1]?.toLowerCase() || '';
   },
-  
+
   /**
    * Generate organization slug from name
    */
@@ -270,7 +267,7 @@ export const authUtils = {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
   },
-  
+
   /**
    * Check if invitation is expired
    */
@@ -287,32 +284,32 @@ export const AUTH_CONSTANTS = {
    * Default session timeout (in milliseconds)
    */
   SESSION_TIMEOUT: 24 * 60 * 60 * 1000, // 24 hours
-  
+
   /**
    * Invitation expiry time (in milliseconds)
    */
   INVITATION_EXPIRY: 7 * 24 * 60 * 60 * 1000, // 7 days
-  
+
   /**
    * Maximum organization name length
    */
   MAX_ORG_NAME_LENGTH: 50,
-  
+
   /**
    * Maximum user name length
    */
   MAX_USER_NAME_LENGTH: 100,
-  
+
   /**
    * Minimum password length
    */
   MIN_PASSWORD_LENGTH: 8,
-  
+
   /**
    * Valid user roles
    */
   USER_ROLES: ['owner', 'admin', 'member'] as const,
-  
+
   /**
    * Valid admin roles
    */

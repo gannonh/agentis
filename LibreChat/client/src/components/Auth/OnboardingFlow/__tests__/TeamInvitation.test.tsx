@@ -18,15 +18,11 @@ vi.mock('~/components/ui/Button', () => ({
 }));
 
 vi.mock('~/components/ui/Input', () => ({
-  Input: ({ placeholder, ...props }: any) => (
-    <input placeholder={placeholder} {...props} />
-  ),
+  Input: ({ placeholder, ...props }: any) => <input placeholder={placeholder} {...props} />,
 }));
 
 vi.mock('~/components/ui/Label', () => ({
-  Label: ({ children, ...props }: any) => (
-    <label {...props}>{children}</label>
-  ),
+  Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
 }));
 
 describe('TeamInvitation', () => {
@@ -50,7 +46,7 @@ describe('TeamInvitation', () => {
 
     // Look for the button that contains the Plus icon (rendered as SVG)
     const buttons = screen.getAllByRole('button');
-    const addButton = buttons.find(button => button.querySelector('svg'));
+    const addButton = buttons.find((button) => button.querySelector('svg'));
     expect(addButton).toBeInTheDocument();
   });
 

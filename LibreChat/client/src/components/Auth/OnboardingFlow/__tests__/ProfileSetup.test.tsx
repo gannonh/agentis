@@ -18,15 +18,11 @@ vi.mock('~/components/ui/Button', () => ({
 }));
 
 vi.mock('~/components/ui/Input', () => ({
-  Input: ({ placeholder, ...props }: any) => (
-    <input placeholder={placeholder} {...props} />
-  ),
+  Input: ({ placeholder, ...props }: any) => <input placeholder={placeholder} {...props} />,
 }));
 
 vi.mock('~/components/ui/Label', () => ({
-  Label: ({ children, ...props }: any) => (
-    <label {...props}>{children}</label>
-  ),
+  Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
 }));
 
 describe('ProfileSetup', () => {

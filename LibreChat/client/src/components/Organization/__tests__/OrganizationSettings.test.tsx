@@ -140,30 +140,30 @@ describe('OrganizationSettings', () => {
     userRole: 'owner' as const,
     members: [],
     invitations: [],
-    
+
     // Loading states
     isLoading: false,
     isLoadingMembers: false,
     isLoadingInvitations: false,
-    
+
     // Error states
     error: null,
-    
+
     // Organization management functions
     inviteMember: vi.fn(),
     updateMemberRole: vi.fn(),
     removeMember: vi.fn(),
     updateOrganization: vi.fn(),
-    
+
     // Invitation management
     cancelInvitation: vi.fn(),
-    
+
     // Organization creation (for onboarding)
     createOrganization: vi.fn(),
-    
+
     // Organization deletion
     deleteOrganization: vi.fn(),
-    
+
     // Permission helpers
     canManageMembers: true,
     canManageOrganization: true,
@@ -404,7 +404,9 @@ describe('OrganizationSettings', () => {
 
       // Get all delete organization buttons and target the trigger (first one with outline variant)
       const deleteButtons = screen.getAllByRole('button', { name: /delete organization/i });
-      const triggerButton = deleteButtons.find(button => button.getAttribute('data-variant') === 'outline');
+      const triggerButton = deleteButtons.find(
+        (button) => button.getAttribute('data-variant') === 'outline',
+      );
       expect(triggerButton).toBeInTheDocument();
     });
 

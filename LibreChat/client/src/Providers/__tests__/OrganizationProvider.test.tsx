@@ -7,9 +7,20 @@ import React from 'react';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { OrganizationProvider, useOrganization, useOrganizationPermissions, useOrganizationMembers, useOrganizationInvitations } from '../OrganizationProvider';
+import {
+  OrganizationProvider,
+  useOrganization,
+  useOrganizationPermissions,
+  useOrganizationMembers,
+  useOrganizationInvitations,
+} from '../OrganizationProvider';
 import { authClient } from '~/config/betterAuth';
-import type { OrganizationData, OrganizationMember, OrganizationInvitation, UserRole } from '~/config/betterAuth';
+import type {
+  OrganizationData,
+  OrganizationMember,
+  OrganizationInvitation,
+  UserRole,
+} from '~/config/betterAuth';
 
 // Mock the auth client
 vi.mock('~/config/betterAuth', () => ({
@@ -141,23 +152,17 @@ const TestComponent: React.FC = () => {
       <div data-testid="can-manage-members">{canManageMembers ? 'yes' : 'no'}</div>
       <div data-testid="can-manage-organization">{canManageOrganization ? 'yes' : 'no'}</div>
       <div data-testid="can-invite-members">{canInviteMembers ? 'yes' : 'no'}</div>
-      
+
       <button
         data-testid="invite-member-btn"
         onClick={() => inviteMember('test@example.com', 'member')}
       >
         Invite Member
       </button>
-      <button
-        data-testid="update-role-btn"
-        onClick={() => updateMemberRole('member-2', 'admin')}
-      >
+      <button data-testid="update-role-btn" onClick={() => updateMemberRole('member-2', 'admin')}>
         Update Role
       </button>
-      <button
-        data-testid="remove-member-btn"
-        onClick={() => removeMember('member-2')}
-      >
+      <button data-testid="remove-member-btn" onClick={() => removeMember('member-2')}>
         Remove Member
       </button>
       <button
@@ -166,22 +171,13 @@ const TestComponent: React.FC = () => {
       >
         Update Organization
       </button>
-      <button
-        data-testid="cancel-invitation-btn"
-        onClick={() => cancelInvitation('invite-1')}
-      >
+      <button data-testid="cancel-invitation-btn" onClick={() => cancelInvitation('invite-1')}>
         Cancel Invitation
       </button>
-      <button
-        data-testid="create-org-btn"
-        onClick={() => createOrganization('New Org')}
-      >
+      <button data-testid="create-org-btn" onClick={() => createOrganization('New Org')}>
         Create Organization
       </button>
-      <button
-        data-testid="delete-org-btn"
-        onClick={() => deleteOrganization()}
-      >
+      <button data-testid="delete-org-btn" onClick={() => deleteOrganization()}>
         Delete Organization
       </button>
     </div>
@@ -196,9 +192,13 @@ const PermissionsTestComponent: React.FC = () => {
       <div data-testid="is-owner">{permissions.isOwner ? 'yes' : 'no'}</div>
       <div data-testid="is-member">{permissions.isMember ? 'yes' : 'no'}</div>
       <div data-testid="can-manage-members-perm">{permissions.canManageMembers ? 'yes' : 'no'}</div>
-      <div data-testid="can-manage-organization-perm">{permissions.canManageOrganization ? 'yes' : 'no'}</div>
+      <div data-testid="can-manage-organization-perm">
+        {permissions.canManageOrganization ? 'yes' : 'no'}
+      </div>
       <div data-testid="can-invite-members-perm">{permissions.canInviteMembers ? 'yes' : 'no'}</div>
-      <div data-testid="can-delete-organization">{permissions.canDeleteOrganization ? 'yes' : 'no'}</div>
+      <div data-testid="can-delete-organization">
+        {permissions.canDeleteOrganization ? 'yes' : 'no'}
+      </div>
     </div>
   );
 };
@@ -212,7 +212,7 @@ const MembersTestComponent: React.FC = () => {
       <div data-testid="members-hook-loading">{membersData.isLoading ? 'loading' : 'loaded'}</div>
       <div data-testid="member-count">{membersData.memberCount}</div>
       <div data-testid="members-can-manage">{membersData.canManageMembers ? 'yes' : 'no'}</div>
-      
+
       <button
         data-testid="members-invite-btn"
         onClick={() => membersData.inviteMember('member@example.com', 'member')}
@@ -225,10 +225,7 @@ const MembersTestComponent: React.FC = () => {
       >
         Update Role via Hook
       </button>
-      <button
-        data-testid="members-remove-btn"
-        onClick={() => membersData.removeMember('member-2')}
-      >
+      <button data-testid="members-remove-btn" onClick={() => membersData.removeMember('member-2')}>
         Remove via Hook
       </button>
     </div>
@@ -241,10 +238,14 @@ const InvitationsTestComponent: React.FC = () => {
   return (
     <div>
       <div data-testid="invitations-hook-count">{invitationsData.invitations.length}</div>
-      <div data-testid="invitations-hook-loading">{invitationsData.isLoading ? 'loading' : 'loaded'}</div>
+      <div data-testid="invitations-hook-loading">
+        {invitationsData.isLoading ? 'loading' : 'loaded'}
+      </div>
       <div data-testid="pending-invitations-count">{invitationsData.pendingInvitations.length}</div>
-      <div data-testid="invitations-can-invite">{invitationsData.canInviteMembers ? 'yes' : 'no'}</div>
-      
+      <div data-testid="invitations-can-invite">
+        {invitationsData.canInviteMembers ? 'yes' : 'no'}
+      </div>
+
       <button
         data-testid="invitations-cancel-btn"
         onClick={() => invitationsData.cancelInvitation('invite-1')}
@@ -264,33 +265,33 @@ const ErrorComponent: React.FC = () => {
 describe('OrganizationProvider', () => {
   // Suppress unhandled promise rejections during error testing
   const originalUPR = process.listeners('unhandledRejection');
-  
+
   beforeAll(() => {
     process.removeAllListeners('unhandledRejection');
     process.on('unhandledRejection', () => {
       // Suppress during testing
     });
   });
-  
+
   afterAll(() => {
     process.removeAllListeners('unhandledRejection');
-    originalUPR.forEach(listener => process.on('unhandledRejection', listener));
+    originalUPR.forEach((listener) => process.on('unhandledRejection', listener));
   });
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     // Setup default mocks
     // Mock auth client hooks
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
       data: mockOrganization,
       error: null,
     });
-    
+
     vi.mocked(authClient.useSession).mockReturnValue({
       data: mockSession,
     });
-    
+
     // Mock useQuery for full organization
     const { useQuery, useMutation } = await import('@tanstack/react-query');
     vi.mocked(useQuery).mockReturnValue({
@@ -298,7 +299,7 @@ describe('OrganizationProvider', () => {
       isLoading: false,
       error: null,
     });
-    
+
     // Mock mutations to execute the mutation function
     vi.mocked(useMutation).mockImplementation((config) => {
       const mutation = {
@@ -316,7 +317,7 @@ describe('OrganizationProvider', () => {
       };
       return mutation;
     });
-    
+
     // Mock organization API methods
     vi.mocked(authClient.organization.inviteMember).mockResolvedValue({});
     vi.mocked(authClient.organization.updateMemberRole).mockResolvedValue({});
@@ -336,7 +337,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('org-name')).toHaveTextContent('Test Organization');
@@ -347,11 +348,11 @@ describe('OrganizationProvider', () => {
 
     it('should throw error when useOrganization is used outside provider', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       expect(() => render(<ErrorComponent />)).toThrow(
-        'useOrganization must be used within OrganizationProvider'
+        'useOrganization must be used within OrganizationProvider',
       );
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -366,7 +367,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('org-name')).toHaveTextContent('No organization');
@@ -383,7 +384,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('user-role')).toHaveTextContent('No role');
@@ -404,7 +405,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('loading')).toHaveTextContent('loading');
@@ -418,7 +419,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
@@ -442,7 +443,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('error')).toHaveTextContent('Failed to fetch organization');
@@ -460,7 +461,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('error')).toHaveTextContent('Auth failed');
@@ -474,7 +475,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('user-role')).toHaveTextContent('owner');
@@ -501,7 +502,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('user-role')).toHaveTextContent('member');
@@ -528,7 +529,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       expect(screen.getByTestId('user-role')).toHaveTextContent('No role');
@@ -543,7 +544,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -562,7 +563,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -581,7 +582,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -599,7 +600,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -617,7 +618,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -635,7 +636,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -654,7 +655,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -685,7 +686,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -704,7 +705,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -722,7 +723,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -740,7 +741,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -763,7 +764,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -779,7 +780,7 @@ describe('OrganizationProvider', () => {
     it('should use provided slug when creating organization', async () => {
       const TestSlugComponent: React.FC = () => {
         const { createOrganization } = useOrganization();
-        
+
         return (
           <button
             data-testid="create-org-with-slug-btn"
@@ -795,7 +796,7 @@ describe('OrganizationProvider', () => {
           <OrganizationProvider>
             <TestSlugComponent />
           </OrganizationProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       await act(async () => {
@@ -813,23 +814,23 @@ describe('OrganizationProvider', () => {
 describe('useOrganizationPermissions Hook', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
       data: mockOrganization,
       error: null,
     });
-    
+
     vi.mocked(authClient.useSession).mockReturnValue({
       data: mockSession,
     });
-    
+
     const { useQuery, useMutation } = await import('@tanstack/react-query');
     vi.mocked(useQuery).mockReturnValue({
       data: mockFullOrganization,
       isLoading: false,
       error: null,
     });
-    
+
     // Mock mutations to execute the mutation function
     vi.mocked(useMutation).mockImplementation((config) => {
       const mutation = {
@@ -855,7 +856,7 @@ describe('useOrganizationPermissions Hook', () => {
         <OrganizationProvider>
           <PermissionsTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId('is-owner')).toHaveTextContent('yes');
@@ -884,7 +885,7 @@ describe('useOrganizationPermissions Hook', () => {
         <OrganizationProvider>
           <PermissionsTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId('is-owner')).toHaveTextContent('no');
@@ -913,7 +914,7 @@ describe('useOrganizationPermissions Hook', () => {
         <OrganizationProvider>
           <PermissionsTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId('is-owner')).toHaveTextContent('no');
@@ -928,23 +929,23 @@ describe('useOrganizationPermissions Hook', () => {
 describe('useOrganizationMembers Hook', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
       data: mockOrganization,
       error: null,
     });
-    
+
     vi.mocked(authClient.useSession).mockReturnValue({
       data: mockSession,
     });
-    
+
     const { useQuery, useMutation } = await import('@tanstack/react-query');
     vi.mocked(useQuery).mockReturnValue({
       data: mockFullOrganization,
       isLoading: false,
       error: null,
     });
-    
+
     // Mock mutations to execute the mutation function
     vi.mocked(useMutation).mockImplementation((config) => {
       const mutation = {
@@ -970,7 +971,7 @@ describe('useOrganizationMembers Hook', () => {
         <OrganizationProvider>
           <MembersTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId('members-hook-count')).toHaveTextContent('2');
@@ -985,7 +986,7 @@ describe('useOrganizationMembers Hook', () => {
         <OrganizationProvider>
           <MembersTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await act(async () => {
@@ -1019,23 +1020,23 @@ describe('useOrganizationMembers Hook', () => {
 describe('useOrganizationInvitations Hook', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
       data: mockOrganization,
       error: null,
     });
-    
+
     vi.mocked(authClient.useSession).mockReturnValue({
       data: mockSession,
     });
-    
+
     const { useQuery, useMutation } = await import('@tanstack/react-query');
     vi.mocked(useQuery).mockReturnValue({
       data: mockFullOrganization,
       isLoading: false,
       error: null,
     });
-    
+
     // Mock mutations to execute the mutation function
     vi.mocked(useMutation).mockImplementation((config) => {
       const mutation = {
@@ -1061,7 +1062,7 @@ describe('useOrganizationInvitations Hook', () => {
         <OrganizationProvider>
           <InvitationsTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId('invitations-hook-count')).toHaveTextContent('1');
@@ -1076,7 +1077,7 @@ describe('useOrganizationInvitations Hook', () => {
         <OrganizationProvider>
           <InvitationsTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await act(async () => {
@@ -1121,7 +1122,7 @@ describe('useOrganizationInvitations Hook', () => {
         <OrganizationProvider>
           <InvitationsTestComponent />
         </OrganizationProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId('invitations-hook-count')).toHaveTextContent('2');

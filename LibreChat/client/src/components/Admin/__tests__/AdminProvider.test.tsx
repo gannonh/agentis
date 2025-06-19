@@ -55,34 +55,19 @@ const TestComponent: React.FC = () => {
       >
         Create User
       </button>
-      <button
-        data-testid="set-role-btn"
-        onClick={() => setUserRole('user1', 'admin')}
-      >
+      <button data-testid="set-role-btn" onClick={() => setUserRole('user1', 'admin')}>
         Set Role
       </button>
-      <button
-        data-testid="get-stats-btn"
-        onClick={() => getUserStats()}
-      >
+      <button data-testid="get-stats-btn" onClick={() => getUserStats()}>
         Get Stats
       </button>
-      <button
-        data-testid="get-sessions-btn"
-        onClick={() => getSessionStats()}
-      >
+      <button data-testid="get-sessions-btn" onClick={() => getSessionStats()}>
         Get Session Stats
       </button>
-      <button
-        data-testid="list-sessions-btn"
-        onClick={() => listUserSessions('user1')}
-      >
+      <button data-testid="list-sessions-btn" onClick={() => listUserSessions('user1')}>
         List Sessions
       </button>
-      <button
-        data-testid="revoke-sessions-btn"
-        onClick={() => revokeUserSessions('user1')}
-      >
+      <button data-testid="revoke-sessions-btn" onClick={() => revokeUserSessions('user1')}>
         Revoke Sessions
       </button>
     </div>
@@ -98,17 +83,17 @@ const ErrorComponent: React.FC = () => {
 describe('AdminProvider', () => {
   // Suppress unhandled promise rejections during error testing
   const originalUPR = process.listeners('unhandledRejection');
-  
+
   beforeAll(() => {
     process.removeAllListeners('unhandledRejection');
     process.on('unhandledRejection', () => {
       // Suppress during testing
     });
   });
-  
+
   afterAll(() => {
     process.removeAllListeners('unhandledRejection');
-    originalUPR.forEach(listener => process.on('unhandledRejection', listener));
+    originalUPR.forEach((listener) => process.on('unhandledRejection', listener));
   });
 
   const mockUsers = [
@@ -153,12 +138,12 @@ describe('AdminProvider', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock successful responses by default
     vi.mocked(authClient.admin.listUsers).mockResolvedValue({
       data: { users: mockUsers },
     });
-    
+
     vi.mocked(authClient.admin.createUser).mockResolvedValue({
       data: {
         user: {
@@ -174,13 +159,13 @@ describe('AdminProvider', () => {
         },
       },
     });
-    
+
     vi.mocked(authClient.admin.setRole).mockResolvedValue({});
-    
+
     vi.mocked(authClient.admin.listUserSessions).mockResolvedValue({
       data: { sessions: mockSessions },
     });
-    
+
     vi.mocked(authClient.admin.revokeUserSessions).mockResolvedValue({});
   });
 
@@ -189,7 +174,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       // Wait for initial load
@@ -203,11 +188,11 @@ describe('AdminProvider', () => {
     it('should throw error when useAdmin is used outside provider', () => {
       // Expect console.error to be called due to error boundary
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       expect(() => render(<ErrorComponent />)).toThrow(
-        'useAdmin must be used within an AdminProvider'
+        'useAdmin must be used within an AdminProvider',
       );
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -215,7 +200,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       expect(authClient.admin.listUsers).toHaveBeenCalledWith({
@@ -230,13 +215,14 @@ describe('AdminProvider', () => {
     it('should handle loading state correctly', async () => {
       // Make the API call slow to test loading state
       vi.mocked(authClient.admin.listUsers).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ data: { users: mockUsers } }), 100))
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve({ data: { users: mockUsers } }), 100)),
       );
 
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       // Initially loading
@@ -254,7 +240,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       // Wait for initial load
@@ -285,7 +271,7 @@ describe('AdminProvider', () => {
 
     it('should handle user creation error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       // Use implementation instead of rejected value to avoid unhandled promise rejection
       vi.mocked(authClient.admin.createUser).mockImplementation(async () => {
         throw new Error('Creation failed');
@@ -294,7 +280,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -308,7 +294,7 @@ describe('AdminProvider', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to create user:', expect.any(Error));
       });
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -316,7 +302,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -335,7 +321,7 @@ describe('AdminProvider', () => {
 
     it('should handle set role error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       // Use implementation instead of rejected value to avoid unhandled promise rejection
       vi.mocked(authClient.admin.setRole).mockImplementation(async () => {
         throw new Error('Role update failed');
@@ -344,7 +330,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -358,7 +344,7 @@ describe('AdminProvider', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to set user role:', expect.any(Error));
       });
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -368,7 +354,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -386,7 +372,7 @@ describe('AdminProvider', () => {
 
     it('should handle list sessions error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       // Use implementation instead of rejected value to avoid unhandled promise rejection
       vi.mocked(authClient.admin.listUserSessions).mockImplementation(async () => {
         throw new Error('Sessions failed');
@@ -395,7 +381,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -409,7 +395,7 @@ describe('AdminProvider', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to list user sessions:', expect.any(Error));
       });
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -417,7 +403,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -435,7 +421,7 @@ describe('AdminProvider', () => {
 
     it('should handle revoke sessions error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       // Use implementation instead of rejected value to avoid unhandled promise rejection
       vi.mocked(authClient.admin.revokeUserSessions).mockImplementation(async () => {
         throw new Error('Revoke failed');
@@ -444,7 +430,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -456,9 +442,12 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to revoke user sessions:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Failed to revoke user sessions:',
+          expect.any(Error),
+        );
       });
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -495,7 +484,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestStatsComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -544,7 +533,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestSessionStatsComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -572,7 +561,7 @@ describe('AdminProvider', () => {
 
     it('should handle stats errors gracefully', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       // Use implementation instead of rejected value to avoid unhandled promise rejection
       vi.mocked(authClient.admin.listUserSessions).mockImplementation(async () => {
         throw new Error('Session error');
@@ -581,7 +570,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -596,7 +585,7 @@ describe('AdminProvider', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to list user sessions:', expect.any(Error));
       });
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -648,7 +637,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestTransformComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -656,7 +645,9 @@ describe('AdminProvider', () => {
         expect(screen.getByTestId('user-name')).toHaveTextContent('Custom User');
         expect(screen.getByTestId('user-email')).toHaveTextContent('custom@example.com');
         expect(screen.getByTestId('user-verified')).toHaveTextContent('true');
-        expect(screen.getByTestId('user-image')).toHaveTextContent('https://example.com/custom.jpg');
+        expect(screen.getByTestId('user-image')).toHaveTextContent(
+          'https://example.com/custom.jpg',
+        );
         expect(screen.getByTestId('user-role')).toHaveTextContent('admin');
         expect(screen.getByTestId('user-banned')).toHaveTextContent('true');
         expect(screen.getByTestId('user-created')).toHaveTextContent('2024-01-15T10:30:00.000Z');
@@ -673,7 +664,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {
@@ -688,7 +679,7 @@ describe('AdminProvider', () => {
       render(
         <AdminProvider>
           <TestComponent />
-        </AdminProvider>
+        </AdminProvider>,
       );
 
       await waitFor(() => {

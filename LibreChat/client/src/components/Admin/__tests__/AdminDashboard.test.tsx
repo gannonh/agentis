@@ -16,16 +16,36 @@ vi.mock('../AdminProvider', () => ({
 
 // Mock Lucide React icons
 vi.mock('lucide-react', () => ({
-  Users: ({ className }: { className?: string }) => <div data-testid="users-icon" className={className} />,
-  UserCheck: ({ className }: { className?: string }) => <div data-testid="user-check-icon" className={className} />,
-  UserPlus: ({ className }: { className?: string }) => <div data-testid="user-plus-icon" className={className} />,
-  Activity: ({ className }: { className?: string }) => <div data-testid="activity-icon" className={className} />,
-  Clock: ({ className }: { className?: string }) => <div data-testid="clock-icon" className={className} />,
-  Globe: ({ className }: { className?: string }) => <div data-testid="globe-icon" className={className} />,
-  Settings: ({ className }: { className?: string }) => <div data-testid="settings-icon" className={className} />,
-  Shield: ({ className }: { className?: string }) => <div data-testid="shield-icon" className={className} />,
-  TrendingUp: ({ className }: { className?: string }) => <div data-testid="trending-up-icon" className={className} />,
-  Calendar: ({ className }: { className?: string }) => <div data-testid="calendar-icon" className={className} />,
+  Users: ({ className }: { className?: string }) => (
+    <div data-testid="users-icon" className={className} />
+  ),
+  UserCheck: ({ className }: { className?: string }) => (
+    <div data-testid="user-check-icon" className={className} />
+  ),
+  UserPlus: ({ className }: { className?: string }) => (
+    <div data-testid="user-plus-icon" className={className} />
+  ),
+  Activity: ({ className }: { className?: string }) => (
+    <div data-testid="activity-icon" className={className} />
+  ),
+  Clock: ({ className }: { className?: string }) => (
+    <div data-testid="clock-icon" className={className} />
+  ),
+  Globe: ({ className }: { className?: string }) => (
+    <div data-testid="globe-icon" className={className} />
+  ),
+  Settings: ({ className }: { className?: string }) => (
+    <div data-testid="settings-icon" className={className} />
+  ),
+  Shield: ({ className }: { className?: string }) => (
+    <div data-testid="shield-icon" className={className} />
+  ),
+  TrendingUp: ({ className }: { className?: string }) => (
+    <div data-testid="trending-up-icon" className={className} />
+  ),
+  Calendar: ({ className }: { className?: string }) => (
+    <div data-testid="calendar-icon" className={className} />
+  ),
 }));
 
 // Mock Button component
@@ -66,11 +86,11 @@ describe('AdminDashboard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup default mock returns
     mockAdminContext.getUserStats.mockResolvedValue(mockUserStats);
     mockAdminContext.getSessionStats.mockResolvedValue(mockSessionStats);
-    
+
     vi.mocked(useAdmin).mockReturnValue(mockAdminContext);
   });
 
@@ -84,7 +104,9 @@ describe('AdminDashboard', () => {
       render(<AdminDashboard />);
 
       expect(screen.getByText('Loading dashboard...')).toBeInTheDocument();
-      expect(screen.getByText('Loading dashboard...').previousElementSibling).toHaveClass('animate-spin');
+      expect(screen.getByText('Loading dashboard...').previousElementSibling).toHaveClass(
+        'animate-spin',
+      );
     });
 
     it('should hide loading state when not loading', () => {
@@ -111,7 +133,7 @@ describe('AdminDashboard', () => {
 
     it('should apply custom className', () => {
       const { container } = render(<AdminDashboard className="custom-class" />);
-      
+
       expect(container.firstChild).toHaveClass('custom-class');
     });
   });
@@ -153,7 +175,7 @@ describe('AdminDashboard', () => {
         newUsersThisWeek: 0,
         newUsersThisMonth: 0,
       });
-      
+
       mockAdminContext.getSessionStats.mockResolvedValue({
         totalSessions: 0,
         activeSessions: 0,
@@ -244,7 +266,7 @@ describe('AdminDashboard', () => {
       expect(screen.getByText('Today')).toBeInTheDocument();
       expect(screen.getByText('This Week')).toBeInTheDocument();
       expect(screen.getByText('This Month')).toBeInTheDocument();
-      
+
       // Check the values
       expect(screen.getByText('+5')).toBeInTheDocument(); // Today
       expect(screen.getByText('+25')).toBeInTheDocument(); // This week
@@ -421,10 +443,10 @@ describe('AdminDashboard', () => {
 
     it('should memoize the loadStats callback', () => {
       const { rerender } = render(<AdminDashboard />);
-      
+
       // Re-render with same props shouldn't trigger new calls
       rerender(<AdminDashboard />);
-      
+
       // Should still only be called once (from initial mount)
       expect(mockAdminContext.getUserStats).toHaveBeenCalledTimes(1);
       expect(mockAdminContext.getSessionStats).toHaveBeenCalledTimes(1);

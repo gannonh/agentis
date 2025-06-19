@@ -91,7 +91,9 @@ describe('OrganizationDetection', () => {
         expect(screen.getByText("You'll create a new organization")).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Set up example.com on Agentis and invite your team')).toBeInTheDocument();
+      expect(
+        screen.getByText('Set up example.com on Agentis and invite your team'),
+      ).toBeInTheDocument();
       expect(screen.getByText("You'll be the organization owner")).toBeInTheDocument();
     });
   });
@@ -130,7 +132,9 @@ describe('OrganizationDetection', () => {
         expect(screen.getByText("You'll create a new organization")).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Set up example.com on Agentis and invite your team')).toBeInTheDocument();
+      expect(
+        screen.getByText('Set up example.com on Agentis and invite your team'),
+      ).toBeInTheDocument();
       expect(screen.getByText("You'll be the organization owner")).toBeInTheDocument();
     });
 
@@ -146,7 +150,9 @@ describe('OrganizationDetection', () => {
         expect(screen.getByText("You'll create a new organization")).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Set up example.com on Agentis and invite your team')).toBeInTheDocument();
+      expect(
+        screen.getByText('Set up example.com on Agentis and invite your team'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -199,7 +205,9 @@ describe('OrganizationDetection', () => {
       const { rerender } = renderWithProviders({ ...defaultProps, email: 'user@first.com' });
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/auth/organization/check-domain?domain=first.com');
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/auth/organization/check-domain?domain=first.com',
+        );
       });
 
       rerender(
@@ -209,7 +217,9 @@ describe('OrganizationDetection', () => {
       );
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/auth/organization/check-domain?domain=second.com');
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/auth/organization/check-domain?domain=second.com',
+        );
       });
     });
   });

@@ -100,30 +100,30 @@ describe('MemberManagement', () => {
     userRole: 'owner' as const,
     members: mockMembers,
     invitations: [],
-    
+
     // Loading states
     isLoading: false,
     isLoadingMembers: false,
     isLoadingInvitations: false,
-    
+
     // Error states
     error: null,
-    
+
     // Organization management functions
     inviteMember: vi.fn(),
     updateMemberRole: vi.fn(),
     removeMember: vi.fn(),
     updateOrganization: vi.fn(),
-    
+
     // Invitation management
     cancelInvitation: vi.fn(),
-    
+
     // Organization creation (for onboarding)
     createOrganization: vi.fn(),
-    
+
     // Organization deletion
     deleteOrganization: vi.fn(),
-    
+
     // Permission helpers
     canManageMembers: true,
     canManageOrganization: true,

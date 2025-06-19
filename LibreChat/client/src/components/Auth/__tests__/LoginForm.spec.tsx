@@ -108,11 +108,11 @@ beforeEach(() => {
 
 test('renders login form', () => {
   const { getByLabelText } = render(
-    <Login 
-      onSubmit={mockLogin} 
-      startupConfig={mockStartupConfig} 
-      error={undefined} 
-      setError={vi.fn()} 
+    <Login
+      onSubmit={mockLogin}
+      startupConfig={mockStartupConfig}
+      error={undefined}
+      setError={vi.fn()}
     />,
   );
   expect(getByLabelText(/email/i)).toBeInTheDocument();
@@ -121,11 +121,11 @@ test('renders login form', () => {
 
 test('submits login form', async () => {
   const { getByLabelText } = render(
-    <Login 
-      onSubmit={mockLogin} 
-      startupConfig={mockStartupConfig} 
-      error={undefined} 
-      setError={vi.fn()} 
+    <Login
+      onSubmit={mockLogin}
+      startupConfig={mockStartupConfig}
+      error={undefined}
+      setError={vi.fn()}
     />,
   );
   const emailInput = getByLabelText(/email/i);
@@ -141,11 +141,11 @@ test('submits login form', async () => {
 
 test('displays validation error messages', async () => {
   const { getByLabelText, getByText } = render(
-    <Login 
-      onSubmit={mockLogin} 
-      startupConfig={mockStartupConfig} 
-      error={undefined} 
-      setError={vi.fn()} 
+    <Login
+      onSubmit={mockLogin}
+      startupConfig={mockStartupConfig}
+      error={undefined}
+      setError={vi.fn()}
     />,
   );
   const emailInput = getByLabelText(/email/i);

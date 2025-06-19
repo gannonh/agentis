@@ -62,11 +62,7 @@ vi.mock('~/components/ui/Label', () => ({
 }));
 
 vi.mock('~/components/ui/Dialog', () => ({
-  Dialog: ({ children }: any) => (
-    <div data-testid="dialog-container">
-      {children}
-    </div>
-  ),
+  Dialog: ({ children }: any) => <div data-testid="dialog-container">{children}</div>,
   DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
   DialogDescription: ({ children }: any) => <div data-testid="dialog-description">{children}</div>,
   DialogFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
@@ -77,47 +73,63 @@ vi.mock('~/components/ui/Dialog', () => ({
       // When asChild is true, render the Button component as-is
       return children;
     }
-    return (
-      <div data-testid="dialog-trigger">
-        {children}
-      </div>
-    );
+    return <div data-testid="dialog-trigger">{children}</div>;
   },
 }));
 
 vi.mock('~/components/ui/DropdownMenu', () => ({
   DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
   DropdownMenuContent: ({ children }: any) => <div data-testid="dropdown-content">{children}</div>,
-  DropdownMenuItem: ({ children, onClick }: any) => 
-    <button data-testid="dropdown-item" onClick={onClick}>{children}</button>,
-  DropdownMenuTrigger: ({ children, asChild }: any) => asChild ? children : <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: any) => (
+    <button data-testid="dropdown-item" onClick={onClick}>
+      {children}
+    </button>
+  ),
+  DropdownMenuTrigger: ({ children, asChild }: any) => (asChild ? children : <div>{children}</div>),
 }));
 
 vi.mock('~/components/ui/Select', () => ({
   Select: ({ children, value, onValueChange }: any) => (
     <div data-testid="select" data-value={value}>
-      <button onClick={() => onValueChange && onValueChange('test-value')}>
-        {children}
-      </button>
+      <button onClick={() => onValueChange && onValueChange('test-value')}>{children}</button>
     </div>
   ),
   SelectContent: ({ children }: any) => <div data-testid="select-content">{children}</div>,
-  SelectItem: ({ children, value }: any) => 
-    <div data-testid="select-item" data-value={value}>{children}</div>,
+  SelectItem: ({ children, value }: any) => (
+    <div data-testid="select-item" data-value={value}>
+      {children}
+    </div>
+  ),
   SelectTrigger: ({ children }: any) => <div data-testid="select-trigger">{children}</div>,
   SelectValue: () => <span data-testid="select-value">Select value</span>,
 }));
 
 // Mock Lucide React icons
 vi.mock('lucide-react', () => ({
-  Users: ({ className }: { className?: string }) => <div data-testid="users-icon" className={className} />,
-  Search: ({ className }: { className?: string }) => <div data-testid="search-icon" className={className} />,
-  MoreVertical: ({ className }: { className?: string }) => <div data-testid="more-vertical-icon" className={className} />,
-  UserPlus: ({ className }: { className?: string }) => <div data-testid="user-plus-icon" className={className} />,
-  Shield: ({ className }: { className?: string }) => <div data-testid="shield-icon" className={className} />,
-  Calendar: ({ className }: { className?: string }) => <div data-testid="calendar-icon" className={className} />,
-  Activity: ({ className }: { className?: string }) => <div data-testid="activity-icon" className={className} />,
-  Crown: ({ className }: { className?: string }) => <div data-testid="crown-icon" className={className} />,
+  Users: ({ className }: { className?: string }) => (
+    <div data-testid="users-icon" className={className} />
+  ),
+  Search: ({ className }: { className?: string }) => (
+    <div data-testid="search-icon" className={className} />
+  ),
+  MoreVertical: ({ className }: { className?: string }) => (
+    <div data-testid="more-vertical-icon" className={className} />
+  ),
+  UserPlus: ({ className }: { className?: string }) => (
+    <div data-testid="user-plus-icon" className={className} />
+  ),
+  Shield: ({ className }: { className?: string }) => (
+    <div data-testid="shield-icon" className={className} />
+  ),
+  Calendar: ({ className }: { className?: string }) => (
+    <div data-testid="calendar-icon" className={className} />
+  ),
+  Activity: ({ className }: { className?: string }) => (
+    <div data-testid="activity-icon" className={className} />
+  ),
+  Crown: ({ className }: { className?: string }) => (
+    <div data-testid="crown-icon" className={className} />
+  ),
 }));
 
 describe('UserManagement', () => {
@@ -174,7 +186,7 @@ describe('UserManagement', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset form mocks
     mockRegister.mockReturnValue({});
     mockHandleSubmit.mockImplementation((fn) => (e: any) => {
@@ -188,7 +200,7 @@ describe('UserManagement', () => {
       });
     });
     mockWatch.mockReturnValue('user');
-    
+
     vi.mocked(useAdmin).mockReturnValue(mockAdminContext);
   });
 
@@ -202,7 +214,9 @@ describe('UserManagement', () => {
       render(<UserManagement />);
 
       expect(screen.getByText('Loading users...')).toBeInTheDocument();
-      expect(screen.getByText('Loading users...').previousElementSibling).toHaveClass('animate-spin');
+      expect(screen.getByText('Loading users...').previousElementSibling).toHaveClass(
+        'animate-spin',
+      );
     });
 
     it('should hide loading state when not loading', () => {
@@ -225,14 +239,14 @@ describe('UserManagement', () => {
 
       // Dialog container exists
       expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
-      
+
       // UserPlus icon should be somewhere in the document (even if in dialog trigger)
       expect(screen.getByTestId('user-plus-icon')).toBeInTheDocument();
     });
 
     it('should apply custom className', () => {
       const { container } = render(<UserManagement className="custom-class" />);
-      
+
       expect(container.firstChild).toHaveClass('custom-class');
     });
   });
@@ -251,7 +265,7 @@ describe('UserManagement', () => {
 
       // John has an image
       expect(screen.getByAltText('John Doe avatar')).toBeInTheDocument();
-      
+
       // Jane and Bob should have initials
       expect(screen.getByText('JS')).toBeInTheDocument(); // Jane Smith
       expect(screen.getByText('BW')).toBeInTheDocument(); // Bob Wilson
@@ -263,11 +277,11 @@ describe('UserManagement', () => {
       // Check for Admin badge in user list (dialog content also has "Admin" text)
       const adminTexts = screen.getAllByText('Admin');
       expect(adminTexts.length).toBeGreaterThanOrEqual(1); // At least Jane's badge
-      
+
       // User badges (dialog form also adds User text)
       const userTexts = screen.getAllByText('User');
       expect(userTexts.length).toBeGreaterThanOrEqual(2); // At least John and Bob badges
-      
+
       expect(screen.getByTestId('crown-icon')).toBeInTheDocument(); // Admin icon
     });
 
@@ -328,7 +342,7 @@ describe('UserManagement', () => {
       render(<UserManagement />);
 
       const searchInput = screen.getByPlaceholderText('Search users by name or email...');
-      
+
       await user.type(searchInput, 'john');
 
       // Should update state (we can't easily test the actual filtering without complex mocking)
@@ -372,10 +386,10 @@ describe('UserManagement', () => {
 
       // Should have dropdown menus
       expect(screen.getAllByTestId('dropdown-menu')).toHaveLength(3);
-      
+
       // Each dropdown should have shield icon for role actions
       expect(screen.getAllByTestId('shield-icon')).toHaveLength(3);
-      
+
       // Actions should include both "Make Admin" and "Remove Admin" (different users)
       expect(screen.getAllByText('Make Admin')).toHaveLength(2); // John and Bob
       expect(screen.getByText('Remove Admin')).toBeInTheDocument(); // Jane
@@ -407,7 +421,7 @@ describe('UserManagement', () => {
       fireEvent.click(revokeButton);
 
       expect(confirmSpy).toHaveBeenCalledWith(
-        'Are you sure you want to revoke all sessions for this user?'
+        'Are you sure you want to revoke all sessions for this user?',
       );
       expect(mockAdminContext.revokeUserSessions).toHaveBeenCalled();
 
@@ -441,7 +455,7 @@ describe('UserManagement', () => {
     it('should render all form fields', async () => {
       // Test that dialog structure exists (even if not visible)
       render(<UserManagement />);
-      
+
       // Dialog content exists in DOM but may not be visible when closed
       expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
     });
@@ -513,7 +527,10 @@ describe('UserManagement', () => {
       fireEvent.click(revokeButton);
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to revoke user sessions:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Failed to revoke user sessions:',
+          expect.any(Error),
+        );
       });
 
       confirmSpy.mockRestore();
@@ -535,10 +552,10 @@ describe('UserManagement', () => {
 
       // Banned user (Jane)
       expect(screen.getByText('Banned')).toBeInTheDocument();
-      
+
       // Verified users (John and Bob)
       expect(screen.getAllByText('Verified')).toHaveLength(2);
-      
+
       // No "Unverified" since Jane shows "Banned" instead (banned takes precedence)
     });
 
@@ -549,11 +566,11 @@ describe('UserManagement', () => {
       const adminTexts = screen.getAllByText('Admin');
       expect(adminTexts.length).toBeGreaterThanOrEqual(1);
       expect(screen.getByTestId('crown-icon')).toBeInTheDocument();
-      
+
       // User roles (John and Bob) - multiple "User" texts due to dialog form
       const userTexts = screen.getAllByText('User');
       expect(userTexts.length).toBeGreaterThanOrEqual(2);
-      
+
       // Look for Users icons (2 for user badges + 1 in empty state that's not shown + possibly filter)
       const usersIcons = screen.getAllByTestId('users-icon');
       expect(usersIcons.length).toBeGreaterThanOrEqual(2); // At least 2 for user badges
