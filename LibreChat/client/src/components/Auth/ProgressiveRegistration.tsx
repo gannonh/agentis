@@ -751,7 +751,6 @@ export const ProgressiveRegistration: React.FC = () => {
                 id="invitations"
                 aria-label="Team member emails"
                 className="webkit-dark-styles transition-color peer w-full resize-none rounded-2xl border border-border-light bg-surface-primary px-3.5 pb-2.5 pt-3 text-text-primary duration-200 focus:border-green-500 focus:outline-none"
-                placeholder="email1@example.com, email2@example.com"
                 rows={4}
               />
               <label
