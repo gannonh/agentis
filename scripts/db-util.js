@@ -94,26 +94,31 @@ function showHelp() {
 ${colors.cyan}${colors.bright}LibreChat Database Utility CLI${colors.reset}
 
 ${colors.yellow}Commands:${colors.reset}
+  get-user         Interactive user data retrieval from all collections
   delete-user      Interactive user deletion with optional organization cleanup
   help, --help     Show this help message
 
 ${colors.yellow}Examples:${colors.reset}
+  ./db-util.js get-user
   ./db-util.js delete-user
-  node db-util.js delete-user
+  node db-util.js get-user
 
 ${colors.yellow}Features:${colors.reset}
   - Interactive email-based user lookup
-  - Shows user and organization information before deletion
-  - Optional organization deletion with member count warnings
+  - Shows user and organization information
+  - get-user: Retrieves ALL data from 20+ collections for a user
+  - delete-user: Optional organization deletion with member count warnings
   - Safe confirmation prompts at each step
-  - COMPLETE cleanup of ALL user data from 17+ collections:
+  - Collections accessed:
     • User profile, conversations, messages, files
     • Presets, assistants, agents, actions
+    • Prompts, prompt groups, tool calls
     • Shared links, tags, balances, API keys
     • Provider accounts, sessions, memberships, invitations
     • Connected accounts, projects, transactions
+    • Teams (owned teams and member teams)
 
-${colors.red}⚠️  Warning: This tool permanently deletes data. Use only in development!${colors.reset}
+${colors.red}⚠️  Warning: delete-user permanently deletes data. Use only in development!${colors.reset}
 `);
 }
 
@@ -154,9 +159,15 @@ async function getOrganizationInfo(organizationId) {
     
     // Get organization details
     const orgCollection = db.collection("organization");
-    const organization = await orgCollection.findOne({ id: organizationId });
+    // Better Auth stores organization with _id as ObjectId
+    const orgQuery = typeof organizationId === 'string' 
+      ? { _id: new mongoose.Types.ObjectId(organizationId) }
+      : { _id: organizationId };
+    
+    const organization = await orgCollection.findOne(orgQuery);
 
     if (!organization) {
+      console.log(`${colors.yellow}⚠️  No organization found with ID: ${organizationId}${colors.reset}`);
       return null;
     }
 
@@ -165,7 +176,10 @@ async function getOrganizationInfo(organizationId) {
     const members = await memberCollection.find({ organizationId }).toArray();
 
     return {
-      ...organization,
+      id: organization._id.toString(),
+      name: organization.name,
+      slug: organization.slug,
+      createdAt: organization.createdAt,
       memberCount: members?.length || 0,
       members: members || [],
     };
@@ -230,7 +244,7 @@ async function deleteUserCompletely(userId, email) {
       },
       {
         name: "agents",
-        field: "user",
+        field: "author",
         value: userId,
         description: "User agents",
       },
@@ -287,6 +301,24 @@ async function deleteUserCompletely(userId, email) {
         field: "user",
         value: userId,
         description: "User transactions",
+      },
+      {
+        name: "prompts",
+        field: "author",
+        value: userId,
+        description: "User prompts",
+      },
+      {
+        name: "promptgroups",
+        field: "author",
+        value: userId,
+        description: "User prompt groups",
+      },
+      {
+        name: "toolcalls",
+        field: "user",
+        value: userId,
+        description: "User tool calls",
       },
     ];
 
@@ -431,6 +463,50 @@ async function deleteUserCompletely(userId, email) {
       }
     }
 
+    // Teams cleanup - handle teams where user is owner or member
+    console.log(
+      `\n${colors.cyan}👥 Cleaning up teams...${colors.reset}`
+    );
+    
+    try {
+      const teamsCollection = db.collection("teams");
+      
+      // First, find teams where user is the owner
+      const ownedTeams = await teamsCollection.find({ ownerId: userId }).toArray();
+      if (ownedTeams.length > 0) {
+        console.log(
+          `${colors.cyan}📊 Found ${ownedTeams.length} teams owned by user${colors.reset}`
+        );
+        
+        // Delete teams owned by the user
+        const deleteOwnedResult = await teamsCollection.deleteMany({ ownerId: userId });
+        if (deleteOwnedResult.deletedCount > 0) {
+          console.log(
+            `${colors.green}✅ Deleted ${deleteOwnedResult.deletedCount} teams owned by user${colors.reset}`
+          );
+          totalDeleted += deleteOwnedResult.deletedCount;
+        }
+      }
+      
+      // Remove user from memberIds and adminIds arrays in other teams
+      const memberUpdateResult = await teamsCollection.updateMany(
+        { memberIds: userId },
+        { $pull: { memberIds: userId, adminIds: userId } }
+      );
+      
+      if (memberUpdateResult.modifiedCount > 0) {
+        console.log(
+          `${colors.green}✅ Removed user from ${memberUpdateResult.modifiedCount} teams as member/admin${colors.reset}`
+        );
+      }
+    } catch (error) {
+      if (!error.message.includes("does not exist")) {
+        console.log(
+          `${colors.yellow}⚠️  Teams cleanup: ${error.message}${colors.reset}`
+        );
+      }
+    }
+
     console.log(
       `\n${colors.green}${colors.bright}🎯 Total records deleted: ${totalDeleted}${colors.reset}`
     );
@@ -458,7 +534,11 @@ async function deleteOrganizationCompletely(organizationId) {
     
     // Delete organization
     const orgCollection = db.collection("organization");
-    const orgResult = await orgCollection.deleteOne({ id: organizationId });
+    // Better Auth stores organization with _id as ObjectId
+    const orgQuery = typeof organizationId === 'string'
+      ? { _id: new mongoose.Types.ObjectId(organizationId) }
+      : { _id: organizationId };
+    const orgResult = await orgCollection.deleteOne(orgQuery);
 
     // Delete all members
     const memberCollection = db.collection("member");
@@ -482,6 +562,451 @@ async function deleteOrganizationCompletely(organizationId) {
       `${colors.red}❌ Failed to delete organization: ${error.message}${colors.reset}`
     );
     throw error;
+  }
+}
+
+/**
+ * Get all user data from all collections
+ */
+async function getUserData(userId, email) {
+  try {
+    const db = mongoose.connection.db;
+    const userData = {
+      summary: {
+        userId: userId,
+        email: email,
+        totalRecords: 0,
+        collections: []
+      },
+      details: {}
+    };
+
+    console.log(
+      `${colors.cyan}📊 Retrieving user data from all collections...${colors.reset}`
+    );
+
+    // LibreChat collections that reference users
+    const collectionsToQuery = [
+      {
+        name: "user",
+        field: "_id",
+        value: userId,
+        description: "User profile",
+      },
+      {
+        name: "conversations",
+        field: "user",
+        value: userId,
+        description: "User conversations",
+      },
+      {
+        name: "messages",
+        field: "user",
+        value: userId,
+        description: "User messages",
+      },
+      {
+        name: "files",
+        field: "user",
+        value: userId,
+        description: "User files",
+      },
+      {
+        name: "presets",
+        field: "user",
+        value: userId,
+        description: "User presets",
+      },
+      {
+        name: "assistants",
+        field: "user",
+        value: userId,
+        description: "User assistants",
+      },
+      {
+        name: "agents",
+        field: "author",
+        value: userId,
+        description: "User agents",
+      },
+      {
+        name: "actions",
+        field: "user",
+        value: userId,
+        description: "User actions",
+      },
+      {
+        name: "sharedlinks",
+        field: "user",
+        value: userId,
+        description: "User shared links",
+      },
+      {
+        name: "conversationtags",
+        field: "user",
+        value: userId,
+        description: "User conversation tags",
+      },
+      {
+        name: "balances",
+        field: "user",
+        value: userId,
+        description: "User balances",
+      },
+      {
+        name: "keys",
+        field: "user",
+        value: userId,
+        description: "User API keys",
+      },
+      {
+        name: "tokens",
+        field: "user",
+        value: userId,
+        description: "User tokens",
+      },
+      {
+        name: "composioconnectedaccounts",
+        field: "user",
+        value: userId,
+        description: "User connected accounts",
+      },
+      {
+        name: "projects",
+        field: "user",
+        value: userId,
+        description: "User projects",
+      },
+      {
+        name: "transactions",
+        field: "user",
+        value: userId,
+        description: "User transactions",
+      },
+      {
+        name: "prompts",
+        field: "author",
+        value: userId,
+        description: "User prompts",
+      },
+      {
+        name: "promptgroups",
+        field: "author",
+        value: userId,
+        description: "User prompt groups",
+      },
+      {
+        name: "toolcalls",
+        field: "user",
+        value: userId,
+        description: "User tool calls",
+      },
+    ];
+
+    // Query LibreChat collections
+    for (const collectionInfo of collectionsToQuery) {
+      try {
+        const collection = db.collection(collectionInfo.name);
+        const query = { [collectionInfo.field]: collectionInfo.value };
+
+        // For _id field, convert string to ObjectId if needed
+        if (
+          collectionInfo.field === "_id" &&
+          typeof collectionInfo.value === "string"
+        ) {
+          query[collectionInfo.field] = new mongoose.Types.ObjectId(
+            collectionInfo.value
+          );
+        }
+
+        const records = await collection.find(query).toArray();
+        
+        if (records.length > 0) {
+          userData.details[collectionInfo.name] = {
+            description: collectionInfo.description,
+            count: records.length,
+            records: records
+          };
+          userData.summary.totalRecords += records.length;
+          userData.summary.collections.push({
+            name: collectionInfo.name,
+            count: records.length
+          });
+
+          console.log(
+            `${colors.green}✅ ${collectionInfo.description}: ${records.length} records found${colors.reset}`
+          );
+        }
+      } catch (error) {
+        // Collection might not exist, which is fine
+        if (!error.message.includes("does not exist")) {
+          console.log(
+            `${colors.yellow}⚠️  ${collectionInfo.description}: ${error.message}${colors.reset}`
+          );
+        }
+      }
+    }
+
+    // Better Auth collections
+    console.log(
+      `\n${colors.cyan}🔐 Querying Better Auth collections...${colors.reset}`
+    );
+
+    // Helper to safely create ObjectId queries
+    const createUserQueries = (id) => {
+      const queries = [];
+      // Better Auth stores userId as ObjectId
+      if (typeof id === "string") {
+        try {
+          queries.push({ userId: new mongoose.Types.ObjectId(id) });
+        } catch (e) {
+          console.log(
+            `${colors.yellow}⚠️  Could not convert ${id} to ObjectId: ${e.message}${colors.reset}`
+          );
+        }
+      } else {
+        // id is already an ObjectId
+        queries.push({ userId: id });
+      }
+      return queries;
+    };
+
+    const betterAuthCollections = [
+      {
+        name: "account",
+        queries: createUserQueries(userId),
+        description: "User provider accounts",
+      },
+      {
+        name: "session",
+        queries: createUserQueries(userId),
+        description: "User sessions",
+      },
+      {
+        name: "member",
+        queries: createUserQueries(userId),
+        description: "Organization memberships",
+      },
+      {
+        name: "invitation",
+        queries: [
+          ...(typeof userId === "string"
+            ? [{ inviterId: new mongoose.Types.ObjectId(userId) }]
+            : [{ inviterId: userId }]),
+          { email: email },
+        ],
+        description: "User invitations",
+      },
+    ];
+
+    for (const collectionInfo of betterAuthCollections) {
+      try {
+        const collection = db.collection(collectionInfo.name);
+        let allRecords = [];
+
+        for (const query of collectionInfo.queries) {
+          const records = await collection.find(query).toArray();
+          allRecords = allRecords.concat(records);
+        }
+
+        if (allRecords.length > 0) {
+          userData.details[collectionInfo.name] = {
+            description: collectionInfo.description,
+            count: allRecords.length,
+            records: allRecords
+          };
+          userData.summary.totalRecords += allRecords.length;
+          userData.summary.collections.push({
+            name: collectionInfo.name,
+            count: allRecords.length
+          });
+
+          console.log(
+            `${colors.green}✅ ${collectionInfo.description}: ${allRecords.length} records found${colors.reset}`
+          );
+        }
+      } catch (error) {
+        if (!error.message.includes("does not exist")) {
+          console.log(
+            `${colors.yellow}⚠️  ${collectionInfo.description}: ${error.message}${colors.reset}`
+          );
+        }
+      }
+    }
+
+    // Teams - find teams where user is owner or member
+    console.log(
+      `\n${colors.cyan}👥 Querying teams...${colors.reset}`
+    );
+    
+    try {
+      const teamsCollection = db.collection("teams");
+      
+      // Find teams where user is the owner
+      const ownedTeams = await teamsCollection.find({ ownerId: userId }).toArray();
+      
+      // Find teams where user is a member
+      const memberTeams = await teamsCollection.find({ memberIds: userId }).toArray();
+      
+      const allTeams = [...ownedTeams];
+      // Add member teams that aren't already in owned teams
+      memberTeams.forEach(team => {
+        if (!allTeams.find(t => t._id.toString() === team._id.toString())) {
+          allTeams.push(team);
+        }
+      });
+      
+      if (allTeams.length > 0) {
+        userData.details.teams = {
+          description: "User teams",
+          count: allTeams.length,
+          owned: ownedTeams.length,
+          member: memberTeams.length,
+          records: allTeams
+        };
+        userData.summary.totalRecords += allTeams.length;
+        userData.summary.collections.push({
+          name: "teams",
+          count: allTeams.length
+        });
+
+        console.log(
+          `${colors.green}✅ User teams: ${allTeams.length} teams (${ownedTeams.length} owned, ${memberTeams.length} as member)${colors.reset}`
+        );
+      }
+    } catch (error) {
+      if (!error.message.includes("does not exist")) {
+        console.log(
+          `${colors.yellow}⚠️  Teams query: ${error.message}${colors.reset}`
+        );
+      }
+    }
+
+    console.log(
+      `\n${colors.green}${colors.bright}🎯 Total records found: ${userData.summary.totalRecords}${colors.reset}`
+    );
+
+    return userData;
+  } catch (error) {
+    logger.error("Error getting user data:", error);
+    throw error;
+  }
+}
+
+/**
+ * Interactive user data retrieval flow
+ */
+async function interactiveGetUser() {
+  try {
+    console.log(
+      `\n${colors.cyan}${colors.bright}📊 Interactive User Data Retrieval${colors.reset}`
+    );
+    console.log(
+      `${colors.yellow}This will retrieve all data for a user from all collections.${colors.reset}\n`
+    );
+
+    // Step 1: Get email address
+    const email = await question("Enter user email address: ");
+
+    if (!email || !email.includes("@")) {
+      console.log(`${colors.red}❌ Invalid email address${colors.reset}`);
+      return;
+    }
+
+    console.log(`\n${colors.cyan}🔍 Looking up user...${colors.reset}`);
+
+    // Step 2: Find user
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      console.log(
+        `${colors.red}❌ User not found with email: ${email}${colors.reset}`
+      );
+      return;
+    }
+
+    // Step 3: Display user information
+    console.log(`\n${colors.green}👤 User found:${colors.reset}`);
+    console.log(`   Email: ${colors.white}${user.email}${colors.reset}`);
+    console.log(`   Name: ${colors.white}${user.name || "N/A"}${colors.reset}`);
+    console.log(`   ID: ${colors.white}${user._id}${colors.reset}`);
+    console.log(
+      `   Created: ${colors.white}${
+        user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"
+      }${colors.reset}`
+    );
+    console.log(`   Role: ${colors.white}${user.role || "N/A"}${colors.reset}`);
+
+    // Step 4: Get all user data
+    console.log(`\n${colors.cyan}📊 Retrieving all user data...${colors.reset}`);
+    const userData = await getUserData(user._id.toString(), user.email);
+
+    // Step 5: Display summary
+    console.log(`\n${colors.magenta}${colors.bright}📋 Data Summary:${colors.reset}`);
+    console.log(`   Total records: ${colors.white}${userData.summary.totalRecords}${colors.reset}`);
+    console.log(`   Collections with data: ${colors.white}${userData.summary.collections.length}${colors.reset}`);
+    
+    console.log(`\n${colors.cyan}📁 Collections breakdown:${colors.reset}`);
+    userData.summary.collections.forEach(col => {
+      console.log(`   • ${col.name}: ${colors.white}${col.count} records${colors.reset}`);
+    });
+
+    // Step 6: Ask if user wants to see detailed data
+    const showDetails = await question(`\nShow detailed data for each collection? (y/N): `);
+
+    if (
+      showDetails.toLowerCase() === "y" ||
+      showDetails.toLowerCase() === "yes"
+    ) {
+      console.log(`\n${colors.cyan}${colors.bright}📄 Detailed Data:${colors.reset}`);
+      
+      for (const [collectionName, data] of Object.entries(userData.details)) {
+        console.log(`\n${colors.yellow}━━━ ${data.description} (${collectionName}) ━━━${colors.reset}`);
+        console.log(`Count: ${data.count}`);
+        
+        // Show first few records as sample
+        const samplesToShow = Math.min(3, data.records.length);
+        if (samplesToShow > 0) {
+          console.log(`\nShowing first ${samplesToShow} records:`);
+          
+          for (let i = 0; i < samplesToShow; i++) {
+            console.log(`\n${colors.cyan}Record ${i + 1}:${colors.reset}`);
+            console.log(JSON.stringify(data.records[i], null, 2));
+          }
+          
+          if (data.records.length > samplesToShow) {
+            console.log(`\n${colors.yellow}... and ${data.records.length - samplesToShow} more records${colors.reset}`);
+          }
+        }
+      }
+    }
+
+    // Step 7: Ask if user wants to export data
+    const exportData = await question(`\nExport all data to JSON file? (y/N): `);
+
+    if (
+      exportData.toLowerCase() === "y" ||
+      exportData.toLowerCase() === "yes"
+    ) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `user-data-${email.replace('@', '-at-')}-${timestamp}.json`;
+      const filepath = join(process.cwd(), filename);
+      
+      const fs = await import('fs');
+      await fs.promises.writeFile(filepath, JSON.stringify(userData, null, 2));
+      
+      console.log(`\n${colors.green}✅ Data exported to: ${colors.white}${filepath}${colors.reset}`);
+    }
+
+    console.log(
+      `\n${colors.green}${colors.bright}✅ Data retrieval completed!${colors.reset}`
+    );
+  } catch (error) {
+    console.error(
+      `\n${colors.red}❌ Error during data retrieval:${colors.reset}`,
+      error.message
+    );
+    logger.error("User data retrieval error:", error);
   }
 }
 
@@ -741,6 +1266,9 @@ async function main() {
     console.log(`${colors.green}✅ Connected to database${colors.reset}`);
 
     switch (command) {
+      case "get-user":
+        await interactiveGetUser();
+        break;
       case "delete-user":
         await interactiveDeleteUser();
         break;

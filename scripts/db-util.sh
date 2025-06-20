@@ -35,10 +35,12 @@ show_help() {
     echo "Usage: ./db-util.sh [command]"
     echo ""
     echo "Commands:"
+    echo "  get-user         Interactive user data retrieval from all collections"
     echo "  delete-user      Interactive user deletion with optional organization cleanup"
     echo "  help             Show this help message"
     echo ""
     echo "Examples:"
+    echo "  ./db-util.sh get-user"
     echo "  ./db-util.sh delete-user"
     echo "  ./db-util.sh help"
     echo ""
@@ -46,6 +48,10 @@ show_help() {
 
 # Main logic to handle commands
 case "${1:-help}" in
+    get-user)
+        echo -e "${YELLOW}🚀 Starting database utility...${NC}"
+        node "$DB_UTIL_JS" get-user
+        ;;
     delete-user)
         echo -e "${YELLOW}🚀 Starting database utility...${NC}"
         node "$DB_UTIL_JS" delete-user
