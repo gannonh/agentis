@@ -49,6 +49,10 @@ const User = (await import(join(API_DIR, "models", "User.js"))).default;
 const { getAuth } = await import(join(API_DIR, "auth.js"));
 const { logger } = await import(join(API_DIR, "config", "index.js"));
 
+// Note: Better Auth API methods (auth.api.*) are not available in CLI context
+// because the auth instance is initialized asynchronously after MongoDB connection.
+// We use direct database queries for Better Auth collections instead.
+
 // Import mongoose from LibreChat's node_modules
 const mongoose = (
   await import(join(API_DIR, "..", "node_modules", "mongoose", "index.js"))
@@ -145,25 +149,20 @@ async function findUserByEmail(email) {
  */
 async function getOrganizationInfo(organizationId) {
   try {
-    const auth = getAuth();
-    if (!auth?.api) {
-      return null;
-    }
-
+    // Query database directly since Better Auth API might not be available in CLI context
+    const db = mongoose.connection.db;
+    
     // Get organization details
-    const organizations = await auth.api.listOrganizations({ body: {} });
-    const organization = organizations?.find(
-      (org) => org.id === organizationId
-    );
+    const orgCollection = db.collection("organization");
+    const organization = await orgCollection.findOne({ id: organizationId });
 
     if (!organization) {
       return null;
     }
 
-    // Get member count
-    const members = await auth.api.listOrganizationMembers({
-      body: { organizationId },
-    });
+    // Get member count and details
+    const memberCollection = db.collection("member");
+    const members = await memberCollection.find({ organizationId }).toArray();
 
     return {
       ...organization,
@@ -349,8 +348,8 @@ async function deleteUserCompletely(userId, email) {
 
     // Helper to safely create ObjectId queries
     const createUserQueries = (id) => {
-      const queries = [{ userId: id }];
-      // Only add ObjectId version if id is a string
+      const queries = [];
+      // Better Auth stores userId as ObjectId
       if (typeof id === "string") {
         try {
           queries.push({ userId: new mongoose.Types.ObjectId(id) });
@@ -359,6 +358,9 @@ async function deleteUserCompletely(userId, email) {
             `${colors.yellow}⚠️  Could not convert ${id} to ObjectId: ${e.message}${colors.reset}`
           );
         }
+      } else {
+        // id is already an ObjectId
+        queries.push({ userId: id });
       }
       return queries;
     };
@@ -382,10 +384,9 @@ async function deleteUserCompletely(userId, email) {
       {
         name: "invitation",
         queries: [
-          { inviterId: userId },
           ...(typeof userId === "string"
             ? [{ inviterId: new mongoose.Types.ObjectId(userId) }]
-            : []),
+            : [{ inviterId: userId }]),
           { email: email },
         ],
         description: "User invitations",
@@ -452,56 +453,35 @@ async function deleteUserCompletely(userId, email) {
  */
 async function deleteOrganizationCompletely(organizationId) {
   try {
-    const auth = getAuth();
-    if (!auth?.api) {
-      throw new Error("Better Auth not available");
-    }
+    // Use direct database access since Better Auth API is not available in CLI context
+    const db = mongoose.connection.db;
+    
+    // Delete organization
+    const orgCollection = db.collection("organization");
+    const orgResult = await orgCollection.deleteOne({ id: organizationId });
 
-    // Use Better Auth API to delete organization
-    // This should cascade and delete members, invitations, etc.
-    await auth.api.deleteOrganization({
-      body: { organizationId },
+    // Delete all members
+    const memberCollection = db.collection("member");
+    const memberResult = await memberCollection.deleteMany({
+      organizationId,
+    });
+
+    // Delete all invitations
+    const invitationCollection = db.collection("invitation");
+    const invitationResult = await invitationCollection.deleteMany({
+      organizationId,
     });
 
     console.log(
-      `${colors.green}✅ Deleted organization and all associated data${colors.reset}`
+      `${colors.green}✅ Deleted organization and ${memberResult.deletedCount} members, ${invitationResult.deletedCount} invitations${colors.reset}`
     );
     return true;
   } catch (error) {
-    // If Better Auth API fails, try manual cleanup
+    logger.error("Organization deletion failed:", error);
     console.log(
-      `${colors.yellow}⚠️  Better Auth organization deletion failed, attempting manual cleanup...${colors.reset}`
+      `${colors.red}❌ Failed to delete organization: ${error.message}${colors.reset}`
     );
-
-    try {
-      const auth = getAuth();
-      const db = auth.adapter?.client || auth.adapter?.db;
-      if (db) {
-        // Delete organization
-        const orgCollection = db.collection("organization");
-        await orgCollection.deleteOne({ id: organizationId });
-
-        // Delete all members
-        const memberCollection = db.collection("member");
-        const memberResult = await memberCollection.deleteMany({
-          organizationId,
-        });
-
-        // Delete all invitations
-        const invitationCollection = db.collection("invitation");
-        const invitationResult = await invitationCollection.deleteMany({
-          organizationId,
-        });
-
-        console.log(
-          `${colors.green}✅ Manually deleted organization and ${memberResult.deletedCount} members, ${invitationResult.deletedCount} invitations${colors.reset}`
-        );
-        return true;
-      }
-    } catch (manualError) {
-      logger.error("Manual organization deletion failed:", manualError);
-      throw manualError;
-    }
+    throw error;
   }
 }
 
@@ -585,8 +565,9 @@ async function interactiveDeleteUser() {
     try {
       const db = mongoose.connection.db;
       const accountCollection = db.collection("account");
+      // Better Auth stores userId as ObjectId
       const accounts = await accountCollection
-        .find({ userId: user._id.toString() })
+        .find({ userId: user._id })
         .toArray();
       if (accounts.length > 0) {
         const providers = accounts.map((acc) => acc.providerId).join(", ");
@@ -602,60 +583,85 @@ async function interactiveDeleteUser() {
     let organizationInfo = null;
     let shouldDeleteOrg = false;
 
-    // Step 4: Check for organization membership
-    if (user.organizationId) {
+    // Step 4: Check for organization membership in Better Auth member collection
+    console.log(
+      `\n${colors.cyan}🏢 Checking organization membership...${colors.reset}`
+    );
+
+    try {
+      const db = mongoose.connection.db;
+      const memberCollection = db.collection("member");
+
+      // Check if user is a member of any organization
+      // Better Auth stores userId as ObjectId, not string
+      const membership = await memberCollection.findOne({
+        userId: user._id,
+      });
+
+      if (membership) {
+        // Convert organizationId to string for Better Auth API
+        const orgIdString = membership.organizationId.toString();
+        console.log(
+          `${colors.cyan}📋 Found membership record for organization: ${orgIdString}${colors.reset}`
+        );
+        organizationInfo = await getOrganizationInfo(orgIdString);
+      } else {
+        console.log(
+          `${colors.cyan}📋 No organization membership found in member collection${colors.reset}`
+        );
+      }
+    } catch (error) {
       console.log(
-        `\n${colors.cyan}🏢 Checking organization membership...${colors.reset}`
+        `${colors.yellow}⚠️  Error checking organization membership: ${error.message}${colors.reset}`
       );
-      organizationInfo = await getOrganizationInfo(user.organizationId);
+    }
 
-      if (organizationInfo) {
-        console.log(`\n${colors.blue}🏢 Organization Details:${colors.reset}`);
-        console.log(
-          `   Name: ${colors.white}${organizationInfo.name}${colors.reset}`
-        );
-        console.log(
-          `   ID: ${colors.white}${organizationInfo.id}${colors.reset}`
-        );
-        console.log(
-          `   Slug: ${colors.white}${organizationInfo.slug}${colors.reset}`
-        );
-        console.log(
-          `   Members: ${colors.white}${organizationInfo.memberCount}${colors.reset}`
-        );
-        console.log(
-          `   Created: ${colors.white}${
-            organizationInfo.createdAt
-              ? new Date(organizationInfo.createdAt).toLocaleDateString()
-              : "N/A"
-          }${colors.reset}`
-        );
+    if (organizationInfo) {
+      console.log(`\n${colors.blue}🏢 Organization Details:${colors.reset}`);
+      console.log(
+        `   Name: ${colors.white}${organizationInfo.name}${colors.reset}`
+      );
+      console.log(
+        `   ID: ${colors.white}${organizationInfo.id}${colors.reset}`
+      );
+      console.log(
+        `   Slug: ${colors.white}${organizationInfo.slug}${colors.reset}`
+      );
+      console.log(
+        `   Members: ${colors.white}${organizationInfo.memberCount}${colors.reset}`
+      );
+      console.log(
+        `   Created: ${colors.white}${
+          organizationInfo.createdAt
+            ? new Date(organizationInfo.createdAt).toLocaleDateString()
+            : "N/A"
+        }${colors.reset}`
+      );
 
-        // Step 5: Ask about organization deletion
-        if (organizationInfo.memberCount <= 1) {
-          console.log(
-            `\n${colors.yellow}⚠️  This user is the only member of the organization.${colors.reset}`
-          );
-          const deleteOrgAnswer = await question(
-            `Delete organization "${organizationInfo.name}" as well? (y/N): `
-          );
-          shouldDeleteOrg =
-            deleteOrgAnswer.toLowerCase() === "y" ||
-            deleteOrgAnswer.toLowerCase() === "yes";
-        } else {
-          console.log(
-            `\n${colors.yellow}⚠️  This organization has ${organizationInfo.memberCount} members.${colors.reset}`
-          );
-          console.log(
-            `${colors.red}Deleting the organization will affect all members!${colors.reset}`
-          );
-          const deleteOrgAnswer = await question(
-            `Are you sure you want to delete organization "${organizationInfo.name}"? (y/N): `
-          );
-          shouldDeleteOrg =
-            deleteOrgAnswer.toLowerCase() === "y" ||
-            deleteOrgAnswer.toLowerCase() === "yes";
-        }
+      // Step 5: Ask about organization deletion
+      if (organizationInfo.memberCount <= 1) {
+        console.log(
+          `\n${colors.yellow}⚠️  This user is the only member of the organization.${colors.reset}`
+        );
+        const deleteOrgAnswer = await question(
+          `Delete organization "${organizationInfo.name}" as well? (y/N): `
+        );
+        shouldDeleteOrg =
+          deleteOrgAnswer.toLowerCase() === "y" ||
+          deleteOrgAnswer.toLowerCase() === "yes";
+      } else {
+        console.log(
+          `\n${colors.yellow}⚠️  This organization has ${organizationInfo.memberCount} members.${colors.reset}`
+        );
+        console.log(
+          `${colors.red}Deleting the organization will affect all members!${colors.reset}`
+        );
+        const deleteOrgAnswer = await question(
+          `Are you sure you want to delete organization "${organizationInfo.name}"? (y/N): `
+        );
+        shouldDeleteOrg =
+          deleteOrgAnswer.toLowerCase() === "y" ||
+          deleteOrgAnswer.toLowerCase() === "yes";
       }
     } else {
       console.log(
