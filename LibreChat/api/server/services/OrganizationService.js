@@ -4,6 +4,7 @@
  */
 
 import { getAuth } from '../../auth.js';
+import mongoose from 'mongoose';
 import { logger } from '#config/index.js';
 import {
   extractEmailDomain,
@@ -17,17 +18,20 @@ import {
 class OrganizationService {
   constructor() {
     this.auth = null;
+    this.db = null;
   }
 
   /**
-   * Initialize the service with Better Auth instance
+   * Initialize the service with Better Auth instance and database
    */
   initialize() {
     this.auth = getAuth();
+    // Use the MongoDB client directly since Better Auth adapter access is not working
+    this.db = mongoose.connection.db;
   }
 
   /**
-   * Finds an organization by email domain using Better Auth API
+   * Finds an organization by email domain using direct MongoDB queries
    * @param {string} email - User's email address
    * @returns {Promise<Object|null>} Organization if found, null otherwise
    */
@@ -40,20 +44,32 @@ class OrganizationService {
 
       logger.debug('Searching for organization with domain:', domain);
 
-      // Get all organizations and filter by metadata.domain
-      // Note: Better Auth doesn't have direct domain search, so we'll search by slug
-      const organizations = await this.auth.api.listOrganizations({
-        body: {},
-      });
+      // Use direct MongoDB queries since Better Auth adapter is not accessible
+      const organizationCollection = this.db.collection('organization');
 
-      // Find organization with matching slug or domain in metadata
-      const organization = organizations?.find(
-        (org) => org.slug === expectedSlug || org.metadata?.domain === domain,
-      );
+      // First try to find by slug
+      let organization = await organizationCollection.findOne({ slug: expectedSlug });
+
+      // If not found by slug, try searching by domain in metadata
+      if (!organization) {
+        // Search for domain in metadata (stored as JSON string)
+        organization = await organizationCollection.findOne({
+          metadata: { $regex: domain, $options: 'i' },
+        });
+
+        if (organization) {
+          logger.debug('Found existing organization by domain:', {
+            id: organization._id.toString(),
+            name: organization.name,
+            domain,
+          });
+          return organization;
+        }
+      }
 
       if (organization) {
-        logger.debug('Found existing organization:', {
-          id: organization.id,
+        logger.debug('Found existing organization by slug:', {
+          id: organization._id.toString(),
           name: organization.name,
           domain,
         });
@@ -67,7 +83,7 @@ class OrganizationService {
   }
 
   /**
-   * Creates a new organization for the user's email domain
+   * Creates a new organization for the user's email domain using direct database queries
    * @param {string} email - User's email address
    * @param {string} userId - User's ID
    * @returns {Promise<Object>} Created organization
@@ -82,30 +98,42 @@ class OrganizationService {
 
       logger.info('Creating organization for new domain:', { domain, name, slug });
 
-      // Attempt to create organization with retry mechanism for slug collisions
+      const organizationCollection = this.db.collection('organization');
+      const memberCollection = this.db.collection('member');
+
       let organization;
       try {
-        organization = await this.auth.api.createOrganization({
-          body: {
-            name,
-            slug,
-            metadata: {
-              domain,
-              autoCreated: true,
-              createdFromEmail: email,
-            },
-          },
-          headers: {
-            'user-id': userId,
-          },
+        // Create organization document
+        const orgResult = await organizationCollection.insertOne({
+          _id: new mongoose.Types.ObjectId(),
+          name,
+          slug,
+          metadata: JSON.stringify({
+            domain,
+            autoCreated: true,
+            createdFromEmail: email,
+          }),
+          createdAt: new Date(),
+        });
+
+        organization = await organizationCollection.findOne({ _id: orgResult.insertedId });
+
+        // Create member record for the owner
+        await memberCollection.insertOne({
+          _id: new mongoose.Types.ObjectId(),
+          userId,
+          organizationId: organization._id.toString(),
+          role: 'owner',
+          createdAt: new Date(),
         });
       } catch (createError) {
-        // Check if this is a 409 duplicate error (slug collision)
+        // Check if this is a duplicate error (slug collision)
         const isDuplicateError =
-          createError.status === 409 ||
-          createError.statusCode === 409 ||
-          (createError.message && createError.message.toLowerCase().includes('duplicate')) ||
-          (createError.message && createError.message.toLowerCase().includes('already exists'));
+          createError.code === 11000 || // MongoDB duplicate key error
+          (createError.message &&
+            (createError.message.toLowerCase().includes('duplicate') ||
+              createError.message.toLowerCase().includes('already exists') ||
+              createError.message.toLowerCase().includes('unique')));
 
         if (isDuplicateError) {
           logger.info('Organization slug collision detected, fetching existing organization:', {
@@ -122,7 +150,7 @@ class OrganizationService {
           }
 
           logger.info('Successfully found existing organization after collision:', {
-            id: organization.id,
+            id: organization._id.toString(),
             name: organization.name,
             domain,
           });
@@ -133,7 +161,7 @@ class OrganizationService {
       }
 
       logger.info('Successfully created organization:', {
-        id: organization.id,
+        id: organization._id.toString(),
         name: organization.name,
         domain,
       });
@@ -162,16 +190,36 @@ class OrganizationService {
         role,
       });
 
-      const member = await this.auth.api.addMember({
-        body: {
-          userId,
-          organizationId,
-          role,
-        },
+      const memberCollection = this.db.collection('member');
+
+      // Check if user is already a member
+      const existingMember = await memberCollection.findOne({
+        userId,
+        organizationId,
       });
 
+      if (existingMember) {
+        logger.info('User is already a member of organization:', {
+          userId,
+          organizationId,
+          role: existingMember.role,
+        });
+        return existingMember;
+      }
+
+      // Create new member record
+      const memberResult = await memberCollection.insertOne({
+        _id: new mongoose.Types.ObjectId(),
+        userId,
+        organizationId,
+        role,
+        createdAt: new Date(),
+      });
+
+      const member = await memberCollection.findOne({ _id: memberResult.insertedId });
+
       logger.info('Successfully added user to organization:', {
-        memberId: member.id,
+        memberId: member._id.toString(),
         userId,
         organizationId,
         role,
@@ -208,45 +256,29 @@ class OrganizationService {
 
         logger.info('User created new organization and is now owner:', {
           userId,
-          organizationId: organization.id,
+          organizationId: organization._id.toString(),
           email,
         });
       } else {
         // Step 3: Add user to existing organization as member
-        try {
-          await this.addUserToOrganization(userId, organization.id, 'member');
-          memberRole = 'member';
+        await this.addUserToOrganization(userId, organization._id.toString(), 'member');
+        memberRole = 'member';
 
-          logger.info('User joined existing organization as member:', {
-            userId,
-            organizationId: organization.id,
-            email,
-          });
-        } catch (error) {
-          // Check if error indicates user is already a member
-          if (
-            error.message &&
-            (error.message.includes('already exists') ||
-              error.message.includes('already a member') ||
-              error.message.includes('duplicate') ||
-              error.code === 'MEMBER_EXISTS')
-          ) {
-            // User is already a member, this is expected behavior
-            memberRole = 'member';
-            logger.info('User is already a member of organization:', {
-              userId,
-              organizationId: organization.id,
-              email,
-            });
-          } else {
-            // Re-throw unexpected errors
-            throw error;
-          }
-        }
+        logger.info('User joined existing organization as member:', {
+          userId,
+          organizationId: organization._id.toString(),
+          email,
+        });
       }
 
       return {
-        organization,
+        organization: {
+          id: organization._id.toString(),
+          name: organization.name,
+          slug: organization.slug,
+          metadata: organization.metadata,
+          createdAt: organization.createdAt,
+        },
         isNewOrganization,
         memberRole,
       };
@@ -257,7 +289,7 @@ class OrganizationService {
   }
 
   /**
-   * Gets the user's active organization and role
+   * Gets the user's active organization and role using direct database queries
    * @param {string} userId - User's ID
    * @returns {Promise<{organization: Object|null, role: string|null}>}
    */
@@ -265,23 +297,35 @@ class OrganizationService {
     try {
       this.initialize();
 
-      // Get user's organizations
-      const userOrgs = await this.auth.api.listUserOrganizations({
-        headers: {
-          'user-id': userId,
-        },
-      });
+      const memberCollection = this.db.collection('member');
+      const organizationCollection = this.db.collection('organization');
 
-      if (!userOrgs || userOrgs.length === 0) {
+      // Get user's organization memberships
+      const memberships = await memberCollection.find({ userId }).toArray();
+
+      if (!memberships || memberships.length === 0) {
         return { organization: null, role: null };
       }
 
       // For Phase 1, user has only one organization (no org switcher)
-      const primaryOrg = userOrgs[0];
+      const primaryMembership = memberships[0];
+
+      // Get the organization details
+      const organization = await organizationCollection.findOne({
+        _id: new mongoose.Types.ObjectId(primaryMembership.organizationId),
+      });
 
       return {
-        organization: primaryOrg.organization,
-        role: primaryOrg.role,
+        organization: organization
+          ? {
+              id: organization._id.toString(),
+              name: organization.name,
+              slug: organization.slug,
+              metadata: organization.metadata,
+              createdAt: organization.createdAt,
+            }
+          : null,
+        role: primaryMembership.role,
       };
     } catch (error) {
       logger.error('Error getting user organization:', error);

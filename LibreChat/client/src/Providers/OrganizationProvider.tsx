@@ -51,10 +51,17 @@ interface OrganizationContextType {
   // Organization deletion
   deleteOrganization: () => Promise<void>;
 
-  // Permission helpers
+  // Permission helpers (client-side)
   canManageMembers: boolean;
   canManageOrganization: boolean;
   canInviteMembers: boolean;
+  canDeleteOrganization: boolean;
+  canUpdateSettings: boolean;
+  canViewMembers: boolean;
+
+  // Better Auth permission checks (server validation)
+  checkPermissions: (permissions: Record<string, string[]>) => Promise<boolean>;
+  hasPermission: (resource: string, actions: string[]) => Promise<boolean>;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
@@ -104,13 +111,34 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   // Permission checks based on user role
   const permissions = useMemo(() => {
     const isOwner = userRole === 'owner';
+    const isAdmin = userRole === 'admin';
 
     return {
-      canManageMembers: isOwner,
+      canManageMembers: isOwner || isAdmin,
       canManageOrganization: isOwner,
-      canInviteMembers: isOwner,
+      canInviteMembers: isOwner || isAdmin,
+      canDeleteOrganization: isOwner,
+      canUpdateSettings: isOwner || isAdmin,
+      canViewMembers: isOwner || isAdmin, // members can see other members too
     };
   }, [userRole]);
+
+  // Better Auth permission checks (for server validation)
+  const checkPermissions = useCallback(async (permissions: Record<string, string[]>) => {
+    try {
+      const result = await authClient.organization.hasPermission({ permissions });
+      // Extract the success boolean from Better Auth response
+      return result?.data?.success || false;
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+      return false;
+    }
+  }, []);
+
+  // Helper function to check specific permissions
+  const hasPermission = useCallback(async (resource: string, actions: string[]) => {
+    return checkPermissions({ [resource]: actions });
+  }, [checkPermissions]);
 
   // Invite member mutation
   const inviteMemberMutation = useMutation({
@@ -181,12 +209,19 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           .replace(/\s+/g, '-')
           .replace(/[^a-z0-9-]/g, '');
       const result = await authClient.organization.create({ name, slug: orgSlug });
+      
+      // Set the newly created organization as active
+      if (result.data?.id) {
+        await authClient.organization.setActive({ organizationId: result.data.id });
+      }
+      
       return result.data as OrganizationData;
     },
     onSuccess: () => {
       // Invalidate organization queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['active-organization'] });
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['full-organization'] });
     },
   });
 
@@ -287,6 +322,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
       // Permissions
       ...permissions,
+
+      // Better Auth permission checks (server validation)
+      checkPermissions,
+      hasPermission,
     }),
     [
       activeOrganization,
@@ -304,6 +343,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       createOrganization,
       deleteOrganization,
       permissions,
+      checkPermissions,
+      hasPermission,
     ],
   );
 

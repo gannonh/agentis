@@ -8,6 +8,7 @@ import {
   ApiErrorWatcher,
   TwoFactorScreen,
 } from '~/components/Auth';
+import { ProgressiveRegistration } from '~/components/Auth/ProgressiveRegistration';
 import { ComposioTestPage } from '~/components/Composio';
 import { AuthContextProvider } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
@@ -48,7 +49,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'register',
-        element: <Registration />,
+        element: <ProgressiveRegistration />,
       },
       {
         path: 'forgot-password',
