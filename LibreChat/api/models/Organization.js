@@ -10,6 +10,8 @@ import { organizationSchema } from '@librechat/data-schemas';
  * Organization model
  * Represents a tenant organization in the multi-tenant system
  */
-const Organization = mongoose.model('Organization', organizationSchema);
+// Disabled to prevent duplicate collection with Better Auth
+// const Organization = mongoose.model('Organization', organizationSchema);
+const Organization = null;
 
 export default Organization;

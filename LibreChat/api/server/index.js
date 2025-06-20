@@ -31,6 +31,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { getAuth } from '#auth.js';
 // Legacy strategies removed - using Better Auth now
 import { connectDb, indexSync } from '../lib/db/index.js';
+import { ensureBetterAuthCollections } from '../db/migrations/ensure-better-auth-collections.js';
 import { isEnabled } from './utils/index.js';
 import { logger } from '#config/index.js';
 import validateImageRequest from './middleware/validateImageRequest.js';
@@ -59,6 +60,15 @@ const startServer = async () => {
   }
   await connectDb();
   logger.info('Connected to MongoDB');
+  
+  // Ensure Better Auth collections exist
+  try {
+    await ensureBetterAuthCollections();
+  } catch (error) {
+    logger.error('Failed to ensure Better Auth collections:', error);
+    // Continue anyway - Better Auth might create them on first use
+  }
+  
   await indexSync();
 
   app.disable('x-powered-by');
