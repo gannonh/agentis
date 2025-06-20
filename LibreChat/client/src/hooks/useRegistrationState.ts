@@ -28,6 +28,8 @@ export interface RegistrationState {
   currentStep: RegistrationStep;
   email: string;
   emailVerified: boolean;
+  emailVerificationSent: boolean;
+  magicLinkSent: boolean;
   organizationData: OrganizationData | null;
   userRole: UserRole | null;
   profileData: {
@@ -48,6 +50,8 @@ const initialState: RegistrationState = {
   currentStep: RegistrationStep.EMAIL,
   email: '',
   emailVerified: false,
+  emailVerificationSent: false,
+  magicLinkSent: false,
   organizationData: null,
   userRole: null,
   profileData: {

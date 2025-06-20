@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { UseQueryOptions, QueryObserverResult } from '@tanstack/react-query';
-import { authClient } from '~/config/betterAuth';
+// Remove authClient import since we're not using it anymore
+// import { authClient } from '~/config/betterAuth';
 
 interface OrganizationDetectionResult {
   organization?: {
@@ -41,16 +42,30 @@ export function useOrganizationDetection(email: string): OrganizationDetectionRe
   const queryResult = useQuery<CheckDomainResponse>(
     ['organization-detection', email],
     async () => {
-      // For now, we'll simulate the API call since checkDomain might not exist yet
-      // TODO: Replace with actual API call once backend endpoint is available
+      try {
+        // Call the actual backend endpoint for organization domain checking
+        const response = await fetch(`/api/auth/organization/check-domain?email=${encodeURIComponent(email)}`, {
+          method: 'GET',
+          credentials: 'include', // Include session cookies
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-      // Temporary mock implementation until backend endpoint exists
-      if ((authClient.organization as any).checkDomain) {
-        return await (authClient.organization as any).checkDomain({ email });
+        if (!response.ok) {
+          // If 404, it means no organization found (which is valid)
+          if (response.status === 404) {
+            return { organization: null };
+          }
+          throw new Error(`Failed to check domain: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data as CheckDomainResponse;
+      } catch (error) {
+        console.error('Error checking organization domain:', error);
+        throw error;
       }
-
-      // Fallback mock response for testing
-      return { organization: null } as CheckDomainResponse;
     },
     {
       enabled: shouldFetch, // Only run if we have a valid email with domain

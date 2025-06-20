@@ -10,7 +10,7 @@
  */
 
 import { createAuthClient } from 'better-auth/react';
-import { organizationClient, adminClient } from 'better-auth/client/plugins';
+import { organizationClient, adminClient, magicLinkClient } from 'better-auth/client/plugins';
 
 /**
  * Base URL for the Better Auth backend server
@@ -20,10 +20,10 @@ const baseURL = import.meta.env.VITE_API_HOST || 'http://localhost:3080';
 
 /**
  * Better Auth React client instance
- * Configured with organization and admin plugins for multi-tenant functionality
+ * Configured with organization, admin, and magic link plugins for modern authentication
  *
  * Features:
- * - Email/password authentication
+ * - Magic link passwordless authentication
  * - Google OAuth integration
  * - Organization membership management
  * - Role-based access control
@@ -32,7 +32,7 @@ const baseURL = import.meta.env.VITE_API_HOST || 'http://localhost:3080';
 export const authClient = createAuthClient({
   baseURL,
   basePath: '/api/auth',
-  plugins: [organizationClient(), adminClient()],
+  plugins: [organizationClient(), adminClient(), magicLinkClient()],
 });
 
 /**
