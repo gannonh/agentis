@@ -121,6 +121,45 @@ mongoose.connection.once('open', () => {
       emailVerification: betterAuthConfig.emailVerification,
       session: betterAuthConfig.session,
 
+      // Add database hooks to set active organization on session creation
+      databaseHooks: {
+        session: {
+          create: {
+            before: async (session) => {
+              try {
+                logger.info(
+                  'Session create hook - setting active organization for user:',
+                  session.userId,
+                );
+
+                // Get user's organization membership
+                const memberCollection = db.collection('member');
+                const membership = await memberCollection.findOne({ userId: session.userId });
+
+                if (membership && membership.organizationId) {
+                  logger.info(
+                    'Found organization membership, setting activeOrganizationId:',
+                    membership.organizationId,
+                  );
+                  return {
+                    data: {
+                      ...session,
+                      activeOrganizationId: membership.organizationId,
+                    },
+                  };
+                }
+
+                logger.info('No organization membership found for user:', session.userId);
+                return session;
+              } catch (error) {
+                logger.error('Error in session create hook:', error);
+                return session;
+              }
+            },
+          },
+        },
+      },
+
       plugins: [
         organization({
           async onCreate({ user, organization }) {

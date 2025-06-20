@@ -32,6 +32,7 @@ import { getAuth } from '#auth.js';
 // Legacy strategies removed - using Better Auth now
 import { connectDb, indexSync } from '../lib/db/index.js';
 import { ensureBetterAuthCollections } from '../db/migrations/ensure-better-auth-collections.js';
+import { ensureActiveOrganizationInSessions } from '../db/migrations/ensure-active-organization-in-sessions.js';
 import { isEnabled } from './utils/index.js';
 import { logger } from '#config/index.js';
 import validateImageRequest from './middleware/validateImageRequest.js';
@@ -41,6 +42,7 @@ import AppService from './services/AppService.js';
 import staticCache from './utils/staticCache.js';
 import noIndex from './middleware/noIndex.js';
 import * as routes from './routes/index.js';
+import mongoose from 'mongoose';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,7 +62,7 @@ const startServer = async () => {
   }
   await connectDb();
   logger.info('Connected to MongoDB');
-  
+
   // Ensure Better Auth collections exist
   try {
     await ensureBetterAuthCollections();
@@ -68,7 +70,16 @@ const startServer = async () => {
     logger.error('Failed to ensure Better Auth collections:', error);
     // Continue anyway - Better Auth might create them on first use
   }
-  
+
+  // Ensure existing sessions have activeOrganizationId set
+  try {
+    const db = mongoose.connection.db;
+    await ensureActiveOrganizationInSessions(db);
+  } catch (error) {
+    logger.error('Failed to update sessions with active organization:', error);
+    // Continue anyway - not critical for app startup
+  }
+
   await indexSync();
 
   app.disable('x-powered-by');
