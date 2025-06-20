@@ -29,11 +29,12 @@ if (!process.env.MONGO_URI) {
 }
 
 // Set required Better Auth environment variables for CLI usage
+// Must set these BEFORE any imports that might use them
 if (!process.env.DOMAIN_CLIENT) {
-  process.env.DOMAIN_CLIENT = "localhost:3090";
+  process.env.DOMAIN_CLIENT = "http://localhost:3090";
 }
 if (!process.env.DOMAIN_SERVER) {
-  process.env.DOMAIN_SERVER = "localhost:3080";
+  process.env.DOMAIN_SERVER = "http://localhost:3080";
 }
 if (!process.env.BETTER_AUTH_SECRET) {
   process.env.BETTER_AUTH_SECRET = "cli-secret-key-for-development-only";
@@ -46,8 +47,10 @@ process.chdir(API_DIR);
 const connectDb = (await import(join(API_DIR, "lib", "db", "connectDb.js")))
   .default;
 const User = (await import(join(API_DIR, "models", "User.js"))).default;
-const { getAuth } = await import(join(API_DIR, "auth.js"));
 const { logger } = await import(join(API_DIR, "config", "index.js"));
+
+// Note: We don't import auth.js here as it's not needed for direct database operations
+// and it causes initialization issues in CLI context
 
 // Note: Better Auth API methods (auth.api.*) are not available in CLI context
 // because the auth instance is initialized asynchronously after MongoDB connection.
