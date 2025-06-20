@@ -5,16 +5,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Building2, Users, ArrowRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Building2, Users, ArrowRight, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
 import { Textarea } from '~/components/ui/Textarea';
+import { authClient } from '~/config/betterAuth';
 
 interface OrganizationSetupData {
   name: string;
   description?: string;
   firstTeamName: string;
+  slug?: string; // Add slug to the form data
 }
 
 interface OrganizationSetupProps {
@@ -49,26 +52,114 @@ export const OrganizationSetup: React.FC<OrganizationSetupProps> = ({
       name: suggestedOrgName,
       description: '',
       firstTeamName: 'General',
+      slug: suggestedOrgName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, ''),
     },
     mode: 'onChange',
   });
 
   const watchedName = watch('name');
+  const watchedSlug = watch('slug');
 
-  // Auto-generate slug preview
-  const slugPreview = watchedName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  // Auto-generate slug from name when name changes
+  useEffect(() => {
+    if (watchedName && currentStep === 'org') {
+      const autoSlug = watchedName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      setValue('slug', autoSlug);
+    }
+  }, [watchedName, setValue, currentStep]);
+
+  // Check if slug is available using Better Auth
+  const { 
+    data: slugCheckResult, 
+    isLoading: isCheckingSlug, 
+    error: slugError 
+  } = useQuery({
+    queryKey: ['check-slug', watchedSlug],
+    queryFn: async () => {
+      if (!watchedSlug || watchedSlug.length < 2) return null;
+      try {
+        const result = await authClient.organization.checkSlug({ slug: watchedSlug });
+        return result;
+      } catch (error) {
+        console.error('Error checking slug:', error);
+        return null;
+      }
+    },
+    enabled: !!watchedSlug && watchedSlug.length >= 2,
+    staleTime: 1000, // Cache for 1 second to avoid too many requests
+  });
+
+  // Determine slug availability status
+  const getSlugStatus = () => {
+    if (!watchedSlug || watchedSlug.length < 2) return null;
+    if (isCheckingSlug) return 'checking';
+    if (slugError) return 'error';
+    if (slugCheckResult?.data?.status === false) return 'taken';
+    if (slugCheckResult?.data?.status === true) return 'available';
+    return 'unknown';
+  };
+
+  const slugStatus = getSlugStatus();
+  const isSlugValid = slugStatus === 'available' || slugStatus === 'unknown';
 
   const handleOrgStepNext = () => {
-    if (watchedName.trim()) {
+    if (watchedName.trim() && isSlugValid) {
       setCurrentStep('team');
     }
   };
 
   const onSubmit = (data: OrganizationSetupData) => {
-    onSetupComplete(data);
+    // Include the validated slug in the submission
+    onSetupComplete({
+      ...data,
+      slug: watchedSlug,
+    });
+  };
+
+  const renderSlugValidation = () => {
+    if (!watchedSlug || watchedSlug.length < 2) return null;
+
+    switch (slugStatus) {
+      case 'checking':
+        return (
+          <div className="mt-2 flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Checking availability...</span>
+          </div>
+        );
+      case 'available':
+        return (
+          <div className="mt-2 flex items-center space-x-2 text-sm text-green-600 dark:text-green-400">
+            <Check className="h-4 w-4" />
+            <span>agentis.ai/{watchedSlug} is available</span>
+          </div>
+        );
+      case 'taken':
+        return (
+          <div className="mt-2 flex items-center space-x-2 text-sm text-red-600 dark:text-red-400">
+            <X className="h-4 w-4" />
+            <span>agentis.ai/{watchedSlug} is already taken</span>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Unable to check availability
+          </div>
+        );
+      default:
+        return (
+          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            URL: agentis.ai/{watchedSlug}
+          </div>
+        );
+    }
   };
 
   if (currentStep === 'org') {
@@ -107,13 +198,41 @@ export const OrganizationSetup: React.FC<OrganizationSetupProps> = ({
             {errors.name && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name.message}</p>
             )}
+          </div>
 
-            {/* URL preview */}
-            {watchedName && slugPreview && (
-              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                URL: agentis.ai/{slugPreview}
-              </div>
+          <div>
+            <Label
+              htmlFor="orgSlug"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Organization URL
+            </Label>
+            <Input
+              id="orgSlug"
+              {...register('slug', {
+                required: 'Organization URL is required',
+                minLength: {
+                  value: 2,
+                  message: 'URL must be at least 2 characters',
+                },
+                pattern: {
+                  value: /^[a-z0-9-]+$/,
+                  message: 'Only lowercase letters, numbers, and hyphens allowed',
+                },
+              })}
+              placeholder="organization-url"
+              className={`mt-1 ${
+                slugStatus === 'taken' 
+                  ? 'border-red-500 focus:border-red-500' 
+                  : slugStatus === 'available' 
+                  ? 'border-green-500 focus:border-green-500' 
+                  : ''
+              }`}
+            />
+            {errors.slug && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.slug.message}</p>
             )}
+            {renderSlugValidation()}
           </div>
 
           <div>
@@ -141,11 +260,20 @@ export const OrganizationSetup: React.FC<OrganizationSetupProps> = ({
 
           <Button
             type="submit"
-            disabled={!watchedName.trim()}
+            disabled={!watchedName.trim() || !isSlugValid || isCheckingSlug}
             className="w-full bg-blue-600 text-white hover:bg-blue-700"
           >
-            Continue
-            <ArrowRight className="ml-2 h-4 w-4" />
+            {isCheckingSlug ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              <>
+                Continue
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            )}
           </Button>
         </form>
       </div>
@@ -205,6 +333,11 @@ export const OrganizationSetup: React.FC<OrganizationSetupProps> = ({
               <Users className="h-4 w-4" />
               <span>First team: {watch('firstTeamName')}</span>
             </div>
+            {watchedSlug && (
+              <div className="flex items-center space-x-2">
+                <span className="text-xs">URL: agentis.ai/{watchedSlug}</span>
+              </div>
+            )}
           </div>
         </div>
 
