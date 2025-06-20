@@ -29,13 +29,13 @@ export default function StartupLayout({ isAuthenticated }: { isAuthenticated?: b
   const location = useLocation();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !location.pathname.includes('/login')) {
       navigate('/c/new', { replace: true });
     }
     if (data) {
       setStartupConfig(data);
     }
-  }, [isAuthenticated, navigate, data]);
+  }, [isAuthenticated, navigate, data, location.pathname]);
 
   useEffect(() => {
     document.title = startupConfig?.appTitle || 'Agentis';

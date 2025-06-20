@@ -1,3 +1,7 @@
+/**
+ * @deprecated This component is for legacy password-based authentication.
+ * The application now uses magic link authentication only.
+ */
 import { useForm } from 'react-hook-form';
 import { useOutletContext } from 'react-router-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';

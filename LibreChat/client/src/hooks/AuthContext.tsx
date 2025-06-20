@@ -16,7 +16,6 @@ import {
   useGetRole,
   useGetUserQuery,
   useLoginUserMutation,
-  useLogoutUserMutation,
   useGetSessionQuery,
 } from '~/data-provider';
 import { TAuthConfig, TUserContext, TAuthContext, TResError } from '~/common';
@@ -104,27 +103,6 @@ const AuthContextProvider = ({
       navigate('/login', { replace: true });
     },
   });
-  const logoutUser = useLogoutUserMutation({
-    onSuccess: (data) => {
-      setUserContext({
-        session: undefined,
-        token: undefined,
-        isAuthenticated: false,
-        user: undefined,
-        redirect: data.redirect ?? '/login',
-      });
-    },
-    onError: (error) => {
-      doSetError((error as Error).message);
-      setUserContext({
-        session: undefined,
-        token: undefined,
-        isAuthenticated: false,
-        user: undefined,
-        redirect: '/login',
-      });
-    },
-  });
 
   // Replace token refresh with session checking
   const sessionQuery = useGetSessionQuery({
@@ -134,13 +112,34 @@ const AuthContextProvider = ({
   });
 
   const logout = useCallback(
-    (redirect?: string) => {
-      if (redirect) {
-        logoutRedirectRef.current = redirect;
+    async (redirect?: string) => {
+      const finalRedirect = redirect ?? '/login';
+      console.log('Logout called with redirect:', finalRedirect);
+      
+      try {
+        // Clear local state first
+        setUser(undefined);
+        setSession(undefined);
+        setIsAuthenticated(false);
+        
+        // Sign out from Better Auth
+        const { authClient } = await import('~/config/betterAuth');
+        
+        // Don't wait for the result, just fire and forget
+        authClient.signOut().catch((error) => {
+          console.error('Error signing out from Better Auth:', error);
+        });
+        
+        // Use window.location for a hard redirect to ensure we leave the authenticated routes
+        console.log('Hard redirecting to:', finalRedirect);
+        window.location.href = finalRedirect;
+      } catch (error) {
+        console.error('Error during logout:', error);
+        // Still navigate even if there's an error
+        window.location.href = finalRedirect;
       }
-      logoutUser.mutate(undefined);
     },
-    [logoutUser],
+    [setUser, setSession, setIsAuthenticated],
   );
 
   const userQuery = useGetUserQuery({ enabled: !!isAuthenticated });
@@ -155,6 +154,10 @@ const AuthContextProvider = ({
       authConfigTest: authConfig?.test,
     });
 
+    // Don't redirect if we're already on the login page
+    const isOnAuthPage = window.location.pathname.includes('/login') || 
+                        window.location.pathname.includes('/register');
+
     if (sessionQuery.data?.session && sessionQuery.data?.user) {
       console.log('Valid session found, setting authenticated');
       setUserContext({
@@ -164,13 +167,13 @@ const AuthContextProvider = ({
       });
     } else if (sessionQuery.isError) {
       console.log('Session check error:', sessionQuery.error);
-      if (authConfig?.test !== true) {
+      if (authConfig?.test !== true && !isOnAuthPage) {
         console.log('Redirecting to login due to error');
         navigate('/login');
       }
     } else if (sessionQuery.data === null || (sessionQuery.data && !sessionQuery.data.session)) {
       console.log('No valid session found. User is not authenticated.');
-      if (authConfig?.test !== true) {
+      if (authConfig?.test !== true && !isOnAuthPage) {
         console.log('Redirecting to login due to no session');
         navigate('/login');
       }

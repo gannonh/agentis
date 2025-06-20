@@ -17,7 +17,12 @@ export const useLogoutUserMutation = (
   const setQueriesEnabled = useSetRecoilState<boolean>(store.queriesEnabled);
 
   return useMutation([MutationKeys.logoutUser], {
-    mutationFn: () => dataService.logout(),
+    mutationFn: async () => {
+      // Better Auth handles logout through the authClient.signOut() method
+      // This mutation is kept for backwards compatibility but doesn't call the API
+      // The actual logout is handled in AuthContext using Better Auth client
+      return { message: 'Logout handled by Better Auth' };
+    },
     ...(options || {}),
     onSuccess: (...args) => {
       setQueriesEnabled(false);
