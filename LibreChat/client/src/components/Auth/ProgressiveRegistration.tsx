@@ -310,16 +310,27 @@ export const ProgressiveRegistration: React.FC = () => {
 
         case RegistrationStep.PROFILE:
           try {
-            // Store profile data (no password needed with magic link)
-          updateState({
-            profileData: {
-              name: data.name!,
-              username: data.username,
-            },
-          });
+            // Store profile data locally
+            updateState({
+              profileData: {
+                name: data.name!,
+                username: data.username,
+              },
+            });
+
+            // Update user profile in Better Auth
+            if (session?.user?.id) {
+              await authClient.updateUser({
+                name: data.name!,
+                username: data.username,
+              });
+              console.log('✅ User profile updated in Better Auth');
+            } else {
+              console.warn('⚠️ No session found, cannot update user profile');
+            }
 
             // User is already authenticated via magic link, continue to next step
-          goToNextStep();
+            goToNextStep();
           } catch (err: any) {
             throw new Error(err.message || 'Profile setup failed');
           }
