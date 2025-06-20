@@ -7,33 +7,34 @@ const app = express();
 app.disable('x-powered-by');
 app.use('/api/config', routes.config);
 
-afterEach(() => {
-  delete process.env.APP_TITLE;
-  delete process.env.GOOGLE_CLIENT_ID;
-  delete process.env.GOOGLE_CLIENT_SECRET;
-  delete process.env.FACEBOOK_CLIENT_ID;
-  delete process.env.FACEBOOK_CLIENT_SECRET;
-  delete process.env.OPENID_CLIENT_ID;
-  delete process.env.OPENID_CLIENT_SECRET;
-  delete process.env.OPENID_ISSUER;
-  delete process.env.OPENID_SESSION_SECRET;
-  delete process.env.OPENID_BUTTON_LABEL;
-  delete process.env.OPENID_AUTO_REDIRECT;
-  delete process.env.OPENID_AUTH_URL;
-  delete process.env.GITHUB_CLIENT_ID;
-  delete process.env.GITHUB_CLIENT_SECRET;
-  delete process.env.DISCORD_CLIENT_ID;
-  delete process.env.DISCORD_CLIENT_SECRET;
-  delete process.env.DOMAIN_SERVER;
-  delete process.env.ALLOW_REGISTRATION;
-  delete process.env.ALLOW_SOCIAL_LOGIN;
-  delete process.env.ALLOW_PASSWORD_RESET;
-  delete process.env.LDAP_URL;
-  delete process.env.LDAP_BIND_DN;
-  delete process.env.LDAP_BIND_CREDENTIALS;
-  delete process.env.LDAP_USER_SEARCH_BASE;
-  delete process.env.LDAP_SEARCH_FILTER;
-});
+// Temporarily disabled to debug environment variable issues
+// afterEach(() => {
+//   delete process.env.APP_TITLE;
+//   delete process.env.GOOGLE_CLIENT_ID;
+//   delete process.env.GOOGLE_CLIENT_SECRET;
+//   delete process.env.FACEBOOK_CLIENT_ID;
+//   delete process.env.FACEBOOK_CLIENT_SECRET;
+//   delete process.env.OPENID_CLIENT_ID;
+//   delete process.env.OPENID_CLIENT_SECRET;
+//   delete process.env.OPENID_ISSUER;
+//   delete process.env.OPENID_SESSION_SECRET;
+//   delete process.env.OPENID_BUTTON_LABEL;
+//   delete process.env.OPENID_AUTO_REDIRECT;
+//   delete process.env.OPENID_AUTH_URL;
+//   delete process.env.GITHUB_CLIENT_ID;
+//   delete process.env.GITHUB_CLIENT_SECRET;
+//   delete process.env.DISCORD_CLIENT_ID;
+//   delete process.env.DISCORD_CLIENT_SECRET;
+//   delete process.env.DOMAIN_SERVER;
+//   delete process.env.ALLOW_REGISTRATION;
+//   delete process.env.ALLOW_SOCIAL_LOGIN;
+//   delete process.env.ALLOW_PASSWORD_RESET;
+//   delete process.env.LDAP_URL;
+//   delete process.env.LDAP_BIND_DN;
+//   delete process.env.LDAP_BIND_CREDENTIALS;
+//   delete process.env.LDAP_USER_SEARCH_BASE;
+//   delete process.env.LDAP_SEARCH_FILTER;
+// });
 
 //TODO: This works/passes locally but http request tests fail with 404 in CI. Need to figure out why.
 
