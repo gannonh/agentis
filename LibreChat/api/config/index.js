@@ -63,19 +63,12 @@ const sendEvent = (res, event) => {
 function createAxiosInstance() {
   const instance = axios.create();
 
-  console.log('🔍 createAxiosInstance called, proxy env:', JSON.stringify(process.env.proxy));
-
   if (process.env.proxy) {
     try {
       // Validate proxy URL before creating URL object
-      if (
-        !process.env.proxy ||
-        typeof process.env.proxy !== 'string' ||
-        process.env.proxy.trim() === ''
-      ) {
+      if (typeof process.env.proxy !== 'string' || process.env.proxy.trim() === '') {
         throw new Error('Proxy URL is empty or invalid');
       }
-      console.log('🔍 About to create URL object with:', process.env.proxy);
       const url = new URL(process.env.proxy);
 
       /** @type {AxiosProxyConfig} */
