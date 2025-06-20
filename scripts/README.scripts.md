@@ -4,6 +4,41 @@ This folder contains utility scripts for managing Docker services and other deve
 
 ## Development Scripts
 
+### db-util.js / db-util.sh
+
+An interactive database utility CLI for managing users and organizations during development. Provides safe cleanup operations with confirmation prompts.
+
+```bash
+# Show help message
+./db-util.sh help
+
+# Interactive user deletion with optional organization cleanup
+./db-util.sh delete-user
+
+# Or use the Node.js script directly
+node scripts/db-util.js delete-user
+```
+
+**Features:**
+- **Interactive email-based user lookup** - Find users by email address
+- **Comprehensive user information display** - Shows user details before deletion
+- **Organization membership detection** - Automatically detects if user belongs to an organization
+- **Smart organization cleanup** - Option to delete organization if user is the only member
+- **Member count warnings** - Warns when deleting organizations with multiple members
+- **Simple confirmation prompts** - Just requires y/n to confirm destructive actions
+- **COMPLETE data cleanup** - Removes user from ALL 17+ collections:
+  - LibreChat: user, conversations, messages, files, presets, assistants, agents, actions, shared links, tags, balances, API keys, connected accounts, projects, transactions
+  - Better Auth: provider accounts, sessions, organization memberships, invitations
+
+**Safety Features:**
+- Multiple confirmation steps
+- Clear warnings about permanent data loss
+- Shows affected organization members
+- Simple y/n confirmation for final deletion step
+- Shows total number of records deleted
+
+⚠️ **Warning: This tool permanently deletes data. Use only in development environments!**
+
 ### dev-rebuild.sh
 
 A utility script for rebuilding npm packages and restarting development servers. This simplifies the development workflow when working with shared packages in the monorepo structure.
