@@ -41,7 +41,7 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
             </svg>
             <p className="text-sm font-medium">Email not found</p>
             <p className="mt-1 text-xs">
-              Debug: email="{email}", domain="{domain}"
+              Debug: email=&quot;{email}&quot;, domain=&quot;{domain}&quot;
             </p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
               />
             </svg>
             <h3 className="mb-2 text-xl font-semibold text-green-900 dark:text-green-100">
-              Great! You'll join {organization.name}
+              Great! You&apos;ll join {organization.name}
             </h3>
             <div className="mb-4 text-sm text-green-700 dark:text-green-300">
               <p>
@@ -105,7 +105,7 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
             </div>
             <div className="rounded-md border border-green-300 bg-green-100 px-4 py-2 dark:border-green-600 dark:bg-green-800/30">
               <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                You'll be added as a team member
+                You&apos;ll be added as a team member
               </p>
             </div>
           </div>
@@ -134,17 +134,19 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
               />
             </svg>
             <h3 className="mb-2 text-xl font-semibold text-blue-900 dark:text-blue-100">
-              You'll create a workspace for {domain}
+              You&apos;ll create a workspace for {domain}
             </h3>
             <div className="mb-4 text-sm text-blue-700 dark:text-blue-300">
               <p>
-                <strong>{domain}</strong> doesn't have an Agentis workspace yet.
+                <strong>{domain}</strong> doesn&apos;t have an Agentis workspace yet.
               </p>
-              <p className="mt-1">You'll be the first person from your organization to join!</p>
+              <p className="mt-1">
+                You&apos;ll be the first person from your organization to join!
+              </p>
             </div>
             <div className="rounded-md border border-blue-300 bg-blue-100 px-4 py-2 dark:border-blue-600 dark:bg-blue-800/30">
               <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                You'll be the workspace owner and can invite team members
+                You&apos;ll be the workspace owner and can invite team members
               </p>
             </div>
           </div>
