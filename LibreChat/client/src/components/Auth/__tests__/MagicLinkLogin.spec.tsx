@@ -37,7 +37,7 @@ describe('MagicLinkLogin', () => {
     return render(
       <BrowserRouter>
         <MagicLinkLogin />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
   };
 

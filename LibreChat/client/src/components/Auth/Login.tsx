@@ -72,9 +72,7 @@ function Login() {
 
   return (
     <>
-      {startupConfig?.emailLoginEnabled === true && (
-        <MagicLinkLogin />
-      )}
+      {startupConfig?.emailLoginEnabled === true && <MagicLinkLogin />}
       {startupConfig?.registrationEnabled === true && (
         <p className="my-4 text-center text-sm font-light text-gray-700 dark:text-white">
           {' '}

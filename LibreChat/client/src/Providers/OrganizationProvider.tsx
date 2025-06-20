@@ -136,9 +136,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Helper function to check specific permissions
-  const hasPermission = useCallback(async (resource: string, actions: string[]) => {
-    return checkPermissions({ [resource]: actions });
-  }, [checkPermissions]);
+  const hasPermission = useCallback(
+    async (resource: string, actions: string[]) => {
+      return checkPermissions({ [resource]: actions });
+    },
+    [checkPermissions],
+  );
 
   // Invite member mutation
   const inviteMemberMutation = useMutation({
@@ -209,12 +212,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           .replace(/\s+/g, '-')
           .replace(/[^a-z0-9-]/g, '');
       const result = await authClient.organization.create({ name, slug: orgSlug });
-      
+
       // Set the newly created organization as active
       if (result.data?.id) {
         await authClient.organization.setActive({ organizationId: result.data.id });
       }
-      
+
       return result.data as OrganizationData;
     },
     onSuccess: () => {

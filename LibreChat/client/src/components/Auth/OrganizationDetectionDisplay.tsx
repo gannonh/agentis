@@ -26,11 +26,23 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
       <div className={`text-center ${className}`}>
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-8 dark:border-yellow-700 dark:bg-yellow-900/20">
           <div className="text-yellow-600 dark:text-yellow-400">
-            <svg className="mx-auto mb-4 h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="mx-auto mb-4 h-12 w-12"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
             <p className="text-sm font-medium">Email not found</p>
-            <p className="text-xs mt-1">Debug: email="{email}", domain="{domain}"</p>
+            <p className="mt-1 text-xs">
+              Debug: email="{email}", domain="{domain}"
+            </p>
           </div>
         </div>
       </div>
@@ -64,8 +76,18 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
       <div className={`text-center ${className}`}>
         <div className="rounded-lg border border-green-200 bg-green-50 p-8 dark:border-green-700 dark:bg-green-900/20">
           <div className="text-green-600 dark:text-green-400">
-            <svg className="mx-auto mb-4 h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <svg
+              className="mx-auto mb-4 h-16 w-16"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
             </svg>
             <h3 className="mb-2 text-xl font-semibold text-green-900 dark:text-green-100">
               Great! You'll join {organization.name}
@@ -76,7 +98,8 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
               </p>
               {organization.memberCount && organization.memberCount > 0 && (
                 <p className="mt-1">
-                  {organization.memberCount} team member{organization.memberCount !== 1 ? 's are' : ' is'} already using LibreChat
+                  {organization.memberCount} team member
+                  {organization.memberCount !== 1 ? 's are' : ' is'} already using LibreChat
                 </p>
               )}
             </div>
@@ -97,8 +120,18 @@ export const OrganizationDetectionDisplay: React.FC<OrganizationDetectionDisplay
       <div className={`text-center ${className}`}>
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-8 dark:border-blue-700 dark:bg-blue-900/20">
           <div className="text-blue-600 dark:text-blue-400">
-            <svg className="mx-auto mb-4 h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <svg
+              className="mx-auto mb-4 h-16 w-16"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
             </svg>
             <h3 className="mb-2 text-xl font-semibold text-blue-900 dark:text-blue-100">
               You'll create a workspace for {domain}

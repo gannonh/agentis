@@ -472,7 +472,9 @@ describe('ProgressiveRegistration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Verify your email')).toBeInTheDocument();
-        expect(screen.getByText('Development Mode - Simulated Email Verification')).toBeInTheDocument();
+        expect(
+          screen.getByText('Development Mode - Simulated Email Verification'),
+        ).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Send Verification Email' })).toBeInTheDocument();
       });
 
@@ -480,12 +482,15 @@ describe('ProgressiveRegistration', () => {
       await user.click(screen.getByRole('button', { name: 'Send Verification Email' }));
 
       // Wait for the simulation delay to complete (1500ms + buffer)
-      await waitFor(() => {
-        expect(screen.getByText('Email Verification Simulated Successfully')).toBeInTheDocument();
-        expect(screen.getByText(/✅ Verification email sent to/)).toBeInTheDocument();
-        expect(screen.getByText('test@example.com')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Continue to Next Step' })).toBeInTheDocument();
-      }, { timeout: 3000 }); // Increased timeout to account for the 1500ms delay
+      await waitFor(
+        () => {
+          expect(screen.getByText('Email Verification Simulated Successfully')).toBeInTheDocument();
+          expect(screen.getByText(/✅ Verification email sent to/)).toBeInTheDocument();
+          expect(screen.getByText('test@example.com')).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: 'Continue to Next Step' })).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      ); // Increased timeout to account for the 1500ms delay
 
       // Second click - proceed to next step
       await user.click(screen.getByRole('button', { name: 'Continue to Next Step' }));

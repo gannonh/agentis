@@ -115,21 +115,21 @@ const AuthContextProvider = ({
     async (redirect?: string) => {
       const finalRedirect = redirect ?? '/login';
       console.log('Logout called with redirect:', finalRedirect);
-      
+
       try {
         // Clear local state first
         setUser(undefined);
         setSession(undefined);
         setIsAuthenticated(false);
-        
+
         // Sign out from Better Auth
         const { authClient } = await import('~/config/betterAuth');
-        
+
         // Don't wait for the result, just fire and forget
         authClient.signOut().catch((error) => {
           console.error('Error signing out from Better Auth:', error);
         });
-        
+
         // Use window.location for a hard redirect to ensure we leave the authenticated routes
         console.log('Hard redirecting to:', finalRedirect);
         window.location.href = finalRedirect;
@@ -155,8 +155,8 @@ const AuthContextProvider = ({
     });
 
     // Don't redirect if we're already on the login page
-    const isOnAuthPage = window.location.pathname.includes('/login') || 
-                        window.location.pathname.includes('/register');
+    const isOnAuthPage =
+      window.location.pathname.includes('/login') || window.location.pathname.includes('/register');
 
     if (sessionQuery.data?.session && sessionQuery.data?.user) {
       console.log('Valid session found, setting authenticated');

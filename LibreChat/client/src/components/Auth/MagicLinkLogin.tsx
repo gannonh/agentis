@@ -36,34 +36,37 @@ export const MagicLinkLogin: React.FC = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     const error = searchParams.get('error');
-    
+
     if (error) {
       setError(localize('com_auth_error_magic_link'));
       // Clean up URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-    
+
     if (token) {
       // Magic link token detected in URL
       console.log('🔗 Magic link token detected, processing authentication...');
-      
+
       // Clean up URL parameters
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
-      
+
       // Force session refresh
-      authClient.getSession().then((sessionData) => {
-        console.log('🔗 Session after magic link:', sessionData);
-        if (sessionData?.data?.user) {
-          console.log('🔗 Magic link authentication successful!');
-          // Redirect to main app
-          navigate('/c/new');
-        }
-      }).catch((error) => {
-        console.error('🔗 Error getting session after magic link:', error);
-        setError(localize('com_auth_error_magic_link'));
-      });
+      authClient
+        .getSession()
+        .then((sessionData) => {
+          console.log('🔗 Session after magic link:', sessionData);
+          if (sessionData?.data?.user) {
+            console.log('🔗 Magic link authentication successful!');
+            // Redirect to main app
+            navigate('/c/new');
+          }
+        })
+        .catch((error) => {
+          console.error('🔗 Error getting session after magic link:', error);
+          setError(localize('com_auth_error_magic_link'));
+        });
     }
   }, [searchParams, navigate, localize]);
 
@@ -81,19 +84,19 @@ export const MagicLinkLogin: React.FC = () => {
     try {
       console.log('🔗 Sending magic link request for:', data.email);
       setEmail(data.email);
-      
+
       const result = await authClient.signIn.magicLink({
         email: data.email,
         callbackURL: `${window.location.origin}/login`,
       });
-      
+
       console.log('🔗 Magic link response received:', result);
-      
+
       if (result.error) {
         console.error('🔗 Magic link error:', result.error);
         throw new Error(result.error.message || localize('com_auth_error_magic_link_send'));
       }
-      
+
       console.log('Magic link sent successfully to:', data.email);
       setMagicLinkSent(true);
     } catch (err: any) {
@@ -106,20 +109,20 @@ export const MagicLinkLogin: React.FC = () => {
 
   const handleResendLink = async () => {
     if (!email) return;
-    
+
     setError('');
     setIsSubmitting(true);
-    
+
     try {
       const result = await authClient.signIn.magicLink({
         email: email,
         callbackURL: `${window.location.origin}/login`,
       });
-      
+
       if (result.error) {
         throw new Error(result.error.message || localize('com_auth_error_magic_link_send'));
       }
-      
+
       setError(''); // Clear any previous errors
     } catch (err: any) {
       setError(err.message || localize('com_auth_error_magic_link_send'));
@@ -140,7 +143,7 @@ export const MagicLinkLogin: React.FC = () => {
             <span className="font-medium text-gray-800 dark:text-gray-200">{email}</span>
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center space-y-4">
           <Button
             variant="outline"
@@ -157,7 +160,7 @@ export const MagicLinkLogin: React.FC = () => {
               localize('com_auth_resend_link')
             )}
           </Button>
-          
+
           <button
             onClick={() => {
               setMagicLinkSent(false);
@@ -168,7 +171,7 @@ export const MagicLinkLogin: React.FC = () => {
             {localize('com_auth_use_different_email')}
           </button>
         </div>
-        
+
         {error && <ErrorMessage>{error}</ErrorMessage>}
       </div>
     );
@@ -177,7 +180,7 @@ export const MagicLinkLogin: React.FC = () => {
   return (
     <>
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      
+
       <form
         className="mt-6"
         aria-label={localize('com_auth_login_form')}

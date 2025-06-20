@@ -6,7 +6,17 @@
 import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
-import { Mail, Plus, X, Send, UserPlus, ArrowRight, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import {
+  Mail,
+  Plus,
+  X,
+  Send,
+  UserPlus,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
@@ -71,13 +81,15 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
 
   // Bulk invitation mutation
   const sendInvitationsMutation = useMutation({
-    mutationFn: async (invitations: InvitationData[]): Promise<Array<{ email: string; success: boolean; error?: string }>> => {
+    mutationFn: async (
+      invitations: InvitationData[],
+    ): Promise<Array<{ email: string; success: boolean; error?: string }>> => {
       const results: Array<{ email: string; success: boolean; error?: string }> = [];
-      
+
       for (const invitation of invitations) {
         try {
           // Update status to sending
-          const index = fields.findIndex(f => f.email === invitation.email);
+          const index = fields.findIndex((f) => f.email === invitation.email);
           if (index !== -1) {
             update(index, { ...invitation, status: 'sending' });
           }
@@ -90,7 +102,7 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
           });
 
           results.push({ email: invitation.email, success: true });
-          
+
           // Update status to sent
           if (index !== -1) {
             update(index, { ...invitation, status: 'sent' });
@@ -98,15 +110,15 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
         } catch (error: any) {
           const errorMessage = error.message || 'Failed to send invitation';
           results.push({ email: invitation.email, success: false, error: errorMessage });
-          
+
           // Update status to error
-          const index = fields.findIndex(f => f.email === invitation.email);
+          const index = fields.findIndex((f) => f.email === invitation.email);
           if (index !== -1) {
             update(index, { ...invitation, status: 'error', error: errorMessage });
           }
         }
       }
-      
+
       return results;
     },
   });
@@ -145,18 +157,18 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
   const handleBulkAdd = () => {
     const emails = bulkEmails
       .split(/[,\n]/)
-      .map(email => email.trim().toLowerCase())
-      .filter(email => email && emailRegex.test(email));
+      .map((email) => email.trim().toLowerCase())
+      .filter((email) => email && emailRegex.test(email));
 
     const newInvitations = emails
-      .filter(email => !watchedInvitations.some(inv => inv.email === email))
-      .map(email => ({
+      .filter((email) => !watchedInvitations.some((inv) => inv.email === email))
+      .map((email) => ({
         email,
         role: 'member' as const,
         status: 'pending' as const,
       }));
 
-    newInvitations.forEach(invitation => append(invitation));
+    newInvitations.forEach((invitation) => append(invitation));
     setBulkEmails('');
     setShowBulkInput(false);
   };
@@ -186,9 +198,9 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
 
     try {
       const results = await sendInvitationsMutation.mutateAsync(data.invitations);
-      const sentCount = results.filter(r => r.success).length;
-      const failedCount = results.filter(r => !r.success).length;
-      
+      const sentCount = results.filter((r) => r.success).length;
+      const failedCount = results.filter((r) => !r.success).length;
+
       onInvitationsComplete({ sentCount, failedCount });
     } catch (error) {
       console.error('Failed to send invitations:', error);
@@ -209,7 +221,7 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
     }
   };
 
-  const pendingInvitations = fields.filter(f => f.status === 'pending');
+  const pendingInvitations = fields.filter((f) => f.status === 'pending');
   const canSend = pendingInvitations.length > 0 && !sendInvitationsMutation.isLoading;
 
   return (
@@ -323,7 +335,7 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
                           value={field.role}
                           onChange={(e) => updateRole(index, e.target.value as 'member' | 'admin')}
                           disabled={sendInvitationsMutation.isLoading || field.status === 'sent'}
-                          className="text-xs text-gray-500 bg-transparent border-none dark:text-gray-400"
+                          className="border-none bg-transparent text-xs text-gray-500 dark:text-gray-400"
                         >
                           <option value="member">Member</option>
                           <option value="admin">Admin</option>
@@ -358,10 +370,12 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
             <div className="flex items-center space-x-2 text-green-700 dark:text-green-300">
               <Send className="h-5 w-5" />
               <span className="font-medium">
-                Ready to send {pendingInvitations.length} invitation{pendingInvitations.length !== 1 ? 's' : ''}
+                Ready to send {pendingInvitations.length} invitation
+                {pendingInvitations.length !== 1 ? 's' : ''}
                 {fields.length > pendingInvitations.length && (
                   <span className="text-sm text-green-600 dark:text-green-400">
-                    {' '}({fields.length - pendingInvitations.length} processed)
+                    {' '}
+                    ({fields.length - pendingInvitations.length} processed)
                   </span>
                 )}
               </span>
@@ -374,10 +388,10 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
 
         {/* Action buttons */}
         <div className="flex space-x-3">
-          <Button 
-            type="button" 
-            onClick={onSkip} 
-            variant="outline" 
+          <Button
+            type="button"
+            onClick={onSkip}
+            variant="outline"
             className="flex-1"
             disabled={sendInvitationsMutation.isLoading}
           >

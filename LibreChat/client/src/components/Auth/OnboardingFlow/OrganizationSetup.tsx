@@ -75,10 +75,10 @@ export const OrganizationSetup: React.FC<OrganizationSetupProps> = ({
   }, [watchedName, setValue, currentStep]);
 
   // Check if slug is available using Better Auth
-  const { 
-    data: slugCheckResult, 
-    isLoading: isCheckingSlug, 
-    error: slugError 
+  const {
+    data: slugCheckResult,
+    isLoading: isCheckingSlug,
+    error: slugError,
   } = useQuery({
     queryKey: ['check-slug', watchedSlug],
     queryFn: async () => {
@@ -222,11 +222,11 @@ export const OrganizationSetup: React.FC<OrganizationSetupProps> = ({
               })}
               placeholder="organization-url"
               className={`mt-1 ${
-                slugStatus === 'taken' 
-                  ? 'border-red-500 focus:border-red-500' 
-                  : slugStatus === 'available' 
-                  ? 'border-green-500 focus:border-green-500' 
-                  : ''
+                slugStatus === 'taken'
+                  ? 'border-red-500 focus:border-red-500'
+                  : slugStatus === 'available'
+                    ? 'border-green-500 focus:border-green-500'
+                    : ''
               }`}
             />
             {errors.slug && (

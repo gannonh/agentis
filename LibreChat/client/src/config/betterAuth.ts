@@ -10,7 +10,12 @@
  */
 
 import { createAuthClient } from 'better-auth/react';
-import { organizationClient, adminClient, magicLinkClient, usernameClient } from 'better-auth/client/plugins';
+import {
+  organizationClient,
+  adminClient,
+  magicLinkClient,
+  usernameClient,
+} from 'better-auth/client/plugins';
 
 /**
  * Base URL for the Better Auth backend server

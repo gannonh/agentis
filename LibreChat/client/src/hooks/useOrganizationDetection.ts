@@ -44,13 +44,16 @@ export function useOrganizationDetection(email: string): OrganizationDetectionRe
     async () => {
       try {
         // Call the actual backend endpoint for organization domain checking
-        const response = await fetch(`/api/auth/organization/check-domain?email=${encodeURIComponent(email)}`, {
-          method: 'GET',
-          credentials: 'include', // Include session cookies
-          headers: {
-            'Content-Type': 'application/json',
+        const response = await fetch(
+          `/api/auth/organization/check-domain?email=${encodeURIComponent(email)}`,
+          {
+            method: 'GET',
+            credentials: 'include', // Include session cookies
+            headers: {
+              'Content-Type': 'application/json',
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           // If 404, it means no organization found (which is valid)
