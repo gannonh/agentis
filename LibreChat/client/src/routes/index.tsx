@@ -2,8 +2,6 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import {
   Login,
   Registration,
-  RequestPasswordReset,
-  ResetPassword,
   VerifyEmail,
   ApiErrorWatcher,
   TwoFactorScreen,
@@ -50,14 +48,6 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: <ProgressiveRegistration />,
-      },
-      {
-        path: 'forgot-password',
-        element: <RequestPasswordReset />,
-      },
-      {
-        path: 'reset-password',
-        element: <ResetPassword />,
       },
     ],
   },

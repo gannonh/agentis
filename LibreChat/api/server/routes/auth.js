@@ -2,8 +2,8 @@ import express from 'express';
 import {
   refreshController,
   registrationController,
-  resetPasswordController,
-  resetPasswordRequestController,
+  // resetPasswordController,
+  // resetPasswordRequestController,
 } from '#server/controllers/AuthController.js';
 import { loginController } from '#server/controllers/auth/LoginController.js';
 import { logoutController } from '#server/controllers/auth/LogoutController.js';
@@ -27,9 +27,9 @@ import {
   requireLdapAuth,
   setBalanceConfig,
   requireLocalAuth,
-  resetPasswordLimiter,
+  // resetPasswordLimiter,
   validateRegistration,
-  validatePasswordReset,
+  // validatePasswordReset,
 } from '#server/middleware/index.js';
 import { organizationService } from '#server/services/OrganizationService.js';
 import { logger } from '#config/index.js';
@@ -57,14 +57,15 @@ router.post(
   validateRegistration,
   registrationController,
 );
-router.post(
-  '/requestPasswordReset',
-  resetPasswordLimiter,
-  checkBan,
-  validatePasswordReset,
-  resetPasswordRequestController,
-);
-router.post('/resetPassword', checkBan, validatePasswordReset, resetPasswordController);
+// Password reset routes are deprecated - we use magic links now
+// router.post(
+//   '/requestPasswordReset',
+//   resetPasswordLimiter,
+//   checkBan,
+//   validatePasswordReset,
+//   resetPasswordRequestController,
+// );
+// router.post('/resetPassword', checkBan, validatePasswordReset, resetPasswordController);
 
 router.get('/2fa/enable', requireBetterAuth, enable2FA);
 router.post('/2fa/verify', requireBetterAuth, verify2FA);
