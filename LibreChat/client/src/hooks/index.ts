@@ -38,4 +38,5 @@ export { default as useGenerationsByLatest } from './useGenerationsByLatest';
 export { default as useStartAgentChat } from './useStartAgentChat';
 export { useOrganizationDetection } from './useOrganizationDetection';
 export { useRegistrationState, RegistrationStep, UserRole } from './useRegistrationState';
+export { useAutoSetActiveOrganization } from './useAutoSetActiveOrganization';
 export type { RegistrationState, OrganizationData } from './useRegistrationState';

@@ -19,6 +19,7 @@ import TermsAndConditionsModal from '~/components/ui/TermsAndConditionsModal';
 import { useUserTermsQuery, useGetStartupConfig, useGetSessionQuery } from '~/data-provider';
 import { Nav, MobileNav } from '~/components/Nav';
 import { Banner } from '~/components/Banners';
+import { useAutoSetActiveOrganization } from '~/hooks/useAutoSetActiveOrganization';
 
 export default function Root() {
   const [showTerms, setShowTerms] = useState(false);
@@ -33,6 +34,9 @@ export default function Root() {
     enabled: !isAuthenticated,
     retry: false,
   });
+
+  // Automatically set active organization after login
+  useAutoSetActiveOrganization();
 
   const assistantsMap = useAssistantsMap({ isAuthenticated });
   const agentsMap = useAgentsMap({ isAuthenticated });
