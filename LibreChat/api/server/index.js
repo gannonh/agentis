@@ -1,4 +1,22 @@
 import 'dotenv/config';
+
+// Add uncaught exception handler at the very beginning
+process.on('uncaughtException', (err) => {
+  console.error('🔍 UNCAUGHT EXCEPTION - Full Error:', err);
+  console.error('🔍 Stack trace:', err.stack);
+  console.error('🔍 Error name:', err.name);
+  console.error('🔍 Error message:', err.message);
+
+  // Don't exit immediately to see if we can get more info
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔍 UNHANDLED REJECTION at:', promise, 'reason:', reason);
+});
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
@@ -53,6 +71,26 @@ const startServer = async () => {
 
   app.get('/health', (_req, res) => res.status(200).send('OK'));
 
+  // Test endpoint to debug Better Auth
+  app.get('/test-auth', async (req, res) => {
+    try {
+      const authInstance = getAuth();
+      if (!authInstance) {
+        return res.json({ error: 'Auth not ready' });
+      }
+
+      // Try to call Better Auth's API directly
+      const testResult = await authInstance.api.getSession({
+        headers: req.headers,
+      });
+
+      res.json({ success: true, session: testResult });
+    } catch (error) {
+      console.error('Test auth error:', error);
+      res.json({ error: error.message, stack: error.stack });
+    }
+  });
+
   /* CORS must be applied before Better Auth */
   app.use(
     cors({
@@ -61,21 +99,37 @@ const startServer = async () => {
     }),
   );
 
-  /**
-   * Better Auth Handler
-   * IMPORTANT: Must be mounted BEFORE express.json() middleware
-   * Handles all authentication endpoints:
-   * - POST /api/auth/sign-up/email - Create new user account
-   * - POST /api/auth/sign-in/email - Authenticate user
-   * - GET  /api/auth/get-session - Get current session
-   * - GET  /api/auth/ok - Health check for auth service
-   */
-  app.all('/api/auth/*', (req, res, next) => {
+  /* Better Auth handler - MUST come before JSON parsing per docs */
+  app.all('/api/auth/*', (req, res) => {
     const authInstance = getAuth();
-    return toNodeHandler(authInstance)(req, res, next);
+    if (!authInstance) {
+      return res.status(503).json({
+        error: 'Authentication service is starting up. Please try again in a moment.',
+      });
+    }
+
+    // Debug magic link requests
+    if (req.path.includes('magic-link')) {
+      console.log('🔍 Magic Link Request Debug:');
+      console.log('  Method:', req.method);
+      console.log('  Path:', req.path);
+      console.log('  Query:', req.query);
+      console.log('  Headers:', JSON.stringify(req.headers, null, 2));
+      console.log('  Body:', req.body);
+      console.log('  Raw body available:', !!req.body);
+
+      // Debug query parameters for verification
+      if (req.path.includes('verify')) {
+        console.log('🔗 Magic Link Verify Request:');
+        console.log('  Token in query:', req.query.token);
+        console.log('  All query params:', JSON.stringify(req.query, null, 2));
+      }
+    }
+
+    return toNodeHandler(authInstance)(req, res);
   });
 
-  /* Middleware */
+  /* Middleware - JSON parsing comes AFTER Better Auth per docs */
   app.use(noIndex);
   app.use(errorController);
   app.use(express.json({ limit: '3mb' }));
@@ -106,8 +160,37 @@ const startServer = async () => {
     configureSocialLogins(app);
   }
 
+  /* Custom Better Auth endpoints */
+  // Organization domain detection endpoint
+  app.get('/api/auth/organization/check-domain', async (req, res) => {
+    try {
+      const { email } = req.query;
+      if (!email) {
+        return res.status(400).json({ error: 'Email parameter is required' });
+      }
+
+      const domain = email.split('@')[1];
+      if (!domain) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+
+      // For now, return a basic response - later we can implement actual organization checking
+      console.log(`🏢 Organization domain check for: ${domain}`);
+
+      // Mock response - assume new domain for now
+      res.json({
+        exists: false,
+        isNewDomain: true,
+        domain: domain,
+      });
+    } catch (error) {
+      console.error('Organization domain check error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   /* API Endpoints */
-  // Legacy auth routes removed - using Better Auth handler above
+  // Auth routes already mounted above (before Better Auth handler)
   app.use('/api/actions', routes.actions);
   app.use('/api/keys', routes.keys);
   app.use('/api/user', routes.user);
