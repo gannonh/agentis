@@ -218,7 +218,7 @@ export const ProgressiveRegistration: React.FC = () => {
         });
       }
     }
-  }, [session, state?.currentStep, updateState]);
+  }, [session, state?.currentStep, state?.email, updateState]);
 
   // Handle magic link callback URL parameters
   useEffect(() => {
@@ -443,7 +443,7 @@ export const ProgressiveRegistration: React.FC = () => {
                     🪄 Ready to Sign In
                   </h3>
                   <p className="mt-2 text-gray-600 dark:text-gray-400">
-                    We'll send a magic link to <strong>{state?.email || ''}</strong>
+                    We&apos;ll send a magic link to <strong>{state?.email || ''}</strong>
                   </p>
                 </div>
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
@@ -466,7 +466,7 @@ export const ProgressiveRegistration: React.FC = () => {
                         Passwordless Authentication
                       </h4>
                       <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
-                        <p>Click "Send Magic Link" to receive a secure sign-in link.</p>
+                        <p>Click &quot;Send Magic Link&quot; to receive a secure sign-in link.</p>
                         <p className="mt-1">
                           No passwords needed - just click the link in your email!
                         </p>
@@ -503,13 +503,13 @@ export const ProgressiveRegistration: React.FC = () => {
                       </h4>
                       <div className="mt-2 text-sm text-green-700 dark:text-green-300">
                         <p>
-                          We've sent a magic link to <strong>{state?.email || ''}</strong>
+                          We&apos;ve sent a magic link to <strong>{state?.email || ''}</strong>
                         </p>
                         <p className="mt-1">
                           Click the link to sign in instantly and continue your setup.
                         </p>
                         <p className="mt-2 text-xs">
-                          Link expires in 5 minutes. Don't see it? Check spam or resend below.
+                          Link expires in 5 minutes. Don&apos;t see it? Check spam or resend below.
                         </p>
                       </div>
                     </div>
@@ -553,7 +553,7 @@ export const ProgressiveRegistration: React.FC = () => {
                 </div>
 
                 <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  After clicking the magic link, you'll be automatically signed in and can continue.
+                  After clicking the magic link, you&apos;ll be automatically signed in and can continue.
                 </p>
               </div>
             )}
@@ -790,7 +790,7 @@ export const ProgressiveRegistration: React.FC = () => {
               </h3>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 {state?.organizationData
-                  ? `You've successfully joined ${state.organizationData.name}`
+                  ? `You&apos;ve successfully joined ${state.organizationData.name}`
                   : 'Your account has been created successfully'}
               </p>
             </div>
@@ -812,7 +812,7 @@ export const ProgressiveRegistration: React.FC = () => {
                   </h4>
                   <div className="mt-2 text-sm text-green-700 dark:text-green-300">
                     <p>Your account is now fully configured and ready to use.</p>
-                    <p className="mt-1">Click "Get Started" to begin exploring Agentis!</p>
+                    <p className="mt-1">Click &quot;Get Started&quot; to begin exploring Agentis!</p>
                   </div>
                 </div>
               </div>
