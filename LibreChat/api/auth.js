@@ -59,6 +59,12 @@ mongoose.connection.once('open', () => {
       logger.warn('Google OAuth credentials missing - Google provider will not be available');
     }
 
+    // Validate required environment variables
+    if (!process.env.BETTER_AUTH_SECRET) {
+      logger.error('❌ BETTER_AUTH_SECRET environment variable is required');
+      throw new Error('BETTER_AUTH_SECRET environment variable is required but not set');
+    }
+
     logger.debug('Better Auth config values:', {
       baseURL: betterAuthConfig.baseURL,
       clientURL: betterAuthConfig.clientURL,
@@ -92,13 +98,13 @@ mongoose.connection.once('open', () => {
       throw new Error(`Invalid clientURL: ${betterAuthConfig.clientURL}`);
     }
 
-    // HARDCODE URLs for debugging
+    // Use environment variables and betterAuthConfig
     const config = {
       database: mongodbAdapter(db),
-      secret: process.env.BETTER_AUTH_SECRET || 'test-secret',
-      baseURL: 'http://localhost:3080',
-      basePath: '/api/auth',
-      trustedOrigins: ['http://localhost:3090', 'http://localhost:3080'],
+      secret: process.env.BETTER_AUTH_SECRET,
+      baseURL: betterAuthConfig.baseURL,
+      basePath: betterAuthConfig.basePath,
+      trustedOrigins: betterAuthConfig.trustedOrigins,
 
       // Add advanced configuration that might help with URL construction
       advanced: {
@@ -108,19 +114,12 @@ mongoose.connection.once('open', () => {
         },
       },
 
-      // Don't spread betterAuthConfig to avoid any bad properties
+      // Use betterAuthConfig for consistent settings
       emailAndPassword: {
         enabled: false, // We use magic links, not passwords
       },
-      emailVerification: {
-        enabled: false,
-        sendOnSignUp: false,
-      },
-      session: {
-        expiresIn: 604800,
-        updateAge: 86400,
-        cookieAge: 604800,
-      },
+      emailVerification: betterAuthConfig.emailVerification,
+      session: betterAuthConfig.session,
 
       plugins: [
         organization({
@@ -162,7 +161,7 @@ mongoose.connection.once('open', () => {
                 clientId: googleClientId,
                 clientSecret: googleClientSecret,
                 // OAuth redirects must go to backend (where Google OAuth is configured)
-                redirectURI: 'http://localhost:3080/api/auth/callback/google',
+                redirectURI: `${betterAuthConfig.baseURL}${betterAuthConfig.basePath}/callback/google`,
               },
             }
           : undefined,
@@ -174,14 +173,12 @@ mongoose.connection.once('open', () => {
       logger.warn('Google OAuth provider not configured - missing credentials');
     }
 
-    // Debug the final config before creating Better Auth
-    console.log('🔍 Creating Better Auth with config:', JSON.stringify(config, null, 2));
-
+    // Create Better Auth instance
     try {
       authInstance = betterAuth(config);
-      console.log('🔍 Better Auth instance created successfully');
+      logger.debug('Better Auth instance created successfully');
     } catch (createError) {
-      console.error('🔍 Error creating Better Auth instance:', createError);
+      logger.error('Error creating Better Auth instance:', createError);
       throw createError;
     }
 
