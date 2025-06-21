@@ -387,6 +387,9 @@ export const ProgressiveRegistration: React.FC = () => {
 
         case RegistrationStep.WELCOME:
           // User is already registered at this point
+          // Navigate directly - the OAuthOnboardingRedirect will handle checking organization state properly
+          console.log('🎉 Welcome step completed, navigating to main app...');
+          
           clearState();
           navigate('/c/new', { replace: true });
           break;

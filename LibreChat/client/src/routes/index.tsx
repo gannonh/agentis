@@ -7,6 +7,7 @@ import {
   TwoFactorScreen,
 } from '~/components/Auth';
 import { ProgressiveRegistration } from '~/components/Auth/ProgressiveRegistration';
+import { OAuthOnboardingRedirect } from '~/components/Auth/OAuthOnboardingRedirect';
 import { ComposioTestPage } from '~/components/Composio';
 import { AuthContextProvider } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
@@ -85,7 +86,11 @@ export const router = createBrowserRouter([
           },
           {
             path: 'c/:conversationId?',
-            element: <ChatRoute />,
+            element: (
+              <OAuthOnboardingRedirect>
+                <ChatRoute />
+              </OAuthOnboardingRedirect>
+            ),
           },
           {
             path: 'search',
