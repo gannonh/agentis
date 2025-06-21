@@ -121,8 +121,43 @@ mongoose.connection.once('open', () => {
       emailVerification: betterAuthConfig.emailVerification,
       session: betterAuthConfig.session,
 
-      // Add database hooks to set active organization on session creation
+      // Account linking - allow OAuth to link to existing magic link users
+      account: {
+        accountLinking: {
+          enabled: true,
+          trustedProviders: ['google'],
+        },
+      },
+
+
+      // Add database hooks to handle OAuth user linking and session creation
       databaseHooks: {
+        user: {
+          create: {
+            before: async (user) => {
+              try {
+                logger.info('User create hook - checking for existing user with email:', user.email);
+                
+                // Check if user already exists with this email
+                const userCollection = db.collection('user');
+                const existingUser = await userCollection.findOne({ email: user.email });
+                
+                if (existingUser) {
+                  logger.info('Found existing user with email, preventing duplicate creation:', user.email);
+                  // Return the existing user to prevent duplicate creation
+                  // Better Auth will handle linking the OAuth account
+                  return { data: existingUser };
+                }
+                
+                logger.info('No existing user found, allowing creation for:', user.email);
+                return { data: user };
+              } catch (error) {
+                logger.error('Error in user create hook:', error);
+                return { data: user };
+              }
+            },
+          },
+        },
         session: {
           create: {
             before: async (session) => {
@@ -201,6 +236,35 @@ mongoose.connection.once('open', () => {
                 clientSecret: googleClientSecret,
                 // OAuth redirects must go to backend (where Google OAuth is configured)
                 redirectURI: `${betterAuthConfig.baseURL}${betterAuthConfig.basePath}/callback/google`,
+                // Custom profile mapping to handle existing users
+                mapProfileToUser: async (profile) => {
+                  logger.info('🔍 OAuth profile mapping for:', profile.email);
+                  
+                  // Check if user already exists with this email
+                  const userCollection = db.collection('user');
+                  const existingUser = await userCollection.findOne({ email: profile.email });
+                  
+                  if (existingUser) {
+                    logger.info('🔗 Found existing user, using existing profile:', profile.email);
+                    // Return existing user data to prevent duplicate creation
+                    return {
+                      id: existingUser._id.toString(),
+                      email: existingUser.email,
+                      name: existingUser.name || profile.name,
+                      image: existingUser.avatar || profile.picture,
+                      emailVerified: existingUser.emailVerified || true,
+                    };
+                  }
+                  
+                  logger.info('👤 Creating new user profile for:', profile.email);
+                  // Return new user data
+                  return {
+                    email: profile.email,
+                    name: profile.name,
+                    image: profile.picture,
+                    emailVerified: true,
+                  };
+                },
               },
             }
           : undefined,

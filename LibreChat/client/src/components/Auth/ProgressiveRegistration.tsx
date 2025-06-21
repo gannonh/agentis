@@ -349,6 +349,12 @@ export const ProgressiveRegistration: React.FC = () => {
               name: data.organizationName!,
               slug: data.organizationSlug!,
             });
+            
+            // Force session refresh to update organization membership immediately
+            console.log('🔄 Forcing session refresh after organization creation...');
+            await authClient.getSession();
+            console.log('✅ Session refreshed, organization hooks should update');
+            
             updateState({
               organizationSetup: {
                 name: data.organizationName!,
@@ -386,12 +392,25 @@ export const ProgressiveRegistration: React.FC = () => {
           break;
 
         case RegistrationStep.WELCOME:
-          // User is already registered at this point
-          // Navigate directly - the OAuthOnboardingRedirect will handle checking organization state properly
-          console.log('🎉 Welcome step completed, navigating to main app...');
+          // User completed onboarding - refresh session to ensure organization membership is loaded
+          console.log('🎉 Welcome step completed, refreshing session before navigation...');
           
-          clearState();
-          navigate('/c/new', { replace: true });
+          try {
+            // Force session refresh to pick up organization membership
+            const sessionData = await authClient.getSession();
+            console.log('🔄 Session refreshed after onboarding:', sessionData);
+            
+            // Note: Organization data will be refreshed automatically by the hooks
+            console.log('🏢 Session refresh completed, organization hooks will update automatically');
+            
+            clearState();
+            navigate('/c/new', { replace: true });
+          } catch (error) {
+            console.error('❌ Error refreshing session after onboarding:', error);
+            // Still navigate even if session refresh fails
+            clearState();
+            navigate('/c/new', { replace: true });
+          }
           break;
       }
     } catch (err: any) {
