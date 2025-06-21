@@ -159,18 +159,21 @@ async function getOrganizationInfo(organizationId) {
   try {
     // Query database directly since Better Auth API might not be available in CLI context
     const db = mongoose.connection.db;
-    
+
     // Get organization details
     const orgCollection = db.collection("organization");
     // Better Auth stores organization with _id as ObjectId
-    const orgQuery = typeof organizationId === 'string' 
-      ? { _id: new mongoose.Types.ObjectId(organizationId) }
-      : { _id: organizationId };
-    
+    const orgQuery =
+      typeof organizationId === "string"
+        ? { _id: new mongoose.Types.ObjectId(organizationId) }
+        : { _id: organizationId };
+
     const organization = await orgCollection.findOne(orgQuery);
 
     if (!organization) {
-      console.log(`${colors.yellow}⚠️  No organization found with ID: ${organizationId}${colors.reset}`);
+      console.log(
+        `${colors.yellow}⚠️  No organization found with ID: ${organizationId}${colors.reset}`
+      );
       return null;
     }
 
@@ -467,22 +470,24 @@ async function deleteUserCompletely(userId, email) {
     }
 
     // Teams cleanup - handle teams where user is owner or member
-    console.log(
-      `\n${colors.cyan}👥 Cleaning up teams...${colors.reset}`
-    );
-    
+    console.log(`\n${colors.cyan}👥 Cleaning up teams...${colors.reset}`);
+
     try {
       const teamsCollection = db.collection("teams");
-      
+
       // First, find teams where user is the owner
-      const ownedTeams = await teamsCollection.find({ ownerId: userId }).toArray();
+      const ownedTeams = await teamsCollection
+        .find({ ownerId: userId })
+        .toArray();
       if (ownedTeams.length > 0) {
         console.log(
           `${colors.cyan}📊 Found ${ownedTeams.length} teams owned by user${colors.reset}`
         );
-        
+
         // Delete teams owned by the user
-        const deleteOwnedResult = await teamsCollection.deleteMany({ ownerId: userId });
+        const deleteOwnedResult = await teamsCollection.deleteMany({
+          ownerId: userId,
+        });
         if (deleteOwnedResult.deletedCount > 0) {
           console.log(
             `${colors.green}✅ Deleted ${deleteOwnedResult.deletedCount} teams owned by user${colors.reset}`
@@ -490,13 +495,13 @@ async function deleteUserCompletely(userId, email) {
           totalDeleted += deleteOwnedResult.deletedCount;
         }
       }
-      
+
       // Remove user from memberIds and adminIds arrays in other teams
       const memberUpdateResult = await teamsCollection.updateMany(
         { memberIds: userId },
         { $pull: { memberIds: userId, adminIds: userId } }
       );
-      
+
       if (memberUpdateResult.modifiedCount > 0) {
         console.log(
           `${colors.green}✅ Removed user from ${memberUpdateResult.modifiedCount} teams as member/admin${colors.reset}`
@@ -534,29 +539,86 @@ async function deleteOrganizationCompletely(organizationId) {
   try {
     // Use direct database access since Better Auth API is not available in CLI context
     const db = mongoose.connection.db;
-    
-    // Delete organization
-    const orgCollection = db.collection("organization");
-    // Better Auth stores organization with _id as ObjectId
-    const orgQuery = typeof organizationId === 'string'
-      ? { _id: new mongoose.Types.ObjectId(organizationId) }
-      : { _id: organizationId };
-    const orgResult = await orgCollection.deleteOne(orgQuery);
-
-    // Delete all members
-    const memberCollection = db.collection("member");
-    const memberResult = await memberCollection.deleteMany({
-      organizationId,
-    });
-
-    // Delete all invitations
-    const invitationCollection = db.collection("invitation");
-    const invitationResult = await invitationCollection.deleteMany({
-      organizationId,
-    });
 
     console.log(
-      `${colors.green}✅ Deleted organization and ${memberResult.deletedCount} members, ${invitationResult.deletedCount} invitations${colors.reset}`
+      `${colors.cyan}🗑️  Deleting organization with ID: ${colors.white}${organizationId}${colors.reset}`
+    );
+
+    // Delete all members first (Better Auth stores organizationId as string in member collection)
+    const memberCollection = db.collection("member");
+    const memberResult = await memberCollection.deleteMany({
+      organizationId: organizationId,
+    });
+    console.log(
+      `${colors.cyan}✅ Deleted ${memberResult.deletedCount} organization members${colors.reset}`
+    );
+
+    // Delete all invitations (Better Auth stores organizationId as string in invitation collection)
+    const invitationCollection = db.collection("invitation");
+    const invitationResult = await invitationCollection.deleteMany({
+      organizationId: organizationId,
+    });
+    console.log(
+      `${colors.cyan}✅ Deleted ${invitationResult.deletedCount} organization invitations${colors.reset}`
+    );
+
+    // Delete organization - Better Auth stores organization with _id as ObjectId
+    const orgCollection = db.collection("organization");
+    const orgQuery =
+      typeof organizationId === "string"
+        ? { _id: new mongoose.Types.ObjectId(organizationId) }
+        : { _id: organizationId };
+
+    console.log(
+      `${colors.cyan}🔍 Deleting organization document with query:${colors.reset}`,
+      JSON.stringify(orgQuery)
+    );
+
+    const orgResult = await orgCollection.deleteOne(orgQuery);
+
+    if (orgResult.deletedCount === 0) {
+      // Try alternative queries in case of ID format issues
+      console.log(
+        `${colors.yellow}⚠️  First delete attempt failed, trying alternative queries...${colors.reset}`
+      );
+
+      // Try with string ID directly
+      const altResult1 = await orgCollection.deleteOne({ _id: organizationId });
+      if (altResult1.deletedCount > 0) {
+        console.log(
+          `${colors.green}✅ Organization deleted using string ID${colors.reset}`
+        );
+      } else {
+        // Try finding by slug or name as last resort
+        const orgToDelete = await orgCollection.findOne({
+          $or: [{ slug: organizationId }, { name: organizationId }],
+        });
+
+        if (orgToDelete) {
+          const finalResult = await orgCollection.deleteOne({
+            _id: orgToDelete._id,
+          });
+          if (finalResult.deletedCount > 0) {
+            console.log(
+              `${colors.green}✅ Organization deleted by finding via slug/name${colors.reset}`
+            );
+          } else {
+            throw new Error(
+              "Failed to delete organization after multiple attempts"
+            );
+          }
+        } else {
+          throw new Error(`Organization not found with ID: ${organizationId}`);
+        }
+      }
+    } else {
+      console.log(
+        `${colors.green}✅ Organization deleted successfully${colors.reset}`
+      );
+    }
+
+    console.log(
+      `${colors.green}${colors.bright}✅ Organization cleanup completed!${colors.reset}`
     );
     return true;
   } catch (error) {
@@ -579,9 +641,9 @@ async function getUserData(userId, email) {
         userId: userId,
         email: email,
         totalRecords: 0,
-        collections: []
+        collections: [],
       },
-      details: {}
+      details: {},
     };
 
     console.log(
@@ -723,17 +785,17 @@ async function getUserData(userId, email) {
         }
 
         const records = await collection.find(query).toArray();
-        
+
         if (records.length > 0) {
           userData.details[collectionInfo.name] = {
             description: collectionInfo.description,
             count: records.length,
-            records: records
+            records: records,
           };
           userData.summary.totalRecords += records.length;
           userData.summary.collections.push({
             name: collectionInfo.name,
-            count: records.length
+            count: records.length,
           });
 
           console.log(
@@ -816,12 +878,12 @@ async function getUserData(userId, email) {
           userData.details[collectionInfo.name] = {
             description: collectionInfo.description,
             count: allRecords.length,
-            records: allRecords
+            records: allRecords,
           };
           userData.summary.totalRecords += allRecords.length;
           userData.summary.collections.push({
             name: collectionInfo.name,
-            count: allRecords.length
+            count: allRecords.length,
           });
 
           console.log(
@@ -838,39 +900,41 @@ async function getUserData(userId, email) {
     }
 
     // Teams - find teams where user is owner or member
-    console.log(
-      `\n${colors.cyan}👥 Querying teams...${colors.reset}`
-    );
-    
+    console.log(`\n${colors.cyan}👥 Querying teams...${colors.reset}`);
+
     try {
       const teamsCollection = db.collection("teams");
-      
+
       // Find teams where user is the owner
-      const ownedTeams = await teamsCollection.find({ ownerId: userId }).toArray();
-      
+      const ownedTeams = await teamsCollection
+        .find({ ownerId: userId })
+        .toArray();
+
       // Find teams where user is a member
-      const memberTeams = await teamsCollection.find({ memberIds: userId }).toArray();
-      
+      const memberTeams = await teamsCollection
+        .find({ memberIds: userId })
+        .toArray();
+
       const allTeams = [...ownedTeams];
       // Add member teams that aren't already in owned teams
-      memberTeams.forEach(team => {
-        if (!allTeams.find(t => t._id.toString() === team._id.toString())) {
+      memberTeams.forEach((team) => {
+        if (!allTeams.find((t) => t._id.toString() === team._id.toString())) {
           allTeams.push(team);
         }
       });
-      
+
       if (allTeams.length > 0) {
         userData.details.teams = {
           description: "User teams",
           count: allTeams.length,
           owned: ownedTeams.length,
           member: memberTeams.length,
-          records: allTeams
+          records: allTeams,
         };
         userData.summary.totalRecords += allTeams.length;
         userData.summary.collections.push({
           name: "teams",
-          count: allTeams.length
+          count: allTeams.length,
         });
 
         console.log(
@@ -941,64 +1005,91 @@ async function interactiveGetUser() {
     console.log(`   Role: ${colors.white}${user.role || "N/A"}${colors.reset}`);
 
     // Step 4: Get all user data
-    console.log(`\n${colors.cyan}📊 Retrieving all user data...${colors.reset}`);
+    console.log(
+      `\n${colors.cyan}📊 Retrieving all user data...${colors.reset}`
+    );
     const userData = await getUserData(user._id.toString(), user.email);
 
     // Step 5: Display summary
-    console.log(`\n${colors.magenta}${colors.bright}📋 Data Summary:${colors.reset}`);
-    console.log(`   Total records: ${colors.white}${userData.summary.totalRecords}${colors.reset}`);
-    console.log(`   Collections with data: ${colors.white}${userData.summary.collections.length}${colors.reset}`);
-    
+    console.log(
+      `\n${colors.magenta}${colors.bright}📋 Data Summary:${colors.reset}`
+    );
+    console.log(
+      `   Total records: ${colors.white}${userData.summary.totalRecords}${colors.reset}`
+    );
+    console.log(
+      `   Collections with data: ${colors.white}${userData.summary.collections.length}${colors.reset}`
+    );
+
     console.log(`\n${colors.cyan}📁 Collections breakdown:${colors.reset}`);
-    userData.summary.collections.forEach(col => {
-      console.log(`   • ${col.name}: ${colors.white}${col.count} records${colors.reset}`);
+    userData.summary.collections.forEach((col) => {
+      console.log(
+        `   • ${col.name}: ${colors.white}${col.count} records${colors.reset}`
+      );
     });
 
     // Step 6: Ask if user wants to see detailed data
-    const showDetails = await question(`\nShow detailed data for each collection? (y/N): `);
+    const showDetails = await question(
+      `\nShow detailed data for each collection? (y/N): `
+    );
 
     if (
       showDetails.toLowerCase() === "y" ||
       showDetails.toLowerCase() === "yes"
     ) {
-      console.log(`\n${colors.cyan}${colors.bright}📄 Detailed Data:${colors.reset}`);
-      
+      console.log(
+        `\n${colors.cyan}${colors.bright}📄 Detailed Data:${colors.reset}`
+      );
+
       for (const [collectionName, data] of Object.entries(userData.details)) {
-        console.log(`\n${colors.yellow}━━━ ${data.description} (${collectionName}) ━━━${colors.reset}`);
+        console.log(
+          `\n${colors.yellow}━━━ ${data.description} (${collectionName}) ━━━${colors.reset}`
+        );
         console.log(`Count: ${data.count}`);
-        
+
         // Show first few records as sample
         const samplesToShow = Math.min(3, data.records.length);
         if (samplesToShow > 0) {
           console.log(`\nShowing first ${samplesToShow} records:`);
-          
+
           for (let i = 0; i < samplesToShow; i++) {
             console.log(`\n${colors.cyan}Record ${i + 1}:${colors.reset}`);
             console.log(JSON.stringify(data.records[i], null, 2));
           }
-          
+
           if (data.records.length > samplesToShow) {
-            console.log(`\n${colors.yellow}... and ${data.records.length - samplesToShow} more records${colors.reset}`);
+            console.log(
+              `\n${colors.yellow}... and ${
+                data.records.length - samplesToShow
+              } more records${colors.reset}`
+            );
           }
         }
       }
     }
 
     // Step 7: Ask if user wants to export data
-    const exportData = await question(`\nExport all data to JSON file? (y/N): `);
+    const exportData = await question(
+      `\nExport all data to JSON file? (y/N): `
+    );
 
     if (
       exportData.toLowerCase() === "y" ||
       exportData.toLowerCase() === "yes"
     ) {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `user-data-${email.replace('@', '-at-')}-${timestamp}.json`;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `user-data-${email.replace(
+        "@",
+        "-at-"
+      )}-${timestamp}.json`;
       const filepath = join(process.cwd(), filename);
-      
-      const fs = await import('fs');
+
+      const fs = await import("fs");
       await fs.promises.writeFile(filepath, JSON.stringify(userData, null, 2));
-      
-      console.log(`\n${colors.green}✅ Data exported to: ${colors.white}${filepath}${colors.reset}`);
+
+      console.log(
+        `\n${colors.green}✅ Data exported to: ${colors.white}${filepath}${colors.reset}`
+      );
     }
 
     console.log(
