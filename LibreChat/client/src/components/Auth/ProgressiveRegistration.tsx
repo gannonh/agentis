@@ -91,8 +91,8 @@ export const ProgressiveRegistration: React.FC = () => {
   useEffect(() => {
     const formValues = {
       email: state?.email || '',
-      name: state?.profileData?.name || '',
-      username: state?.profileData?.username || '',
+      name: state?.profileData?.name || session?.user?.name || '',
+      username: state?.profileData?.username || session?.user?.username || '',
       organizationName: state?.organizationSetup?.name || '',
       organizationSlug: state?.organizationSetup?.slug || '',
       organizationDescription: state?.organizationSetup?.description || '',
@@ -107,6 +107,8 @@ export const ProgressiveRegistration: React.FC = () => {
     state?.organizationSetup?.name,
     state?.organizationSetup?.slug,
     state?.organizationSetup?.description,
+    session?.user?.name,
+    session?.user?.username,
     reset,
   ]);
 
@@ -334,7 +336,7 @@ export const ProgressiveRegistration: React.FC = () => {
               console.warn('⚠️ No session found, cannot update user profile');
             }
 
-            // User is already authenticated via magic link, continue to next step
+            // Continue to next step
             goToNextStep();
           } catch (err: any) {
             throw new Error(err.message || 'Profile setup failed');
