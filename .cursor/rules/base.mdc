@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Agentis
 
@@ -180,8 +180,8 @@ Agentis uses self-hosted Docker images for all external dependencies to ensure s
 - **Sandpack**: `ghcr.io/gannonh/codesandbox-client/bundler:latest` - Code execution environment
 
 These are maintained in separate repositories:
-- [rag_api](https://github.com/gannonh/rag_api) - Forked from danny-avila/rag_api
-- [codesandbox-client](https://github.com/gannonh/codesandbox-client) - Forked from LibreChat-AI/codesandbox-client
+- [rag_api](mdc:https:/github.com/gannonh/rag_api) - Forked from danny-avila/rag_api
+- [codesandbox-client](mdc:https:/github.com/gannonh/codesandbox-client) - Forked from LibreChat-AI/codesandbox-client
 
 ### Development Setup
 
@@ -296,7 +296,7 @@ Development logs are written to the `logs/` directory in the project root:
 ### Node.js API Server
 
 #### General Guidelines
-- Follow the [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)
+- Follow the [Airbnb JavaScript Style Guide](mdc:https:/github.com/airbnb/javascript)
 - Use "clean code" principles with small functions and modules
 - Prioritize readability and maintainability over brevity
 - Use CommonJS modules (require/exports) for Node.js modules
