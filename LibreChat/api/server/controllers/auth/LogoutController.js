@@ -3,6 +3,7 @@ import { Issuer } from 'openid-client';
 import { logoutUser } from '#server/services/AuthService.js';
 import { isEnabled } from '#server/utils/index.js';
 import { logger } from '#config/index.js';
+import { authEvents } from '#utils/authEvents.js';
 
 const logoutController = async (req, res) => {
   const refreshToken = req.headers.cookie ? cookies.parse(req.headers.cookie).refreshToken : null;
@@ -10,6 +11,14 @@ const logoutController = async (req, res) => {
     const logout = await logoutUser(req, refreshToken);
     const { status, message } = logout;
     res.clearCookie('refreshToken');
+
+    // Log successful logout
+    if (req.user) {
+      authEvents.userLogout(req.user.id || req.user._id?.toString(), {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+      });
+    }
     const response = { message };
     if (
       req.user.openidId != null &&

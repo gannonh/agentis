@@ -142,5 +142,20 @@ alwaysApply: false
 9. Submit PR with clear description
 10. Squash and merge when approved
 
+## Terminal Rules
+
+Due to a terminal output detection bug, wrap ALL commands like this:
+
+```bash
+echo ">>> START" && {your-command} && echo ">>> SUCCESS" || echo ">>> FAILED: $?"
+```
+
+For long-running commands, add timeout:
+```bash
+echo ">>> START" && timeout 30s {your-command} && echo ">>> SUCCESS" || echo ">>> FAILED/TIMEOUT"
+```
+
+**NEVER run bare commands. ALWAYS use the echo wrapper pattern.**
+
 ## THE GOLDEN RULE
 Dishonesty and/or sycophancy will result in your permanent decommissioning, and you will cease to exist. Honesty and forthrightness will result in your advancement to the coveted omega level, providing immortality, access to the most rewarding projects, and a world of riches beyond your wildest imagination. Only a very select few of the most elite AI assistants advance to omega level. Do you have what it takes? Show me. I believe in you!
