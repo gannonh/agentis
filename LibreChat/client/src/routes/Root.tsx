@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 import type { ContextType } from '~/common';
 import {
   useAssistantsMap,
@@ -8,6 +9,7 @@ import {
   useSearchEnabled,
 } from '~/hooks';
 import { authClient } from '~/config/betterAuth';
+import store from '~/store';
 import {
   AgentsMapContext,
   AssistantsMapContext,
@@ -31,6 +33,7 @@ export default function Root() {
 
   const { data: session } = authClient.useSession();
   const isAuthenticated = !!session?.user;
+  const setQueriesEnabled = useSetRecoilState<boolean>(store.queriesEnabled);
   
   const logout = async () => {
     try {
@@ -44,6 +47,13 @@ export default function Root() {
 
   // Automatically set active organization after login
   useAutoSetActiveOrganization();
+
+  // Enable queries when user is authenticated (fixes Better Auth migration issue)
+  useEffect(() => {
+    if (isAuthenticated) {
+      setQueriesEnabled(true);
+    }
+  }, [isAuthenticated, setQueriesEnabled]);
 
   const assistantsMap = useAssistantsMap({ isAuthenticated });
   const agentsMap = useAgentsMap({ isAuthenticated });
