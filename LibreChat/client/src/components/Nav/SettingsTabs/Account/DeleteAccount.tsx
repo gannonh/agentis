@@ -11,7 +11,7 @@ import {
   OGDialogTitle,
 } from '~/components';
 import { useDeleteUserMutation } from '~/data-provider';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 import { LocalizeFunction } from '~/common';

@@ -9,7 +9,7 @@ import {
   useAgentsMapContext,
 } from '~/Providers';
 import useCopyToClipboard from './useCopyToClipboard';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import useLocalize from '~/hooks/useLocalize';
 import store from '~/store';
 

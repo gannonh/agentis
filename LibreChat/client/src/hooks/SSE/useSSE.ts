@@ -15,7 +15,7 @@ import type { TMessage, TPayload, TSubmission, EventSubmission } from 'librechat
 import type { EventHandlerParams } from './useEventHandlers';
 import type { TResData } from '~/common';
 import { useGenTitleMutation, useGetStartupConfig, useGetUserBalance } from '~/data-provider';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import useEventHandlers from './useEventHandlers';
 import store from '~/store';
 

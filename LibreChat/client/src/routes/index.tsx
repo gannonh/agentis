@@ -9,7 +9,6 @@ import {
 import { ProgressiveRegistration } from '~/components/Auth/ProgressiveRegistration';
 import { OAuthOnboardingRedirect } from '~/components/Auth/OAuthOnboardingRedirect';
 import { ComposioTestPage } from '~/components/Composio';
-import { AuthContextProvider } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
 import LoginLayout from './Layouts/Login';
@@ -21,10 +20,10 @@ import Root from './Root';
 import AuthGuard from './AuthGuard';
 
 const AuthLayout = () => (
-  <AuthContextProvider>
+  <>
     <Outlet />
     <ApiErrorWatcher />
-  </AuthContextProvider>
+  </>
 );
 
 export const router = createBrowserRouter([
@@ -40,11 +39,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: (
-          <AuthContextProvider>
-            <AuthGuard />
-          </AuthContextProvider>
-        ),
+        element: <AuthGuard />,
       },
       {
         path: 'register',

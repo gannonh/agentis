@@ -5,7 +5,7 @@ import { useRecoilState, useResetRecoilState, useSetRecoilState } from 'recoil';
 import type { TMessage } from 'librechat-data-provider';
 import useChatFunctions from '~/hooks/Chat/useChatFunctions';
 import { useGetMessagesByConvoId } from '~/data-provider';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import useNewConvo from '~/hooks/useNewConvo';
 import store from '~/store';
 

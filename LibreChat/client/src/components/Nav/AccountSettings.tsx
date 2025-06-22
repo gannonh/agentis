@@ -5,7 +5,7 @@ import { FileText, LogOut } from 'lucide-react';
 import { LinkIcon, GearIcon, DropdownMenuSeparator } from '~/components';
 import { useGetStartupConfig, useGetUserBalance } from '~/data-provider';
 import FilesView from '~/components/Chat/Input/Files/FilesView';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import useAvatar from '~/hooks/Messages/useAvatar';
 import { UserIcon } from '~/components/svg';
 import { useLocalize } from '~/hooks';

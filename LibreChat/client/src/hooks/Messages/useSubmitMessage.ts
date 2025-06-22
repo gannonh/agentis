@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Constants, replaceSpecialVars } from 'librechat-data-provider';
 import { useChatContext, useChatFormContext, useAddedChatContext } from '~/Providers';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import store from '~/store';
 
 const appendIndex = (index: number, value?: string) => {

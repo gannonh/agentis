@@ -2,7 +2,7 @@ import React, { memo, useState } from 'react';
 import type { TUser } from 'librechat-data-provider';
 import type { IconProps } from '~/common';
 import MessageEndpointIcon from './MessageEndpointIcon';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import useAvatar from '~/hooks/Messages/useAvatar';
 import useLocalize from '~/hooks/useLocalize';
 import { UserIcon } from '~/components/svg';

@@ -1,6 +1,6 @@
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import type { TLoginLayoutContext } from '~/common';
 import { useLocalize } from '~/hooks';
 import MagicLinkLogin from './MagicLinkLogin';

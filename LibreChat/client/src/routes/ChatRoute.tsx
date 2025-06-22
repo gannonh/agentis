@@ -13,7 +13,7 @@ import { useNewConvo, useAppStartup, useAssistantListMap, useIdChangeEffect } fr
 import { getDefaultModelSpec, getModelSpecPreset, logger } from '~/utils';
 import { ToolCallsMapProvider } from '~/Providers';
 import ChatView from '~/components/Chat/ChatView';
-import useAuthRedirect from './useAuthRedirect';
+import { authClient } from '~/config/betterAuth';
 import temporaryStore from '~/store/temporary';
 import { Spinner } from '~/components/svg';
 import { useRecoilCallback } from 'recoil';
@@ -22,7 +22,9 @@ import store from '~/store';
 export default function ChatRoute() {
   useHealthCheck();
   const { data: startupConfig } = useGetStartupConfig();
-  const { isAuthenticated, user } = useAuthRedirect();
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = !!session?.user;
+  const user = session?.user;
   const setIsTemporary = useRecoilCallback(
     ({ set }) =>
       (value: boolean) => {

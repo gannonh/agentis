@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import type { ContextType } from '~/common';
 import {
-  useAuthContext,
   useAssistantsMap,
   useAgentsMap,
   useFileMap,
   useSearchEnabled,
 } from '~/hooks';
+import { authClient } from '~/config/betterAuth';
 import {
   AgentsMapContext,
   AssistantsMapContext,
@@ -16,7 +16,7 @@ import {
   OrganizationProvider,
 } from '~/Providers';
 import TermsAndConditionsModal from '~/components/ui/TermsAndConditionsModal';
-import { useUserTermsQuery, useGetStartupConfig, useGetSessionQuery } from '~/data-provider';
+import { useUserTermsQuery, useGetStartupConfig } from '~/data-provider';
 import { Nav, MobileNav } from '~/components/Nav';
 import { Banner } from '~/components/Banners';
 import { useAutoSetActiveOrganization } from '~/hooks/useAutoSetActiveOrganization';
@@ -29,11 +29,18 @@ export default function Root() {
     return savedNavVisible !== null ? JSON.parse(savedNavVisible) : true;
   });
 
-  const { isAuthenticated, logout } = useAuthContext();
-  const { isLoading: sessionLoading } = useGetSessionQuery({
-    enabled: !isAuthenticated,
-    retry: false,
-  });
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = !!session?.user;
+  
+  const logout = async () => {
+    try {
+      await authClient.signOut();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error during logout:', error);
+      window.location.href = '/login';
+    }
+  };
 
   // Automatically set active organization after login
   useAutoSetActiveOrganization();
@@ -61,22 +68,11 @@ export default function Root() {
 
   const handleDeclineTerms = () => {
     setShowTerms(false);
-    logout('/login?redirect=false');
+    logout();
   };
 
-  if (sessionLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"></div>
-          <div className="text-gray-600">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
   if (!isAuthenticated) {
-    // Don't block the redirect - AuthContext will handle navigation
+    // Don't block the redirect - AuthGuard will handle navigation
     return null;
   }
 

@@ -14,7 +14,7 @@ import {
 import { cleanupPreset, removeUnavailableTools, getConvoSwitchLogic } from '~/utils';
 import useDefaultConvo from '~/hooks/Conversations/useDefaultConvo';
 import { useChatContext, useToastContext } from '~/Providers';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import { NotificationSeverity } from '~/common';
 import useLocalize from '~/hooks/useLocalize';
 import useNewConvo from '~/hooks/useNewConvo';
