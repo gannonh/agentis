@@ -11,12 +11,59 @@ import type { ReactNode } from 'react';
 
 // Mock dependencies
 vi.mock('~/hooks/useOrganizationDetection');
+
 vi.mock('~/config/betterAuth', () => ({
   authClient: {
+    useSession: vi.fn(() => ({
+      data: {
+        user: {
+          id: 'user-123',
+          name: 'Test User', 
+          email: 'test@example.com',
+        },
+        session: {
+          id: 'session-123',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        },
+      },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    })),
+    
+    useActiveOrganization: vi.fn(() => ({
+      data: {
+        id: 'org-123',
+        name: 'Test Organization',
+        slug: 'test-org',
+        createdAt: new Date(),
+      },
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch: vi.fn(),
+    })),
+
+    useListOrganizations: vi.fn(() => ({
+      data: [
+        {
+          id: 'org-123',
+          name: 'Test Organization',
+          slug: 'test-org',
+          role: 'owner',
+        },
+      ],
+      error: null,
+      isPending: false,
+      refetch: vi.fn(),
+    })),
+    
     signUp: {
       email: vi.fn(),
     },
+    
     sendVerificationEmail: vi.fn(),
+    
     organization: {
       create: vi.fn(),
       inviteMember: vi.fn(),

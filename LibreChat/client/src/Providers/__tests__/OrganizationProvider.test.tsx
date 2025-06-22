@@ -41,9 +41,7 @@ vi.mock('~/config/betterAuth', () => ({
 }));
 
 // Mock @tanstack/react-query
-const mockQueryClient = {
-  invalidateQueries: vi.fn(),
-};
+let actualQueryClient: QueryClient;
 
 vi.mock('@tanstack/react-query', async () => {
   const actual = await vi.importActual('@tanstack/react-query');
@@ -51,9 +49,7 @@ vi.mock('@tanstack/react-query', async () => {
     ...actual,
     useQuery: vi.fn(),
     useMutation: vi.fn(),
-    useQueryClient: () => mockQueryClient,
-    QueryClient: vi.fn().mockImplementation(() => mockQueryClient),
-    QueryClientProvider: ({ children }: any) => children,
+    useQueryClient: () => actualQueryClient,
   };
 });
 
@@ -63,9 +59,12 @@ const mockOrganization: OrganizationData = {
   name: 'Test Organization',
   slug: 'test-org',
   logo: 'https://example.com/logo.png',
-  metadata: { theme: 'dark' },
-  createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z',
+  metadata: {
+    domain: 'test.com',
+    autoCreated: false,
+    createdFromEmail: 'test@test.com',
+  },
+  createdAt: new Date('2024-01-01T00:00:00Z'),
 };
 
 const mockMembers: OrganizationMember[] = [
@@ -73,17 +72,15 @@ const mockMembers: OrganizationMember[] = [
     id: 'member-1',
     userId: 'user-1',
     organizationId: 'org-1',
-    role: 'owner',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
+    role: 'owner' as UserRole,
+    createdAt: new Date('2024-01-01T00:00:00Z'),
   },
   {
     id: 'member-2',
     userId: 'user-2',
     organizationId: 'org-1',
-    role: 'member',
-    createdAt: '2024-01-02T00:00:00Z',
-    updatedAt: '2024-01-02T00:00:00Z',
+    role: 'member' as UserRole,
+    createdAt: new Date('2024-01-02T00:00:00Z'),
   },
 ];
 
@@ -92,11 +89,10 @@ const mockInvitations: OrganizationInvitation[] = [
     id: 'invite-1',
     organizationId: 'org-1',
     email: 'invited@example.com',
-    role: 'member',
+    role: 'member' as UserRole,
     status: 'pending',
-    expiresAt: '2024-12-31T23:59:59Z',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
+    expiresAt: new Date('2024-12-31T23:59:59Z'),
+    createdAt: new Date('2024-01-01T00:00:00Z'),
   },
 ];
 
@@ -105,6 +101,15 @@ const mockSession = {
     id: 'user-1',
     email: 'owner@example.com',
     name: 'Organization Owner',
+    emailVerified: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    banned: false,
+  },
+  session: {
+    id: 'session-1',
+    userId: 'user-1',
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   },
 };
 
@@ -280,6 +285,15 @@ describe('OrganizationProvider', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    
+    // Create a real QueryClient instance and spy on its methods
+    actualQueryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    vi.spyOn(actualQueryClient, 'invalidateQueries');
 
     // Setup default mocks
     // Mock auth client hooks
@@ -712,7 +726,7 @@ describe('OrganizationProvider', () => {
         screen.getByTestId('invite-member-btn').click();
       });
 
-      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+      expect(actualQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['organization-invitations'],
       });
     });
@@ -730,7 +744,7 @@ describe('OrganizationProvider', () => {
         screen.getByTestId('update-role-btn').click();
       });
 
-      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+      expect(actualQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['full-organization'],
       });
     });
@@ -748,10 +762,10 @@ describe('OrganizationProvider', () => {
         screen.getByTestId('create-org-btn').click();
       });
 
-      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+      expect(actualQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['active-organization'],
       });
-      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+      expect(actualQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['organizations'],
       });
     });
@@ -1096,11 +1110,10 @@ describe('useOrganizationInvitations Hook', () => {
         id: 'invite-2',
         organizationId: 'org-1',
         email: 'accepted@example.com',
-        role: 'member',
+        role: 'member' as UserRole,
         status: 'accepted' as const,
-        expiresAt: '2024-12-31T23:59:59Z',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        expiresAt: new Date('2024-12-31T23:59:59Z'),
+        createdAt: new Date('2024-01-01T00:00:00Z'),
       },
     ];
 

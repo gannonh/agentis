@@ -5,7 +5,6 @@ import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecoilRoot } from 'recoil';
 import Root from '../Root';
-import { authClient } from '~/config/betterAuth';
 
 // Mock dependencies
 vi.mock('~/hooks/AuthContext', () => ({
@@ -70,6 +69,23 @@ vi.mock('react-router-dom', async () => {
 // Mock Better-auth client hooks
 vi.mock('~/config/betterAuth', () => ({
   authClient: {
+    useSession: vi.fn(() => ({
+      data: {
+        user: {
+          id: 'user-123',
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+        session: {
+          id: 'session-123',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        },
+      },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    })),
+    
     useActiveOrganization: vi.fn(() => ({
       data: {
         id: 'org-123',
@@ -82,23 +98,29 @@ vi.mock('~/config/betterAuth', () => ({
       isRefetching: false,
       refetch: vi.fn(),
     })),
-    useSession: vi.fn(() => ({
-      data: {
-        user: {
-          id: 'user-123',
-          name: 'Test User',
-          email: 'test@example.com',
+
+    useListOrganizations: vi.fn(() => ({
+      data: [
+        {
+          id: 'org-123',
+          name: 'Test Organization',
+          slug: 'test-org',
+          role: 'owner',
         },
-        session: {
-          id: 'session-123',
-        },
-      },
+      ],
+      error: null,
+      isPending: false,
+      refetch: vi.fn(),
     })),
+    
     organization: {
       getFullOrganization: vi.fn(),
     },
   },
 }));
+
+// Import after mocking
+import { authClient } from '~/config/betterAuth';
 
 // Store original mocks to restore them
 const originalMocks = {

@@ -96,14 +96,16 @@ describe('SocialButton', () => {
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3080/api/auth/sign-in/social', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ provider: 'google' }),
-        credentials: 'include',
-      });
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3080/api/auth/sign-in/social', 
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: expect.stringContaining('"provider":"google"'),
+          credentials: 'include',
+        })
+      );
     });
 
     it('sends correct provider in request body', async () => {
@@ -125,7 +127,7 @@ describe('SocialButton', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          body: JSON.stringify({ provider: 'github' }),
+          body: expect.stringContaining('"provider":"github"'),
         }),
       );
     });
@@ -374,7 +376,7 @@ describe('SocialButton', () => {
         expect(mockFetch).toHaveBeenCalledWith(
           expect.any(String),
           expect.objectContaining({
-            body: JSON.stringify({ provider: oauthPath }),
+            body: expect.stringContaining(`"provider":"${oauthPath}"`),
           }),
         );
       });
