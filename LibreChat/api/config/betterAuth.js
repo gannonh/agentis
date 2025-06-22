@@ -3,6 +3,8 @@
  * @module config/betterAuth
  */
 
+import logger from './winston.js';
+
 /**
  * Better Auth configuration object
  * @typedef {Object} BetterAuthConfig
@@ -54,9 +56,9 @@ export const betterAuthConfig = {
   // Social providers are configured directly in auth.js
 };
 
-console.log('🔍 betterAuthConfig values:', {
+logger.debug('Better Auth config values:', {
   baseURL: process.env.DOMAIN_SERVER,
   clientURL: process.env.DOMAIN_CLIENT,
   basePath: '/api/auth',
 });
-console.log('🔍 betterAuthConfig object created successfully');
+logger.debug('Better Auth config object created successfully');
