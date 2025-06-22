@@ -1,3 +1,30 @@
+# Auth System Refactor Tasks
+
+## Progress Update (Latest)
+
+### Test Status
+- **Initial State**: 52 failing tests across 27 test files
+- **Current State**: 17 failing tests across 23 test files
+- **Fixed**: 35 tests across 4 test files
+- **Completion**: 67% of failing tests fixed
+
+### Key Fixes Applied
+- ✅ Better Auth mock setup with all required methods
+- ✅ SocialButton tests updated for new API format
+- ✅ useOrganizationDetection tests using proper fetch mocks
+- ✅ OrganizationSetup tests with correct UI component mocks
+- ✅ Added QueryClientProvider to tests requiring React Query
+
+### Remaining Issues
+- ❌ ProgressiveRegistration component tests (16 failures)
+- ❌ OrganizationProvider query invalidation test (1 failure)
+- ❌ Various Speech/TTS component tests (out of scope for auth refactor)
+
+---
+
+## Overview
+This document outlines the tasks required to refactor the authentication system from Passport.js to Better Auth while maintaining backward compatibility and ensuring a smooth migration path.
+
 # Auth System Refactor Task List
 ## Based on Code Review & Branch Analysis
 
