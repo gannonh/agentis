@@ -14,63 +14,38 @@ const BETTER_AUTH_COLLECTIONS = [
   {
     name: 'user',
     description: 'Stores user authentication data',
-    indexes: [
-      { email: 1 },
-      { username: 1 },
-    ]
+    indexes: [{ email: 1 }, { username: 1 }],
   },
   {
     name: 'session',
     description: 'Manages user sessions',
-    indexes: [
-      { userId: 1 },
-      { token: 1 },
-      { expiresAt: 1 },
-    ]
+    indexes: [{ userId: 1 }, { token: 1 }, { expiresAt: 1 }],
   },
   {
     name: 'account',
     description: 'Stores authentication provider data (OAuth, credentials)',
-    indexes: [
-      { userId: 1 },
-      { providerId: 1 },
-      { providerAccountId: 1 },
-    ]
+    indexes: [{ userId: 1 }, { providerId: 1 }, { providerAccountId: 1 }],
   },
   {
     name: 'verification',
     description: 'Email/phone verification tokens',
-    indexes: [
-      { token: 1 },
-      { identifier: 1 },
-      { expiresAt: 1 },
-    ]
+    indexes: [{ token: 1 }, { identifier: 1 }, { expiresAt: 1 }],
   },
   {
     name: 'member',
     description: 'Organization membership data',
-    indexes: [
-      { userId: 1, organizationId: 1 },
-      { organizationId: 1 },
-    ]
+    indexes: [{ userId: 1, organizationId: 1 }, { organizationId: 1 }],
   },
   {
     name: 'organization',
     description: 'Organization data',
-    indexes: [
-      { slug: 1 },
-      { 'metadata.domain': 1 },
-    ]
+    indexes: [{ slug: 1 }, { 'metadata.domain': 1 }],
   },
   {
     name: 'invitation',
     description: 'Organization invitations',
-    indexes: [
-      { organizationId: 1 },
-      { email: 1 },
-      { expiresAt: 1 },
-    ]
-  }
+    indexes: [{ organizationId: 1 }, { email: 1 }, { expiresAt: 1 }],
+  },
 ];
 
 /**
@@ -83,19 +58,19 @@ export async function ensureBetterAuthCollections() {
   try {
     await connectDb();
     const db = mongoose.connection.db;
-    
+
     // Get existing collections
     const existingCollections = await db.listCollections().toArray();
-    const existingNames = existingCollections.map(c => c.name);
-    
+    const existingNames = existingCollections.map((c) => c.name);
+
     logger.info(`📊 Found ${existingNames.length} existing collections:`, existingNames);
-    
+
     const results = {
       created: [],
       existing: [],
-      errors: []
+      errors: [],
     };
-    
+
     // Create missing collections
     for (const collection of BETTER_AUTH_COLLECTIONS) {
       try {
@@ -106,7 +81,7 @@ export async function ensureBetterAuthCollections() {
           await db.createCollection(collection.name);
           results.created.push(collection.name);
           logger.info(`✅ Created collection: ${collection.name}`);
-          
+
           // Create indexes for the new collection
           const coll = db.collection(collection.name);
           for (const indexSpec of collection.indexes || []) {
@@ -117,18 +92,18 @@ export async function ensureBetterAuthCollections() {
       } catch (error) {
         results.errors.push({
           collection: collection.name,
-          error: error.message
+          error: error.message,
         });
         logger.error(`❌ Error with collection ${collection.name}:`, error);
       }
     }
-    
+
     logger.info('✅ Better Auth collection check completed:', {
       created: results.created.length,
       existing: results.existing.length,
-      errors: results.errors.length
+      errors: results.errors.length,
     });
-    
+
     return results;
   } catch (error) {
     logger.error('❌ Failed to ensure Better Auth collections:', error);
