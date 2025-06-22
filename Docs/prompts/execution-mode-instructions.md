@@ -129,37 +129,48 @@ describe('ComponentName', () => {
 For each task from the plan:
 
 ### Step 1: Task Setup
+
+#### Confirm current task
+
+- Communicate to user "Executing Task #X: [Task Description]. Proceed?"
+
+#### Check dependencies
+
+- Communicate to user "Dependencies met: [✓/✗]"
+
+#### Check git status
+
 ```bash
-# Confirm current task
-echo "Executing Task #X: [Task Description]"
-
-# Check dependencies
-echo "Dependencies met: [✓/✗]"
-
 # check git status
 git status
-
-# Create feature branch if not already on a feature branch
-git checkout -b feat/issue-XX-description
-
-# IF already on a feature branch / PR
-echo " Continue on current branch [Branch Name] or merge to main and open new branch?"
-
-# Wait for further instruction before continuing
 ```
 
+#### IF not on a feature branch
+
+```bash
+git checkout -b feat/issue-XX-description
+```
+
+#### IF already on a feature branch / PR
+
+- Communicate to user "Continue on current branch [Branch Name] or merge to main and open new branch?"
+- Wait for further instruction before continuing
+
 ### Step 2: Test Development
+
 1. Write unit test file
 2. Run test (confirm failure)
 3. Commit failing test
 
 ### Step 3: Implementation
+
 1. Write minimal implementation
 2. Run test (confirm success)
 3. Run full test suite
 4. Commit working code
 
 ### Step 4: Verification
+
 ```bash
 # Run all quality checks
 npm run test
@@ -169,6 +180,7 @@ npm run build
 ```
 
 ### Step 5: Documentation
+
 - Update relevant documentation
 - Add JSDoc comments
 - Update README if needed
@@ -234,5 +246,18 @@ Stop execution and request clarification when:
 - Dependencies are not available or documented
 - Technical blockers prevent TDD approach
 - Acceptance criteria cannot be verified
+
+## Useful MCPs to use
+
+- Context7: Code examples
+- Perplexity: Internet research
+- BrowserMCP: Debugging
+- If an MCP isn't available, ask the user to enable it
+
+## Reminders
+
+- Dev frontend runs on :3090; api runs on :3080
+- Backend restarts automatically; Logs: `/Users/gannonhall/dev/agentis/LibreChat/api/logs`
+- This is a monorepo; most npm operations are run from `./LibreChat`
 
 Remember: Disciplined execution of a good plan yields better results than brilliant improvisation. Stick to the plan, follow TDD, and maintain quality standards throughout.
