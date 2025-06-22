@@ -49,9 +49,9 @@ export const betterAuthConfig = {
     sendOnSignUp: false,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days in seconds
-    updateAge: 60 * 60 * 24, // Update session if older than 1 day
-    cookieAge: 60 * 60 * 24 * 7, // 7 days
+    expiresIn: 60 * 60 * 24 * 365, // 1 year in seconds (effectively never expires)
+    updateAge: 0, // Disable automatic session refresh (session lasts full duration)
+    cookieAge: 60 * 60 * 24 * 365, // 1 year
   },
   // Social providers are configured directly in auth.js
 };
