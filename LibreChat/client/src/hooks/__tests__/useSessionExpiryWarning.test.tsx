@@ -10,22 +10,23 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { RecoilRoot } from 'recoil';
-import { vi } from 'vitest';
+import { vi, type Mock } from 'vitest';
 import { useSessionExpiryWarning } from '../useSessionExpiryWarning';
-import { authClient } from '~/config/betterAuth';
 
-// Mock Better Auth client
-vi.mock('~/config/betterAuth', () => ({
-  authClient: {
-    useSession: vi.fn(),
-    signOut: vi.fn(),
-  },
+// Create mock functions
+const mockNavigateFn = vi.fn();
+const mockUseSession = vi.fn();
+
+// Mock dependencies
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigateFn,
 }));
 
-// Mock navigation
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => mockNavigate,
+vi.mock('~/config/betterAuth', () => ({
+  authClient: {
+    useSession: () => mockUseSession(),
+    signOut: vi.fn(),
+  },
 }));
 
 describe('useSessionExpiryWarning', () => {
@@ -56,7 +57,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
@@ -88,7 +89,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
@@ -116,7 +117,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
@@ -137,15 +138,20 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
+
+      // Wait for hook to stabilize
+      await vi.waitFor(() => {
+        expect(result.current).toBeDefined();
+      });
 
       expect(result.current.showWarning).toBe(true);
 
       // Mock successful refresh
       const newExpiryTime = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      (authClient.useSession as any).mockReturnValueOnce({
+      mockUseSession.mockReturnValueOnce({
         ...mockSession,
         data: {
           session: {
@@ -175,12 +181,12 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
       // Mock refresh failure
-      (authClient.useSession as any).mockReturnValueOnce({
+      mockUseSession.mockReturnValueOnce({
         ...mockSession,
         error: new Error('Refresh failed'),
       });
@@ -207,7 +213,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
@@ -229,7 +235,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
@@ -241,7 +247,7 @@ describe('useSessionExpiryWarning', () => {
       });
 
       expect(result.current.isExpired).toBe(true);
-      expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
+      expect(mockNavigateFn).toHaveBeenCalledWith('/login', { replace: true });
     });
   });
 
@@ -258,7 +264,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
@@ -284,7 +290,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { result } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
@@ -306,7 +312,7 @@ describe('useSessionExpiryWarning', () => {
 
   describe('Edge Cases', () => {
     it('should handle no session gracefully', () => {
-      (authClient.useSession as any).mockReturnValue({
+      mockUseSession.mockReturnValue({
         data: null,
         isPending: false,
         error: null,
@@ -320,7 +326,7 @@ describe('useSessionExpiryWarning', () => {
     });
 
     it('should handle loading state', () => {
-      (authClient.useSession as any).mockReturnValue({
+      mockUseSession.mockReturnValue({
         data: null,
         isPending: true,
         error: null,
@@ -344,7 +350,7 @@ describe('useSessionExpiryWarning', () => {
         error: null,
       };
 
-      (authClient.useSession as any).mockReturnValue(mockSession);
+      mockUseSession.mockReturnValue(mockSession);
 
       const { unmount } = renderHook(() => useSessionExpiryWarning(), { wrapper });
 
