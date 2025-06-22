@@ -134,9 +134,8 @@ vi.mock('react-router-dom', async (importOriginal) => {
 test('renders login form', () => {
   const { getByLabelText, getByRole, getByTestId } = setup();
 
-  // Check if login form is rendered
+  // Check if login form is rendered (email only for magic link)
   expect(getByLabelText(/com_auth_email/i)).toBeInTheDocument();
-  expect(getByLabelText(/com_auth_password/i)).toBeInTheDocument();
   expect(getByTestId('login-button')).toBeInTheDocument();
   expect(getByRole('link', { name: /com_auth_sign_up/i })).toBeInTheDocument();
   expect(getByRole('link', { name: /com_auth_sign_up/i })).toHaveAttribute('href', '/register');
@@ -161,11 +160,9 @@ test('calls loginUser.mutate on login', async () => {
   });
 
   const emailInput = getByLabelText(/com_auth_email/i);
-  const passwordInput = getByLabelText(/com_auth_password/i);
   const submitButton = getByTestId(document.body, 'login-button');
 
   await userEvent.type(emailInput, 'test@test.com');
-  await userEvent.type(passwordInput, 'password');
   await userEvent.click(submitButton);
 
   waitFor(() => expect(mutate).toHaveBeenCalled());
@@ -192,11 +189,9 @@ test('Navigates to / on successful login', async () => {
   });
 
   const emailInput = getByLabelText(/com_auth_email/i);
-  const passwordInput = getByLabelText(/com_auth_password/i);
   const submitButton = getByTestId(document.body, 'login-button');
 
   await userEvent.type(emailInput, 'test@test.com');
-  await userEvent.type(passwordInput, 'password');
   await userEvent.click(submitButton);
 
   // Note: Navigation testing would require proper router setup

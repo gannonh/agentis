@@ -2,35 +2,55 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
+import { describe, expect, it, test, vi, beforeEach, afterEach } from 'vitest';
 import MagicLinkLogin from '../MagicLinkLogin';
 import { authClient } from '~/config/betterAuth';
 import { useLocalize } from '~/hooks';
 
-// Mock dependencies
-jest.mock('~/config/betterAuth');
-jest.mock('~/hooks');
+const mockNavigate = vi.fn();
 
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-  useSearchParams: () => [new URLSearchParams()],
+// Mock dependencies - define mocks inline to avoid hoisting issues
+vi.mock('~/config/betterAuth', () => ({
+  authClient: {
+    useSession: vi.fn(),
+    signIn: {
+      magicLink: vi.fn(),
+    },
+    getSession: vi.fn(),
+  },
 }));
 
-const mockedAuthClient = authClient as jest.Mocked<typeof authClient>;
-const mockedUseLocalize = useLocalize as jest.MockedFunction<typeof useLocalize>;
+vi.mock('~/hooks', () => ({
+  useLocalize: vi.fn(),
+}));
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useSearchParams: () => [new URLSearchParams()],
+  };
+});
 
 describe('MagicLinkLogin', () => {
-  const mockLocalize = jest.fn((key: string) => key);
+  const mockLocalize = vi.fn((key: string) => key);
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockedUseLocalize.mockReturnValue(mockLocalize);
-    mockedAuthClient.useSession.mockReturnValue({ data: null } as any);
-    mockedAuthClient.signIn = {
-      magicLink: jest.fn().mockResolvedValue({ error: null }),
-    } as any;
-    mockedAuthClient.getSession = jest.fn().mockResolvedValue({ data: null });
+    vi.clearAllMocks();
+    
+    // Reset mocks with proper structure
+    vi.mocked(useLocalize).mockReturnValue(mockLocalize);
+    
+    vi.mocked(authClient.useSession).mockReturnValue({ 
+      data: null,
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+    
+    vi.mocked(authClient.signIn.magicLink).mockResolvedValue({ error: null } as any);
+    vi.mocked(authClient.getSession).mockResolvedValue({ data: null } as any);
   });
 
   const renderComponent = () => {
@@ -75,7 +95,7 @@ describe('MagicLinkLogin', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockedAuthClient.signIn.magicLink).toHaveBeenCalledWith({
+      expect(authClient.signIn.magicLink).toHaveBeenCalledWith({
         email: 'test@example.com',
         callbackURL: expect.stringContaining('/login'),
       });
@@ -100,9 +120,9 @@ describe('MagicLinkLogin', () => {
   });
 
   it('handles magic link send error', async () => {
-    mockedAuthClient.signIn.magicLink = jest.fn().mockResolvedValue({
+    vi.mocked(authClient.signIn.magicLink).mockResolvedValue({
       error: { message: 'Network error' },
-    });
+    } as any);
 
     const user = userEvent.setup();
     renderComponent();
@@ -138,13 +158,16 @@ describe('MagicLinkLogin', () => {
     await user.click(resendButton);
 
     await waitFor(() => {
-      expect(mockedAuthClient.signIn.magicLink).toHaveBeenCalledTimes(2);
+      expect(authClient.signIn.magicLink).toHaveBeenCalledTimes(2);
     });
   });
 
   it('redirects to main app if user is already authenticated', () => {
-    mockedAuthClient.useSession.mockReturnValue({
+    vi.mocked(authClient.useSession).mockReturnValue({
       data: { user: { id: '123', email: 'user@example.com' } },
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
     } as any);
 
     renderComponent();

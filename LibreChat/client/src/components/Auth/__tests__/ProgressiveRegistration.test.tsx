@@ -64,6 +64,24 @@ vi.mock('~/config/betterAuth', () => ({
     
     sendVerificationEmail: vi.fn(),
     
+    getSession: vi.fn().mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-123',
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+        session: {
+          id: 'session-123',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        },
+      },
+    }),
+    
+    signIn: {
+      magicLink: vi.fn().mockResolvedValue({ error: null }),
+    },
+    
     organization: {
       create: vi.fn(),
       inviteMember: vi.fn(),
@@ -100,6 +118,15 @@ describe('ProgressiveRegistration', () => {
     });
     vi.clearAllMocks();
     localStorage.clear();
+
+    // Reset useSession to return no authenticated user by default
+    // This prevents auto-advancement to step 3 for tests that expect step 1
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: null,
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    });
 
     // Set default mock return value for useOrganizationDetection
     vi.mocked(useOrganizationDetection).mockReturnValue({
@@ -138,7 +165,7 @@ describe('ProgressiveRegistration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Step 2 of 5')).toBeInTheDocument();
-        expect(screen.getByText('Verify your email')).toBeInTheDocument();
+        expect(screen.getByText('🪄 Ready to Sign In')).toBeInTheDocument();
       });
     });
 
@@ -204,7 +231,7 @@ describe('ProgressiveRegistration', () => {
       render(<ProgressiveRegistration />, { wrapper });
 
       await waitFor(() => {
-        expect(screen.getByText('Invite team members')).toBeInTheDocument();
+        expect(screen.getByText('Add email addresses separated by commas')).toBeInTheDocument();
         const skipButton = screen.getByRole('button', { name: 'Skip' });
         expect(skipButton).toBeInTheDocument();
       });
@@ -213,7 +240,7 @@ describe('ProgressiveRegistration', () => {
 
       // Should skip to welcome step
       await waitFor(() => {
-        expect(screen.getByText('Welcome to LibreChat!')).toBeInTheDocument();
+        expect(screen.getByText('Welcome to Agentis!')).toBeInTheDocument();
       });
     });
   });
@@ -331,7 +358,7 @@ describe('ProgressiveRegistration', () => {
 
       // Step 2: Verification
       await waitFor(() => {
-        expect(screen.getByText('Verify your email')).toBeInTheDocument();
+        expect(screen.getByText('🪄 Ready to Sign In')).toBeInTheDocument();
       });
 
       // For testing, we can't easily complete the full flow due to API mocking complexity
@@ -366,7 +393,7 @@ describe('ProgressiveRegistration', () => {
 
       // For now, just verify we moved to verification step
       await waitFor(() => {
-        expect(screen.getByText('Verify your email')).toBeInTheDocument();
+        expect(screen.getByText('🪄 Ready to Sign In')).toBeInTheDocument();
       });
     });
   });
@@ -425,8 +452,10 @@ describe('ProgressiveRegistration', () => {
         expect(screen.getByLabelText('Organization name')).toBeInTheDocument();
       });
 
-      // Try to continue without org name
+      // Clear the auto-populated organization name to trigger validation
       const user = userEvent.setup();
+      const orgNameInput = screen.getByLabelText('Organization name');
+      await user.clear(orgNameInput);
       await user.click(screen.getByRole('button', { name: 'Continue' }));
 
       expect(screen.getByText('Organization name is required')).toBeInTheDocument();
@@ -461,7 +490,7 @@ describe('ProgressiveRegistration', () => {
       render(<ProgressiveRegistration />, { wrapper });
 
       expect(screen.getByText('Email')).toBeInTheDocument();
-      expect(screen.getByText('Verify')).toBeInTheDocument();
+      expect(screen.getByText('Magic Link')).toBeInTheDocument();
       expect(screen.getByText('Organization')).toBeInTheDocument();
       expect(screen.getByText('Profile')).toBeInTheDocument();
       expect(screen.getByText('Welcome')).toBeInTheDocument();
@@ -518,32 +547,25 @@ describe('ProgressiveRegistration', () => {
       render(<ProgressiveRegistration />, { wrapper });
 
       await waitFor(() => {
-        expect(screen.getByText('Verify your email')).toBeInTheDocument();
-        expect(
-          screen.getByText('Development Mode - Simulated Email Verification'),
-        ).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Send Verification Email' })).toBeInTheDocument();
+        expect(screen.getByText('🪄 Ready to Sign In')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '🪄 Send Magic Link' })).toBeInTheDocument();
       });
 
-      // First click - simulate sending verification email
-      await user.click(screen.getByRole('button', { name: 'Send Verification Email' }));
+      // First click - simulate sending magic link
+      await user.click(screen.getByRole('button', { name: '🪄 Send Magic Link' }));
 
-      // Wait for the simulation delay to complete (1500ms + buffer)
-      await waitFor(
-        () => {
-          expect(screen.getByText('Email Verification Simulated Successfully')).toBeInTheDocument();
-          expect(screen.getByText(/✅ Verification email sent to/)).toBeInTheDocument();
-          expect(screen.getByText('test@example.com')).toBeInTheDocument();
-          expect(screen.getByRole('button', { name: 'Continue to Next Step' })).toBeInTheDocument();
-        },
-        { timeout: 3000 },
-      ); // Increased timeout to account for the 1500ms delay
+      // Wait for magic link sent state
+      await waitFor(() => {
+        expect(screen.getByText('✨ Magic Link Sent!')).toBeInTheDocument();
+        expect(screen.getByText('test@example.com')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+      });
 
       // Second click - proceed to next step
-      await user.click(screen.getByRole('button', { name: 'Continue to Next Step' }));
+      await user.click(screen.getByRole('button', { name: 'Continue' }));
 
       await waitFor(() => {
-        expect(screen.getByText('Checking organization')).toBeInTheDocument();
+        expect(screen.getByText('Step 3 of 5')).toBeInTheDocument();
       });
     });
 

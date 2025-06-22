@@ -15,25 +15,34 @@ interface AuthContextProviderProps {
   authConfig: AuthConfig;
 }
 
-// Create a context to pass the auth config if needed
+// Create contexts for both auth config and auth state
 const AuthConfigContext = createContext<AuthConfig | null>(null);
+const AuthStateContext = createContext<ReturnType<typeof useBetterAuthContext> | null>(null);
 
 /**
  * AuthContextProvider component that wraps the app with auth context
  */
 export function AuthContextProvider({ children, authConfig }: AuthContextProviderProps) {
+  const authState = useBetterAuthContext();
+  
   return (
     <AuthConfigContext.Provider value={authConfig}>
-      {children}
+      <AuthStateContext.Provider value={authState}>
+        {children}
+      </AuthStateContext.Provider>
     </AuthConfigContext.Provider>
   );
 }
 
 /**
- * Hook to access auth context - re-exports the Better Auth context
+ * Hook to access auth context - throws error if used outside provider
  */
 export function useAuthContext() {
-  return useBetterAuthContext();
+  const context = useContext(AuthStateContext);
+  if (context === null) {
+    throw new Error('useAuthContext is not a function');
+  }
+  return context;
 }
 
 /**

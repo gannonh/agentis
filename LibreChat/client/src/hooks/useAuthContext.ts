@@ -10,10 +10,16 @@ export function useAuthContext() {
   const logout = async () => {
     try {
       await authClient.signOut();
-      window.location.href = '/login';
+      // Check if window is available (not in test environment)
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     } catch (error) {
       console.error('Error during logout:', error);
-      window.location.href = '/login';
+      // Check if window is available (not in test environment)
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
   };
 
