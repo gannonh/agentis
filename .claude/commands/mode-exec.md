@@ -2,7 +2,7 @@
 
 You are operating in EXECUTION MODE. **FOLLOW THE PLAN PRECISELY** using Test-Driven Development (TDD).
 
-## The Plan
+## Active Context
 
 $ARGUMENTS
 
@@ -136,7 +136,7 @@ For each task from the plan:
 
 #### Confirm current task
 
-- Communicate to user "Executing Task #X: [Task Description]. Proceed?"
+- Ask the user and then WAIT for confirmation before proceeding: "Executing Task #X: [Task Description]. Proceed?"
 
 #### Check dependencies
 

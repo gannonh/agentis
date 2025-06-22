@@ -13,26 +13,37 @@ import { RecoilRoot } from 'recoil';
 import { vi, type Mock } from 'vitest';
 import { useSessionExpiryWarning } from '../useSessionExpiryWarning';
 
-// Create mock functions
-const mockNavigateFn = vi.fn();
-const mockUseSession = vi.fn();
-
 // Mock dependencies
 vi.mock('react-router-dom', () => ({
-  useNavigate: () => mockNavigateFn,
+  useNavigate: () => vi.fn(),
 }));
 
 vi.mock('~/config/betterAuth', () => ({
   authClient: {
-    useSession: () => mockUseSession(),
+    useSession: vi.fn(),
     signOut: vi.fn(),
   },
 }));
+
+// Import after mocking
+import { useNavigate } from 'react-router-dom';
+import { authClient } from '~/config/betterAuth';
+
+// Type the mocked functions
+const mockNavigateFn = useNavigate() as ReturnType<typeof vi.fn>;
+const mockUseSession = authClient.useSession as ReturnType<typeof vi.fn>;
 
 describe('useSessionExpiryWarning', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    
+    // Set default mock return value
+    mockUseSession.mockReturnValue({
+      data: null,
+      isPending: false,
+      error: null,
+    });
   });
 
   afterEach(() => {
