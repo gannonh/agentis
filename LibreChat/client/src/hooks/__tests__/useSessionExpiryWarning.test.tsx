@@ -36,9 +36,10 @@ const mockUseSession = authClient.useSession as ReturnType<typeof vi.fn>;
 describe('useSessionExpiryWarning', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.clearAllTimers();
     vi.useFakeTimers();
     
-    // Set default mock return value
+    // Set default mock return value AFTER clearing mocks
     mockUseSession.mockReturnValue({
       data: null,
       isPending: false,
@@ -47,6 +48,7 @@ describe('useSessionExpiryWarning', () => {
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
