@@ -129,8 +129,8 @@ const startServer = async () => {
       });
     }
 
-    // Debug magic link requests
-    if (req.path.includes('magic-link')) {
+    // Debug magic link requests (development only)
+    if (req.path.includes('magic-link') && process.env.NODE_ENV === 'development') {
       console.log('🔍 Magic Link Request Debug:');
       console.log('  Method:', req.method);
       console.log('  Path:', req.path);
@@ -196,7 +196,9 @@ const startServer = async () => {
       }
 
       // For now, return a basic response - later we can implement actual organization checking
-      console.log(`🏢 Organization domain check for: ${domain}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🏢 Organization domain check for: ${domain}`);
+      }
 
       // Mock response - assume new domain for now
       res.json({

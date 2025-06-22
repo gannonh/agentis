@@ -15,14 +15,18 @@ let indexFixInProgress = false;
  */
 async function fixIndexes() {
   try {
-    console.log('🔧 Token fixIndexes() called with NODE_ENV:', process.env.NODE_ENV);
-    console.log('🔧 Environment check - NODE_ENV:', process.env.NODE_ENV);
-    console.log('🔧 Environment check - EMAIL_HOST:', process.env.EMAIL_HOST);
-    console.log('🔧 Environment check - SEARCH:', process.env.SEARCH);
-    console.log('🔧 Environment check - SESSION_EXPIRY:', process.env.SESSION_EXPIRY);
-    console.log('🔧 Environment check - ALLOW_REGISTRATION:', process.env.ALLOW_REGISTRATION);
-    console.log('🔧 Environment check - REFRESH_TOKEN_EXPIRY:', process.env.REFRESH_TOKEN_EXPIRY);
-    console.log('🔧 Environment check - MONGO_URI set:', !!process.env.MONGO_URI);
+    logger.debug('Token fixIndexes() called', {
+      nodeEnv: process.env.NODE_ENV,
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        EMAIL_HOST: process.env.EMAIL_HOST,
+        SEARCH: process.env.SEARCH,
+        SESSION_EXPIRY: process.env.SESSION_EXPIRY,
+        ALLOW_REGISTRATION: process.env.ALLOW_REGISTRATION,
+        REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY,
+        MONGO_URI_SET: !!process.env.MONGO_URI,
+      },
+    });
 
     // Skip index fixes in test environments
     const isTestEnvironment =
@@ -36,10 +40,9 @@ async function fixIndexes() {
           process.env.REFRESH_TOKEN_EXPIRY === '300000'));
 
     if (isTestEnvironment) {
-      console.log(
-        '🔧 Skipping Token index fixes for environment:',
-        process.env.NODE_ENV || 'undefined (test context)',
-      );
+      logger.debug('Skipping Token index fixes for environment', {
+        nodeEnv: process.env.NODE_ENV || 'undefined (test context)',
+      });
       return;
     }
 

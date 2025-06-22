@@ -171,22 +171,23 @@ async function clearExpiredFromCache(cache) {
 
 const auditCache = () => {
   const ttlStores = getTTLStores();
-  console.log('[Cache] Starting audit');
+  debugMemoryCache && console.log('[Cache] Starting audit');
 
   ttlStores.forEach((store) => {
     if (!store?.opts?.store?.entries) {
       return;
     }
 
-    console.log(`[Cache] ${store.opts.namespace} entries:`, {
-      count: store.opts.store.size,
-      ttl: store.opts.ttl,
-      keys: Array.from(store.opts.store.keys()),
-      entriesWithTimestamps: Array.from(store.opts.store.entries()).map(([key, value]) => ({
-        key,
-        value,
-      })),
-    });
+    debugMemoryCache &&
+      console.log(`[Cache] ${store.opts.namespace} entries:`, {
+        count: store.opts.store.size,
+        ttl: store.opts.ttl,
+        keys: Array.from(store.opts.store.keys()),
+        entriesWithTimestamps: Array.from(store.opts.store.entries()).map(([key, value]) => ({
+          key,
+          value,
+        })),
+      });
   });
 };
 
@@ -220,13 +221,14 @@ if (!isRedisEnabled && !isEnabled(CI)) {
       const memory = process.memoryUsage();
       const totalSize = ttlStores.reduce((sum, store) => sum + (store.opts?.store?.size ?? 0), 0);
 
-      console.log('[Cache] Memory usage:', {
-        heapUsed: `${(memory.heapUsed / 1024 / 1024).toFixed(2)} MB`,
-        heapTotal: `${(memory.heapTotal / 1024 / 1024).toFixed(2)} MB`,
-        rss: `${(memory.rss / 1024 / 1024).toFixed(2)} MB`,
-        external: `${(memory.external / 1024 / 1024).toFixed(2)} MB`,
-        totalCacheEntries: totalSize,
-      });
+      debugMemoryCache &&
+        console.log('[Cache] Memory usage:', {
+          heapUsed: `${(memory.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+          heapTotal: `${(memory.heapTotal / 1024 / 1024).toFixed(2)} MB`,
+          rss: `${(memory.rss / 1024 / 1024).toFixed(2)} MB`,
+          external: `${(memory.external / 1024 / 1024).toFixed(2)} MB`,
+          totalCacheEntries: totalSize,
+        });
 
       auditCache();
     }, Time.ONE_MINUTE);

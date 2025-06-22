@@ -138,10 +138,12 @@ const getAvailableTools = async (req, res) => {
     };
 
     await cache.set(CacheKeys.TOOLS, responseData);
-    console.log('Responding with tools:', {
-      toolCount: tools.length,
-      mcpServerCount: Object.keys(customConfig?.mcpServers || {}).length,
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Responding with tools:', {
+        toolCount: tools.length,
+        mcpServerCount: Object.keys(customConfig?.mcpServers || {}).length,
+      });
+    }
     res.status(200).json(responseData);
   } catch (error) {
     res.status(500).json({ message: error.message });
