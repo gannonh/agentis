@@ -3,6 +3,8 @@
  * @module Providers/__tests__/OrganizationProvider.test
  */
 
+// @ts-nocheck - Test file with complex Better Auth/React Query type compatibility issues
+
 import React from 'react';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
@@ -35,6 +37,7 @@ vi.mock('~/config/betterAuth', () => ({
       update: vi.fn(),
       cancelInvitation: vi.fn(),
       create: vi.fn(),
+      setActive: vi.fn(),
       delete: vi.fn(),
     },
   },
@@ -65,6 +68,8 @@ const mockOrganization: OrganizationData = {
     createdFromEmail: 'test@test.com',
   },
   createdAt: new Date('2024-01-01T00:00:00Z'),
+  description: 'Test organization description',
+  website: 'https://test.com',
 };
 
 const mockMembers: OrganizationMember[] = [
@@ -74,6 +79,14 @@ const mockMembers: OrganizationMember[] = [
     organizationId: 'org-1',
     role: 'owner' as UserRole,
     createdAt: new Date('2024-01-01T00:00:00Z'),
+    user: {
+      id: 'user-1',
+      name: 'Organization Owner',
+      email: 'owner@example.com',
+      emailVerified: true,
+      // @ts-ignore - Mock user object for testing
+      image: null,
+    },
   },
   {
     id: 'member-2',
@@ -81,6 +94,14 @@ const mockMembers: OrganizationMember[] = [
     organizationId: 'org-1',
     role: 'member' as UserRole,
     createdAt: new Date('2024-01-02T00:00:00Z'),
+    user: {
+      id: 'user-2',
+      name: 'Organization Member',
+      email: 'member@example.com',
+      emailVerified: true,
+      // @ts-ignore - Mock user object for testing
+      image: null,
+    },
   },
 ];
 
@@ -93,29 +114,48 @@ const mockInvitations: OrganizationInvitation[] = [
     status: 'pending',
     expiresAt: new Date('2024-12-31T23:59:59Z'),
     createdAt: new Date('2024-01-01T00:00:00Z'),
+    inviterId: 'user-1',
   },
 ];
 
 const mockSession = {
   user: {
     id: 'user-1',
-    email: 'owner@example.com',
     name: 'Organization Owner',
+    email: 'owner@example.com',
     emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     banned: false,
+    image: null,
+    displayUsername: null,
   },
   session: {
     id: 'session-1',
+    token: 'mock-token',
     userId: 'user-1',
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ipAddress: '127.0.0.1',
+    userAgent: 'test-agent',
   },
 };
 
 const mockFullOrganization = {
   data: {
-    ...mockOrganization,
+    id: 'org-1',
+    name: 'Test Organization',
+    slug: 'test-org',
+    logo: 'https://example.com/logo.png',
+    metadata: {
+      domain: 'test.com',
+      autoCreated: false,
+      createdFromEmail: 'test@test.com',
+    },
+    createdAt: new Date('2024-01-01T00:00:00Z'),
+    description: 'Test organization description',
+    website: 'https://test.com',
     members: mockMembers,
     invitations: mockInvitations,
   },
@@ -300,11 +340,17 @@ describe('OrganizationProvider', () => {
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
       data: mockOrganization,
       error: null,
-    });
+      isPending: false,
+      isRefetching: false,
+      refetch: vi.fn(),
+    } as any);
 
     vi.mocked(authClient.useSession).mockReturnValue({
       data: mockSession,
-    });
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
 
     // Mock useQuery for full organization
     const { useQuery, useMutation } = await import('@tanstack/react-query');
@@ -312,24 +358,61 @@ describe('OrganizationProvider', () => {
       data: mockFullOrganization,
       isLoading: false,
       error: null,
-    });
+      isError: false,
+      isLoadingError: false,
+      isRefetchError: false,
+      isSuccess: true,
+      isPending: false,
+      isRefetching: false,
+      isFetching: false,
+      isFetched: true,
+      isFetchedAfterMount: true,
+      isStale: false,
+      isPlaceholderData: false,
+      isPaused: false,
+      failureCount: 0,
+      failureReason: null,
+      refetch: vi.fn(),
+      remove: vi.fn(),
+      fetchStatus: 'idle' as const,
+      status: 'success' as const,
+      dataUpdatedAt: Date.now(),
+      errorUpdatedAt: 0,
+    } as any);
 
     // Mock mutations to execute the mutation function
-    vi.mocked(useMutation).mockImplementation((config) => {
+    vi.mocked(useMutation).mockImplementation((options: any) => {
       const mutation = {
-        mutateAsync: vi.fn().mockImplementation(async (args) => {
+        mutateAsync: vi.fn().mockImplementation(async (args: any) => {
           // Execute the mutation function
-          if (config.mutationFn) {
-            await config.mutationFn(args);
+          let result = {};
+          if (options.mutationFn) {
+            result = await options.mutationFn(args);
           }
-          // Execute onSuccess callback
-          if (config.onSuccess) {
-            config.onSuccess({}, args, {});
+          // Execute onSuccess callback with result, args, and context
+          if (options.onSuccess) {
+            options.onSuccess(result, args, {});
           }
-          return {};
+          return result;
         }),
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        isError: false,
+        isIdle: true,
+        isLoading: false,
+        isPending: false,
+        isSuccess: false,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        status: 'idle' as const,
+        variables: undefined,
+        submittedAt: 0,
+        reset: vi.fn(),
+        context: undefined,
       };
-      return mutation;
+      return mutation as any;
     });
 
     // Mock organization API methods
@@ -339,15 +422,22 @@ describe('OrganizationProvider', () => {
     vi.mocked(authClient.organization.update).mockResolvedValue({});
     vi.mocked(authClient.organization.cancelInvitation).mockResolvedValue({});
     vi.mocked(authClient.organization.create).mockResolvedValue({
-      data: mockOrganization,
+      data: {
+        id: 'new-org-123',
+        name: 'New Org',
+        slug: 'new-org',
+        createdAt: new Date(),
+        metadata: {},
+      },
     });
+    vi.mocked(authClient.organization.setActive).mockResolvedValue({});
     vi.mocked(authClient.organization.delete).mockResolvedValue({});
   });
 
   describe('Provider Setup', () => {
     it('should provide organization context to children', () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -374,10 +464,10 @@ describe('OrganizationProvider', () => {
       vi.mocked(authClient.useActiveOrganization).mockReturnValue({
         data: null,
         error: null,
-      });
+      } as any);
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -391,10 +481,10 @@ describe('OrganizationProvider', () => {
     it('should handle missing session data', () => {
       vi.mocked(authClient.useSession).mockReturnValue({
         data: null,
-      });
+      } as any);
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -412,10 +502,10 @@ describe('OrganizationProvider', () => {
         data: null,
         isLoading: true,
         error: null,
-      });
+      } as any);
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -429,7 +519,7 @@ describe('OrganizationProvider', () => {
 
     it('should show loaded state when data is available', () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -450,10 +540,10 @@ describe('OrganizationProvider', () => {
         data: null,
         isLoading: false,
         error: testError,
-      });
+      } as any);
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -468,10 +558,10 @@ describe('OrganizationProvider', () => {
       vi.mocked(authClient.useActiveOrganization).mockReturnValue({
         data: null,
         error: authError,
-      });
+      } as any);
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -485,7 +575,7 @@ describe('OrganizationProvider', () => {
   describe('User Role Detection', () => {
     it('should detect owner role correctly', () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -499,20 +589,21 @@ describe('OrganizationProvider', () => {
     });
 
     it('should detect member role correctly', () => {
-      const memberSession = {
-        user: {
-          id: 'user-2', // user-2 is a member
-          email: 'member@example.com',
-          name: 'Organization Member',
-        },
-      };
+          const memberSession = {
+      user: {
+        id: 'user-2', // user-2 is a member
+        email: 'member@example.com',
+        name: 'Organization Member',
+      },
+    };
 
-      vi.mocked(authClient.useSession).mockReturnValue({
-        data: memberSession,
-      });
+    // @ts-ignore - Mock session for testing purposes
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: memberSession,
+    });
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -539,7 +630,7 @@ describe('OrganizationProvider', () => {
       });
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -554,7 +645,7 @@ describe('OrganizationProvider', () => {
   describe('Organization Management Actions', () => {
     it('should handle member invitation', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -573,7 +664,7 @@ describe('OrganizationProvider', () => {
 
     it('should handle member role update', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -592,7 +683,7 @@ describe('OrganizationProvider', () => {
 
     it('should handle member removal', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -610,7 +701,7 @@ describe('OrganizationProvider', () => {
 
     it('should handle organization update', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -628,7 +719,7 @@ describe('OrganizationProvider', () => {
 
     it('should handle invitation cancellation', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -646,7 +737,7 @@ describe('OrganizationProvider', () => {
 
     it('should handle organization creation', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -665,7 +756,7 @@ describe('OrganizationProvider', () => {
 
     it('should handle organization deletion', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -696,7 +787,7 @@ describe('OrganizationProvider', () => {
       vi.mocked(useMutation).mockReturnValue(mockMutation);
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -715,7 +806,7 @@ describe('OrganizationProvider', () => {
   describe('Query Invalidation', () => {
     it('should invalidate queries after member invitation', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -733,7 +824,7 @@ describe('OrganizationProvider', () => {
 
     it('should invalidate queries after member role update', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -751,7 +842,7 @@ describe('OrganizationProvider', () => {
 
     it('should invalidate queries after organization creation', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -774,7 +865,7 @@ describe('OrganizationProvider', () => {
   describe('Slug Generation', () => {
     it('should generate slug from organization name', async () => {
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestComponent />
           </OrganizationProvider>
@@ -806,7 +897,7 @@ describe('OrganizationProvider', () => {
       };
 
       render(
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={actualQueryClient}>
           <OrganizationProvider>
             <TestSlugComponent />
           </OrganizationProvider>
@@ -866,7 +957,7 @@ describe('useOrganizationPermissions Hook', () => {
 
   it('should provide correct permissions for owner', () => {
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <PermissionsTestComponent />
         </OrganizationProvider>
@@ -885,17 +976,36 @@ describe('useOrganizationPermissions Hook', () => {
     const memberSession = {
       user: {
         id: 'user-2',
-        email: 'member@example.com',
         name: 'Member',
+        email: 'member@example.com',
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        banned: false,
+        image: null,
+        displayUsername: null,
+      },
+      session: {
+        id: 'session-2',
+        token: 'mock-token-2',
+        userId: 'user-2',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ipAddress: '127.0.0.1',
+        userAgent: 'test-agent',
       },
     };
 
     vi.mocked(authClient.useSession).mockReturnValue({
       data: memberSession,
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
     });
 
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <PermissionsTestComponent />
         </OrganizationProvider>
@@ -914,17 +1024,36 @@ describe('useOrganizationPermissions Hook', () => {
     const outsiderSession = {
       user: {
         id: 'user-999',
-        email: 'outsider@example.com',
         name: 'Outsider',
+        email: 'outsider@example.com',
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        banned: false,
+        image: null,
+        displayUsername: null,
+      },
+      session: {
+        id: 'session-999',
+        token: 'mock-token-999',
+        userId: 'user-999',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ipAddress: '127.0.0.1',
+        userAgent: 'test-agent',
       },
     };
 
     vi.mocked(authClient.useSession).mockReturnValue({
       data: outsiderSession,
+      isPending: false,
+      error: null,
+      refetch: vi.fn(),
     });
 
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <PermissionsTestComponent />
         </OrganizationProvider>
@@ -981,7 +1110,7 @@ describe('useOrganizationMembers Hook', () => {
 
   it('should provide members data and operations', () => {
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <MembersTestComponent />
         </OrganizationProvider>
@@ -996,7 +1125,7 @@ describe('useOrganizationMembers Hook', () => {
 
   it('should handle member operations through hook', async () => {
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <MembersTestComponent />
         </OrganizationProvider>
@@ -1072,7 +1201,7 @@ describe('useOrganizationInvitations Hook', () => {
 
   it('should provide invitations data and operations', () => {
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <InvitationsTestComponent />
         </OrganizationProvider>
@@ -1087,7 +1216,7 @@ describe('useOrganizationInvitations Hook', () => {
 
   it('should handle invitation operations through hook', async () => {
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <InvitationsTestComponent />
         </OrganizationProvider>
@@ -1131,7 +1260,7 @@ describe('useOrganizationInvitations Hook', () => {
     });
 
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={actualQueryClient}>
         <OrganizationProvider>
           <InvitationsTestComponent />
         </OrganizationProvider>
