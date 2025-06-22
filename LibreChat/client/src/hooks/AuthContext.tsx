@@ -24,12 +24,10 @@ const AuthStateContext = createContext<ReturnType<typeof useBetterAuthContext> |
  */
 export function AuthContextProvider({ children, authConfig }: AuthContextProviderProps) {
   const authState = useBetterAuthContext();
-  
+
   return (
     <AuthConfigContext.Provider value={authConfig}>
-      <AuthStateContext.Provider value={authState}>
-        {children}
-      </AuthStateContext.Provider>
+      <AuthStateContext.Provider value={authState}>{children}</AuthStateContext.Provider>
     </AuthConfigContext.Provider>
   );
 }
@@ -53,4 +51,4 @@ export function useAuthConfig() {
   return config;
 }
 
-export default AuthContextProvider; 
+export default AuthContextProvider;

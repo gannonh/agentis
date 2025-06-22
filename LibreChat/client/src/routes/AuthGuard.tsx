@@ -9,7 +9,7 @@ import { authClient } from '~/config/betterAuth';
 export default function AuthGuard() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
-  
+
   console.log('AuthGuard Better Auth state:', {
     sessionLoading,
     orgsLoading,

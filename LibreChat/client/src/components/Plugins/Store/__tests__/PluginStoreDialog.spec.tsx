@@ -219,4 +219,4 @@ test('allows the user to search for plugins', async () => {
   expect(screen.getByText('Plugin 1')).toBeInTheDocument();
   expect(screen.queryByText('Google')).not.toBeInTheDocument();
   expect(screen.queryByText('Wolfram')).not.toBeInTheDocument();
-}); 
+});

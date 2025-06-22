@@ -85,7 +85,7 @@ vi.mock('~/config/betterAuth', () => ({
       error: null,
       refetch: vi.fn(),
     })),
-    
+
     useActiveOrganization: vi.fn(() => ({
       data: {
         id: 'org-123',
@@ -112,7 +112,7 @@ vi.mock('~/config/betterAuth', () => ({
       isPending: false,
       refetch: vi.fn(),
     })),
-    
+
     organization: {
       getFullOrganization: vi.fn(),
     },

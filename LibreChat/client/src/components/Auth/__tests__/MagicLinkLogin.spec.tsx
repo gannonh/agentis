@@ -38,17 +38,17 @@ describe('MagicLinkLogin', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset mocks with proper structure
     vi.mocked(useLocalize).mockReturnValue(mockLocalize);
-    
-    vi.mocked(authClient.useSession).mockReturnValue({ 
+
+    vi.mocked(authClient.useSession).mockReturnValue({
       data: null,
       isPending: false,
       error: null,
       refetch: vi.fn(),
     } as any);
-    
+
     vi.mocked(authClient.signIn.magicLink).mockResolvedValue({ error: null } as any);
     vi.mocked(authClient.getSession).mockResolvedValue({ data: null } as any);
   });

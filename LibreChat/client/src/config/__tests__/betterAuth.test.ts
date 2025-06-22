@@ -172,8 +172,8 @@ describe('Better Auth Client Configuration', () => {
       const listUsersSpy = vi.spyOn(authClient.admin, 'listUsers');
       const filters = {
         query: {
-        limit: 10,
-        offset: 0,
+          limit: 10,
+          offset: 0,
         },
       };
 

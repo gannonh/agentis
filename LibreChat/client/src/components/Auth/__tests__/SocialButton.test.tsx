@@ -96,7 +96,8 @@ describe('SocialButton', () => {
       const button = screen.getByRole('button');
       await userEvent.click(button);
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3080/api/auth/sign-in/social', 
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3080/api/auth/sign-in/social',
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -104,7 +105,7 @@ describe('SocialButton', () => {
           },
           body: expect.stringContaining('"provider":"google"'),
           credentials: 'include',
-        })
+        }),
       );
     });
 

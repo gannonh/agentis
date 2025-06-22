@@ -14,9 +14,7 @@ vi.mock('~/components/ui/Button', () => ({
   Button: ({ children, onClick, disabled, type = 'button', ...props }: any) => (
     <button type={type} onClick={onClick} disabled={disabled} {...props}>
       {/* Render children, handling React fragments and elements properly */}
-      {React.Children.map(children, (child) => 
-        typeof child === 'string' ? child : child
-      )}
+      {React.Children.map(children, (child) => (typeof child === 'string' ? child : child))}
     </button>
   ),
 }));
@@ -92,7 +90,9 @@ describe('OrganizationSetup', () => {
   });
 
   it('should apply custom className', () => {
-    const { container } = render(<OrganizationSetup {...defaultProps} className="custom-class" />, { wrapper });
+    const { container } = render(<OrganizationSetup {...defaultProps} className="custom-class" />, {
+      wrapper,
+    });
 
     expect(container.firstChild).toHaveClass('custom-class');
   });

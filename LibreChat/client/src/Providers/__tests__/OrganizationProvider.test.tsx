@@ -325,7 +325,7 @@ describe('OrganizationProvider', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     // Create a real QueryClient instance and spy on its methods
     actualQueryClient = new QueryClient({
       defaultOptions: {
@@ -589,18 +589,18 @@ describe('OrganizationProvider', () => {
     });
 
     it('should detect member role correctly', () => {
-          const memberSession = {
-      user: {
-        id: 'user-2', // user-2 is a member
-        email: 'member@example.com',
-        name: 'Organization Member',
-      },
-    };
+      const memberSession = {
+        user: {
+          id: 'user-2', // user-2 is a member
+          email: 'member@example.com',
+          name: 'Organization Member',
+        },
+      };
 
-    // @ts-ignore - Mock session for testing purposes
-    vi.mocked(authClient.useSession).mockReturnValue({
-      data: memberSession,
-    });
+      // @ts-ignore - Mock session for testing purposes
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: memberSession,
+      });
 
       render(
         <QueryClientProvider client={actualQueryClient}>

@@ -14,9 +14,9 @@ const SocialButton = ({ id, enabled, serverDomain, oauthPath, Icon, label }) => 
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           provider: oauthPath,
-          callbackURL: `${window.location.origin}/login`
+          callbackURL: `${window.location.origin}/login`,
         }),
         credentials: 'include',
       });

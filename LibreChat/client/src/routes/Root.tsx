@@ -2,12 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import type { ContextType } from '~/common';
-import {
-  useAssistantsMap,
-  useAgentsMap,
-  useFileMap,
-  useSearchEnabled,
-} from '~/hooks';
+import { useAssistantsMap, useAgentsMap, useFileMap, useSearchEnabled } from '~/hooks';
 import { authClient } from '~/config/betterAuth';
 import store from '~/store';
 import {
@@ -34,7 +29,7 @@ export default function Root() {
   const { data: session } = authClient.useSession();
   const isAuthenticated = !!session?.user;
   const setQueriesEnabled = useSetRecoilState<boolean>(store.queriesEnabled);
-  
+
   const logout = async () => {
     try {
       await authClient.signOut();

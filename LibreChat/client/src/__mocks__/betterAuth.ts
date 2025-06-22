@@ -20,7 +20,7 @@ export const createBetterAuthMock = () => ({
       error: null,
       refetch: vi.fn(),
     })),
-    
+
     getSession: vi.fn().mockResolvedValue({
       data: {
         user: { id: 'user-123', email: 'test@example.com' },
@@ -61,13 +61,13 @@ export const createBetterAuthMock = () => ({
     signUp: {
       email: vi.fn().mockResolvedValue({ success: true }),
     },
-    
+
     signIn: {
       email: vi.fn().mockResolvedValue({ success: true }),
     },
 
     signOut: vi.fn().mockResolvedValue({}),
-    
+
     // Organization methods
     organization: {
       create: vi.fn().mockResolvedValue({
@@ -107,4 +107,4 @@ export const createBetterAuthMock = () => ({
 });
 
 // Export for direct use in vi.mock
-export const authClient = createBetterAuthMock().authClient; 
+export const authClient = createBetterAuthMock().authClient;

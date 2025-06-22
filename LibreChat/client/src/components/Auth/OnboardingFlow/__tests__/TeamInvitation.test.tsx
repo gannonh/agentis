@@ -76,7 +76,9 @@ describe('TeamInvitation', () => {
   });
 
   it('should apply custom className', () => {
-    const { container } = render(<TeamInvitation {...defaultProps} className="custom-class" />, { wrapper });
+    const { container } = render(<TeamInvitation {...defaultProps} className="custom-class" />, {
+      wrapper,
+    });
 
     expect(container.firstChild).toHaveClass('custom-class');
   });

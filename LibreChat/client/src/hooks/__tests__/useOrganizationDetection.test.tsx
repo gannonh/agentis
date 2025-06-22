@@ -167,10 +167,13 @@ describe('useOrganizationDetection', () => {
         wrapper,
       });
 
-      await waitFor(() => {
-        expect(result.current.error).toBeTruthy();
-        expect(result.current.organization).toBeUndefined();
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(result.current.error).toBeTruthy();
+          expect(result.current.organization).toBeUndefined();
+        },
+        { timeout: 5000 },
+      );
     });
 
     it('should handle non-404 HTTP errors', async () => {
@@ -185,10 +188,13 @@ describe('useOrganizationDetection', () => {
         wrapper,
       });
 
-      await waitFor(() => {
-        expect(result.current.error).toBeTruthy();
-        expect(result.current.organization).toBeUndefined();
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(result.current.error).toBeTruthy();
+          expect(result.current.organization).toBeUndefined();
+        },
+        { timeout: 5000 },
+      );
     });
 
     it('should handle malformed API responses', async () => {

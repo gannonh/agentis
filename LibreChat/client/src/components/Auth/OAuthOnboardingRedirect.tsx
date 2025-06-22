@@ -12,14 +12,15 @@ export const OAuthOnboardingRedirect: React.FC<{ children: React.ReactNode }> = 
   const navigate = useNavigate();
   const [redirectState, setRedirectState] = useState<RedirectState>('LOADING');
   const [hasRedirected, setHasRedirected] = useState(false);
-  
+
   const { data: session, isPending: sessionLoading } = authClient.useSession();
-  const { data: activeOrganization, isPending: activeOrgLoading } = authClient.useActiveOrganization();
+  const { data: activeOrganization, isPending: activeOrgLoading } =
+    authClient.useActiveOrganization();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
 
   useEffect(() => {
     const isLoading = sessionLoading || activeOrgLoading || orgsLoading;
-    
+
     const debugData = {
       sessionLoading,
       activeOrgLoading,
@@ -34,7 +35,7 @@ export const OAuthOnboardingRedirect: React.FC<{ children: React.ReactNode }> = 
       hasRedirected,
       timestamp: new Date().toISOString(),
     };
-    
+
     console.log('🔍 OAuthOnboardingRedirect DEBUG:', debugData);
 
     // State machine logic
@@ -72,8 +73,17 @@ export const OAuthOnboardingRedirect: React.FC<{ children: React.ReactNode }> = 
         return;
       }
     }
-
-  }, [session, activeOrganization, organizations, sessionLoading, activeOrgLoading, orgsLoading, navigate, redirectState, hasRedirected]);
+  }, [
+    session,
+    activeOrganization,
+    organizations,
+    sessionLoading,
+    activeOrgLoading,
+    orgsLoading,
+    navigate,
+    redirectState,
+    hasRedirected,
+  ]);
 
   // Only render children if we're in a state that allows access
   if (redirectState === 'ALLOW_ACCESS') {

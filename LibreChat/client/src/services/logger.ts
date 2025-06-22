@@ -40,10 +40,10 @@ class Logger {
    */
   private sanitizeContext(context: LogContext): LogContext {
     const sanitized = { ...context };
-    
+
     // Remove sensitive fields
     const sensitiveFields = ['password', 'token', 'email', 'accessToken', 'refreshToken', 'secret'];
-    sensitiveFields.forEach(field => {
+    sensitiveFields.forEach((field) => {
       if (field in sanitized) {
         sanitized[field] = '[REDACTED]';
       }
@@ -71,7 +71,7 @@ class Logger {
     if (!this.shouldLog('debug')) return;
 
     const entry = this.createLogEntry('debug', message, context);
-    
+
     if (this.isDevelopment) {
       console.debug(`🔍 [DEBUG] ${message}`, context ? this.sanitizeContext(context) : '');
     }
@@ -84,7 +84,7 @@ class Logger {
     if (!this.shouldLog('info')) return;
 
     const entry = this.createLogEntry('info', message, context);
-    
+
     if (this.isDevelopment) {
       console.info(`ℹ️ [INFO] ${message}`, context ? this.sanitizeContext(context) : '');
     }
@@ -97,7 +97,7 @@ class Logger {
     if (!this.shouldLog('warn')) return;
 
     const entry = this.createLogEntry('warn', message, context);
-    
+
     if (this.isDevelopment) {
       console.warn(`⚠️ [WARN] ${message}`, context ? this.sanitizeContext(context) : '');
     }
@@ -109,10 +109,10 @@ class Logger {
   error(message: string, error?: Error, context?: LogContext): void {
     const fullContext = { ...context, error: error?.message, stack: error?.stack };
     const entry = this.createLogEntry('error', message, fullContext);
-    
+
     // Always log errors to console, even in production
     console.error(`❌ [ERROR] ${message}`, error, context ? this.sanitizeContext(context) : '');
-    
+
     // TODO: Send to error reporting service in production
   }
 }
@@ -125,41 +125,41 @@ class AuthLogger extends Logger {
    * Log authentication events
    */
   login(userId: string, method: 'magic-link' | 'oauth'): void {
-    this.info('User login attempt', { 
+    this.info('User login attempt', {
       userId,
       method,
-      action: 'login'
+      action: 'login',
     });
   }
 
   logout(userId: string): void {
-    this.info('User logout', { 
+    this.info('User logout', {
       userId,
-      action: 'logout'
+      action: 'logout',
     });
   }
 
   organizationSet(userId: string, organizationId: string): void {
-    this.info('Active organization set', { 
+    this.info('Active organization set', {
       userId,
       organizationId,
-      action: 'org-set'
+      action: 'org-set',
     });
   }
 
   redirecting(from: string, to: string, reason: string): void {
-    this.debug('Auth redirect', { 
+    this.debug('Auth redirect', {
       from,
       to,
       reason,
-      action: 'redirect'
+      action: 'redirect',
     });
   }
 
   sessionExpired(userId?: string): void {
-    this.warn('Session expired', { 
+    this.warn('Session expired', {
       userId,
-      action: 'session-expired'
+      action: 'session-expired',
     });
   }
 }
@@ -169,4 +169,4 @@ export const logger = new Logger();
 export const authLogger = new AuthLogger();
 
 // Export for testing
-export { Logger, AuthLogger }; 
+export { Logger, AuthLogger };

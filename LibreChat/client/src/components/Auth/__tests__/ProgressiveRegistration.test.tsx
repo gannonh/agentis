@@ -18,7 +18,7 @@ vi.mock('~/config/betterAuth', () => ({
       data: {
         user: {
           id: 'user-123',
-          name: 'Test User', 
+          name: 'Test User',
           email: 'test@example.com',
         },
         session: {
@@ -30,7 +30,7 @@ vi.mock('~/config/betterAuth', () => ({
       error: null,
       refetch: vi.fn(),
     })),
-    
+
     useActiveOrganization: vi.fn(() => ({
       data: {
         id: 'org-123',
@@ -57,13 +57,13 @@ vi.mock('~/config/betterAuth', () => ({
       isPending: false,
       refetch: vi.fn(),
     })),
-    
+
     signUp: {
       email: vi.fn(),
     },
-    
+
     sendVerificationEmail: vi.fn(),
-    
+
     getSession: vi.fn().mockResolvedValue({
       data: {
         user: {
@@ -77,11 +77,11 @@ vi.mock('~/config/betterAuth', () => ({
         },
       },
     }),
-    
+
     signIn: {
       magicLink: vi.fn().mockResolvedValue({ error: null }),
     },
-    
+
     organization: {
       create: vi.fn(),
       inviteMember: vi.fn(),

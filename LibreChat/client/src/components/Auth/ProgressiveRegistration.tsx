@@ -349,12 +349,12 @@ export const ProgressiveRegistration: React.FC = () => {
               name: data.organizationName!,
               slug: data.organizationSlug!,
             });
-            
+
             // Force session refresh to update organization membership immediately
             console.log('🔄 Forcing session refresh after organization creation...');
             await authClient.getSession();
             console.log('✅ Session refreshed, organization hooks should update');
-            
+
             updateState({
               organizationSetup: {
                 name: data.organizationName!,
@@ -394,15 +394,17 @@ export const ProgressiveRegistration: React.FC = () => {
         case RegistrationStep.WELCOME:
           // User completed onboarding - refresh session to ensure organization membership is loaded
           console.log('🎉 Welcome step completed, refreshing session before navigation...');
-          
+
           try {
             // Force session refresh to pick up organization membership
             const sessionData = await authClient.getSession();
             console.log('🔄 Session refreshed after onboarding:', sessionData);
-            
+
             // Note: Organization data will be refreshed automatically by the hooks
-            console.log('🏢 Session refresh completed, organization hooks will update automatically');
-            
+            console.log(
+              '🏢 Session refresh completed, organization hooks will update automatically',
+            );
+
             clearState();
             navigate('/c/new', { replace: true });
           } catch (error) {
@@ -577,7 +579,8 @@ export const ProgressiveRegistration: React.FC = () => {
                 </div>
 
                 <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  After clicking the magic link, you&apos;ll be automatically signed in and can continue.
+                  After clicking the magic link, you&apos;ll be automatically signed in and can
+                  continue.
                 </p>
               </div>
             )}
@@ -835,7 +838,9 @@ export const ProgressiveRegistration: React.FC = () => {
                   </h4>
                   <div className="mt-2 text-sm text-green-700 dark:text-green-300">
                     <p>Your account is now fully configured and ready to use.</p>
-                    <p className="mt-1">Click &quot;Get Started&quot; to begin exploring Agentis!</p>
+                    <p className="mt-1">
+                      Click &quot;Get Started&quot; to begin exploring Agentis!
+                    </p>
                   </div>
                 </div>
               </div>
