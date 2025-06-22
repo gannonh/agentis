@@ -193,7 +193,7 @@ export async function handleOrganizationAssignment(auth, email, userId) {
       memberRole = 'owner';
     } else {
       logger.debug('User will join existing organization:', organization.name);
-      
+
       // Add user to existing organization as member
       try {
         await auth.api.addMember({
