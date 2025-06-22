@@ -1,5 +1,5 @@
 # Auth System Review: Better Auth Migration
-## Branch: feat/issue-68-better-auth-frontend
+
 
 ### Executive Summary
 

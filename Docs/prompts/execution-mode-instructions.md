@@ -136,8 +136,16 @@ echo "Executing Task #X: [Task Description]"
 # Check dependencies
 echo "Dependencies met: [✓/✗]"
 
-# Create feature branch
+# check git status
+git status
+
+# Create feature branch if not already on a feature branch
 git checkout -b feat/issue-XX-description
+
+# IF already on a feature branch / PR
+echo " Continue on current branch [Branch Name] or merge to main and open new branch?"
+
+# Wait for further instruction before continuing
 ```
 
 ### Step 2: Test Development
