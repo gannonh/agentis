@@ -91,11 +91,11 @@ describe('OrganizationService', () => {
 
   describe('findOrganizationByEmailDomain', () => {
     it('should find organization by email domain', async () => {
-      const mockOrganization = { 
-        _id: '1', 
-        slug: 'company', 
+      const mockOrganization = {
+        _id: '1',
+        slug: 'company',
         name: 'Company',
-        metadata: JSON.stringify({ domain: 'company.com' }) 
+        metadata: JSON.stringify({ domain: 'company.com' }),
       };
       mockCollections.organization.findOne.mockResolvedValue(mockOrganization);
 
@@ -184,7 +184,7 @@ describe('OrganizationService', () => {
         role: 'member',
         createdAt: new Date(),
       };
-      
+
       mockCollections.member.findOne.mockResolvedValueOnce(null); // No existing member
       mockCollections.member.insertOne.mockResolvedValue({ insertedId: mockMemberId });
       mockCollections.member.findOne.mockResolvedValueOnce(mockMember);
@@ -210,7 +210,7 @@ describe('OrganizationService', () => {
         role: 'admin',
         createdAt: new Date(),
       };
-      
+
       mockCollections.member.findOne.mockResolvedValueOnce(null); // No existing member
       mockCollections.member.insertOne.mockResolvedValue({ insertedId: mockMemberId });
       mockCollections.member.findOne.mockResolvedValueOnce(mockMember);
@@ -253,12 +253,12 @@ describe('OrganizationService', () => {
 
       // Mock findOrganizationByEmailDomain to return null
       mockCollections.organization.findOne.mockResolvedValue(null);
-      
+
       // Mock createOrganizationForDomain
       mockCollections.organization.insertOne.mockResolvedValue({ insertedId: mockOrgId });
       mockCollections.organization.findOne
         .mockResolvedValueOnce(null) // findOrganizationByEmailDomain - slug check
-        .mockResolvedValueOnce(null) // findOrganizationByEmailDomain - metadata check  
+        .mockResolvedValueOnce(null) // findOrganizationByEmailDomain - metadata check
         .mockResolvedValueOnce(mockOrganization); // After creation
       mockCollections.member.insertOne.mockResolvedValue({ insertedId: 'member123' });
       mockCollections.member.findOne.mockResolvedValue({
@@ -304,7 +304,7 @@ describe('OrganizationService', () => {
 
       // Mock findOrganizationByEmailDomain to return existing org
       mockCollections.organization.findOne.mockResolvedValue(mockOrganization);
-      
+
       // Mock addUserToOrganization
       mockCollections.member.findOne
         .mockResolvedValueOnce(null) // No existing member
@@ -352,7 +352,7 @@ describe('OrganizationService', () => {
         name: 'Company',
         slug: 'company',
       };
-      
+
       mockCollections.member.find.mockReturnValue({
         toArray: vi.fn().mockResolvedValue([mockMembership]),
       });

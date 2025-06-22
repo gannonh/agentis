@@ -50,49 +50,49 @@ const { logger } = await import('./config/index.js');
 // Add a delay to ensure MongoDB connection is established
 async function waitForAuth() {
   console.log('\nWaiting for MongoDB connection...');
-  
+
   // Connect to MongoDB if not connected
   if (mongoose.connection.readyState === 0) {
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/Agentis?authSource=admin';
     console.log('Connecting to MongoDB:', mongoUri);
     await mongoose.connect(mongoUri);
   }
-  
+
   // Wait for mongoose connection
   if (mongoose.connection.readyState !== 1) {
     await new Promise((resolve) => {
       mongoose.connection.once('open', resolve);
     });
   }
-  
+
   // Give Better Auth time to initialize after MongoDB opens
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
   console.log('MongoDB connected, checking Better Auth...');
 }
 
 async function testBetterAuthOrg() {
   try {
     await waitForAuth();
-    
+
     const auth = getAuth();
     console.log('\n=== Better Auth Instance ===');
     console.log('Auth instance exists:', !!auth);
     console.log('Auth handler exists:', !!auth?.handler);
     console.log('Auth api exists:', !!auth?.api);
-    
+
     if (auth?.api) {
       console.log('\n=== API Methods Available ===');
       console.log('All API keys:', Object.keys(auth.api));
-      
+
       // Check for organization-specific methods
       console.log('\n=== Organization API ===');
       console.log('auth.api.organization exists:', !!auth.api.organization);
-      
+
       if (auth.api.organization) {
         console.log('Organization methods:', Object.keys(auth.api.organization));
       }
-      
+
       // Check for individual organization methods
       console.log('\n=== Individual Org Methods ===');
       console.log('listOrganizations:', typeof auth.api.listOrganizations);
@@ -103,18 +103,24 @@ async function testBetterAuthOrg() {
       console.log('addMember:', typeof auth.api.addMember);
       console.log('removeMember:', typeof auth.api.removeMember);
       console.log('listMembers:', typeof auth.api.listMembers);
-      
+
       // Check organization plugin specific methods
       console.log('\n=== Organization Plugin Methods ===');
       console.log('organization.create:', typeof auth.api.organization?.create);
-      console.log('organization.listOrganizations:', typeof auth.api.organization?.listOrganizations);
+      console.log(
+        'organization.listOrganizations:',
+        typeof auth.api.organization?.listOrganizations,
+      );
       console.log('organization.checkSlug:', typeof auth.api.organization?.checkSlug);
       console.log('organization.setActive:', typeof auth.api.organization?.setActive);
-      console.log('organization.getFullOrganization:', typeof auth.api.organization?.getFullOrganization);
+      console.log(
+        'organization.getFullOrganization:',
+        typeof auth.api.organization?.getFullOrganization,
+      );
       console.log('organization.update:', typeof auth.api.organization?.update);
       console.log('organization.inviteMember:', typeof auth.api.organization?.inviteMember);
       console.log('organization.removeMember:', typeof auth.api.organization?.removeMember);
-      
+
       // Try to call listOrganizations
       console.log('\n=== Testing listOrganizations ===');
       try {
@@ -135,7 +141,7 @@ async function testBetterAuthOrg() {
         console.log('Error details:', error);
       }
     }
-    
+
     process.exit(0);
   } catch (error) {
     console.error('\nTest failed:', error);

@@ -148,7 +148,9 @@ describe('Better Auth Integration', () => {
       // Simulate MongoDB connection opening
       connectionCallback();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('🔧 MongoDB connection established, initializing Better Auth...');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '🔧 MongoDB connection established, initializing Better Auth...',
+      );
       expect(mockConnection.getClient).toHaveBeenCalled();
       expect(mockClient.db).toHaveBeenCalledWith('Agentis');
       expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
@@ -206,10 +208,14 @@ describe('Better Auth Integration', () => {
       await import('./auth.js');
 
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       // Should throw an error when BETTER_AUTH_SECRET is missing
-      expect(() => connectionCallback()).toThrow('BETTER_AUTH_SECRET environment variable is required but not set');
-      expect(mockLogger.error).toHaveBeenCalledWith('❌ BETTER_AUTH_SECRET environment variable is required');
+      expect(() => connectionCallback()).toThrow(
+        'BETTER_AUTH_SECRET environment variable is required but not set',
+      );
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '❌ BETTER_AUTH_SECRET environment variable is required',
+      );
     });
   });
 
@@ -315,10 +321,14 @@ describe('Better Auth Integration', () => {
       await import('./auth.js');
 
       const connectionCallback = mockConnection.once.mock.calls[0][1];
-      
+
       // Should throw an error when BETTER_AUTH_SECRET is missing
-      expect(() => connectionCallback()).toThrow('BETTER_AUTH_SECRET environment variable is required but not set');
-      expect(mockLogger.error).toHaveBeenCalledWith('❌ BETTER_AUTH_SECRET environment variable is required');
+      expect(() => connectionCallback()).toThrow(
+        'BETTER_AUTH_SECRET environment variable is required but not set',
+      );
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '❌ BETTER_AUTH_SECRET environment variable is required',
+      );
     });
   });
 
@@ -329,7 +339,9 @@ describe('Better Auth Integration', () => {
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('🔧 MongoDB connection established, initializing Better Auth...');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '🔧 MongoDB connection established, initializing Better Auth...',
+      );
     });
 
     test('should log successful initialization', async () => {
