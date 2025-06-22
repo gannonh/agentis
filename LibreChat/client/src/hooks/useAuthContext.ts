@@ -23,6 +23,7 @@ export function useAuthContext() {
     // Add legacy fields that components expect
     avatar: session.user.image || '',
     provider: 'local', // Default provider
+    role: 'user', // Default role for permission system
     // Keep all Better Auth fields
   } : null;
 
@@ -35,6 +36,39 @@ export function useAuthContext() {
     error: null,
     login: () => {}, // Not used in new flow
     setError: () => {}, // Not used in new flow
-    roles: {}, // Not used in new flow
+    roles: {
+      // TODO: TEMPORARY FIX - Replace with proper role-based permission system
+      // This hardcoded permissions object is a temporary solution during Better Auth migration
+      // to restore agents/prompts functionality. Should be replaced with:
+      // 1. Dynamic role loading from backend API
+      // 2. Proper multi-tenant role inheritance 
+      // 3. Organization-level permission overrides
+      // 4. User-specific role assignments
+      // See: auth multi-tenant refactor tasks for proper implementation
+      user: {
+        permissions: {
+          AGENTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+          },
+          PROMPTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+          },
+          BOOKMARKS: {
+            USE: true,
+            CREATE: true,
+          },
+          MULTI_CONVO: {
+            USE: true,
+          },
+          EXECUTE_CODE: {
+            USE: true,
+          },
+        },
+      },
+    },
   };
 }
