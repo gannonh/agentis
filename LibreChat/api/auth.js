@@ -359,8 +359,18 @@ mongoose.connection.once('open', () => {
 /**
  * Gets the Better Auth instance
  *
- * @returns {import('better-auth').BetterAuth | null} The auth instance or null
+ * @returns {import('better-auth').BetterAuth | {handler: Function}} The auth instance or temporary handler
  */
 export const getAuth = () => {
+  if (!authInstance) {
+    // Return a temporary handler that responds with 503 when auth is not ready
+    return {
+      handler: (req, res) => {
+        res.status(503).json({
+          error: 'Authentication service is starting up. Please try again in a moment.',
+        });
+      },
+    };
+  }
   return authInstance;
 };

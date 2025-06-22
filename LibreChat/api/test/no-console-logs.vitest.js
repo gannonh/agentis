@@ -29,8 +29,12 @@ describe('Console.log Security Checks', () => {
         const lines = content.split('\n');
 
         lines.forEach((line, index) => {
-          // Look for console.log statements
-          if (line.includes('console.log')) {
+          // Look for console.log statements, but skip commented lines
+          if (
+            line.includes('console.log') &&
+            !line.trim().startsWith('//') &&
+            !line.trim().startsWith('*')
+          ) {
             // Check if this console.log is properly protected with NODE_ENV
             const isProtected = checkConsoleLogProtection(content, index + 1, fullPath);
 

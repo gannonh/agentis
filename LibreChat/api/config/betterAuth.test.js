@@ -3,14 +3,24 @@
  * @module config/betterAuth.test
  */
 
-import { describe, test, expect, beforeEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 
 describe('Better Auth Configuration', () => {
   let betterAuthConfig;
 
   beforeEach(async () => {
+    // Set required environment variables for tests
+    process.env.DOMAIN_SERVER = 'http://localhost:3080';
+    process.env.DOMAIN_CLIENT = 'http://localhost:3090';
+
     const configModule = await import('./betterAuth.js');
     betterAuthConfig = configModule.betterAuthConfig;
+  });
+
+  afterEach(() => {
+    // Clean up environment variables
+    delete process.env.DOMAIN_SERVER;
+    delete process.env.DOMAIN_CLIENT;
   });
 
   describe('Configuration Structure', () => {
