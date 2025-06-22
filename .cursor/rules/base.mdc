@@ -3,9 +3,9 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Agentis
+# BASE RULES
 
-## Project Overview
+## Agentis Project Overview
 
 Agentis is an all-in-one AI conversations platform that integrates multiple AI models into a single chat interface. It's a branded fork of LibreChat with custom capabilities, allowing users to integrate various AI models including:
 - Anthropic (Claude)
