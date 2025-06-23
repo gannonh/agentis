@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NavigationService } from '../NavigationService';
+import { NavigationService } from './NavigationService';
 
 // Mock react-router-dom
 const mockNavigate = vi.fn();

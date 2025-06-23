@@ -74,7 +74,7 @@ describe('Root', () => {
             <Root />
           </MemoryRouter>
         </RecoilRoot>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   };
 
