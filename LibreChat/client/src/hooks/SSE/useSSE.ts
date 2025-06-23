@@ -38,7 +38,11 @@ type ChatHelpers = Pick<
   | 'newConversation'
   | 'resetLatestMessage'
 >;
-
+// TODO: Deprecate legacy SSE component
+/**
+ * @deprecated This component will be removed during the account management refactor.
+ * Keeping window.location.href navigation until removal.
+ */
 export default function useSSE(
   submission: TSubmission | null,
   chatHelpers: ChatHelpers,

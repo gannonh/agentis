@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import type { ContextType } from '~/common';
 import { useAssistantsMap, useAgentsMap, useFileMap, useSearchEnabled } from '~/hooks';
 import { authClient } from '~/config/betterAuth';
+import { navigationService } from '~/services/NavigationService';
 import store from '~/store';
 import {
   AgentsMapContext,
@@ -26,17 +27,23 @@ export default function Root() {
     return savedNavVisible !== null ? JSON.parse(savedNavVisible) : true;
   });
 
+  const navigate = useNavigate();
   const { data: session } = authClient.useSession();
   const isAuthenticated = !!session?.user;
   const setQueriesEnabled = useSetRecoilState<boolean>(store.queriesEnabled);
 
+  // Initialize navigation service with React Router's navigate
+  useEffect(() => {
+    navigationService.setNavigate(navigate);
+  }, [navigate]);
+
   const logout = async () => {
     try {
       await authClient.signOut();
-      window.location.href = '/login';
+      navigationService.navigateToLogin();
     } catch (error) {
       console.error('Error during logout:', error);
-      window.location.href = '/login';
+      navigationService.navigateToLogin();
     }
   };
 
