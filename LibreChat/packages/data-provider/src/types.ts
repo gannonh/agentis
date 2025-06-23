@@ -117,7 +117,7 @@ export type TBackupCode = {
 
 export type TUser = {
   id: string;
-  username: string;
+  username?: string | null; // Better Auth allows null/undefined username
   email: string;
   name: string;
   avatar: string;

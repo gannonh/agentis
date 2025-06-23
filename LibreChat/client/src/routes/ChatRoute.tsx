@@ -9,11 +9,16 @@ import {
   useGetStartupConfig,
   useGetEndpointsQuery,
 } from '~/data-provider';
-import { useNewConvo, useAppStartup, useAssistantListMap, useIdChangeEffect } from '~/hooks';
+import {
+  useNewConvo,
+  useAppStartup,
+  useAssistantListMap,
+  useIdChangeEffect,
+  useAuthContext,
+} from '~/hooks';
 import { getDefaultModelSpec, getModelSpecPreset, logger } from '~/utils';
 import { ToolCallsMapProvider } from '~/Providers';
 import ChatView from '~/components/Chat/ChatView';
-import { authClient } from '~/config/betterAuth';
 import temporaryStore from '~/store/temporary';
 import { Spinner } from '~/components/svg';
 import { useRecoilCallback } from 'recoil';
@@ -22,9 +27,7 @@ import store from '~/store';
 export default function ChatRoute() {
   useHealthCheck();
   const { data: startupConfig } = useGetStartupConfig();
-  const { data: session } = authClient.useSession();
-  const isAuthenticated = !!session?.user;
-  const user = session?.user;
+  const { user, isAuthenticated } = useAuthContext();
   const setIsTemporary = useRecoilCallback(
     ({ set }) =>
       (value: boolean) => {
@@ -32,7 +35,7 @@ export default function ChatRoute() {
       },
     [],
   );
-  useAppStartup({ startupConfig, user });
+  useAppStartup({ startupConfig, user: user ?? undefined });
 
   const index = 0;
   const { conversationId = '' } = useParams();
