@@ -15,7 +15,7 @@ import type { TMessage, TPayload, TSubmission, EventSubmission } from 'librechat
 import type { EventHandlerParams } from './useEventHandlers';
 import type { TResData } from '~/common';
 import { useGenTitleMutation, useGetStartupConfig, useGetUserBalance } from '~/data-provider';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import useEventHandlers from './useEventHandlers';
 import store from '~/store';
 
@@ -38,7 +38,11 @@ type ChatHelpers = Pick<
   | 'newConversation'
   | 'resetLatestMessage'
 >;
-
+// TODO: Deprecate legacy SSE component
+/**
+ * @deprecated This component will be removed during the account management refactor.
+ * Keeping window.location.href navigation until removal.
+ */
 export default function useSSE(
   submission: TSubmission | null,
   chatHelpers: ChatHelpers,

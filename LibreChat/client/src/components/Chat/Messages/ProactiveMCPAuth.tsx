@@ -7,7 +7,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import type { TMessage } from 'librechat-data-provider';
 import type { TAgentOption } from '~/common/agents-types';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import { useAgentsMapContext } from '~/Providers/AgentsMapContext';
 import { useChatContext } from '~/Providers/ChatContext';
 import ComposioAuthButton from '~/components/Composio/ComposioAuthButton';

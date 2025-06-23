@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 import type { ContextType } from '~/common';
-import {
-  useAuthContext,
-  useAssistantsMap,
-  useAgentsMap,
-  useFileMap,
-  useSearchEnabled,
-} from '~/hooks';
+import { useAssistantsMap, useAgentsMap, useFileMap, useSearchEnabled } from '~/hooks';
+import { authClient } from '~/config/betterAuth';
+import { navigationService } from '~/services/NavigationService';
+import store from '~/store';
 import {
   AgentsMapContext,
   AssistantsMapContext,
   FileMapContext,
   SetConvoProvider,
+  OrganizationProvider,
 } from '~/Providers';
 import TermsAndConditionsModal from '~/components/ui/TermsAndConditionsModal';
-import { useUserTermsQuery, useGetStartupConfig, useGetSessionQuery } from '~/data-provider';
+import { useUserTermsQuery, useGetStartupConfig } from '~/data-provider';
 import { Nav, MobileNav } from '~/components/Nav';
 import { Banner } from '~/components/Banners';
+import { useAutoSetActiveOrganization } from '~/hooks/useAutoSetActiveOrganization';
 
 export default function Root() {
   const [showTerms, setShowTerms] = useState(false);
@@ -27,11 +27,35 @@ export default function Root() {
     return savedNavVisible !== null ? JSON.parse(savedNavVisible) : true;
   });
 
-  const { isAuthenticated, logout } = useAuthContext();
-  const { isLoading: sessionLoading } = useGetSessionQuery({
-    enabled: !isAuthenticated,
-    retry: false,
-  });
+  const navigate = useNavigate();
+  const { data: session } = authClient.useSession();
+  const isAuthenticated = !!session?.user;
+  const setQueriesEnabled = useSetRecoilState<boolean>(store.queriesEnabled);
+
+  // Initialize navigation service with React Router's navigate
+  useEffect(() => {
+    navigationService.setNavigate(navigate);
+  }, [navigate]);
+
+  const logout = async () => {
+    try {
+      await authClient.signOut();
+      navigationService.navigateToLogin();
+    } catch (error) {
+      console.error('Error during logout:', error);
+      navigationService.navigateToLogin();
+    }
+  };
+
+  // Automatically set active organization after login
+  useAutoSetActiveOrganization();
+
+  // Enable queries when user is authenticated (fixes Better Auth migration issue)
+  useEffect(() => {
+    if (isAuthenticated) {
+      setQueriesEnabled(true);
+    }
+  }, [isAuthenticated, setQueriesEnabled]);
 
   const assistantsMap = useAssistantsMap({ isAuthenticated });
   const agentsMap = useAgentsMap({ isAuthenticated });
@@ -56,60 +80,44 @@ export default function Root() {
 
   const handleDeclineTerms = () => {
     setShowTerms(false);
-    logout('/login?redirect=false');
+    logout();
   };
 
-  if (sessionLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"></div>
-          <div className="text-gray-600">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
   if (!isAuthenticated) {
-    // Let AuthContext handle the redirect, show loading while redirecting
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"></div>
-          <div className="text-gray-600">Redirecting to login...</div>
-        </div>
-      </div>
-    );
+    // Don't block the redirect - AuthGuard will handle navigation
+    return null;
   }
 
   return (
-    <SetConvoProvider>
-      <FileMapContext.Provider value={fileMap}>
-        <AssistantsMapContext.Provider value={assistantsMap}>
-          <AgentsMapContext.Provider value={agentsMap}>
-            <Banner onHeightChange={setBannerHeight} />
-            <div className="flex" style={{ height: `calc(100dvh - ${bannerHeight}px)` }}>
-              <div className="relative z-0 flex h-full w-full overflow-hidden">
-                <Nav navVisible={navVisible} setNavVisible={setNavVisible} />
-                <div className="relative flex h-full max-w-full flex-1 flex-col overflow-hidden">
-                  <MobileNav setNavVisible={setNavVisible} />
-                  <Outlet context={{ navVisible, setNavVisible } satisfies ContextType} />
+    <OrganizationProvider>
+      <SetConvoProvider>
+        <FileMapContext.Provider value={fileMap}>
+          <AssistantsMapContext.Provider value={assistantsMap}>
+            <AgentsMapContext.Provider value={agentsMap}>
+              <Banner onHeightChange={setBannerHeight} />
+              <div className="flex" style={{ height: `calc(100dvh - ${bannerHeight}px)` }}>
+                <div className="relative z-0 flex h-full w-full overflow-hidden">
+                  <Nav navVisible={navVisible} setNavVisible={setNavVisible} />
+                  <div className="relative flex h-full max-w-full flex-1 flex-col overflow-hidden">
+                    <MobileNav setNavVisible={setNavVisible} />
+                    <Outlet context={{ navVisible, setNavVisible } satisfies ContextType} />
+                  </div>
                 </div>
               </div>
-            </div>
-          </AgentsMapContext.Provider>
-          {config?.interface?.termsOfService?.modalAcceptance === true && (
-            <TermsAndConditionsModal
-              open={showTerms}
-              onOpenChange={setShowTerms}
-              onAccept={handleAcceptTerms}
-              onDecline={handleDeclineTerms}
-              title={config.interface.termsOfService.modalTitle}
-              modalContent={config.interface.termsOfService.modalContent}
-            />
-          )}
-        </AssistantsMapContext.Provider>
-      </FileMapContext.Provider>
-    </SetConvoProvider>
+            </AgentsMapContext.Provider>
+            {config?.interface?.termsOfService?.modalAcceptance === true && (
+              <TermsAndConditionsModal
+                open={showTerms}
+                onOpenChange={setShowTerms}
+                onAccept={handleAcceptTerms}
+                onDecline={handleDeclineTerms}
+                title={config.interface.termsOfService.modalTitle}
+                modalContent={config.interface.termsOfService.modalContent}
+              />
+            )}
+          </AssistantsMapContext.Provider>
+        </FileMapContext.Provider>
+      </SetConvoProvider>
+    </OrganizationProvider>
   );
 }

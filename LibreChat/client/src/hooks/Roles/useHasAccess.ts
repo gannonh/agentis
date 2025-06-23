@@ -1,6 +1,6 @@
-import { useMemo, useCallback, useContext } from 'react';
+import { useMemo, useCallback } from 'react';
 import type { TUser, PermissionTypes, Permissions } from 'librechat-data-provider';
-import { AuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 
 const useHasAccess = ({
   permissionType,
@@ -9,7 +9,7 @@ const useHasAccess = ({
   permissionType: PermissionTypes;
   permission: Permissions;
 }) => {
-  const authContext = useContext(AuthContext);
+  const authContext = useAuthContext();
   const user = authContext?.user;
   const roles = authContext?.roles;
   const isAuthenticated = authContext?.isAuthenticated || false;
@@ -24,16 +24,12 @@ const useHasAccess = ({
       permissionType: PermissionTypes;
       permission: Permissions;
     }) => {
-      if (!authContext) {
-        return false;
-      }
-
       if (isAuthenticated && user?.role != null && roles && roles[user.role]) {
         return roles[user.role]?.permissions?.[permissionType]?.[permission] === true;
       }
       return false;
     },
-    [authContext, isAuthenticated, roles],
+    [isAuthenticated, roles],
   );
 
   const hasAccess = useMemo(

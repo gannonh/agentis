@@ -1,7 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { beforeEach, describe, expect, it, test, vi, type Mock } from 'vitest';
 import { RecoilRoot } from 'recoil';
+import { MemoryRouter } from 'react-router-dom';
 import type { TMessage } from 'librechat-data-provider';
 import type { TAgentOption } from '~/common/agents-types';
 import ProactiveMCPAuth from '../ProactiveMCPAuth';
@@ -12,8 +14,8 @@ import { ChatContext } from '~/Providers/ChatContext';
 import { AgentsMapContext } from '~/Providers/AgentsMapContext';
 
 // Mock the ComposioAuthButton component
-import { beforeEach, describe, expect, it, test, vi } from 'vitest';
 
+// @ts-ignore
 vi.mock('~/components/Composio/ComposioAuthButton', () => ({
   __esModule: true,
   default: ({ service, inline }: { service: string; inline?: boolean }) => (
@@ -24,18 +26,25 @@ vi.mock('~/components/Composio/ComposioAuthButton', () => ({
 }));
 
 // Mock utilities
+// @ts-ignore
 vi.mock('~/utils/mcpAuth');
+// @ts-ignore
 const mockedMcpAuth = mcpAuth as vi.Mocked<typeof mcpAuth>;
 
 // Mock hooks
+// @ts-ignore
 vi.mock('~/hooks/AuthContext');
+// @ts-ignore
 const mockedAuthHooks = authHooks as vi.Mocked<typeof authHooks>;
 
 // Mock store selectors
+// @ts-ignore
 vi.mock('recoil', async () => {
+  // @ts-ignore
   const actual = await vi.importActual('recoil');
   return {
     ...actual,
+    // @ts-ignore
     useRecoilValue: vi.fn((atom) => {
       // Return null for ephemeral agents by default
       return null;
@@ -44,11 +53,14 @@ vi.mock('recoil', async () => {
 });
 
 // Mock agent queries
+// @ts-ignore
 vi.mock('~/data-provider/Agents/queries');
+// @ts-ignore
 const mockedAgentQueries = agentQueries as vi.Mocked<typeof agentQueries>;
 
 // Get reference to the mocked useRecoilValue
 import { useRecoilValue } from 'recoil';
+// @ts-ignore
 const mockUseRecoilValue = useRecoilValue as vi.MockedFunction<typeof useRecoilValue>;
 
 describe('ProactiveMCPAuth Component', () => {
@@ -93,6 +105,7 @@ describe('ProactiveMCPAuth Component', () => {
   };
 
   beforeEach(() => {
+    // @ts-ignore
     vi.clearAllMocks();
 
     // Reset the useRecoilValue mock to default behavior
@@ -103,9 +116,12 @@ describe('ProactiveMCPAuth Component', () => {
       isAuthenticated: true,
       user: { id: 'user-1' } as any,
       token: 'mock-token',
+      // @ts-ignore
       logout: vi.fn(),
+      // @ts-ignore
       login: vi.fn(),
       error: undefined,
+      // @ts-ignore
       setError: vi.fn(),
     });
 
@@ -133,11 +149,13 @@ describe('ProactiveMCPAuth Component', () => {
     };
 
     return render(
-      <RecoilRoot>
-        <ChatContext.Provider value={mockChatContext as any}>
-          <AgentsMapContext.Provider value={mockAgentsMap}>{ui}</AgentsMapContext.Provider>
-        </ChatContext.Provider>
-      </RecoilRoot>,
+      <MemoryRouter>
+        <RecoilRoot>
+          <ChatContext.Provider value={mockChatContext as any}>
+            <AgentsMapContext.Provider value={mockAgentsMap}>{ui}</AgentsMapContext.Provider>
+          </ChatContext.Provider>
+        </RecoilRoot>
+      </MemoryRouter>,
     );
   };
 
@@ -167,15 +185,19 @@ describe('ProactiveMCPAuth Component', () => {
       };
 
       render(
-        <RecoilRoot>
-          <ChatContext.Provider
-            value={{ conversation: { conversationId: 'conv-1', agent_id: 'agent-no-mcp' } } as any}
-          >
-            <AgentsMapContext.Provider value={mockAgentsMapNoMCP}>
-              <ProactiveMCPAuth {...defaultProps} />
-            </AgentsMapContext.Provider>
-          </ChatContext.Provider>
-        </RecoilRoot>,
+        <MemoryRouter>
+          <RecoilRoot>
+            <ChatContext.Provider
+              value={
+                { conversation: { conversationId: 'conv-1', agent_id: 'agent-no-mcp' } } as any
+              }
+            >
+              <AgentsMapContext.Provider value={mockAgentsMapNoMCP}>
+                <ProactiveMCPAuth {...defaultProps} />
+              </AgentsMapContext.Provider>
+            </ChatContext.Provider>
+          </RecoilRoot>
+        </MemoryRouter>,
       );
 
       expect(screen.queryByText('Authentication Required')).not.toBeInTheDocument();
@@ -291,17 +313,19 @@ describe('ProactiveMCPAuth Component', () => {
       mockedMcpAuth.getConversationAuthServices.mockReturnValue(['googlesheets']);
 
       render(
-        <RecoilRoot>
-          <ChatContext.Provider
-            value={
-              { conversation: { conversationId: 'conv-1', agent_id: 'agent-malformed' } } as any
-            }
-          >
-            <AgentsMapContext.Provider value={mockAgentsMapMalformed}>
-              <ProactiveMCPAuth {...defaultProps} />
-            </AgentsMapContext.Provider>
-          </ChatContext.Provider>
-        </RecoilRoot>,
+        <MemoryRouter>
+          <RecoilRoot>
+            <ChatContext.Provider
+              value={
+                { conversation: { conversationId: 'conv-1', agent_id: 'agent-malformed' } } as any
+              }
+            >
+              <AgentsMapContext.Provider value={mockAgentsMapMalformed}>
+                <ProactiveMCPAuth {...defaultProps} />
+              </AgentsMapContext.Provider>
+            </ChatContext.Provider>
+          </RecoilRoot>
+        </MemoryRouter>,
       );
 
       expect(screen.getByTestId('auth-button-googlesheets')).toBeInTheDocument();
@@ -321,15 +345,17 @@ describe('ProactiveMCPAuth Component', () => {
       mockedMcpAuth.shouldShowAuthUI.mockReturnValue(false);
 
       render(
-        <RecoilRoot>
-          <ChatContext.Provider
-            value={{ conversation: { conversationId: 'conv-1', agent_id: 'agent-empty' } } as any}
-          >
-            <AgentsMapContext.Provider value={mockAgentsMapEmpty}>
-              <ProactiveMCPAuth {...defaultProps} />
-            </AgentsMapContext.Provider>
-          </ChatContext.Provider>
-        </RecoilRoot>,
+        <MemoryRouter>
+          <RecoilRoot>
+            <ChatContext.Provider
+              value={{ conversation: { conversationId: 'conv-1', agent_id: 'agent-empty' } } as any}
+            >
+              <AgentsMapContext.Provider value={mockAgentsMapEmpty}>
+                <ProactiveMCPAuth {...defaultProps} />
+              </AgentsMapContext.Provider>
+            </ChatContext.Provider>
+          </RecoilRoot>
+        </MemoryRouter>,
       );
 
       expect(screen.queryByText('Authentication Required')).not.toBeInTheDocument();
@@ -375,13 +401,15 @@ describe('ProactiveMCPAuth Component', () => {
 
       // Render without agent_id in conversation
       render(
-        <RecoilRoot>
-          <ChatContext.Provider value={{ conversation: { conversationId: 'conv-1' } } as any}>
-            <AgentsMapContext.Provider value={{}}>
-              <ProactiveMCPAuth {...defaultProps} />
-            </AgentsMapContext.Provider>
-          </ChatContext.Provider>
-        </RecoilRoot>,
+        <MemoryRouter>
+          <RecoilRoot>
+            <ChatContext.Provider value={{ conversation: { conversationId: 'conv-1' } } as any}>
+              <AgentsMapContext.Provider value={{}}>
+                <ProactiveMCPAuth {...defaultProps} />
+              </AgentsMapContext.Provider>
+            </ChatContext.Provider>
+          </RecoilRoot>
+        </MemoryRouter>,
       );
 
       expect(screen.getByText('Authentication Required')).toBeInTheDocument();
@@ -400,13 +428,15 @@ describe('ProactiveMCPAuth Component', () => {
       mockedMcpAuth.getConversationAuthServices.mockReturnValue(['googlesheets']);
 
       render(
-        <RecoilRoot>
-          <ChatContext.Provider value={{ conversation: { conversationId: 'conv-1' } } as any}>
-            <AgentsMapContext.Provider value={{}}>
-              <ProactiveMCPAuth {...defaultProps} />
-            </AgentsMapContext.Provider>
-          </ChatContext.Provider>
-        </RecoilRoot>,
+        <MemoryRouter>
+          <RecoilRoot>
+            <ChatContext.Provider value={{ conversation: { conversationId: 'conv-1' } } as any}>
+              <AgentsMapContext.Provider value={{}}>
+                <ProactiveMCPAuth {...defaultProps} />
+              </AgentsMapContext.Provider>
+            </ChatContext.Provider>
+          </RecoilRoot>
+        </MemoryRouter>,
       );
 
       // Verify the agent object passed to getConversationAuthServices has correct tool format

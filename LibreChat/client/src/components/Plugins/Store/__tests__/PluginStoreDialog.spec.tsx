@@ -3,7 +3,7 @@ import PluginStoreDialog from '../PluginStoreDialog';
 import userEvent from '@testing-library/user-event';
 import * as mockDataProvider from 'librechat-data-provider/react-query';
 import * as authMutations from '~/data-provider/Auth/mutations';
-import * as authQueries from '~/data-provider/Auth/queries';
+import * as authHooks from '~/hooks';
 import { describe, expect, it, test, vi } from 'vitest';
 
 vi.mock('librechat-data-provider/react-query');
@@ -109,11 +109,9 @@ const pluginsQueryResult = [
 ];
 
 const setup = ({
-  useGetUserQueryReturnValue = {
-    isLoading: false,
-    isError: false,
-    data: {
-      plugins: ['wolfram'],
+  useAuthContextReturnValue = {
+    user: {
+      plugins: ['wolfram'], // Wolfram is installed
     },
   },
   useRefreshTokenMutationReturnValue = {
@@ -145,10 +143,10 @@ const setup = ({
     .spyOn(mockDataProvider, 'useUpdateUserPluginsMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
     .mockReturnValue(useUpdateUserPluginsMutationReturnValue);
-  const mockUseGetUserQuery = vi
-    .spyOn(authQueries, 'useGetUserQuery')
-    //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
-    .mockReturnValue(useGetUserQueryReturnValue);
+  const mockUseAuthContext = vi
+    .spyOn(authHooks, 'useAuthContext')
+    //@ts-ignore - we don't need all parameters
+    .mockReturnValue(useAuthContextReturnValue);
   const mockUseRefreshTokenMutation = vi
     .spyOn(authMutations, 'useRefreshTokenMutation')
     //@ts-ignore - we don't need all parameters of the QueryObserverSuccessResult
@@ -158,7 +156,7 @@ const setup = ({
 
   return {
     ...renderResult,
-    mockUseGetUserQuery,
+    mockUseAuthContext,
     mockUseAvailablePluginsQuery,
     mockUseUpdateUserPluginsMutation,
     mockUseRefreshTokenMutation,

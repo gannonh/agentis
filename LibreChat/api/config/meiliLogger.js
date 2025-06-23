@@ -10,8 +10,10 @@ const logger = {
   warn: (...args) => console.warn('[MEILI-WARN]', ...args),
   info: (...args) => console.info('[MEILI-INFO]', ...args),
   debug: (...args) => console.debug('[MEILI-DEBUG]', ...args),
-  verbose: (...args) => console.log('[MEILI-VERBOSE]', ...args),
-  silly: (...args) => console.log('[MEILI-SILLY]', ...args),
+  verbose: (...args) =>
+    process.env.NODE_ENV === 'development' && console.log('[MEILI-VERBOSE]', ...args),
+  silly: (...args) =>
+    process.env.NODE_ENV === 'development' && console.log('[MEILI-SILLY]', ...args),
 };
 
 export default logger;

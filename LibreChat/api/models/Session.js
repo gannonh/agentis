@@ -4,7 +4,9 @@ import { hashToken } from '../server/utils/crypto.js';
 import { sessionSchema } from '@librechat/data-schemas';
 import { logger } from '#config/index.js';
 
-const Session = mongoose.model('Session', sessionSchema);
+// Disabled to prevent duplicate collection with Better Auth
+// const Session = mongoose.model('Session', sessionSchema);
+const Session = null;
 
 const { REFRESH_TOKEN_EXPIRY } = process.env ?? {};
 const expires = eval(REFRESH_TOKEN_EXPIRY) ?? 1000 * 60 * 60 * 24 * 7; // 7 days default

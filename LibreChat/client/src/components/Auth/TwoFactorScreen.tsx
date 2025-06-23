@@ -17,7 +17,11 @@ type TwoFactorFormInputs = {
   token?: string;
   backupCode?: string;
 };
-
+// TODO: Deprecate legacy 2FA component
+/**
+ * @deprecated This component will be removed during the account management refactor.
+ * Keeping window.location.href navigation until removal.
+ */
 const TwoFactorScreen: React.FC = React.memo(() => {
   const [searchParams] = useSearchParams();
   const tempTokenRaw = searchParams.get('tempToken');

@@ -2,7 +2,7 @@ import React, { memo, useState } from 'react';
 import type { TUser } from 'librechat-data-provider';
 import type { IconProps } from '~/common';
 import MessageEndpointIcon from './MessageEndpointIcon';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { useAuthContext } from '~/hooks';
 import useAvatar from '~/hooks/Messages/useAvatar';
 import useLocalize from '~/hooks/useLocalize';
 import { UserIcon } from '~/components/svg';
@@ -46,7 +46,7 @@ const UserAvatar = memo(({ size, user, avatarSrc, username, className }: UserAva
       }}
       className={cn('relative flex items-center justify-center', className ?? '')}
     >
-      {(!(user?.avatar ?? '') && (!(user?.username ?? '') || user?.username.trim() === '')) ||
+      {(!(user?.avatar ?? '') && (!(user?.username ?? '') || user?.username?.trim() === '')) ||
       imageError ? (
         renderDefaultAvatar()
       ) : (
@@ -67,7 +67,7 @@ const Icon: React.FC<IconProps> = memo((props) => {
   const { user } = useAuthContext();
   const { size = 30, isCreatedByUser } = props;
 
-  const avatarSrc = useAvatar(user);
+  const avatarSrc = useAvatar(user ?? undefined);
   const localize = useLocalize();
 
   if (isCreatedByUser) {
@@ -75,7 +75,7 @@ const Icon: React.FC<IconProps> = memo((props) => {
     return (
       <UserAvatar
         size={size}
-        user={user}
+        user={user ?? undefined}
         avatarSrc={avatarSrc}
         username={username}
         className={props.className}

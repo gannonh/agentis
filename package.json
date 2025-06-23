@@ -2,6 +2,7 @@
   "name": "agentis",
   "version": "1.0.0",
   "description": "Agentis - AI conversations platform",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "./scripts/dev.sh",

@@ -12,26 +12,42 @@ Agentis is an all-in-one AI conversations platform that integrates multiple AI m
 ## Project Structure
 
 ```bash
-├── docs
-├── LibreChat
-│   ├── api # Backend server (Node.js/Express)
-│   │       # API endpoints, controllers, middleware, models, services
-│   │       # Authentication, conversations, message processing, AI provider integrations
-│   ├── client # Frontend application (React, TypeScript)
-│   │          # UI components for chat functionality
-│   │          # Uses Tailwind CSS for styling
-│   ├── config  # Utility scripts for user management, balance management, and configuration
-│   ├── e2e # Playwright e2e tests
-│   ├── packages # Shared packages used by both client and server
-│   │   ├── arcade-client # Client SDK for Arcade integration
-│   │   ├── data-provider # Data services for client-server communication
-│   │   ├── data-schemas # Mongoose schemas and model definitions
-│   │   └── mcp # Model Context Protocol integration services
-│   └── utils # dev-ops
-├── logs # dev logs
+agentis/                    # Project root
+├── docs                    # Project documentation
+├── LibreChat              # Main application directory
+│   ├── api                # Backend server (Node.js/Express)
+│   │                      # API endpoints, controllers, middleware, models, services
+│   │                      # Authentication, conversations, message processing, AI provider integrations
+│   ├── client             # Frontend application (React, TypeScript)
+│   │                      # UI components for chat functionality
+│   │                      # Uses Tailwind CSS for styling
+│   ├── config             # Utility scripts for user management, balance management, and configuration
+│   ├── e2e                # Playwright e2e tests
+│   ├── packages           # Shared packages used by both client and server
+│   │   ├── arcade-client  # Client SDK for Arcade integration
+│   │   ├── data-provider  # Data services for client-server communication
+│   │   ├── data-schemas   # Mongoose schemas and model definitions
+│   │   └── mcp           # Model Context Protocol integration services
+│   └── utils              # DevOps utilities
+├── logs                   # Development logs
 │   ├── backend.log
 │   └── frontend.log
-└── scripts # utility scripts
+├── scripts                # Project-level utility scripts
+├── codesandbox-client     # Self-hosted code execution environment
+├── rag_api               # Self-hosted document processing and retrieval
+└── secrets               # Local secrets management
+```
+
+## Working Directory Context
+
+**Important**: Most development commands should be run from the `LibreChat` directory, not the project root:
+
+```bash
+# Navigate to the main application directory
+cd LibreChat
+
+# Then run your commands
+npm run backend:dev
 ```
 
 ## Development Commands
@@ -39,6 +55,9 @@ Agentis is an all-in-one AI conversations platform that integrates multiple AI m
 ### Installation
 
 ```bash
+# From the LibreChat directory
+cd LibreChat
+
 # Install dependencies
 npm ci
 
@@ -51,9 +70,10 @@ npm run build:data-schemas
 ### Running the Application
 
 ```bash
-# dev cli
+# Development CLI helper (from project root)
 ./scripts/dev.sh --help
 
+# From LibreChat directory:
 # Start backend server in development mode
 npm run backend:dev
 
@@ -73,19 +93,22 @@ When making changes to shared packages, you need to rebuild them for changes to 
    - **data-schemas**: Mongoose schema definitions and models
    - **data-provider**: API communication layer and data services
    - **mcp**: Model Context Protocol integration services
+   - **arcade-client**: Client SDK for Arcade integration
 
 2. **When to rebuild packages**:
    - Changes to `data-schemas` → rebuild with `npm run build:data-schemas`
    - Changes to `data-provider` → rebuild with `npm run build:data-provider`
    - Changes to `mcp` → rebuild with `npm run build:mcp`
+   - Changes to `arcade-client` → rebuild with `npm run build:arcade-client`
   
 3. **Dependency Order**: 
-   - Changes to a package require rebuilding that package and any that depend on it:
+   - Changes to a package require rebuilding that package and any that depend on it
    - Dependency chain: `data-schemas` → `data-provider` → `mcp` → client/API
 
 4. **Development Helper Script**:
-   - Use the provided script for easier rebuilding: `./scripts/dev-rebuild.sh`
-   - Example: `./scripts/dev-rebuild.sh --provider --frontend` to rebuild data-provider and restart frontend
+   - Use the provided script for easier development: `./scripts/dev.sh`
+   - Example: `./scripts/dev.sh --all` to rebuild all packages and restart servers
+   - Run `./scripts/dev.sh --help` for all available options
 
 5. **Auto-watch During Development**:
    - For continuous development, use watch mode in the package directory:
@@ -94,6 +117,8 @@ When making changes to shared packages, you need to rebuild them for changes to 
 ### Testing
 
 ```bash
+# From LibreChat directory:
+
 # Run backend unit tests
 npm run test:api
 
@@ -103,12 +128,16 @@ npm run test:client
 # End-to-end tests
 npm run e2e          # Run E2E tests
 npm run e2e:headed   # Run E2E tests with browser visible
-npm run e2e:a11y     # Run accessibility tests
+
+# Run all tests
+npm run test:all     # Runs all unit tests across the project
 ```
 
 ### Code Quality
 
 ```bash
+# From LibreChat directory:
+
 # Linting
 npm run lint         # Check for linting issues
 npm run lint:fix     # Fix linting issues automatically
@@ -118,6 +147,9 @@ npm run format       # Format code with prettier
 npm run typecheck:client    # Check client production code types
 npm run typecheck:packages  # Check packages production code types
 npm run typecheck:all       # Check all production code types
+
+# Run all checks before PR
+npm run check:all    # Runs lint, format, typecheck, and test:all
 ```
 
 ### TypeScript Configuration
@@ -151,23 +183,32 @@ These are maintained in separate repositories:
 For local development, use the dev configuration that runs only supporting services while keeping the API and client running on the host:
 
 ```bash
+# From project root:
 # Start supporting services for development
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f LibreChat/docker-compose.dev.yml up -d
 
-# Or use our CLI helper
-../scripts/docker-cli.sh start
+# Or use the CLI helper (from project root)
+./scripts/docker-cli.sh start
+
+# View available services
+./scripts/docker-cli.sh status
 ```
+
+**Required Environment Files** (in LibreChat directory):
+- `.env` - Main application configuration
+- `.env.docker` - Docker services configuration (e.g., OpenAI key for RAG API)
 
 ### Full Deployment
 
 For full application deployment with Docker:
 
 ```bash
-# Start application with Docker
-docker-compose up -d
+# From LibreChat directory:
+# Start application with production config
+docker-compose -f docker-compose.prod.yml up -d
 
-# With custom configuration
-docker-compose -f ./deploy-compose.yml up -d
+# Stop services
+docker-compose -f docker-compose.prod.yml down
 ```
 
 ### Docker Best Practices
@@ -189,7 +230,7 @@ docker-compose -f ./deploy-compose.yml up -d
 4. **Debugging Docker Services**:
    - Check logs with `docker logs [container_name]` 
    - Use `docker exec -it [container_name] [command]` to run commands inside containers
-   - Use container names that include the project name for clarity (`agentis-mongodb` instead of just `mongodb`)
+   - Container names include the project name for clarity (`agentis-mongodb` instead of just `mongodb`)
 
 ## Key Architecture Components
 
@@ -227,6 +268,23 @@ docker-compose -f ./deploy-compose.yml up -d
 3. **API Integration**
    - Data providers for backend communication
    - Real-time message streaming
+
+## Additional Resources
+
+### Model Context Protocol (MCP)
+The project includes MCP integration for enhanced AI capabilities. Configuration is managed through `.mcp.json` in the project root.
+
+### Development Scripts
+The `scripts/` directory contains various helper scripts:
+- `dev.sh` - Main development helper with build and server management
+- `docker-cli.sh` - Docker services management
+- `mongodb-cli.sh` - Direct MongoDB access
+- See `scripts/README.scripts.md` for full documentation
+
+### Logs
+Development logs are written to the `logs/` directory in the project root:
+- `backend.log` - Backend server logs
+- `frontend.log` - Frontend development server logs
 
 ## Coding Conventions
 

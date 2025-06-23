@@ -1,0 +1,637 @@
+
+> LibreChat@v0.1.0 test:client
+> cd client && npm run test:ci
+
+
+> @librechat/frontend@v0.1.0 test:ci
+> vitest --run
+
+
+ RUN  v3.2.3 /Users/gannonhall/dev/agentis/LibreChat/client
+
+ ❯ src/hooks/__tests__/AuthContext.test.tsx (23 tests | 1 failed) 103ms
+   ✓ AuthContext > Initial State Management > sets correct initial authentication state 20ms
+   ✓ AuthContext > Initial State Management > handles missing session data 8ms
+   ✓ AuthContext > Initial State Management > initializes user state properly 1ms
+   ✓ AuthContext > Session Query Integration > triggers session query when not authenticated 8ms
+   ✓ AuthContext > Session Query Integration > disables session query when authenticated 0ms
+   ✓ AuthContext > Session Query Integration > handles session query errors appropriately 0ms
+   ✓ AuthContext > Session Query Integration > respects enabled flag for session queries 0ms
+   ✓ AuthContext > Session Query Integration > does not navigate in test mode 0ms
+   ✓ AuthContext > Login Flow > handles successful login with session data 0ms
+   ✓ AuthContext > Login Flow > manages 2FA redirect scenarios 1ms
+   ✓ AuthContext > Login Flow > handles login errors with proper error setting 0ms
+   ✓ AuthContext > Login Flow > handles legacy token mode fallback 0ms
+   ✓ AuthContext > Logout Flow > clears authentication state on logout 41ms
+   ✓ AuthContext > Logout Flow > navigates to correct redirect URL 0ms
+   ✓ AuthContext > Logout Flow > handles logout errors gracefully 0ms
+   ✓ AuthContext > Logout Flow > manages custom logout redirects 0ms
+   ✓ AuthContext > Session Update Events > handles session update events correctly 0ms
+   ✓ AuthContext > Session Update Events > cleans up event listeners on unmount 0ms
+   ✓ AuthContext > Error Context > provides setError function 2ms
+   ✓ AuthContext > Error Context > handles error timeout correctly 1ms
+   × AuthContext > Error Context > throws error when used outside AuthProvider 13ms
+     → expected [Function] to throw an error
+   ✓ AuthContext > Role Management > provides user and admin roles 3ms
+   ✓ AuthContext > Role Management > handles null roles correctly 1ms
+ ✓ src/components/Admin/__tests__/AdminDashboard.test.tsx (34 tests) 452ms
+ ✓ src/components/Admin/__tests__/UserManagement.test.tsx (39 tests) 482ms
+ ✓ src/components/Organization/__tests__/OrganizationSettings.test.tsx (27 tests) 274ms
+ ✓ src/components/Organization/__tests__/InvitationManager.test.tsx (29 tests) 313ms
+ ✓ src/components/Auth/__tests__/MagicLinkLogin.spec.tsx (7 tests) 432ms
+ ✓ src/hooks/__tests__/useOrganizationDetection.test.tsx (15 tests) 2527ms
+   ✓ useOrganizationDetection > Error Handling > should handle API errors  1016ms
+   ✓ useOrganizationDetection > Error Handling > should handle non-404 HTTP errors  1018ms
+ ✓ src/components/Auth/__tests__/SocialButton.test.tsx (24 tests) 326ms
+ ✓ src/components/Auth/__tests__/Login.spec.tsx (3 tests) 258ms
+ ✓ src/components/Admin/__tests__/AdminProvider.test.tsx (18 tests) 273ms
+ ✓ src/components/Organization/__tests__/MemberManagement.test.tsx (27 tests) 267ms
+ ✓ src/components/Auth/__tests__/Registration.spec.tsx (3 tests) 522ms
+ ✓ src/components/Nav/SettingsTabs/General/LangSelector.spec.tsx (2 tests) 317ms
+ ✓ src/components/Composio/__tests__/ComposioAuthButton.test.tsx (15 tests) 247ms
+ ✓ src/components/Auth/__tests__/ProgressiveRegistration.test.tsx (20 tests | 2 skipped) 873ms
+ ❯ src/components/Plugins/Store/__tests__/PluginStoreDialog.spec.tsx (4 tests | 1 failed) 1209ms
+   × renders plugin store dialog with plugins from the available plugins query and shows install/uninstall buttons based on user plugins 808ms
+     → Unable to find an accessible element with the role "button" and name `/Uninstall Wolfram/i`
+
+Here are the accessible roles:
+
+  dialog:
+
+  Name "com_nav_plugin_store":
+  [36m<div[39m
+    [33maria-labelledby[39m=[32m"headlessui-dialog-title-:r7:"[39m
+    [33maria-modal[39m=[32m"true"[39m
+    [33mclass[39m=[32m"relative z-[102]"[39m
+    [33mdata-headlessui-state[39m=[32m"open"[39m
+    [33mdata-open[39m=[32m""[39m
+    [33mid[39m=[32m"headlessui-dialog-:r0:"[39m
+    [33mrole[39m=[32m"dialog"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "com_nav_plugin_store":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-lg font-medium leading-6 text-gray-800 dark:text-gray-200"[39m
+    [33mdata-headlessui-state[39m=[32m"open"[39m
+    [33mdata-open[39m=[32m""[39m
+    [33mid[39m=[32m"headlessui-dialog-title-:r7:"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "":
+  [36m<button[39m
+    [33mclass[39m=[32m"inline-block text-gray-500 hover:text-gray-200"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Google":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Google"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Wolfram":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Wolfram"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Calculator":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Calculator"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Plugin 1":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Plugin 1"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Plugin 2":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Plugin 2"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Plugin 3":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Plugin 3"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Plugin 4":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Plugin 4"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "com_nav_plugin_install Plugin 5":
+  [36m<button[39m
+    [33maria-label[39m=[32m"com_nav_plugin_install Plugin 5"[39m
+    [33mclass[39m=[32m"btn btn-primary relative"[39m
+  [36m/>[39m
+
+  Name "Previous page":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Previous page"[39m
+    [33mclass[39m=[32m"flex cursor-default items-center text-sm text-black/70 opacity-50 dark:text-white/70"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mstyle[39m=[32m"user-select: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "1":
+  [36m<div[39m
+    [33mclass[39m=[32m"flex h-5 w-5 items-center justify-center text-sm text-blue-600 hover:text-blue-600 dark:text-blue-600 dark:hover:text-blue-600"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mstyle[39m=[32m"user-select: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "2":
+  [36m<div[39m
+    [33mclass[39m=[32m"flex h-5 w-5 items-center justify-center text-sm text-black/70 hover:text-black/50 dark:text-white/70 dark:hover:text-white/50"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mstyle[39m=[32m"user-select: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "Next page":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Next page"[39m
+    [33mclass[39m=[32m"flex cursor-default items-center text-sm text-black/70 hover:text-black/50 dark:text-white/70 dark:hover:text-white/50"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mstyle[39m=[32m"user-select: none;"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  textbox:
+
+  Name "":
+  [36m<input[39m
+    [33mclass[39m=[32m"text-token-text-primary flex rounded-md border border-border-heavy bg-surface-tertiary py-2 pl-10 pr-2"[39m
+    [33mplaceholder[39m=[32m"com_nav_plugin_search"[39m
+    [33mtype[39m=[32m"text"[39m
+    [33mvalue[39m=[32m""[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  img:
+
+  Name "Google logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Google logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"https://i.imgur.com/SMmVkNB.png"[39m
+  [36m/>[39m
+
+  Name "Wolfram logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Wolfram logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"https://www.wolframcdn.com/images/icons/Wolfram.png"[39m
+  [36m/>[39m
+
+  Name "Calculator logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Calculator logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"https://i.imgur.com/SMmVkNB.png"[39m
+  [36m/>[39m
+
+  Name "Plugin 1 logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Plugin 1 logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"mock-icon"[39m
+  [36m/>[39m
+
+  Name "Plugin 2 logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Plugin 2 logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"mock-icon"[39m
+  [36m/>[39m
+
+  Name "Plugin 3 logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Plugin 3 logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"mock-icon"[39m
+  [36m/>[39m
+
+  Name "Plugin 4 logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Plugin 4 logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"mock-icon"[39m
+  [36m/>[39m
+
+  Name "Plugin 5 logo":
+  [36m<img[39m
+    [33malt[39m=[32m"Plugin 5 logo"[39m
+    [33mclass[39m=[32m"h-full w-full rounded-[5px]"[39m
+    [33msrc[39m=[32m"mock-icon"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div[39m
+    [33maria-hidden[39m=[32m"true"[39m
+  [36m/>[39m
+  [36m<div[39m
+    [33mid[39m=[32m"headlessui-portal-root"[39m
+  [36m>[39m
+    [36m<div[39m
+      [33mdata-headlessui-portal[39m=[32m""[39m
+    [36m>[39m
+      [36m<button[39m
+        [33maria-hidden[39m=[32m"true"[39m
+        [33mdata-headlessui-focus-guard[39m=[32m"true"[39m
+        [33mstyle[39m=[32m"position: fixed; top: 1px; left: 1px; width: 1px; height: 0px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border-width: 0px;"[39m
+        [33mtype[39m=[32m"button"[39m
+      [36m/>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33maria-labelledby[39m=[32m"headlessui-dialog-title-:r7:"[39m
+          [33maria-modal[39m=[32m"true"[39m
+          [33mclass[39m=[32m"relative z-[102]"[39m
+          [33mdata-headlessui-state[39m=[32m"open"[39m
+          [33mdata-open[39m=[32m""[39m
+          [33mid[39m=[32m"headlessui-dialog-:r0:"[39m
+          [33mrole[39m=[32m"dialog"[39m
+          [33mtabindex[39m=[32m"-1"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"fixed inset-0 bg-gray-600/65 transition-opacity dark:bg-black/80"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"fixed inset-0 flex items-center justify-center p-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"relative w-full transform overflow-hidden overflow-y-auto rounded-lg bg-white text-left shadow-xl transition-all dark:bg-gray-700 max-sm:h-full sm:mx-7 sm:my-8 sm:max-w-2xl lg:max-w-5xl xl:max-w-7xl"[39m
+              [33mdata-headlessui-state[39m=[32m"open"[39m
+              [33mdata-open[39m=[32m""[39m
+              [33mid[39m=[32m"headlessui-dialog-panel-:r6:"[39m
+              [33mstyle[39m=[32m"min-height: 610px;"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex items-center justify-between border-b-[1px] border-black/10 p-6 pb-4 dark:border-white/10"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex items-center"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"text-center sm:text-left"[39m
+                  [36m>[39m
+                    [36m<h2[39m
+                      [33mclass[39m=[32m"text-lg font-medium leading-6 text-gray-800 dark:text-gray-200"[39m
+                      [33mdata-headlessui-state[39m=[32m"open"[39m
+                      [33mdata-open[39m=[32m""[39m
+                      [33mid[39m=[32m"headlessui-dialog-title-:r7:"[39m
+                    [36m>[39m
+                      [0mcom_nav_plugin_store[0m
+                    [36m</h2>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"sm:mt-0"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33mclass[39m=[32m"inline-block text-gray-500 hover:text-gray-200"[39m
+                      [33mtabindex[39m=[32m"0"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33mclass[39m=[32m"lucide lucide-x"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"M18 6 6 18"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"m6 6 12 12"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                    [36m</button>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"p-4 sm:p-6 sm:pt-4"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"mt-4 flex flex-col gap-4"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"flex items-center"[39m
+                  [36m>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"relative flex items-center"[39m
+                    [36m>[39m
+                      [36m<svg[39m
+                        [33mclass[39m=[32m"lucide lucide-search absolute left-2 h-6 w-6 text-gray-500"[39m
+                        [33mfill[39m=[32m"none"[39m
+                        [33mheight[39m=[32m"24"[39m
+                        [33mstroke[39m=[32m"currentColor"[39m
+                        [33mstroke-linecap[39m=[32m"round"[39m
+                        [33mstroke-linejoin[39m=[32m"round"[39m
+                        [33mstroke-width[39m=[32m"2"[39m
+                        [33mviewBox[39m=[32m"0 0 24 24"[39m
+                        [33mwidth[39m=[32m"24"[39m
+                        [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                      [36m>[39m
+                        [36m<circle[39m
+                          [33mcx[39m=[32m"11"[39m
+                          [33mcy[39m=[32m"11"[39m
+                          [33mr[39m=[32m"8"[39m
+                        [36m/>[39m
+                        [36m<path[39m
+                          [33md[39m=[32m"m21 21-4.3-4.3"[39m
+                        [36m/>[39m
+                      [36m</svg>[39m
+                      [36m<input[39m
+                        [33mclass[39m=[32m"text-token-text-primary flex rounded-md border border-border-heavy bg-surface-tertiary py-2 pl-10 pr-2"[39m
+                        [33mplaceholder[39m=[32m"com_nav_plugin_search"[39m
+                        [33mtype[39m=[32m"text"[39m
+                        [33mvalue[39m=[32m""[39m
+                      [36m/>[39m
+                    [36m</div>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"grid grid-cols-1 grid-rows-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"[39m
+                    [33mstyle[39m=[32m"min-height: 410px;"[39m
+                  [36m>[39m
+                    [36m<div[39m
+      ...
+   ✓ Displays the plugin auth form when installing a plugin with auth 224ms
+   ✓ allows the user to navigate between pages 143ms
+   ✓ allows the user to search for plugins 33ms
+ ✓ src/components/Auth/OnboardingFlow/__tests__/TeamInvitation.test.tsx (5 tests) 152ms
+ ✓ src/components/Auth/OnboardingFlow/__tests__/OrganizationSetup.test.tsx (5 tests) 111ms
+ ✓ src/components/Tools/__tests__/MCPServerToolSelect.test.tsx (5 tests) 171ms
+ ✓ src/components/Organization/__tests__/OrganizationHeader.test.tsx (20 tests) 165ms
+ ✓ src/components/Tools/__tests__/ToolSelectDialog.test.tsx (4 tests) 145ms
+ ✓ src/Providers/__tests__/OrganizationProvider.test.tsx (32 tests) 196ms
+ ✓ src/components/Auth/OnboardingFlow/__tests__/WelcomeDashboard.test.tsx (5 tests) 95ms
+ ✓ src/components/Auth/OnboardingFlow/__tests__/OrganizationDetection.test.tsx (11 tests) 112ms
+ ✓ src/components/Auth/OnboardingFlow/__tests__/ProfileSetup.test.tsx (4 tests) 85ms
+ ✓ src/components/SidePanel/Agents/__tests__/FeaturedToggle.test.tsx (6 tests) 84ms
+ ✓ src/components/Plugins/Store/__tests__/PluginPagination.spec.tsx (5 tests) 129ms
+ ✓ src/components/Messages/Content/__tests__/AuthCodeParser.test.tsx (14 tests) 126ms
+ ✓ src/components/Nav/SettingsTabs/General/ThemeSelector.spec.tsx (2 tests) 185ms
+ ✓ src/components/Plugins/Store/__tests__/PluginAuthForm.spec.tsx (2 tests) 198ms
+ ✓ src/components/Chat/Messages/__tests__/ProactiveMCPAuth.test.tsx (29 tests) 128ms
+ ✓ src/components/Chat/__tests__/AgentCTA.test.tsx (9 tests) 85ms
+ ✓ src/components/Plugins/Store/__tests__/PluginStoreItem.spec.tsx (3 tests) 104ms
+ ✓ src/components/Chat/__tests__/AgentDiscovery.test.tsx (8 tests) 138ms
+ ✓ src/utils/__tests__/mcpAuth.test.ts (48 tests) 8ms
+ ✓ src/components/Tools/__tests__/MCPServerCard.test.tsx (4 tests) 49ms
+ ✓ src/components/Input/Generations/__tests__/Stop.spec.tsx (2 tests) 45ms
+ ✓ src/components/ui/DialogTemplate.spec.tsx (3 tests) 117ms
+ ✓ src/components/Auth/OnboardingFlow/__tests__/OnboardingLayout.test.tsx (4 tests) 32ms
+ ✓ src/routes/__tests__/Root.integration.test.tsx (6 tests) 63ms
+ ✓ src/components/Nav/SettingsTabs/Speech/ConversationModeSwitch.spec.tsx (2 tests) 64ms
+ ✓ src/components/Nav/SettingsTabs/Speech/STT/__tests__/SpeechToTextSwitch.spec.tsx (2 tests) 46ms
+ ✓ src/components/Nav/SettingsTabs/Speech/TTS/__tests__/CacheTTSSwitch.spec.tsx (2 tests) 43ms
+ ✓ src/components/SidePanel/Agents/__tests__/AgentToolGroup.test.tsx (3 tests) 31ms
+ ✓ src/components/Input/Generations/__tests__/Button.spec.tsx (2 tests) 22ms
+ ✓ src/components/Nav/SettingsTabs/Speech/STT/__tests__/AutoTranscribeAudioSwitch.spec.tsx (2 tests) 42ms
+ ✓ src/components/Nav/SettingsTabs/Speech/TTS/__tests__/TextToSpeechSwitch.spec.tsx (2 tests) 80ms
+ ✓ src/components/Input/Generations/__tests__/Regenerate.spec.tsx (2 tests) 34ms
+ ✓ src/components/Input/Generations/__tests__/Continue.spec.tsx (2 tests) 34ms
+ ✓ src/hooks/Input/useQueryParams.spec.ts (6 tests) 66ms
+ ✓ src/hooks/__tests__/useStartAgentChat.test.ts (9 tests) 24ms
+ ✓ src/utils/createChatSearchParams.spec.ts (27 tests) 8ms
+ ✓ src/hooks/Chat/__tests__/useFocusChatEffect.spec.tsx (17 tests) 60ms
+ ✓ src/utils/convos.spec.ts (36 tests) 22ms
+ ✓ src/components/Nav/SettingsTabs/Speech/TTS/__tests__/AutomaticPlaybackSwitch.spec.tsx (2 tests) 65ms
+ ✓ src/utils/__tests__/tools.test.ts (19 tests) 15ms
+ ✓ src/config/__tests__/betterAuth.test.ts (21 tests) 14ms
+ ✓ src/utils/latex.spec.ts (29 tests) 10ms
+ ✓ src/utils/endpoints.spec.ts (11 tests) 3ms
+ ✓ src/utils/conversationTags.spec.ts (6 tests) 4ms
+ ❯ src/routes/__tests__/AuthGuard.test.tsx (22 tests | 19 failed) 12082ms
+   ✓ AuthGuard > Loading State Display > shows loading spinner when session query is loading 21ms
+   ✓ AuthGuard > Loading State Display > displays correct loading message 2ms
+   × AuthGuard > Authenticated User Redirect > redirects to /c/new when isAuthenticated is true 1009ms
+     → expected "spy" to be called with arguments: [ '/c/new', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Authenticated User Redirect > uses replace: true navigation for authenticated users 1004ms
+     → expected "spy" to be called with arguments: [ '/c/new', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Authenticated User Redirect > calls navigate with correct parameters for authenticated users 1004ms
+     → expected "spy" to be called 1 times, but got 0 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Unauthenticated User Redirect > redirects to /login when session query completes with no session 1002ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Unauthenticated User Redirect > handles case where session data exists but user is null 1004ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Unauthenticated User Redirect > handles case where user exists but session is null 1003ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Unauthenticated User Redirect > handles completely undefined session data 1003ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Unauthenticated User Redirect > uses replace: true navigation for unauthenticated users 1003ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Session Data Handling > waits for context update when session exists but isAuthenticated is false 2ms
+     → Unable to find an element with the text: Loading.... This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div />[39m
+[36m</body>[39m
+   ✓ AuthGuard > Session Data Handling > does not navigate prematurely during auth context updates 3ms
+   × AuthGuard > Session Data Handling > handles session query errors gracefully 2ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × AuthGuard > Session Data Handling > shows loading state while session query is loading 2ms
+     → Unable to find an element with the text: Loading.... This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div />[39m
+[36m</body>[39m
+   × AuthGuard > Session Query Configuration > disables session query when already authenticated 1ms
+     → expected "spy" to be called with arguments: [ { enabled: false, …(2) } ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × AuthGuard > Session Query Configuration > enables session query when not authenticated 1ms
+     → expected "spy" to be called with arguments: [ { enabled: true, …(2) } ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × AuthGuard > Session Query Configuration > sets correct staleTime for session query 2ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × AuthGuard > Session Query Configuration > disables retry for session query 2ms
+     → expected "spy" to be called with arguments: [ ObjectContaining {"retry": false} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × AuthGuard > Edge Cases > handles rapid auth state changes 1002ms
+     → expected "spy" to be called with arguments: [ '/c/new', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Edge Cases > handles undefined sessionData gracefully 1004ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Edge Cases > handles empty sessionData object 1003ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+   × AuthGuard > Edge Cases > handles session without user data 1004ms
+     → expected "spy" to be called with arguments: [ '/login', { replace: true } ][90m
+
+Number of calls: [1m0[22m
+[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div />[39m
+  [36m</body>[39m
+[36m</html>[39m
+ ✓ src/locales/Translation.spec.ts (6 tests) 4ms
+ ✓ src/utils/tools.test.ts (13 tests) 4ms
+ ✓ src/components/Nav/SettingsTabs/Speech/TTS/__tests__/CloudBrowserVoicesSwitch.spec.tsx (2 tests) 33ms
+ ✓ src/components/Auth/OnboardingFlow/__tests__/index.test.ts (6 tests) 2ms
+
+ Test Files  3 failed | 62 passed (65)
+      Tests  21 failed | 754 passed | 2 skipped (777)
+   Start at  15:12:37
+   Duration  13.54s (transform 3.39s, setup 4.15s, collect 58.42s, tests 24.42s, environment 17.08s, prepare 4.20s)
+

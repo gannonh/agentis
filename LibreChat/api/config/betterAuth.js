@@ -3,6 +3,8 @@
  * @module config/betterAuth
  */
 
+import logger from './winston.js';
+
 /**
  * Better Auth configuration object
  * @typedef {Object} BetterAuthConfig
@@ -27,12 +29,15 @@
  */
 export const betterAuthConfig = {
   basePath: '/api/auth',
-  baseURL: process.env.NODE_ENV === 'production' ? 'https://agentis.ai' : 'http://localhost:3080',
+  // Backend API URL (where Better Auth endpoints are served)
+  baseURL: process.env.DOMAIN_SERVER,
+  // Client URL (where users' browsers are pointed) - used for redirects
+  clientURL: process.env.DOMAIN_CLIENT,
   trustedOrigins: [
-    'http://localhost:3090',
-    'http://localhost:3080',
-    'http://localhost:3000',
-    'https://agentis.ai',
+    'http://localhost:3090', // Dev frontend server
+    'http://localhost:3080', // Backend + production frontend
+    'http://localhost:3000', // Alternative dev port
+    'https://agentis.ai', // Production domain
   ],
   emailAndPassword: {
     enabled: true,
@@ -44,9 +49,16 @@ export const betterAuthConfig = {
     sendOnSignUp: false,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days in seconds
-    updateAge: 60 * 60 * 24, // Update session if older than 1 day
-    cookieAge: 60 * 60 * 24 * 7, // 7 days
+    expiresIn: 60 * 60 * 24 * 365, // 1 year in seconds (effectively never expires)
+    updateAge: 0, // Disable automatic session refresh (session lasts full duration)
+    cookieAge: 60 * 60 * 24 * 365, // 1 year
   },
   // Social providers are configured directly in auth.js
 };
+
+logger.debug('Better Auth config values:', {
+  baseURL: process.env.DOMAIN_SERVER,
+  clientURL: process.env.DOMAIN_CLIENT,
+  basePath: '/api/auth',
+});
+logger.debug('Better Auth config object created successfully');

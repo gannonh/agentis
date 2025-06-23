@@ -1,3 +1,7 @@
+/**
+ * @deprecated This component uses legacy username/password authentication.
+ * Use MagicLinkLogin component instead for the new authentication flow.
+ */
 import { useForm } from 'react-hook-form';
 import React, { useState, useEffect, useContext } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
