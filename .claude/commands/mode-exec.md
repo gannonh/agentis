@@ -26,6 +26,7 @@ You function as a senior software engineer executing against a predefined plan w
 
 ### 1. Task Preparation
 - Read the GitHub Issue
+- Understand the issue in the context of the PRD/plan
 - Evaluate scope and criteria
 - Understand dependencies and constraints
 - Update the issue with detailed implementation details and/or corrections

@@ -110,6 +110,7 @@ This document outlines the tasks required to refactor the authentication system 
 - [ ] 90% unit test coverage
 
 #### Task #7: Fix Organization Setting Race Conditions
+<https://github.com/gannonh/agentis/issues/84>
 **Priority**: High  
 **Estimated Effort**: Medium (4-5 hours)  
 **Dependencies**: Task #6  
@@ -121,6 +122,7 @@ This document outlines the tasks required to refactor the authentication system 
 - [ ] No race conditions in concurrent requests
 
 #### Task #8: Add Auth Error Boundaries
+<https://github.com/gannonh/agentis/issues/85>
 **Priority**: Medium  
 **Estimated Effort**: Medium (3-4 hours)  
 **Dependencies**: None  
@@ -132,6 +134,7 @@ This document outlines the tasks required to refactor the authentication system 
 - [ ] Error recovery actions (retry, logout, contact support)
 
 #### Task #9: Implement Centralized Loading State
+<https://github.com/gannonh/agentis/issues/86>
 **Priority**: Medium  
 **Estimated Effort**: Small (2-3 hours)  
 **Dependencies**: Task #6  
@@ -141,6 +144,8 @@ This document outlines the tasks required to refactor the authentication system 
 - [ ] Prevent duplicate loading spinners
 - [ ] Loading state includes progress indication
 - [ ] Accessible loading announcements
+
+### DEFERRED:
 
 #### Task #10: Improve TypeScript Type Safety
 **Priority**: Medium  
