@@ -77,13 +77,14 @@ This document outlines the tasks required to refactor the authentication system 
 **Estimated Effort**: Large (4-6 hours)  
 **Dependencies**: None  
 **Acceptance Criteria**:
-- [ ] Replace all 23+ window.location.href instances with React Router navigation
-- [ ] Ensure SPA navigation flow is maintained
-- [ ] No full page reloads except for OAuth redirects
-- [ ] Preserve application state during navigation
-- [ ] Test all navigation flows work correctly
+- [X] Replace all 23+ window.location.href instances with React Router navigation
+- [X] Ensure SPA navigation flow is maintained
+- [X] No full page reloads except for OAuth redirects
+- [X] Preserve application state during navigation
+- [X] Test all navigation flows work correctly
 
 #### Task #5: Implement Auth Audit Trail
+<https://github.com/gannonh/agentis/issues/82>
 **Priority**: High  
 **Estimated Effort**: Medium (3-4 hours)  
 **Dependencies**: Task #2  
@@ -97,6 +98,7 @@ This document outlines the tasks required to refactor the authentication system 
 ### Phase 2: Architecture Improvements
 
 #### Task #6: Create Centralized AuthService
+<https://github.com/gannonh/agentis/issues/83>
 **Priority**: High  
 **Estimated Effort**: Large (6-8 hours)  
 **Dependencies**: Tasks #1-5  
