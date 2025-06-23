@@ -135,14 +135,14 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
           <div className={cn('fixed inset-0 flex w-screen items-center justify-center p-4')}>
             <DialogPanel
               className={cn(
-                'min-h-[600px] overflow-hidden rounded-xl rounded-b-lg bg-background pb-6 shadow-2xl backdrop-blur-2xl animate-in sm:rounded-2xl md:min-h-[373px] md:w-[680px]',
+                'min-h-[750px] overflow-hidden rounded-xl rounded-b-lg bg-background shadow-2xl backdrop-blur-2xl animate-in sm:rounded-2xl md:min-h-[650px] md:w-[820px] lg:w-[880px]',
               )}
             >
               <DialogTitle
-                className="mb-1 flex items-center justify-between p-6 pb-5 text-left"
+                className="flex items-center justify-between border-b border-border-light p-6 pb-4 text-left"
                 as="div"
               >
-                <h2 className="text-lg font-medium leading-6 text-text-primary">
+                <h2 className="text-xl font-semibold leading-6 text-text-primary">
                   {localize('com_nav_settings')}
                 </h2>
                 <button
@@ -168,7 +168,7 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
                   <span className="sr-only">{localize('com_ui_close')}</span>
                 </button>
               </DialogTitle>
-              <div className="max-h-[550px] overflow-auto px-6 md:max-h-[400px] md:min-h-[400px] md:w-[680px]">
+              <div className="max-h-[700px] overflow-auto px-6 pt-4 md:max-h-[550px] md:min-h-[550px] md:w-[820px] lg:w-[880px]">
                 <Tabs.Root
                   value={activeTab}
                   onValueChange={handleTabChange}
@@ -178,7 +178,7 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
                   <Tabs.List
                     aria-label="Settings"
                     className={cn(
-                      'min-w-auto max-w-auto relative -ml-[8px] flex flex-shrink-0 flex-col flex-nowrap overflow-auto sm:max-w-none',
+                      'min-w-[200px] max-w-[250px] relative -ml-[8px] flex flex-shrink-0 flex-col flex-nowrap overflow-auto sm:max-w-none',
                       isSmallScreen
                         ? 'flex-row rounded-xl bg-surface-secondary'
                         : 'sticky top-0 h-full',
@@ -189,7 +189,7 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
                       <Tabs.Trigger
                         key={value}
                         className={cn(
-                          'group relative z-10 m-1 flex items-center justify-start gap-2 rounded-xl px-2 py-1.5 transition-all duration-200 ease-in-out',
+                          'group relative z-10 m-1 flex items-center justify-start gap-3 rounded-xl px-3 py-2 transition-all duration-200 ease-in-out',
                           isSmallScreen
                             ? 'flex-1 justify-center text-nowrap p-1 px-3 text-sm text-text-secondary radix-state-active:bg-surface-hover radix-state-active:text-text-primary'
                             : 'bg-transparent text-text-secondary radix-state-active:bg-surface-tertiary radix-state-active:text-text-primary',
