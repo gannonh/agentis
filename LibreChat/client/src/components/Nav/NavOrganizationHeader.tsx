@@ -3,10 +3,11 @@
  * @module components/Nav/NavOrganizationHeader
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Building2, Crown, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { SettingsTabValues } from 'librechat-data-provider';
 import { useOrganization } from '~/Providers/OrganizationProvider';
+import Settings from './Settings';
 import { cn } from '~/utils';
 
 /**
@@ -14,7 +15,7 @@ import { cn } from '~/utils';
  * Shows organization context and role in a condensed format
  */
 export const NavOrganizationHeader: React.FC = () => {
-  const navigate = useNavigate();
+  const [showSettings, setShowSettings] = useState(false);
   const { organization, userRole, members, isLoading } = useOrganization();
 
   if (isLoading || !organization) {
@@ -25,45 +26,56 @@ export const NavOrganizationHeader: React.FC = () => {
   const RoleIcon = roleIcon;
 
   const handleClick = () => {
-    // Navigate to organization settings (to be implemented)
-    navigate('/settings/organization');
+    // Open settings modal with organization tab
+    setShowSettings(true);
   };
 
   return (
-    <div
-      className={cn(
-        'mx-2 mb-3 cursor-pointer rounded-lg bg-surface-secondary p-3',
-        'transition-colors duration-200 hover:bg-surface-tertiary',
-      )}
-      onClick={handleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          handleClick();
-        }
-      }}
-    >
-      <div className="flex items-center space-x-3">
-        {/* Organization icon */}
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-purple-600">
-          <Building2 className="h-5 w-5 text-white" />
-        </div>
+    <>
+      <div
+        className={cn(
+          'mx-2 mb-3 cursor-pointer rounded-lg bg-surface-secondary p-3',
+          'transition-colors duration-200 hover:bg-surface-tertiary',
+        )}
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleClick();
+          }
+        }}
+      >
+        <div className="flex items-center space-x-3">
+          {/* Organization icon */}
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-purple-600">
+            <Building2 className="h-5 w-5 text-white" />
+          </div>
 
-        {/* Organization info */}
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-medium text-text-primary">{organization.name}</h3>
-          <div className="flex items-center space-x-2 text-xs text-text-secondary">
-            <div className="flex items-center space-x-1">
-              <RoleIcon className="h-3 w-3" />
-              <span>{userRole === 'owner' ? 'Owner' : 'Member'}</span>
+          {/* Organization info */}
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-medium text-text-primary">{organization.name}</h3>
+            <div className="flex items-center space-x-2 text-xs text-text-secondary">
+              <div className="flex items-center space-x-1">
+                <RoleIcon className="h-3 w-3" />
+                <span>{userRole === 'owner' ? 'Owner' : 'Member'}</span>
+              </div>
+              <span className="text-text-tertiary">•</span>
+              <span>{members.length} members</span>
             </div>
-            <span className="text-text-tertiary">•</span>
-            <span>{members.length} members</span>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Settings modal with organization tab */}
+      {showSettings && (
+        <Settings
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          initialTab={SettingsTabValues.ORGANIZATION}
+        />
+      )}
+    </>
   );
 };
 

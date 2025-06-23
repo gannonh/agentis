@@ -92,12 +92,12 @@ export interface OrganizationData {
   name: string;
   slug: string;
   logo?: string | null;
-  description?: string;
-  website?: string;
   metadata?: {
     domain: string;
     autoCreated: boolean;
     createdFromEmail: string;
+    description?: string;
+    website?: string;
   };
   createdAt: Date;
 }

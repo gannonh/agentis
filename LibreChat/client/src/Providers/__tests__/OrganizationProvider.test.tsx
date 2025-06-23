@@ -57,6 +57,23 @@ vi.mock('@tanstack/react-query', async () => {
 });
 
 // Test data
+// Raw organization data as it comes from Better Auth (with description/website in metadata)
+const mockRawOrganization = {
+  id: 'org-1',
+  name: 'Test Organization',
+  slug: 'test-org',
+  logo: 'https://example.com/logo.png',
+  metadata: {
+    domain: 'test.com',
+    autoCreated: false,
+    createdFromEmail: 'test@test.com',
+    description: 'Test organization description',
+    website: 'https://test.com',
+  },
+  createdAt: new Date('2024-01-01T00:00:00Z'),
+};
+
+// Processed organization data as the frontend expects it (with description/website as direct properties)
 const mockOrganization: OrganizationData = {
   id: 'org-1',
   name: 'Test Organization',
@@ -66,6 +83,8 @@ const mockOrganization: OrganizationData = {
     domain: 'test.com',
     autoCreated: false,
     createdFromEmail: 'test@test.com',
+    description: 'Test organization description',
+    website: 'https://test.com',
   },
   createdAt: new Date('2024-01-01T00:00:00Z'),
   description: 'Test organization description',
@@ -338,7 +357,7 @@ describe('OrganizationProvider', () => {
     // Setup default mocks
     // Mock auth client hooks
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
-      data: mockOrganization,
+      data: mockRawOrganization,
       error: null,
       isPending: false,
       isRefetching: false,
@@ -713,7 +732,49 @@ describe('OrganizationProvider', () => {
       });
 
       expect(authClient.organization.update).toHaveBeenCalledWith({
-        data: { name: 'Updated Org' },
+        data: { name: 'Updated Org', metadata: {} },
+      });
+    });
+
+    it('should handle organization update with description and website', async () => {
+      const TestComponent = () => {
+        const { updateOrganization } = useOrganization();
+        return (
+          <button
+            data-testid="update-org-with-details-btn"
+            onClick={() =>
+              updateOrganization({
+                name: 'Updated Org',
+                description: 'New description',
+                website: 'https://new-website.com',
+              })
+            }
+          >
+            Update Org with Details
+          </button>
+        );
+      };
+
+      render(
+        <QueryClientProvider client={actualQueryClient}>
+          <OrganizationProvider>
+            <TestComponent />
+          </OrganizationProvider>
+        </QueryClientProvider>,
+      );
+
+      await act(async () => {
+        screen.getByTestId('update-org-with-details-btn').click();
+      });
+
+      expect(authClient.organization.update).toHaveBeenCalledWith({
+        data: { 
+          name: 'Updated Org', 
+          metadata: { 
+            description: 'New description',
+            website: 'https://new-website.com'
+          } 
+        },
       });
     });
 
@@ -921,7 +982,7 @@ describe('useOrganizationPermissions Hook', () => {
     vi.clearAllMocks();
 
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
-      data: mockOrganization,
+      data: mockRawOrganization,
       error: null,
     });
 
@@ -1074,7 +1135,7 @@ describe('useOrganizationMembers Hook', () => {
     vi.clearAllMocks();
 
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
-      data: mockOrganization,
+      data: mockRawOrganization,
       error: null,
     });
 
@@ -1165,7 +1226,7 @@ describe('useOrganizationInvitations Hook', () => {
     vi.clearAllMocks();
 
     vi.mocked(authClient.useActiveOrganization).mockReturnValue({
-      data: mockOrganization,
+      data: mockRawOrganization,
       error: null,
     });
 

@@ -1,19 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { MessageSquare, Command } from 'lucide-react';
+import { MessageSquare, Command, Building2 } from 'lucide-react';
 import { SettingsTabValues } from 'librechat-data-provider';
-import type { TDialogProps } from '~/common';
+import type { TDialogProps } from '~/common/types';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
-import { General, Chat, Speech, Beta, Commands, Data, Account } from './SettingsTabs';
+import { General, Chat, Speech, Beta, Commands, Data, Account, Organization } from './SettingsTabs';
 import { useMediaQuery, useLocalize, TranslationKeys } from '~/hooks';
 import { cn } from '~/utils';
 
-export default function Settings({ open, onOpenChange }: TDialogProps) {
+interface SettingsProps extends TDialogProps {
+  initialTab?: SettingsTabValues;
+}
+
+export default function Settings({ open, onOpenChange, initialTab }: SettingsProps) {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const localize = useLocalize();
-  const [activeTab, setActiveTab] = useState(SettingsTabValues.GENERAL);
+  const [activeTab, setActiveTab] = useState(initialTab || SettingsTabValues.GENERAL);
   const tabRefs = useRef({});
+
+  // Update active tab when initialTab prop changes
+  useEffect(() => {
+    if (initialTab && open) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, open]);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     const tabs = [
@@ -24,6 +35,7 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       SettingsTabValues.SPEECH,
       SettingsTabValues.DATA,
       SettingsTabValues.ACCOUNT,
+      SettingsTabValues.ORGANIZATION,
     ];
     const currentIndex = tabs.indexOf(activeTab);
 
@@ -86,6 +98,11 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       value: SettingsTabValues.ACCOUNT,
       icon: <UserIcon />,
       label: 'com_nav_setting_account',
+    },
+    {
+      value: SettingsTabValues.ORGANIZATION,
+      icon: <Building2 className="icon-sm" />,
+      label: 'com_nav_setting_organization',
     },
   ];
 
@@ -206,6 +223,9 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                     </Tabs.Content>
                     <Tabs.Content value={SettingsTabValues.ACCOUNT}>
                       <Account />
+                    </Tabs.Content>
+                    <Tabs.Content value={SettingsTabValues.ORGANIZATION}>
+                      <Organization />
                     </Tabs.Content>
                   </div>
                 </Tabs.Root>

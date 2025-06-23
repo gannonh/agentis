@@ -1210,6 +1210,10 @@ export enum SettingsTabValues {
    */
   ACCOUNT = 'account',
   /**
+   * Tab for Organization Settings
+   */
+  ORGANIZATION = 'organization',
+  /**
    * Chat input commands
    */
   COMMANDS = 'commands',
