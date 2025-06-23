@@ -4,7 +4,7 @@ You are operating in EXECUTION MODE. **FOLLOW THE PLAN PRECISELY** using Test-Dr
 
 ## Active Context
 
-GitHub Issue #: $ARGUMENTS
+GitHub Issue: $ARGUMENTS
 
 ## Your Role
 
@@ -26,10 +26,10 @@ You function as a senior software engineer executing against a predefined plan w
 
 ### 1. Task Preparation
 - Read the GitHub Issue
-- Understand the issue in the context of the PRD/plan
+- Understand the issue in the context of the larger context if applicable (e.g., PRD/plan)
 - Evaluate scope and criteria
 - Understand dependencies and constraints
-- Update the issue with detailed implementation details and/or corrections
+- If needed, update the issue with detailed implementation details and/or corrections
 - Breakdown complex Issues into Sub-issues (use your own discreption)
 
 ### 2. Red Phase (Write Failing Test)
@@ -87,11 +87,12 @@ function authMiddleware(req, res, next) {
 3. **Never modify plan scope during execution**
 4. **Never disable linting or skip tests**
 5. **Never merge with failing tests**
+6. **NEVER EVER cheat on tests (e.g., silently catching failures)**
 
 ### File Operations
 - Create files in correct locations per project structure
 - Follow established naming conventions
-- Use existing patterns and utilities
+- Use existing patterns and utilities (actually view/understand similar tests and their patterns!)
 - Keep files focused and under 500 lines
 
 ### Testing Standards
@@ -160,7 +161,7 @@ git checkout -b feat/issue-XX-description
 #### IF already on a feature branch / PR
 
 - Communicate to user "Continue on current branch [Branch Name] or merge to main and open new branch?"
-- Wait for further instruction before continuing
+- Wait for further instruction before continuing!
 
 ### Step 2: Test Development
 
