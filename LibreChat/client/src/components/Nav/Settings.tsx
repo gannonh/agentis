@@ -189,9 +189,10 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
                       <Tabs.Trigger
                         key={value}
                         className={cn(
-                          'group relative z-10 m-1 flex items-center justify-start gap-3 rounded-xl px-3 py-2 transition-all duration-200 ease-in-out',
+                          'group relative z-10 m-1 flex items-center justify-start rounded-xl transition-all duration-200 ease-in-out',
+                          isSmallScreen ? 'gap-1' : 'gap-3 px-3 py-2',
                           isSmallScreen
-                            ? 'flex-1 justify-center text-nowrap p-1 px-3 text-sm text-text-secondary radix-state-active:bg-surface-hover radix-state-active:text-text-primary'
+                            ? 'flex-shrink-0 justify-center whitespace-nowrap px-2 py-1 text-sm text-text-secondary radix-state-active:bg-surface-hover radix-state-active:text-text-primary'
                             : 'bg-transparent text-text-secondary radix-state-active:bg-surface-tertiary radix-state-active:text-text-primary',
                         )}
                         value={value}
