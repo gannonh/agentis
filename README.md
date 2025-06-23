@@ -75,9 +75,11 @@ npm run build:data-schemas
 
 # From LibreChat directory:
 # Start backend server in development mode
+# Backend is always running and restarts on file change so you almost never need to run this
 npm run backend:dev
 
 # Start frontend development server
+# Frontend is always running and restarts on file change so you almost never need to run this
 npm run frontend:dev
 
 # Production mode
@@ -149,7 +151,9 @@ npm run typecheck:packages  # Check packages production code types
 npm run typecheck:all       # Check all production code types
 
 # Run all checks before PR
-npm run check:all    # Runs lint, format, typecheck, and test:all
+npm run check:client
+npm run check:api
+npm run check:packages
 ```
 
 ### TypeScript Configuration

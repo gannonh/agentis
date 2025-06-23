@@ -479,10 +479,39 @@ describe('OrganizationProvider', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should handle missing organization data', () => {
+    it('should handle missing organization data', async () => {
       vi.mocked(authClient.useActiveOrganization).mockReturnValue({
         data: null,
         error: null,
+      } as any);
+
+      // Also mock useQuery to return null for the full organization query
+      const { useQuery } = await import('@tanstack/react-query');
+      vi.mocked(useQuery).mockReturnValue({
+        data: null,
+        error: null,
+        isLoading: false,
+        isError: false,
+        isSuccess: true,
+        isIdle: false,
+        isLoadingError: false,
+        isRefetchError: false,
+        isStale: false,
+        isFetched: true,
+        isFetchedAfterMount: true,
+        isFetching: false,
+        isRefetching: false,
+        isInitialLoading: false,
+        isPlaceholderData: false,
+        isPaused: false,
+        failureCount: 0,
+        failureReason: null,
+        refetch: vi.fn(),
+        remove: vi.fn(),
+        fetchStatus: 'idle' as const,
+        status: 'success' as const,
+        dataUpdatedAt: Date.now(),
+        errorUpdatedAt: 0,
       } as any);
 
       render(
@@ -768,12 +797,12 @@ describe('OrganizationProvider', () => {
       });
 
       expect(authClient.organization.update).toHaveBeenCalledWith({
-        data: { 
-          name: 'Updated Org', 
-          metadata: { 
+        data: {
+          name: 'Updated Org',
+          metadata: {
             description: 'New description',
-            website: 'https://new-website.com'
-          } 
+            website: 'https://new-website.com',
+          },
         },
       });
     });

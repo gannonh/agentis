@@ -53,9 +53,15 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
   const [logoError, setLogoError] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { organization, userRole, canUpdateSettings, updateOrganization, deleteOrganization, isLoading } =
-    useOrganization();
-    
+  const {
+    organization,
+    userRole,
+    canUpdateSettings,
+    updateOrganization,
+    deleteOrganization,
+    isLoading,
+  } = useOrganization();
+
   console.log('OrganizationSettings - organization data:', organization);
 
   const {
@@ -73,14 +79,14 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
       logo: organization?.logo || '',
     },
   });
-  
+
   // Set form values when organization data changes
   React.useEffect(() => {
     if (organization) {
       console.log('Setting form values from organization:', organization);
       console.log('organization.metadata:', organization.metadata);
       console.log('typeof organization.metadata:', typeof organization.metadata);
-      
+
       // Check if metadata is a string that needs parsing
       let metadata = organization.metadata;
       if (typeof metadata === 'string') {
@@ -91,12 +97,12 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
           console.error('Failed to parse metadata:', e);
         }
       }
-      
+
       const descValue = metadata?.description || '';
       const webValue = metadata?.website || '';
       console.log('Setting description to:', descValue);
       console.log('Setting website to:', webValue);
-      
+
       setValue('name', organization.name || '');
       setValue('description', descValue);
       setValue('website', webValue);

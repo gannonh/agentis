@@ -178,7 +178,7 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
                   <Tabs.List
                     aria-label="Settings"
                     className={cn(
-                      'min-w-[200px] max-w-[250px] relative -ml-[8px] flex flex-shrink-0 flex-col flex-nowrap overflow-auto sm:max-w-none',
+                      'relative -ml-[8px] flex min-w-[200px] max-w-[250px] flex-shrink-0 flex-col flex-nowrap overflow-auto sm:max-w-none',
                       isSmallScreen
                         ? 'flex-row rounded-xl bg-surface-secondary'
                         : 'sticky top-0 h-full',

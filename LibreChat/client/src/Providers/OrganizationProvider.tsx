@@ -68,7 +68,6 @@ interface OrganizationContextType {
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
-
 /**
  * Organization provider component
  * Provides organization context using Better-auth hooks
@@ -78,10 +77,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   // Get active organization from Better-auth
   const { data: activeOrganizationResult, error: orgError } = authClient.useActiveOrganization();
-  
+
   // Extract organization data
   const activeOrganization = useMemo(() => {
-    return activeOrganizationResult?.data || activeOrganizationResult;
+    return activeOrganizationResult;
   }, [activeOrganizationResult]);
 
   // Get current user session for role checking
@@ -196,7 +195,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     }) => {
       // Extract description and website to store in metadata
       const { description, website, metadata = {}, ...rest } = data;
-      
+
       // Prepare metadata with description and website
       const updatedMetadata = {
         ...metadata,
@@ -205,11 +204,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       };
 
       // Call Better Auth with metadata structure
-      await authClient.organization.update({ 
+      await authClient.organization.update({
         data: {
           ...rest,
           metadata: updatedMetadata,
-        }
+        },
       });
     },
     onSuccess: () => {
