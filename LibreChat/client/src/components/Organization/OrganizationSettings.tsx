@@ -53,25 +53,72 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
   const [logoError, setLogoError] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { organization, userRole, canManageOrganization, updateOrganization, deleteOrganization } =
-    useOrganization();
+  const {
+    organization,
+    userRole,
+    canUpdateSettings,
+    updateOrganization,
+    deleteOrganization,
+    isLoading,
+  } = useOrganization();
+
+  console.log('OrganizationSettings - organization data:', organization);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<OrganizationFormData>({
     defaultValues: {
       name: organization?.name || '',
-      description: organization?.description || '',
-      website: organization?.website || '',
+      description: organization?.metadata?.description || '',
+      website: organization?.metadata?.website || '',
       logo: organization?.logo || '',
     },
   });
 
-  if (!organization || !canManageOrganization) {
+  // Set form values when organization data changes
+  React.useEffect(() => {
+    if (organization) {
+      console.log('Setting form values from organization:', organization);
+      console.log('organization.metadata:', organization.metadata);
+      console.log('typeof organization.metadata:', typeof organization.metadata);
+
+      // Check if metadata is a string that needs parsing
+      let metadata = organization.metadata;
+      if (typeof metadata === 'string') {
+        try {
+          metadata = JSON.parse(metadata);
+          console.log('Parsed metadata:', metadata);
+        } catch (e) {
+          console.error('Failed to parse metadata:', e);
+        }
+      }
+
+      const descValue = metadata?.description || '';
+      const webValue = metadata?.website || '';
+      console.log('Setting description to:', descValue);
+      console.log('Setting website to:', webValue);
+
+      setValue('name', organization.name || '');
+      setValue('description', descValue);
+      setValue('website', webValue);
+      setValue('logo', organization.logo || '');
+    }
+  }, [organization, setValue]);
+
+  if (isLoading) {
+    return (
+      <div className="py-12 text-center">
+        <div className="text-gray-600 dark:text-gray-400">Loading organization settings...</div>
+      </div>
+    );
+  }
+
+  if (!organization || !canUpdateSettings) {
     return (
       <div className="py-12 text-center">
         <Building2 className="mx-auto mb-4 h-12 w-12 text-gray-400" />

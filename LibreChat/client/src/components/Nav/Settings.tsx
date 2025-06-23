@@ -1,19 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { MessageSquare, Command } from 'lucide-react';
+import { MessageSquare, Command, Building2 } from 'lucide-react';
 import { SettingsTabValues } from 'librechat-data-provider';
-import type { TDialogProps } from '~/common';
+import type { TDialogProps } from '~/common/types';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
-import { General, Chat, Speech, Beta, Commands, Data, Account } from './SettingsTabs';
+import { General, Chat, Speech, Beta, Commands, Data, Account, Organization } from './SettingsTabs';
 import { useMediaQuery, useLocalize, TranslationKeys } from '~/hooks';
 import { cn } from '~/utils';
 
-export default function Settings({ open, onOpenChange }: TDialogProps) {
+interface SettingsProps extends TDialogProps {
+  initialTab?: SettingsTabValues;
+}
+
+export default function Settings({ open, onOpenChange, initialTab }: SettingsProps) {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const localize = useLocalize();
-  const [activeTab, setActiveTab] = useState(SettingsTabValues.GENERAL);
+  const [activeTab, setActiveTab] = useState(initialTab || SettingsTabValues.GENERAL);
   const tabRefs = useRef({});
+
+  // Update active tab when initialTab prop changes
+  useEffect(() => {
+    if (initialTab && open) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, open]);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     const tabs = [
@@ -24,6 +35,7 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       SettingsTabValues.SPEECH,
       SettingsTabValues.DATA,
       SettingsTabValues.ACCOUNT,
+      SettingsTabValues.ORGANIZATION,
     ];
     const currentIndex = tabs.indexOf(activeTab);
 
@@ -87,6 +99,11 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       icon: <UserIcon />,
       label: 'com_nav_setting_account',
     },
+    {
+      value: SettingsTabValues.ORGANIZATION,
+      icon: <Building2 className="icon-sm" />,
+      label: 'com_nav_setting_organization',
+    },
   ];
 
   const handleTabChange = (value: string) => {
@@ -118,14 +135,14 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
           <div className={cn('fixed inset-0 flex w-screen items-center justify-center p-4')}>
             <DialogPanel
               className={cn(
-                'min-h-[600px] overflow-hidden rounded-xl rounded-b-lg bg-background pb-6 shadow-2xl backdrop-blur-2xl animate-in sm:rounded-2xl md:min-h-[373px] md:w-[680px]',
+                'min-h-[750px] overflow-hidden rounded-xl rounded-b-lg bg-background shadow-2xl backdrop-blur-2xl animate-in sm:rounded-2xl md:min-h-[650px] md:w-[820px] lg:w-[880px]',
               )}
             >
               <DialogTitle
-                className="mb-1 flex items-center justify-between p-6 pb-5 text-left"
+                className="flex items-center justify-between border-b border-border-light p-6 pb-4 text-left"
                 as="div"
               >
-                <h2 className="text-lg font-medium leading-6 text-text-primary">
+                <h2 className="text-xl font-semibold leading-6 text-text-primary">
                   {localize('com_nav_settings')}
                 </h2>
                 <button
@@ -151,7 +168,7 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                   <span className="sr-only">{localize('com_ui_close')}</span>
                 </button>
               </DialogTitle>
-              <div className="max-h-[550px] overflow-auto px-6 md:max-h-[400px] md:min-h-[400px] md:w-[680px]">
+              <div className="max-h-[700px] overflow-auto px-6 pt-4 md:max-h-[550px] md:min-h-[550px] md:w-[820px] lg:w-[880px]">
                 <Tabs.Root
                   value={activeTab}
                   onValueChange={handleTabChange}
@@ -161,7 +178,7 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                   <Tabs.List
                     aria-label="Settings"
                     className={cn(
-                      'min-w-auto max-w-auto relative -ml-[8px] flex flex-shrink-0 flex-col flex-nowrap overflow-auto sm:max-w-none',
+                      'relative -ml-[8px] flex min-w-[200px] max-w-[250px] flex-shrink-0 flex-col flex-nowrap overflow-auto sm:max-w-none',
                       isSmallScreen
                         ? 'flex-row rounded-xl bg-surface-secondary'
                         : 'sticky top-0 h-full',
@@ -172,9 +189,10 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                       <Tabs.Trigger
                         key={value}
                         className={cn(
-                          'group relative z-10 m-1 flex items-center justify-start gap-2 rounded-xl px-2 py-1.5 transition-all duration-200 ease-in-out',
+                          'group relative z-10 m-1 flex items-center justify-start rounded-xl transition-all duration-200 ease-in-out',
+                          isSmallScreen ? 'gap-1' : 'gap-3 px-3 py-2',
                           isSmallScreen
-                            ? 'flex-1 justify-center text-nowrap p-1 px-3 text-sm text-text-secondary radix-state-active:bg-surface-hover radix-state-active:text-text-primary'
+                            ? 'flex-shrink-0 justify-center whitespace-nowrap px-2 py-1 text-sm text-text-secondary radix-state-active:bg-surface-hover radix-state-active:text-text-primary'
                             : 'bg-transparent text-text-secondary radix-state-active:bg-surface-tertiary radix-state-active:text-text-primary',
                         )}
                         value={value}
@@ -206,6 +224,9 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                     </Tabs.Content>
                     <Tabs.Content value={SettingsTabValues.ACCOUNT}>
                       <Account />
+                    </Tabs.Content>
+                    <Tabs.Content value={SettingsTabValues.ORGANIZATION}>
+                      <Organization />
                     </Tabs.Content>
                   </div>
                 </Tabs.Root>

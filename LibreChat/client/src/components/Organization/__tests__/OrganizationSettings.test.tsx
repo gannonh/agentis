@@ -168,6 +168,9 @@ describe('OrganizationSettings', () => {
     canManageMembers: true,
     canManageOrganization: true,
     canInviteMembers: true,
+    canUpdateSettings: true,
+    canDeleteOrganization: true,
+    canViewMembers: true,
   };
 
   beforeEach(() => {
@@ -199,7 +202,7 @@ describe('OrganizationSettings', () => {
     it('should render access denied when user cannot manage organization', () => {
       mockUseOrganization.mockReturnValue({
         ...defaultMockData,
-        canManageOrganization: false,
+        canUpdateSettings: false,
       });
 
       render(<OrganizationSettings />);

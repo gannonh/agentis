@@ -37,6 +37,8 @@ interface OrganizationContextType {
   removeMember: (memberId: string) => Promise<void>;
   updateOrganization: (data: {
     name?: string;
+    description?: string;
+    website?: string;
     metadata?: Record<string, any>;
     slug?: string;
     logo?: string;
@@ -74,7 +76,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   // Get active organization from Better-auth
-  const { data: activeOrganization, error: orgError } = authClient.useActiveOrganization();
+  const { data: activeOrganizationResult, error: orgError } = authClient.useActiveOrganization();
+
+  // Extract organization data
+  const activeOrganization = useMemo(() => {
+    return activeOrganizationResult;
+  }, [activeOrganizationResult]);
 
   // Get current user session for role checking
   const { data: session } = authClient.useSession();
@@ -180,15 +187,34 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const updateOrganizationMutation = useMutation({
     mutationFn: async (data: {
       name?: string;
+      description?: string;
+      website?: string;
       metadata?: Record<string, any>;
       slug?: string;
       logo?: string;
     }) => {
-      await authClient.organization.update({ data });
+      // Extract description and website to store in metadata
+      const { description, website, metadata = {}, ...rest } = data;
+
+      // Prepare metadata with description and website
+      const updatedMetadata = {
+        ...metadata,
+        ...(description !== undefined && { description }),
+        ...(website !== undefined && { website }),
+      };
+
+      // Call Better Auth with metadata structure
+      await authClient.organization.update({
+        data: {
+          ...rest,
+          metadata: updatedMetadata,
+        },
+      });
     },
     onSuccess: () => {
       // Invalidate and refetch organization data
       queryClient.invalidateQueries({ queryKey: ['active-organization'] });
+      queryClient.invalidateQueries({ queryKey: ['full-organization'] });
     },
   });
 
@@ -269,6 +295,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const updateOrganization = useCallback(
     async (data: {
       name?: string;
+      description?: string;
+      website?: string;
       metadata?: Record<string, any>;
       slug?: string;
       logo?: string;
@@ -297,11 +325,18 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     await deleteOrganizationMutation.mutateAsync();
   }, [deleteOrganizationMutation]);
 
+  // Use organization data directly - no transformation needed
+  const processedOrganization = useMemo(() => {
+    // Use full organization data if available, otherwise fall back to active organization
+    const orgData = fullOrganization?.data || activeOrganization;
+    return orgData;
+  }, [fullOrganization?.data, activeOrganization]);
+
   // Context value
   const contextValue = useMemo(
     () => ({
       // Data
-      organization: activeOrganization || null,
+      organization: processedOrganization,
       userRole,
       members,
       invitations,
@@ -331,7 +366,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       hasPermission,
     }),
     [
-      activeOrganization,
+      processedOrganization,
       userRole,
       members,
       invitations,

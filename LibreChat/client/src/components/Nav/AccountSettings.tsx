@@ -22,7 +22,7 @@ function AccountSettings() {
   const [showSettings, setShowSettings] = useState(false);
   const [showFiles, setShowFiles] = useRecoilState(store.showFiles);
 
-  const avatarSrc = useAvatar(user);
+  const avatarSrc = useAvatar(user || undefined);
   const avatarSeed = user?.avatar || user?.name || user?.username || '';
 
   return (
