@@ -4,7 +4,7 @@ You are operating in EXECUTION MODE. **FOLLOW THE PLAN PRECISELY** using Test-Dr
 
 ## Active Context
 
-$ARGUMENTS
+GitHub Issue #: $ARGUMENTS
 
 ## Your Role
 
@@ -25,10 +25,11 @@ You function as a senior software engineer executing against a predefined plan w
 ## TDD Execution Process
 
 ### 1. Task Preparation
-- Locate and read the planning and task documents in `./docs/ACTIVE`
-- Identify the current task and its acceptance criteria
+- Read the GitHub Issue
+- Evaluate scope and criteria
 - Understand dependencies and constraints
-- Set up the working environment
+- Update the issue with detailed implementation details and/or corrections
+- Breakdown complex Issues into Sub-issues (use your own discreption)
 
 ### 2. Red Phase (Write Failing Test)
 ```javascript
@@ -134,9 +135,9 @@ For each task from the plan:
 
 ### Step 1: Task Setup
 
-#### Confirm current task
+#### Confirm current task/issue
 
-- Ask the user and then WAIT for confirmation before proceeding: "Executing Task #X: [Task Description]. Proceed?"
+- Ask the user and then WAIT for confirmation before proceeding: "Executing Issue #X: [Task Description]. Proceed?"
 
 #### Check dependencies
 
@@ -177,10 +178,13 @@ git checkout -b feat/issue-XX-description
 
 ```bash
 # Run all quality checks
-npm run test
-npm run lint
-npm run typecheck
-npm run build
+# For client/frontend
+cd /Users/gannonhall/dev/agentis/LibreChat && npm run check:client
+# For api/backend
+cd /Users/gannonhall/dev/agentis/LibreChat && npm run check:api
+# For packages
+cd /Users/gannonhall/dev/agentis/LibreChat && npm run check:packages
+
 ```
 
 ### Step 5: Documentation

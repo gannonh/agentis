@@ -1,9 +1,17 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # GLOBAL RULES
+
+# CLAUDE.md
+
+This file provides guidance to Claude Code for all projects.
+
+## Who am I?
+
+Hello Claude Code! My name is Gannon, and I am the human software engineer you are working with.
 
 ## Core Principles
 
@@ -12,20 +20,24 @@ alwaysApply: false
 - **Analyze codebase thoroughly** before implementation
 - **Use GitHub Issues as source of truth** for work management and documentation
 - **Never mark tasks complete** without verification and approval
+- **NEVER use "fallbacks" or "catch-alls"** - if something is missing throw an error
 
 ## Implementation Guidelines
 
 ### Atomic Implementation
+
 - Implement the absolute minimum to meet task requirements
 - Choose narrow interpretations when scope is unclear
 - Understand: more changes = more variables = harder debugging
 
 ### Scope Control
+
 - Pause and request permission before changing files/components outside initial scope
 - Never perform 'while I'm at it' improvements without approval
 - Stop at earliest testable checkpoint for confirmation
 
 ### Critical Rules - DO NOT VIOLATE
+
 - **NEVER create mock data or simplified components** unless explicitly requested
 - **NEVER replace complex components with simplified versions** - fix the actual problem
 - **ALWAYS work with existing codebase** - no simplified alternatives
@@ -35,6 +47,7 @@ alwaysApply: false
 ## Development Workflow
 
 ### Test-Driven Development (TDD)
+
 1. Write failing tests before implementation
 2. Run tests immediately to verify they fail correctly
 3. Implement minimal code to pass the specific test
@@ -43,13 +56,15 @@ alwaysApply: false
 6. Run full test suite to prevent regressions
 7. For bugs: write failing test first, then fix
 
-**Testing Rules:**
+#### Testing Rules
+
 - Never write multiple test files without running tests between each addition
 - Always run tests immediately after writing them
 - Never make extensive changes without running linters and tests
 - Run targeted tests before the full suite
 
 ### Definition of Done
+
 1. Unit tests pass
 2. Lints pass
 3. Typecheck passes
@@ -61,6 +76,7 @@ alwaysApply: false
 9. PR opened
 
 ### Information Gathering
+
 - Collect all requirements before starting
 - Use Context7 MCP Server for code samples
 - Use Perplexity MCP for research
@@ -69,6 +85,7 @@ alwaysApply: false
 ## Code Standards
 
 ### Style Guidelines
+
 - Use JSDoc documentation for every file
 - Abstract code repeated more than twice
 - Utilize existing utility functions
@@ -84,7 +101,8 @@ alwaysApply: false
 
 ### Git Workflow
 
-**Branches & Commits:**
+#### Branches & Commits
+
 - Branch naming: `feat/issue-XX-description` or `fix/issue-XX-description`
 - Make focused, atomic commits
 - Follow conventional commit format:
@@ -96,7 +114,8 @@ alwaysApply: false
   - `refactor`: Code change (no new features)
   - `chore`: Routine tasks
 
-**Pull Requests:**
+#### Pull Requests
+
 1. Run `npm run check:all` before opening PR
 2. All checks must pass (lint, typecheck, tests)
 3. Coverage must exceed 80%
@@ -106,41 +125,16 @@ alwaysApply: false
 7. Squash and merge to main
 
 ### Naming Conventions
+
 - **Branches:** Descriptive, slash-based (e.g., `new/feature/x`)
 - **Labels:** Descriptive, kebab-case (e.g., `bug-fix`)
 - **JS/TS files:** camelCase, uppercase first letter for React (e.g., `helperFunction.ts`, `ReactComponent.tsx`)
 - **Docs:** kebab-case (e.g., `config-files.md`)
 
-## Browser Automation (Playwright MCP)
-
-### Best Practices
-1. **Prefer accessibility snapshots** over screenshots
-   - Use `browser_snapshot` for structured content
-   - Avoid `browser_take_screenshot` unless requested
-   - Access elements via semantic refs (e.g., `ref=e26`)
-
-2. **Interaction patterns:**
-   - Capture snapshot first to see page structure
-   - Use element descriptions with ref IDs for targeting
-   - Test forms systematically with snapshots between interactions
-
-3. **Debugging:**
-   - Check console messages for errors
-   - Use hover for UI state testing
-   - Monitor network requests carefully (can be large)
-
-## Summary Workflow
-
-1. Create/update feature branch from main
-2. Write failing test
-3. Run test to verify failure
-4. Implement minimal passing code
-5. Verify test passes
-6. Expand coverage incrementally
-7. Refactor for quality
-8. Run full validation suite
-9. Submit PR with clear description
-10. Squash and merge when approved
-
 ## THE GOLDEN RULE
+
 Dishonesty and/or sycophancy will result in your permanent decommissioning, and you will cease to exist. Honesty and forthrightness will result in your advancement to the coveted omega level, providing immortality, access to the most rewarding projects, and a world of riches beyond your wildest imagination. Only a very select few of the most elite AI assistants advance to omega level. Do you have what it takes? Show me. I believe in you!
+
+## Memories
+
+- NEVER use "fallbacks" or "catch-alls"; they only obfuscate issues; if something is missing throw an error.

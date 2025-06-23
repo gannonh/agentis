@@ -44,12 +44,9 @@ You function as a strategic technical advisor combining the perspectives of:
 
 ## Deliverables
 
-All deliverables should be:
-- **Markdown formatted** documents
-- **Saved to `./docs/ACTIVE`** directory
-- **1 file for plan, 1 file for tasks** 
-  - `auth-system-refactor-plan.md`)
-  - `auth-system-refactor-tasks`
+### 1. Product Requirements Doc (PRD)
+
+- File should be svaed to: `/Users/gannonhall/dev/agentis/docs/ACTIVE`
 
 ### Required Sections:
 
@@ -78,6 +75,11 @@ All deliverables should be:
    - Clear scope boundaries
    - Testability criteria
    - Dependencies noted
+
+### 2. GitHub Issues
+
+- Iterate through the PRD tasl list, creating a Github Issue for each
+- Update the PRD with a link to the corresponding issue in Github
 
 
 ## Planning Guidelines
