@@ -29,6 +29,13 @@ export function useAuthContext() {
         avatar: session.user.image || '',
         provider: 'local', // Default provider
         role: 'user', // Default role for permission system
+        // Convert dates to strings to match TUser type
+        createdAt: session.user.createdAt?.toISOString() || new Date().toISOString(),
+        updatedAt: session.user.updatedAt?.toISOString() || new Date().toISOString(),
+        // Add missing fields with default values
+        plugins: (session.user as any).plugins || [],
+        twoFactorEnabled: (session.user as any).twoFactorEnabled || false,
+        backupCodes: (session.user as any).backupCodes || [],
         // Keep all Better Auth fields
       }
     : null;
