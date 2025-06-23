@@ -130,7 +130,8 @@ class AnthropicClient extends BaseClient {
       this.modelOptions.maxOutputTokens = legacy.maxOutputTokens.default;
     }
 
-    this.useMessages = this.isClaude3 || !!this.options.attachments;
+    // Always use Messages API for Claude 3.5+ models (deprecated legacy completions API)
+    this.useMessages = true;
 
     this.defaultVisionModel = this.options.visionModel ?? 'claude-3-sonnet-20240229';
     this.options.attachments?.then((attachments) => this.checkVisionRequest(attachments));
@@ -654,7 +655,7 @@ class AnthropicClient extends BaseClient {
       );
     };
 
-    if (this.modelOptions.model.includes('claude-3')) {
+    if (this.useMessages) {
       await buildMessagesPayload();
       processTokens();
       return {
@@ -684,16 +685,14 @@ class AnthropicClient extends BaseClient {
   }
 
   /**
-   * Creates a message or completion response using the Anthropic client.
+   * Creates a message response using the Anthropic client.
    * @param {Anthropic} client - The Anthropic client instance.
-   * @param {Anthropic.default.MessageCreateParams | Anthropic.default.CompletionCreateParams} options - The options for the message or completion.
-   * @param {boolean} useMessages - Whether to use messages or completions. Defaults to `this.useMessages`.
-   * @returns {Promise<Anthropic.default.Message | Anthropic.default.Completion>} The response from the Anthropic client.
+   * @param {Anthropic.default.MessageCreateParams} options - The options for the message.
+   * @returns {Promise<Anthropic.default.Message>} The response from the Anthropic client.
    */
-  async createResponse(client, options, useMessages) {
-    return (useMessages ?? this.useMessages)
-      ? await client.messages.create(options)
-      : await client.completions.create(options);
+  async createResponse(client, options) {
+    // Always use Messages API (legacy completions API deprecated)
+    return await client.messages.create(options);
   }
 
   getMessageMapMethod() {
