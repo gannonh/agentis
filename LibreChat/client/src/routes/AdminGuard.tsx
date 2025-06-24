@@ -19,7 +19,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     hasSession: !!session?.user,
     userEmail: session?.user?.email,
     userRole: session?.user?.role,
-    isAdmin: session?.user?.role === 'admin' || session?.user?.isAdmin,
+    isAdmin: session?.user?.role === 'admin',
   });
 
   // Show loading while checking auth state

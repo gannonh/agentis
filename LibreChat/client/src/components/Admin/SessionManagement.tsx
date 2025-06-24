@@ -3,7 +3,7 @@
  * @module components/Admin/SessionManagement
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Activity,
   Search,
@@ -43,6 +43,59 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
 
   const { users, listUserSessions, revokeUserSessions, isLoadingUsers } = useAdmin();
 
+  const loadUserSessions = useCallback(
+    async (userId: string) => {
+      setIsLoadingSessions(true);
+      try {
+        console.log('Loading sessions for user:', userId);
+        const userSessions = await listUserSessions(userId);
+        console.log('User sessions response:', userSessions);
+        setSessions(userSessions);
+      } catch (error) {
+        console.error('Failed to load user sessions:', error);
+        setSessions([]);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    },
+    [listUserSessions],
+  );
+
+  const loadAllSessions = useCallback(async () => {
+    setIsLoadingSessions(true);
+    try {
+      // In a real implementation, you'd have a dedicated endpoint for all sessions
+      // For now, we'll load sessions for the first few users as a demo
+      const allSessions: AdminSession[] = [];
+      const usersToCheck = users.slice(0, 10); // Limit to prevent too many requests
+
+      console.log(
+        'Loading sessions for users:',
+        usersToCheck.map((u) => ({ id: u.id, name: u.name })),
+      );
+
+      for (const user of usersToCheck) {
+        try {
+          console.log(`Fetching sessions for user ${user.name} (${user.id})`);
+          const userSessions = await listUserSessions(user.id);
+          console.log(`Sessions for ${user.name}:`, userSessions);
+          allSessions.push(...userSessions);
+        } catch (error) {
+          // Skip users that fail
+          console.error(`Failed to load sessions for user ${user.id}:`, error);
+        }
+      }
+
+      console.log('All sessions loaded:', allSessions);
+      setSessions(allSessions);
+    } catch (error) {
+      console.error('Failed to load all sessions:', error);
+      setSessions([]);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, [listUserSessions, users]);
+
   // Load sessions for selected user
   useEffect(() => {
     // Don't try to load sessions if users haven't been loaded yet
@@ -57,54 +110,7 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
       // This is a simplified version - in production you'd want a dedicated endpoint
       loadAllSessions();
     }
-  }, [selectedUser, users, isLoadingUsers]);
-
-  const loadUserSessions = async (userId: string) => {
-    setIsLoadingSessions(true);
-    try {
-      console.log('Loading sessions for user:', userId);
-      const userSessions = await listUserSessions(userId);
-      console.log('User sessions response:', userSessions);
-      setSessions(userSessions);
-    } catch (error) {
-      console.error('Failed to load user sessions:', error);
-      setSessions([]);
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
-
-  const loadAllSessions = async () => {
-    setIsLoadingSessions(true);
-    try {
-      // In a real implementation, you'd have a dedicated endpoint for all sessions
-      // For now, we'll load sessions for the first few users as a demo
-      const allSessions: AdminSession[] = [];
-      const usersToCheck = users.slice(0, 10); // Limit to prevent too many requests
-      
-      console.log('Loading sessions for users:', usersToCheck.map(u => ({ id: u.id, name: u.name })));
-      
-      for (const user of usersToCheck) {
-        try {
-          console.log(`Fetching sessions for user ${user.name} (${user.id})`);
-          const userSessions = await listUserSessions(user.id);
-          console.log(`Sessions for ${user.name}:`, userSessions);
-          allSessions.push(...userSessions);
-        } catch (error) {
-          // Skip users that fail
-          console.error(`Failed to load sessions for user ${user.id}:`, error);
-        }
-      }
-      
-      console.log('All sessions loaded:', allSessions);
-      setSessions(allSessions);
-    } catch (error) {
-      console.error('Failed to load all sessions:', error);
-      setSessions([]);
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
+  }, [selectedUser, users, isLoadingUsers, loadAllSessions, loadUserSessions]);
 
   const handleRevokeSession = async (userId: string) => {
     if (!confirm('Are you sure you want to revoke all sessions for this user?')) {
@@ -144,9 +150,13 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
 
   const getDeviceIcon = (userAgent?: string) => {
     if (!userAgent) return <Monitor className="h-4 w-4" />;
-    
+
     const lowerAgent = userAgent.toLowerCase();
-    if (lowerAgent.includes('mobile') || lowerAgent.includes('android') || lowerAgent.includes('iphone')) {
+    if (
+      lowerAgent.includes('mobile') ||
+      lowerAgent.includes('android') ||
+      lowerAgent.includes('iphone')
+    ) {
       return <Smartphone className="h-4 w-4" />;
     }
     return <Monitor className="h-4 w-4" />;
@@ -154,7 +164,7 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
 
   const getDeviceInfo = (userAgent?: string) => {
     if (!userAgent) return 'Unknown Device';
-    
+
     // Simple parsing - in production you'd use a proper user agent parser
     if (userAgent.includes('Chrome')) return 'Chrome Browser';
     if (userAgent.includes('Firefox')) return 'Firefox Browser';
@@ -169,7 +179,7 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
     const diffMs = now.getTime() - created.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (diffHours > 0) {
       return `${diffHours}h ${diffMinutes}m`;
     }
@@ -181,11 +191,9 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
     const userName = getUserName(session.userId).toLowerCase();
     const userEmail = getUserEmail(session.userId).toLowerCase();
     const query = searchQuery.toLowerCase();
-    
+
     return (
-      userName.includes(query) ||
-      userEmail.includes(query) ||
-      session.ipAddress?.includes(query)
+      userName.includes(query) || userEmail.includes(query) || session.ipAddress?.includes(query)
     );
   });
 
@@ -203,7 +211,9 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Session Management</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Session Management
+          </h2>
           <p className="mt-1 text-gray-600 dark:text-gray-400">
             Monitor and manage active user sessions
           </p>
@@ -250,7 +260,13 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
 
         <div className="mt-4 flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
           <div>Total: {filteredSessions.length} sessions</div>
-          <div>Active: {filteredSessions.filter((s) => new Date(s.expiresAt) > new Date()).length}</div>
+          <div>
+            Active:{' '}
+            {
+              filteredSessions.filter((s) => s.expiresAt && new Date(s.expiresAt) > new Date())
+                .length
+            }
+          </div>
         </div>
       </div>
 
@@ -276,9 +292,11 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
             </div>
           ) : (
             filteredSessions.map((session) => {
-              const isExpired = new Date(session.expiresAt) < new Date();
+              const isExpired = session.expiresAt
+                ? new Date(session.expiresAt) < new Date()
+                : false;
               const user = users.find((u) => u.id === session.userId);
-              
+
               return (
                 <div key={session.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <div className="flex items-start justify-between">
@@ -327,7 +345,9 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
                         <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
                           <Activity className="h-4 w-4" />
                           <span>
-                            {isExpired ? 'Expired' : `Expires ${new Date(session.expiresAt).toLocaleString()}`}
+                            {isExpired
+                              ? 'Expired'
+                              : `Expires ${session.expiresAt ? new Date(session.expiresAt).toLocaleString() : 'Unknown'}`}
                           </span>
                         </div>
                       </div>

@@ -58,12 +58,12 @@ describe('AdminGuard', () => {
   describe('Admin Access', () => {
     it('renders children when user has admin role', () => {
       mockUseSession.mockReturnValue({
-        data: { 
-          user: { 
-            id: 'admin-user', 
+        data: {
+          user: {
+            id: 'admin-user',
             email: 'admin@example.com',
-            role: 'admin' 
-          } 
+            role: 'admin',
+          },
         },
         isPending: false,
       });
@@ -77,12 +77,12 @@ describe('AdminGuard', () => {
     it('allows access when user is in adminUserIds list', () => {
       // Better Auth admin plugin sets role to 'admin' for users in adminUserIds
       mockUseSession.mockReturnValue({
-        data: { 
-          user: { 
-            id: 'special-admin-id', 
+        data: {
+          user: {
+            id: 'special-admin-id',
             email: 'special@example.com',
-            role: 'admin' // Better Auth will set this for adminUserIds
-          } 
+            role: 'admin', // Better Auth will set this for adminUserIds
+          },
         },
         isPending: false,
       });
@@ -97,12 +97,12 @@ describe('AdminGuard', () => {
   describe('Non-Admin Access', () => {
     it('redirects to home when user is not admin', () => {
       mockUseSession.mockReturnValue({
-        data: { 
-          user: { 
-            id: 'regular-user', 
+        data: {
+          user: {
+            id: 'regular-user',
             email: 'user@example.com',
-            role: 'user' 
-          } 
+            role: 'user',
+          },
         },
         isPending: false,
       });
@@ -165,12 +165,12 @@ describe('AdminGuard', () => {
 
     it('handles missing role property', () => {
       mockUseSession.mockReturnValue({
-        data: { 
-          user: { 
-            id: 'user-without-role', 
-            email: 'noRole@example.com'
+        data: {
+          user: {
+            id: 'user-without-role',
+            email: 'noRole@example.com',
             // No role property
-          } 
+          },
         },
         isPending: false,
       });
@@ -189,12 +189,12 @@ describe('AdminGuard', () => {
     it('allows access for custom admin roles', () => {
       // If Better Auth is configured with adminRoles: ['admin', 'superadmin']
       mockUseSession.mockReturnValue({
-        data: { 
-          user: { 
-            id: 'super-admin', 
+        data: {
+          user: {
+            id: 'super-admin',
             email: 'super@example.com',
-            role: 'superadmin' // Better Auth supports custom admin roles
-          } 
+            role: 'superadmin', // Better Auth supports custom admin roles
+          },
         },
         isPending: false,
       });
@@ -216,7 +216,7 @@ describe('AdminGuard', () => {
       const { unmount } = renderAdminGuard();
 
       expect(screen.getByText('Loading...')).toBeInTheDocument();
-      
+
       unmount();
 
       // Should not throw any errors
@@ -250,12 +250,12 @@ describe('AdminGuard', () => {
 
       // Change to admin user
       mockUseSession.mockReturnValue({
-        data: { 
-          user: { 
-            id: 'admin-user', 
+        data: {
+          user: {
+            id: 'admin-user',
             email: 'admin@example.com',
-            role: 'admin' 
-          } 
+            role: 'admin',
+          },
         },
         isPending: false,
       });

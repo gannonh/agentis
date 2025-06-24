@@ -60,7 +60,7 @@ async function makeUserAdmin(email) {
       logger.info('Updating user role to admin...');
       const result = await usersCollection.updateOne(
         { _id: user._id },
-        { $set: { role: 'admin' } }
+        { $set: { role: 'admin' } },
       );
 
       if (result.modifiedCount === 1) {
@@ -73,16 +73,15 @@ async function makeUserAdmin(email) {
     // Also check Better Auth user table
     const betterAuthUsersCollection = db.collection('user');
     const betterAuthUser = await betterAuthUsersCollection.findOne({ email });
-    
+
     if (betterAuthUser) {
       logger.info('Also updating Better Auth user table...');
       await betterAuthUsersCollection.updateOne(
         { _id: betterAuthUser._id },
-        { $set: { role: 'admin' } }
+        { $set: { role: 'admin' } },
       );
       logger.success('✅ Better Auth user table updated!');
     }
-
   } catch (error) {
     logger.error('Error:', error);
     process.exit(1);

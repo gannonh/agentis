@@ -22,12 +22,7 @@ import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
 import { Switch } from '~/components/ui/Switch';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '~/components/ui/Tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/Tabs';
 
 interface SystemSettingsProps {
   className?: string;
@@ -85,7 +80,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
   };
 
   const updateSetting = (category: string, key: string, value: any) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       [category]: {
         ...prev[category as keyof typeof prev],
@@ -179,7 +174,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
           </TabsList>
 
           {/* General Settings */}
-          <TabsContent value="general" className="p-6 space-y-6">
+          <TabsContent value="general" className="space-y-6 p-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div>
                 <Label htmlFor="siteName">Site Name</Label>
@@ -218,7 +213,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
                 </div>
                 <Switch
                   checked={settings.general.maintenanceMode}
-                  onCheckedChange={(checked) => updateSetting('general', 'maintenanceMode', checked)}
+                  onCheckedChange={(checked) =>
+                    updateSetting('general', 'maintenanceMode', checked)
+                  }
                 />
               </div>
 
@@ -231,7 +228,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
                 </div>
                 <Switch
                   checked={settings.general.allowRegistration}
-                  onCheckedChange={(checked) => updateSetting('general', 'allowRegistration', checked)}
+                  onCheckedChange={(checked) =>
+                    updateSetting('general', 'allowRegistration', checked)
+                  }
                 />
               </div>
 
@@ -255,7 +254,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
           </TabsContent>
 
           {/* Security Settings */}
-          <TabsContent value="security" className="p-6 space-y-6">
+          <TabsContent value="security" className="space-y-6 p-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div>
                 <Label htmlFor="sessionTimeout">Session Timeout (hours)</Label>
@@ -263,7 +262,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
                   id="sessionTimeout"
                   type="number"
                   value={settings.security.sessionTimeout}
-                  onChange={(e) => updateSetting('security', 'sessionTimeout', parseInt(e.target.value))}
+                  onChange={(e) =>
+                    updateSetting('security', 'sessionTimeout', parseInt(e.target.value))
+                  }
                   className="mt-1"
                 />
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -316,27 +317,33 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
                 </div>
                 <Switch
                   checked={settings.security.enableTwoFactor}
-                  onCheckedChange={(checked) => updateSetting('security', 'enableTwoFactor', checked)}
+                  onCheckedChange={(checked) =>
+                    updateSetting('security', 'enableTwoFactor', checked)
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium text-gray-900 dark:text-white">Enable Rate Limiting</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white">
+                    Enable Rate Limiting
+                  </h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Protect against abuse with request rate limits
                   </p>
                 </div>
                 <Switch
                   checked={settings.security.enableRateLimit}
-                  onCheckedChange={(checked) => updateSetting('security', 'enableRateLimit', checked)}
+                  onCheckedChange={(checked) =>
+                    updateSetting('security', 'enableRateLimit', checked)
+                  }
                 />
               </div>
             </div>
           </TabsContent>
 
           {/* API Settings */}
-          <TabsContent value="api" className="p-6 space-y-6">
+          <TabsContent value="api" className="space-y-6 p-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div>
                 <Label htmlFor="defaultModel">Default AI Model</Label>
@@ -410,7 +417,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ className = '' }) => {
           </TabsContent>
 
           {/* Notification Settings */}
-          <TabsContent value="notifications" className="p-6 space-y-6">
+          <TabsContent value="notifications" className="space-y-6 p-6">
             <div>
               <Label htmlFor="adminEmail">Admin Email</Label>
               <Input

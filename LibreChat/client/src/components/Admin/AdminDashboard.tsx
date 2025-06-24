@@ -231,8 +231,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, className =
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">System Health</h3>
             <Shield className="h-5 w-5 text-gray-400" />
           </div>
-          <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-            <Settings className="h-10 w-10 mx-auto mb-3 opacity-50 animate-spin" />
+          <div className="py-6 text-center text-gray-500 dark:text-gray-400">
+            <Settings className="mx-auto mb-3 h-10 w-10 animate-spin opacity-50" />
             <p className="text-sm">System monitoring coming soon</p>
           </div>
         </div>
@@ -266,8 +266,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, className =
         <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
           Recent Activity
         </h3>
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
+        <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+          <Activity className="mx-auto mb-3 h-12 w-12 opacity-50" />
           <p>Activity tracking coming soon</p>
         </div>
       </div>

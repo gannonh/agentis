@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Migration script to convert LibreChat uppercase roles (USER/ADMIN) 
+ * Migration script to convert LibreChat uppercase roles (USER/ADMIN)
  * to Better Auth lowercase roles (user/admin)
  */
 
@@ -37,12 +37,14 @@ async function migrateRoles() {
     // Count users with uppercase roles
     const userCount = await usersCollection.countDocuments({ role: 'USER' });
     const adminCount = await usersCollection.countDocuments({ role: 'ADMIN' });
-    
+
     logger.info(`Found ${userCount} users with role 'USER'`);
     logger.info(`Found ${adminCount} users with role 'ADMIN'`);
 
     if (userCount === 0 && adminCount === 0) {
-      logger.info('No users with uppercase roles found. Migration may have already been completed.');
+      logger.info(
+        'No users with uppercase roles found. Migration may have already been completed.',
+      );
       return;
     }
 
@@ -51,7 +53,7 @@ async function migrateRoles() {
       logger.info('Migrating USER -> user...');
       const userResult = await usersCollection.updateMany(
         { role: 'USER' },
-        { $set: { role: 'user' } }
+        { $set: { role: 'user' } },
       );
       logger.success(`Migrated ${userResult.modifiedCount} users from 'USER' to 'user'`);
     }
@@ -61,33 +63,35 @@ async function migrateRoles() {
       logger.info('Migrating ADMIN -> admin...');
       const adminResult = await usersCollection.updateMany(
         { role: 'ADMIN' },
-        { $set: { role: 'admin' } }
+        { $set: { role: 'admin' } },
       );
       logger.success(`Migrated ${adminResult.modifiedCount} users from 'ADMIN' to 'admin'`);
     }
 
     // Verify migration
     const remainingUppercase = await usersCollection.countDocuments({
-      $or: [{ role: 'USER' }, { role: 'ADMIN' }]
+      $or: [{ role: 'USER' }, { role: 'ADMIN' }],
     });
 
     if (remainingUppercase === 0) {
-      logger.success('✅ Migration completed successfully! All roles have been converted to lowercase.');
+      logger.success(
+        '✅ Migration completed successfully! All roles have been converted to lowercase.',
+      );
     } else {
-      logger.error(`⚠️  Migration incomplete. ${remainingUppercase} users still have uppercase roles.`);
+      logger.error(
+        `⚠️  Migration incomplete. ${remainingUppercase} users still have uppercase roles.`,
+      );
     }
 
     // Show current role distribution
-    const roleStats = await usersCollection.aggregate([
-      { $group: { _id: '$role', count: { $sum: 1 } } },
-      { $sort: { _id: 1 } }
-    ]).toArray();
+    const roleStats = await usersCollection
+      .aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }, { $sort: { _id: 1 } }])
+      .toArray();
 
     logger.info('Current role distribution:');
-    roleStats.forEach(stat => {
+    roleStats.forEach((stat) => {
       logger.info(`  ${stat._id || 'no role'}: ${stat.count} users`);
     });
-
   } catch (error) {
     logger.error('Migration failed:', error);
     process.exit(1);

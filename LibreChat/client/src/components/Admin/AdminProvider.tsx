@@ -65,10 +65,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         query: { limit: 1000 }, // Get all users
       });
       console.log('Admin listUsers response:', response);
-      
+
       // Better Auth wraps the response in data property
-      const users = response?.data?.users || response?.users || [];
-      
+      const users = (response as any)?.data?.users || (response as any)?.users || [];
+
       // Transform the response to match our AdminUser interface
       const transformedUsers: AdminUser[] = users.map((user: any) => ({
         id: user.id,
@@ -108,20 +108,21 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         },
       });
 
-      if (response?.user) {
+      const responseUser = (response as any)?.user;
+      if (responseUser) {
         const newUser: AdminUser = {
-          id: response.user.id,
-          name: response.user.name || '',
-          email: response.user.email,
-          emailVerified: response.user.emailVerified || false,
-          image: response.user.image || null,
-          role: (response.user.role || 'user') as AdminRole,
-          banned: response.user.banned || false,
-          createdAt: response.user.createdAt
-            ? new Date(response.user.createdAt).toISOString()
+          id: responseUser.id,
+          name: responseUser.name || '',
+          email: responseUser.email,
+          emailVerified: responseUser.emailVerified || false,
+          image: responseUser.image || null,
+          role: (responseUser.role || 'user') as AdminRole,
+          banned: responseUser.banned || false,
+          createdAt: responseUser.createdAt
+            ? new Date(responseUser.createdAt).toISOString()
             : new Date().toISOString(),
-          updatedAt: response.user.updatedAt
-            ? new Date(response.user.updatedAt).toISOString()
+          updatedAt: responseUser.updatedAt
+            ? new Date(responseUser.updatedAt).toISOString()
             : new Date().toISOString(),
           lastLoginAt: null, // Better Auth doesn't provide lastLoginAt field
         };
@@ -155,12 +156,13 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       const response = await authClient.admin.listUserSessions({
         userId,
       });
-      
+
       console.log('Raw session API response for user', userId, ':', response);
 
       // Better Auth might return the sessions directly or wrapped in data
-      const sessions = response?.sessions || response?.data?.sessions || response || [];
-      
+      const sessions =
+        (response as any)?.sessions || (response as any)?.data?.sessions || response || [];
+
       if (Array.isArray(sessions)) {
         return sessions.map((session: any) => ({
           id: session.id,
@@ -171,7 +173,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
           userAgent: session.userAgent,
         }));
       }
-      
+
       return [];
     } catch (error) {
       console.error('Failed to list user sessions:', error);
@@ -238,8 +240,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     try {
       // For now, return estimated session stats since fetching all user sessions might be expensive
       // In a real implementation, you'd want to get this from an aggregated endpoint
-      const estimatedActiveSessions = users.filter(user => !user.banned).length;
-      
+      const estimatedActiveSessions = users.filter((user) => !user.banned).length;
+
       return {
         totalSessions: estimatedActiveSessions * 2, // Estimate 2 sessions per active user
         activeSessions: estimatedActiveSessions, // At least one session per active user

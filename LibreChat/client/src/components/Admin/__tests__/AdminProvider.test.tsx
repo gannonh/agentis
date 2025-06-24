@@ -98,30 +98,26 @@ describe('AdminProvider', () => {
 
   const mockUsers = [
     {
-      user: {
-        id: 'user1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        emailVerified: true,
-        image: 'https://example.com/avatar.jpg',
-        role: 'user',
-        banned: false,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      },
+      id: 'user1',
+      name: 'John Doe',
+      email: 'john@example.com',
+      emailVerified: true,
+      image: 'https://example.com/avatar.jpg',
+      role: 'user',
+      banned: false,
+      createdAt: '2020-01-01T00:00:00Z',
+      updatedAt: '2020-01-01T00:00:00Z',
     },
     {
-      user: {
-        id: 'user2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        emailVerified: false,
-        image: null,
-        role: 'admin',
-        banned: false,
-        createdAt: '2024-01-02T00:00:00Z',
-        updatedAt: '2024-01-02T00:00:00Z',
-      },
+      id: 'user2',
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      emailVerified: false,
+      image: null,
+      role: 'admin',
+      banned: false,
+      createdAt: '2020-01-02T00:00:00Z',
+      updatedAt: '2020-01-02T00:00:00Z',
     },
   ];
 
@@ -145,18 +141,16 @@ describe('AdminProvider', () => {
     });
 
     vi.mocked(authClient.admin.createUser).mockResolvedValue({
-      data: {
-        user: {
-          id: 'new-user',
-          name: 'Test User',
-          email: 'test@example.com',
-          emailVerified: false,
-          image: null,
-          role: 'user',
-          banned: false,
-          createdAt: '2024-01-03T00:00:00Z',
-          updatedAt: '2024-01-03T00:00:00Z',
-        },
+      user: {
+        id: 'new-user',
+        name: 'Test User',
+        email: 'test@example.com',
+        emailVerified: false,
+        image: null,
+        role: 'user',
+        banned: false,
+        createdAt: '2024-01-03T00:00:00Z',
+        updatedAt: '2024-01-03T00:00:00Z',
       },
     });
 
@@ -497,8 +491,8 @@ describe('AdminProvider', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('total-users')).toHaveTextContent('2');
-        expect(screen.getByTestId('active-users')).toHaveTextContent('0'); // No lastLoginAt data
-        expect(screen.getByTestId('new-users-today')).toHaveTextContent('0'); // Old dates
+        expect(screen.getByTestId('active-users')).toHaveTextContent('2'); // All non-banned users are considered active
+        expect(screen.getByTestId('new-users-today')).toHaveTextContent('0'); // Old dates from 2020
         expect(screen.getByTestId('new-users-week')).toHaveTextContent('0');
         expect(screen.getByTestId('new-users-month')).toHaveTextContent('0');
       });
@@ -578,7 +572,7 @@ describe('AdminProvider', () => {
       });
 
       await act(async () => {
-        screen.getByTestId('get-sessions-btn').click();
+        screen.getByTestId('list-sessions-btn').click();
       });
 
       // Should show errors for failed session calls per user
@@ -594,17 +588,15 @@ describe('AdminProvider', () => {
     it('should transform API response to AdminUser format correctly', async () => {
       const customMockUsers = [
         {
-          user: {
-            id: 'user3',
-            name: 'Custom User',
-            email: 'custom@example.com',
-            emailVerified: true,
-            image: 'https://example.com/custom.jpg',
-            role: 'admin',
-            banned: true,
-            createdAt: '2024-01-15T10:30:00Z',
-            updatedAt: '2024-01-16T15:45:00Z',
-          },
+          id: 'user3',
+          name: 'Custom User',
+          email: 'custom@example.com',
+          emailVerified: true,
+          image: 'https://example.com/custom.jpg',
+          role: 'admin',
+          banned: true,
+          createdAt: '2024-01-15T10:30:00Z',
+          updatedAt: '2024-01-16T15:45:00Z',
         },
       ];
 
