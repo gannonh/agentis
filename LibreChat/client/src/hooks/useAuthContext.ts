@@ -28,7 +28,7 @@ export function useAuthContext() {
         // Add legacy fields that components expect
         avatar: session.user.image || '',
         provider: 'local', // Default provider
-        role: 'user', // Default role for permission system
+        role: session.user.role || 'user', // Use actual role from Better Auth session
         // Convert dates to strings to match TUser type
         createdAt: session.user.createdAt?.toISOString() || new Date().toISOString(),
         updatedAt: session.user.updatedAt?.toISOString() || new Date().toISOString(),
@@ -69,6 +69,32 @@ export function useAuthContext() {
             USE: true,
             CREATE: true,
             SHARE: true,
+          },
+          BOOKMARKS: {
+            USE: true,
+            CREATE: true,
+          },
+          MULTI_CONVO: {
+            USE: true,
+          },
+          EXECUTE_CODE: {
+            USE: true,
+          },
+        },
+      },
+      admin: {
+        permissions: {
+          AGENTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+            SHARED_GLOBAL: true,
+          },
+          PROMPTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+            SHARED_GLOBAL: true,
           },
           BOOKMARKS: {
             USE: true,

@@ -116,7 +116,7 @@ mongoose.connection.once('open', () => {
 
       // Use betterAuthConfig for consistent settings
       emailAndPassword: {
-        enabled: false, // We use magic links, not passwords
+        enabled: true, // Required for admin.createUser to work, though users still authenticate via OAuth/magic links
       },
       emailVerification: betterAuthConfig.emailVerification,
       session: betterAuthConfig.session,

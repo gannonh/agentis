@@ -25,22 +25,43 @@ const Role = mongoose.model('Role', roleSchema);
 const getRoleByName = async function (roleName, fieldsToSelect = null) {
   const cache = getLogStores(CacheKeys.ROLES);
   try {
-    const cachedRole = await cache.get(roleName);
+    // Normalize role name for cache key (use lowercase)
+    const cacheKey = roleName.toLowerCase();
+    const cachedRole = await cache.get(cacheKey);
     if (cachedRole) {
       return cachedRole;
     }
+
+    // Try to find role with exact name first
     let query = Role.findOne({ name: roleName });
     if (fieldsToSelect) {
       query = query.select(fieldsToSelect);
     }
     let role = await query.lean().exec();
 
-    if (!role && SystemRoles[roleName]) {
-      role = await new Role(roleDefaults[roleName]).save();
-      await cache.set(roleName, role);
-      return role.toObject();
+    // If not found, try with opposite case (for Better Auth migration compatibility)
+    if (!role) {
+      const alternativeRoleName =
+        roleName === roleName.toUpperCase() ? roleName.toLowerCase() : roleName.toUpperCase();
+
+      let alternativeQuery = Role.findOne({ name: alternativeRoleName });
+      if (fieldsToSelect) {
+        alternativeQuery = alternativeQuery.select(fieldsToSelect);
+      }
+      role = await alternativeQuery.lean().exec();
     }
-    await cache.set(roleName, role);
+
+    // If still not found, check if we should create a default role
+    if (!role) {
+      const upperRoleName = roleName.toUpperCase();
+      if (SystemRoles[upperRoleName]) {
+        role = await new Role(roleDefaults[upperRoleName]).save();
+        await cache.set(cacheKey, role);
+        return role.toObject();
+      }
+    }
+
+    await cache.set(cacheKey, role);
     return role;
   } catch (error) {
     throw new Error(`Failed to retrieve or create role: ${error.message}`);

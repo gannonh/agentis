@@ -11,6 +11,8 @@ import type { AdminUser, AdminSession, CreateUserData, AdminRole } from '~/confi
 interface AdminContextValue {
   // Admin user management
   users: AdminUser[];
+  totalUsers: number;
+  loadUsers: (query?: UserListQuery) => Promise<void>;
   createUser: (userData: CreateUserData) => Promise<AdminUser>;
   setUserRole: (userId: string, role: 'user' | 'admin') => Promise<void>;
   listUserSessions: (userId: string) => Promise<AdminSession[]>;
@@ -19,10 +21,27 @@ interface AdminContextValue {
   // Admin analytics
   getUserStats: () => Promise<UserStats>;
   getSessionStats: () => Promise<SessionStats>;
+  
+  // User management
+  banUser: (userId: string, reason?: string, banExpiresIn?: number) => Promise<void>;
+  unbanUser: (userId: string) => Promise<void>;
 
   // Loading states
   isLoadingUsers: boolean;
   isLoadingStats: boolean;
+}
+
+interface UserListQuery {
+  limit?: number;
+  offset?: number;
+  searchField?: 'email' | 'name';
+  searchOperator?: 'contains' | 'starts_with' | 'ends_with';
+  searchValue?: string;
+  filterField?: string;
+  filterOperator?: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains';
+  filterValue?: string;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 interface UserStats {
@@ -51,36 +70,34 @@ interface AdminProviderProps {
  */
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const [users, setUsers] = React.useState<AdminUser[]>([]);
+  const [totalUsers, setTotalUsers] = React.useState(0);
   const [isLoadingUsers, setIsLoadingUsers] = React.useState(false);
   const [isLoadingStats, setIsLoadingStats] = React.useState(false);
 
-  // Load users data manually since Better-auth admin plugin doesn't provide hooks
-  React.useEffect(() => {
-    logger.info('AdminProvider initialized', {
-      component: 'AdminProvider',
-      action: 'initialize'
-    });
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = React.useCallback(async (query?: UserListQuery) => {
     logger.info('Starting to load users', {
       component: 'AdminProvider',
-      action: 'loadUsers-start'
+      action: 'loadUsers-start',
+      query
     });
     setIsLoadingUsers(true);
     try {
       const response = await authClient.admin.listUsers({
-        query: { limit: 1000 }, // Get all users
+        query: query || { limit: 20 }, // Default to 20 users per page
       });
       logger.info('Admin listUsers response received', { 
         component: 'AdminProvider',
         action: 'listUsers',
-        userCount: (response as any)?.data?.users?.length || (response as any)?.users?.length || 0
+        response
       });
 
-      // Better Auth wraps the response in data property
-      const users = (response as any)?.data?.users || (response as any)?.users || [];
+      // Better Auth returns users, total, limit, offset
+      const responseData = response as any;
+      console.log('Raw response from Better Auth:', responseData);
+      
+      // The response might be nested differently
+      const users = responseData?.users || responseData?.data?.users || responseData || [];
+      const total = responseData?.total || responseData?.data?.total || users.length || 0;
 
       // Transform the response to match our AdminUser interface
       const transformedUsers: AdminUser[] = users.map((user: any) => ({
@@ -91,6 +108,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         image: user.image || null,
         role: (user.role || 'user') as AdminRole,
         banned: user.banned || false,
+        banReason: user.banReason || null,
+        banExpires: user.banExpires || null,
         createdAt: user.createdAt
           ? new Date(user.createdAt).toISOString()
           : new Date().toISOString(),
@@ -100,10 +119,12 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         lastLoginAt: null, // Better Auth doesn't provide lastLoginAt field
       }));
       setUsers(transformedUsers);
+      setTotalUsers(total);
       logger.info('Users transformed for admin interface', {
         component: 'AdminProvider',
         action: 'transformUsers',
-        userCount: transformedUsers.length
+        userCount: transformedUsers.length,
+        totalUsers: total
       });
     } catch (error) {
       logger.error('Failed to load users', error instanceof Error ? error : new Error(String(error)), {
@@ -113,23 +134,43 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     } finally {
       setIsLoadingUsers(false);
     }
-  };
+  }, []);
+
+  // Load users data manually since Better-auth admin plugin doesn't provide hooks
+  React.useEffect(() => {
+    logger.info('AdminProvider initialized', {
+      component: 'AdminProvider',
+      action: 'initialize'
+    });
+    loadUsers();
+  }, [loadUsers]);
 
   const createUser = async (userData: CreateUserData): Promise<AdminUser> => {
     try {
-      const response = await authClient.admin.createUser({
+      // Match the exact format from Better Auth documentation
+      const requestData = {
+        name: userData.name,
         email: userData.email,
         password: userData.password,
-        name: userData.name,
         role: userData.role || 'user',
-        data: {
-          emailVerified: userData.emailVerified || false,
-          ...userData.data,
-        },
-      });
+        data: userData.data || {},
+      };
+      
+      let response;
+      try {
+        response = await authClient.admin.createUser(requestData);
+      } catch (apiError: any) {
+        // Better Auth might throw an error with the server response
+        if (apiError?.code === 'USER_ALREADY_EXISTS') {
+          throw apiError;
+        }
+        throw new Error(apiError?.message || 'Failed to create user');
+      }
 
-      const responseUser = (response as any)?.user;
-      if (responseUser) {
+      // The response might be the user directly or wrapped in a data/user property
+      const responseUser = response?.user || response?.data?.user || response;
+      
+      if (responseUser && responseUser.id) {
         const newUser: AdminUser = {
           id: responseUser.id,
           name: responseUser.name || '',
@@ -138,6 +179,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
           image: responseUser.image || null,
           role: (responseUser.role || 'user') as AdminRole,
           banned: responseUser.banned || false,
+          banReason: responseUser.banReason || null,
+          banExpires: responseUser.banExpires || null,
           createdAt: responseUser.createdAt
             ? new Date(responseUser.createdAt).toISOString()
             : new Date().toISOString(),
@@ -147,9 +190,13 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
           lastLoginAt: null, // Better Auth doesn't provide lastLoginAt field
         };
         setUsers((prev) => [...prev, newUser]);
+        
+        // Refresh the user list to ensure consistency
+        loadUsers();
+        
         return newUser;
       }
-      throw new Error('Failed to create user');
+      throw new Error('Failed to create user - no user data in response');
     } catch (error) {
       logger.error('Failed to create user', error instanceof Error ? error : new Error(String(error)), {
         component: 'AdminProvider',
@@ -281,6 +328,85 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     }
   };
 
+  const banUser = async (userId: string, reason?: string, banExpiresIn?: number): Promise<void> => {
+    try {
+      const banData: any = {
+        userId,
+        banReason: reason || 'No reason provided',
+      };
+      
+      // Only add banExpiresIn if it's provided (undefined means permanent ban)
+      if (banExpiresIn !== undefined) {
+        banData.banExpiresIn = banExpiresIn;
+      }
+      
+      await authClient.admin.banUser(banData);
+      
+      // Calculate ban expiration date for local state
+      let banExpires: string | null = null;
+      if (banExpiresIn !== undefined && banExpiresIn > 0) {
+        const expirationDate = new Date();
+        expirationDate.setSeconds(expirationDate.getSeconds() + banExpiresIn);
+        banExpires = expirationDate.toISOString();
+      }
+      
+      // Update local state
+      setUsers((prev) => prev.map((user) => 
+        user.id === userId ? { 
+          ...user, 
+          banned: true,
+          banReason: reason || 'No reason provided',
+          banExpires
+        } : user
+      ));
+      
+      logger.info('User banned successfully', {
+        component: 'AdminProvider',
+        action: 'banUser',
+        userId,
+        banExpiresIn
+      });
+    } catch (error) {
+      logger.error('Failed to ban user', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'banUser',
+        userId
+      });
+      throw error;
+    }
+  };
+
+  const unbanUser = async (userId: string): Promise<void> => {
+    try {
+      await authClient.admin.unbanUser({
+        userId,
+      });
+      
+      // Update local state
+      setUsers((prev) => prev.map((user) => 
+        user.id === userId ? { 
+          ...user, 
+          banned: false,
+          banReason: null,
+          banExpires: null
+        } : user
+      ));
+      
+      logger.info('User unbanned successfully', {
+        component: 'AdminProvider',
+        action: 'unbanUser',
+        userId
+      });
+    } catch (error) {
+      logger.error('Failed to unban user', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'unbanUser',
+        userId
+      });
+      throw error;
+    }
+  };
+
   const getSessionStats = async (): Promise<SessionStats> => {
     try {
       // For now, return estimated session stats since fetching all user sessions might be expensive
@@ -303,12 +429,16 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const value: AdminContextValue = {
     users,
+    totalUsers,
+    loadUsers,
     createUser,
     setUserRole,
     listUserSessions,
     revokeUserSessions,
     getUserStats,
     getSessionStats,
+    banUser,
+    unbanUser,
     isLoadingUsers,
     isLoadingStats,
   };
