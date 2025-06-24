@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 import { roleCheckers } from '~/config/betterAuth';
+import { logger } from '~/services/logger';
 
 /**
  * AdminGuard component that protects admin routes using Better Auth
@@ -14,12 +15,13 @@ interface AdminGuardProps {
 export default function AdminGuard({ children }: AdminGuardProps) {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
 
-  console.log('AdminGuard Better Auth state:', {
+  logger.debug('AdminGuard auth state check', {
+    component: 'AdminGuard',
+    action: 'checkAuth',
     sessionLoading,
     hasSession: !!session?.user,
-    userEmail: session?.user?.email,
     userRole: session?.user?.role,
-    isAdmin: session?.user?.role === 'admin',
+    isAdmin: session?.user?.role === 'admin'
   });
 
   // Show loading while checking auth state
@@ -36,7 +38,12 @@ export default function AdminGuard({ children }: AdminGuardProps) {
 
   // No session - redirect to login
   if (!session?.user) {
-    console.log('AdminGuard: No session, redirecting to login');
+    logger.info('No session found, redirecting to login', {
+      component: 'AdminGuard',
+      action: 'redirect',
+      reason: 'no-session',
+      to: '/login'
+    });
     return <Navigate to="/login" replace={true} />;
   }
 
@@ -48,11 +55,21 @@ export default function AdminGuard({ children }: AdminGuardProps) {
 
   // User is not admin - redirect to main chat
   if (!isAdmin) {
-    console.log('AdminGuard: User is not admin, redirecting to chat');
+    logger.warn('User lacks admin privileges, redirecting to chat', {
+      component: 'AdminGuard',
+      action: 'redirect',
+      reason: 'insufficient-role',
+      userRole: session.user.role,
+      to: '/c/new'
+    });
     return <Navigate to="/c/new" replace={true} />;
   }
 
   // User is admin - render children
-  console.log('AdminGuard: User is admin, rendering admin content');
+  logger.debug('Admin access granted', {
+    component: 'AdminGuard',
+    action: 'allow-access',
+    userRole: session.user.role
+  });
   return <>{children}</>;
 }

@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Calendar,
 } from 'lucide-react';
+import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
 import { useAdmin } from './AdminProvider';
 
@@ -84,7 +85,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, className =
       setUserStats(users);
       setSessionStats(sessions);
     } catch (error) {
-      console.error('Failed to load admin stats:', error);
+      logger.error('Failed to load admin dashboard stats', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminDashboard',
+        action: 'loadStats'
+      });
     }
   }, [getUserStats, getSessionStats]);
 

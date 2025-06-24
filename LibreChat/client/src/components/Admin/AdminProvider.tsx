@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { authClient } from '~/config/betterAuth';
+import { logger } from '~/services/logger';
 import type { AdminUser, AdminSession, CreateUserData, AdminRole } from '~/config/betterAuth';
 
 interface AdminContextValue {
@@ -55,16 +56,28 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   // Load users data manually since Better-auth admin plugin doesn't provide hooks
   React.useEffect(() => {
+    logger.info('AdminProvider initialized', {
+      component: 'AdminProvider',
+      action: 'initialize'
+    });
     loadUsers();
   }, []);
 
   const loadUsers = async () => {
+    logger.info('Starting to load users', {
+      component: 'AdminProvider',
+      action: 'loadUsers-start'
+    });
     setIsLoadingUsers(true);
     try {
       const response = await authClient.admin.listUsers({
         query: { limit: 1000 }, // Get all users
       });
-      console.log('Admin listUsers response:', response);
+      logger.info('Admin listUsers response received', { 
+        component: 'AdminProvider',
+        action: 'listUsers',
+        userCount: (response as any)?.data?.users?.length || (response as any)?.users?.length || 0
+      });
 
       // Better Auth wraps the response in data property
       const users = (response as any)?.data?.users || (response as any)?.users || [];
@@ -87,9 +100,16 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         lastLoginAt: null, // Better Auth doesn't provide lastLoginAt field
       }));
       setUsers(transformedUsers);
-      console.log('Transformed users:', transformedUsers);
+      logger.info('Users transformed for admin interface', {
+        component: 'AdminProvider',
+        action: 'transformUsers',
+        userCount: transformedUsers.length
+      });
     } catch (error) {
-      console.error('Failed to load users:', error);
+      logger.error('Failed to load users', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'loadUsers'
+      });
     } finally {
       setIsLoadingUsers(false);
     }
@@ -131,7 +151,11 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       }
       throw new Error('Failed to create user');
     } catch (error) {
-      console.error('Failed to create user:', error);
+      logger.error('Failed to create user', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'createUser',
+        email: userData.email
+      });
       throw error;
     }
   };
@@ -146,7 +170,12 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       // Update local state
       setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role } : user)));
     } catch (error) {
-      console.error('Failed to set user role:', error);
+      logger.error('Failed to set user role', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'setUserRole',
+        userId,
+        role
+      });
       throw error;
     }
   };
@@ -157,7 +186,12 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         userId,
       });
 
-      console.log('Raw session API response for user', userId, ':', response);
+      logger.debug('Session API response received', {
+        component: 'AdminProvider',
+        action: 'listUserSessions',
+        userId,
+        sessionCount: Array.isArray(response) ? response.length : 'unknown'
+      });
 
       // Better Auth might return the sessions directly or wrapped in data
       const sessions =
@@ -176,7 +210,11 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
       return [];
     } catch (error) {
-      console.error('Failed to list user sessions:', error);
+      logger.error('Failed to list user sessions', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'listUserSessions',
+        userId
+      });
       throw error;
     }
   };
@@ -187,7 +225,11 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         userId,
       });
     } catch (error) {
-      console.error('Failed to revoke user sessions:', error);
+      logger.error('Failed to revoke user sessions', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'revokeUserSessions',
+        userId
+      });
       throw error;
     }
   };
@@ -229,7 +271,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         newUsersThisMonth,
       };
     } catch (error) {
-      console.error('Failed to get user stats:', error);
+      logger.error('Failed to get user stats', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'getUserStats'
+      });
       throw error;
     } finally {
       setIsLoadingStats(false);
@@ -248,7 +293,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         averageSessionDuration: 2.5, // Estimate 2.5 hours average
       };
     } catch (error) {
-      console.error('Failed to get session stats:', error);
+      logger.error('Failed to get session stats', error instanceof Error ? error : new Error(String(error)), {
+        component: 'AdminProvider',
+        action: 'getSessionStats'
+      });
       throw error;
     }
   };

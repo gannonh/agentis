@@ -18,6 +18,7 @@ import {
   X,
   Trash2,
 } from 'lucide-react';
+import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
@@ -104,7 +105,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       reset();
       setIsCreateDialogOpen(false);
     } catch (error) {
-      console.error('Failed to create user:', error);
+      logger.error('Failed to create user', error instanceof Error ? error : new Error(String(error)), {
+        component: 'UserManagement',
+        action: 'createUser',
+        email: data.email
+      });
     }
   };
 
@@ -113,7 +118,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       const newRole = user.role === 'admin' ? 'user' : 'admin';
       await setUserRole(user.id, newRole);
     } catch (error) {
-      console.error('Failed to update user role:', error);
+      logger.error('Failed to update user role', error instanceof Error ? error : new Error(String(error)), {
+        component: 'UserManagement',
+        action: 'promoteUser',
+        userId: user.id,
+        newRole: user.role === 'admin' ? 'user' : 'admin'
+      });
     }
   };
 
@@ -125,7 +135,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
     try {
       await revokeUserSessions(userId);
     } catch (error) {
-      console.error('Failed to revoke user sessions:', error);
+      logger.error('Failed to revoke user sessions', error instanceof Error ? error : new Error(String(error)), {
+        component: 'UserManagement',
+        action: 'revokeUserSessions',
+        userId
+      });
     }
   };
 
@@ -162,7 +176,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
         return;
       }
     } catch (error) {
-      console.error('Failed to update user:', error);
+      logger.error('Failed to update user field', error instanceof Error ? error : new Error(String(error)), {
+        component: 'UserManagement',
+        action: 'saveEditing',
+        userId: editing.userId,
+        field: editing.field
+      });
       alert('Failed to update user. Please try again.');
     } finally {
       setIsUpdating(false);

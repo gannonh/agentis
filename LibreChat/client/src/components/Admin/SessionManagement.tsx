@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Shield,
 } from 'lucide-react';
+import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import {
@@ -47,12 +48,25 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
     async (userId: string) => {
       setIsLoadingSessions(true);
       try {
-        console.log('Loading sessions for user:', userId);
+        logger.debug('Loading sessions for user', {
+          component: 'SessionManagement',
+          action: 'loadUserSessions',
+          userId
+        });
         const userSessions = await listUserSessions(userId);
-        console.log('User sessions response:', userSessions);
+        logger.debug('User sessions loaded', {
+          component: 'SessionManagement',
+          action: 'loadUserSessions',
+          userId,
+          sessionCount: userSessions.length
+        });
         setSessions(userSessions);
       } catch (error) {
-        console.error('Failed to load user sessions:', error);
+        logger.error('Failed to load user sessions', error instanceof Error ? error : new Error(String(error)), {
+          component: 'SessionManagement',
+          action: 'loadUserSessions',
+          userId
+        });
         setSessions([]);
       } finally {
         setIsLoadingSessions(false);
@@ -69,27 +83,49 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
       const allSessions: AdminSession[] = [];
       const usersToCheck = users.slice(0, 10); // Limit to prevent too many requests
 
-      console.log(
-        'Loading sessions for users:',
-        usersToCheck.map((u) => ({ id: u.id, name: u.name })),
-      );
+      logger.debug('Loading sessions for multiple users', {
+        component: 'SessionManagement',
+        action: 'loadAllSessions',
+        userCount: usersToCheck.length
+      });
 
       for (const user of usersToCheck) {
         try {
-          console.log(`Fetching sessions for user ${user.name} (${user.id})`);
+          logger.debug('Fetching sessions for individual user', {
+            component: 'SessionManagement',
+            action: 'loadAllSessions',
+            userId: user.id,
+            userName: user.name
+          });
           const userSessions = await listUserSessions(user.id);
-          console.log(`Sessions for ${user.name}:`, userSessions);
+          logger.debug('Individual user sessions loaded', {
+            component: 'SessionManagement',
+            action: 'loadAllSessions',
+            userId: user.id,
+            sessionCount: userSessions.length
+          });
           allSessions.push(...userSessions);
         } catch (error) {
           // Skip users that fail
-          console.error(`Failed to load sessions for user ${user.id}:`, error);
+          logger.error('Failed to load sessions for individual user', error instanceof Error ? error : new Error(String(error)), {
+            component: 'SessionManagement',
+            action: 'loadAllSessions',
+            userId: user.id
+          });
         }
       }
 
-      console.log('All sessions loaded:', allSessions);
+      logger.debug('All sessions aggregated', {
+        component: 'SessionManagement',
+        action: 'loadAllSessions',
+        totalSessions: allSessions.length
+      });
       setSessions(allSessions);
     } catch (error) {
-      console.error('Failed to load all sessions:', error);
+      logger.error('Failed to load all sessions', error instanceof Error ? error : new Error(String(error)), {
+        component: 'SessionManagement',
+        action: 'loadAllSessions'
+      });
       setSessions([]);
     } finally {
       setIsLoadingSessions(false);
@@ -126,7 +162,11 @@ const SessionManagement: React.FC<SessionManagementProps> = ({ className = '' })
         loadUserSessions(selectedUser);
       }
     } catch (error) {
-      console.error('Failed to revoke sessions:', error);
+      logger.error('Failed to revoke sessions', error instanceof Error ? error : new Error(String(error)), {
+        component: 'SessionManagement',
+        action: 'handleRevokeSession',
+        userId
+      });
     }
   };
 
