@@ -6,7 +6,7 @@
 
 import { logger } from '#config/index.js';
 import { User } from '../../models/index.js';
-import { SystemRoles } from 'librechat-data-provider';
+// Removed SystemRoles import - using Better Auth roles
 import { getAuth } from '../../auth.js';
 import { organizationService } from '#server/services/OrganizationService.js';
 
@@ -78,7 +78,7 @@ const requireBetterAuth = async (req, res, next) => {
         email: session.user.email,
         emailVerified: session.user.emailVerified || false,
         provider: 'local', // Default provider
-        role: SystemRoles.USER,
+        role: session.user.role || 'user', // Use Better Auth role
         termsAccepted: true, // Assume terms accepted if they can log in
         // Add organization fields if assignment was successful
         ...(organizationInfo && {
@@ -93,17 +93,17 @@ const requireBetterAuth = async (req, res, next) => {
     // Ensure user has required LibreChat fields
     if (!user.role) {
       await User.findByIdAndUpdate(user._id, {
-        role: SystemRoles.USER,
+        role: session.user.role || 'user', // Use Better Auth role
         provider: user.provider || 'local',
         termsAccepted: user.termsAccepted !== undefined ? user.termsAccepted : true,
       });
-      user.role = SystemRoles.USER;
+      user.role = session.user.role || 'user';
     }
 
     // Populate req.user with the same structure as JWT middleware
     req.user = {
       id: user._id.toString(), // Convert ObjectId to string like JWT middleware
-      role: user.role || SystemRoles.USER, // Default to USER role
+      role: user.role || 'user', // Default to Better Auth user role
       ...user,
       _id: user._id.toString(), // Ensure _id is also string
     };

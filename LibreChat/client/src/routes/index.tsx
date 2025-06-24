@@ -9,12 +9,18 @@ import {
 import { ProgressiveRegistration } from '~/components/Auth/ProgressiveRegistration';
 import { OAuthOnboardingRedirect } from '~/components/Auth/OAuthOnboardingRedirect';
 import { ComposioTestPage } from '~/components/Composio';
+import { AdminDashboard } from '~/components/Admin/AdminDashboard';
+import { UserManagement } from '~/components/Admin/UserManagement';
+import { SessionManagement } from '~/components/Admin/SessionManagement';
+import { OrganizationManagement } from '~/components/Admin/OrganizationManagement';
+import { SystemSettings } from '~/components/Admin/SystemSettings';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
 import LoginLayout from './Layouts/Login';
 import dashboardRoutes from './Dashboard';
 import ShareRoute from './ShareRoute';
 import ChatRoute from './ChatRoute';
+import AdminRoute from './AdminRoute';
 import Search from './Search';
 import Root from './Root';
 import AuthGuard from './AuthGuard';
@@ -71,6 +77,32 @@ export const router = createBrowserRouter([
         ],
       },
       dashboardRoutes,
+      {
+        path: 'admin',
+        element: <AdminRoute />,
+        children: [
+          {
+            index: true,
+            element: <AdminDashboard />,
+          },
+          {
+            path: 'users',
+            element: <UserManagement />,
+          },
+          {
+            path: 'sessions',
+            element: <SessionManagement />,
+          },
+          {
+            path: 'organizations',
+            element: <OrganizationManagement />,
+          },
+          {
+            path: 'settings',
+            element: <SystemSettings />,
+          },
+        ],
+      },
       {
         path: '/',
         element: <Root />,

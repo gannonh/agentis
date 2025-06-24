@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   UserCheck,
@@ -70,7 +71,8 @@ interface AdminDashboardProps {
  * Admin dashboard component
  * Shows platform statistics and provides quick access to admin features
  */
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, className = '' }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, className = '' }) => {
+  const navigate = useNavigate();
   const { getUserStats, getSessionStats, isLoadingStats } = useAdmin();
 
   const [userStats, setUserStats] = React.useState<any>(null);
@@ -95,28 +97,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, clas
       title: 'User Management',
       description: 'Manage users, roles, and permissions',
       icon: <Users className="h-6 w-6" />,
-      action: () => onNavigate?.('users'),
+      action: () => navigate('/admin/users'),
       color: 'bg-blue-500',
     },
     {
       title: 'Session Management',
       description: 'View and manage active sessions',
       icon: <Activity className="h-6 w-6" />,
-      action: () => onNavigate?.('sessions'),
+      action: () => navigate('/admin/sessions'),
       color: 'bg-green-500',
     },
     {
       title: 'Organization Management',
       description: 'Manage organizations and multi-tenancy',
       icon: <Globe className="h-6 w-6" />,
-      action: () => onNavigate?.('organizations'),
+      action: () => navigate('/admin/organizations'),
       color: 'bg-purple-500',
     },
     {
       title: 'System Settings',
       description: 'Configure platform settings',
       icon: <Settings className="h-6 w-6" />,
-      action: () => onNavigate?.('settings'),
+      action: () => navigate('/admin/settings'),
       color: 'bg-gray-500',
     },
   ];
@@ -223,36 +225,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, clas
           </div>
         </div>
 
-        {/* System Health */}
+        {/* System Health - Real values coming soon */}
         <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">System Health</h3>
-            <div className="h-3 w-3 rounded-full bg-green-500"></div>
+            <Shield className="h-5 w-5 text-gray-400" />
           </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Database</span>
-              <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                Healthy
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Authentication</span>
-              <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                Operational
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">API Response</span>
-              <span className="text-sm font-medium text-green-600 dark:text-green-400">Fast</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Storage</span>
-              <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
-                75% Used
-              </span>
-            </div>
+          <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+            <Settings className="h-10 w-10 mx-auto mb-3 opacity-50 animate-spin" />
+            <p className="text-sm">System monitoring coming soon</p>
           </div>
         </div>
       </div>
@@ -280,44 +261,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, clas
         </div>
       </div>
 
-      {/* Recent Activity Feed */}
+      {/* Activity Feed - Coming Soon */}
       <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
         <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
           Recent Activity
         </h3>
-
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              New user registration: user@example.com
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-500">2 min ago</span>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="h-2 w-2 rounded-full bg-green-500"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Organization created: TechCorp Inc.
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-500">15 min ago</span>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Session expired for user: admin@platform.com
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-500">1 hour ago</span>
-          </div>
-
-          <div className="pt-4 text-center">
-            <Button variant="outline" size="sm" onClick={() => onNavigate?.('activity')}>
-              View All Activity
-            </Button>
-          </div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p>Activity tracking coming soon</p>
         </div>
       </div>
     </div>
   );
 };
+
+export { AdminDashboard };

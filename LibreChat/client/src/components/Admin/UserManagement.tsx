@@ -59,7 +59,7 @@ interface UserManagementProps {
  * User management component for admin panel
  * Provides CRUD operations for user accounts
  */
-export const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -443,3 +443,5 @@ export const UserManagement: React.FC<UserManagementProps> = ({ className = '' }
     </div>
   );
 };
+
+export { UserManagement };
