@@ -3,17 +3,20 @@
  * @module components/Admin/UserManagement
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Users,
   Search,
-  MoreVertical,
   UserPlus,
   Shield,
   Calendar,
   Activity,
   Crown,
+  Edit,
+  Check,
+  X,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
@@ -27,12 +30,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '~/components/ui/Dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '~/components/ui/DropdownMenu';
 import {
   Select,
   SelectContent,
@@ -55,6 +52,12 @@ interface UserManagementProps {
   className?: string;
 }
 
+interface EditingState {
+  userId: string | null;
+  field: 'name' | 'email' | 'role' | null;
+  value: string;
+}
+
 /**
  * User management component for admin panel
  * Provides CRUD operations for user accounts
@@ -63,10 +66,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [editing, setEditing] = useState<EditingState>({ userId: null, field: null, value: '' });
+  const [isUpdating, setIsUpdating] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const { users, createUser, setUserRole, listUserSessions, revokeUserSessions, isLoadingUsers } =
-    useAdmin();
+  const { users, createUser, setUserRole, revokeUserSessions, isLoadingUsers } = useAdmin();
 
   const {
     register,
@@ -124,6 +128,63 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       console.error('Failed to revoke user sessions:', error);
     }
   };
+
+  // Inline editing functions
+  const startEditing = useCallback((userId: string, field: 'name' | 'email' | 'role', currentValue: string) => {
+    setEditing({ userId, field, value: currentValue });
+    // Focus the input after state update
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+  }, []);
+
+  const cancelEditing = useCallback(() => {
+    setEditing({ userId: null, field: null, value: '' });
+  }, []);
+
+  const saveEditing = useCallback(async () => {
+    if (!editing.userId || !editing.field) return;
+
+    setIsUpdating(true);
+    try {
+      const user = users.find(u => u.id === editing.userId);
+      if (!user) return;
+
+      if (editing.field === 'role') {
+        await setUserRole(editing.userId, editing.value as 'user' | 'admin');
+        setEditing({ userId: null, field: null, value: '' });
+      } else {
+        // Name and email updates require additional backend implementation
+        // Better Auth admin plugin doesn't provide these methods yet
+        alert('Name and email updates are not yet implemented. Role changes work correctly.');
+        setEditing({ userId: null, field: null, value: '' });
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      alert('Failed to update user. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [editing, users, setUserRole]);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveEditing();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
+  }, [saveEditing, cancelEditing]);
+
+  const handleBlur = useCallback(() => {
+    // Save on blur unless user clicked cancel
+    setTimeout(() => {
+      if (editing.userId) {
+        saveEditing();
+      }
+    }, 100);
+  }, [editing.userId, saveEditing]);
 
   const getUserStatusBadge = (user: AdminUser) => {
     if (user.banned) {
@@ -372,68 +433,180 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
           ) : (
             filteredUsers.map((user) => (
               <div key={user.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <div className="flex items-center justify-between">
-                  {/* User info */}
-                  <div className="flex items-center space-x-4">
-                    {/* Avatar */}
-                    {user.image ? (
-                      <img
-                        src={user.image}
-                        alt={`${user.name} avatar`}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-semibold text-white">
-                        {getAvatarInitials(user.name)}
-                      </div>
-                    )}
+                <div className="flex items-start space-x-4">
+                  {/* Avatar */}
+                  {user.image ? (
+                    <img
+                      src={user.image}
+                      alt={`${user.name} avatar`}
+                      className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-semibold text-white flex-shrink-0">
+                      {getAvatarInitials(user.name)}
+                    </div>
+                  )}
 
-                    {/* Details */}
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                          {user.name}
-                        </h4>
-                        {getRoleBadge(user)}
-                        {getUserStatusBadge(user)}
-                      </div>
-                      <div className="mt-1 flex items-center space-x-3">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
-                      </div>
-                      <div className="mt-1 flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+                  {/* User Details - Now taking full width */}
+                  <div className="flex-1 min-w-0">
+                    {/* Name Row with inline editing */}
+                    <div className="flex items-center space-x-2 group">
+                      {editing.userId === user.id && editing.field === 'name' ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            ref={inputRef}
+                            type="text"
+                            value={editing.value}
+                            onChange={(e) => setEditing(prev => ({ ...prev, value: e.target.value }))}
+                            onKeyDown={handleKeyPress}
+                            onBlur={handleBlur}
+                            className="px-2 py-1 text-sm font-medium bg-white dark:bg-gray-700 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                            disabled={isUpdating}
+                          />
+                          <button
+                            onClick={saveEditing}
+                            disabled={isUpdating}
+                            className="p-1 text-green-600 hover:text-green-700 dark:text-green-400"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
-                        {user.lastLoginAt && (
-                          <div className="flex items-center space-x-1">
-                            <Activity className="h-3 w-3" />
-                            <span>Last seen {new Date(user.lastLoginAt).toLocaleDateString()}</span>
-                          </div>
-                        )}
+                      ) : (
+                        <>
+                          <h4 
+                            className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-orange-600 dark:hover:text-orange-400 group-hover:underline"
+                            onClick={() => startEditing(user.id, 'name', user.name)}
+                            title="Click to edit name (Not yet implemented)"
+                          >
+                            {user.name}
+                          </h4>
+                          <Edit className="h-3 w-3 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </>
+                      )}
+                      {getRoleBadge(user)}
+                      {getUserStatusBadge(user)}
+                    </div>
+
+                    {/* Email Row with inline editing */}
+                    <div className="mt-1 flex items-center space-x-2 group">
+                      {editing.userId === user.id && editing.field === 'email' ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            ref={inputRef}
+                            type="email"
+                            value={editing.value}
+                            onChange={(e) => setEditing(prev => ({ ...prev, value: e.target.value }))}
+                            onKeyDown={handleKeyPress}
+                            onBlur={handleBlur}
+                            className="px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 dark:text-gray-400"
+                            disabled={isUpdating}
+                          />
+                          <button
+                            onClick={saveEditing}
+                            disabled={isUpdating}
+                            className="p-1 text-green-600 hover:text-green-700 dark:text-green-400"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <p 
+                            className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:text-orange-600 dark:hover:text-orange-400 group-hover:underline"
+                            onClick={() => startEditing(user.id, 'email', user.email)}
+                            title="Click to edit email (Not yet implemented)"
+                          >
+                            {user.email}
+                          </p>
+                          <Edit className="h-3 w-3 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Metadata Row */}
+                    <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
                       </div>
+                      {user.lastLoginAt && (
+                        <div className="flex items-center space-x-1">
+                          <Activity className="h-3 w-3" />
+                          <span>Last seen {new Date(user.lastLoginAt).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Links Row */}
+                    <div className="mt-3 flex items-center space-x-4 text-sm">
+                      <button
+                        onClick={() => handlePromoteUser(user)}
+                        className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                      >
+                        <Shield className="h-4 w-4" />
+                        <span>{user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleRevokeUserSessions(user.id)}
+                        className="flex items-center space-x-1 text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
+                      >
+                        <Activity className="h-4 w-4" />
+                        <span>Revoke Sessions</span>
+                      </button>
+
+                      {/* Role quick edit */}
+                      {editing.userId === user.id && editing.field === 'role' ? (
+                        <div className="flex items-center space-x-2">
+                          <Select
+                            value={editing.value}
+                            onValueChange={(value) => setEditing(prev => ({ ...prev, value }))}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <button
+                            onClick={saveEditing}
+                            disabled={isUpdating}
+                            className="p-1 text-green-600 hover:text-green-700 dark:text-green-400"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startEditing(user.id, 'role', user.role)}
+                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span>Change Role</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="p-2">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem onClick={() => handlePromoteUser(user)}>
-                        <Shield className="mr-2 h-4 w-4" />
-                        {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem onClick={() => handleRevokeUserSessions(user.id)}>
-                        <Activity className="mr-2 h-4 w-4" />
-                        Revoke Sessions
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
               </div>
             ))
