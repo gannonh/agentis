@@ -1,5 +1,10 @@
 import express from 'express';
-import { requireBetterAuth, canDeleteAccount, verifyEmailLimiter, checkAdmin } from '#server/middleware.js';
+import {
+  requireBetterAuth,
+  canDeleteAccount,
+  verifyEmailLimiter,
+  checkAdmin,
+} from '#server/middleware.js';
 import { User } from '#models/index.js';
 import logger from '#utils/logger.js';
 import {
@@ -30,7 +35,7 @@ router.patch('/admin/update/:userId', requireBetterAuth, checkAdmin, async (req,
   try {
     const { userId } = req.params;
     const { name, email } = req.body;
-    
+
     // Validate input
     if (!name && !email) {
       return res.status(400).json({ error: 'No fields to update' });
@@ -54,17 +59,16 @@ router.patch('/admin/update/:userId', requireBetterAuth, checkAdmin, async (req,
     const updateData = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
-    
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updateData,
-      { new: true, runValidators: true }
-    );
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     logger.info('Admin updated user', {
       adminId: req.user.id,
       userId,
-      updatedFields: Object.keys(updateData)
+      updatedFields: Object.keys(updateData),
     });
 
     res.json({ user: updatedUser });
