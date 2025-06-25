@@ -44,13 +44,14 @@ export default defineConfig({
   projects: [
     // Main test project with worker-scoped authentication
     {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
+      // name: 'chromium',
+      // use: {
+      //   ...devices['Desktop Chrome'],
 
-        // channel: 'chrome', // Use Google Chrome instead of Chromium
-        // Worker-scoped storage state will be handled by fixtures
-      },
+      name: 'Google Chrome',
+      use: { ...devices['Desktop Chrome'], channel: 'chrome' }, // or 'chrome-beta'
+
+      // Worker-scoped storage state will be handled by fixtures
     },
   ],
 
