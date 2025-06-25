@@ -98,30 +98,26 @@ describe('AdminProvider', () => {
 
   const mockUsers = [
     {
-      user: {
-        id: 'user1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        emailVerified: true,
-        image: 'https://example.com/avatar.jpg',
-        role: 'user',
-        banned: false,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      },
+      id: 'user1',
+      name: 'John Doe',
+      email: 'john@example.com',
+      emailVerified: true,
+      image: 'https://example.com/avatar.jpg',
+      role: 'user',
+      banned: false,
+      createdAt: '2020-01-01T00:00:00Z',
+      updatedAt: '2020-01-01T00:00:00Z',
     },
     {
-      user: {
-        id: 'user2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        emailVerified: false,
-        image: null,
-        role: 'admin',
-        banned: false,
-        createdAt: '2024-01-02T00:00:00Z',
-        updatedAt: '2024-01-02T00:00:00Z',
-      },
+      id: 'user2',
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      emailVerified: false,
+      image: null,
+      role: 'admin',
+      banned: false,
+      createdAt: '2020-01-02T00:00:00Z',
+      updatedAt: '2020-01-02T00:00:00Z',
     },
   ];
 
@@ -145,18 +141,16 @@ describe('AdminProvider', () => {
     });
 
     vi.mocked(authClient.admin.createUser).mockResolvedValue({
-      data: {
-        user: {
-          id: 'new-user',
-          name: 'Test User',
-          email: 'test@example.com',
-          emailVerified: false,
-          image: null,
-          role: 'user',
-          banned: false,
-          createdAt: '2024-01-03T00:00:00Z',
-          updatedAt: '2024-01-03T00:00:00Z',
-        },
+      user: {
+        id: 'new-user',
+        name: 'Test User',
+        email: 'test@example.com',
+        emailVerified: false,
+        image: null,
+        role: 'user',
+        banned: false,
+        createdAt: '2024-01-03T00:00:00Z',
+        updatedAt: '2024-01-03T00:00:00Z',
       },
     });
 
@@ -204,7 +198,7 @@ describe('AdminProvider', () => {
       );
 
       expect(authClient.admin.listUsers).toHaveBeenCalledWith({
-        query: { limit: 1000 },
+        query: { limit: 20 }, // Default to 20 users per page
       });
 
       await waitFor(() => {
@@ -237,6 +231,26 @@ describe('AdminProvider', () => {
 
   describe('User Management', () => {
     it('should create a new user successfully', async () => {
+      // Setup initial users list
+      const initialUsers = [...mockUsers];
+      const newUser = {
+        id: 'new-user',
+        name: 'Test User',
+        email: 'test@example.com',
+        emailVerified: false,
+        image: null,
+        role: 'user',
+        banned: false,
+        createdAt: '2024-01-03T00:00:00Z',
+        updatedAt: '2024-01-03T00:00:00Z',
+      };
+      const updatedUsers = [...initialUsers, newUser];
+
+      // Mock the first call to return original users, second call to return updated list
+      vi.mocked(authClient.admin.listUsers)
+        .mockResolvedValueOnce({ data: { users: initialUsers } })
+        .mockResolvedValueOnce({ data: { users: updatedUsers } });
+
       render(
         <AdminProvider>
           <TestComponent />
@@ -258,12 +272,10 @@ describe('AdminProvider', () => {
         name: 'Test User',
         password: 'password123',
         role: 'user',
-        data: {
-          emailVerified: false,
-        },
+        data: {},
       });
 
-      // User count should increase
+      // User count should increase after refresh
       await waitFor(() => {
         expect(screen.getByTestId('users-count')).toHaveTextContent('3');
       });
@@ -292,7 +304,11 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to create user:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to create user',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -342,7 +358,11 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to set user role:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to set user role',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -393,7 +413,11 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to list user sessions:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to list user sessions',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -443,8 +467,9 @@ describe('AdminProvider', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to revoke user sessions:',
+          '❌ [ERROR] Failed to revoke user sessions',
           expect.any(Error),
+          expect.any(Object),
         );
       });
 
@@ -497,8 +522,8 @@ describe('AdminProvider', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('total-users')).toHaveTextContent('2');
-        expect(screen.getByTestId('active-users')).toHaveTextContent('0'); // No lastLoginAt data
-        expect(screen.getByTestId('new-users-today')).toHaveTextContent('0'); // Old dates
+        expect(screen.getByTestId('active-users')).toHaveTextContent('2'); // All non-banned users are considered active
+        expect(screen.getByTestId('new-users-today')).toHaveTextContent('0'); // Old dates from 2020
         expect(screen.getByTestId('new-users-week')).toHaveTextContent('0');
         expect(screen.getByTestId('new-users-month')).toHaveTextContent('0');
       });
@@ -578,12 +603,16 @@ describe('AdminProvider', () => {
       });
 
       await act(async () => {
-        screen.getByTestId('get-sessions-btn').click();
+        screen.getByTestId('list-sessions-btn').click();
       });
 
       // Should show errors for failed session calls per user
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to list user sessions:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to list user sessions',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -594,17 +623,15 @@ describe('AdminProvider', () => {
     it('should transform API response to AdminUser format correctly', async () => {
       const customMockUsers = [
         {
-          user: {
-            id: 'user3',
-            name: 'Custom User',
-            email: 'custom@example.com',
-            emailVerified: true,
-            image: 'https://example.com/custom.jpg',
-            role: 'admin',
-            banned: true,
-            createdAt: '2024-01-15T10:30:00Z',
-            updatedAt: '2024-01-16T15:45:00Z',
-          },
+          id: 'user3',
+          name: 'Custom User',
+          email: 'custom@example.com',
+          emailVerified: true,
+          image: 'https://example.com/custom.jpg',
+          role: 'admin',
+          banned: true,
+          createdAt: '2024-01-15T10:30:00Z',
+          updatedAt: '2024-01-16T15:45:00Z',
         },
       ];
 
@@ -687,7 +714,11 @@ describe('AdminProvider', () => {
         expect(screen.getByTestId('users-count')).toHaveTextContent('0');
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to load users:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '❌ [ERROR] Failed to load users',
+        expect.any(Error),
+        expect.any(Object),
+      );
       consoleSpy.mockRestore();
     });
   });

@@ -1,8 +1,11 @@
-import { SystemRoles } from 'librechat-data-provider';
-
+/**
+ * Middleware to check if user has admin role using Better Auth
+ * This replaces the legacy SystemRoles.admin check
+ */
 function checkAdmin(req, res, next) {
   try {
-    if (req.user.role !== SystemRoles.ADMIN) {
+    // Check for Better Auth admin role (lowercase)
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });
     }
     next();

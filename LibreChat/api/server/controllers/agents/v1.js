@@ -113,7 +113,7 @@ const getAgentHandler = async (req, res) => {
       delete agent.author;
     }
 
-    if (!agent.isCollaborative && agent.author !== author && req.user.role !== SystemRoles.ADMIN) {
+    if (!agent.isCollaborative && agent.author !== author && req.user.role !== SystemRoles.admin) {
       return res.status(200).json({
         id: agent.id,
         name: agent.name,
@@ -143,7 +143,7 @@ const updateAgentHandler = async (req, res) => {
   try {
     const id = req.params.id;
     const { projectIds, removeProjectIds, ...updateData } = req.body;
-    const isAdmin = req.user.role === SystemRoles.ADMIN;
+    const isAdmin = req.user.role === SystemRoles.admin;
     const existingAgent = await getAgent({ id });
     const isAuthor = existingAgent.author.toString() === req.user.id;
 

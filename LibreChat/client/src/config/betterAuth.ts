@@ -156,6 +156,8 @@ export interface AdminUser {
   image?: string | null;
   role: AdminRole;
   banned?: boolean | null;
+  banReason?: string | null;
+  banExpires?: string | null;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string | null;

@@ -14,8 +14,10 @@ describe('Console.log Security Checks', () => {
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        // Skip node_modules, coverage, and test directories
-        if (!['node_modules', 'coverage', 'dist', '__tests__', 'test'].includes(entry.name)) {
+        // Skip node_modules, coverage, test directories, and scripts directory (CLI utilities)
+        if (
+          !['node_modules', 'coverage', 'dist', '__tests__', 'test', 'scripts'].includes(entry.name)
+        ) {
           scanDirectory(fullPath, violations);
         }
       } else if (

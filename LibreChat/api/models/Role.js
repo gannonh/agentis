@@ -35,7 +35,7 @@ const getRoleByName = async function (roleName, fieldsToSelect = null) {
     }
     let role = await query.lean().exec();
 
-    if (!role && SystemRoles[roleName]) {
+    if (!role && Object.values(SystemRoles).includes(roleName)) {
       role = await new Role(roleDefaults[roleName]).save();
       await cache.set(roleName, role);
       return role.toObject();
@@ -175,13 +175,13 @@ async function updateAccessPermissions(roleName, permissionsUpdate) {
 
 /**
  * Initialize default roles in the system.
- * Creates the default roles (ADMIN, USER) if they don't exist in the database.
+ * Creates the default roles (admin, user) if they don't exist in the database.
  * Updates existing roles with new permission types if they're missing.
  *
  * @returns {Promise<void>}
  */
 const initializeRoles = async function () {
-  for (const roleName of [SystemRoles.ADMIN, SystemRoles.USER]) {
+  for (const roleName of [SystemRoles.admin, SystemRoles.user]) {
     let role = await Role.findOne({ name: roleName });
     const defaultPerms = roleDefaults[roleName].permissions;
 

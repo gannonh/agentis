@@ -44,7 +44,7 @@ const LabelController: React.FC<LabelControllerProps> = ({
       render={({ field }) => (
         <Switch
           {...field}
-          checked={field.value}
+          checked={Boolean(field.value)}
           onCheckedChange={(val) => {
             if (val === false && confirmChange) {
               confirmChange(val, field.onChange);
@@ -52,7 +52,7 @@ const LabelController: React.FC<LabelControllerProps> = ({
               field.onChange(val);
             }
           }}
-          value={field.value.toString()}
+          value={field.value?.toString() ?? 'false'}
         />
       )}
     />
@@ -77,13 +77,23 @@ const AdminSettings = () => {
   });
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<SystemRoles>(SystemRoles.USER);
+  const [selectedRole, setSelectedRole] = useState<SystemRoles>(SystemRoles.user);
 
   const defaultValues = useMemo(() => {
-    if (roles?.[selectedRole]?.permissions) {
-      return roles[selectedRole]?.permissions[PermissionTypes.PROMPTS];
+    const safeDefaults = {
+      [Permissions.SHARED_GLOBAL]: false,
+      [Permissions.CREATE]: false,
+      [Permissions.USE]: false,
+    };
+    if (roles?.[selectedRole]?.permissions?.[PermissionTypes.PROMPTS]) {
+      return { ...safeDefaults, ...roles[selectedRole].permissions[PermissionTypes.PROMPTS] };
     }
-    return roleDefaults[selectedRole].permissions[PermissionTypes.PROMPTS];
+    const roleDefaultPermissions =
+      roleDefaults[selectedRole]?.permissions?.[PermissionTypes.PROMPTS];
+    if (roleDefaultPermissions) {
+      return { ...safeDefaults, ...roleDefaultPermissions };
+    }
+    return safeDefaults;
   }, [roles, selectedRole]);
 
   const {
@@ -106,7 +116,7 @@ const AdminSettings = () => {
     }
   }, [roles, selectedRole, reset]);
 
-  if (user?.role !== SystemRoles.ADMIN) {
+  if (user?.role !== SystemRoles.admin) {
     return null;
   }
 
@@ -131,15 +141,15 @@ const AdminSettings = () => {
 
   const roleDropdownItems = [
     {
-      label: SystemRoles.USER,
+      label: SystemRoles.user,
       onClick: () => {
-        setSelectedRole(SystemRoles.USER);
+        setSelectedRole(SystemRoles.user);
       },
     },
     {
-      label: SystemRoles.ADMIN,
+      label: SystemRoles.admin,
       onClick: () => {
-        setSelectedRole(SystemRoles.ADMIN);
+        setSelectedRole(SystemRoles.admin);
       },
     },
   ];
@@ -190,7 +200,7 @@ const AdminSettings = () => {
                       label={label}
                       getValues={getValues}
                       setValue={setValue}
-                      {...(selectedRole === SystemRoles.ADMIN && promptPerm === Permissions.USE
+                      {...(selectedRole === SystemRoles.admin && promptPerm === Permissions.USE
                         ? {
                             confirmChange: (
                               newValue: boolean,
@@ -199,7 +209,7 @@ const AdminSettings = () => {
                           }
                         : {})}
                     />
-                    {selectedRole === SystemRoles.ADMIN && promptPerm === Permissions.USE && (
+                    {selectedRole === SystemRoles.admin && promptPerm === Permissions.USE && (
                       <>
                         <div className="mb-2 max-w-full whitespace-normal break-words text-sm text-red-600">
                           <span>{localize('com_ui_admin_access_warning')}</span>

@@ -51,7 +51,7 @@ const optionalBetterAuth = async (req, res, next) => {
     // Populate req.user with the same structure as JWT middleware
     req.user = {
       id: user._id.toString(), // Convert ObjectId to string like JWT middleware
-      role: user.role || SystemRoles.USER, // Default to USER role
+      role: user.role || SystemRoles.user, // Default to user role
       ...user,
       _id: user._id.toString(), // Ensure _id is also string
     };

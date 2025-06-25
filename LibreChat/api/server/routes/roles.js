@@ -19,11 +19,11 @@ router.use(requireBetterAuth);
 router.get('/:roleName', async (req, res) => {
   const { roleName: _r } = req.params;
   // TODO: TEMP, use a better parsing for roleName
-  const roleName = _r.toUpperCase();
+  const roleName = _r.toLowerCase();
 
   if (
-    (req.user.role !== SystemRoles.ADMIN && roleName === SystemRoles.ADMIN) ||
-    (req.user.role !== SystemRoles.ADMIN && !roleDefaults[roleName])
+    (req.user.role !== SystemRoles.admin && roleName === SystemRoles.admin) ||
+    (req.user.role !== SystemRoles.admin && !roleDefaults[roleName])
   ) {
     return res.status(403).send({ message: 'Unauthorized' });
   }
@@ -47,7 +47,7 @@ router.get('/:roleName', async (req, res) => {
 router.put('/:roleName/prompts', checkAdmin, async (req, res) => {
   const { roleName: _r } = req.params;
   // TODO: TEMP, use a better parsing for roleName
-  const roleName = _r.toUpperCase();
+  const roleName = _r.toLowerCase();
   /** @type {TRole['permissions']['PROMPTS']} */
   const updates = req.body;
 
@@ -86,7 +86,7 @@ router.put('/:roleName/prompts', checkAdmin, async (req, res) => {
 router.put('/:roleName/agents', checkAdmin, async (req, res) => {
   const { roleName: _r } = req.params;
   // TODO: TEMP, use a better parsing for roleName
-  const roleName = _r.toUpperCase();
+  const roleName = _r.toLowerCase();
   /** @type {TRole['permissions']['AGENTS']} */
   const updates = req.body;
 

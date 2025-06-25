@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { CSSTransition } from 'react-transition-group';
 import type { TMessage } from 'librechat-data-provider';
@@ -19,6 +19,7 @@ export default function MessagesView({
   const { screenshotTargetRef } = useScreenshot();
   const scrollButtonPreference = useRecoilValue(store.showScrollButton);
   const [currentEditId, setCurrentEditId] = useState<number | string | null>(-1);
+  const scrollButtonRef = useRef<HTMLDivElement>(null);
 
   const {
     conversation,
@@ -148,8 +149,11 @@ export default function MessagesView({
             classNames="scroll-animation"
             unmountOnExit={true}
             appear={true}
+            nodeRef={scrollButtonRef}
           >
-            <ScrollToBottom scrollHandler={handleSmoothToRef} />
+            <div ref={scrollButtonRef}>
+              <ScrollToBottom scrollHandler={handleSmoothToRef} />
+            </div>
           </CSSTransition>
         </div>
       </div>

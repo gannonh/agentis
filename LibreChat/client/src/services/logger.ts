@@ -19,7 +19,10 @@ export interface LogContext {
  * - Never logs sensitive data (emails, tokens, passwords)
  */
 class Logger {
-  private isDevelopment = import.meta.env.DEV;
+  private isDevelopment =
+    import.meta.env.DEV ||
+    import.meta.env.MODE === 'development' ||
+    process.env.NODE_ENV === 'development';
   private logLevel: LogLevel = this.isDevelopment ? 'debug' : 'error';
 
   /**
@@ -68,39 +71,42 @@ class Logger {
    * Log debug information (development only)
    */
   debug(message: string, context?: LogContext): void {
-    if (!this.shouldLog('debug')) return;
-
-    const entry = this.createLogEntry('debug', message, context);
-
+    // Always log debug in development, regardless of shouldLog check
     if (this.isDevelopment) {
       console.debug(`🔍 [DEBUG] ${message}`, context ? this.sanitizeContext(context) : '');
+      return;
     }
+
+    if (!this.shouldLog('debug')) return;
+    const entry = this.createLogEntry('debug', message, context);
   }
 
   /**
    * Log general information
    */
   info(message: string, context?: LogContext): void {
-    if (!this.shouldLog('info')) return;
-
-    const entry = this.createLogEntry('info', message, context);
-
+    // Always log info in development, regardless of shouldLog check
     if (this.isDevelopment) {
       console.info(`ℹ️ [INFO] ${message}`, context ? this.sanitizeContext(context) : '');
+      return;
     }
+
+    if (!this.shouldLog('info')) return;
+    const entry = this.createLogEntry('info', message, context);
   }
 
   /**
    * Log warnings
    */
   warn(message: string, context?: LogContext): void {
-    if (!this.shouldLog('warn')) return;
-
-    const entry = this.createLogEntry('warn', message, context);
-
+    // Always log warnings in development, regardless of shouldLog check
     if (this.isDevelopment) {
       console.warn(`⚠️ [WARN] ${message}`, context ? this.sanitizeContext(context) : '');
+      return;
     }
+
+    if (!this.shouldLog('warn')) return;
+    const entry = this.createLogEntry('warn', message, context);
   }
 
   /**

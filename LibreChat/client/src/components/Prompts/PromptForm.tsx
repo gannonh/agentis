@@ -208,7 +208,7 @@ const PromptForm = () => {
     return <SkeletonForm />;
   }
 
-  if (!isOwner && groupsQuery.data && user?.role !== SystemRoles.ADMIN) {
+  if (!isOwner && groupsQuery.data && user?.role !== SystemRoles.admin) {
     const fetchedPrompt = findPromptGroup(
       groupsQuery.data,
       (group) => group._id === params.promptId,

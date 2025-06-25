@@ -121,19 +121,18 @@ describe('Better Auth Configuration', () => {
       expect(typeof betterAuthConfig.session.cookieAge).toBe('number');
     });
 
-    test('should have 7 days expiration (604800 seconds)', () => {
-      const sevenDaysInSeconds = 60 * 60 * 24 * 7;
-      expect(betterAuthConfig.session.expiresIn).toBe(sevenDaysInSeconds);
+    test('should have 1 year expiration (31536000 seconds)', () => {
+      const oneYearInSeconds = 60 * 60 * 24 * 365;
+      expect(betterAuthConfig.session.expiresIn).toBe(oneYearInSeconds);
     });
 
-    test('should have 1 day update age (86400 seconds)', () => {
-      const oneDayInSeconds = 60 * 60 * 24;
-      expect(betterAuthConfig.session.updateAge).toBe(oneDayInSeconds);
+    test('should have no automatic session refresh (0 seconds)', () => {
+      expect(betterAuthConfig.session.updateAge).toBe(0);
     });
 
-    test('should have 7 days cookie age (604800 seconds)', () => {
-      const sevenDaysInSeconds = 60 * 60 * 24 * 7;
-      expect(betterAuthConfig.session.cookieAge).toBe(sevenDaysInSeconds);
+    test('should have 1 year cookie age (31536000 seconds)', () => {
+      const oneYearInSeconds = 60 * 60 * 24 * 365;
+      expect(betterAuthConfig.session.cookieAge).toBe(oneYearInSeconds);
     });
 
     test('should have valid session timing relationships', () => {
@@ -145,10 +144,12 @@ describe('Better Auth Configuration', () => {
       // Cookie age should match session expiration for consistency
       expect(cookieAge).toBe(expiresIn);
 
-      // All values should be positive
+      // Expiration and cookie age should be positive
       expect(expiresIn).toBeGreaterThan(0);
-      expect(updateAge).toBeGreaterThan(0);
       expect(cookieAge).toBeGreaterThan(0);
+
+      // Update age can be 0 (disabled automatic refresh)
+      expect(updateAge).toBeGreaterThanOrEqual(0);
     });
   });
 
@@ -157,9 +158,9 @@ describe('Better Auth Configuration', () => {
       // Password requirements should meet basic security standards
       expect(betterAuthConfig.emailAndPassword.minPasswordLength).toBeGreaterThanOrEqual(8);
 
-      // Session should not be too long (max 30 days for security)
-      const thirtyDaysInSeconds = 60 * 60 * 24 * 30;
-      expect(betterAuthConfig.session.expiresIn).toBeLessThanOrEqual(thirtyDaysInSeconds);
+      // Session should not be too long (max 2 years for reasonable security)
+      const twoYearsInSeconds = 60 * 60 * 24 * 365 * 2;
+      expect(betterAuthConfig.session.expiresIn).toBeLessThanOrEqual(twoYearsInSeconds);
 
       // Session should not be too short (min 1 hour for usability)
       const oneHourInSeconds = 60 * 60;

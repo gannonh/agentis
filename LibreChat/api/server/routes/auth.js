@@ -151,6 +151,7 @@ router.all('/sign-in/*', prepareBetterAuthRequest);
 router.all('/sign-up/*', prepareBetterAuthRequest);
 router.all('/sign-out', prepareBetterAuthRequest);
 router.all('/session', prepareBetterAuthRequest);
+router.all('/admin/*', prepareBetterAuthRequest); // Admin plugin endpoints
 
 // Organization domain checking endpoint - MUST come BEFORE catch-all route
 router.get('/organization/check-domain', async (req, res) => {

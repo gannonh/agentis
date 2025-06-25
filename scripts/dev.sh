@@ -13,6 +13,7 @@ REBUILD_DATA_SCHEMAS=false
 REBUILD_DATA_PROVIDER=false
 REBUILD_MCP=false
 REBUILD_ARCADE=false
+REBUILD_FRONTEND=false
 RESTART_FRONTEND=false
 RESTART_BACKEND=false
 STOP_SERVERS=false
@@ -29,7 +30,7 @@ function show_usage {
   echo -e ""
   echo -e "${BLUE}Common Development Commands:${NC}"
   echo -e "  --dev          ${GREEN}[MOST COMMON]${NC} Full dev restart: stop servers, rebuild packages, start servers"
-  echo -e "  --rebuild      Rebuild all packages only (no server changes)"
+  echo -e "  --rebuild      Rebuild all packages AND frontend (no server changes)"
   echo -e "  --restart      Restart both dev servers only (no rebuilding)"
   echo -e "  --stop         Stop all running dev servers"
   echo -e ""
@@ -38,7 +39,8 @@ function show_usage {
   echo -e "  --data-provider   Rebuild data-provider package only"
   echo -e "  --mcp            Rebuild mcp package only"
   echo -e "  --arcade         Rebuild arcade-client package only"
-  echo -e "  --packages       Rebuild all packages (same as --rebuild)"
+  echo -e "  --frontend-build Build frontend for production only"
+  echo -e "  --packages       Rebuild all packages only (excludes frontend)"
   echo -e ""
   echo -e "${BLUE}Server Management:${NC}"
   echo -e "  --frontend     Restart frontend dev server only"
@@ -196,6 +198,13 @@ function rebuild_package {
   echo -e "${GREEN}✓ ${package_name} built${NC}"
 }
 
+# Function to rebuild frontend
+function rebuild_frontend {
+  echo -e "${BLUE}Building frontend for production...${NC}"
+  npm run frontend
+  echo -e "${GREEN}✓ Frontend built${NC}"
+}
+
 # Function to rebuild all packages in correct order
 function rebuild_all_packages {
   echo -e "${BLUE}Rebuilding all packages in dependency order...${NC}"
@@ -318,7 +327,14 @@ while [[ $# -gt 0 ]]; do
     RESTART_FRONTEND=true
     RESTART_BACKEND=true
     ;;
-  --rebuild | --packages)
+  --rebuild)
+    REBUILD_DATA_PROVIDER=true
+    REBUILD_DATA_SCHEMAS=true
+    REBUILD_MCP=true
+    REBUILD_ARCADE=true
+    REBUILD_FRONTEND=true
+    ;;
+  --packages)
     REBUILD_DATA_PROVIDER=true
     REBUILD_DATA_SCHEMAS=true
     REBUILD_MCP=true
@@ -345,6 +361,9 @@ while [[ $# -gt 0 ]]; do
   --arcade)
     REBUILD_ARCADE=true
     ;;
+  --frontend-build)
+    REBUILD_FRONTEND=true
+    ;;
 
   # Server-specific
   --frontend)
@@ -368,6 +387,7 @@ while [[ $# -gt 0 ]]; do
     REBUILD_DATA_SCHEMAS=true
     REBUILD_MCP=true
     REBUILD_ARCADE=true
+    REBUILD_FRONTEND=true
     ;;
   --reset)
     DO_CLEAN_ALL=true
@@ -376,6 +396,7 @@ while [[ $# -gt 0 ]]; do
     REBUILD_DATA_SCHEMAS=true
     REBUILD_MCP=true
     REBUILD_ARCADE=true
+    REBUILD_FRONTEND=true
     RESTART_FRONTEND=true
     RESTART_BACKEND=true
     ;;
@@ -391,6 +412,7 @@ while [[ $# -gt 0 ]]; do
     REBUILD_DATA_SCHEMAS=true
     REBUILD_MCP=true
     REBUILD_ARCADE=true
+    REBUILD_FRONTEND=true
     # Don't restart servers for test build
     ;;
 
@@ -481,6 +503,12 @@ fi
 
 if [ "$REBUILD_ARCADE" = true ] && [ -d "packages/arcade-client" ]; then
   rebuild_package "arcade-client" "build:arcade-client"
+  packages_built=true
+fi
+
+# Build frontend if requested
+if [ "$REBUILD_FRONTEND" = true ]; then
+  rebuild_frontend
   packages_built=true
 fi
 

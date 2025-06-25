@@ -11,10 +11,10 @@ import { logger } from '#config/index.js';
  * Loads the default interface object.
  * @param {TCustomConfig | undefined} config - The loaded custom configuration.
  * @param {TConfigDefaults} configDefaults - The custom configuration default values.
- * @param {SystemRoles} [roleName] - The role to load the default interface for, defaults to `'USER'`.
+ * @param {SystemRoles} [roleName] - The role to load the default interface for, defaults to `'user'`.
  * @returns {Promise<TCustomConfig['interface']>} The default interface object.
  */
-async function loadDefaultInterface(config, configDefaults, roleName = SystemRoles.USER) {
+async function loadDefaultInterface(config, configDefaults, roleName = SystemRoles.user) {
   const { interface: interfaceConfig } = config ?? {};
   const { interface: defaults } = configDefaults;
   const hasModelSpecs = config?.modelSpecs?.list?.length > 0;
@@ -49,7 +49,7 @@ async function loadDefaultInterface(config, configDefaults, roleName = SystemRol
     [PermissionTypes.TEMPORARY_CHAT]: { [Permissions.USE]: loadedInterface.temporaryChat },
     [PermissionTypes.RUN_CODE]: { [Permissions.USE]: loadedInterface.runCode },
   });
-  await updateAccessPermissions(SystemRoles.ADMIN, {
+  await updateAccessPermissions(SystemRoles.admin, {
     [PermissionTypes.PROMPTS]: { [Permissions.USE]: loadedInterface.prompts },
     [PermissionTypes.BOOKMARKS]: { [Permissions.USE]: loadedInterface.bookmarks },
     [PermissionTypes.MULTI_CONVO]: { [Permissions.USE]: loadedInterface.multiConvo },

@@ -1,4 +1,5 @@
 import express from 'express';
+import { ObjectId } from 'mongodb';
 import { PermissionTypes, Permissions, SystemRoles } from 'librechat-data-provider';
 import {
   getPrompt,
@@ -42,14 +43,14 @@ router.use(checkPromptAccess);
  */
 router.get('/groups/:groupId', async (req, res) => {
   let groupId = req.params.groupId;
-  const author = req.user.id;
+  const author = new ObjectId(req.user.id);
 
   const query = {
     _id: groupId,
     $or: [{ projectIds: { $exists: true, $ne: [], $not: { $size: 0 } } }, { author }],
   };
 
-  if (req.user.role === SystemRoles.ADMIN) {
+  if (req.user.role === SystemRoles.admin) {
     delete query.$or;
   }
 
@@ -74,7 +75,7 @@ router.get('/groups/:groupId', async (req, res) => {
 router.get('/all', async (req, res) => {
   try {
     const groups = await getAllPromptGroups(req, {
-      author: req.user._id,
+      author: new ObjectId(req.user.id),
     });
     res.status(200).send(groups);
   } catch (error) {
@@ -91,7 +92,7 @@ router.get('/groups', async (req, res) => {
   try {
     const filter = req.query;
     /* Note: The aggregation requires an ObjectId */
-    filter.author = req.user._id;
+    filter.author = new ObjectId(req.user.id);
     const groups = await getPromptGroups(req, filter);
     res.status(200).send(groups);
   } catch (error) {
@@ -116,7 +117,7 @@ const createPrompt = async (req, res) => {
     const saveData = {
       prompt,
       group,
-      author: req.user.id,
+      author: new ObjectId(req.user.id),
       authorName: req.user.name,
     };
 
@@ -147,9 +148,9 @@ router.post('/', checkPromptCreate, createPrompt);
 const patchPromptGroup = async (req, res) => {
   try {
     const { groupId } = req.params;
-    const author = req.user.id;
+    const author = new ObjectId(req.user.id);
     const filter = { _id: groupId, author };
-    if (req.user.role === SystemRoles.ADMIN) {
+    if (req.user.role === SystemRoles.admin) {
       delete filter.author;
     }
     const promptGroup = await updatePromptGroup(filter, req.body);
@@ -175,9 +176,9 @@ router.patch('/:promptId/tags/production', checkPromptCreate, async (req, res) =
 
 router.get('/:promptId', async (req, res) => {
   const { promptId } = req.params;
-  const author = req.user.id;
+  const author = new ObjectId(req.user.id);
   const query = { _id: promptId, author };
-  if (req.user.role === SystemRoles.ADMIN) {
+  if (req.user.role === SystemRoles.admin) {
     delete query.author;
   }
   const prompt = await getPrompt(query);
@@ -186,10 +187,10 @@ router.get('/:promptId', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const author = req.user.id;
+    const author = new ObjectId(req.user.id);
     const { groupId } = req.query;
     const query = { groupId, author };
-    if (req.user.role === SystemRoles.ADMIN) {
+    if (req.user.role === SystemRoles.admin) {
       delete query.author;
     }
     const prompts = await getPrompts(query);
@@ -213,7 +214,7 @@ const deletePromptController = async (req, res) => {
   try {
     const { promptId } = req.params;
     const { groupId } = req.query;
-    const author = req.user.id;
+    const author = new ObjectId(req.user.id);
     const query = { promptId, groupId, author, role: req.user.role };
     const result = await deletePrompt(query);
     res.status(200).send(result);
@@ -232,7 +233,11 @@ const deletePromptController = async (req, res) => {
 const deletePromptGroupController = async (req, res) => {
   try {
     const { groupId: _id } = req.params;
-    const message = await deletePromptGroup({ _id, author: req.user.id, role: req.user.role });
+    const message = await deletePromptGroup({
+      _id,
+      author: new ObjectId(req.user.id),
+      role: req.user.role,
+    });
     res.send(message);
   } catch (error) {
     logger.error('Error deleting prompt group', error);

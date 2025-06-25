@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { authClient } from '~/config/betterAuth';
@@ -18,6 +18,7 @@ export const MagicLinkLogin: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMountedRef = useRef(true);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [email, setEmail] = useState<string>('');
 
@@ -57,7 +58,7 @@ export const MagicLinkLogin: React.FC = () => {
         .getSession()
         .then((sessionData) => {
           console.log('🔗 Session after magic link:', sessionData);
-          if (sessionData?.data?.user) {
+          if (sessionData?.data?.user && isMountedRef.current) {
             console.log('🔗 Magic link authentication successful!');
             // Redirect to main app
             navigate('/c/new');
@@ -65,7 +66,9 @@ export const MagicLinkLogin: React.FC = () => {
         })
         .catch((error) => {
           console.error('🔗 Error getting session after magic link:', error);
-          setError(localize('com_auth_error_magic_link'));
+          if (isMountedRef.current) {
+            setError(localize('com_auth_error_magic_link'));
+          }
         });
     }
   }, [searchParams, navigate, localize]);
@@ -76,6 +79,13 @@ export const MagicLinkLogin: React.FC = () => {
       navigate('/c/new');
     }
   }, [session, navigate, magicLinkSent]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const onSubmit = async (data: MagicLinkLoginFormData) => {
     setError('');
@@ -98,20 +108,28 @@ export const MagicLinkLogin: React.FC = () => {
       }
 
       console.log('Magic link sent successfully to:', data.email);
-      setMagicLinkSent(true);
+      if (isMountedRef.current) {
+        setMagicLinkSent(true);
+      }
     } catch (err: any) {
       console.error('Magic link error:', err);
-      setError(err.message || localize('com_auth_error_magic_link_send'));
+      if (isMountedRef.current) {
+        setError(err.message || localize('com_auth_error_magic_link_send'));
+      }
     } finally {
-      setIsSubmitting(false);
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleResendLink = async () => {
     if (!email) return;
 
-    setError('');
-    setIsSubmitting(true);
+    if (isMountedRef.current) {
+      setError('');
+      setIsSubmitting(true);
+    }
 
     try {
       const result = await authClient.signIn.magicLink({
@@ -123,11 +141,17 @@ export const MagicLinkLogin: React.FC = () => {
         throw new Error(result.error.message || localize('com_auth_error_magic_link_send'));
       }
 
-      setError(''); // Clear any previous errors
+      if (isMountedRef.current) {
+        setError(''); // Clear any previous errors
+      }
     } catch (err: any) {
-      setError(err.message || localize('com_auth_error_magic_link_send'));
+      if (isMountedRef.current) {
+        setError(err.message || localize('com_auth_error_magic_link_send'));
+      }
     } finally {
-      setIsSubmitting(false);
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 

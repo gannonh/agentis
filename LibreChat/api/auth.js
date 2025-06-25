@@ -8,7 +8,7 @@
 
 import { betterAuth } from 'better-auth';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
-import { organization, magicLink } from 'better-auth/plugins';
+import { organization, magicLink, admin } from 'better-auth/plugins';
 import mongoose from 'mongoose';
 import { logger } from '#config/index.js';
 import { betterAuthConfig } from '#config/betterAuth.js';
@@ -116,7 +116,7 @@ mongoose.connection.once('open', () => {
 
       // Use betterAuthConfig for consistent settings
       emailAndPassword: {
-        enabled: false, // We use magic links, not passwords
+        enabled: true, // Required for admin.createUser to work, though users still authenticate via OAuth/magic links
       },
       emailVerification: betterAuthConfig.emailVerification,
       session: betterAuthConfig.session,
@@ -240,6 +240,12 @@ mongoose.connection.once('open', () => {
       },
 
       plugins: [
+        admin({
+          defaultRole: 'user',
+          adminRoles: ['admin'],
+          // For development, make specific users admin by their ID
+          adminUserIds: process.env.ADMIN_USER_IDS ? process.env.ADMIN_USER_IDS.split(',') : [],
+        }),
         organization({
           async onCreate({ user, organization }) {
             logger.info('📍 Organization created:', organization);

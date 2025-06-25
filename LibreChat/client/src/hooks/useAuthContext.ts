@@ -2,6 +2,7 @@
  * Compatibility hook for useAuthContext using Better Auth
  * This provides the same interface as the old AuthContext for components that haven't been migrated yet
  */
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authClient } from '../config/betterAuth';
 
@@ -28,7 +29,7 @@ export function useAuthContext() {
         // Add legacy fields that components expect
         avatar: session.user.image || '',
         provider: 'local', // Default provider
-        role: 'user', // Default role for permission system
+        role: session.user.role || 'user', // Use actual role from Better Auth session
         // Convert dates to strings to match TUser type
         createdAt: session.user.createdAt?.toISOString() || new Date().toISOString(),
         updatedAt: session.user.updatedAt?.toISOString() || new Date().toISOString(),
@@ -40,16 +41,9 @@ export function useAuthContext() {
       }
     : null;
 
-  return {
-    user,
-    isAuthenticated: !!session?.user,
-    session: session || null,
-    logout,
-    // Legacy fields for compatibility - these can be removed as components are migrated
-    error: null,
-    login: () => {}, // Not used in new flow
-    setError: () => {}, // Not used in new flow
-    roles: {
+  // Memoize the roles object to prevent infinite re-renders
+  const roles = useMemo(
+    () => ({
       // TODO: TEMPORARY FIX - Replace with proper role-based permission system
       // This hardcoded permissions object is a temporary solution during Better Auth migration
       // to restore agents/prompts functionality. Should be replaced with:
@@ -82,6 +76,45 @@ export function useAuthContext() {
           },
         },
       },
-    },
+      admin: {
+        permissions: {
+          AGENTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+            SHARED_GLOBAL: true,
+          },
+          PROMPTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+            SHARED_GLOBAL: true,
+          },
+          BOOKMARKS: {
+            USE: true,
+            CREATE: true,
+          },
+          MULTI_CONVO: {
+            USE: true,
+          },
+          EXECUTE_CODE: {
+            USE: true,
+          },
+        },
+      },
+    }),
+    [],
+  );
+
+  return {
+    user,
+    isAuthenticated: !!session?.user,
+    session: session || null,
+    logout,
+    // Legacy fields for compatibility - these can be removed as components are migrated
+    error: null,
+    login: () => {}, // Not used in new flow
+    setError: () => {}, // Not used in new flow
+    roles,
   };
 }
