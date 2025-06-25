@@ -198,7 +198,7 @@ describe('AdminProvider', () => {
       );
 
       expect(authClient.admin.listUsers).toHaveBeenCalledWith({
-        query: { limit: 1000 },
+        query: { limit: 20 }, // Default to 20 users per page
       });
 
       await waitFor(() => {
@@ -231,6 +231,26 @@ describe('AdminProvider', () => {
 
   describe('User Management', () => {
     it('should create a new user successfully', async () => {
+      // Setup initial users list
+      const initialUsers = [...mockUsers];
+      const newUser = {
+        id: 'new-user',
+        name: 'Test User',
+        email: 'test@example.com',
+        emailVerified: false,
+        image: null,
+        role: 'user',
+        banned: false,
+        createdAt: '2024-01-03T00:00:00Z',
+        updatedAt: '2024-01-03T00:00:00Z',
+      };
+      const updatedUsers = [...initialUsers, newUser];
+
+      // Mock the first call to return original users, second call to return updated list
+      vi.mocked(authClient.admin.listUsers)
+        .mockResolvedValueOnce({ data: { users: initialUsers } })
+        .mockResolvedValueOnce({ data: { users: updatedUsers } });
+
       render(
         <AdminProvider>
           <TestComponent />
@@ -252,12 +272,10 @@ describe('AdminProvider', () => {
         name: 'Test User',
         password: 'password123',
         role: 'user',
-        data: {
-          emailVerified: false,
-        },
+        data: {},
       });
 
-      // User count should increase
+      // User count should increase after refresh
       await waitFor(() => {
         expect(screen.getByTestId('users-count')).toHaveTextContent('3');
       });
@@ -286,7 +304,7 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to create user:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to create user', expect.any(Error), expect.any(Object));
       });
 
       consoleSpy.mockRestore();
@@ -336,7 +354,7 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to set user role:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to set user role', expect.any(Error), expect.any(Object));
       });
 
       consoleSpy.mockRestore();
@@ -387,7 +405,7 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to list user sessions:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to list user sessions', expect.any(Error), expect.any(Object));
       });
 
       consoleSpy.mockRestore();
@@ -437,8 +455,9 @@ describe('AdminProvider', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to revoke user sessions:',
+          '❌ [ERROR] Failed to revoke user sessions',
           expect.any(Error),
+          expect.any(Object),
         );
       });
 
@@ -577,7 +596,7 @@ describe('AdminProvider', () => {
 
       // Should show errors for failed session calls per user
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to list user sessions:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to list user sessions', expect.any(Error), expect.any(Object));
       });
 
       consoleSpy.mockRestore();
@@ -679,7 +698,7 @@ describe('AdminProvider', () => {
         expect(screen.getByTestId('users-count')).toHaveTextContent('0');
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to load users:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to load users', expect.any(Error), expect.any(Object));
       consoleSpy.mockRestore();
     });
   });

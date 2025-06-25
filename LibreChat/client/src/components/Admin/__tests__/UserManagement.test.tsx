@@ -61,8 +61,22 @@ vi.mock('~/components/ui/Label', () => ({
   Label: ({ children, htmlFor }: any) => <label htmlFor={htmlFor}>{children}</label>,
 }));
 
+// Use a counter to make dialog testids unique
+let dialogCounter = 0;
+
 vi.mock('~/components/ui/Dialog', () => ({
-  Dialog: ({ children }: any) => <div data-testid="dialog-container">{children}</div>,
+  Dialog: ({ children, open }: any) => {
+    dialogCounter += 1;
+    // Only render the trigger button when dialog is closed, full content when open
+    if (open) {
+      return <div data-testid={`dialog-container-${dialogCounter}`}>{children}</div>;
+    }
+    // When closed, only render the trigger
+    const trigger = React.Children.toArray(children).find((child: any) => 
+      child?.props && (child.props.asChild !== undefined || child.type?.name === 'DialogTrigger')
+    );
+    return <div data-testid={`dialog-container-${dialogCounter}`}>{trigger}</div>;
+  },
   DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
   DialogDescription: ({ children }: any) => <div data-testid="dialog-description">{children}</div>,
   DialogFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
@@ -104,6 +118,18 @@ vi.mock('~/components/ui/Select', () => ({
   SelectValue: () => <span data-testid="select-value">Select value</span>,
 }));
 
+vi.mock('~/components/ui/Switch', () => ({
+  Switch: ({ id, checked, onCheckedChange }: any) => (
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onCheckedChange && onCheckedChange(e.target.checked)}
+      data-testid="switch"
+    />
+  ),
+}));
+
 // Mock Lucide React icons
 vi.mock('lucide-react', () => ({
   Users: ({ className }: { className?: string }) => (
@@ -130,6 +156,13 @@ vi.mock('lucide-react', () => ({
   Crown: ({ className }: { className?: string }) => (
     <div data-testid="crown-icon" className={className} />
   ),
+  Edit: ({ className }: { className?: string }) => (
+    <div data-testid="edit-icon" className={className} />
+  ),
+  UserCheck: ({ className }: { className?: string }) => (
+    <div data-testid="user-check-icon" className={className} />
+  ),
+  Ban: ({ className }: { className?: string }) => <div data-testid="ban-icon" className={className} />,
 }));
 
 describe('UserManagement', () => {
@@ -174,10 +207,15 @@ describe('UserManagement', () => {
 
   const mockAdminContext = {
     users: mockUsers,
+    totalUsers: mockUsers.length,
+    loadUsers: vi.fn(),
     createUser: vi.fn(),
     setUserRole: vi.fn(),
-    listUserSessions: vi.fn(),
+    updateUser: vi.fn(),
     revokeUserSessions: vi.fn(),
+    banUser: vi.fn(),
+    unbanUser: vi.fn(),
+    listUserSessions: vi.fn(),
     getUserStats: vi.fn(),
     getSessionStats: vi.fn(),
     isLoadingUsers: false,
@@ -186,6 +224,7 @@ describe('UserManagement', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    dialogCounter = 0;
 
     // Reset form mocks
     mockRegister.mockReturnValue({});
@@ -237,8 +276,9 @@ describe('UserManagement', () => {
     it('should render create user button', () => {
       render(<UserManagement />);
 
-      // Dialog container exists
-      expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
+      // Dialog containers exist (create user dialog and ban user dialog)
+      expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-container-2')).toBeInTheDocument();
 
       // UserPlus icon should be somewhere in the document (even if in dialog trigger)
       expect(screen.getByTestId('user-plus-icon')).toBeInTheDocument();
@@ -288,8 +328,13 @@ describe('UserManagement', () => {
     it('should show user status badges', () => {
       render(<UserManagement />);
 
-      expect(screen.getAllByText('Verified')).toHaveLength(2); // John and Bob
-      expect(screen.getByText('Banned')).toBeInTheDocument(); // Jane is banned (takes precedence over unverified)
+      // There will be "Verified" text in the filter dropdown plus user badges
+      const verifiedTexts = screen.getAllByText('Verified');
+      expect(verifiedTexts.length).toBeGreaterThanOrEqual(2); // At least John and Bob badges
+      
+      // There will be "Banned" text in the filter dropdown plus user badge
+      const bannedTexts = screen.getAllByText('Banned');
+      expect(bannedTexts.length).toBeGreaterThanOrEqual(1); // At least Jane's badge, possibly filter dropdown too
       // No "Unverified" text because Jane shows "Banned" instead
     });
 
@@ -312,9 +357,10 @@ describe('UserManagement', () => {
     it('should show user count statistics', () => {
       render(<UserManagement />);
 
-      expect(screen.getByText('Total: 3 users')).toBeInTheDocument();
+      expect(screen.getByText('Showing 3 of 3 on this page (3 total)')).toBeInTheDocument();
       expect(screen.getByText('Admins: 1')).toBeInTheDocument();
       expect(screen.getByText('Verified: 2')).toBeInTheDocument();
+      expect(screen.getByText('Banned: 1')).toBeInTheDocument();
     });
   });
 
@@ -353,9 +399,10 @@ describe('UserManagement', () => {
       render(<UserManagement />);
 
       // Initially shows all users
-      expect(screen.getByText('Total: 3 users')).toBeInTheDocument();
+      expect(screen.getByText('Showing 3 of 3 on this page (3 total)')).toBeInTheDocument();
       expect(screen.getByText('Admins: 1')).toBeInTheDocument();
       expect(screen.getByText('Verified: 2')).toBeInTheDocument();
+      expect(screen.getByText('Banned: 1')).toBeInTheDocument();
     });
 
     it('should show empty state when no users match filter', () => {
@@ -374,25 +421,30 @@ describe('UserManagement', () => {
   });
 
   describe('User Actions', () => {
-    it('should render action dropdown for each user', () => {
+    it('should render action buttons for each user', () => {
       render(<UserManagement />);
 
-      const dropdownTriggers = screen.getAllByTestId('more-vertical-icon');
-      expect(dropdownTriggers).toHaveLength(3); // One for each user
+      // Should have shield icons for role actions (one per user)
+      expect(screen.getAllByTestId('shield-icon')).toHaveLength(3);
+      
+      // Should have activity icons for revoke sessions (one per user)
+      expect(screen.getAllByTestId('activity-icon')).toHaveLength(3);
+      
+      // Should have ban/user-check icons for ban actions (one per user)
+      const banIcons = screen.getAllByTestId('ban-icon');
+      const userCheckIcons = screen.getAllByTestId('user-check-icon');
+      expect(banIcons.length + userCheckIcons.length).toBe(3);
     });
 
     it('should show promote/demote admin action', () => {
       render(<UserManagement />);
 
-      // Should have dropdown menus
-      expect(screen.getAllByTestId('dropdown-menu')).toHaveLength(3);
-
-      // Each dropdown should have shield icon for role actions
+      // Each user should have shield icon for role actions
       expect(screen.getAllByTestId('shield-icon')).toHaveLength(3);
 
       // Actions should include both "Make Admin" and "Remove Admin" (different users)
-      expect(screen.getAllByText('Make Admin')).toHaveLength(2); // John and Bob
-      expect(screen.getByText('Remove Admin')).toBeInTheDocument(); // Jane
+      expect(screen.getAllByText('Make Admin')).toHaveLength(2); // John and Bob (both are users)
+      expect(screen.getByText('Remove Admin')).toBeInTheDocument(); // Jane (admin)
     });
 
     it('should show revoke sessions action', () => {
@@ -448,7 +500,7 @@ describe('UserManagement', () => {
       render(<UserManagement />);
 
       // Dialog structure exists in DOM and form is visible
-      expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
       expect(screen.getByTestId('dialog-content')).toBeInTheDocument();
     });
 
@@ -457,7 +509,7 @@ describe('UserManagement', () => {
       render(<UserManagement />);
 
       // Dialog content exists in DOM but may not be visible when closed
-      expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
     });
 
     it('should render form input fields', async () => {
@@ -477,7 +529,7 @@ describe('UserManagement', () => {
     it('should render dialog action buttons', async () => {
       render(<UserManagement />);
       // Dialog container exists
-      expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
     });
 
     it('should handle form submission', async () => {
@@ -495,7 +547,7 @@ describe('UserManagement', () => {
     it('should handle creation errors', async () => {
       render(<UserManagement />);
       // Component renders without errors
-      expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
     });
   });
 
@@ -528,8 +580,9 @@ describe('UserManagement', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to revoke user sessions:',
+          '❌ [ERROR] Failed to revoke user sessions',
           expect.any(Error),
+          expect.any(Object),
         );
       });
 
@@ -587,13 +640,13 @@ describe('UserManagement', () => {
     it('should handle role selection', () => {
       render(<UserManagement />);
       // Component renders with form setup
-      expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
     });
 
     it('should handle checkbox for email verification', () => {
       render(<UserManagement />);
       // Component renders with form setup
-      expect(screen.getByTestId('dialog-container')).toBeInTheDocument();
+      expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
     });
   });
 });

@@ -1012,7 +1012,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                 value={banReason}
                 onChange={(e) => setBanReason(e.target.value)}
                 placeholder="Ban Reason"
-                autoFocus={false}
               />
             </div>
 
