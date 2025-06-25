@@ -49,7 +49,7 @@ router.get('/groups/:groupId', async (req, res) => {
     $or: [{ projectIds: { $exists: true, $ne: [], $not: { $size: 0 } } }, { author }],
   };
 
-  if (req.user.role === SystemRoles.ADMIN) {
+  if (req.user.role === SystemRoles.admin) {
     delete query.$or;
   }
 
@@ -149,7 +149,7 @@ const patchPromptGroup = async (req, res) => {
     const { groupId } = req.params;
     const author = req.user.id;
     const filter = { _id: groupId, author };
-    if (req.user.role === SystemRoles.ADMIN) {
+    if (req.user.role === SystemRoles.admin) {
       delete filter.author;
     }
     const promptGroup = await updatePromptGroup(filter, req.body);
@@ -177,7 +177,7 @@ router.get('/:promptId', async (req, res) => {
   const { promptId } = req.params;
   const author = req.user.id;
   const query = { _id: promptId, author };
-  if (req.user.role === SystemRoles.ADMIN) {
+  if (req.user.role === SystemRoles.admin) {
     delete query.author;
   }
   const prompt = await getPrompt(query);
@@ -189,7 +189,7 @@ router.get('/', async (req, res) => {
     const author = req.user.id;
     const { groupId } = req.query;
     const query = { groupId, author };
-    if (req.user.role === SystemRoles.ADMIN) {
+    if (req.user.role === SystemRoles.admin) {
       delete query.author;
     }
     const prompts = await getPrompts(query);

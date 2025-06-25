@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Migration script to convert LibreChat uppercase roles (USER/ADMIN)
+ * Migration script to convert LibreChat uppercase roles (user/admin)
  * to Better Auth lowercase roles (user/admin)
  */
 
@@ -35,11 +35,11 @@ async function migrateRoles() {
     const usersCollection = db.collection('users');
 
     // Count users with uppercase roles
-    const userCount = await usersCollection.countDocuments({ role: 'USER' });
-    const adminCount = await usersCollection.countDocuments({ role: 'ADMIN' });
+    const userCount = await usersCollection.countDocuments({ role: 'user' });
+    const adminCount = await usersCollection.countDocuments({ role: 'admin' });
 
-    logger.info(`Found ${userCount} users with role 'USER'`);
-    logger.info(`Found ${adminCount} users with role 'ADMIN'`);
+    logger.info(`Found ${userCount} users with role 'user'`);
+    logger.info(`Found ${adminCount} users with role 'admin'`);
 
     if (userCount === 0 && adminCount === 0) {
       logger.info(
@@ -48,29 +48,29 @@ async function migrateRoles() {
       return;
     }
 
-    // Migrate USER -> user
+    // Migrate user -> user
     if (userCount > 0) {
-      logger.info('Migrating USER -> user...');
+      logger.info('Migrating user -> user...');
       const userResult = await usersCollection.updateMany(
-        { role: 'USER' },
+        { role: 'user' },
         { $set: { role: 'user' } },
       );
-      logger.success(`Migrated ${userResult.modifiedCount} users from 'USER' to 'user'`);
+      logger.success(`Migrated ${userResult.modifiedCount} users from 'user' to 'user'`);
     }
 
-    // Migrate ADMIN -> admin
+    // Migrate admin -> admin
     if (adminCount > 0) {
-      logger.info('Migrating ADMIN -> admin...');
+      logger.info('Migrating admin -> admin...');
       const adminResult = await usersCollection.updateMany(
-        { role: 'ADMIN' },
+        { role: 'admin' },
         { $set: { role: 'admin' } },
       );
-      logger.success(`Migrated ${adminResult.modifiedCount} users from 'ADMIN' to 'admin'`);
+      logger.success(`Migrated ${adminResult.modifiedCount} users from 'admin' to 'admin'`);
     }
 
     // Verify migration
     const remainingUppercase = await usersCollection.countDocuments({
-      $or: [{ role: 'USER' }, { role: 'ADMIN' }],
+      $or: [{ role: 'user' }, { role: 'admin' }],
     });
 
     if (remainingUppercase === 0) {

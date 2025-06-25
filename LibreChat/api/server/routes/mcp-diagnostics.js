@@ -141,7 +141,7 @@ async function diagnoseSpecificUser(userId, logger) {
 router.get('/', requireBetterAuth, async (req, res) => {
   try {
     // Check if user has admin permissions
-    const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.ADMIN]);
+    const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.admin]);
     if (!hasAccess) {
       return res.status(403).json({ message: 'Admin permission required for this endpoint' });
     }
@@ -197,7 +197,7 @@ router.get('/user', requireBetterAuth, async (req, res) => {
 router.get('/user/:userId', requireBetterAuth, async (req, res) => {
   try {
     // Check if user has admin permissions
-    const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.ADMIN]);
+    const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.admin]);
     if (!hasAccess) {
       return res.status(403).json({ message: 'Admin permission required for this endpoint' });
     }

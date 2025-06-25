@@ -1,6 +1,6 @@
 /**
  * Middleware to check if user has admin role using Better Auth
- * This replaces the legacy SystemRoles.ADMIN check
+ * This replaces the legacy SystemRoles.admin check
  */
 function checkAdmin(req, res, next) {
   try {

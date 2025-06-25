@@ -1344,9 +1344,9 @@ export enum CohereConstants {
    */
   API_URL = 'https://api.cohere.ai/v1',
   /**
-   * Role for "USER" messages
+   * Role for "user" messages
    */
-  ROLE_USER = 'USER',
+  ROLE_USER = 'user',
   /**
    * Role for "SYSTEM" messages
    */

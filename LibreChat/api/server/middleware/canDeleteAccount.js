@@ -17,7 +17,7 @@ import { logger } from '#config/index.js';
 const canDeleteAccount = async (req, res, next = () => {}) => {
   const { user } = req;
   const { ALLOW_ACCOUNT_DELETION = true } = process.env;
-  if (user?.role === SystemRoles.ADMIN || isEnabled(ALLOW_ACCOUNT_DELETION)) {
+  if (user?.role === SystemRoles.admin || isEnabled(ALLOW_ACCOUNT_DELETION)) {
     return next();
   } else {
     logger.error(`[User] [Delete Account] [User cannot delete account] [User: ${user?.id}]`);

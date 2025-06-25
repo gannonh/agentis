@@ -9,10 +9,10 @@ import { logger } from '#config.js';
 
 const router = express.Router();
 
-// If the user has ADMIN role
+// If the user has admin role
 // then action edition is possible even if not owner of the assistant
 const isAdmin = (req) => {
-  return req.user.role === SystemRoles.ADMIN;
+  return req.user.role === SystemRoles.admin;
 };
 
 /**

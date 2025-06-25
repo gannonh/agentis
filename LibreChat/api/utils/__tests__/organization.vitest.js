@@ -22,7 +22,7 @@ describe('Organization Utilities', () => {
     });
 
     it('should handle case insensitive domains', () => {
-      expect(extractEmailDomain('USER@COMPANY.COM')).toBe('company.com');
+      expect(extractEmailDomain('user@COMPANY.COM')).toBe('company.com');
       expect(extractEmailDomain('Test@Example.ORG')).toBe('example.org');
     });
 

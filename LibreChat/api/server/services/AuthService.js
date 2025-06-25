@@ -210,7 +210,7 @@ const registerUser = async (user, additionalData = {}) => {
       username,
       name,
       avatar: null,
-      role: isFirstRegisteredUser ? SystemRoles.ADMIN : SystemRoles.USER,
+      role: isFirstRegisteredUser ? SystemRoles.admin : SystemRoles.user,
       password: bcrypt.hashSync(password, salt),
       ...additionalData,
     };

@@ -77,7 +77,7 @@ const AdminSettings = () => {
   });
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<SystemRoles>(SystemRoles.USER);
+  const [selectedRole, setSelectedRole] = useState<SystemRoles>(SystemRoles.user);
 
   const defaultValues = useMemo(() => {
     if (roles?.[selectedRole]?.permissions) {
@@ -106,7 +106,7 @@ const AdminSettings = () => {
     }
   }, [roles, selectedRole]);
 
-  if (user?.role !== SystemRoles.ADMIN) {
+  if (user?.role !== SystemRoles.admin) {
     return null;
   }
 
@@ -131,15 +131,15 @@ const AdminSettings = () => {
 
   const roleDropdownItems = [
     {
-      label: SystemRoles.USER,
+      label: SystemRoles.user,
       onClick: () => {
-        setSelectedRole(SystemRoles.USER);
+        setSelectedRole(SystemRoles.user);
       },
     },
     {
-      label: SystemRoles.ADMIN,
+      label: SystemRoles.admin,
       onClick: () => {
-        setSelectedRole(SystemRoles.ADMIN);
+        setSelectedRole(SystemRoles.admin);
       },
     },
   ];
@@ -190,7 +190,7 @@ const AdminSettings = () => {
                       label={label}
                       getValues={getValues}
                       setValue={setValue}
-                      {...(selectedRole === SystemRoles.ADMIN && promptPerm === Permissions.USE
+                      {...(selectedRole === SystemRoles.admin && promptPerm === Permissions.USE
                         ? {
                             confirmChange: (
                               newValue: boolean,
@@ -199,7 +199,7 @@ const AdminSettings = () => {
                           }
                         : {})}
                     />
-                    {selectedRole === SystemRoles.ADMIN && promptPerm === Permissions.USE && (
+                    {selectedRole === SystemRoles.admin && promptPerm === Permissions.USE && (
                       <>
                         <div className="mb-2 max-w-full whitespace-normal break-words text-sm text-red-600">
                           <span>{localize('com_ui_admin_access_warning')}</span>

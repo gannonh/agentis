@@ -360,7 +360,7 @@ const updateAgentProjects = async ({ user, agentId, projectIds, removeProjectIds
   }
 
   const updateQuery = { id: agentId, author: user.id };
-  if (user.role === SystemRoles.ADMIN) {
+  if (user.role === SystemRoles.admin) {
     delete updateQuery.author;
   }
 

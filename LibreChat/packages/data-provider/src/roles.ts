@@ -18,11 +18,11 @@ export enum SystemRoles {
   /**
    * The Admin role
    */
-  ADMIN = 'admin',
+  admin = 'admin',
   /**
    * The default user role
    */
-  USER = 'user',
+  user = 'user',
 }
 
 // The role schema now only needs to reference the permissions schema.
@@ -35,8 +35,8 @@ export type TRole = z.infer<typeof roleSchema>;
 
 // Define default roles using the new structure.
 const defaultRolesSchema = z.object({
-  [SystemRoles.ADMIN]: roleSchema.extend({
-    name: z.literal(SystemRoles.ADMIN),
+  [SystemRoles.admin]: roleSchema.extend({
+    name: z.literal(SystemRoles.admin),
     permissions: permissionsSchema.extend({
       [PermissionTypes.PROMPTS]: promptPermissionsSchema.extend({
         [Permissions.SHARED_GLOBAL]: z.boolean().default(true),
@@ -64,15 +64,15 @@ const defaultRolesSchema = z.object({
       }),
     }),
   }),
-  [SystemRoles.USER]: roleSchema.extend({
-    name: z.literal(SystemRoles.USER),
+  [SystemRoles.user]: roleSchema.extend({
+    name: z.literal(SystemRoles.user),
     permissions: permissionsSchema,
   }),
 });
 
 export const roleDefaults = defaultRolesSchema.parse({
-  [SystemRoles.ADMIN]: {
-    name: SystemRoles.ADMIN,
+  [SystemRoles.admin]: {
+    name: SystemRoles.admin,
     permissions: {
       [PermissionTypes.PROMPTS]: {
         [Permissions.SHARED_GLOBAL]: true,
@@ -98,8 +98,8 @@ export const roleDefaults = defaultRolesSchema.parse({
       },
     },
   },
-  [SystemRoles.USER]: {
-    name: SystemRoles.USER,
+  [SystemRoles.user]: {
+    name: SystemRoles.user,
     permissions: {
       [PermissionTypes.PROMPTS]: {},
       [PermissionTypes.BOOKMARKS]: {},

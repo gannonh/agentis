@@ -12,7 +12,7 @@ import { getAssistant } from '#models/index.js';
  * @returns {Promise<void>}
  */
 const validateAuthor = async ({ req, openai, overrideEndpoint, overrideAssistantId }) => {
-  if (req.user.role === SystemRoles.ADMIN) {
+  if (req.user.role === SystemRoles.admin) {
     return;
   }
 

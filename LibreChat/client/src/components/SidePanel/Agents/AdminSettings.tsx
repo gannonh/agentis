@@ -46,9 +46,9 @@ const LabelController: React.FC<LabelControllerProps> = ({
       render={({ field }) => (
         <Switch
           {...field}
-          checked={field.value}
+          checked={Boolean(field.value)}
           onCheckedChange={field.onChange}
-          value={field.value.toString()}
+          value={field.value?.toString() ?? 'false'}
         />
       )}
     />
@@ -69,13 +69,26 @@ const AdminSettings = () => {
   });
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<SystemRoles>(SystemRoles.USER);
+  const [selectedRole, setSelectedRole] = useState<SystemRoles>(SystemRoles.user);
 
   const defaultValues = useMemo(() => {
-    if (roles?.[selectedRole]?.permissions) {
-      return roles[selectedRole]?.permissions[PermissionTypes.AGENTS];
+    // Always provide safe boolean defaults for all expected permissions
+    const safeDefaults = {
+      [Permissions.SHARED_GLOBAL]: false,
+      [Permissions.CREATE]: false,
+      [Permissions.USE]: false,
+    };
+
+    if (roles?.[selectedRole]?.permissions?.[PermissionTypes.AGENTS]) {
+      return { ...safeDefaults, ...roles[selectedRole].permissions[PermissionTypes.AGENTS] };
     }
-    return roleDefaults[selectedRole].permissions[PermissionTypes.AGENTS];
+    
+    const roleDefaultPermissions = roleDefaults[selectedRole]?.permissions?.[PermissionTypes.AGENTS];
+    if (roleDefaultPermissions) {
+      return { ...safeDefaults, ...roleDefaultPermissions };
+    }
+    
+    return safeDefaults;
   }, [roles, selectedRole]);
 
   const {
@@ -91,14 +104,25 @@ const AdminSettings = () => {
   });
 
   useEffect(() => {
-    if (roles?.[selectedRole]?.permissions?.[PermissionTypes.AGENTS]) {
-      reset(roles[selectedRole]?.permissions[PermissionTypes.AGENTS]);
-    } else {
-      reset(roleDefaults[selectedRole].permissions[PermissionTypes.AGENTS]);
-    }
-  }, [roles, selectedRole]);
+    const safeDefaults = {
+      [Permissions.SHARED_GLOBAL]: false,
+      [Permissions.CREATE]: false,
+      [Permissions.USE]: false,
+    };
 
-  if (user?.role !== SystemRoles.ADMIN) {
+    if (roles?.[selectedRole]?.permissions?.[PermissionTypes.AGENTS]) {
+      reset({ ...safeDefaults, ...roles[selectedRole].permissions[PermissionTypes.AGENTS] });
+    } else {
+      const roleDefaultPermissions = roleDefaults[selectedRole]?.permissions?.[PermissionTypes.AGENTS];
+      if (roleDefaultPermissions) {
+        reset({ ...safeDefaults, ...roleDefaultPermissions });
+      } else {
+        reset(safeDefaults);
+      }
+    }
+  }, [roles, selectedRole, reset]);
+
+  if (user?.role !== SystemRoles.admin) {
     return null;
   }
 
@@ -123,15 +147,15 @@ const AdminSettings = () => {
 
   const roleDropdownItems = [
     {
-      label: SystemRoles.USER,
+      label: SystemRoles.user,
       onClick: () => {
-        setSelectedRole(SystemRoles.USER);
+        setSelectedRole(SystemRoles.user);
       },
     },
     {
-      label: SystemRoles.ADMIN,
+      label: SystemRoles.admin,
       onClick: () => {
-        setSelectedRole(SystemRoles.ADMIN);
+        setSelectedRole(SystemRoles.admin);
       },
     },
   ];
@@ -183,7 +207,7 @@ const AdminSettings = () => {
                     getValues={getValues}
                     setValue={setValue}
                   />
-                  {selectedRole === SystemRoles.ADMIN && agentPerm === Permissions.USE && (
+                  {selectedRole === SystemRoles.admin && agentPerm === Permissions.USE && (
                     <>
                       <div className="mb-2 max-w-full whitespace-normal break-words text-sm text-red-600">
                         <span>{localize('com_ui_admin_access_warning')}</span>
