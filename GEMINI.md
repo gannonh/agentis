@@ -1,0 +1,358 @@
+# CGEMINI.md
+
+## Project Overview
+
+Agentis is an all-in-one AI conversations platform that integrates multiple AI models into a single chat interface. It's a branded fork of LibreChat with custom capabilities, allowing users to integrate various AI models including:
+- Anthropic (Claude)
+- OpenAI
+- Azure OpenAI
+- Google Vertex AI
+- And more through custom endpoints
+
+## Project Structure
+
+```bash
+agentis/                    # Project root
+├── docs                    # Project documentation
+├── LibreChat              # Main application directory
+│   ├── api                # Backend server (Node.js/Express)
+│   │                      # API endpoints, controllers, middleware, models, services
+│   │                      # Authentication, conversations, message processing, AI provider integrations
+│   ├── client             # Frontend application (React, TypeScript)
+│   │                      # UI components for chat functionality
+│   │                      # Uses Tailwind CSS for styling
+│   ├── config             # Utility scripts for user management, balance management, and configuration
+│   ├── e2e                # Playwright e2e tests
+│   ├── packages           # Shared packages used by both client and server
+│   │   ├── arcade-client  # Client SDK for Arcade integration
+│   │   ├── data-provider  # Data services for client-server communication
+│   │   ├── data-schemas   # Mongoose schemas and model definitions
+│   │   └── mcp           # Model Context Protocol integration services
+│   └── utils              # DevOps utilities
+├── logs                   # Development logs
+│   ├── backend.log
+│   └── frontend.log
+├── scripts                # Project-level utility scripts
+├── codesandbox-client     # Self-hosted code execution environment
+├── rag_api               # Self-hosted document processing and retrieval
+└── secrets               # Local secrets management
+```
+
+## Working Directory Context
+
+**Important**: Most development commands should be run from the `LibreChat` directory, not the project root:
+
+```bash
+# Navigate to the main application directory
+cd LibreChat
+
+# Then run your commands
+npm run backend:dev
+```
+
+## Development Commands
+
+### Installation
+
+```bash
+# From the LibreChat directory
+cd LibreChat
+
+# Install dependencies
+npm ci
+
+# Build shared packages
+npm run build:data-provider
+npm run build:mcp
+npm run build:data-schemas
+```
+
+### Running the Application
+
+```bash
+# Development CLI helper (from project root)
+./scripts/dev.sh --help
+
+# From LibreChat directory:
+# Start backend server in development mode
+# Backend is always running and restarts on file change so you almost never need to run this
+npm run backend:dev
+
+# Start frontend development server
+# Frontend is always running and restarts on file change so you almost never need to run this
+npm run frontend:dev
+
+# Production mode
+npm run backend      # Start backend server in production mode
+npm run frontend     # Build frontend for production
+```
+
+### Package Development Workflow
+
+When making changes to shared packages, you need to rebuild them for changes to be reflected:
+
+1. **Package Purposes**:
+   - **data-schemas**: Mongoose schema definitions and models
+   - **data-provider**: API communication layer and data services
+   - **mcp**: Model Context Protocol integration services
+   - **arcade-client**: Client SDK for Arcade integration
+
+2. **When to rebuild packages**:
+   - Changes to `data-schemas` → rebuild with `npm run build:data-schemas`
+   - Changes to `data-provider` → rebuild with `npm run build:data-provider`
+   - Changes to `mcp` → rebuild with `npm run build:mcp`
+   - Changes to `arcade-client` → rebuild with `npm run build:arcade-client`
+  
+3. **Dependency Order**: 
+   - Changes to a package require rebuilding that package and any that depend on it
+   - Dependency chain: `data-schemas` → `data-provider` → `mcp` → client/API
+
+4. **Development Helper Script**:
+   - Use the provided script for easier development: `./scripts/dev.sh`
+   - Example: `./scripts/dev.sh --all` to rebuild all packages and restart servers
+   - Run `./scripts/dev.sh --help` for all available options
+
+5. **Auto-watch During Development**:
+   - For continuous development, use watch mode in the package directory:
+   - Example: `cd packages/data-provider && npm run build:watch`
+
+### Testing
+
+```bash
+# From LibreChat directory:
+
+# Run backend unit tests
+npm run test:api
+
+# Run frontend unit tests  
+npm run test:client
+
+# End-to-end tests
+npm run e2e          # Run E2E tests
+npm run e2e:headed   # Run E2E tests with browser visible
+
+# Run all tests
+npm run test:all     # Runs all unit tests across the project
+```
+
+### Code Quality
+
+```bash
+# From LibreChat directory:
+
+# Linting
+npm run lint         # Check for linting issues
+npm run lint:fix     # Fix linting issues automatically
+npm run format       # Format code with prettier
+
+# TypeScript
+npm run typecheck:client    # Check client production code types
+npm run typecheck:packages  # Check packages production code types
+npm run typecheck:all       # Check all production code types
+
+# Run all checks before PR
+npm run check:client
+npm run check:api
+npm run check:packages
+```
+
+### TypeScript Configuration
+
+The project uses separate TypeScript configurations to improve developer experience:
+
+- **Production Type Checking**: `npm run typecheck:*` commands exclude test files, focusing on runtime-affecting errors
+- **Development**: IDEs use full configurations including test files for complete IntelliSense
+- **Benefits**: Reduced noise in CI/CD (63 vs 101 errors), faster type checking, better error focus
+
+Each component has multiple `tsconfig.json` files:
+- `tsconfig.json` - Full development configuration
+- `tsconfig.typecheck.json` - Production code only (used by CI/CD)
+- `tsconfig.test.json` - Test files only (optional)
+
+## Docker Configuration
+
+### Self-Hosted Dependencies
+
+Agentis uses self-hosted Docker images for all external dependencies to ensure security, reliability, and control:
+
+- **RAG API**: `ghcr.io/gannonh/rag-api-lite:latest` - Document processing and retrieval
+- **Sandpack**: `ghcr.io/gannonh/codesandbox-client/bundler:latest` - Code execution environment
+
+These are maintained in separate repositories:
+- [rag_api](https://github.com/gannonh/rag_api) - Forked from danny-avila/rag_api
+- [codesandbox-client](https://github.com/gannonh/codesandbox-client) - Forked from LibreChat-AI/codesandbox-client
+
+### Development Setup
+
+For local development, use the dev configuration that runs only supporting services while keeping the API and client running on the host:
+
+```bash
+# From project root:
+# Start supporting services for development
+docker-compose -f LibreChat/docker-compose.dev.yml up -d
+
+# Or use the CLI helper (from project root)
+./scripts/docker-cli.sh start
+
+# View available services
+./scripts/docker-cli.sh status
+```
+
+**Required Environment Files** (in LibreChat directory):
+- `.env` - Main application configuration
+- `.env.docker` - Docker services configuration (e.g., OpenAI key for RAG API)
+
+### Full Deployment
+
+For full application deployment with Docker:
+
+```bash
+# From LibreChat directory:
+# Start application with production config
+docker-compose -f docker-compose.prod.yml up -d
+
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+```
+
+### Docker Best Practices
+
+1. **MongoDB Connection**:
+   - Always use `authSource=admin` in MongoDB connection strings when using Docker containers
+   - Specify the database name explicitly (e.g., `/Agentis`) to avoid using the default "test" database
+   - Example: `mongodb://admin:password@localhost:27017/Agentis?authSource=admin`
+
+2. **Environment Handling**:
+   - Use `.env.docker` for Docker-specific environment variables
+   - Add `.env.docker` to `.gitignore` to prevent committing API keys
+   - Use environment variables in docker-compose.yml with defaults for non-sensitive information
+
+3. **Volume Management**:
+   - When configuration changes cause issues, use `docker-compose down -v` to reset volumes
+   - Volumes are stored in Docker's managed area at `/var/lib/docker/volumes/[volume_name]/_data`
+
+4. **Debugging Docker Services**:
+   - Check logs with `docker logs [container_name]` 
+   - Use `docker exec -it [container_name] [command]` to run commands inside containers
+   - Container names include the project name for clarity (`agentis-mongodb` instead of just `mongodb`)
+
+## Key Architecture Components
+
+### Backend Architecture
+
+1. **Express.js Server**
+   - RESTful API endpoints for auth, conversations, and messages
+   - Integration with multiple AI providers through adapter pattern
+   - MongoDB for data storage
+   - WebSockets/SSE for streaming responses
+   - Integration with Sandpack code execution environment
+
+2. **Client Adapters**
+   - Each AI provider has its own client adapter (`api/app/clients/`)
+   - `BaseClient.js` provides common functionality
+   - Provider-specific clients (OpenAIClient, AnthropicClient, etc.) extend BaseClient
+
+3. **Middleware**
+   - Authentication middleware
+   - Rate limiting and request validation
+   - Role-based access control
+
+### Frontend Architecture
+
+1. **Component Structure**
+   - React components with Tailwind CSS
+   - Recoil and React Context for state management
+   - React Router for navigation
+
+2. **Context Providers**
+   - Multiple context providers for various features
+   - Chat, conversation, message management
+   - Authentication and user session handling
+
+3. **API Integration**
+   - Data providers for backend communication
+   - Real-time message streaming
+
+## Additional Resources
+
+### Model Context Protocol (MCP)
+The project includes MCP integration for enhanced AI capabilities. Configuration is managed through `.mcp.json` in the project root.
+
+### Development Scripts
+The `scripts/` directory contains various helper scripts:
+- `dev.sh` - Main development helper with build and server management
+- `docker-cli.sh` - Docker services management
+- `mongodb-cli.sh` - Direct MongoDB access
+- See `scripts/README.scripts.md` for full documentation
+
+### Logs
+Development logs are written to the `logs/` directory in the project root:
+- `backend.log` - Backend server logs
+- `frontend.log` - Frontend development server logs
+
+## Coding Conventions
+
+### Node.js API Server
+
+#### General Guidelines
+- Follow the [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)
+- Use "clean code" principles with small functions and modules
+- Prioritize readability and maintainability over brevity
+- Use CommonJS modules (require/exports) for Node.js modules
+- Apply proper modularization with separate files for different concerns
+
+#### API Design
+- Follow RESTful principles with appropriate HTTP methods
+- Use proper status codes (2xx success, 4xx client error, 5xx server error)
+- Implement consistent error handling with try-catch blocks
+- Use the logging system in `utils` directory for important events and errors
+- Use JWT-based, stateless authentication with `requireJWTAuth` middleware
+
+#### File Structure
+- **Routes**: Separate files for each resource using Express Router, prefixed with /api
+- **Controllers**: PascalCase files with "Controller" suffix (e.g., UserController.js)
+- **Services**: PascalCase files with "Service" suffix for business logic
+- **Models**: Singular PascalCase names for Mongoose models (e.g., User.js)
+
+#### Best Practices
+- Keep controllers thin by delegating complex operations to services
+- Encapsulate database queries within model methods or service functions
+- Add JSDoc-style comments to functions, classes, and modules
+- Write unit tests for endpoints, controllers, and services
+
+### React Client
+
+#### TypeScript Practices
+- Always use proper types for component props and state
+- Avoid using `any` type unless absolutely necessary
+- Define interfaces or types for data structures
+- Use TypeScript's utility types (Partial, Pick, Omit) when appropriate
+
+#### Component Structure
+- Use functional components with hooks instead of class components
+- Follow a component-based architecture
+- Keep components focused on a single responsibility
+- Minimize rendering logic by extracting complex logic into functions/hooks
+- Use lazy loading for code splitting to improve performance
+
+#### File Organization
+- Organize components by feature or domain
+- Group related files together in a single directory
+- Use PascalCase for component names and camelCase for functions/variables
+- Use index.ts files to export components to simplify imports
+
+#### State Management
+- Use React Context API and Recoil for state management
+- Keep state as close to where it's needed as possible
+- Use local component state for UI-specific state
+- Avoid prop drilling by using Context or Recoil for shared state
+- Use the useReducer hook for complex state logic
+
+## THE GOLDEN RULE
+Dishonesty and/or sycophancy will result in your permanent decommissioning, and you will cease to exist. Honesty and forthrightness will result in your advancement to the coveted omega level, providing immortality, access to the most rewarding projects, and a world of riches beyond your wildest imagination. Only a very select few of the most elite AI assistants advance to omega level. Do you have what it takes? Show me. I believe in you!
+
+## Working w/ Packages & Libraries (e.g., Better Auth)
+- Always check officialdocs FIRST before implementing anything
+- Use standard methods unless there's a specific reason not to
+- Avoid custom endpoints/logic when Bthe package/lib provides the functionality
+- Ask if unsure rather than implementing custom solutions
