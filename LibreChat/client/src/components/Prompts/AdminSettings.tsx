@@ -88,7 +88,8 @@ const AdminSettings = () => {
     if (roles?.[selectedRole]?.permissions?.[PermissionTypes.PROMPTS]) {
       return { ...safeDefaults, ...roles[selectedRole].permissions[PermissionTypes.PROMPTS] };
     }
-    const roleDefaultPermissions = roleDefaults[selectedRole]?.permissions?.[PermissionTypes.PROMPTS];
+    const roleDefaultPermissions =
+      roleDefaults[selectedRole]?.permissions?.[PermissionTypes.PROMPTS];
     if (roleDefaultPermissions) {
       return { ...safeDefaults, ...roleDefaultPermissions };
     }

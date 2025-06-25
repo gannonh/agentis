@@ -132,6 +132,9 @@ export const useCreatePrompt = (
         addGroupToAll(queryClient, group);
       }
 
+      // Invalidate allPromptGroups query to refresh chat interface
+      queryClient.invalidateQueries([QueryKeys.allPromptGroups]);
+
       if (onSuccess) {
         onSuccess(response, variables, context);
       }
@@ -186,6 +189,10 @@ export const useDeletePrompt = (
           },
         );
       }
+
+      // Invalidate allPromptGroups query to refresh chat interface
+      queryClient.invalidateQueries([QueryKeys.allPromptGroups]);
+
       if (onSuccess) {
         onSuccess(response, variables, context);
       }
@@ -224,6 +231,10 @@ export const useDeletePromptGroup = (
       );
 
       removeGroupFromAll(queryClient, variables.id);
+
+      // Invalidate allPromptGroups query to refresh chat interface
+      queryClient.invalidateQueries([QueryKeys.allPromptGroups]);
+
       if (onSuccess) {
         onSuccess(response, variables, context);
       }
