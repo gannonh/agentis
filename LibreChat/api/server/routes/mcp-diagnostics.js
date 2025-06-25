@@ -1,7 +1,6 @@
 import express from 'express';
 import { MCPManager } from 'librechat-mcp';
-import { requireBetterAuth, checkAccess } from '#server/middleware.js';
-import { Permissions, PermissionTypes } from 'librechat-data-provider';
+import { requireBetterAuth, checkAdmin } from '#server/middleware.js';
 import { logger } from '#config/index.js';
 
 const router = express.Router();
@@ -138,14 +137,8 @@ async function diagnoseSpecificUser(userId, logger) {
  * @description Get diagnostics for all MCP connections (admin only)
  * @access Private/Admin
  */
-router.get('/', requireBetterAuth, async (req, res) => {
+router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
-    // Check if user has admin permissions
-    const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.admin]);
-    if (!hasAccess) {
-      return res.status(403).json({ message: 'Admin permission required for this endpoint' });
-    }
-
     // Run diagnostics
     await diagnoseUserConnections(logger);
 
@@ -194,14 +187,8 @@ router.get('/user', requireBetterAuth, async (req, res) => {
  * @description Get diagnostics for a specific user's MCP connections (admin only)
  * @access Private/Admin
  */
-router.get('/user/:userId', requireBetterAuth, async (req, res) => {
+router.get('/user/:userId', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
-    // Check if user has admin permissions
-    const hasAccess = await checkAccess(req.user, PermissionTypes.DIAGNOSTICS, [Permissions.admin]);
-    if (!hasAccess) {
-      return res.status(403).json({ message: 'Admin permission required for this endpoint' });
-    }
-
     const { userId } = req.params;
     logger.info(`[MCP-DIAGNOSTICS] Running diagnostics for user ${userId}`);
 
