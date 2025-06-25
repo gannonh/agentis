@@ -18,11 +18,11 @@ export enum SystemRoles {
   /**
    * The Admin role
    */
-  ADMIN = 'ADMIN',
+  ADMIN = 'admin',
   /**
    * The default user role
    */
-  USER = 'USER',
+  USER = 'user',
 }
 
 // The role schema now only needs to reference the permissions schema.

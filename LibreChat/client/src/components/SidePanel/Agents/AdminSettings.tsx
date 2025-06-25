@@ -96,7 +96,7 @@ const AdminSettings = () => {
     } else {
       reset(roleDefaults[selectedRole].permissions[PermissionTypes.AGENTS]);
     }
-  }, [roles, selectedRole, reset]);
+  }, [roles, selectedRole]);
 
   if (user?.role !== SystemRoles.ADMIN) {
     return null;
