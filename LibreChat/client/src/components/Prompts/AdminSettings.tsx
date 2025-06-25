@@ -44,7 +44,7 @@ const LabelController: React.FC<LabelControllerProps> = ({
       render={({ field }) => (
         <Switch
           {...field}
-          checked={field.value}
+          checked={Boolean(field.value)}
           onCheckedChange={(val) => {
             if (val === false && confirmChange) {
               confirmChange(val, field.onChange);
@@ -52,7 +52,7 @@ const LabelController: React.FC<LabelControllerProps> = ({
               field.onChange(val);
             }
           }}
-          value={field.value.toString()}
+          value={field.value?.toString() ?? 'false'}
         />
       )}
     />
@@ -80,10 +80,19 @@ const AdminSettings = () => {
   const [selectedRole, setSelectedRole] = useState<SystemRoles>(SystemRoles.user);
 
   const defaultValues = useMemo(() => {
-    if (roles?.[selectedRole]?.permissions) {
-      return roles[selectedRole]?.permissions[PermissionTypes.PROMPTS];
+    const safeDefaults = {
+      [Permissions.SHARED_GLOBAL]: false,
+      [Permissions.CREATE]: false,
+      [Permissions.USE]: false,
+    };
+    if (roles?.[selectedRole]?.permissions?.[PermissionTypes.PROMPTS]) {
+      return { ...safeDefaults, ...roles[selectedRole].permissions[PermissionTypes.PROMPTS] };
     }
-    return roleDefaults[selectedRole].permissions[PermissionTypes.PROMPTS];
+    const roleDefaultPermissions = roleDefaults[selectedRole]?.permissions?.[PermissionTypes.PROMPTS];
+    if (roleDefaultPermissions) {
+      return { ...safeDefaults, ...roleDefaultPermissions };
+    }
+    return safeDefaults;
   }, [roles, selectedRole]);
 
   const {

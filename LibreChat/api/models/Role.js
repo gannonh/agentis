@@ -35,8 +35,8 @@ const getRoleByName = async function (roleName, fieldsToSelect = null) {
     }
     let role = await query.lean().exec();
 
-    if (!role && SystemRoles[roleName.toUpperCase()]) {
-      role = await new Role(roleDefaults[SystemRoles[roleName.toUpperCase()]]).save();
+    if (!role && Object.values(SystemRoles).includes(roleName)) {
+      role = await new Role(roleDefaults[roleName]).save();
       await cache.set(roleName, role);
       return role.toObject();
     }

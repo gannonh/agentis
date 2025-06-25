@@ -1346,7 +1346,7 @@ export enum CohereConstants {
   /**
    * Role for "user" messages
    */
-  ROLE_USER = 'user',
+  ROLE_USER = 'USER',
   /**
    * Role for "SYSTEM" messages
    */
