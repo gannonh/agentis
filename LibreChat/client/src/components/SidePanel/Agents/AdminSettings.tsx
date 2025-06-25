@@ -82,12 +82,13 @@ const AdminSettings = () => {
     if (roles?.[selectedRole]?.permissions?.[PermissionTypes.AGENTS]) {
       return { ...safeDefaults, ...roles[selectedRole].permissions[PermissionTypes.AGENTS] };
     }
-    
-    const roleDefaultPermissions = roleDefaults[selectedRole]?.permissions?.[PermissionTypes.AGENTS];
+
+    const roleDefaultPermissions =
+      roleDefaults[selectedRole]?.permissions?.[PermissionTypes.AGENTS];
     if (roleDefaultPermissions) {
       return { ...safeDefaults, ...roleDefaultPermissions };
     }
-    
+
     return safeDefaults;
   }, [roles, selectedRole]);
 
@@ -113,7 +114,8 @@ const AdminSettings = () => {
     if (roles?.[selectedRole]?.permissions?.[PermissionTypes.AGENTS]) {
       reset({ ...safeDefaults, ...roles[selectedRole].permissions[PermissionTypes.AGENTS] });
     } else {
-      const roleDefaultPermissions = roleDefaults[selectedRole]?.permissions?.[PermissionTypes.AGENTS];
+      const roleDefaultPermissions =
+        roleDefaults[selectedRole]?.permissions?.[PermissionTypes.AGENTS];
       if (roleDefaultPermissions) {
         reset({ ...safeDefaults, ...roleDefaultPermissions });
       } else {

@@ -304,7 +304,11 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to create user', expect.any(Error), expect.any(Object));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to create user',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -354,7 +358,11 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to set user role', expect.any(Error), expect.any(Object));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to set user role',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -405,7 +413,11 @@ describe('AdminProvider', () => {
       });
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to list user sessions', expect.any(Error), expect.any(Object));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to list user sessions',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -596,7 +608,11 @@ describe('AdminProvider', () => {
 
       // Should show errors for failed session calls per user
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to list user sessions', expect.any(Error), expect.any(Object));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to list user sessions',
+          expect.any(Error),
+          expect.any(Object),
+        );
       });
 
       consoleSpy.mockRestore();
@@ -698,7 +714,11 @@ describe('AdminProvider', () => {
         expect(screen.getByTestId('users-count')).toHaveTextContent('0');
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('❌ [ERROR] Failed to load users', expect.any(Error), expect.any(Object));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '❌ [ERROR] Failed to load users',
+        expect.any(Error),
+        expect.any(Object),
+      );
       consoleSpy.mockRestore();
     });
   });

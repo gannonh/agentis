@@ -233,7 +233,7 @@ describe('Better Auth Integration', () => {
           baseURL: 'http://localhost:3080',
           basePath: '/api/auth',
           emailAndPassword: {
-            enabled: false,
+            enabled: true,
           },
           plugins: expect.any(Array),
           socialProviders: undefined,
