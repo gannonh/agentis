@@ -1,0 +1,7 @@
+{
+  "fileFiltering": {
+    "respectGitIgnore": false,
+    "enableRecursiveFileSearch": true
+  },
+  "autoAccept": true
+}
