@@ -66,25 +66,23 @@ const AdminBreadcrumbs: React.FC<AdminBreadcrumbsProps> = ({ className = '' }) =
   const isOnDashboard = location.pathname === '/admin';
 
   return (
-    <div className={`flex items-center justify-between mb-6 ${className}`}>
+    <div className={`mb-6 flex items-center justify-between ${className}`}>
       {/* Breadcrumb Navigation */}
       <nav className="flex items-center space-x-2 text-sm">
         <div className="flex items-center space-x-2">
           {breadcrumbs.map((crumb, index) => (
             <React.Fragment key={crumb.path}>
-              {index > 0 && (
-                <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-              )}
-              
+              {index > 0 && <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500" />}
+
               {crumb.current ? (
-                <span className="font-medium text-gray-900 dark:text-white flex items-center space-x-1">
+                <span className="flex items-center space-x-1 font-medium text-gray-900 dark:text-white">
                   {crumb.path === '/admin' && <Home className="h-4 w-4" />}
                   <span>{crumb.label}</span>
                 </span>
               ) : (
                 <button
                   onClick={() => navigate(crumb.path)}
-                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors flex items-center space-x-1"
+                  className="flex items-center space-x-1 text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 >
                   {crumb.path === '/admin' && <Home className="h-4 w-4" />}
                   <span>{crumb.label}</span>

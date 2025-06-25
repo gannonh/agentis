@@ -81,12 +81,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
   const [banExpiresDate, setBanExpiresDate] = useState<string>('');
   const [isPermanentBan, setIsPermanentBan] = useState(false);
   const [banDuration, setBanDuration] = useState<string>('7'); // Default 7 days
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 20;
 
-  const { users, totalUsers, loadUsers, createUser, setUserRole, revokeUserSessions, banUser, unbanUser, isLoadingUsers } = useAdmin();
+  const {
+    users,
+    totalUsers,
+    loadUsers,
+    createUser,
+    setUserRole,
+    updateUser,
+    revokeUserSessions,
+    banUser,
+    unbanUser,
+    isLoadingUsers,
+  } = useAdmin();
 
   const {
     register,
@@ -113,12 +124,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       selectedStatus === 'all' ||
       (selectedStatus === 'active' && !user.banned) ||
       (selectedStatus === 'banned' && user.banned);
-    
+
     const matchesVerification =
       selectedVerification === 'all' ||
       (selectedVerification === 'verified' && user.emailVerified) ||
       (selectedVerification === 'unverified' && !user.emailVerified);
-    
+
     return matchesStatus && matchesVerification;
   });
 
@@ -169,25 +180,30 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       // Generate a secure random password since Better Auth admin plugin requires it
       // This creates an Account record with provider="credential" but users will
       // authenticate via OAuth/magic link, never using this password
-      const randomPassword = crypto.getRandomValues(new Uint8Array(32))
+      const randomPassword = crypto
+        .getRandomValues(new Uint8Array(32))
         .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
-      
+
       const createUserData = {
         ...data,
         password: randomPassword,
         // Don't send emailVerified - let the backend handle it
       };
-      
+
       await createUser(createUserData);
       reset();
       setIsCreateDialogOpen(false);
     } catch (error: any) {
-      logger.error('Failed to create user', error instanceof Error ? error : new Error(String(error)), {
-        component: 'UserManagement',
-        action: 'createUser',
-        email: data.email
-      });
-      
+      logger.error(
+        'Failed to create user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'UserManagement',
+          action: 'createUser',
+          email: data.email,
+        },
+      );
+
       // Show user-friendly error message
       if (error?.message?.includes('already exists') || error?.code === 'USER_ALREADY_EXISTS') {
         alert(`User with email ${data.email} already exists.`);
@@ -202,12 +218,16 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       const newRole = user.role === 'admin' ? 'user' : 'admin';
       await setUserRole(user.id, newRole);
     } catch (error) {
-      logger.error('Failed to update user role', error instanceof Error ? error : new Error(String(error)), {
-        component: 'UserManagement',
-        action: 'promoteUser',
-        userId: user.id,
-        newRole: user.role === 'admin' ? 'user' : 'admin'
-      });
+      logger.error(
+        'Failed to update user role',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'UserManagement',
+          action: 'promoteUser',
+          userId: user.id,
+          newRole: user.role === 'admin' ? 'user' : 'admin',
+        },
+      );
     }
   };
 
@@ -218,11 +238,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
         try {
           await unbanUser(user.id);
         } catch (error) {
-          logger.error('Failed to unban user', error instanceof Error ? error : new Error(String(error)), {
-            component: 'UserManagement',
-            action: 'unbanUser',
-            userId: user.id
-          });
+          logger.error(
+            'Failed to unban user',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              component: 'UserManagement',
+              action: 'unbanUser',
+              userId: user.id,
+            },
+          );
           alert(`Failed to unban user. Please try again.`);
         }
       }
@@ -245,29 +269,33 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
 
     try {
       let banExpiresIn: number | undefined;
-      
+
       if (!isPermanentBan && banExpiresDate) {
         const expirationDate = new Date(banExpiresDate);
         const now = new Date();
         const diffInSeconds = Math.floor((expirationDate.getTime() - now.getTime()) / 1000);
-        
+
         if (diffInSeconds <= 0) {
           alert('Ban expiration date must be in the future.');
           return;
         }
-        
+
         banExpiresIn = diffInSeconds;
       }
-      
+
       await banUser(userToBan.id, banReason, banExpiresIn);
       setIsBanDialogOpen(false);
       setUserToBan(null);
     } catch (error) {
-      logger.error('Failed to ban user', error instanceof Error ? error : new Error(String(error)), {
-        component: 'UserManagement',
-        action: 'banUser',
-        userId: userToBan.id
-      });
+      logger.error(
+        'Failed to ban user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'UserManagement',
+          action: 'banUser',
+          userId: userToBan.id,
+        },
+      );
       alert('Failed to ban user. Please try again.');
     }
   };
@@ -280,28 +308,35 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
     try {
       await revokeUserSessions(userId);
     } catch (error) {
-      logger.error('Failed to revoke user sessions', error instanceof Error ? error : new Error(String(error)), {
-        component: 'UserManagement',
-        action: 'revokeUserSessions',
-        userId
-      });
+      logger.error(
+        'Failed to revoke user sessions',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'UserManagement',
+          action: 'revokeUserSessions',
+          userId,
+        },
+      );
     }
   };
 
   // Inline editing functions
-  const startEditing = useCallback((userId: string, field: 'name' | 'email' | 'role', currentValue: string) => {
-    // Clear any pending save from previous edit
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-      blurTimeoutRef.current = null;
-    }
-    setEditing({ userId, field, value: currentValue });
-    // Focus the input after state update
-    setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }, 0);
-  }, []);
+  const startEditing = useCallback(
+    (userId: string, field: 'name' | 'email' | 'role', currentValue: string) => {
+      // Clear any pending save from previous edit
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+        blurTimeoutRef.current = null;
+      }
+      setEditing({ userId, field, value: currentValue });
+      // Focus the input after state update
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+    },
+    [],
+  );
 
   const cancelEditing = useCallback(() => {
     // Set cancellation flag and clear any pending save
@@ -322,46 +357,63 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
 
     setIsUpdating(true);
     try {
-      const user = users.find(u => u.id === editing.userId);
+      const user = users.find((u) => u.id === editing.userId);
       if (!user) return;
 
       if (editing.field === 'role') {
         await setUserRole(editing.userId, editing.value as 'user' | 'admin');
         setEditing({ userId: null, field: null, value: '' });
-      } else {
-        // Name and email updates require additional backend implementation
-        // Better Auth admin plugin doesn't provide these methods yet
-        alert('Name and email updates are not yet implemented. Role changes work correctly.');
+      } else if (editing.field === 'name' || editing.field === 'email') {
+        // Validate email format if editing email
+        if (editing.field === 'email') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(editing.value)) {
+            alert('Please enter a valid email address');
+            return;
+          }
+        }
+
+        // Call updateUser with the appropriate field
+        await updateUser(editing.userId, { [editing.field]: editing.value });
         setEditing({ userId: null, field: null, value: '' });
-        return;
       }
     } catch (error) {
-      logger.error('Failed to update user field', error instanceof Error ? error : new Error(String(error)), {
-        component: 'UserManagement',
-        action: 'saveEditing',
-        userId: editing.userId,
-        field: editing.field
-      });
-      alert('Failed to update user. Please try again.');
+      logger.error(
+        'Failed to update user field',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'UserManagement',
+          action: 'saveEditing',
+          userId: editing.userId,
+          field: editing.field,
+        },
+      );
+
+      // Show specific error message if available
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+      alert(errorMessage);
     } finally {
       setIsUpdating(false);
     }
-  }, [editing, users, setUserRole]);
+  }, [editing, users, setUserRole, updateUser]);
 
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      saveEditing();
-    } else if (e.key === 'Escape') {
-      cancelEditing();
-    }
-  }, [saveEditing, cancelEditing]);
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        saveEditing();
+      } else if (e.key === 'Escape') {
+        cancelEditing();
+      }
+    },
+    [saveEditing, cancelEditing],
+  );
 
   const handleBlur = useCallback(() => {
     // Clear any existing timeout
     if (blurTimeoutRef.current) {
       clearTimeout(blurTimeoutRef.current);
     }
-    
+
     // Save on blur unless user clicked cancel
     blurTimeoutRef.current = setTimeout(() => {
       // Check if user cancelled in the meantime
@@ -461,60 +513,58 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
             <form onSubmit={handleSubmit(onCreateUser)} className="mt-4">
               <div className="space-y-4 px-6">
                 <div>
-                <Input
-                  id="email"
-                  type="email"
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Please enter a valid email address',
-                    },
-                  })}
-                  placeholder="Email Address"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Please enter a valid email address',
+                      },
+                    })}
+                    placeholder="Email Address"
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
 
-              <div>
-                <Input
-                  id="name"
-                  {...register('name', {
-                    required: 'Name is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Name must be at least 2 characters',
-                    },
-                  })}
-                  placeholder="Full Name"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {errors.name.message}
-                  </p>
-                )}
-              </div>
+                <div>
+                  <Input
+                    id="name"
+                    {...register('name', {
+                      required: 'Name is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Name must be at least 2 characters',
+                      },
+                    })}
+                    placeholder="Full Name"
+                  />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {errors.name.message}
+                    </p>
+                  )}
+                </div>
 
-
-              <div>
-                <Select
-                  value={watch('role') || ''}
-                  onValueChange={(value) => setValue('role', value as 'user' | 'admin')}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[1000]">
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
+                <div>
+                  <Select
+                    value={watch('role') || ''}
+                    onValueChange={(value) => setValue('role', value as 'user' | 'admin')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1000]">
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <DialogFooter>
@@ -596,7 +646,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-              <div>Showing {filteredUsers.length} of {users.length} on this page ({totalUsers} total)</div>
+              <div>
+                Showing {filteredUsers.length} of {users.length} on this page ({totalUsers} total)
+              </div>
               <div>Admins: {users.filter((u) => u.role === 'admin').length}</div>
               <div>Verified: {users.filter((u) => u.emailVerified).length}</div>
               <div>Banned: {users.filter((u) => u.banned).length}</div>
@@ -615,7 +667,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                 No users found
               </h4>
               <p className="text-gray-600 dark:text-gray-400">
-                {searchQuery || selectedRole !== 'all' || selectedStatus !== 'all' || selectedVerification !== 'all'
+                {searchQuery ||
+                selectedRole !== 'all' ||
+                selectedStatus !== 'all' ||
+                selectedVerification !== 'all'
                   ? 'Try adjusting your search or filter criteria'
                   : 'No users have been created yet'}
               </p>
@@ -629,28 +684,30 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                     <img
                       src={user.image}
                       alt={`${user.name} avatar`}
-                      className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+                      className="h-12 w-12 flex-shrink-0 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-semibold text-white flex-shrink-0">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-semibold text-white">
                       {getAvatarInitials(user.name)}
                     </div>
                   )}
 
                   {/* User Details - Now taking full width */}
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     {/* Name Row with inline editing */}
-                    <div className="flex items-center space-x-2 group">
+                    <div className="group flex items-center space-x-2">
                       {editing.userId === user.id && editing.field === 'name' ? (
                         <div className="flex items-center space-x-2">
                           <input
                             ref={inputRef}
                             type="text"
                             value={editing.value}
-                            onChange={(e) => setEditing(prev => ({ ...prev, value: e.target.value }))}
+                            onChange={(e) =>
+                              setEditing((prev) => ({ ...prev, value: e.target.value }))
+                            }
                             onKeyDown={handleKeyPress}
                             onBlur={handleBlur}
-                            className="px-2 py-1 text-sm font-medium bg-white dark:bg-gray-700 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                            className="rounded border border-blue-300 bg-white px-2 py-1 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                             disabled={isUpdating}
                           />
                           <button
@@ -680,14 +737,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                         </div>
                       ) : (
                         <>
-                          <h4 
-                            className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-orange-600 dark:hover:text-orange-400 group-hover:underline"
+                          <h4
+                            className="cursor-pointer text-sm font-medium text-gray-900 hover:text-orange-600 group-hover:underline dark:text-white dark:hover:text-orange-400"
                             onClick={() => startEditing(user.id, 'name', user.name)}
-                            title="Click to edit name (Not yet implemented)"
+                            title="Click to edit name"
                           >
                             {user.name}
                           </h4>
-                          <Edit className="h-3 w-3 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <Edit className="h-3 w-3 text-orange-400 opacity-0 transition-opacity group-hover:opacity-100" />
                         </>
                       )}
                       {getRoleBadge(user)}
@@ -695,17 +752,19 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                     </div>
 
                     {/* Email Row with inline editing */}
-                    <div className="mt-1 flex items-center space-x-2 group">
+                    <div className="group mt-1 flex items-center space-x-2">
                       {editing.userId === user.id && editing.field === 'email' ? (
                         <div className="flex items-center space-x-2">
                           <input
                             ref={inputRef}
                             type="email"
                             value={editing.value}
-                            onChange={(e) => setEditing(prev => ({ ...prev, value: e.target.value }))}
+                            onChange={(e) =>
+                              setEditing((prev) => ({ ...prev, value: e.target.value }))
+                            }
                             onKeyDown={handleKeyPress}
                             onBlur={handleBlur}
-                            className="px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 dark:text-gray-400"
+                            className="rounded border border-blue-300 bg-white px-2 py-1 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-400"
                             disabled={isUpdating}
                           />
                           <button
@@ -735,14 +794,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                         </div>
                       ) : (
                         <>
-                          <p 
-                            className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:text-orange-600 dark:hover:text-orange-400 group-hover:underline"
+                          <p
+                            className="cursor-pointer text-sm text-gray-600 hover:text-orange-600 group-hover:underline dark:text-gray-400 dark:hover:text-orange-400"
                             onClick={() => startEditing(user.id, 'email', user.email)}
-                            title="Click to edit email (Not yet implemented)"
+                            title="Click to edit email"
                           >
                             {user.email}
                           </p>
-                          <Edit className="h-3 w-3 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <Edit className="h-3 w-3 text-orange-400 opacity-0 transition-opacity group-hover:opacity-100" />
                         </>
                       )}
                     </div>
@@ -773,7 +832,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                         {user.banExpires && (
                           <div className="flex items-center space-x-1">
                             <Calendar className="h-3 w-3" />
-                            <span>Ban expires: {new Date(user.banExpires).toLocaleDateString()}</span>
+                            <span>
+                              Ban expires: {new Date(user.banExpires).toLocaleDateString()}
+                            </span>
                           </div>
                         )}
                         {!user.banExpires && (
@@ -789,7 +850,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                     <div className="mt-3 flex items-center space-x-4 text-sm">
                       <button
                         onClick={() => handlePromoteUser(user)}
-                        className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+                        className="flex items-center space-x-1 text-purple-600 transition-colors hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
                       >
                         <Shield className="h-4 w-4" />
                         <span>{user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}</span>
@@ -797,7 +858,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
 
                       <button
                         onClick={() => handleRevokeUserSessions(user.id)}
-                        className="flex items-center space-x-1 text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
+                        className="flex items-center space-x-1 text-orange-600 transition-colors hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
                       >
                         <Activity className="h-4 w-4" />
                         <span>Revoke Sessions</span>
@@ -806,12 +867,16 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                       <button
                         onClick={() => handleBanUser(user)}
                         className={`flex items-center space-x-1 transition-colors ${
-                          user.banned 
-                            ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300' 
+                          user.banned
+                            ? 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
                             : 'text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300'
                         }`}
                       >
-                        {user.banned ? <UserCheck className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                        {user.banned ? (
+                          <UserCheck className="h-4 w-4" />
+                        ) : (
+                          <Ban className="h-4 w-4" />
+                        )}
                         <span>{user.banned ? 'Unban User' : 'Ban User'}</span>
                       </button>
 
@@ -820,9 +885,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                         <div className="flex items-center space-x-2">
                           <Select
                             value={editing.value}
-                            onValueChange={(value) => setEditing(prev => ({ ...prev, value }))}
+                            onValueChange={(value) => setEditing((prev) => ({ ...prev, value }))}
                           >
-                            <SelectTrigger className="w-32 h-8">
+                            <SelectTrigger className="h-8 w-32">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -858,7 +923,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                       ) : (
                         <button
                           onClick={() => startEditing(user.id, 'role', user.role)}
-                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                          className="flex items-center space-x-1 text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           <Edit className="h-4 w-4" />
                           <span>Change Role</span>
@@ -871,10 +936,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
             ))
           )}
         </div>
-        
+
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between border-t border-gray-200 px-6 py-3 dark:border-gray-700">
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
@@ -884,7 +949,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
               >
                 Previous
               </Button>
-              
+
               {/* Page numbers */}
               <div className="flex items-center space-x-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -898,11 +963,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                   } else {
                     pageNum = currentPage - 2 + i;
                   }
-                  
+
                   return (
                     <Button
                       key={i}
-                      variant={pageNum === currentPage ? "default" : "outline"}
+                      variant={pageNum === currentPage ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setCurrentPage(pageNum)}
                       className="min-w-[40px]"
@@ -912,7 +977,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                   );
                 })}
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -922,7 +987,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                 Next
               </Button>
             </div>
-            
+
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Page {currentPage} of {totalPages}
             </div>
@@ -982,7 +1047,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                   </Select>
                   {banDuration && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Ban expires on {(() => {
+                      Ban expires on{' '}
+                      {(() => {
                         const date = new Date();
                         date.setDate(date.getDate() + parseInt(banDuration));
                         return date.toLocaleDateString();
@@ -991,7 +1057,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                   )}
                 </div>
               )}
-              
+
               <div className="flex items-center justify-between">
                 <Label htmlFor="permanentBan" className="text-sm font-medium">
                   Permanent ban
@@ -1006,17 +1072,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsBanDialogOpen(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => setIsBanDialogOpen(false)}>
               Cancel
             </Button>
             <Button
               type="button"
               onClick={handleConfirmBan}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               Ban User
             </Button>

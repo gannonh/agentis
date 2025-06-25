@@ -11,7 +11,7 @@ export default function AdminRoute() {
     <AdminGuard>
       <AdminProvider>
         <div className="flex h-screen w-full bg-white dark:bg-gray-900">
-          <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
             <AdminBreadcrumbs />
             <Outlet />
           </div>

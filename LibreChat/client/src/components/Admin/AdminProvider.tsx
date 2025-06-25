@@ -15,13 +15,14 @@ interface AdminContextValue {
   loadUsers: (query?: UserListQuery) => Promise<void>;
   createUser: (userData: CreateUserData) => Promise<AdminUser>;
   setUserRole: (userId: string, role: 'user' | 'admin') => Promise<void>;
+  updateUser: (userId: string, updates: { name?: string; email?: string }) => Promise<void>;
   listUserSessions: (userId: string) => Promise<AdminSession[]>;
   revokeUserSessions: (userId: string) => Promise<void>;
 
   // Admin analytics
   getUserStats: () => Promise<UserStats>;
   getSessionStats: () => Promise<SessionStats>;
-  
+
   // User management
   banUser: (userId: string, reason?: string, banExpiresIn?: number) => Promise<void>;
   unbanUser: (userId: string) => Promise<void>;
@@ -78,23 +79,22 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     logger.info('Starting to load users', {
       component: 'AdminProvider',
       action: 'loadUsers-start',
-      query
+      query,
     });
     setIsLoadingUsers(true);
     try {
       const response = await authClient.admin.listUsers({
         query: query || { limit: 20 }, // Default to 20 users per page
       });
-      logger.info('Admin listUsers response received', { 
+      logger.info('Admin listUsers response received', {
         component: 'AdminProvider',
         action: 'listUsers',
-        response
+        response,
       });
 
       // Better Auth returns users, total, limit, offset
       const responseData = response as any;
-      console.log('Raw response from Better Auth:', responseData);
-      
+
       // The response might be nested differently
       const users = responseData?.users || responseData?.data?.users || responseData || [];
       const total = responseData?.total || responseData?.data?.total || users.length || 0;
@@ -124,13 +124,17 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         component: 'AdminProvider',
         action: 'transformUsers',
         userCount: transformedUsers.length,
-        totalUsers: total
+        totalUsers: total,
       });
     } catch (error) {
-      logger.error('Failed to load users', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'loadUsers'
-      });
+      logger.error(
+        'Failed to load users',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'loadUsers',
+        },
+      );
     } finally {
       setIsLoadingUsers(false);
     }
@@ -140,7 +144,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   React.useEffect(() => {
     logger.info('AdminProvider initialized', {
       component: 'AdminProvider',
-      action: 'initialize'
+      action: 'initialize',
     });
     loadUsers();
   }, [loadUsers]);
@@ -155,7 +159,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         role: userData.role || 'user',
         data: userData.data || {},
       };
-      
+
       let response;
       try {
         response = await authClient.admin.createUser(requestData);
@@ -169,7 +173,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
       // The response might be the user directly or wrapped in a data/user property
       const responseUser = response?.user || response?.data?.user || response;
-      
+
       if (responseUser && responseUser.id) {
         const newUser: AdminUser = {
           id: responseUser.id,
@@ -190,19 +194,23 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
           lastLoginAt: null, // Better Auth doesn't provide lastLoginAt field
         };
         setUsers((prev) => [...prev, newUser]);
-        
+
         // Refresh the user list to ensure consistency
         loadUsers();
-        
+
         return newUser;
       }
       throw new Error('Failed to create user - no user data in response');
     } catch (error) {
-      logger.error('Failed to create user', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'createUser',
-        email: userData.email
-      });
+      logger.error(
+        'Failed to create user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'createUser',
+          email: userData.email,
+        },
+      );
       throw error;
     }
   };
@@ -217,12 +225,72 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       // Update local state
       setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role } : user)));
     } catch (error) {
-      logger.error('Failed to set user role', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'setUserRole',
-        userId,
-        role
+      logger.error(
+        'Failed to set user role',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'setUserRole',
+          userId,
+          role,
+        },
+      );
+      throw error;
+    }
+  };
+
+  const updateUser = async (
+    userId: string,
+    updates: { name?: string; email?: string },
+  ): Promise<void> => {
+    try {
+      // Call our custom admin update endpoint
+      const response = await fetch(`/api/user/admin/update/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update user');
+      }
+
+      const { user: updatedUser } = await response.json();
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                name: updatedUser.name || user.name,
+                email: updatedUser.email || user.email,
+              }
+            : user,
+        ),
+      );
+
+      logger.info('User updated successfully', {
+        component: 'AdminProvider',
+        action: 'updateUser',
+        userId,
+        updates,
+      });
+    } catch (error) {
+      logger.error(
+        'Failed to update user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'updateUser',
+          userId,
+          updates,
+        },
+      );
       throw error;
     }
   };
@@ -237,7 +305,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         component: 'AdminProvider',
         action: 'listUserSessions',
         userId,
-        sessionCount: Array.isArray(response) ? response.length : 'unknown'
+        sessionCount: Array.isArray(response) ? response.length : 'unknown',
       });
 
       // Better Auth might return the sessions directly or wrapped in data
@@ -257,11 +325,15 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
       return [];
     } catch (error) {
-      logger.error('Failed to list user sessions', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'listUserSessions',
-        userId
-      });
+      logger.error(
+        'Failed to list user sessions',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'listUserSessions',
+          userId,
+        },
+      );
       throw error;
     }
   };
@@ -272,11 +344,15 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         userId,
       });
     } catch (error) {
-      logger.error('Failed to revoke user sessions', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'revokeUserSessions',
-        userId
-      });
+      logger.error(
+        'Failed to revoke user sessions',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'revokeUserSessions',
+          userId,
+        },
+      );
       throw error;
     }
   };
@@ -318,10 +394,14 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         newUsersThisMonth,
       };
     } catch (error) {
-      logger.error('Failed to get user stats', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'getUserStats'
-      });
+      logger.error(
+        'Failed to get user stats',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'getUserStats',
+        },
+      );
       throw error;
     } finally {
       setIsLoadingStats(false);
@@ -334,14 +414,14 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         userId,
         banReason: reason || 'No reason provided',
       };
-      
+
       // Only add banExpiresIn if it's provided (undefined means permanent ban)
       if (banExpiresIn !== undefined) {
         banData.banExpiresIn = banExpiresIn;
       }
-      
+
       await authClient.admin.banUser(banData);
-      
+
       // Calculate ban expiration date for local state
       let banExpires: string | null = null;
       if (banExpiresIn !== undefined && banExpiresIn > 0) {
@@ -349,29 +429,37 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         expirationDate.setSeconds(expirationDate.getSeconds() + banExpiresIn);
         banExpires = expirationDate.toISOString();
       }
-      
+
       // Update local state
-      setUsers((prev) => prev.map((user) => 
-        user.id === userId ? { 
-          ...user, 
-          banned: true,
-          banReason: reason || 'No reason provided',
-          banExpires
-        } : user
-      ));
-      
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                banned: true,
+                banReason: reason || 'No reason provided',
+                banExpires,
+              }
+            : user,
+        ),
+      );
+
       logger.info('User banned successfully', {
         component: 'AdminProvider',
         action: 'banUser',
         userId,
-        banExpiresIn
+        banExpiresIn,
       });
     } catch (error) {
-      logger.error('Failed to ban user', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'banUser',
-        userId
-      });
+      logger.error(
+        'Failed to ban user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'banUser',
+          userId,
+        },
+      );
       throw error;
     }
   };
@@ -381,28 +469,36 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       await authClient.admin.unbanUser({
         userId,
       });
-      
+
       // Update local state
-      setUsers((prev) => prev.map((user) => 
-        user.id === userId ? { 
-          ...user, 
-          banned: false,
-          banReason: null,
-          banExpires: null
-        } : user
-      ));
-      
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                banned: false,
+                banReason: null,
+                banExpires: null,
+              }
+            : user,
+        ),
+      );
+
       logger.info('User unbanned successfully', {
         component: 'AdminProvider',
         action: 'unbanUser',
-        userId
+        userId,
       });
     } catch (error) {
-      logger.error('Failed to unban user', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'unbanUser',
-        userId
-      });
+      logger.error(
+        'Failed to unban user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'unbanUser',
+          userId,
+        },
+      );
       throw error;
     }
   };
@@ -419,10 +515,14 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         averageSessionDuration: 2.5, // Estimate 2.5 hours average
       };
     } catch (error) {
-      logger.error('Failed to get session stats', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminProvider',
-        action: 'getSessionStats'
-      });
+      logger.error(
+        'Failed to get session stats',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'getSessionStats',
+        },
+      );
       throw error;
     }
   };
@@ -433,6 +533,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     loadUsers,
     createUser,
     setUserRole,
+    updateUser,
     listUserSessions,
     revokeUserSessions,
     getUserStats,

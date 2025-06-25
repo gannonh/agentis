@@ -19,9 +19,11 @@ export interface LogContext {
  * - Never logs sensitive data (emails, tokens, passwords)
  */
 class Logger {
-  private isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development' || process.env.NODE_ENV === 'development';
+  private isDevelopment =
+    import.meta.env.DEV ||
+    import.meta.env.MODE === 'development' ||
+    process.env.NODE_ENV === 'development';
   private logLevel: LogLevel = this.isDevelopment ? 'debug' : 'error';
-
 
   /**
    * Check if a log level should be output

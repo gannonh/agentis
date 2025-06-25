@@ -85,10 +85,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, className =
       setUserStats(users);
       setSessionStats(sessions);
     } catch (error) {
-      logger.error('Failed to load admin dashboard stats', error instanceof Error ? error : new Error(String(error)), {
-        component: 'AdminDashboard',
-        action: 'loadStats'
-      });
+      logger.error(
+        'Failed to load admin dashboard stats',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminDashboard',
+          action: 'loadStats',
+        },
+      );
     }
   }, [getUserStats, getSessionStats]);
 

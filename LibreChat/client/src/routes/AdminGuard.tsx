@@ -21,7 +21,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     sessionLoading,
     hasSession: !!session?.user,
     userRole: session?.user?.role,
-    isAdmin: session?.user?.role === 'admin'
+    isAdmin: session?.user?.role === 'admin',
   });
 
   // Show loading while checking auth state
@@ -42,7 +42,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       component: 'AdminGuard',
       action: 'redirect',
       reason: 'no-session',
-      to: '/login'
+      to: '/login',
     });
     return <Navigate to="/login" replace={true} />;
   }
@@ -60,7 +60,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       action: 'redirect',
       reason: 'insufficient-role',
       userRole: session.user.role,
-      to: '/c/new'
+      to: '/c/new',
     });
     return <Navigate to="/c/new" replace={true} />;
   }
@@ -69,7 +69,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   logger.debug('Admin access granted', {
     component: 'AdminGuard',
     action: 'allow-access',
-    userRole: session.user.role
+    userRole: session.user.role,
   });
   return <>{children}</>;
 }

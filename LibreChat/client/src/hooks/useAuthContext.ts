@@ -42,66 +42,69 @@ export function useAuthContext() {
     : null;
 
   // Memoize the roles object to prevent infinite re-renders
-  const roles = useMemo(() => ({
-    // TODO: TEMPORARY FIX - Replace with proper role-based permission system
-    // This hardcoded permissions object is a temporary solution during Better Auth migration
-    // to restore agents/prompts functionality. Should be replaced with:
-    // 1. Dynamic role loading from backend API
-    // 2. Proper multi-tenant role inheritance
-    // 3. Organization-level permission overrides
-    // 4. User-specific role assignments
-    // See: auth multi-tenant refactor tasks for proper implementation
-    user: {
-      permissions: {
-        AGENTS: {
-          USE: true,
-          CREATE: true,
-          SHARE: true,
-        },
-        PROMPTS: {
-          USE: true,
-          CREATE: true,
-          SHARE: true,
-        },
-        BOOKMARKS: {
-          USE: true,
-          CREATE: true,
-        },
-        MULTI_CONVO: {
-          USE: true,
-        },
-        EXECUTE_CODE: {
-          USE: true,
-        },
-      },
-    },
-    admin: {
-      permissions: {
-        AGENTS: {
-          USE: true,
-          CREATE: true,
-          SHARE: true,
-          SHARED_GLOBAL: true,
-        },
-        PROMPTS: {
-          USE: true,
-          CREATE: true,
-          SHARE: true,
-          SHARED_GLOBAL: true,
-        },
-        BOOKMARKS: {
-          USE: true,
-          CREATE: true,
-        },
-        MULTI_CONVO: {
-          USE: true,
-        },
-        EXECUTE_CODE: {
-          USE: true,
+  const roles = useMemo(
+    () => ({
+      // TODO: TEMPORARY FIX - Replace with proper role-based permission system
+      // This hardcoded permissions object is a temporary solution during Better Auth migration
+      // to restore agents/prompts functionality. Should be replaced with:
+      // 1. Dynamic role loading from backend API
+      // 2. Proper multi-tenant role inheritance
+      // 3. Organization-level permission overrides
+      // 4. User-specific role assignments
+      // See: auth multi-tenant refactor tasks for proper implementation
+      user: {
+        permissions: {
+          AGENTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+          },
+          PROMPTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+          },
+          BOOKMARKS: {
+            USE: true,
+            CREATE: true,
+          },
+          MULTI_CONVO: {
+            USE: true,
+          },
+          EXECUTE_CODE: {
+            USE: true,
+          },
         },
       },
-    },
-  }), []);
+      admin: {
+        permissions: {
+          AGENTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+            SHARED_GLOBAL: true,
+          },
+          PROMPTS: {
+            USE: true,
+            CREATE: true,
+            SHARE: true,
+            SHARED_GLOBAL: true,
+          },
+          BOOKMARKS: {
+            USE: true,
+            CREATE: true,
+          },
+          MULTI_CONVO: {
+            USE: true,
+          },
+          EXECUTE_CODE: {
+            USE: true,
+          },
+        },
+      },
+    }),
+    [],
+  );
 
   return {
     user,
