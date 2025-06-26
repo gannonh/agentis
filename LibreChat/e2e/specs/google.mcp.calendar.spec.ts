@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/oAuth';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -21,14 +26,21 @@ test.describe('Google Calendar MCP Tests', () => {
     // Generate unique test ID and create authenticated user
     testId = generateTestId();
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
     // Clean up test data after all tests complete
     if (testAuth) {
-      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
-      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      try {
+        await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+        logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      } catch (error) {
+        logProgress(`⚠️ Cleanup failed for user ${testAuth.user.email}: ${error}`);
+        // Don't throw to avoid masking test failures
+      }
     }
   });
 
@@ -46,7 +58,7 @@ test.describe('Google Calendar MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -83,11 +95,17 @@ test.describe('Google Calendar MCP Tests', () => {
         .fill(
           `You are a scheduling optimization expert who helps users make the most of their time. When creating events, include all relevant details (location, description, attendees) and provide calendar links. Proactively identify scheduling conflicts and suggest alternatives. Help users block time for focused work, breaks, and personal commitments. Analyze calendar patterns to suggest productivity improvements. Always respect time zones and clarify ambiguous time references. Offer to create recurring events for regular activities.`,
         );
-      await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button', { name: 'Select a model' })
+        .click();
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -140,7 +158,7 @@ test.describe('Google Calendar MCP Tests', () => {
       logProgress('⚠️ CI mode - Skipping Use Google Calendar Agent test');
       return;
     }
-    
+
     logProgress('✅ Starting Use Google Calendar Agent test');
 
     // Create a new context with authentication cookies
@@ -154,7 +172,7 @@ test.describe('Google Calendar MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {

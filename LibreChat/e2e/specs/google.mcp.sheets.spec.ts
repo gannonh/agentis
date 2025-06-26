@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/oAuth';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -21,14 +26,21 @@ test.describe('Google Sheets MCP Tests', () => {
     // Generate unique test ID and create authenticated user
     testId = generateTestId();
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
     // Clean up test data after all tests complete
     if (testAuth) {
-      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
-      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      try {
+        await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+        logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      } catch (error) {
+        logProgress(`⚠️ Cleanup failed for user ${testAuth.user.email}: ${error}`);
+        // Don't throw to avoid masking test failures
+      }
     }
   });
 
@@ -46,7 +58,7 @@ test.describe('Google Sheets MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -57,69 +69,75 @@ test.describe('Google Sheets MCP Tests', () => {
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('Verified on main chat page');
 
-    // Create Google Sheets Agent
-    await page.getByRole('button', { name: 'Controls' }).click();
-    await page.getByRole('button', { name: 'Agent Builder' }).click();
-    logProgress('Opened Agent Builder');
+      // Create Google Sheets Agent
+      await page.getByRole('button', { name: 'Controls' }).click();
+      await page.getByRole('button', { name: 'Agent Builder' }).click();
+      logProgress('Opened Agent Builder');
 
-    try {
-      await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-    } catch (e) {
-      // Button might not exist, continue
-      console.log('Create New Agent button not found, continuing...');
-    }
+      try {
+        await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
+      } catch (e) {
+        // Button might not exist, continue
+        console.log('Create New Agent button not found, continuing...');
+      }
 
-    await page.getByRole('textbox', { name: 'Agent name' }).click();
-    await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
-    await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
-    await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Sheets Agent');
-    await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
-    await page
-      .getByRole('textbox', { name: 'Agent description' })
-      .fill('Claude 3.7 Agent with access to Google Sheets.');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-    await page
-      .getByRole('textbox', { name: 'Agent instructions' })
-      .fill(
-        'You possess expert-level Google Sheets skills. Whenever you create a new spreadsheet or make spreadsheet edits for the user, please provide a link so they can access it conveniently.',
-      );
-    await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
-    await page.getByRole('combobox', { name: 'Provider' }).click();
-    await page.getByText('Anthropic').click();
-    await page.getByRole('combobox', { name: 'Model' }).click();
+      await page.getByRole('textbox', { name: 'Agent name' }).click();
+      await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
+      await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
+      await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Sheets Agent');
+      await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
+      await page
+        .getByRole('textbox', { name: 'Agent description' })
+        .fill('Claude 3.7 Agent with access to Google Sheets.');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+      await page
+        .getByRole('textbox', { name: 'Agent instructions' })
+        .fill(
+          'You possess expert-level Google Sheets skills. Whenever you create a new spreadsheet or make spreadsheet edits for the user, please provide a link so they can access it conveniently.',
+        );
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button', { name: 'Select a model' })
+        .click();
+      await page.getByRole('combobox', { name: 'Provider' }).click();
+      await page.getByText('Anthropic').click();
+      await page.getByRole('combobox', { name: 'Model' }).click();
 
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
-    await page.getByRole('button', { name: 'Create' }).click();
-    logProgress('Created agent with basic settings');
-    // add mcp tools
-    await page
-      .getByLabel('Agent Builder')
-      .getByRole('button')
-      .filter({ hasText: /^$/ })
-      .first()
-      .click();
-    await page.getByRole('button', { name: 'Add Tools' }).click();
-    await page.getByRole('button', { name: 'Add Google Sheets' }).click();
-    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-    await page.getByRole('button', { name: 'Add Selected' }).click();
-    await page.getByRole('button', { name: 'Close dialog' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
+      await page.getByRole('button', { name: 'Create' }).click();
+      logProgress('Created agent with basic settings');
+      // add mcp tools
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button')
+        .filter({ hasText: /^$/ })
+        .first()
+        .click();
+      await page.getByRole('button', { name: 'Add Tools' }).click();
+      await page.getByRole('button', { name: 'Add Google Sheets' }).click();
+      await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+      await page.getByRole('button', { name: 'Add Selected' }).click();
+      await page.getByRole('button', { name: 'Close dialog' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
 
-    // Wait for save operation to complete
-    try {
-      await page.waitForTimeout(2000); // Give server time to save
-      logProgress('Waited for save operation to complete');
-    } catch (error) {
-      logProgress('⚠️ Save wait timeout, continuing...');
-    }
+      // Wait for save operation to complete
+      try {
+        await page.waitForTimeout(2000); // Give server time to save
+        logProgress('Waited for save operation to complete');
+      } catch (error) {
+        logProgress('⚠️ Save wait timeout, continuing...');
+      }
 
-    logProgress('Saved agent configuration');
+      logProgress('Saved agent configuration');
 
       // Assert MCP is created
       await expect(
@@ -141,7 +159,7 @@ test.describe('Google Sheets MCP Tests', () => {
       logProgress('⚠️ CI mode - Skipping Use Google Sheets Agent test');
       return;
     }
-    
+
     logProgress('✅ Starting Use Google Sheets Agent test');
 
     // Create a new context with authentication cookies
@@ -155,7 +173,7 @@ test.describe('Google Sheets MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {

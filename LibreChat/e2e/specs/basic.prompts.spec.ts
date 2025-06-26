@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -20,14 +25,21 @@ test.describe('Prompt Tests', () => {
     // Generate unique test ID and create authenticated user
     testId = generateTestId();
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
     // Clean up test data after all tests complete
     if (testAuth) {
-      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
-      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      try {
+        await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+        logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      } catch (error) {
+        logProgress(`⚠️ Cleanup failed for user ${testAuth.user.email}: ${error}`);
+        // Don't throw to avoid masking test failures
+      }
     }
   });
 
@@ -45,7 +57,7 @@ test.describe('Prompt Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -115,13 +127,15 @@ test.describe('Prompt Tests', () => {
       await expect(page.getByText('{{context}}')).toBeVisible();
 
       await expect(
-        page.getByText('Please format your response with clear sections and actionable suggestions.'),
+        page.getByText(
+          'Please format your response with clear sections and actionable suggestions.',
+        ),
       ).toBeVisible();
 
       // Check that the command textbox has the value we entered
-      await expect(page.getByRole('textbox', { name: 'Optional: Enter a command for' })).toHaveValue(
-        'review',
-      );
+      await expect(
+        page.getByRole('textbox', { name: 'Optional: Enter a command for' }),
+      ).toHaveValue('review');
       logProgress('✅ All prompt content verified successfully');
 
       // clean up

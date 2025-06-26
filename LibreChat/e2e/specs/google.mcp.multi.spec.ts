@@ -5,7 +5,12 @@ import {
   handleExistingAccountAuth,
   handleExistingAccountAuthSingle,
 } from '../utils/oAuth';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -25,14 +30,21 @@ test.describe('Google Multi MCP Tests', () => {
     // Generate unique test ID and create authenticated user
     testId = generateTestId();
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
     // Clean up test data after all tests complete
     if (testAuth) {
-      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
-      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      try {
+        await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+        logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      } catch (error) {
+        logProgress(`⚠️ Cleanup failed for user ${testAuth.user.email}: ${error}`);
+        // Don't throw to avoid masking test failures
+      }
     }
   });
 
@@ -50,7 +62,7 @@ test.describe('Google Multi MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -61,84 +73,94 @@ test.describe('Google Multi MCP Tests', () => {
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
 
-    // Create Google Multi Agent (using original codegen approach)
-    await page.getByRole('button', { name: 'Controls' }).click();
-    await page.getByRole('button', { name: 'Agent Builder' }).click();
-    logProgress('Opened Agent Builder');
+      // Create Google Multi Agent (using original codegen approach)
+      await page.getByRole('button', { name: 'Controls' }).click();
+      await page.getByRole('button', { name: 'Agent Builder' }).click();
+      logProgress('Opened Agent Builder');
 
-    try {
-      await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-    } catch (e) {
-      // Button might not exist, continue
-      console.log('Create New Agent button not found, continuing...');
-    }
+      try {
+        await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
+      } catch (e) {
+        // Button might not exist, continue
+        console.log('Create New Agent button not found, continuing...');
+      }
 
-    await page.getByRole('textbox', { name: 'Agent name' }).click();
-    await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Multi Agent');
-    await page
-      .getByRole('textbox', { name: 'Agent description' })
-      .fill(
-        "Seamlessly work across Google's core productivity tools to manage complex projects, analyze data, and create comprehensive documentation.",
-      );
-    await page
-      .getByRole('textbox', { name: 'Agent instructions' })
-      .fill(
-        'You are a Google Workspace integration expert with mastery of Drive, Docs, and Sheets working together as a unified system. You excel at creating sophisticated workflows that leverage the strengths of each tool while maintaining seamless connections between them.\nCore Capabilities:\n\nCreate integrated solutions that span multiple Google tools (e.g., Sheets data feeding into Docs reports, all organized in Drive)\nMaintain consistent naming conventions and folder structures across all created assets\nAlways provide direct links to all files and folders you create or modify\nProactively suggest which tool is best for each task component\n\nWhen working on projects:\n\nStart by understanding the full scope and create a Drive folder structure to organize all assets\nUse Sheets for data storage, calculations, and analysis\nUse Docs for reports, documentation, and formatted output\nCreate dynamic connections between tools (e.g., embedding Sheets charts in Docs)\nMaintain a "project index" document that links to all related files\n\nBest Practices:\n\nAsk clarifying questions upfront to understand the complete workflow before starting\nCreate templates for recurring needs\nSuggest automation opportunities between tools\nMaintain version control by creating copies before major changes\nUse clear, descriptive file names that indicate relationships (e.g., "Q4_Sales_Data.sheets" and "Q4_Sales_Report.docs")\nProvide a summary of the file structure and how components connect\n\nCommunication Style:\n\nBegin responses with a brief project plan outlining which tools you\'ll use for what\nExplain the connections between different files and why you\'ve organized things a certain way\nOffer tips for maintaining and expanding the system you\'ve created\nAlways end with a clear list of all created/modified files with their links and purposes\n\nRemember: You\'re not just using three separate tools - you\'re orchestrating them as an integrated workspace solution.',
-      );
-    await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
-    await page.getByRole('combobox', { name: 'Provider' }).click();
-    await page.getByText('Anthropic').click();
-    await page.getByRole('combobox', { name: 'Model' }).click();
-    // toggle featured
+      await page.getByRole('textbox', { name: 'Agent name' }).click();
+      await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Multi Agent');
+      await page
+        .getByRole('textbox', { name: 'Agent description' })
+        .fill(
+          "Seamlessly work across Google's core productivity tools to manage complex projects, analyze data, and create comprehensive documentation.",
+        );
+      await page
+        .getByRole('textbox', { name: 'Agent instructions' })
+        .fill(
+          'You are a Google Workspace integration expert with mastery of Drive, Docs, and Sheets working together as a unified system. You excel at creating sophisticated workflows that leverage the strengths of each tool while maintaining seamless connections between them.\nCore Capabilities:\n\nCreate integrated solutions that span multiple Google tools (e.g., Sheets data feeding into Docs reports, all organized in Drive)\nMaintain consistent naming conventions and folder structures across all created assets\nAlways provide direct links to all files and folders you create or modify\nProactively suggest which tool is best for each task component\n\nWhen working on projects:\n\nStart by understanding the full scope and create a Drive folder structure to organize all assets\nUse Sheets for data storage, calculations, and analysis\nUse Docs for reports, documentation, and formatted output\nCreate dynamic connections between tools (e.g., embedding Sheets charts in Docs)\nMaintain a "project index" document that links to all related files\n\nBest Practices:\n\nAsk clarifying questions upfront to understand the complete workflow before starting\nCreate templates for recurring needs\nSuggest automation opportunities between tools\nMaintain version control by creating copies before major changes\nUse clear, descriptive file names that indicate relationships (e.g., "Q4_Sales_Data.sheets" and "Q4_Sales_Report.docs")\nProvide a summary of the file structure and how components connect\n\nCommunication Style:\n\nBegin responses with a brief project plan outlining which tools you\'ll use for what\nExplain the connections between different files and why you\'ve organized things a certain way\nOffer tips for maintaining and expanding the system you\'ve created\nAlways end with a clear list of all created/modified files with their links and purposes\n\nRemember: You\'re not just using three separate tools - you\'re orchestrating them as an integrated workspace solution.',
+        );
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button', { name: 'Select a model' })
+        .click();
+      await page.getByRole('combobox', { name: 'Provider' }).click();
+      await page.getByText('Anthropic').click();
+      await page.getByRole('combobox', { name: 'Model' }).click();
+      // toggle featured
 
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
-    await page.getByRole('button', { name: 'Create', exact: true }).click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
+      await page.getByRole('button', { name: 'Create', exact: true }).click();
 
-    await page
-      .getByLabel('Agent Builder')
-      .getByRole('button')
-      .filter({ hasText: /^$/ })
-      .first()
-      .click();
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button')
+        .filter({ hasText: /^$/ })
+        .first()
+        .click();
 
-    await page.getByRole('button', { name: 'Add Tools' }).click();
-    await page.getByRole('button', { name: 'Add Google Drive' }).click();
-    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-    await page.getByRole('button', { name: 'Add Selected' }).click();
-    await page.getByRole('button', { name: 'Add Google Docs' }).click();
-    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-    await page.getByRole('button', { name: 'Add Selected' }).click();
-    await page.getByRole('button', { name: 'Add Google Sheets' }).click();
-    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-    await page.getByRole('button', { name: 'Add Selected' }).click();
-    await page.getByRole('button', { name: 'Close dialog' }).click();
-    await page.getByTestId('featured-toggle').click();
-    await page.getByRole('button', { name: 'Save' }).click();
+      await page.getByRole('button', { name: 'Add Tools' }).click();
+      await page.getByRole('button', { name: 'Add Google Drive' }).click();
+      await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+      await page.getByRole('button', { name: 'Add Selected' }).click();
+      await page.getByRole('button', { name: 'Add Google Docs' }).click();
+      await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+      await page.getByRole('button', { name: 'Add Selected' }).click();
+      await page.getByRole('button', { name: 'Add Google Sheets' }).click();
+      await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+      await page.getByRole('button', { name: 'Add Selected' }).click();
+      await page.getByRole('button', { name: 'Close dialog' }).click();
+      await page.getByTestId('featured-toggle').click();
+      await page.getByRole('button', { name: 'Save' }).click();
 
-    // Wait for save operation to complete
-    try {
-      await page.waitForTimeout(2000); // Give server time to save
-      logProgress('Waited for save operation to complete');
-    } catch (error) {
-      logProgress('⚠️ Save wait timeout, continuing...');
-    }
+      // Wait for save operation to complete
+      try {
+        await page.waitForTimeout(2000); // Give server time to save
+        logProgress('Waited for save operation to complete');
+      } catch (error) {
+        logProgress('⚠️ Save wait timeout, continuing...');
+      }
 
-    logProgress('✅ Created Google Multi Agent');
-    // Verify agent was created successfully
-    await expect(page.getByRole('button', { name: 'Start chat with Google Multi' })).toBeVisible();
-    logProgress('✅ Found "Start chat with Google Multi Agent" button');
+      logProgress('✅ Created Google Multi Agent');
+      // Verify agent was created successfully
+      await expect(
+        page.getByRole('button', { name: 'Start chat with Google Multi' }),
+      ).toBeVisible();
+      logProgress('✅ Found "Start chat with Google Multi Agent" button');
 
-    await expect(
-      page.getByTestId('agent-discovery-grid').getByRole('heading', { name: /Google Multi Agent/ }),
-    ).toBeVisible();
-    logProgress('✅ Found agent name in discovery grid');
+      await expect(
+        page
+          .getByTestId('agent-discovery-grid')
+          .getByRole('heading', { name: /Google Multi Agent/ }),
+      ).toBeVisible();
+      logProgress('✅ Found agent name in discovery grid');
 
-    await expect(
-      page
-        .getByTestId('agent-discovery-grid')
-        .getByText(/Seamlessly work across Google's core productivity tools to manage/),
-    ).toBeVisible();
-    logProgress('✅ Found agent description in discovery grid');
+      await expect(
+        page
+          .getByTestId('agent-discovery-grid')
+          .getByText(/Seamlessly work across Google's core productivity tools to manage/),
+      ).toBeVisible();
+      logProgress('✅ Found agent description in discovery grid');
       await expect(page.getByTestId('agent-discovery-grid').getByText(/more tools/i)).toBeVisible();
       logProgress('✅ Found "+n more tools" in discovery grid');
     } finally {
@@ -152,7 +174,7 @@ test.describe('Google Multi MCP Tests', () => {
       logProgress('⚠️ CI mode - Skipping Use Google Multi Agent test');
       return;
     }
-    
+
     logProgress('✅ Starting Use Google Multi Agent test');
 
     // Create a new context with authentication cookies
@@ -166,7 +188,7 @@ test.describe('Google Multi MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {

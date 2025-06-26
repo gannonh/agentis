@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/oAuth';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -21,14 +26,21 @@ test.describe('Google Docs MCP Tests', () => {
     // Generate unique test ID and create authenticated user
     testId = generateTestId();
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
     // Clean up test data after all tests complete
     if (testAuth) {
-      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
-      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      try {
+        await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+        logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      } catch (error) {
+        logProgress(`⚠️ Cleanup failed for user ${testAuth.user.email}: ${error}`);
+        // Don't throw to avoid masking test failures
+      }
     }
   });
 
@@ -46,7 +58,7 @@ test.describe('Google Docs MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -90,15 +102,21 @@ test.describe('Google Docs MCP Tests', () => {
           'You possess expert-level Google Docs skills. Whenever you create a new document or make document edits for the user, please provide a link so they can access it conveniently.',
         );
 
-      await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button', { name: 'Select a model' })
+        .click();
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
 
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       logProgress('Created agent with basic settings');
-      
+
       // add mcp tools
       await page
         .getByLabel('Agent Builder')
@@ -126,7 +144,7 @@ test.describe('Google Docs MCP Tests', () => {
       // Assert MCP is created
       await expect(page.getByText('Google Docs', { exact: true })).toBeVisible();
       logProgress('Google Docs MCP created successfully');
-      
+
       // open panel
       await page.getByText('Google Docs', { exact: true }).click();
 
@@ -142,7 +160,7 @@ test.describe('Google Docs MCP Tests', () => {
       logProgress('⚠️ CI mode - Skipping Use Google Docs Agent test');
       return;
     }
-    
+
     logProgress('Starting Use Google Docs Agent test');
 
     // Create a new context with authentication cookies
@@ -156,7 +174,7 @@ test.describe('Google Docs MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {

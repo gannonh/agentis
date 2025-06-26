@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/oAuth';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -21,14 +26,21 @@ test.describe('Google Gmail MCP Tests', () => {
     // Generate unique test ID and create authenticated user
     testId = generateTestId();
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
     // Clean up test data after all tests complete
     if (testAuth) {
-      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
-      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      try {
+        await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+        logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      } catch (error) {
+        logProgress(`⚠️ Cleanup failed for user ${testAuth.user.email}: ${error}`);
+        // Don't throw to avoid masking test failures
+      }
     }
   });
 
@@ -46,7 +58,7 @@ test.describe('Google Gmail MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -87,15 +99,21 @@ test.describe('Google Gmail MCP Tests', () => {
       await page
         .getByRole('textbox', { name: 'Agent instructions' })
         .fill('You possess expert-level Gmail skills.');
-      await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button', { name: 'Select a model' })
+        .click();
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
 
       await page.getByRole('button', { name: 'Create' }).click();
       logProgress('Created agent with basic settings');
-      
+
       // add mcp tools
       await page
         .getByLabel('Agent Builder')
@@ -139,7 +157,7 @@ test.describe('Google Gmail MCP Tests', () => {
       logProgress('⚠️ CI mode - Skipping Use Gmail Agent test');
       return;
     }
-    
+
     logProgress('✅ Starting Use Gmail Agent test');
 
     // Create a new context with authentication cookies
@@ -153,7 +171,7 @@ test.describe('Google Gmail MCP Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
