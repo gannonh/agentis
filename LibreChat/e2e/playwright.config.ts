@@ -77,6 +77,10 @@ export default defineConfig({
       REGISTER_WINDOW: '1', // 1 minute window
       REGISTER_MAX: '1000', // Allow 1000 registrations per window
       REGISTRATION_VIOLATION_SCORE: '0', // Don't score violations
+      // Better Auth configuration for tests
+      DOMAIN_SERVER: 'http://localhost:3080',
+      DOMAIN_CLIENT: 'http://localhost:3080',
+      BETTER_AUTH_SECRET: 'test-secret-key-for-e2e-testing-only',
       // Explicitly set critical variables to ensure they're passed to the server
       MONGO_URI: 'mongodb://admin:password@localhost:27017/Agentis?authSource=admin',
       GOOGLE_TEST_ACCOUNT_1_EMAIL: 'agentis.test@gmail.com',

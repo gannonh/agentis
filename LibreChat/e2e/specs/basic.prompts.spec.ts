@@ -26,7 +26,6 @@ test.describe('Prompt Tests', () => {
     await page.goto('http://localhost:3080/');
     logProgress('📱 Navigated to application');
 
-    await page.pause();
     await page.getByRole('button', { name: 'Prompts' }).click();
     logProgress('📝 Clicked Prompts button');
 
