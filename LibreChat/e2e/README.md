@@ -57,8 +57,8 @@ The E2E testing framework follows a modular architecture where:
 
 ```
 e2e/
-├── config.local.example.ts         # Example local user configuration template
-├── config.local.ts                 # Local user configuration (gitignored)
+├── config.local.example.ts         # Example local user configuration template (deprecated)
+├── config.local.ts                 # Local user configuration (gitignored, deprecated)
 ├── jestSetup.js                    # Jest configuration for Playwright tests
 ├── login-logs.log                  # Authentication logs (gitignored)
 ├── storageState.json              # Browser storage state for test sessions (gitignored)
@@ -69,11 +69,13 @@ e2e/
 ├── playwright.config.google.ts     # Google OAuth testing configuration
 ├── playwright.config.local.ts      # Local development testing configuration
 │
-├── fixtures/                       # Playwright test fixtures
-│   └── fixtures.ts                # File-scoped authentication fixture with UUID isolation
+├── utils/                          # Test utilities
+│   ├── testAuth.ts                # Better Auth authentication utilities
+│   └── testLogger.ts              # Test logging utilities
 │
 ├── specs/                         # Test specifications
 │   ├── agent-cta-display.spec.ts # Agent discovery and CTA display tests
+│   ├── basic-database-test.spec.ts # Basic authentication database test
 │   ├── google.mcp.calendar.spec.ts # Google Calendar MCP integration tests
 │   ├── google.mcp.docs.spec.ts   # Google Docs MCP integration tests
 │   ├── google.mcp.gmail.spec.ts  # Gmail MCP integration tests
@@ -305,162 +307,208 @@ Common test patterns:
     - GOOGLE_TEST_ACCOUNT_1_PASSWORD="KJHkh97HKH87jjfU"
 
 
-## Test Isolation Pattern (DEFINITIVE)
+## Test Authentication System
 
-### File-Scoped Authentication with Unique Users
+### Better Auth Integration (Current)
 
-**CRITICAL**: This pattern is set in stone and must be followed exactly for all E2E tests.
+**CURRENT APPROACH**: Tests now use Better Auth HTTP APIs for authentication, providing more reliable and production-like test environments.
 
-Each test file gets its own unique user, ensuring complete test isolation between files while allowing data sharing within a file. This works regardless of worker count (workers=1 or workers=N).
+Each test suite creates its own unique user and organization using Better Auth's registration and organization creation APIs, ensuring complete test isolation.
 
 ```mermaid
 graph TD
-    A[Test File 1: google.mcp.calendar.spec.ts] --> B[File UUID: abc123ef]
-    B --> C[User: test-abc123ef@librechat.test]
-    C --> D[Registration]
-    D --> E[Login]
-    E --> F[Accept TOS]
-    F --> G[Storage State: storageState-abc123ef.json]
-    G --> H[Test 1.1: Create Calendar Agent]
-    G --> I[Test 1.2: Use Calendar Agent]
-    G --> J[Test 1.3: Chat with Agent]
-    
-    K[Test File 2: google.mcp.docs.spec.ts] --> L[File UUID: def456gh]
-    L --> M[User: test-def456gh@librechat.test]
-    M --> N[Registration]
-    N --> O[Login]
-    O --> P[Accept TOS]
-    P --> Q[Storage State: storageState-def456gh.json]
-    Q --> R[Test 2.1: Create Docs Agent]
-    Q --> S[Test 2.2: Use Docs Agent]
-    Q --> T[Test 2.3: Chat with Agent]
+    A[Test Suite: agent-cta-display.spec.ts] --> B[Generate Test ID: abc123ef]
+    B --> C[User: test-abc123ef@example.com]
+    C --> D[Better Auth Sign-up API]
+    D --> E[Better Auth Sign-in API]
+    E --> F[Get Session Token]
+    F --> G[Create Organization via API]
+    G --> H[Accept Terms of Service]
+    H --> I[Test 1: No Featured Agents]
+    I --> J[Test 2: Create Featured Agents]
+    J --> K[Test 3: CTA Navigation]
+    K --> L[Cleanup User & Organization]
     
     style A fill:#e1f5fe
-    style K fill:#e8f5e8
     style C fill:#fff3e0
-    style M fill:#fff3e0
+    style F fill:#f3e5f5
     style G fill:#f3e5f5
-    style Q fill:#f3e5f5
 ```
 
-### Authentication Flow
+### Better Auth Flow
 
 ```mermaid
 sequenceDiagram
-    participant TF as Test File
-    participant F as Fixture
+    participant TS as Test Suite
+    participant BA as Better Auth API
+    participant DB as Database
     participant B as Browser
     participant App as LibreChat App
-    participant DB as Database
     
-    TF->>F: Request fileStorageState
-    F->>F: Generate UUID (abc123ef)
-    F->>F: Create user: test-abc123ef@librechat.test
-    F->>B: Create browser context
-    F->>App: Navigate to /register
-    F->>App: Fill registration form
-    App->>DB: Create user account
-    F->>App: Navigate to /login
-    F->>App: Fill login form
-    App->>DB: Authenticate user
-    App->>F: Redirect to /c/new
-    F->>App: Accept TOS modal
-    F->>F: Save storage state: storageState-abc123ef.json
-    F->>TF: Return storage state path
+    TS->>TS: Generate unique test ID
+    TS->>BA: POST /api/auth/sign-up/email
+    BA->>DB: Create user account
+    BA->>TS: User created
     
-    Note over TF: First test uses fresh auth
-    Note over TF: Subsequent tests reuse storage state
+    TS->>BA: POST /api/auth/sign-in/email
+    BA->>DB: Authenticate user
+    BA->>TS: Session token + cookies
     
-    TF->>B: Create context with storage state
-    TF->>App: Already authenticated
-    TF->>TF: Run test scenarios
+    TS->>BA: POST /api/auth/organization/create
+    BA->>DB: Create organization
+    BA->>TS: Organization created
+    
+    TS->>BA: POST /api/user/terms/accept
+    BA->>DB: Update terms acceptance
+    BA->>TS: Terms accepted
+    
+    Note over TS: Authentication complete
+    
+    TS->>B: Create context with session cookies
+    TS->>App: Navigate to app (authenticated)
+    TS->>TS: Run test scenarios
+    
+    Note over TS: After all tests
+    TS->>DB: Cleanup user & organization
 ```
 
 ### Key Principles
 
-1. **One User Per Test File**: Each test file gets a UUID-based unique user generated at module load time
-2. **Shared Storage State**: All tests within a file share the same authentication storage state  
-3. **Registration + Login + TOS Flow**: Always: Registration → Login → Accept TOS → Homepage
-4. **First Test Authenticates**: First test in file handles full auth flow, subsequent tests reuse storage state
-5. **Complete Isolation**: Different test files cannot see each other's data (users, agents, chats)
-6. **Worker-Independent**: Works with workers=1 (local dev) or workers=N (CI) seamlessly
+1. **Better Auth Integration**: Uses actual Better Auth APIs for user creation and authentication
+2. **Unique Test Data**: Each test suite gets a unique user, organization, and session
+3. **Complete Onboarding Bypass**: Registration → Sign-in → Organization → Terms → Ready
+4. **Session Token Authentication**: Tests use real Better Auth session tokens for authentication
+5. **Complete Isolation**: Test suites cannot see each other's data
+6. **Automatic Cleanup**: Test data is cleaned up after test completion
 
 ### Implementation
 
-The implementation uses a simple file-scoped UUID that's generated once when the fixtures module loads:
+The new implementation uses the `testAuth.ts` utility for Better Auth integration:
 
 ```typescript
-// fixtures.ts - Creates unique user per test file
-const fileUuid = crypto.randomUUID().substring(0, 8);
+// testAuth.ts - Better Auth API integration
+export async function createTestUserWithOrganization(testId: string): Promise<TestAuthResult> {
+  // 1. Create user via Better Auth sign-up API
+  const signUpResponse = await fetch('http://localhost:3080/api/auth/sign-up/email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: `test-${testId}@example.com`,
+      password: `TestPass123!${testId}`,
+      name: `Test User ${testId}`,
+    }),
+  });
 
-export const test = baseTest.extend<object, { fileStorageState: string }>({
-  fileStorageState: [
-    async ({ browser }, use, testInfo) => {
-      // Use the file-scoped UUID - same for all tests in this file, unique per file
-      const user: TestUser = {
-        name: `Test User ${fileUuid}`,
-        email: `test-${fileUuid}@librechat.test`,
-        password: 'TestPassword123!',
-      };
-      const storageStatePath = path.join(__dirname, `storageState-${fileUuid}.json`);
-      
-      // ... authentication logic (registration, login, TOS)
-      
-      await use(storageStatePath);
+  // 2. Sign in to get session token
+  const signInResponse = await fetch('http://localhost:3080/api/auth/sign-in/email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  // 3. Create organization via Better Auth API
+  const createOrgResponse = await fetch('http://localhost:3080/api/auth/organization/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': `better-auth.session_token=${sessionToken}`
     },
-    { scope: 'worker' },
-  ],
-});
+    body: JSON.stringify({
+      name: `Test Org ${testId}`,
+      slug: `test-org-${testId}`,
+    }),
+  });
+
+  // 4. Accept terms of service
+  await fetch('http://localhost:3080/api/user/terms/accept', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': `better-auth.session_token=${sessionToken}`
+    }
+  });
+
+  return { user, organization, session, sessionCookie };
+}
 ```
 
-**This pattern ensures**:
-- No cross-contamination between test files
-- Data persistence within test file for sequential tests  
-- Predictable, repeatable test runs
-- Clear data ownership and cleanup
-- Works regardless of Playwright worker configuration
-- Simple implementation following KISS principle
+**This approach ensures**:
+- Production-like authentication flow
+- Valid session tokens that work with the frontend
+- Proper organization setup for multi-tenant features
+- Terms of service acceptance for complete onboarding bypass
+- Easy cleanup with `cleanupTestUser()` function
 
 ## Writing New Tests
 
-### Test Structure
+### Test Structure (Better Auth)
 
 ```typescript
-import { test, expect } from '../fixtures/fixtures';
+import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
+import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
 
 // Configure viewport for consistent testing
 test.use({
   viewport: { width: 1600, height: 1700 }
 });
 
-// Tests run in order within the file, but with isolated users between files
+// Tests run in order within the file
 test.describe.configure({ mode: 'default' });
 
-// Individual test case using the fileStorageState fixture
-test('should perform specific action', async ({ browser, fileStorageState }) => {
-  logProgress('Starting test');
-  
-  // Create browser context with authenticated user
-  const context = await browser.newContext({ storageState: fileStorageState });
-  const page = await context.newPage();
+test.describe('My Test Suite', () => {
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  try {
-    // Navigate to app (already authenticated)
-    await page.goto('http://localhost:3080/');
-    await expect(page).toHaveURL(/.*\/c\/new/);
+  test.beforeAll(async () => {
+    // Generate unique test ID and create authenticated user
+    testId = generateTestId();
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(`✅ Created test user: ${testAuth.user.email}`);
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data
+    if (testAuth) {
+      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+    }
+  });
+
+  test('should perform specific action', async ({ browser }) => {
+    logProgress('Starting test');
     
-    // Perform test actions
-    const message = 'Test message';
-    await page.getByTestId('text-input').fill(message);
-    await page.getByTestId('send-button').click();
+    // Create browser context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
     
-    // Verify results
-    await expect(page.getByText(message)).toBeVisible();
-    logProgress('✅ Test completed successfully');
-  } finally {
-    await context.close();
-  }
+    const page = await context.newPage();
+
+    try {
+      // Navigate to app (already authenticated)
+      await page.goto('http://localhost:3080/');
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      
+      // Perform test actions
+      const message = 'Test message';
+      await page.getByTestId('text-input').fill(message);
+      await page.getByTestId('send-button').click();
+      
+      // Verify results
+      await expect(page.getByText(message)).toBeVisible();
+      logProgress('✅ Test completed successfully');
+    } finally {
+      await context.close();
+    }
+  });
 });
 ```
 
@@ -501,43 +549,48 @@ async function authenticateProvider(page: Page, provider: string) {
 
 ## Setup and Teardown
 
-### Authentication Flow (Current)
+### Authentication Flow (Better Auth)
 
-The authentication flow is now handled entirely by the `fileStorageState` fixture:
+The authentication flow is now handled by the `testAuth.ts` utility using Better Auth APIs:
 
-1. **UUID Generation**: 
-   - Generate unique 8-character UUID for test file
-   - Create user: `test-{uuid}@librechat.test`
+1. **Test ID Generation**: 
+   - Generate unique test ID with timestamp and random string
+   - Create user: `test-{testId}@example.com`
 
-2. **Storage State Check**:
-   - Check if valid storage state exists for this UUID
-   - Validate authentication by navigating to app
-   - Reuse valid state or recreate if expired
+2. **Better Auth Registration**:
+   - Call Better Auth sign-up API with user credentials
+   - Create new user account in database via Better Auth
 
-3. **Fresh Authentication** (when needed):
-   - Clean up any existing user data
-   - Navigate to registration page
-   - Register new user account
-   - Login with credentials
-   - Accept Terms of Service
-   - Save browser storage state
+3. **Better Auth Sign-in**:
+   - Call Better Auth sign-in API to get session token
+   - Extract session token from response cookies
+   - Validate session token works with Better Auth
 
-4. **Test Execution**:
-   - Load saved storage state for all tests in file
-   - All tests share same authenticated user
-   - Complete isolation between different test files
+4. **Organization Creation**:
+   - Call Better Auth organization API to create test organization
+   - Link user to organization as owner
+   - Ensure organization is visible in list API
+
+5. **Terms Acceptance**:
+   - Call terms acceptance API to bypass T&C modal
+   - User is now fully onboarded and ready for testing
+
+6. **Test Execution**:
+   - Inject session cookies into browser context
+   - All tests in suite share same authenticated user
+   - Complete isolation between different test suites
 
 ### Database Cleanup Process
 
 The cleanup utility performs thorough database cleaning:
 ```javascript
-// From cleanupUser.ts
-- Find user by email
-- Delete all conversations with cascade delete for messages
-- Delete orphaned messages
-- Clear all user sessions
-- Remove user balance and transactions
-- Delete user account
+// From testAuth.ts cleanupTestUser()
+- Delete user sessions (Better Auth and direct DB)
+- Delete organization memberships
+- Delete organization by ID
+- Delete user account by ID
+- Delete OAuth account linkages
+- Handle both ObjectId and string ID formats
 ```
 
 ## Environment Configuration
