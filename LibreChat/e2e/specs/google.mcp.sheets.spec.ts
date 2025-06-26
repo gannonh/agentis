@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/oAuth';
-import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
+import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -14,29 +14,48 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Google Sheets MCP Tests', () => {
-  let fileAuth: FileAuthConfig;
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  test.beforeAll(async ({ browser }) => {
-    // Create file-scoped authentication for this test file
-    fileAuth = await createFileAuth(browser, 'google-sheets-mcp');
-    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
+  test.beforeAll(async () => {
+    // Generate unique test ID and create authenticated user
+    testId = generateTestId();
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    if (testAuth) {
+      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+    }
   });
 
   test('Create Google Sheets MCP', async ({ browser }) => {
     logProgress('Starting Create Google Sheets MCP test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
+    try {
+      await page.goto('http://localhost:3080/');
 
-    // With storage state, we should be automatically authenticated
-
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('Verified on main chat page');
-    //
+      // With session token, we should be automatically authenticated
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('Verified on main chat page');
 
     // Create Google Sheets Agent
     await page.getByRole('button', { name: 'Controls' }).click();
@@ -102,34 +121,47 @@ test.describe('Google Sheets MCP Tests', () => {
 
     logProgress('Saved agent configuration');
 
-    // Assert MCP is created
-    await expect(
-      page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }),
-    ).toBeVisible();
-    logProgress('✅ Google Sheets MCP created successfully');
-    await page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }).click();
+      // Assert MCP is created
+      await expect(
+        page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }),
+      ).toBeVisible();
+      logProgress('✅ Google Sheets MCP created successfully');
+      await page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }).click();
 
-    // assert mcp/tool
-    await expect(page.getByText('Create New Spreadsheet')).toBeVisible();
-
-    // Close the context
-    await context.close();
+      // assert mcp/tool
+      await expect(page.getByText('Create New Spreadsheet')).toBeVisible();
+    } finally {
+      // Close the context
+      await context.close();
+    }
   });
 
   test('Use Google Sheets Agent', async ({ browser }) => {
     if (process.env.CI) {
       logProgress('⚠️ CI mode - Skipping Use Google Sheets Agent test');
-    } else {
-      logProgress('✅ Starting Use Google Sheets Agent test');
+      return;
+    }
+    
+    logProgress('✅ Starting Use Google Sheets Agent test');
 
-      // Create a new context with the file-specific storage state
-      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-      const page = await context.newPage();
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
+    const page = await context.newPage();
 
+    try {
       await page.goto('http://localhost:3080/');
 
-      // With storage state, we should be automatically authenticated
-
+      // With session token, we should be automatically authenticated
       // Verify we're on the main chat page
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
@@ -286,7 +318,7 @@ test.describe('Google Sheets MCP Tests', () => {
         timeout: 90000,
       });
       logProgress('✅ Found Google Sheets link');
-
+    } finally {
       // Close the context
       await context.close();
     }

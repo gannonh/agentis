@@ -6,7 +6,6 @@ test.use({
     height: 1700,
     width: 1600,
   },
-  channel: 'chrome', // Use Google Chrome instead of Chromium
 });
 
 // Tests in this file run in order. Retries, if any, run independently.

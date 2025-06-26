@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/oAuth';
-import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
+import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -14,121 +14,152 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Google Gmail MCP Tests', () => {
-  let fileAuth: FileAuthConfig;
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  test.beforeAll(async ({ browser }) => {
-    // Create file-scoped authentication for this test file
-    fileAuth = await createFileAuth(browser, 'google-gmail-mcp');
-    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
+  test.beforeAll(async () => {
+    // Generate unique test ID and create authenticated user
+    testId = generateTestId();
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    if (testAuth) {
+      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+    }
   });
 
   test('Create Gmail MCP', async ({ browser }) => {
     logProgress('Starting Create Gmail MCP test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
-
-    // With storage state, we should be automatically authenticated
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('Verified on main chat page');
-    //
-
-    // Create Gmail
-    await page.getByRole('button', { name: 'Controls' }).click();
-    await page.getByRole('button', { name: 'Agent Builder' }).click();
-    logProgress('Opened Agent Builder');
-
     try {
-      await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-    } catch (e) {
-      // Button might not exist, continue
-      console.log('Create New Agent button not found, continuing...');
+      await page.goto('http://localhost:3080/');
+
+      // With session token, we should be automatically authenticated
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('Verified on main chat page');
+
+      // Create Gmail
+      await page.getByRole('button', { name: 'Controls' }).click();
+      await page.getByRole('button', { name: 'Agent Builder' }).click();
+      logProgress('Opened Agent Builder');
+
+      try {
+        await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
+      } catch (e) {
+        // Button might not exist, continue
+        console.log('Create New Agent button not found, continuing...');
+      }
+
+      await page.getByRole('textbox', { name: 'Agent name' }).click();
+      await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
+      await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
+      await page.getByRole('textbox', { name: 'Agent name' }).fill('Gmail Agent');
+      await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
+      await page
+        .getByRole('textbox', { name: 'Agent description' })
+        .fill('Claude 3.7 Agent with access to Gmail.');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+      await page
+        .getByRole('textbox', { name: 'Agent instructions' })
+        .fill('You possess expert-level Gmail skills.');
+      await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
+      await page.getByRole('combobox', { name: 'Provider' }).click();
+      await page.getByText('Anthropic').click();
+      await page.getByRole('combobox', { name: 'Model' }).click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
+
+      await page.getByRole('button', { name: 'Create' }).click();
+      logProgress('Created agent with basic settings');
+      
+      // add mcp tools
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button')
+        .filter({ hasText: /^$/ })
+        .first()
+        .click();
+      await page.getByRole('button', { name: 'Add Tools' }).click();
+      await page.getByRole('button', { name: 'Add Gmail' }).click();
+      await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+      await page.getByRole('button', { name: 'Add Selected' }).click();
+      await page.getByRole('button', { name: 'Close dialog' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
+
+      // Wait for save operation to complete
+      try {
+        await page.waitForTimeout(2000); // Give server time to save
+        logProgress('Waited for save operation to complete');
+      } catch (error) {
+        logProgress('⚠️ Save wait timeout, continuing...');
+      }
+
+      logProgress('Saved agent configuration');
+
+      // Assert MCP is created
+      await expect(
+        page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }),
+      ).toBeVisible();
+      logProgress('✅ Gmail MCP created successfully');
+      await page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }).click();
+
+      // assert mcp/tool
+      await expect(page.getByText('Add Label To Email')).toBeVisible();
+    } finally {
+      await context.close();
     }
-
-    await page.getByRole('textbox', { name: 'Agent name' }).click();
-    await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
-    await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
-    await page.getByRole('textbox', { name: 'Agent name' }).fill('Gmail Agent');
-    await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
-    await page
-      .getByRole('textbox', { name: 'Agent description' })
-      .fill('Claude 3.7 Agent with access to Gmail.');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-    await page
-      .getByRole('textbox', { name: 'Agent instructions' })
-      .fill('You possess expert-level Gmail skills.');
-    await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
-    await page.getByRole('combobox', { name: 'Provider' }).click();
-    await page.getByText('Anthropic').click();
-    await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
-
-    await page.getByRole('button', { name: 'Create' }).click();
-    logProgress('Created agent with basic settings');
-    // add mcp tools
-
-    await page
-      .getByLabel('Agent Builder')
-      .getByRole('button')
-      .filter({ hasText: /^$/ })
-      .first()
-      .click();
-    await page.getByRole('button', { name: 'Add Tools' }).click();
-    await page.getByRole('button', { name: 'Add Gmail' }).click();
-    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-    await page.getByRole('button', { name: 'Add Selected' }).click();
-    await page.getByRole('button', { name: 'Close dialog' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-
-    // Wait for save operation to complete
-    try {
-      await page.waitForTimeout(2000); // Give server time to save
-      logProgress('Waited for save operation to complete');
-    } catch (error) {
-      logProgress('⚠️ Save wait timeout, continuing...');
-    }
-
-    logProgress('Saved agent configuration');
-
-    // Assert MCP is created
-
-    await expect(
-      page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }),
-    ).toBeVisible();
-    logProgress('✅ Gmail MCP created successfully');
-    await page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }).click();
-
-    // assert mcp/tool
-
-    await expect(page.getByText('Add Label To Email')).toBeVisible();
-
-    // Close the context
-    await context.close();
   });
 
   test('Use Gmail Agent', async ({ browser }) => {
     if (process.env.CI) {
       logProgress('⚠️ CI mode - Skipping Use Gmail Agent test');
-    } else {
-      logProgress('✅ Starting Use Gmail Agent test');
+      return;
+    }
+    
+    logProgress('✅ Starting Use Gmail Agent test');
 
-      // Create a new context with the file-specific storage state
-      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-      const page = await context.newPage();
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
+    const page = await context.newPage();
 
+    try {
       await page.goto('http://localhost:3080/');
 
-      // With storage state, we should be automatically authenticated
+      // With session token, we should be automatically authenticated
       // Verify we're on the main chat page
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
@@ -136,7 +167,7 @@ test.describe('Google Gmail MCP Tests', () => {
       // Select the Gmail Agent explicitly to avoid conflicts with other parallel tests
       await page.getByRole('button', { name: 'Select a model' }).click();
       await page.getByRole('dialog').getByRole('option', { name: 'Agents' }).click();
-      await page.getByLabel('Agents').getByText('Gmail Agent').click(); // ISSUE
+      await page.getByLabel('Agents').getByText('Gmail Agent').click();
       logProgress('✅ Selected Gmail Agent');
 
       await page
@@ -185,7 +216,6 @@ test.describe('Google Gmail MCP Tests', () => {
       // Look for the Connect Gmail button in the proactive auth UI
       await expect(page.getByRole('button', { name: 'Connect Gmail' })).toBeVisible();
       logProgress('✅ Found Connect Gmail button in proactive auth UI');
-      // await page.pause();
 
       // Handle the authentication
       logProgress('✅ Starting Gmail authentication');
@@ -237,8 +267,7 @@ test.describe('Google Gmail MCP Tests', () => {
       } catch {
         logProgress('⚠️ Ran Create Email Draft not found');
       }
-
-      // Close the context
+    } finally {
       await context.close();
     }
   });

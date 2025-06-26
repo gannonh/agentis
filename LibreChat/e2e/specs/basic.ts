@@ -11,7 +11,6 @@ test.use({
     height: 1700,
     width: 1600,
   },
-  storageState: path.join(__dirname, '../data/codegen-auth.json'),
 });
 
 test('basic', async ({ page }) => {

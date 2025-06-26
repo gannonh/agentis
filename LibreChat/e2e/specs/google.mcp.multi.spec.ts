@@ -5,7 +5,7 @@ import {
   handleExistingAccountAuth,
   handleExistingAccountAuthSingle,
 } from '../utils/oAuth';
-import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
+import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -18,28 +18,48 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Google Multi MCP Tests', () => {
-  let fileAuth: FileAuthConfig;
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  test.beforeAll(async ({ browser }) => {
-    // Create file-scoped authentication for this test file
-    fileAuth = await createFileAuth(browser, 'google-multi-mcp');
-    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
+  test.beforeAll(async () => {
+    // Generate unique test ID and create authenticated user
+    testId = generateTestId();
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    if (testAuth) {
+      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+    }
   });
 
   test('Create Google Multi Agent', async ({ browser }) => {
     logProgress('Starting agent creation test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
+    try {
+      await page.goto('http://localhost:3080/');
 
-    // With storage state, we should be automatically authenticated
-
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('✅ Verified on main chat page');
+      // With session token, we should be automatically authenticated
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('✅ Verified on main chat page');
 
     // Create Google Multi Agent (using original codegen approach)
     await page.getByRole('button', { name: 'Controls' }).click();
@@ -119,32 +139,40 @@ test.describe('Google Multi MCP Tests', () => {
         .getByText(/Seamlessly work across Google's core productivity tools to manage/),
     ).toBeVisible();
     logProgress('✅ Found agent description in discovery grid');
-    await expect(page.getByTestId('agent-discovery-grid').getByText(/more tools/i)).toBeVisible();
-    logProgress('✅ Found "+n more tools" in discovery grid');
-
-    // Always close context, regardless of test success/failure
-    try {
+      await expect(page.getByTestId('agent-discovery-grid').getByText(/more tools/i)).toBeVisible();
+      logProgress('✅ Found "+n more tools" in discovery grid');
+    } finally {
+      // Always close context
       await context.close();
-    } catch (closeError) {
-      console.log('⚠️ Context close error:', closeError);
-      // Don't throw here - we want the original test error to propagate
     }
   });
 
   test('Use Google Multi Agent', async ({ browser }) => {
     if (process.env.CI) {
       logProgress('⚠️ CI mode - Skipping Use Google Multi Agent test');
-    } else {
-      logProgress('✅ Starting Use Google Multi Agent test');
+      return;
+    }
+    
+    logProgress('✅ Starting Use Google Multi Agent test');
 
-      // Create a new context with the file-specific storage state
-      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-      const page = await context.newPage();
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
+    const page = await context.newPage();
 
+    try {
       await page.goto('http://localhost:3080/');
 
-      // With storage state, we should be automatically authenticated
-
+      // With session token, we should be automatically authenticated
       // Verify we're on the main chat page
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
@@ -323,7 +351,7 @@ test.describe('Google Multi MCP Tests', () => {
       } catch (error) {
         console.log('Error matching aria snapshot for Google Sheets auth completion:', error);
       }
-
+    } finally {
       // Close the context
       await context.close();
     }

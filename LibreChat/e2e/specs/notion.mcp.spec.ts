@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialNotionAuth } from '../utils/oAuth';
-import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
+import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -14,27 +14,48 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Notion MCP Tests', () => {
-  let fileAuth: FileAuthConfig;
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  test.beforeAll(async ({ browser }) => {
-    // Create file-scoped authentication for this test file
-    fileAuth = await createFileAuth(browser, 'notion-mcp');
-    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
+  test.beforeAll(async () => {
+    // Generate unique test ID and create authenticated user
+    testId = generateTestId();
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    if (testAuth) {
+      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+    }
   });
 
   test('Create Notion MCP', async ({ browser }) => {
     logProgress('Starting Create Notion MCP test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
+    try {
+      await page.goto('http://localhost:3080/');
 
-    // With storage state, we should be automatically authenticated
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('Verified on main chat page');
+      // With session token, we should be automatically authenticated
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('Verified on main chat page');
 
     // Create Notion Agent
     await page.getByRole('button', { name: 'Controls' }).click();
@@ -111,26 +132,40 @@ test.describe('Notion MCP Tests', () => {
     // Open panel
     await page.getByLabel('Agent Builder').getByText('Notion', { exact: true }).click();
 
-    // Assert MCP/tool
-    await expect(page.getByText('Add Page Content')).toBeVisible();
-
-    // Close the context
-    await context.close();
+      // Assert MCP/tool
+      await expect(page.getByText('Add Page Content')).toBeVisible();
+    } finally {
+      // Close the context
+      await context.close();
+    }
   });
 
   test('Use Notion Agent', async ({ browser }) => {
     if (process.env.CI) {
       logProgress('⚠️ CI mode - Skipping Use Notion Agent test');
-    } else {
-      logProgress('Starting Use Notion Agent test');
+      return;
+    }
+    
+    logProgress('Starting Use Notion Agent test');
 
-      // Create a new context with the file-specific storage state
-      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-      const page = await context.newPage();
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
+    const page = await context.newPage();
 
+    try {
       await page.goto('http://localhost:3080/');
 
-      // With storage state, we should be automatically authenticated
+      // With session token, we should be automatically authenticated
       // Verify we're on the main chat page
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
@@ -217,7 +252,7 @@ test.describe('Notion MCP Tests', () => {
       } catch {
         logProgress('❌ Regenerate button not found');
       }
-
+    } finally {
       // Close the context
       await context.close();
     }

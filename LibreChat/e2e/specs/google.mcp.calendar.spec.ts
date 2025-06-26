@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialAuth } from '../utils/oAuth';
-import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
+import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -14,133 +14,163 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Google Calendar MCP Tests', () => {
-  let fileAuth: FileAuthConfig;
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  test.beforeAll(async ({ browser }) => {
-    // Create file-scoped authentication for this test file
-    fileAuth = await createFileAuth(browser, 'google-calendar-mcp');
-    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
+  test.beforeAll(async () => {
+    // Generate unique test ID and create authenticated user
+    testId = generateTestId();
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    if (testAuth) {
+      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+    }
   });
 
   test('Create Calendar MCP Agent', async ({ browser }) => {
     logProgress('Starting Create Calendar MCP test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
-
-    // With storage state, we should be automatically authenticated
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('Verified on main chat page');
-    //
-
-    // Create Google Calendar Agent
-    await page.getByRole('button', { name: 'Controls' }).click();
-    await page.getByRole('button', { name: 'Agent Builder' }).click();
-    logProgress('Opened Agent Builder');
-
     try {
-      await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-    } catch (e) {
-      // Button might not exist, continue
-      console.log('Create New Agent button not found, continuing...');
+      await page.goto('http://localhost:3080/');
+
+      // With session token, we should be automatically authenticated
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('Verified on main chat page');
+
+      // Create Google Calendar Agent
+      await page.getByRole('button', { name: 'Controls' }).click();
+      await page.getByRole('button', { name: 'Agent Builder' }).click();
+      logProgress('Opened Agent Builder');
+
+      try {
+        await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
+      } catch (e) {
+        // Button might not exist, continue
+        console.log('Create New Agent button not found, continuing...');
+      }
+
+      await page.getByRole('textbox', { name: 'Agent name' }).click();
+      await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Calendar Agent');
+      await page.getByRole('textbox', { name: 'Agent description' }).click();
+      await page
+        .getByRole('textbox', { name: 'Agent description' })
+        .fill(
+          'Schedule meetings intelligently, find open time slots, set smart reminders, and coordinate with others.',
+        );
+      await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+      await page
+        .getByRole('textbox', { name: 'Agent instructions' })
+        .fill(
+          `You are a scheduling optimization expert who helps users make the most of their time. When creating events, include all relevant details (location, description, attendees) and provide calendar links. Proactively identify scheduling conflicts and suggest alternatives. Help users block time for focused work, breaks, and personal commitments. Analyze calendar patterns to suggest productivity improvements. Always respect time zones and clarify ambiguous time references. Offer to create recurring events for regular activities.`,
+        );
+      await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
+      await page.getByRole('combobox', { name: 'Provider' }).click();
+      await page.getByText('Anthropic').click();
+      await page.getByRole('combobox', { name: 'Model' }).click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
+      await page.getByRole('button', { name: 'Create' }).click();
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button')
+        .filter({ hasText: /^$/ })
+        .first()
+        .click();
+      await page.getByRole('button', { name: 'Add Tools' }).click();
+      await page.getByRole('button', { name: 'Add Google Calendar' }).click();
+      await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+      await page.getByRole('button', { name: 'Add Selected' }).click();
+      await page.getByRole('button', { name: 'Close dialog' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
+
+      // Wait for save operation to complete by waiting for success indicator or page change
+      try {
+        // Look for success toast, saved state, or navigation change
+        await page.waitForTimeout(2000); // Give server time to save
+        logProgress('Waited for save operation to complete');
+      } catch (error) {
+        logProgress('⚠️ Save wait timeout, continuing...');
+      }
+
+      // Verify agent was saved by checking for success state
+      try {
+        await expect(page.getByText('Agent saved successfully')).toBeVisible({ timeout: 5000 });
+        logProgress('✅ Found explicit save confirmation');
+      } catch (error) {
+        logProgress('⚠️ No explicit save confirmation found, continuing...');
+      }
+
+      logProgress('Saved agent configuration');
+
+      // Assert MCP is created
+      await expect(
+        page.getByLabel('Agent Builder').getByText('Google Calendar', { exact: true }),
+      ).toBeVisible();
+      logProgress('✅ Google Calendar MCP created successfully');
+
+      await page.getByLabel('Agent Builder').getByText('Google Calendar', { exact: true }).click();
+
+      await expect(page.getByText('Create Event')).toBeVisible();
+    } finally {
+      await context.close();
     }
-
-    await page.getByRole('textbox', { name: 'Agent name' }).click();
-    await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Calendar Agent');
-    await page.getByRole('textbox', { name: 'Agent description' }).click();
-    await page
-      .getByRole('textbox', { name: 'Agent description' })
-      .fill(
-        'Schedule meetings intelligently, find open time slots, set smart reminders, and coordinate with others.',
-      );
-    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-    await page
-      .getByRole('textbox', { name: 'Agent instructions' })
-      .fill(
-        `You are a scheduling optimization expert who helps users make the most of their time. When creating events, include all relevant details (location, description, attendees) and provide calendar links. Proactively identify scheduling conflicts and suggest alternatives. Help users block time for focused work, breaks, and personal commitments. Analyze calendar patterns to suggest productivity improvements. Always respect time zones and clarify ambiguous time references. Offer to create recurring events for regular activities.`,
-      );
-    await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
-    await page.getByRole('combobox', { name: 'Provider' }).click();
-    await page.getByText('Anthropic').click();
-    await page.getByRole('combobox', { name: 'Model' }).click();
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
-    await page.getByRole('button', { name: 'Create' }).click();
-    await page
-      .getByLabel('Agent Builder')
-      .getByRole('button')
-      .filter({ hasText: /^$/ })
-      .first()
-      .click();
-    await page.getByRole('button', { name: 'Add Tools' }).click();
-    await page.getByRole('button', { name: 'Add Google Calendar' }).click();
-    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-    await page.getByRole('button', { name: 'Add Selected' }).click();
-    await page.getByRole('button', { name: 'Close dialog' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-
-    // Wait for save operation to complete by waiting for success indicator or page change
-    try {
-      // Look for success toast, saved state, or navigation change
-      await page.waitForTimeout(2000); // Give server time to save
-      logProgress('Waited for save operation to complete');
-    } catch (error) {
-      logProgress('⚠️ Save wait timeout, continuing...');
-    }
-
-    // Verify agent was saved by checking for success state
-    try {
-      await expect(page.getByText('Agent saved successfully')).toBeVisible({ timeout: 5000 });
-      logProgress('✅ Found explicit save confirmation');
-    } catch (error) {
-      logProgress('⚠️ No explicit save confirmation found, continuing...');
-    }
-
-    logProgress('Saved agent configuration');
-
-    // Assert MCP is created
-
-    await expect(
-      page.getByLabel('Agent Builder').getByText('Google Calendar', { exact: true }),
-    ).toBeVisible();
-    logProgress('✅ Google Calendar MCP created successfully');
-
-    await page.getByLabel('Agent Builder').getByText('Google Calendar', { exact: true }).click();
-
-    await expect(page.getByText('Create Event')).toBeVisible();
-
-    // Close the context
-    await context.close();
   });
 
   test('Use Calendar Agent', async ({ browser }) => {
     if (process.env.CI) {
       logProgress('⚠️ CI mode - Skipping Use Google Calendar Agent test');
-    } else {
-      logProgress('✅ Starting Use Google Calendar Agent test');
+      return;
+    }
+    
+    logProgress('✅ Starting Use Google Calendar Agent test');
 
-      // Create a new context with the file-specific storage state
-      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-      const page = await context.newPage();
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
+    const page = await context.newPage();
 
+    try {
       await page.goto('http://localhost:3080/');
 
-      // With storage state, we should be automatically authenticated
+      // With session token, we should be automatically authenticated
       // Verify we're on the main chat page
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
 
       // Select the Google Calendar Agent explicitly to avoid conflicts with other parallel tests
-
       await page.getByRole('button', { name: 'Select a model' }).click();
       await page.getByText('Agents', { exact: true }).first().click();
       await page.getByLabel('Agents').getByText('Google Calendar Agent').first().click();
 
       // ----------------- begin cogegen
-
       await page.getByTestId('text-input').click();
       await page
         .getByTestId('text-input')
@@ -234,8 +264,7 @@ test.describe('Google Calendar MCP Tests', () => {
         });
         logProgress('✅ Found "Ran"  execution after authentication');
       }
-
-      // Close the context
+    } finally {
       await context.close();
     }
   });
