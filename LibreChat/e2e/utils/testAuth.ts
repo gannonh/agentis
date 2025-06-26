@@ -39,18 +39,19 @@ export interface TestAuthResult {
  */
 export async function getTestDatabase() {
   const mongoose = (await import('mongoose')).default;
-  
+
   // Ensure MongoDB is connected
   if (mongoose.connection.readyState !== 1) {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/AgentisTest?authSource=admin';
+    const mongoUri =
+      process.env.MONGO_URI || 'mongodb://admin:password@localhost:27017/Agentis?authSource=admin';
     await mongoose.connect(mongoUri);
   }
-  
+
   const db = mongoose.connection.db;
   if (!db) {
     throw new Error('Database connection not available');
   }
-  
+
   return { db, mongoose };
 }
 
@@ -72,25 +73,26 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
     logger.info(`🔧 Creating user via Better Auth: ${userEmail}`);
 
     // Wait a moment for the server to be ready
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Test server connectivity first
     logger.info('🔍 Testing server connectivity...');
     try {
-      const healthCheck = await fetch('http://localhost:3080/', { 
-        method: 'GET'
+      const healthCheck = await fetch('http://localhost:3080/', {
+        method: 'GET',
       });
       logger.info(`✅ Server is reachable, status: ${healthCheck.status}`);
     } catch (connectError) {
       logger.error(`❌ Server connectivity test failed:`, connectError);
-      const errorMessage = connectError instanceof Error ? connectError.message : String(connectError);
+      const errorMessage =
+        connectError instanceof Error ? connectError.message : String(connectError);
       throw new Error(`Server at http://localhost:3080 is not reachable: ${errorMessage}`);
     }
 
     // Create user using Better Auth's email/password method
     // First, use the signUp endpoint programmatically
     logger.info('📡 Calling sign-up endpoint...');
-    
+
     // Add better error handling for fetch
     let signUpResponse;
     try {
@@ -116,7 +118,7 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
     }
 
     logger.info(`📡 Sign-up response: ${signUpResponse.status} ${signUpResponse.statusText}`);
-    
+
     if (!signUpResponse.ok) {
       const errorText = await signUpResponse.text();
       logger.error(`❌ Sign up failed: ${signUpResponse.status} ${errorText}`);
@@ -140,7 +142,7 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
     });
 
     logger.info(`📡 Sign-in response: ${signInResponse.status} ${signInResponse.statusText}`);
-    
+
     if (!signInResponse.ok) {
       const errorText = await signInResponse.text();
       logger.error(`❌ Sign in failed: ${signInResponse.status} ${errorText}`);
@@ -150,7 +152,7 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
     // Extract session token from Set-Cookie header
     const setCookieHeader = signInResponse.headers.get('set-cookie');
     let sessionToken = '';
-    
+
     if (setCookieHeader) {
       const sessionMatch = setCookieHeader.match(/better-auth\.session_token=([^;]+)/);
       if (sessionMatch) {
@@ -173,13 +175,13 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
 
     // Create organization using Better Auth API instead of direct database manipulation
     logger.info(`🏢 Creating organization via Better Auth API...`);
-    
+
     try {
       const createOrgResponse = await fetch('http://localhost:3080/api/auth/organization/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': `better-auth.session_token=${sessionToken}`
+          Cookie: `better-auth.session_token=${sessionToken}`,
         },
         body: JSON.stringify({
           name: orgName,
@@ -189,12 +191,14 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
             createdForE2E: true,
             domain: 'example.com',
             autoCreated: false,
-          }
+          },
         }),
       });
 
-      logger.info(`📡 Create org response: ${createOrgResponse.status} ${createOrgResponse.statusText}`);
-      
+      logger.info(
+        `📡 Create org response: ${createOrgResponse.status} ${createOrgResponse.statusText}`,
+      );
+
       if (!createOrgResponse.ok) {
         const errorText = await createOrgResponse.text();
         logger.error(`❌ Organization creation failed: ${createOrgResponse.status} ${errorText}`);
@@ -203,23 +207,25 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
 
       const orgData = await createOrgResponse.json();
       logger.info(`✅ Organization created via Better Auth API:`, JSON.stringify(orgData, null, 2));
-      
+
       const orgId = orgData.id || orgData._id;
-      
+
       // Test the organization list API to verify it's working
       logger.info(`🔍 Testing organization list API...`);
       const orgListResponse = await fetch('http://localhost:3080/api/auth/organization/list', {
         method: 'GET',
         headers: {
-          'Cookie': `better-auth.session_token=${sessionToken}`
-        }
+          Cookie: `better-auth.session_token=${sessionToken}`,
+        },
       });
-      
-      logger.info(`📡 Org list API response: ${orgListResponse.status} ${orgListResponse.statusText}`);
+
+      logger.info(
+        `📡 Org list API response: ${orgListResponse.status} ${orgListResponse.statusText}`,
+      );
       if (orgListResponse.ok) {
         const orgListData = await orgListResponse.json();
         logger.info(`📋 Organization list data:`, JSON.stringify(orgListData, null, 2));
-        
+
         if (!orgListData || orgListData.length === 0) {
           throw new Error('Organization list API returned empty - authentication setup failed');
         }
@@ -235,11 +241,13 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': `better-auth.session_token=${sessionToken}`
-        }
+          Cookie: `better-auth.session_token=${sessionToken}`,
+        },
       });
-      
-      logger.info(`📡 Accept terms response: ${acceptTermsResponse.status} ${acceptTermsResponse.statusText}`);
+
+      logger.info(
+        `📡 Accept terms response: ${acceptTermsResponse.status} ${acceptTermsResponse.statusText}`,
+      );
       if (acceptTermsResponse.ok) {
         logger.info(`✅ Terms accepted successfully`);
       } else {
@@ -273,10 +281,11 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
         },
         sessionCookie,
       };
-
     } catch (orgError) {
       logger.error(`❌ Failed to create organization:`, orgError);
-      throw new Error(`Organization creation failed: ${orgError instanceof Error ? orgError.message : String(orgError)}`);
+      throw new Error(
+        `Organization creation failed: ${orgError instanceof Error ? orgError.message : String(orgError)}`,
+      );
     }
   } catch (error) {
     logger.error(`❌ Failed to create test user/org for ${testId}:`, error);
