@@ -78,13 +78,13 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
     logger.info('🔍 Testing server connectivity...');
     try {
       const healthCheck = await fetch('http://localhost:3080/', { 
-        method: 'GET',
-        timeout: 5000 
+        method: 'GET'
       });
       logger.info(`✅ Server is reachable, status: ${healthCheck.status}`);
     } catch (connectError) {
       logger.error(`❌ Server connectivity test failed:`, connectError);
-      throw new Error(`Server at http://localhost:3080 is not reachable: ${connectError.message}`);
+      const errorMessage = connectError instanceof Error ? connectError.message : String(connectError);
+      throw new Error(`Server at http://localhost:3080 is not reachable: ${errorMessage}`);
     }
 
     // Create user using Better Auth's email/password method
@@ -107,10 +107,12 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
       });
     } catch (fetchError) {
       logger.error(`❌ Fetch error calling sign-up endpoint:`, fetchError);
-      logger.error(`❌ Error type: ${fetchError.constructor.name}`);
-      logger.error(`❌ Error message: ${fetchError.message}`);
-      logger.error(`❌ Error code: ${fetchError.code}`);
-      throw new Error(`Failed to connect to Better Auth endpoint: ${fetchError.message}`);
+      if (fetchError instanceof Error) {
+        logger.error(`❌ Error type: ${fetchError.constructor.name}`);
+        logger.error(`❌ Error message: ${fetchError.message}`);
+      }
+      const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      throw new Error(`Failed to connect to Better Auth endpoint: ${errorMessage}`);
     }
 
     logger.info(`📡 Sign-up response: ${signUpResponse.status} ${signUpResponse.statusText}`);
