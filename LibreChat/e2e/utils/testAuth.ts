@@ -227,6 +227,25 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
         throw new Error(`Organization list API failed: ${errorText}`);
       }
 
+      // Accept terms to bypass Terms of Service modal
+      logger.info(`📋 Accepting terms of service...`);
+      const acceptTermsResponse = await fetch('http://localhost:3080/api/user/terms/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': `better-auth.session_token=${sessionToken}`
+        }
+      });
+      
+      logger.info(`📡 Accept terms response: ${acceptTermsResponse.status} ${acceptTermsResponse.statusText}`);
+      if (acceptTermsResponse.ok) {
+        logger.info(`✅ Terms accepted successfully`);
+      } else {
+        const errorText = await acceptTermsResponse.text();
+        logger.warn(`⚠️ Terms acceptance failed (may not be required): ${errorText}`);
+        // Don't throw error - terms acceptance might not be enabled
+      }
+
       // Format session cookie for Playwright
       const sessionCookie = `better-auth.session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax`;
 
