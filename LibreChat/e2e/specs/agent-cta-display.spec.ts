@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
-import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
+import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
 
 /**
  * Test 1: Basic CTA Display Test
@@ -18,12 +18,24 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Agent CTA Display Tests', () => {
-  let fileAuth: FileAuthConfig;
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  test.beforeAll(async ({ browser }) => {
-    // Create file-scoped authentication for this test file
-    fileAuth = await createFileAuth(browser, 'agent-cta-display');
-    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
+  test.beforeAll(async () => {
+    // Generate unique test ID for this test suite
+    testId = generateTestId();
+    
+    // Create test user with organization using Better Auth
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    if (testAuth) {
+      await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+      logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+    }
   });
 
   test('should display no featured agents message when no agents are featured', async ({
@@ -31,14 +43,24 @@ test.describe('Agent CTA Display Tests', () => {
   }) => {
     logProgress('Starting no featured agents test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
     try {
       await page.goto('http://localhost:3080/');
 
-      // With storage state, we should be automatically authenticated
+      // With session token, we should be automatically authenticated
       // Verify we're on the main chat page
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('Verified on main chat page');
@@ -57,8 +79,18 @@ test.describe('Agent CTA Display Tests', () => {
   test('should create featured agent and display in CTAs', async ({ browser }) => {
     logProgress('Starting Agent CTA Display test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
     try {
@@ -352,8 +384,18 @@ test.describe('Agent CTA Display Tests', () => {
   test('should navigate correctly when clicking on CTAs', async ({ browser }) => {
     logProgress('Starting CTA navigation test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
     try {
@@ -437,8 +479,18 @@ test.describe('Agent CTA Display Tests', () => {
   test('chat should dissapear CTAs', async ({ browser }) => {
     logProgress('Starting CTA navigation test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+    
     const page = await context.newPage();
 
     try {

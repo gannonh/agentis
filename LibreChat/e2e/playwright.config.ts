@@ -42,16 +42,45 @@ export default defineConfig({
   timeout: 5 * 60 * 1000, // 5 minutes
   /* Configure projects for major browsers */
   projects: [
-    // Main test project with worker-scoped authentication
     {
-      // name: 'chromium',
-      // use: {
-      //   ...devices['Desktop Chrome'],
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
 
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+
+    /* Test against mobile viewports. */
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
+
+    /* Test against branded browsers. */
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: {
+    //     ...devices['Desktop Edge'],
+    //     channel: 'msedge',
+    //   },
+    // },
+    {
       name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' }, // or 'chrome-beta'
-
-      // Worker-scoped storage state will be handled by fixtures
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+      },
     },
   ],
 
@@ -77,6 +106,10 @@ export default defineConfig({
       REGISTER_WINDOW: '1', // 1 minute window
       REGISTER_MAX: '1000', // Allow 1000 registrations per window
       REGISTRATION_VIOLATION_SCORE: '0', // Don't score violations
+      // Better Auth configuration for tests
+      DOMAIN_SERVER: 'http://localhost:3080',
+      DOMAIN_CLIENT: 'http://localhost:3080',
+      BETTER_AUTH_SECRET: 'test-secret-key-for-e2e-testing-only',
       // Explicitly set critical variables to ensure they're passed to the server
       MONGO_URI: 'mongodb://admin:password@localhost:27017/Agentis?authSource=admin',
       GOOGLE_TEST_ACCOUNT_1_EMAIL: 'agentis.test@gmail.com',

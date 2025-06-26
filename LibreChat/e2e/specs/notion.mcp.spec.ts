@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 import { handleInitialNotionAuth } from '../utils/oAuth';
-import { createFileAuth, type FileAuthConfig } from '../utils/fileAuthentication';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../utils/testAuth';
 
 test.use({
   viewport: {
@@ -14,123 +19,171 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Notion MCP Tests', () => {
-  let fileAuth: FileAuthConfig;
+  let testAuth: TestAuthResult;
+  let testId: string;
 
-  test.beforeAll(async ({ browser }) => {
-    // Create file-scoped authentication for this test file
-    fileAuth = await createFileAuth(browser, 'notion-mcp');
-    logProgress(`✅ Created file authentication for user: ${fileAuth.user.email}`);
+  test.beforeAll(async () => {
+    // Generate unique test ID and create authenticated user
+    testId = generateTestId();
+    testAuth = await createTestUserWithOrganization(testId);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
+  });
+
+  test.afterAll(async () => {
+    // Clean up test data after all tests complete
+    if (testAuth) {
+      try {
+        await cleanupTestUser(testAuth.user.id, testAuth.organization.id);
+        logProgress(`✅ Cleaned up test user: ${testAuth.user.email}`);
+      } catch (error) {
+        logProgress(`⚠️ Cleanup failed for user ${testAuth.user.email}: ${error}`);
+        // Don't throw to avoid masking test failures
+      }
+    }
   });
 
   test('Create Notion MCP', async ({ browser }) => {
     logProgress('Starting Create Notion MCP test');
 
-    // Create a new context with the file-specific storage state
-    const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+
     const page = await context.newPage();
 
-    await page.goto('http://localhost:3080/');
-
-    // With storage state, we should be automatically authenticated
-    // Verify we're on the main chat page
-    await expect(page).toHaveURL(/.*\/c\/new/);
-    logProgress('Verified on main chat page');
-
-    // Create Notion Agent
-    await page.getByRole('button', { name: 'Controls' }).click();
-    await page.getByRole('button', { name: 'Agent Builder' }).click();
-    logProgress('Opened Agent Builder');
-
     try {
-      await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-    } catch (e) {
-      // Button might not exist, continue
-      console.log('Create New Agent button not found, continuing...');
+      await page.goto('http://localhost:3080/');
+
+      // With session token, we should be automatically authenticated
+      // Verify we're on the main chat page
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      logProgress('Verified on main chat page');
+
+      // Create Notion Agent
+      await page.getByRole('button', { name: 'Controls' }).click();
+      await page.getByRole('button', { name: 'Agent Builder' }).click();
+      logProgress('Opened Agent Builder');
+
+      try {
+        await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
+      } catch (e) {
+        // Button might not exist, continue
+        console.log('Create New Agent button not found, continuing...');
+      }
+
+      await page.getByRole('textbox', { name: 'Agent name' }).click();
+      await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
+      await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
+      await page.getByRole('textbox', { name: 'Agent name' }).fill('Notion Agent');
+      await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
+      await page
+        .getByRole('textbox', { name: 'Agent description' })
+        .fill('Sonnet 3.7 with access to Notion');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
+      await page.getByRole('textbox', { name: 'Agent instructions' }).click();
+      await page
+        .getByRole('textbox', { name: 'Agent instructions' })
+        .fill(
+          "You possess expert-level Notion skills. Whenever you create new pages, databases, or make content edits for the user, please provide links so they can access them conveniently. Help users organize their information effectively using Notion's powerful database and page features.",
+        );
+
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button', { name: 'Select a model' })
+        .click();
+      await page.getByRole('combobox', { name: 'Provider' }).click();
+      await page.getByText('Anthropic').click();
+      await page.getByRole('combobox', { name: 'Model' }).click();
+
+      await page
+        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
+        .locator('span')
+        .click();
+      await page.getByRole('button', { name: 'Create' }).click();
+      logProgress('Created agent with basic settings');
+
+      // Add MCP tools
+      await page
+        .getByLabel('Agent Builder')
+        .getByRole('button')
+        .filter({ hasText: /^$/ })
+        .first()
+        .click();
+      await page.getByRole('button', { name: 'Add Tools' }).click();
+      await page.getByRole('button', { name: 'Add Notion' }).click();
+      await page.getByRole('checkbox', { name: 'Select all tools' }).check();
+      await page.getByRole('button', { name: 'Add Selected' }).click();
+      await page.getByRole('button', { name: 'Close dialog' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
+
+      // Wait for save operation to complete
+      try {
+        await page.waitForTimeout(2000); // Give server time to save
+        logProgress('Waited for save operation to complete');
+      } catch (error) {
+        logProgress('⚠️ Save wait timeout, continuing...');
+      }
+
+      logProgress('Saved agent configuration');
+
+      // Assert MCP is created
+      await expect(
+        page.getByLabel('Agent Builder').getByText('Notion', { exact: true }),
+      ).toBeVisible();
+      logProgress('Notion MCP created successfully');
+
+      // Open panel
+      await page.getByLabel('Agent Builder').getByText('Notion', { exact: true }).click();
+
+      // Assert MCP/tool
+      await expect(page.getByText('Add Page Content')).toBeVisible();
+    } finally {
+      // Close the context
+      await context.close();
     }
-
-    await page.getByRole('textbox', { name: 'Agent name' }).click();
-    await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
-    await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
-    await page.getByRole('textbox', { name: 'Agent name' }).fill('Notion Agent');
-    await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
-    await page
-      .getByRole('textbox', { name: 'Agent description' })
-      .fill('Sonnet 3.7 with access to Notion');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowDown');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).press('ArrowRight');
-    await page.getByRole('textbox', { name: 'Agent instructions' }).click();
-    await page
-      .getByRole('textbox', { name: 'Agent instructions' })
-      .fill(
-        "You possess expert-level Notion skills. Whenever you create new pages, databases, or make content edits for the user, please provide links so they can access them conveniently. Help users organize their information effectively using Notion's powerful database and page features.",
-      );
-
-    await page.getByLabel('Agent Builder').getByRole('button', { name: 'Select a model' }).click();
-    await page.getByRole('combobox', { name: 'Provider' }).click();
-    await page.getByText('Anthropic').click();
-    await page.getByRole('combobox', { name: 'Model' }).click();
-
-    await page.getByRole('option', { name: 'claude-3-7-sonnet-20250219' }).locator('span').click();
-    await page.getByRole('button', { name: 'Create' }).click();
-    logProgress('Created agent with basic settings');
-
-    // Add MCP tools
-    await page
-      .getByLabel('Agent Builder')
-      .getByRole('button')
-      .filter({ hasText: /^$/ })
-      .first()
-      .click();
-    await page.getByRole('button', { name: 'Add Tools' }).click();
-    await page.getByRole('button', { name: 'Add Notion' }).click();
-    await page.getByRole('checkbox', { name: 'Select all tools' }).check();
-    await page.getByRole('button', { name: 'Add Selected' }).click();
-    await page.getByRole('button', { name: 'Close dialog' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-
-    // Wait for save operation to complete
-    try {
-      await page.waitForTimeout(2000); // Give server time to save
-      logProgress('Waited for save operation to complete');
-    } catch (error) {
-      logProgress('⚠️ Save wait timeout, continuing...');
-    }
-
-    logProgress('Saved agent configuration');
-
-    // Assert MCP is created
-    await expect(
-      page.getByLabel('Agent Builder').getByText('Notion', { exact: true }),
-    ).toBeVisible();
-    logProgress('Notion MCP created successfully');
-
-    // Open panel
-    await page.getByLabel('Agent Builder').getByText('Notion', { exact: true }).click();
-
-    // Assert MCP/tool
-    await expect(page.getByText('Add Page Content')).toBeVisible();
-
-    // Close the context
-    await context.close();
   });
 
   test('Use Notion Agent', async ({ browser }) => {
     if (process.env.CI) {
       logProgress('⚠️ CI mode - Skipping Use Notion Agent test');
-    } else {
-      logProgress('Starting Use Notion Agent test');
+      return;
+    }
 
-      // Create a new context with the file-specific storage state
-      const context = await browser.newContext({ storageState: fileAuth.storageStatePath });
-      const page = await context.newPage();
+    logProgress('Starting Use Notion Agent test');
 
+    // Create a new context with authentication cookies
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+
+    const page = await context.newPage();
+
+    try {
       await page.goto('http://localhost:3080/');
 
-      // With storage state, we should be automatically authenticated
+      // With session token, we should be automatically authenticated
       // Verify we're on the main chat page
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
@@ -217,7 +270,7 @@ test.describe('Notion MCP Tests', () => {
       } catch {
         logProgress('❌ Regenerate button not found');
       }
-
+    } finally {
       // Close the context
       await context.close();
     }
