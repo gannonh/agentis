@@ -9,7 +9,6 @@ import {
   Building2,
   Plus,
   Users,
-  Search,
   Globe,
   Edit,
   Trash2,
@@ -35,14 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/Select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '~/components/ui/Table';
+import { AdminDataTable, AdminPagination, type AdminColumn, type AdminAction } from './shared';
 
 interface Organization {
   id: string;
@@ -235,6 +227,95 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
   const organizations = organizationData?.organizations || [];
   const pagination = organizationData?.pagination;
 
+  const handleEditClick = (organization: Organization) => {
+    setOrganizationToEdit(organization);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (organization: Organization) => {
+    setOrganizationToDelete(organization);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Define table columns
+  const columns: AdminColumn<Organization>[] = [
+    {
+      key: 'name',
+      header: 'Organization',
+      accessor: (org) => (
+        <div className="flex items-center space-x-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
+            <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <div className="font-medium text-gray-900 dark:text-white">{org.name}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{org.slug}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'domain',
+      header: 'Domain',
+      accessor: (org) => (
+        <div className="flex items-center space-x-2">
+          {org.domain ? (
+            <>
+              <Globe className="h-4 w-4 text-gray-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {org.domain}
+              </span>
+            </>
+          ) : (
+            <span className="text-sm text-gray-400">No domain</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'memberCount',
+      header: 'Members',
+      accessor: (org) => (
+        <div className="flex items-center space-x-2">
+          <Users className="h-4 w-4 text-gray-400" />
+          <span className="text-sm text-gray-500 dark:text-gray-400">{org.memberCount}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Created',
+      accessor: (org) => (
+        <div className="flex items-center space-x-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {new Date(org.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+    },
+  ];
+
+  // Define table actions
+  const actions: AdminAction<Organization>[] = [
+    {
+      label: 'Edit',
+      icon: Edit,
+      onClick: handleEditClick,
+      variant: 'edit',
+    },
+    {
+      label: 'Delete',
+      icon: Trash2,
+      onClick: handleDeleteClick,
+      variant: 'delete',
+    },
+  ];
+
   const handleCreateOrganization = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -267,17 +348,6 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
     if (organizationToDelete) {
       deleteMutation.mutate(organizationToDelete.id);
     }
-  };
-
-
-  const handleEditClick = (organization: Organization) => {
-    setOrganizationToEdit(organization);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleDeleteClick = (organization: Organization) => {
-    setOrganizationToDelete(organization);
-    setIsDeleteDialogOpen(true);
   };
 
   if (error) {
@@ -361,145 +431,27 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
         </Dialog>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search organizations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
       {/* Organizations Table */}
-      <div className="w-full rounded-lg border bg-white dark:bg-gray-800">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Organization</TableHead>
-              <TableHead>Domain</TableHead>
-              <TableHead>Members</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center">
-                  Loading organizations...
-                </TableCell>
-              </TableRow>
-            ) : organizations.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center">
-                  {searchQuery
-                    ? 'No organizations found matching your search.'
-                    : 'No organizations found.'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              organizations.map((org) => (
-                <TableRow key={org.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
-                        <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">{org.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{org.slug}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {org.domain ? (
-                        <>
-                          <Globe className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600 dark:text-gray-300">
-                            {org.domain}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-sm text-gray-400">No domain</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">{org.memberCount}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        {new Date(org.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditClick(org)}
-                        className="h-8 px-2 text-xs text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit className="mr-1 h-3 w-3" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteClick(org)}
-                        className="h-8 px-2 text-xs text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="mr-1 h-3 w-3" />
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <AdminDataTable
+        data={organizations}
+        columns={columns}
+        actions={actions}
+        isLoading={isLoading}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search organizations..."
+        emptyMessage="No organizations found."
+      />
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            Showing {organizations.length} of {pagination.total} organizations
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Page {currentPage} of {pagination.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
-              disabled={currentPage === pagination.totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <AdminPagination
+          currentPage={currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.total}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+        />
       )}
 
 

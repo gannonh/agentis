@@ -24,10 +24,10 @@ interface AdminColumn<T> {
 }
 
 interface AdminAction<T> {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  label: string | ((item: T) => string);
+  icon: React.ComponentType<{ className?: string }> | ((item: T) => React.ComponentType<{ className?: string }>);
   onClick: (item: T) => void;
-  variant?: 'edit' | 'delete' | 'primary';
+  variant?: 'edit' | 'delete' | 'primary' | ((item: T) => 'edit' | 'delete' | 'primary');
   className?: string;
 }
 
@@ -63,6 +63,8 @@ function AdminDataTable<T extends { id: string }>({
         return 'h-8 px-2 text-xs text-blue-600 hover:text-blue-700';
       case 'delete':
         return 'h-8 px-2 text-xs text-red-600 hover:text-red-700';
+      case 'primary':
+        return 'h-8 px-2 text-xs text-green-600 hover:text-green-700';
       default:
         return 'h-8 px-2 text-xs';
     }
@@ -118,18 +120,24 @@ function AdminDataTable<T extends { id: string }>({
                     <TableCell key={String(column.key)} className={column.className}>
                       {column.key === 'actions' ? (
                         <div className="flex items-center justify-end space-x-2">
-                          {actions.map((action, index) => (
-                            <Button
-                              key={index}
-                              variant="outline"
-                              size="sm"
-                              onClick={() => action.onClick(item)}
-                              className={getActionButtonClass(action.variant)}
-                            >
-                              <action.icon className="mr-1 h-3 w-3" />
-                              {action.label}
-                            </Button>
-                          ))}
+                          {actions.map((action, index) => {
+                            const label = typeof action.label === 'function' ? action.label(item) : action.label;
+                            const IconComponent = typeof action.icon === 'function' ? action.icon(item) : action.icon;
+                            const variant = typeof action.variant === 'function' ? action.variant(item) : action.variant;
+                            
+                            return (
+                              <Button
+                                key={index}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => action.onClick(item)}
+                                className={getActionButtonClass(variant)}
+                              >
+                                <IconComponent className="mr-1 h-3 w-3" />
+                                {label}
+                              </Button>
+                            );
+                          })}
                         </div>
                       ) : column.accessor ? (
                         column.accessor(item)
