@@ -13,10 +13,12 @@ import {
   Crown,
   Ban,
   UserCheck,
+  Edit,
 } from 'lucide-react';
 import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
+import { Label } from '~/components/ui/Label';
 import {
   Dialog,
   DialogContent,
@@ -168,6 +170,31 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
     }
   };
 
+  const handleEditUser = (user: AdminUser) => {
+    setUserToEdit(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!userToEdit) return;
+
+    const formData = new FormData(event.currentTarget);
+    const data = {
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+    };
+
+    try {
+      await updateUser(userToEdit.id, data);
+      setIsEditDialogOpen(false);
+      setUserToEdit(null);
+    } catch (error) {
+      logger.error('Failed to update user', error instanceof Error ? error : new Error(String(error)));
+      alert('Failed to update user. Please check the console for details.');
+    }
+  };
+
   const onCreateUser = async (data: CreateUserFormData) => {
     try {
       const randomPassword = crypto
@@ -265,6 +292,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
 
   // Define table actions for unified design
   const actions: AdminAction<AdminUser>[] = [
+    {
+      label: 'Edit',
+      icon: Edit,
+      onClick: handleEditUser,
+      variant: 'edit',
+    },
     {
       label: (user) => (user.role === 'admin' ? 'Demote' : 'Promote'),
       icon: (user) => (user.role === 'admin' ? UserCheck : Crown),
@@ -470,6 +503,49 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
           onPageChange={setCurrentPage}
         />
       )}
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <form onSubmit={handleUpdateUser}>
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>Update the user information below.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 px-6">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Full Name</Label>
+                <Input
+                  id="edit-name"
+                  name="name"
+                  defaultValue={userToEdit?.name || ''}
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email Address</Label>
+                <Input
+                  id="edit-email"
+                  name="email"
+                  type="email"
+                  defaultValue={userToEdit?.email || ''}
+                  placeholder="john@example.com"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Update User
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
