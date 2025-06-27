@@ -86,7 +86,7 @@ function AdminDataTable<T extends { id: string }>({
       )}
 
       {/* Table */}
-      <div className="w-full rounded-lg border bg-white dark:bg-gray-800">
+      <div className="w-full rounded-lg bg-white dark:bg-gray-800">
         <Table>
           <TableHeader>
             <TableRow>
