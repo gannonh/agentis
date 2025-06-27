@@ -64,7 +64,7 @@ describe('Admin Organization Routes', () => {
   beforeEach(() => {
     app = express();
     app.use(express.json());
-    
+
     // Mock database collections
     mockOrganizationCollection = {
       find: vi.fn().mockReturnThis(),
@@ -75,7 +75,7 @@ describe('Admin Organization Routes', () => {
       findOne: vi.fn(),
       countDocuments: vi.fn(),
     };
-    
+
     mockMemberCollection = {
       find: vi.fn().mockReturnThis(),
       toArray: vi.fn(),
@@ -123,9 +123,7 @@ describe('Admin Organization Routes', () => {
       mockOrganizationCollection.toArray.mockResolvedValue(mockOrganizations);
       mockMemberCollection.countDocuments.mockResolvedValueOnce(5).mockResolvedValueOnce(3);
 
-      const response = await request(app)
-        .get('/api/admin/organizations')
-        .expect(200);
+      const response = await request(app).get('/api/admin/organizations').expect(200);
 
       expect(response.body).toHaveLength(2);
       expect(response.body[0]).toEqual({
@@ -167,9 +165,7 @@ describe('Admin Organization Routes', () => {
       mockOrganizationCollection.find.mockReturnValue(chainMock);
       mockMemberCollection.countDocuments.mockResolvedValue(5);
 
-      const response = await request(app)
-        .get('/api/admin/organizations?search=acme')
-        .expect(200);
+      const response = await request(app).get('/api/admin/organizations?search=acme').expect(200);
 
       expect(mockOrganizationCollection.find).toHaveBeenCalledWith({
         $or: [
@@ -247,14 +243,25 @@ describe('Admin Organization Routes', () => {
       mockMemberCollection.find.mockReturnValue({
         toArray: vi.fn().mockResolvedValue(mockMembers),
       });
-      
+
       // Mock user collection for member details
       const mockUserCollection = {
-        findOne: vi.fn()
-          .mockResolvedValueOnce({ _id: 'user1', name: 'User 1', email: 'user1@example.com', image: null })
-          .mockResolvedValueOnce({ _id: 'user2', name: 'User 2', email: 'user2@example.com', image: null }),
+        findOne: vi
+          .fn()
+          .mockResolvedValueOnce({
+            _id: 'user1',
+            name: 'User 1',
+            email: 'user1@example.com',
+            image: null,
+          })
+          .mockResolvedValueOnce({
+            _id: 'user2',
+            name: 'User 2',
+            email: 'user2@example.com',
+            image: null,
+          }),
       };
-      
+
       mockDb.collection.mockImplementation((name) => {
         if (name === 'organization') return mockOrganizationCollection;
         if (name === 'member') return mockMemberCollection;
@@ -262,9 +269,7 @@ describe('Admin Organization Routes', () => {
         return null;
       });
 
-      const response = await request(app)
-        .get('/api/admin/organizations/1')
-        .expect(200);
+      const response = await request(app).get('/api/admin/organizations/1').expect(200);
 
       expect(response.body).toMatchObject({
         id: '1',
@@ -301,9 +306,7 @@ describe('Admin Organization Routes', () => {
     it('should return 404 for non-existent organization', async () => {
       mockOrganizationCollection.findOne.mockResolvedValue(null);
 
-      await request(app)
-        .get('/api/admin/organizations/nonexistent')
-        .expect(404);
+      await request(app).get('/api/admin/organizations/nonexistent').expect(404);
     });
   });
 });

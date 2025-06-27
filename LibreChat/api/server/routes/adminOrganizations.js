@@ -18,7 +18,7 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
     const { search, page = 1, limit = 10 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
+
     const db = mongoose.connection.db;
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
@@ -56,9 +56,13 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
         // Parse metadata if it's a string
         let metadata = {};
         try {
-          metadata = typeof org.metadata === 'string' ? JSON.parse(org.metadata) : org.metadata || {};
+          metadata =
+            typeof org.metadata === 'string' ? JSON.parse(org.metadata) : org.metadata || {};
         } catch (e) {
-          logger.warn('Failed to parse organization metadata', { orgId: org._id, error: e.message });
+          logger.warn('Failed to parse organization metadata', {
+            orgId: org._id,
+            error: e.message,
+          });
         }
 
         return {
@@ -69,7 +73,7 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
           memberCount,
           createdAt: org.createdAt,
         };
-      })
+      }),
     );
 
     // Return paginated response
@@ -100,7 +104,7 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
 router.get('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const db = mongoose.connection.db;
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
@@ -116,9 +120,7 @@ router.get('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     }
 
     // Get members with user details
-    const members = await memberCollection
-      .find({ organizationId: id })
-      .toArray();
+    const members = await memberCollection.find({ organizationId: id }).toArray();
 
     // Get user details for each member
     const membersWithDetails = await Promise.all(
@@ -132,22 +134,25 @@ router.get('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
           userId: member.userId,
           role: member.role,
           createdAt: member.createdAt,
-          user: user ? {
-            id: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            image: user.image,
-          } : null,
+          user: user
+            ? {
+                id: user._id.toString(),
+                name: user.name,
+                email: user.email,
+                image: user.image,
+              }
+            : null,
         };
-      })
+      }),
     );
 
     // Parse metadata
     let metadata = {};
     try {
-      metadata = typeof organization.metadata === 'string' 
-        ? JSON.parse(organization.metadata) 
-        : organization.metadata || {};
+      metadata =
+        typeof organization.metadata === 'string'
+          ? JSON.parse(organization.metadata)
+          : organization.metadata || {};
     } catch (e) {
       logger.warn('Failed to parse organization metadata', { orgId: id, error: e.message });
     }
@@ -159,7 +164,7 @@ router.get('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
       domain: metadata.domain || null,
       memberCount: members.length,
       createdAt: organization.createdAt,
-      members: membersWithDetails.filter(m => m.user !== null), // Only return members with valid users
+      members: membersWithDetails.filter((m) => m.user !== null), // Only return members with valid users
       metadata,
     });
   } catch (error) {
@@ -257,9 +262,10 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     // Parse existing metadata
     let metadata = {};
     try {
-      metadata = typeof organization.metadata === 'string' 
-        ? JSON.parse(organization.metadata) 
-        : organization.metadata || {};
+      metadata =
+        typeof organization.metadata === 'string'
+          ? JSON.parse(organization.metadata)
+          : organization.metadata || {};
     } catch (e) {
       logger.warn('Failed to parse organization metadata', { orgId: id, error: e.message });
     }
@@ -275,7 +281,7 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
 
     await organizationCollection.updateOne(
       { _id: new mongoose.Types.ObjectId(id) },
-      { $set: updateData }
+      { $set: updateData },
     );
 
     logger.info('Admin updated organization', {
@@ -323,7 +329,7 @@ router.delete('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     });
 
     if (memberCount > 0 && !req.query.force) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Organization has members. Use force=true to delete anyway.',
         memberCount,
       });
@@ -332,12 +338,12 @@ router.delete('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     // Soft delete by adding deletedAt timestamp
     await organizationCollection.updateOne(
       { _id: new mongoose.Types.ObjectId(id) },
-      { 
-        $set: { 
+      {
+        $set: {
           deletedAt: new Date(),
           deletedBy: req.user.id,
-        } 
-      }
+        },
+      },
     );
 
     logger.info('Admin deleted organization', {
@@ -452,7 +458,7 @@ router.patch('/:id/members/:userId', requireBetterAuth, checkAdmin, async (req, 
     // Update member role
     const result = await memberCollection.updateOne(
       { userId, organizationId: id },
-      { $set: { role } }
+      { $set: { role } },
     );
 
     if (result.matchedCount === 0) {
