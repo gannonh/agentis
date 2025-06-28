@@ -5,16 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import {
-  Users,
-  UserPlus,
-  Shield,
-  Calendar,
-  Crown,
-  Ban,
-  UserCheck,
-  Edit,
-} from 'lucide-react';
+import { Users, UserPlus, Shield, Calendar, Crown, Ban, UserCheck, Edit } from 'lucide-react';
 import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
@@ -36,7 +27,13 @@ import {
   SelectValue,
 } from '~/components/ui/Select';
 import { useAdmin } from './AdminProvider';
-import { AdminDataTable, AdminPagination, AdminStatusBadge, type AdminColumn, type AdminAction } from './shared';
+import {
+  AdminDataTable,
+  AdminPagination,
+  AdminStatusBadge,
+  type AdminColumn,
+  type AdminAction,
+} from './shared';
 import type { AdminUser } from '~/config/betterAuth';
 
 interface CreateUserFormData {
@@ -60,6 +57,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<AdminUser | null>(null);
+  const [isRevokeSessionsDialogOpen, setIsRevokeSessionsDialogOpen] = useState(false);
+  const [userForSessionRevoke, setUserForSessionRevoke] = useState<AdminUser | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 20;
 
@@ -140,7 +139,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       const newRole = user.role === 'admin' ? 'user' : 'admin';
       await setUserRole(user.id, newRole);
     } catch (error) {
-      logger.error('Failed to update user role', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to update user role',
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   };
 
@@ -154,19 +156,30 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
         await banUser(user.id, 'Policy violation', banExpiresIn);
       }
     } catch (error) {
-      logger.error('Failed to ban/unban user', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to ban/unban user',
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   };
 
-  const handleRevokeUserSessions = async (user: AdminUser) => {
-    if (!confirm('Are you sure you want to revoke all sessions for this user?')) {
-      return;
-    }
+  const handleRevokeUserSessions = (user: AdminUser) => {
+    setUserForSessionRevoke(user);
+    setIsRevokeSessionsDialogOpen(true);
+  };
+
+  const confirmRevokeUserSessions = async () => {
+    if (!userForSessionRevoke) return;
 
     try {
-      await revokeUserSessions(user.id);
+      await revokeUserSessions(userForSessionRevoke.id);
+      setIsRevokeSessionsDialogOpen(false);
+      setUserForSessionRevoke(null);
     } catch (error) {
-      logger.error('Failed to revoke user sessions', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to revoke user sessions',
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   };
 
@@ -190,7 +203,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       setIsEditDialogOpen(false);
       setUserToEdit(null);
     } catch (error) {
-      logger.error('Failed to update user', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to update user',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       alert('Failed to update user. Please check the console for details.');
     }
   };
@@ -210,7 +226,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       reset();
       setIsCreateDialogOpen(false);
     } catch (error: any) {
-      logger.error('Failed to create user', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to create user',
+        error instanceof Error ? error : new Error(String(error)),
+      );
 
       if (error?.message?.includes('already exists') || error?.code === 'USER_ALREADY_EXISTS') {
         alert(`User with email ${data.email} already exists.`);
@@ -353,7 +372,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                   Create a new user account. They can sign in with Google or magic link.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4 px-6">
+              <div className="space-y-4 px-6 py-4">
                 <div className="space-y-2">
                   <Input
                     id="email"
@@ -369,9 +388,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                     required
                   />
                   {errors.email && (
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                      {errors.email.message}
-                    </p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
                   )}
                 </div>
 
@@ -389,9 +406,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                     required
                   />
                   {errors.name && (
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                      {errors.name.message}
-                    </p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{errors.name.message}</p>
                   )}
                 </div>
 
@@ -474,7 +489,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
         </div>
 
         <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-          <div>Showing {filteredUsers.length} of {users.length} on this page ({totalUsers} total)</div>
+          <div>
+            Showing {filteredUsers.length} of {users.length} on this page ({totalUsers} total)
+          </div>
           <div>Admins: {users.filter((u) => u.role === 'admin').length}</div>
           <div>Verified: {users.filter((u) => u.emailVerified).length}</div>
           <div>Banned: {users.filter((u) => u.banned).length}</div>
@@ -512,7 +529,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>Update the user information below.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4 px-6">
+            <div className="space-y-4 px-6 py-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Full Name</Label>
                 <Input
@@ -539,11 +556,46 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">
-                Update User
-              </Button>
+              <Button type="submit">Update User</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revoke Sessions Confirmation Dialog */}
+      <Dialog
+        open={isRevokeSessionsDialogOpen}
+        onOpenChange={(open) => {
+          setIsRevokeSessionsDialogOpen(open);
+          if (!open) {
+            setUserForSessionRevoke(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Session Revocation</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to revoke all sessions for{' '}
+              <strong>{userForSessionRevoke?.name || userForSessionRevoke?.email}</strong>? This
+              will log them out of all devices immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsRevokeSessionsDialogOpen(false);
+                setUserForSessionRevoke(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmRevokeUserSessions}>
+              Revoke Sessions
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
