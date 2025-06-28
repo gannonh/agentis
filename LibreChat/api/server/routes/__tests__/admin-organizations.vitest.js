@@ -168,6 +168,7 @@ describe('Admin Organization Routes', () => {
       const response = await request(app).get('/api/admin/organizations?search=acme').expect(200);
 
       expect(mockOrganizationCollection.find).toHaveBeenCalledWith({
+        deletedAt: { $exists: false },
         $or: [
           { name: { $regex: 'acme', $options: 'i' } },
           { slug: { $regex: 'acme', $options: 'i' } },

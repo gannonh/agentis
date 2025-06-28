@@ -8,7 +8,31 @@ import mongoose from 'mongoose';
 import { requireBetterAuth, checkAdmin } from '#server/middleware/index.js';
 import { logger } from '#config/index.js';
 
+/**
+ * Escapes special regex characters to prevent ReDoS attacks
+ * @param {string} string - The string to escape
+ * @returns {string} - The escaped string safe for regex use
+ */
+function escapeRegex(string) {
+  if (typeof string !== 'string') return '';
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 const router = express.Router();
+
+/**
+ * Allowed organization member roles
+ */
+const ALLOWED_ROLES = ['admin', 'member', 'owner'];
+
+/**
+ * Validates if a role is allowed
+ * @param {string} role - The role to validate
+ * @returns {boolean} - True if role is valid, false otherwise
+ */
+function isValidRole(role) {
+  return typeof role === 'string' && ALLOWED_ROLES.includes(role);
+}
 
 /**
  * GET /api/admin/organizations
@@ -17,20 +41,22 @@ const router = express.Router();
 router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
     const { search, page = 1, limit = 10 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
     const db = mongoose.connection.db;
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
 
     // Build search query
-    let query = {};
+    let query = { deletedAt: { $exists: false } }; // Exclude soft-deleted organizations
     if (search) {
+      const escapedSearch = escapeRegex(search);
       query = {
+        deletedAt: { $exists: false },
         $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { slug: { $regex: search, $options: 'i' } },
-          { metadata: { $regex: search, $options: 'i' } },
+          { name: { $regex: escapedSearch, $options: 'i' } },
+          { slug: { $regex: escapedSearch, $options: 'i' } },
+          { metadata: { $regex: escapedSearch, $options: 'i' } },
         ],
       };
     }
@@ -39,7 +65,7 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
     const organizations = await organizationCollection
       .find(query)
       .skip(skip)
-      .limit(parseInt(limit))
+      .limit(parseInt(limit, 10))
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -81,10 +107,10 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
       res.json({
         organizations: organizationsWithCounts,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: parseInt(page, 10),
+          limit: parseInt(limit, 10),
           total: totalCount,
-          totalPages: Math.ceil(totalCount / parseInt(limit)),
+          totalPages: Math.ceil(totalCount / parseInt(limit, 10)),
         },
       });
     } else {
@@ -111,8 +137,17 @@ router.get('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     const userCollection = db.collection('user');
 
     // Get organization
+    let organizationId;
+    try {
+      organizationId = new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      logger.warn('Invalid organization ID format', { id, error: error.message });
+      return res.status(400).json({ error: 'Invalid organization ID format' });
+    }
+
     const organization = await organizationCollection.findOne({
-      _id: new mongoose.Types.ObjectId(id),
+      _id: organizationId,
+      deletedAt: { $exists: false }, // Exclude soft-deleted organizations
     });
 
     if (!organization) {
@@ -185,6 +220,12 @@ router.post('/', requireBetterAuth, checkAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Name and slug are required' });
     }
 
+    // Validate slug format
+    const slugPattern = /^[a-z0-9-]+$/;
+    if (!slugPattern.test(slug)) {
+      return res.status(400).json({ error: 'Slug must contain only lowercase letters, numbers, and hyphens' });
+    }
+
     const db = mongoose.connection.db;
     const organizationCollection = db.collection('organization');
 
@@ -243,8 +284,16 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     const organizationCollection = db.collection('organization');
 
     // Get current organization
+    let organizationId;
+    try {
+      organizationId = new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      logger.warn('Invalid organization ID format', { id, error: error.message });
+      return res.status(400).json({ error: 'Invalid organization ID format' });
+    }
+
     const organization = await organizationCollection.findOne({
-      _id: new mongoose.Types.ObjectId(id),
+      _id: organizationId,
     });
 
     if (!organization) {
@@ -279,8 +328,16 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
       updateData.metadata = JSON.stringify(metadata);
     }
 
+    let updateId;
+    try {
+      updateId = new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      logger.warn('Invalid organization ID format for update', { id, error: error.message });
+      return res.status(400).json({ error: 'Invalid organization ID format' });
+    }
+
     await organizationCollection.updateOne(
-      { _id: new mongoose.Types.ObjectId(id) },
+      { _id: updateId },
       { $set: updateData },
     );
 
@@ -315,8 +372,16 @@ router.delete('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     const memberCollection = db.collection('member');
 
     // Check if organization exists
+    let deleteCheckId;
+    try {
+      deleteCheckId = new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      logger.warn('Invalid organization ID format', { id, error: error.message });
+      return res.status(400).json({ error: 'Invalid organization ID format' });
+    }
+
     const organization = await organizationCollection.findOne({
-      _id: new mongoose.Types.ObjectId(id),
+      _id: deleteCheckId,
     });
 
     if (!organization) {
@@ -336,8 +401,16 @@ router.delete('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     }
 
     // Soft delete by adding deletedAt timestamp
+    let deleteId;
+    try {
+      deleteId = new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      logger.warn('Invalid organization ID format for deletion', { id, error: error.message });
+      return res.status(400).json({ error: 'Invalid organization ID format' });
+    }
+
     await organizationCollection.updateOne(
-      { _id: new mongoose.Types.ObjectId(id) },
+      { _id: deleteId },
       {
         $set: {
           deletedAt: new Date(),
@@ -373,14 +446,28 @@ router.post('/:id/members', requireBetterAuth, checkAdmin, async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
+    if (!isValidRole(role)) {
+      return res.status(400).json({ 
+        error: `Invalid role. Allowed roles are: ${ALLOWED_ROLES.join(', ')}` 
+      });
+    }
+
     const db = mongoose.connection.db;
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
     const userCollection = db.collection('user');
 
     // Check if organization exists
+    let addMemberOrgId;
+    try {
+      addMemberOrgId = new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      logger.warn('Invalid organization ID format', { id, error: error.message });
+      return res.status(400).json({ error: 'Invalid organization ID format' });
+    }
+
     const organization = await organizationCollection.findOne({
-      _id: new mongoose.Types.ObjectId(id),
+      _id: addMemberOrgId,
     });
 
     if (!organization) {
@@ -450,6 +537,12 @@ router.patch('/:id/members/:userId', requireBetterAuth, checkAdmin, async (req, 
 
     if (!role) {
       return res.status(400).json({ error: 'Role is required' });
+    }
+
+    if (!isValidRole(role)) {
+      return res.status(400).json({ 
+        error: `Invalid role. Allowed roles are: ${ALLOWED_ROLES.join(', ')}` 
+      });
     }
 
     const db = mongoose.connection.db;
