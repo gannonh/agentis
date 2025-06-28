@@ -151,6 +151,15 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const createUser = async (userData: CreateUserData): Promise<AdminUser> => {
     try {
+      // Check if email already exists in current user list
+      const existingUser = users.find(user => 
+        user.email.toLowerCase() === userData.email.toLowerCase()
+      );
+      
+      if (existingUser) {
+        throw new Error(`A user with email ${userData.email} already exists.`);
+      }
+
       // Match the exact format from Better Auth documentation
       const requestData = {
         name: userData.name,
@@ -160,16 +169,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         data: userData.data || {},
       };
 
-      let response;
-      try {
-        response = await authClient.admin.createUser(requestData);
-      } catch (apiError: any) {
-        // Better Auth might throw an error with the server response
-        if (apiError?.code === 'USER_ALREADY_EXISTS') {
-          throw apiError;
-        }
-        throw new Error(apiError?.message || 'Failed to create user');
-      }
+      const response = await authClient.admin.createUser(requestData);
 
       // The response might be the user directly or wrapped in a data/user property
       const responseUser = response?.user || response?.data?.user || response;
@@ -201,17 +201,52 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         return newUser;
       }
       throw new Error('Failed to create user - no user data in response');
-    } catch (error) {
+    } catch (error: any) {
+      // Log detailed error information
+      logger.error('API Error details', error, {
+        component: 'AdminProvider',
+        action: 'createUser-error',
+        email: userData.email,
+        status: error?.status,
+        statusText: error?.statusText,
+        responseData: error?.response?.data,
+        fullError: error,
+      });
+
+      // Handle specific error types
+      if (error?.code === 'USER_ALREADY_EXISTS') {
+        throw new Error(`A user with email ${userData.email} already exists.`);
+      }
+      
+      // Parse error message from API response - try multiple possible error locations
+      let errorMessage = 'Failed to create user';
+      
+      // Check for HTTP status 400 (Bad Request) which likely means duplicate email
+      if (error?.status === 400 || error?.response?.status === 400) {
+        errorMessage = `A user with email ${userData.email} already exists.`;
+      }
+      // Try to get specific error message from response
+      else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message && !error.message.includes('Failed to fetch')) {
+        errorMessage = error.message;
+      }
+      
+      const finalError = new Error(errorMessage);
       logger.error(
         'Failed to create user',
-        error instanceof Error ? error : new Error(String(error)),
+        finalError,
         {
           component: 'AdminProvider',
           action: 'createUser',
           email: userData.email,
         },
       );
-      throw error;
+      throw finalError;
     }
   };
 

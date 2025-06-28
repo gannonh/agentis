@@ -59,6 +59,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
   const [userToEdit, setUserToEdit] = useState<AdminUser | null>(null);
   const [isRevokeSessionsDialogOpen, setIsRevokeSessionsDialogOpen] = useState(false);
   const [userForSessionRevoke, setUserForSessionRevoke] = useState<AdminUser | null>(null);
+  const [errorDialog, setErrorDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 20;
 
@@ -82,7 +91,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<CreateUserFormData>();
+  } = useForm<CreateUserFormData>({
+    defaultValues: {
+      role: 'user',
+    },
+  });
 
   // Filter users
   const filteredUsers = users.filter((user) => {
@@ -231,11 +244,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
         error instanceof Error ? error : new Error(String(error)),
       );
 
-      if (error?.message?.includes('already exists') || error?.code === 'USER_ALREADY_EXISTS') {
-        alert(`User with email ${data.email} already exists.`);
-      } else {
-        alert(error?.message || 'Failed to create user. Please check the console for details.');
-      }
+      const errorMessage = error?.message || 'Failed to create user. Please try again.';
+      setErrorDialog({
+        isOpen: true,
+        title: 'Failed to Create User',
+        message: errorMessage,
+      });
     }
   };
 
@@ -411,18 +425,19 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <Select
-                    value={watch('role') || ''}
-                    onValueChange={(value) => setValue('role', value as 'user' | 'admin')}
+                  <Label htmlFor="role">Role</Label>
+                  <select
+                    id="role"
+                    {...register('role', { required: 'Role is required' })}
+                    className="flex h-10 w-full items-center justify-between whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:focus:border-blue-400 dark:focus:ring-blue-400/20"
+                    defaultValue="user"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  {errors.role && (
+                    <p className="text-sm text-red-600 dark:text-red-400">{errors.role.message}</p>
+                  )}
                 </div>
               </div>
               <DialogFooter>
@@ -594,6 +609,35 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
             </Button>
             <Button type="button" variant="destructive" onClick={confirmRevokeUserSessions}>
               Revoke Sessions
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Dialog */}
+      <Dialog
+        open={errorDialog.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setErrorDialog({ isOpen: false, title: '', message: '' });
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 dark:text-red-400">
+              {errorDialog.title}
+            </DialogTitle>
+            <DialogDescription className="break-words text-gray-700 dark:text-gray-300">
+              {errorDialog.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              onClick={() => setErrorDialog({ isOpen: false, title: '', message: '' })}
+            >
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -18,6 +18,8 @@ test.use({
 test.describe.configure({ mode: 'default' });
 test.describe('Admin Tests Tests', () => {
   test('Basic Admin CRUD', async ({ page }) => {
-    await page.goto('http://localhost:3080/');
+    await page.goto('http://localhost:3080/admin');
+    await page.getByRole('button', { name: 'User Management Manage users' }).click();
+    await page.getByRole('button', { name: 'Create User' }).click();
   });
 });
