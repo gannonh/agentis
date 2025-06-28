@@ -457,20 +457,23 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Delete Organization</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete &quot;{organizationToDelete?.name}&quot;? This action
               cannot be undone.
-              {organizationToDelete && organizationToDelete.memberCount > 0 && (
-                <div className="mt-2 rounded bg-orange-50 p-2 dark:bg-orange-900/20">
-                  <strong>Warning:</strong> This organization has {organizationToDelete.memberCount}{' '}
-                  member(s). They will lose access to this organization.
-                </div>
-              )}
             </DialogDescription>
           </DialogHeader>
+          {organizationToDelete && organizationToDelete.memberCount > 0 && (
+            <div className="mt-4 rounded bg-orange-50 p-3 dark:bg-orange-900/20">
+              <strong className="text-orange-800 dark:text-orange-200">Warning:</strong>{' '}
+              <span className="text-orange-700 dark:text-orange-300">
+                This organization has {organizationToDelete.memberCount} member(s). They will lose
+                access to this organization.
+              </span>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel

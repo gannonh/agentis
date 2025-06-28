@@ -3,7 +3,7 @@
  * @module components/Admin/shared/AdminFormDialog
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
@@ -61,16 +61,24 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
   isSubmitting = false,
   initialValues = {},
 }) => {
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const data: Record<string, string> = {};
+    setError(null);
     
-    fields.forEach(field => {
-      data[field.name] = formData.get(field.name) as string || '';
-    });
-    
-    await onSubmit(data);
+    try {
+      const formData = new FormData(event.currentTarget);
+      const data: Record<string, string> = {};
+      
+      fields.forEach(field => {
+        data[field.name] = formData.get(field.name) as string || '';
+      });
+      
+      await onSubmit(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    }
   };
 
   return (
@@ -82,27 +90,46 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
           
+          {error && (
+            <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+          
           <div className="space-y-4 py-4 px-6">
             {fields.map((field) => (
               <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>{field.label}</Label>
                 
                 {field.type === 'select' ? (
-                  <Select
-                    name={field.name}
-                    defaultValue={initialValues[field.name] || field.defaultValue || ''}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={field.placeholder} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {field.options?.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <>
+                    <Select
+                      defaultValue={initialValues[field.name] || field.defaultValue || ''}
+                      onValueChange={(value) => {
+                        const input = document.getElementById(
+                          `${field.name}-input`
+                        ) as HTMLInputElement;
+                        if (input) input.value = value;
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={field.placeholder} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options?.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <input
+                      type="hidden"
+                      id={`${field.name}-input`}
+                      name={field.name}
+                      defaultValue={initialValues[field.name] || field.defaultValue || ''}
+                    />
+                  </>
                 ) : (
                   <Input
                     id={field.name}
