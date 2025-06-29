@@ -27,6 +27,10 @@ interface AdminContextValue {
   banUser: (userId: string, reason?: string, banExpiresIn?: number) => Promise<void>;
   unbanUser: (userId: string) => Promise<void>;
 
+  // User impersonation
+  impersonateUser: (userId: string) => Promise<void>;
+  stopImpersonating: () => Promise<void>;
+
   // Loading states
   isLoadingUsers: boolean;
   isLoadingStats: boolean;
@@ -152,10 +156,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const createUser = async (userData: CreateUserData): Promise<AdminUser> => {
     try {
       // Check if email already exists in current user list
-      const existingUser = users.find(user => 
-        user.email.toLowerCase() === userData.email.toLowerCase()
+      const existingUser = users.find(
+        (user) => user.email.toLowerCase() === userData.email.toLowerCase(),
       );
-      
+
       if (existingUser) {
         throw new Error(`A user with email ${userData.email} already exists.`);
       }
@@ -172,7 +176,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       const response = await authClient.admin.createUser(requestData);
 
       // The response might be the user directly or wrapped in a data/user property
-      const responseUser = response?.user || response?.data?.user || response;
+      const responseUser = (response as any)?.user || (response as any)?.data?.user || response;
 
       if (responseUser && responseUser.id) {
         const newUser: AdminUser = {
@@ -217,10 +221,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       if (error?.code === 'USER_ALREADY_EXISTS') {
         throw new Error(`A user with email ${userData.email} already exists.`);
       }
-      
+
       // Parse error message from API response - try multiple possible error locations
       let errorMessage = 'Failed to create user';
-      
+
       // Check for HTTP status 400 (Bad Request) which likely means duplicate email
       if (error?.status === 400 || error?.response?.status === 400) {
         errorMessage = `A user with email ${userData.email} already exists.`;
@@ -235,17 +239,13 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       } else if (error?.message && !error.message.includes('Failed to fetch')) {
         errorMessage = error.message;
       }
-      
+
       const finalError = new Error(errorMessage);
-      logger.error(
-        'Failed to create user',
-        finalError,
-        {
-          component: 'AdminProvider',
-          action: 'createUser',
-          email: userData.email,
-        },
-      );
+      logger.error('Failed to create user', finalError, {
+        component: 'AdminProvider',
+        action: 'createUser',
+        email: userData.email,
+      });
       throw finalError;
     }
   };
@@ -562,6 +562,59 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     }
   };
 
+  const impersonateUser = async (userId: string): Promise<void> => {
+    try {
+      const response = await authClient.admin.impersonateUser({
+        userId,
+      });
+
+      logger.info('User impersonation started successfully', {
+        component: 'AdminProvider',
+        action: 'impersonateUser',
+        userId,
+        response,
+      });
+
+      // Redirect to home page to start using the impersonated session
+      window.location.href = '/';
+    } catch (error) {
+      logger.error(
+        'Failed to impersonate user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'impersonateUser',
+          userId,
+        },
+      );
+      throw error;
+    }
+  };
+
+  const stopImpersonating = async (): Promise<void> => {
+    try {
+      await authClient.admin.stopImpersonating();
+
+      logger.info('User impersonation stopped successfully', {
+        component: 'AdminProvider',
+        action: 'stopImpersonating',
+      });
+
+      // Redirect back to admin panel
+      window.location.href = '/admin';
+    } catch (error) {
+      logger.error(
+        'Failed to stop impersonating',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'stopImpersonating',
+        },
+      );
+      throw error;
+    }
+  };
+
   const value: AdminContextValue = {
     users,
     totalUsers,
@@ -575,6 +628,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     getSessionStats,
     banUser,
     unbanUser,
+    impersonateUser,
+    stopImpersonating,
     isLoadingUsers,
     isLoadingStats,
   };

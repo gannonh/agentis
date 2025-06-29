@@ -25,7 +25,9 @@ interface AdminColumn<T> {
 
 interface AdminAction<T> {
   label: string | ((item: T) => string);
-  icon: React.ComponentType<{ className?: string }> | ((item: T) => React.ComponentType<{ className?: string }>);
+  icon:
+    | React.ComponentType<{ className?: string }>
+    | ((item: T) => React.ComponentType<{ className?: string }>);
   onClick: (item: T) => void;
   variant?: 'edit' | 'delete' | 'primary' | ((item: T) => 'edit' | 'delete' | 'primary');
   className?: string;
@@ -121,10 +123,23 @@ function AdminDataTable<T extends { id: string }>({
                       {column.key === 'actions' ? (
                         <div className="flex items-center justify-end space-x-2">
                           {actions.map((action, index) => {
-                            const label = typeof action.label === 'function' ? action.label(item) : action.label;
-                            const IconComponent = typeof action.icon === 'function' ? action.icon(item) : action.icon;
-                            const variant = typeof action.variant === 'function' ? action.variant(item) : action.variant;
-                            
+                            const label =
+                              typeof action.label === 'function'
+                                ? action.label(item)
+                                : action.label;
+                            const IconComponent =
+                              typeof action.icon === 'function'
+                                ? (
+                                    action.icon as (
+                                      item: T,
+                                    ) => React.ComponentType<{ className?: string }>
+                                  )(item)
+                                : (action.icon as React.ComponentType<{ className?: string }>);
+                            const variant =
+                              typeof action.variant === 'function'
+                                ? action.variant(item)
+                                : action.variant;
+
                             return (
                               <Button
                                 key={index}

@@ -42,7 +42,7 @@ const AdminPagination: React.FC<AdminPaginationProps> = ({
           Showing {startItem} to {endItem} of {totalItems} items
         </div>
       )}
-      
+
       <div className="flex items-center space-x-2">
         <Button
           variant="outline"
@@ -52,11 +52,11 @@ const AdminPagination: React.FC<AdminPaginationProps> = ({
         >
           Previous
         </Button>
-        
+
         <span className="text-sm text-gray-600 dark:text-gray-400">
           Page {currentPage} of {totalPages}
         </span>
-        
+
         <Button
           variant="outline"
           size="sm"

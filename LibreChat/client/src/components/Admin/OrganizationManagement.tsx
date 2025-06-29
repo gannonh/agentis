@@ -5,15 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Building2,
-  Plus,
-  Users,
-  Globe,
-  Edit,
-  Trash2,
-  Calendar,
-} from 'lucide-react';
+import { Building2, Plus, Users, Globe, Edit, Trash2, Calendar } from 'lucide-react';
 import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
@@ -44,7 +36,6 @@ interface Organization {
   memberCount: number;
   createdAt: string;
 }
-
 
 interface CreateOrganizationData {
   name: string;
@@ -94,7 +85,6 @@ const fetchOrganizations = async (
 
   return data;
 };
-
 
 /**
  * Create a new organization
@@ -181,7 +171,6 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-
   // Create organization mutation
   const createMutation = useMutation({
     mutationFn: createOrganization,
@@ -262,9 +251,7 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
           {org.domain ? (
             <>
               <Globe className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {org.domain}
-              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">{org.domain}</span>
             </>
           ) : (
             <span className="text-sm text-gray-400">No domain</span>
@@ -393,7 +380,7 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
                   Create a new organization to manage teams and access control.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4 px-6">
+              <div className="space-y-4 px-6 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Organization Name</Label>
                   <Input id="name" name="name" placeholder="Acme Corporation" required />
@@ -454,7 +441,6 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
         />
       )}
 
-
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-lg">
@@ -497,7 +483,7 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
               <DialogTitle>Edit Organization</DialogTitle>
               <DialogDescription>Update the organization information below.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4 px-6">
+            <div className="space-y-4 px-6 py-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Organization Name</Label>
                 <Input

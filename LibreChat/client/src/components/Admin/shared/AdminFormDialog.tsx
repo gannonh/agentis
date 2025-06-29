@@ -66,15 +66,15 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    
+
     try {
       const formData = new FormData(event.currentTarget);
       const data: Record<string, string> = {};
-      
-      fields.forEach(field => {
-        data[field.name] = formData.get(field.name) as string || '';
+
+      fields.forEach((field) => {
+        data[field.name] = (formData.get(field.name) as string) || '';
       });
-      
+
       await onSubmit(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -89,25 +89,25 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
-          
+
           {error && (
-            <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="mx-6 mb-4 rounded-md border border-red-200 bg-red-50 p-3">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
-          
-          <div className="space-y-4 py-4 px-6">
+
+          <div className="space-y-4 px-6 py-4">
             {fields.map((field) => (
               <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>{field.label}</Label>
-                
+
                 {field.type === 'select' ? (
                   <>
                     <Select
                       defaultValue={initialValues[field.name] || field.defaultValue || ''}
                       onValueChange={(value) => {
                         const input = document.getElementById(
-                          `${field.name}-input`
+                          `${field.name}-input`,
                         ) as HTMLInputElement;
                         if (input) input.value = value;
                       }}
@@ -145,13 +145,9 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
               </div>
             ))}
           </div>
-          
+
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>

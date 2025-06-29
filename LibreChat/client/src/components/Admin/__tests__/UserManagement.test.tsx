@@ -125,7 +125,15 @@ vi.mock('~/components/ui/Switch', () => ({
 
 // Mock AdminDataTable and related components
 vi.mock('../shared', () => ({
-  AdminDataTable: ({ data, columns, actions, searchValue, onSearchChange, searchPlaceholder, emptyMessage }: any) => (
+  AdminDataTable: ({
+    data,
+    columns,
+    actions,
+    searchValue,
+    onSearchChange,
+    searchPlaceholder,
+    emptyMessage,
+  }: any) => (
     <div data-testid="admin-data-table">
       {onSearchChange && (
         <input
@@ -159,19 +167,19 @@ vi.mock('../shared', () => ({
                 <img src={user.image} alt={`${user.name} avatar`} data-testid="user-avatar" />
               ) : (
                 <div data-testid="user-initials">
-                  {user.name.split(' ').map((n: string) => n[0]).join('')}
+                  {user.name
+                    .split(' ')
+                    .map((n: string) => n[0])
+                    .join('')}
                 </div>
               )}
               <div data-testid="user-actions">
                 {actions?.map((action: any, index: number) => {
-                  const label = typeof action.label === 'function' ? action.label(user) : action.label;
+                  const label =
+                    typeof action.label === 'function' ? action.label(user) : action.label;
                   const testId = `action-${label.toLowerCase().replace(/\s+/g, '-')}`;
                   return (
-                    <button
-                      key={index}
-                      onClick={() => action.onClick(user)}
-                      data-testid={testId}
-                    >
+                    <button key={index} onClick={() => action.onClick(user)} data-testid={testId}>
                       {label}
                     </button>
                   );
@@ -196,7 +204,7 @@ vi.mock('../shared', () => ({
     } else if (variant === 'role' && value === 'user') {
       icon = <div data-testid="users-icon" />;
     }
-    
+
     return (
       <span data-testid={`status-badge-${variant}`}>
         {icon}
@@ -240,6 +248,9 @@ vi.mock('lucide-react', () => ({
   ),
   Ban: ({ className }: { className?: string }) => (
     <div data-testid="ban-icon" className={className} />
+  ),
+  UserX: ({ className }: { className?: string }) => (
+    <div data-testid="user-x-icon" className={className} />
   ),
 }));
 
@@ -296,6 +307,8 @@ describe('UserManagement', () => {
     listUserSessions: vi.fn(),
     getUserStats: vi.fn(),
     getSessionStats: vi.fn(),
+    impersonateUser: vi.fn(),
+    stopImpersonating: vi.fn(),
     isLoadingUsers: false,
     isLoadingStats: false,
   };
@@ -348,7 +361,9 @@ describe('UserManagement', () => {
       render(<UserManagement />);
 
       expect(screen.getByText('User Management')).toBeInTheDocument();
-      expect(screen.getByText('Manage user accounts and permissions across the platform')).toBeInTheDocument();
+      expect(
+        screen.getByText('Manage user accounts and permissions across the platform'),
+      ).toBeInTheDocument();
     });
 
     it('should render create user button', () => {
@@ -376,7 +391,7 @@ describe('UserManagement', () => {
       expect(screen.getByTestId('user-user1')).toBeInTheDocument();
       expect(screen.getByTestId('user-user2')).toBeInTheDocument();
       expect(screen.getByTestId('user-user3')).toBeInTheDocument();
-      
+
       expect(screen.getByText('John Doe')).toBeInTheDocument();
       expect(screen.getByText('jane@example.com')).toBeInTheDocument();
       expect(screen.getByText('Bob Wilson')).toBeInTheDocument();
@@ -407,7 +422,7 @@ describe('UserManagement', () => {
       const adminTexts = screen.getAllByText('Admin');
       expect(adminTexts.length).toBeGreaterThanOrEqual(1); // At least Jane's badge
 
-      // User badges 
+      // User badges
       const userTexts = screen.getAllByText('User');
       expect(userTexts.length).toBeGreaterThanOrEqual(2); // At least John and Bob badges
     });
@@ -434,10 +449,10 @@ describe('UserManagement', () => {
       // Check that join dates are displayed via test IDs
       const joinDates = screen.getAllByTestId('user-join-date');
       expect(joinDates).toHaveLength(3); // One for each user
-      
+
       // Check that join dates contain the word "Joined" and a date pattern
       expect(screen.getAllByText(/Joined.*202[34]/)).toHaveLength(3); // Allow for timezone differences (2023/2024)
-      
+
       // Check for multiple join dates
       const joinTexts = screen.getAllByText(/Joined \d{1,2}\/\d{1,2}\/\d{4}/);
       expect(joinTexts).toHaveLength(3); // All three users have join dates
@@ -449,7 +464,7 @@ describe('UserManagement', () => {
       // Check for last seen elements
       const lastSeenElements = screen.getAllByTestId('user-last-seen');
       expect(lastSeenElements).toHaveLength(2); // Only John and Bob have lastLoginAt
-      
+
       // Check for "Last seen" text with flexible date matching
       const lastSeenTexts = screen.getAllByText(/Last seen \d{1,2}\/\d{1,2}\/\d{4}/);
       expect(lastSeenTexts).toHaveLength(2); // John and Bob
@@ -533,12 +548,13 @@ describe('UserManagement', () => {
       // Check for specific action buttons
       expect(screen.getAllByTestId('action-edit')).toHaveLength(3);
       expect(screen.getAllByTestId('action-revoke-sessions')).toHaveLength(3);
-      
+      expect(screen.getAllByTestId('action-impersonate')).toHaveLength(3);
+
       // Check for role actions (Promote/Demote)
       const promoteButtons = screen.getAllByTestId('action-promote');
       const demoteButtons = screen.getAllByTestId('action-demote');
       expect(promoteButtons.length + demoteButtons.length).toBe(3);
-      
+
       // Check for ban/unban actions
       const banButtons = screen.getAllByTestId('action-ban');
       const unbanButtons = screen.getAllByTestId('action-unban');
@@ -578,7 +594,9 @@ describe('UserManagement', () => {
 
       // Should show the revoke sessions dialog
       expect(screen.getByText('Confirm Session Revocation')).toBeInTheDocument();
-      expect(screen.getByText(/Are you sure you want to revoke all sessions for/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Are you sure you want to revoke all sessions for/),
+      ).toBeInTheDocument();
     });
 
     it('should call revokeUserSessions when confirm button is clicked in dialog', async () => {
@@ -588,11 +606,30 @@ describe('UserManagement', () => {
       fireEvent.click(revokeButton);
 
       // Find the session revocation dialog and click the confirm button within it
-      const sessionDialog = screen.getByText('Confirm Session Revocation').closest('[data-testid^="dialog-container"]');
+      const sessionDialog = screen
+        .getByText('Confirm Session Revocation')
+        .closest('[data-testid^="dialog-container"]');
       const confirmButton = within(sessionDialog).getByRole('button', { name: 'Revoke Sessions' });
       fireEvent.click(confirmButton);
 
       expect(mockAdminContext.revokeUserSessions).toHaveBeenCalled();
+    });
+
+    it('should show impersonate action for all users', () => {
+      render(<UserManagement />);
+
+      // Should have impersonate button for each user
+      expect(screen.getAllByText('Impersonate')).toHaveLength(3);
+      expect(screen.getAllByTestId('action-impersonate')).toHaveLength(3);
+    });
+
+    it('should call impersonateUser when impersonate action is clicked', async () => {
+      render(<UserManagement />);
+
+      const impersonateButtons = screen.getAllByTestId('action-impersonate');
+      fireEvent.click(impersonateButtons[0]); // Click first "Impersonate" button
+
+      expect(mockAdminContext.impersonateUser).toHaveBeenCalledWith('user1');
     });
   });
 
@@ -602,7 +639,7 @@ describe('UserManagement', () => {
 
       // Dialog structure exists in DOM and form is visible
       expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
-      expect(screen.getAllByTestId('dialog-content')).toHaveLength(3); // Create user + Edit user + Session revocation dialogs
+      expect(screen.getAllByTestId('dialog-content')).toHaveLength(4); // Create user + Edit user + Session revocation + Error dialogs
     });
 
     it('should render all form fields', async () => {
@@ -683,13 +720,35 @@ describe('UserManagement', () => {
       fireEvent.click(revokeButton);
 
       // Find the session revocation dialog and click the confirm button within it
-      const sessionDialog = screen.getByText('Confirm Session Revocation').closest('[data-testid^="dialog-container"]');
+      const sessionDialog = screen
+        .getByText('Confirm Session Revocation')
+        .closest('[data-testid^="dialog-container"]');
       const confirmButton = within(sessionDialog).getByRole('button', { name: 'Revoke Sessions' });
       fireEvent.click(confirmButton);
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
           '❌ [ERROR] Failed to revoke user sessions',
+          expect.any(Error),
+          expect.any(String),
+        );
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle impersonate user errors', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockAdminContext.impersonateUser.mockRejectedValue(new Error('Impersonation failed'));
+
+      render(<UserManagement />);
+
+      const impersonateButtons = screen.getAllByTestId('action-impersonate');
+      fireEvent.click(impersonateButtons[0]);
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to impersonate user',
           expect.any(Error),
           expect.any(String),
         );
@@ -740,12 +799,6 @@ describe('UserManagement', () => {
   });
 
   describe('Form State Management', () => {
-    it('should watch form values correctly', () => {
-      render(<UserManagement />);
-      // Form hooks are called during component mount
-      expect(mockWatch).toHaveBeenCalledWith('role');
-    });
-
     it('should handle role selection', () => {
       render(<UserManagement />);
       // Component renders with form setup

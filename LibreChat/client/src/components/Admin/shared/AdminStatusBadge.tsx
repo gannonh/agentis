@@ -15,14 +15,10 @@ interface AdminStatusBadgeProps {
 /**
  * Consistent status badge component for admin interfaces
  */
-const AdminStatusBadge: React.FC<AdminStatusBadgeProps> = ({
-  variant,
-  value,
-  className = '',
-}) => {
+const AdminStatusBadge: React.FC<AdminStatusBadgeProps> = ({ variant, value, className = '' }) => {
   const getVariantClasses = () => {
     const baseClasses = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium';
-    
+
     switch (variant) {
       case 'role':
         switch (value.toLowerCase()) {
@@ -33,7 +29,7 @@ const AdminStatusBadge: React.FC<AdminStatusBadgeProps> = ({
           default:
             return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300`;
         }
-      
+
       case 'status':
         switch (value.toLowerCase()) {
           case 'active':
@@ -46,7 +42,7 @@ const AdminStatusBadge: React.FC<AdminStatusBadgeProps> = ({
           default:
             return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300`;
         }
-      
+
       case 'verification':
         switch (value.toLowerCase()) {
           case 'verified':
@@ -56,17 +52,13 @@ const AdminStatusBadge: React.FC<AdminStatusBadgeProps> = ({
           default:
             return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300`;
         }
-      
+
       default:
         return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300`;
     }
   };
 
-  return (
-    <span className={cn(getVariantClasses(), className)}>
-      {value}
-    </span>
-  );
+  return <span className={cn(getVariantClasses(), className)}>{value}</span>;
 };
 
 export { AdminStatusBadge };

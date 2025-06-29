@@ -5,7 +5,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Users, UserPlus, Shield, Calendar, Crown, Ban, UserCheck, Edit } from 'lucide-react';
+import {
+  Users,
+  UserPlus,
+  Shield,
+  Calendar,
+  Crown,
+  Ban,
+  UserCheck,
+  Edit,
+  UserX,
+} from 'lucide-react';
 import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
@@ -81,6 +91,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
     banUser,
     unbanUser,
     revokeUserSessions,
+    impersonateUser,
     isLoadingUsers,
   } = useAdmin();
 
@@ -193,6 +204,25 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
         'Failed to revoke user sessions',
         error instanceof Error ? error : new Error(String(error)),
       );
+    }
+  };
+
+  const handleImpersonateUser = async (user: AdminUser) => {
+    try {
+      await impersonateUser(user.id);
+    } catch (error) {
+      logger.error(
+        'Failed to impersonate user',
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to impersonate user. Please try again.';
+      setErrorDialog({
+        isOpen: true,
+        title: 'Failed to Impersonate User',
+        message: errorMessage,
+      });
     }
   };
 
@@ -348,6 +378,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       icon: Shield,
       onClick: handleRevokeUserSessions,
       variant: 'edit',
+    },
+    {
+      label: 'Impersonate',
+      icon: UserX,
+      onClick: handleImpersonateUser,
+      variant: 'primary',
     },
   ];
 
