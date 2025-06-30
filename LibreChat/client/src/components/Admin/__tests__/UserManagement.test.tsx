@@ -252,6 +252,9 @@ vi.mock('lucide-react', () => ({
   UserX: ({ className }: { className?: string }) => (
     <div data-testid="user-x-icon" className={className} />
   ),
+  Trash: ({ className }: { className?: string }) => (
+    <div data-testid="trash-icon" className={className} />
+  ),
 }));
 
 describe('UserManagement', () => {
@@ -304,6 +307,7 @@ describe('UserManagement', () => {
     revokeUserSessions: vi.fn(),
     banUser: vi.fn(),
     unbanUser: vi.fn(),
+    removeUser: vi.fn(),
     listUserSessions: vi.fn(),
     getUserStats: vi.fn(),
     getSessionStats: vi.fn(),
@@ -547,6 +551,7 @@ describe('UserManagement', () => {
 
       // Check for specific action buttons
       expect(screen.getAllByTestId('action-edit')).toHaveLength(3);
+      expect(screen.getAllByTestId('action-delete')).toHaveLength(3);
       expect(screen.getAllByTestId('action-revoke-sessions')).toHaveLength(3);
       expect(screen.getAllByTestId('action-impersonate')).toHaveLength(3);
 
@@ -631,6 +636,43 @@ describe('UserManagement', () => {
 
       expect(mockAdminContext.impersonateUser).toHaveBeenCalledWith('user1');
     });
+
+    it('should show delete action for all users', () => {
+      render(<UserManagement />);
+
+      // Should have delete button for each user  
+      expect(screen.getAllByText('Delete')).toHaveLength(3); // 3 in actions (dialog button rendered but not visible initially)
+      expect(screen.getAllByTestId('action-delete')).toHaveLength(3);
+    });
+
+    it('should open delete confirmation dialog when delete action is clicked', async () => {
+      render(<UserManagement />);
+
+      const deleteButton = screen.getAllByTestId('action-delete')[0];
+      fireEvent.click(deleteButton);
+
+      // Should show the delete confirmation dialog
+      expect(screen.getByText('Confirm User Deletion')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Are you sure you want to permanently delete/),
+      ).toBeInTheDocument();
+    });
+
+    it('should call removeUser when confirm button is clicked in delete dialog', async () => {
+      render(<UserManagement />);
+
+      const deleteButton = screen.getAllByTestId('action-delete')[0];
+      fireEvent.click(deleteButton);
+
+      // Find the delete confirmation dialog and click the confirm button within it
+      const deleteDialog = screen
+        .getByText('Confirm User Deletion')
+        .closest('[data-testid^="dialog-container"]');
+      const confirmButton = within(deleteDialog).getByRole('button', { name: 'Delete User' });
+      fireEvent.click(confirmButton);
+
+      expect(mockAdminContext.removeUser).toHaveBeenCalledWith('user1');
+    });
   });
 
   describe('Create User Dialog', () => {
@@ -639,7 +681,7 @@ describe('UserManagement', () => {
 
       // Dialog structure exists in DOM and form is visible
       expect(screen.getByTestId('dialog-container-1')).toBeInTheDocument();
-      expect(screen.getAllByTestId('dialog-content')).toHaveLength(4); // Create user + Edit user + Session revocation + Error dialogs
+      expect(screen.getAllByTestId('dialog-content')).toHaveLength(5); // Create user + Edit user + Session revocation + Delete confirmation + Error dialogs
     });
 
     it('should render all form fields', async () => {
@@ -749,6 +791,33 @@ describe('UserManagement', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
           '❌ [ERROR] Failed to impersonate user',
+          expect.any(Error),
+          expect.any(String),
+        );
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle delete user errors', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockAdminContext.removeUser.mockRejectedValue(new Error('Delete failed'));
+
+      render(<UserManagement />);
+
+      const deleteButton = screen.getAllByTestId('action-delete')[0];
+      fireEvent.click(deleteButton);
+
+      // Find the delete confirmation dialog and click the confirm button within it
+      const deleteDialog = screen
+        .getByText('Confirm User Deletion')
+        .closest('[data-testid^="dialog-container"]');
+      const confirmButton = within(deleteDialog).getByRole('button', { name: 'Delete User' });
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to delete user',
           expect.any(Error),
           expect.any(String),
         );

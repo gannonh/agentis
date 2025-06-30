@@ -15,6 +15,7 @@ import {
   UserCheck,
   Edit,
   UserX,
+  Trash,
 } from 'lucide-react';
 import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
@@ -69,6 +70,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
   const [userToEdit, setUserToEdit] = useState<AdminUser | null>(null);
   const [isRevokeSessionsDialogOpen, setIsRevokeSessionsDialogOpen] = useState(false);
   const [userForSessionRevoke, setUserForSessionRevoke] = useState<AdminUser | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userForDelete, setUserForDelete] = useState<AdminUser | null>(null);
   const [errorDialog, setErrorDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -90,6 +93,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
     setUserRole,
     banUser,
     unbanUser,
+    removeUser,
     revokeUserSessions,
     impersonateUser,
     isLoadingUsers,
@@ -229,6 +233,34 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
   const handleEditUser = (user: AdminUser) => {
     setUserToEdit(user);
     setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteUser = (user: AdminUser) => {
+    setUserForDelete(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userForDelete) return;
+
+    try {
+      await removeUser(userForDelete.id);
+      setIsDeleteDialogOpen(false);
+      setUserForDelete(null);
+    } catch (error) {
+      logger.error(
+        'Failed to delete user',
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to delete user. Please try again.';
+      setErrorDialog({
+        isOpen: true,
+        title: 'Failed to Delete User',
+        message: errorMessage,
+      });
+    }
   };
 
   const handleUpdateUser = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -372,6 +404,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
       icon: Ban,
       onClick: handleBanUser,
       variant: (user) => (user.banned ? 'primary' : 'delete'),
+    },
+    {
+      label: 'Delete',
+      icon: Trash,
+      onClick: handleDeleteUser,
+      variant: 'delete',
     },
     {
       label: 'Revoke Sessions',
@@ -645,6 +683,43 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
             </Button>
             <Button type="button" variant="destructive" onClick={confirmRevokeUserSessions}>
               Revoke Sessions
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) {
+            setUserForDelete(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm User Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete{' '}
+              <strong>{userForDelete?.name || userForDelete?.email}</strong>? This action cannot be
+              undone and will remove all user data from the system.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setUserForDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDeleteUser}>
+              Delete User
             </Button>
           </DialogFooter>
         </DialogContent>

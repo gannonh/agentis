@@ -41,7 +41,14 @@ function isValidRole(role) {
 router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
     const { search, page = 1, limit = 10 } = req.query;
-    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+
+    // Validate and sanitize page parameter
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+
+    // Validate and sanitize limit parameter
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+
+    const skip = (pageNum - 1) * limitNum;
 
     const db = mongoose.connection.db;
     const organizationCollection = db.collection('organization');
@@ -65,7 +72,7 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
     const organizations = await organizationCollection
       .find(query)
       .skip(skip)
-      .limit(parseInt(limit, 10))
+      .limit(limitNum)
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -107,10 +114,10 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
       res.json({
         organizations: organizationsWithCounts,
         pagination: {
-          page: parseInt(page, 10),
-          limit: parseInt(limit, 10),
+          page: pageNum,
+          limit: limitNum,
           total: totalCount,
-          totalPages: Math.ceil(totalCount / parseInt(limit, 10)),
+          totalPages: Math.ceil(totalCount / limitNum),
         },
       });
     } else {
@@ -223,7 +230,9 @@ router.post('/', requireBetterAuth, checkAdmin, async (req, res) => {
     // Validate slug format
     const slugPattern = /^[a-z0-9-]+$/;
     if (!slugPattern.test(slug)) {
-      return res.status(400).json({ error: 'Slug must contain only lowercase letters, numbers, and hyphens' });
+      return res
+        .status(400)
+        .json({ error: 'Slug must contain only lowercase letters, numbers, and hyphens' });
     }
 
     const db = mongoose.connection.db;
@@ -283,7 +292,7 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     const db = mongoose.connection.db;
     const organizationCollection = db.collection('organization');
 
-    // Get current organization
+    // Validate and convert organization ID
     let organizationId;
     try {
       organizationId = new mongoose.Types.ObjectId(id);
@@ -328,18 +337,7 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
       updateData.metadata = JSON.stringify(metadata);
     }
 
-    let updateId;
-    try {
-      updateId = new mongoose.Types.ObjectId(id);
-    } catch (error) {
-      logger.warn('Invalid organization ID format for update', { id, error: error.message });
-      return res.status(400).json({ error: 'Invalid organization ID format' });
-    }
-
-    await organizationCollection.updateOne(
-      { _id: updateId },
-      { $set: updateData },
-    );
+    await organizationCollection.updateOne({ _id: organizationId }, { $set: updateData });
 
     logger.info('Admin updated organization', {
       adminId: req.user.id,
@@ -371,17 +369,17 @@ router.delete('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
 
-    // Check if organization exists
-    let deleteCheckId;
+    // Validate and convert organization ID
+    let organizationId;
     try {
-      deleteCheckId = new mongoose.Types.ObjectId(id);
+      organizationId = new mongoose.Types.ObjectId(id);
     } catch (error) {
       logger.warn('Invalid organization ID format', { id, error: error.message });
       return res.status(400).json({ error: 'Invalid organization ID format' });
     }
 
     const organization = await organizationCollection.findOne({
-      _id: deleteCheckId,
+      _id: organizationId,
     });
 
     if (!organization) {
@@ -401,16 +399,8 @@ router.delete('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     }
 
     // Soft delete by adding deletedAt timestamp
-    let deleteId;
-    try {
-      deleteId = new mongoose.Types.ObjectId(id);
-    } catch (error) {
-      logger.warn('Invalid organization ID format for deletion', { id, error: error.message });
-      return res.status(400).json({ error: 'Invalid organization ID format' });
-    }
-
     await organizationCollection.updateOne(
-      { _id: deleteId },
+      { _id: organizationId },
       {
         $set: {
           deletedAt: new Date(),
@@ -447,8 +437,8 @@ router.post('/:id/members', requireBetterAuth, checkAdmin, async (req, res) => {
     }
 
     if (!isValidRole(role)) {
-      return res.status(400).json({ 
-        error: `Invalid role. Allowed roles are: ${ALLOWED_ROLES.join(', ')}` 
+      return res.status(400).json({
+        error: `Invalid role. Allowed roles are: ${ALLOWED_ROLES.join(', ')}`,
       });
     }
 
@@ -540,8 +530,8 @@ router.patch('/:id/members/:userId', requireBetterAuth, checkAdmin, async (req, 
     }
 
     if (!isValidRole(role)) {
-      return res.status(400).json({ 
-        error: `Invalid role. Allowed roles are: ${ALLOWED_ROLES.join(', ')}` 
+      return res.status(400).json({
+        error: `Invalid role. Allowed roles are: ${ALLOWED_ROLES.join(', ')}`,
       });
     }
 

@@ -19,6 +19,7 @@ vi.mock('~/config/betterAuth', () => ({
       setRole: vi.fn(),
       listUserSessions: vi.fn(),
       revokeUserSessions: vi.fn(),
+      removeUser: vi.fn(),
     },
   },
 }));
@@ -31,6 +32,7 @@ const TestComponent: React.FC = () => {
     setUserRole,
     listUserSessions,
     revokeUserSessions,
+    removeUser,
     getUserStats,
     getSessionStats,
     isLoadingUsers,
@@ -69,6 +71,9 @@ const TestComponent: React.FC = () => {
       </button>
       <button data-testid="revoke-sessions-btn" onClick={() => revokeUserSessions('user1')}>
         Revoke Sessions
+      </button>
+      <button data-testid="remove-user-btn" onClick={() => removeUser('user1')}>
+        Remove User
       </button>
     </div>
   );
@@ -135,6 +140,20 @@ describe('AdminProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Mock global fetch for email validation endpoint
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/user/admin/check-email')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ exists: false, email: 'test@example.com' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+    });
+
     // Mock successful responses by default
     vi.mocked(authClient.admin.listUsers).mockResolvedValue({
       data: { users: mockUsers },
@@ -161,6 +180,8 @@ describe('AdminProvider', () => {
     });
 
     vi.mocked(authClient.admin.revokeUserSessions).mockResolvedValue({});
+
+    vi.mocked(authClient.admin.removeUser).mockResolvedValue({});
   });
 
   describe('Provider Setup', () => {
@@ -302,6 +323,51 @@ describe('AdminProvider', () => {
       await act(async () => {
         screen.getByTestId('create-user-btn').click();
       });
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to create user',
+          expect.any(Error),
+          expect.any(Object),
+        );
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle duplicate email validation', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Mock fetch to return email exists
+      global.fetch = vi.fn().mockImplementation((url) => {
+        if (url.includes('/api/user/admin/check-email')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ exists: true, email: 'test@example.com' }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({}),
+        });
+      });
+
+      render(
+        <AdminProvider>
+          <TestComponent />
+        </AdminProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading-users')).toHaveTextContent('loaded');
+      });
+
+      await act(async () => {
+        screen.getByTestId('create-user-btn').click();
+      });
+
+      // Should not call createUser if email exists
+      expect(authClient.admin.createUser).not.toHaveBeenCalled();
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
@@ -474,6 +540,34 @@ describe('AdminProvider', () => {
       });
 
       consoleSpy.mockRestore();
+    });
+
+    it('should remove user successfully', async () => {
+      render(
+        <AdminProvider>
+          <TestComponent />
+        </AdminProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading-users')).toHaveTextContent('loaded');
+      });
+
+      // Initial user count should be 2
+      expect(screen.getByTestId('users-count')).toHaveTextContent('2');
+
+      await act(async () => {
+        screen.getByTestId('remove-user-btn').click();
+      });
+
+      expect(authClient.admin.removeUser).toHaveBeenCalledWith({
+        userId: 'user1',
+      });
+
+      // User count should decrease after removal
+      await waitFor(() => {
+        expect(screen.getByTestId('users-count')).toHaveTextContent('1');
+      });
     });
   });
 

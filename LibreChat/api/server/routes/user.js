@@ -78,4 +78,31 @@ router.patch('/admin/update/:userId', requireBetterAuth, checkAdmin, async (req,
   }
 });
 
+/**
+ * GET /api/user/admin/check-email
+ * Check if email is already in use (admin only)
+ */
+router.get('/admin/check-email', requireBetterAuth, checkAdmin, async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter is required' });
+    }
+
+    // Check if email is already in use
+    const existingUser = await User.findOne({
+      email: { $regex: new RegExp(`^${email}$`, 'i') },
+    });
+
+    res.json({
+      exists: !!existingUser,
+      email: email.toLowerCase(),
+    });
+  } catch (error) {
+    logger.error('Failed to check email availability', error);
+    res.status(500).json({ error: 'Failed to check email availability' });
+  }
+});
+
 export default router;

@@ -26,6 +26,7 @@ interface AdminContextValue {
   // User management
   banUser: (userId: string, reason?: string, banExpiresIn?: number) => Promise<void>;
   unbanUser: (userId: string) => Promise<void>;
+  removeUser: (userId: string) => Promise<void>;
 
   // User impersonation
   impersonateUser: (userId: string) => Promise<void>;
@@ -155,12 +156,24 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const createUser = async (userData: CreateUserData): Promise<AdminUser> => {
     try {
-      // Check if email already exists in current user list
-      const existingUser = users.find(
-        (user) => user.email.toLowerCase() === userData.email.toLowerCase(),
+      // Check if email already exists on server (across all pages)
+      const emailCheckResponse = await fetch(
+        `/api/user/admin/check-email?email=${encodeURIComponent(userData.email)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        },
       );
 
-      if (existingUser) {
+      if (!emailCheckResponse.ok) {
+        throw new Error(`Failed to check email availability: ${emailCheckResponse.status}`);
+      }
+
+      const emailCheckData = await emailCheckResponse.json();
+      if (emailCheckData.exists) {
         throw new Error(`A user with email ${userData.email} already exists.`);
       }
 
@@ -538,6 +551,34 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     }
   };
 
+  const removeUser = async (userId: string): Promise<void> => {
+    try {
+      await authClient.admin.removeUser({
+        userId,
+      });
+
+      // Remove user from local state
+      setUsers((prev) => prev.filter((user) => user.id !== userId));
+
+      logger.info('User removed successfully', {
+        component: 'AdminProvider',
+        action: 'removeUser',
+        userId,
+      });
+    } catch (error) {
+      logger.error(
+        'Failed to remove user',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'AdminProvider',
+          action: 'removeUser',
+          userId,
+        },
+      );
+      throw error;
+    }
+  };
+
   const getSessionStats = async (): Promise<SessionStats> => {
     try {
       // For now, return estimated session stats since fetching all user sessions might be expensive
@@ -628,6 +669,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     getSessionStats,
     banUser,
     unbanUser,
+    removeUser,
     impersonateUser,
     stopImpersonating,
     isLoadingUsers,
