@@ -1,0 +1,9 @@
+{
+  "claudeAiOauth": {
+    "accessToken": "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",
+    "refreshToken": "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",
+    "expiresAt": 1751324492094,
+    "scopes": ["user:inference", "user:profile"],
+    "subscriptionType": "max"
+  }
+}
