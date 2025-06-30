@@ -140,20 +140,6 @@ describe('AdminProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock global fetch for email validation endpoint
-    global.fetch = vi.fn().mockImplementation((url) => {
-      if (url.includes('/api/user/admin/check-email')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ exists: false, email: 'test@example.com' }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
-    });
-
     // Mock successful responses by default
     vi.mocked(authClient.admin.listUsers).mockResolvedValue({
       data: { users: mockUsers },
@@ -335,21 +321,14 @@ describe('AdminProvider', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should handle duplicate email validation', async () => {
+    it('should handle duplicate email error from atomic creation', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      // Mock fetch to return email exists
-      global.fetch = vi.fn().mockImplementation((url) => {
-        if (url.includes('/api/user/admin/check-email')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ exists: true, email: 'test@example.com' }),
-          });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({}),
-        });
+      // Mock Better Auth createUser to return a 400 error for duplicate email
+      vi.mocked(authClient.admin.createUser).mockImplementation(async () => {
+        const error = new Error('User already exists');
+        (error as any).status = 400;
+        throw error;
       });
 
       render(
@@ -366,8 +345,14 @@ describe('AdminProvider', () => {
         screen.getByTestId('create-user-btn').click();
       });
 
-      // Should not call createUser if email exists
-      expect(authClient.admin.createUser).not.toHaveBeenCalled();
+      // Should call createUser but it will fail due to duplicate email
+      expect(authClient.admin.createUser).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        name: 'Test User',
+        password: 'password123',
+        role: 'user',
+        data: {},
+      });
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(

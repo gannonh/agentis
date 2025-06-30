@@ -156,28 +156,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const createUser = async (userData: CreateUserData): Promise<AdminUser> => {
     try {
-      // Check if email already exists on server (across all pages)
-      const emailCheckResponse = await fetch(
-        `/api/user/admin/check-email?email=${encodeURIComponent(userData.email)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        },
-      );
-
-      if (!emailCheckResponse.ok) {
-        throw new Error(`Failed to check email availability: ${emailCheckResponse.status}`);
-      }
-
-      const emailCheckData = await emailCheckResponse.json();
-      if (emailCheckData.exists) {
-        throw new Error(`A user with email ${userData.email} already exists.`);
-      }
-
-      // Match the exact format from Better Auth documentation
+      // Use atomic user creation with Better Auth - email uniqueness is enforced at DB level
+      // This eliminates the race condition by relying on database constraints
       const requestData = {
         name: userData.name,
         email: userData.email,
