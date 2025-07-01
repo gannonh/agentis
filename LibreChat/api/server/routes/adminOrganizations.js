@@ -239,9 +239,9 @@ router.post('/', requireBetterAuth, checkAdmin, async (req, res) => {
     const organizationCollection = db.collection('organization');
 
     // Check if slug already exists (excluding soft-deleted organizations)
-    const existingOrg = await organizationCollection.findOne({ 
-      slug, 
-      deletedAt: { $exists: false } 
+    const existingOrg = await organizationCollection.findOne({
+      slug,
+      deletedAt: { $exists: false },
     });
     if (existingOrg) {
       return res.status(400).json({ error: 'Organization with this slug already exists' });
@@ -314,9 +314,9 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
 
     // Check if new slug conflicts (excluding soft-deleted organizations)
     if (slug && slug !== organization.slug) {
-      const existingOrg = await organizationCollection.findOne({ 
-        slug, 
-        deletedAt: { $exists: false } 
+      const existingOrg = await organizationCollection.findOne({
+        slug,
+        deletedAt: { $exists: false },
       });
       if (existingOrg) {
         return res.status(400).json({ error: 'Organization with this slug already exists' });
