@@ -29,6 +29,7 @@ import ask from './ask/index.js';
 import composio from './composio.js';
 import mcpDiagnostics from './mcp-diagnostics.js';
 import invitations from './invitations.js';
+import adminOrganizations from './adminOrganizations.js';
 
 export {
   ask,
@@ -61,4 +62,5 @@ export {
   composio,
   mcpDiagnostics,
   invitations,
+  adminOrganizations,
 };
