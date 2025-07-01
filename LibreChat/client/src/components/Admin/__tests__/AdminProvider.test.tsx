@@ -19,6 +19,7 @@ vi.mock('~/config/betterAuth', () => ({
       setRole: vi.fn(),
       listUserSessions: vi.fn(),
       revokeUserSessions: vi.fn(),
+      removeUser: vi.fn(),
     },
   },
 }));
@@ -31,6 +32,7 @@ const TestComponent: React.FC = () => {
     setUserRole,
     listUserSessions,
     revokeUserSessions,
+    removeUser,
     getUserStats,
     getSessionStats,
     isLoadingUsers,
@@ -69,6 +71,9 @@ const TestComponent: React.FC = () => {
       </button>
       <button data-testid="revoke-sessions-btn" onClick={() => revokeUserSessions('user1')}>
         Revoke Sessions
+      </button>
+      <button data-testid="remove-user-btn" onClick={() => removeUser('user1')}>
+        Remove User
       </button>
     </div>
   );
@@ -161,6 +166,8 @@ describe('AdminProvider', () => {
     });
 
     vi.mocked(authClient.admin.revokeUserSessions).mockResolvedValue({});
+
+    vi.mocked(authClient.admin.removeUser).mockResolvedValue({});
   });
 
   describe('Provider Setup', () => {
@@ -301,6 +308,50 @@ describe('AdminProvider', () => {
 
       await act(async () => {
         screen.getByTestId('create-user-btn').click();
+      });
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '❌ [ERROR] Failed to create user',
+          expect.any(Error),
+          expect.any(Object),
+        );
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle duplicate email error from atomic creation', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Mock Better Auth createUser to return a 400 error for duplicate email
+      vi.mocked(authClient.admin.createUser).mockImplementation(async () => {
+        const error = new Error('User already exists');
+        (error as any).status = 400;
+        throw error;
+      });
+
+      render(
+        <AdminProvider>
+          <TestComponent />
+        </AdminProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading-users')).toHaveTextContent('loaded');
+      });
+
+      await act(async () => {
+        screen.getByTestId('create-user-btn').click();
+      });
+
+      // Should call createUser but it will fail due to duplicate email
+      expect(authClient.admin.createUser).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        name: 'Test User',
+        password: 'password123',
+        role: 'user',
+        data: {},
       });
 
       await waitFor(() => {
@@ -474,6 +525,34 @@ describe('AdminProvider', () => {
       });
 
       consoleSpy.mockRestore();
+    });
+
+    it('should remove user successfully', async () => {
+      render(
+        <AdminProvider>
+          <TestComponent />
+        </AdminProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading-users')).toHaveTextContent('loaded');
+      });
+
+      // Initial user count should be 2
+      expect(screen.getByTestId('users-count')).toHaveTextContent('2');
+
+      await act(async () => {
+        screen.getByTestId('remove-user-btn').click();
+      });
+
+      expect(authClient.admin.removeUser).toHaveBeenCalledWith({
+        userId: 'user1',
+      });
+
+      // User count should decrease after removal
+      await waitFor(() => {
+        expect(screen.getByTestId('users-count')).toHaveTextContent('1');
+      });
     });
   });
 

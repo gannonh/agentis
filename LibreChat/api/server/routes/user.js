@@ -78,4 +78,47 @@ router.patch('/admin/update/:userId', requireBetterAuth, checkAdmin, async (req,
   }
 });
 
+/**
+ * Escapes special regex characters to prevent ReDoS attacks
+ * @param {string} string - The string to escape
+ * @returns {string} - The escaped string safe for regex use
+ */
+function escapeRegex(string) {
+  if (typeof string !== 'string') return '';
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * GET /api/user/admin/check-email
+ * Check if email is already in use (admin only)
+ */
+router.get('/admin/check-email', requireBetterAuth, checkAdmin, async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter is required' });
+    }
+
+    // Validate email format
+    if (typeof email !== 'string' || email.length > 254) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Use case-insensitive exact match without regex for better security and performance
+    // MongoDB's case-insensitive collation is safer than constructing regex patterns
+    const existingUser = await User.findOne({
+      email: email.toLowerCase(),
+    });
+
+    res.json({
+      exists: !!existingUser,
+      email: email.toLowerCase(),
+    });
+  } catch (error) {
+    logger.error('Failed to check email availability', error);
+    res.status(500).json({ error: 'Failed to check email availability' });
+  }
+});
+
 export default router;
