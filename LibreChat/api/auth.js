@@ -248,9 +248,18 @@ mongoose.connection.once('open', () => {
         }),
         organization({
           async onCreate({ user, organization }) {
-            logger.info('📍 Organization created:', organization);
-            if (user?.email) {
-              await handleOrganizationAssignment(user, organization.id);
+            try {
+              logger.info('📍 Organization created:', organization);
+              if (user?.email) {
+                await handleOrganizationAssignment(authInstance, user.email, user.id);
+                logger.info('✅ Organization assignment completed for user:', user.email);
+              } else {
+                logger.warn('⚠️ User has no email, skipping organization assignment');
+              }
+            } catch (error) {
+              logger.error('❌ Failed to handle organization assignment:', error);
+              // Don't throw the error to prevent breaking the organization creation
+              // The organization is still created successfully, just without auto-assignment
             }
           },
         }),
