@@ -10,7 +10,7 @@ vi.mock('fs/promises', async () => {
   const actual = await vi.importActual('fs/promises');
   return {
     ...actual,
-    readFile: vi.fn()
+    readFile: vi.fn(),
   };
 });
 
@@ -27,11 +27,11 @@ describe('PublicDomainService', () => {
     // For most tests, we want to use the real file data
     // Let's unmock the readFile for the initial load
     vi.restoreAllMocks();
-    
+
     // Re-import the actual readFile
     const actualFs = await vi.importActual('fs/promises');
     vi.mocked(readFile).mockImplementation(actualFs.readFile);
-    
+
     // Load real domains for most tests
     await loadPublicDomains();
   });
@@ -144,10 +144,10 @@ describe('PublicDomainService', () => {
     it('should populate domains set with expected domains', async () => {
       await loadPublicDomains();
       const count = getPublicDomainsCount();
-      
+
       // Should have loaded a substantial number of domains
       expect(count).toBeGreaterThan(1000);
-      
+
       // Should include known public domains
       expect(isPublicDomain('gmail.com')).toBe(true);
       expect(isPublicDomain('yahoo.com')).toBe(true);
@@ -157,25 +157,25 @@ describe('PublicDomainService', () => {
     it('should handle file loading errors gracefully', async () => {
       // Store current state
       const originalCount = getPublicDomainsCount();
-      
+
       // Mock readFile to reject with an error for this test only
       vi.mocked(readFile).mockRejectedValueOnce(new Error('File not found'));
 
       // Should not throw, but should return false
       const result = await loadPublicDomains();
       expect(result).toBe(false);
-      
+
       // Verify that domains count is 0 when loading fails
       expect(getPublicDomainsCount()).toBe(0);
-      
+
       // Verify that isPublicDomain returns false when domains not loaded
       expect(isPublicDomain('gmail.com')).toBe(false);
-      
+
       // Restore the working state for other tests by reloading with real data
       const actualFs = await vi.importActual('fs/promises');
       vi.mocked(readFile).mockImplementation(actualFs.readFile);
       await loadPublicDomains();
-      
+
       // Verify we're back to working state
       expect(getPublicDomainsCount()).toBeGreaterThan(0);
     });
@@ -185,7 +185,7 @@ describe('PublicDomainService', () => {
     it('should return the number of loaded domains', async () => {
       await loadPublicDomains();
       const count = getPublicDomainsCount();
-      
+
       expect(typeof count).toBe('number');
       expect(count).toBeGreaterThan(0);
     });
@@ -194,27 +194,21 @@ describe('PublicDomainService', () => {
   describe('performance characteristics', () => {
     it('should perform domain lookup in O(1) time', async () => {
       await loadPublicDomains();
-      
+
       // Test with large number of lookups to ensure O(1) performance
-      const testDomains = [
-        'gmail.com',
-        'yahoo.com',
-        'hotmail.com',
-        'company.com',
-        'mycorp.org',
-      ];
-      
+      const testDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'company.com', 'mycorp.org'];
+
       const iterations = 10000;
       const startTime = performance.now();
-      
+
       for (let i = 0; i < iterations; i++) {
         const domain = testDomains[i % testDomains.length];
         isPublicDomain(domain);
       }
-      
+
       const endTime = performance.now();
       const totalTime = endTime - startTime;
-      
+
       // Should complete many lookups very quickly (less than 100ms for 10k lookups)
       expect(totalTime).toBeLessThan(100);
     });

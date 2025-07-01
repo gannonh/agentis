@@ -47,32 +47,32 @@ export async function loadPublicDomains() {
   try {
     // Construct path to the public domains file
     const filePath = join(__dirname, '../../services/public-email-domains.txt');
-    
+
     logger.debug('Loading public domains from:', filePath);
-    
+
     const fileContent = await readFile(filePath, 'utf-8');
-    
+
     // Parse file content - each line is a domain
     const domains = fileContent
       .split('\n')
-      .map(line => line.trim().toLowerCase())
-      .filter(line => line.length > 0 && !line.startsWith('#')); // Filter out empty lines and comments
-    
+      .map((line) => line.trim().toLowerCase())
+      .filter((line) => line.length > 0 && !line.startsWith('#')); // Filter out empty lines and comments
+
     // Clear existing set and populate with new domains
     publicDomainsSet.clear();
-    domains.forEach(domain => publicDomainsSet.add(domain));
-    
+    domains.forEach((domain) => publicDomainsSet.add(domain));
+
     domainsLoaded = true;
-    
+
     logger.info(`✅ Loaded ${domains.length} public email domains`);
     return true;
   } catch (error) {
     logger.error('❌ Failed to load public domains:', error);
-    
+
     // On error, clear the domains and mark as not loaded
     publicDomainsSet.clear();
     domainsLoaded = false;
-    
+
     return false;
   }
 }
@@ -101,7 +101,7 @@ export function isPublicDomain(input) {
   }
 
   let domain;
-  
+
   try {
     // Check if input looks like an email (contains @)
     if (input.includes('@')) {
@@ -129,6 +129,6 @@ export function isPublicDomain(input) {
 
 // Auto-load domains when module is imported
 // This ensures domains are available for synchronous usage
-loadPublicDomains().catch(error => {
+loadPublicDomains().catch((error) => {
   logger.error('Failed to auto-load public domains on module import:', error);
 });
