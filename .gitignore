@@ -32,3 +32,4 @@ site-starlight/.vscode/
 site-starlight/node_modules/
 LibreChat/cookies.txt
 LibreChat/e2e/fixtures/*.png
+LibreChat/e2e/data/admin2-auth.json
