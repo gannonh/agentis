@@ -30,8 +30,10 @@ export function extractDomain(email) {
     throw new Error('Valid email string is required');
   }
 
-  // Basic email validation regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // More comprehensive email validation regex that handles special characters
+  // Allows: letters, numbers, dots, hyphens, underscores, plus signs in local part
+  // Requires: @ symbol and domain with at least one dot
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) {
     throw new Error('Invalid email format');
   }
@@ -86,6 +88,14 @@ export function getPublicDomainsCount() {
 }
 
 /**
+ * Checks if public domains have been loaded successfully
+ * @returns {boolean} True if domains are loaded, false otherwise
+ */
+export function isDomainsLoaded() {
+  return domainsLoaded;
+}
+
+/**
  * Checks if a domain or email address uses a public email provider
  * @param {string} input - Email address or domain to check
  * @returns {boolean} True if the domain is public, false otherwise
@@ -117,9 +127,11 @@ export function isPublicDomain(input) {
 
   // Ensure domains are loaded
   if (!domainsLoaded) {
-    logger.warn('Public domains not loaded yet, attempting to load...');
-    // For synchronous usage, we'll return false if not loaded
-    // In production, this should be loaded at startup
+    logger.warn(
+      'Public domains not loaded yet. Ensure loadPublicDomains() is called during app initialization.',
+    );
+    // Return false for safety - prevents false positives where public domains
+    // would be incorrectly identified as private during startup
     return false;
   }
 

@@ -20,6 +20,7 @@ import {
   extractDomain,
   loadPublicDomains,
   getPublicDomainsCount,
+  isDomainsLoaded,
 } from '../PublicDomainService.js';
 
 describe('PublicDomainService', () => {
@@ -65,6 +66,18 @@ describe('PublicDomainService', () => {
       expect(() => extractDomain('user@')).toThrow('Invalid email format');
       expect(() => extractDomain('@domain.com')).toThrow('Invalid email format');
       expect(() => extractDomain('user@domain')).toThrow('Invalid email format');
+    });
+
+    it('should handle emails with special characters', () => {
+      expect(extractDomain('user+tag@gmail.com')).toBe('gmail.com');
+      expect(extractDomain('user.name@yahoo.com')).toBe('yahoo.com');
+      expect(extractDomain('user_name@hotmail.com')).toBe('hotmail.com');
+      expect(extractDomain('user-name@outlook.com')).toBe('outlook.com');
+    });
+
+    it('should handle emails with numbers and dashes', () => {
+      expect(extractDomain('user123@gmail.com')).toBe('gmail.com');
+      expect(extractDomain('test-user@mail.ru')).toBe('mail.ru');
     });
   });
 
@@ -188,6 +201,30 @@ describe('PublicDomainService', () => {
 
       expect(typeof count).toBe('number');
       expect(count).toBeGreaterThan(0);
+    });
+  });
+
+  describe('isDomainsLoaded', () => {
+    it('should return true when domains are loaded', async () => {
+      const { isDomainsLoaded } = await import('../PublicDomainService.js');
+
+      await loadPublicDomains();
+      expect(isDomainsLoaded()).toBe(true);
+    });
+
+    it('should return false when domains are not loaded', async () => {
+      const { isDomainsLoaded } = await import('../PublicDomainService.js');
+
+      // Force domains to be unloaded by simulating an error
+      vi.mocked(readFile).mockRejectedValueOnce(new Error('File not found'));
+      await loadPublicDomains();
+
+      expect(isDomainsLoaded()).toBe(false);
+
+      // Restore working state
+      const actualFs = await vi.importActual('fs/promises');
+      vi.mocked(readFile).mockImplementation(actualFs.readFile);
+      await loadPublicDomains();
     });
   });
 
