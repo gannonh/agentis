@@ -3,7 +3,18 @@
  * @module server/services/PublicDomainService.test
  */
 
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, vi, beforeEach, afterEach } from 'vitest';
+
+// Mock fs/promises for error testing
+vi.mock('fs/promises', async () => {
+  const actual = await vi.importActual('fs/promises');
+  return {
+    ...actual,
+    readFile: vi.fn()
+  };
+});
+
+import { readFile } from 'fs/promises';
 import {
   isPublicDomain,
   extractDomain,
@@ -13,7 +24,15 @@ import {
 
 describe('PublicDomainService', () => {
   beforeAll(async () => {
-    // Ensure domains are loaded before tests
+    // For most tests, we want to use the real file data
+    // Let's unmock the readFile for the initial load
+    vi.restoreAllMocks();
+    
+    // Re-import the actual readFile
+    const actualFs = await vi.importActual('fs/promises');
+    vi.mocked(readFile).mockImplementation(actualFs.readFile);
+    
+    // Load real domains for most tests
     await loadPublicDomains();
   });
 
@@ -136,20 +155,29 @@ describe('PublicDomainService', () => {
     });
 
     it('should handle file loading errors gracefully', async () => {
-      // Mock file reading to simulate error
-      const originalReadFile = await import('fs/promises');
-      const mockReadFile = vi.spyOn(originalReadFile, 'readFile');
-      mockReadFile.mockRejectedValueOnce(new Error('File not found'));
+      // Store current state
+      const originalCount = getPublicDomainsCount();
+      
+      // Mock readFile to reject with an error for this test only
+      vi.mocked(readFile).mockRejectedValueOnce(new Error('File not found'));
 
       // Should not throw, but should return false
       const result = await loadPublicDomains();
       expect(result).toBe(false);
-
-      // Restore original implementation
-      mockReadFile.mockRestore();
       
-      // Reload domains for other tests
+      // Verify that domains count is 0 when loading fails
+      expect(getPublicDomainsCount()).toBe(0);
+      
+      // Verify that isPublicDomain returns false when domains not loaded
+      expect(isPublicDomain('gmail.com')).toBe(false);
+      
+      // Restore the working state for other tests by reloading with real data
+      const actualFs = await vi.importActual('fs/promises');
+      vi.mocked(readFile).mockImplementation(actualFs.readFile);
       await loadPublicDomains();
+      
+      // Verify we're back to working state
+      expect(getPublicDomainsCount()).toBeGreaterThan(0);
     });
   });
 
