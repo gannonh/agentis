@@ -3,8 +3,9 @@
  * @module components/Admin/OrganizationManagement
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
 import { Building2, Plus, Users, Globe, Edit, Trash2, Calendar } from 'lucide-react';
 import { logger } from '~/services/logger';
 import { Button } from '~/components/ui/Button';
@@ -177,10 +178,17 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
       setIsCreateDialogOpen(false);
+      createForm.reset();
       logger.info('Organization created successfully');
     },
     onError: (error: Error) => {
       logger.error('Failed to create organization', error);
+      // Show error to user
+      const errorMessage = error.message || 'Failed to create organization';
+      createForm.setError('root', { 
+        type: 'server', 
+        message: errorMessage 
+      });
     },
   });
 
@@ -192,6 +200,7 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
       queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
       setIsEditDialogOpen(false);
       setOrganizationToEdit(null);
+      editForm.reset();
       logger.info('Organization updated successfully');
     },
     onError: (error: Error) => {
@@ -303,32 +312,71 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
     },
   ];
 
-  const handleCreateOrganization = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+  // Create form
+  const createForm = useForm<CreateOrganizationData>({
+    mode: 'onSubmit', // Validate on submit instead of onChange
+    defaultValues: {
+      name: '',
+      slug: '',
+      domain: '',
+    },
+  });
 
-    const data: CreateOrganizationData = {
-      name: formData.get('name') as string,
-      slug: formData.get('slug') as string,
-      domain: (formData.get('domain') as string) || undefined,
-    };
+  // Auto-generate slug from name
+  const watchName = createForm.watch('name');
+  useEffect(() => {
+    if (watchName) {
+      const generatedSlug = watchName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      // Force the form to update with all the necessary flags
+      createForm.setValue('slug', generatedSlug, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true
+      });
+    }
+  }, [watchName, createForm]);
 
-    createMutation.mutate(data);
+  const handleCreateOrganization = (data: CreateOrganizationData) => {
+    createMutation.mutate({
+      ...data,
+      domain: data.domain || undefined,
+    });
   };
 
-  const handleUpdateOrganization = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // Edit form
+  const editForm = useForm<CreateOrganizationData>({
+    mode: 'onSubmit', // Same mode as create form to avoid issues
+    defaultValues: {
+      name: '',
+      slug: '',
+      domain: '',
+    },
+  });
+
+  // Reset edit form when organization changes
+  useEffect(() => {
+    if (organizationToEdit) {
+      editForm.reset({
+        name: organizationToEdit.name,
+        slug: organizationToEdit.slug,
+        domain: organizationToEdit.domain || '',
+      });
+    }
+  }, [organizationToEdit, editForm]);
+
+  const handleUpdateOrganization = (data: CreateOrganizationData) => {
     if (!organizationToEdit) return;
 
-    const formData = new FormData(event.currentTarget);
-
-    const data: Partial<CreateOrganizationData> = {
-      name: formData.get('name') as string,
-      slug: formData.get('slug') as string,
-      domain: (formData.get('domain') as string) || undefined,
-    };
-
-    updateMutation.mutate({ id: organizationToEdit.id, data });
+    updateMutation.mutate({
+      id: organizationToEdit.id,
+      data: {
+        ...data,
+        domain: data.domain || undefined,
+      },
+    });
   };
 
   const handleDeleteOrganization = () => {
@@ -373,7 +421,7 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
-            <form onSubmit={handleCreateOrganization}>
+            <form onSubmit={createForm.handleSubmit(handleCreateOrganization)}>
               <DialogHeader>
                 <DialogTitle>Create New Organization</DialogTitle>
                 <DialogDescription>
@@ -383,29 +431,51 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
               <div className="space-y-4 px-6 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Organization Name</Label>
-                  <Input id="name" name="name" placeholder="Acme Corporation" required />
+                  <Input
+                    id="name"
+                    placeholder="Acme Corporation"
+                    {...createForm.register('name', { required: 'Organization name is required' })}
+                  />
+                  {createForm.formState.errors.name && (
+                    <p className="text-xs text-red-500">{createForm.formState.errors.name.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="slug">URL Slug</Label>
                   <Input
                     id="slug"
-                    name="slug"
                     placeholder="acme-corp"
-                    pattern="[a-z0-9-]+"
-                    title="Only lowercase letters, numbers, and hyphens allowed"
-                    required
+                    {...createForm.register('slug')}
                   />
+                  {createForm.formState.errors.slug && (
+                    <p className="text-xs text-red-500">{createForm.formState.errors.slug.message}</p>
+                  )}
+                  <p className="text-xs text-gray-500">Only lowercase letters, numbers, and hyphens allowed</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="domain">Domain (Optional)</Label>
-                  <Input id="domain" name="domain" placeholder="acme.com" />
+                  <Input
+                    id="domain"
+                    placeholder="acme.com"
+                    {...createForm.register('domain')}
+                  />
                 </div>
               </div>
+              {createForm.formState.errors.root && (
+                <div className="mx-6 mb-4 rounded bg-red-50 p-3 dark:bg-red-900/20">
+                  <p className="text-sm text-red-800 dark:text-red-200">
+                    {createForm.formState.errors.root.message}
+                  </p>
+                </div>
+              )}
               <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    createForm.reset();
+                  }}
                 >
                   Cancel
                 </Button>
@@ -478,7 +548,7 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
       {/* Edit Organization Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-lg">
-          <form onSubmit={handleUpdateOrganization}>
+          <form onSubmit={editForm.handleSubmit(handleUpdateOrganization)}>
             <DialogHeader>
               <DialogTitle>Edit Organization</DialogTitle>
               <DialogDescription>Update the organization information below.</DialogDescription>
@@ -488,36 +558,44 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
                 <Label htmlFor="edit-name">Organization Name</Label>
                 <Input
                   id="edit-name"
-                  name="name"
-                  defaultValue={organizationToEdit?.name || ''}
                   placeholder="Acme Corporation"
-                  required
+                  {...editForm.register('name', { required: 'Organization name is required' })}
                 />
+                {editForm.formState.errors.name && (
+                  <p className="text-xs text-red-500">{editForm.formState.errors.name.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-slug">URL Slug</Label>
                 <Input
                   id="edit-slug"
-                  name="slug"
-                  defaultValue={organizationToEdit?.slug || ''}
                   placeholder="acme-corp"
-                  pattern="[a-z0-9-]+"
-                  title="Only lowercase letters, numbers, and hyphens allowed"
-                  required
+                  {...editForm.register('slug')}
                 />
+                {editForm.formState.errors.slug && (
+                  <p className="text-xs text-red-500">{editForm.formState.errors.slug.message}</p>
+                )}
+                <p className="text-xs text-gray-500">Only lowercase letters, numbers, and hyphens allowed</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-domain">Domain (Optional)</Label>
                 <Input
                   id="edit-domain"
-                  name="domain"
-                  defaultValue={organizationToEdit?.domain || ''}
                   placeholder="acme.com"
+                  {...editForm.register('domain')}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setOrganizationToEdit(null);
+                  editForm.reset();
+                }}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={updateMutation.isLoading}>
