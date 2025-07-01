@@ -252,7 +252,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ className = '' }) => {
         'Failed to delete user',
         error instanceof Error ? error : new Error(String(error)),
       );
-      
+
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to delete user. Please try again.';
       setErrorDialog({

@@ -185,9 +185,9 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
       logger.error('Failed to create organization', error);
       // Show error to user
       const errorMessage = error.message || 'Failed to create organization';
-      createForm.setError('root', { 
-        type: 'server', 
-        message: errorMessage 
+      createForm.setError('root', {
+        type: 'server',
+        message: errorMessage,
       });
     },
   });
@@ -334,7 +334,7 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
       createForm.setValue('slug', generatedSlug, {
         shouldValidate: true,
         shouldDirty: true,
-        shouldTouch: true
+        shouldTouch: true,
       });
     }
   }, [watchName, createForm]);
@@ -437,28 +437,26 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
                     {...createForm.register('name', { required: 'Organization name is required' })}
                   />
                   {createForm.formState.errors.name && (
-                    <p className="text-xs text-red-500">{createForm.formState.errors.name.message}</p>
+                    <p className="text-xs text-red-500">
+                      {createForm.formState.errors.name.message}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="slug">URL Slug</Label>
-                  <Input
-                    id="slug"
-                    placeholder="acme-corp"
-                    {...createForm.register('slug')}
-                  />
+                  <Input id="slug" placeholder="acme-corp" {...createForm.register('slug')} />
                   {createForm.formState.errors.slug && (
-                    <p className="text-xs text-red-500">{createForm.formState.errors.slug.message}</p>
+                    <p className="text-xs text-red-500">
+                      {createForm.formState.errors.slug.message}
+                    </p>
                   )}
-                  <p className="text-xs text-gray-500">Only lowercase letters, numbers, and hyphens allowed</p>
+                  <p className="text-xs text-gray-500">
+                    Only lowercase letters, numbers, and hyphens allowed
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="domain">Domain (Optional)</Label>
-                  <Input
-                    id="domain"
-                    placeholder="acme.com"
-                    {...createForm.register('domain')}
-                  />
+                  <Input id="domain" placeholder="acme.com" {...createForm.register('domain')} />
                 </div>
               </div>
               {createForm.formState.errors.root && (
@@ -567,23 +565,17 @@ const OrganizationManagement: React.FC<OrganizationManagementProps> = ({ classNa
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-slug">URL Slug</Label>
-                <Input
-                  id="edit-slug"
-                  placeholder="acme-corp"
-                  {...editForm.register('slug')}
-                />
+                <Input id="edit-slug" placeholder="acme-corp" {...editForm.register('slug')} />
                 {editForm.formState.errors.slug && (
                   <p className="text-xs text-red-500">{editForm.formState.errors.slug.message}</p>
                 )}
-                <p className="text-xs text-gray-500">Only lowercase letters, numbers, and hyphens allowed</p>
+                <p className="text-xs text-gray-500">
+                  Only lowercase letters, numbers, and hyphens allowed
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-domain">Domain (Optional)</Label>
-                <Input
-                  id="edit-domain"
-                  placeholder="acme.com"
-                  {...editForm.register('domain')}
-                />
+                <Input id="edit-domain" placeholder="acme.com" {...editForm.register('domain')} />
               </div>
             </div>
             <DialogFooter>

@@ -640,7 +640,7 @@ describe('UserManagement', () => {
     it('should show delete action for all users', () => {
       render(<UserManagement />);
 
-      // Should have delete button for each user  
+      // Should have delete button for each user
       expect(screen.getAllByText('Delete')).toHaveLength(3); // 3 in actions (dialog button rendered but not visible initially)
       expect(screen.getAllByTestId('action-delete')).toHaveLength(3);
     });
@@ -653,9 +653,7 @@ describe('UserManagement', () => {
 
       // Should show the delete confirmation dialog
       expect(screen.getByText('Confirm User Deletion')).toBeInTheDocument();
-      expect(
-        screen.getByText(/Are you sure you want to permanently delete/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to permanently delete/)).toBeInTheDocument();
     });
 
     it('should call removeUser when confirm button is clicked in delete dialog', async () => {

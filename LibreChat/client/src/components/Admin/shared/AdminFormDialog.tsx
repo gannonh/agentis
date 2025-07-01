@@ -3,7 +3,8 @@
  * @module components/Admin/shared/AdminFormDialog
  */
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
@@ -61,38 +62,56 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
   isSubmitting = false,
   initialValues = {},
 }) => {
-  const [error, setError] = useState<string | null>(null);
+  // Create default values from fields and initial values
+  const defaultValues = fields.reduce(
+    (acc, field) => {
+      acc[field.name] = initialValues[field.name] || field.defaultValue || '';
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    setError,
+    reset,
+  } = useForm<Record<string, string>>({
+    mode: 'onSubmit',
+    defaultValues,
+  });
 
+  // Reset form when initialValues change or dialog opens
+  React.useEffect(() => {
+    if (isOpen) {
+      reset(defaultValues);
+    }
+  }, [isOpen, reset, defaultValues]);
+
+  const onSubmitHandler = async (data: Record<string, string>) => {
     try {
-      const formData = new FormData(event.currentTarget);
-      const data: Record<string, string> = {};
-
-      fields.forEach((field) => {
-        data[field.name] = (formData.get(field.name) as string) || '';
-      });
-
       await onSubmit(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setError('root', {
+        type: 'server',
+        message: err instanceof Error ? err.message : 'An unexpected error occurred',
+      });
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmitHandler)}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
 
-          {error && (
+          {errors.root && (
             <div className="mx-6 mb-4 rounded-md border border-red-200 bg-red-50 p-3">
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600">{errors.root.message}</p>
             </div>
           )}
 
@@ -102,52 +121,67 @@ const AdminFormDialog: React.FC<AdminFormDialogProps> = ({
                 <Label htmlFor={field.name}>{field.label}</Label>
 
                 {field.type === 'select' ? (
-                  <>
-                    <Select
-                      defaultValue={initialValues[field.name] || field.defaultValue || ''}
-                      onValueChange={(value) => {
-                        const input = document.getElementById(
-                          `${field.name}-input`,
-                        ) as HTMLInputElement;
-                        if (input) input.value = value;
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={field.placeholder} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options?.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <input
-                      type="hidden"
-                      id={`${field.name}-input`}
-                      name={field.name}
-                      defaultValue={initialValues[field.name] || field.defaultValue || ''}
-                    />
-                  </>
-                ) : (
-                  <Input
-                    id={field.name}
+                  <Controller
                     name={field.name}
-                    type={field.type}
-                    placeholder={field.placeholder}
-                    required={field.required}
-                    pattern={field.pattern}
-                    title={field.title}
-                    defaultValue={initialValues[field.name] || field.defaultValue || ''}
+                    control={control}
+                    rules={{ required: field.required ? `${field.label} is required` : false }}
+                    render={({ field: controllerField }) => (
+                      <Select
+                        value={controllerField.value}
+                        onValueChange={controllerField.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={field.placeholder} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.options?.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
+                ) : (
+                  <Controller
+                    name={field.name}
+                    control={control}
+                    rules={{
+                      required: field.required ? `${field.label} is required` : false,
+                      pattern: field.pattern
+                        ? {
+                            value: new RegExp(field.pattern),
+                            message: field.title || `Invalid ${field.label.toLowerCase()}`,
+                          }
+                        : undefined,
+                    }}
+                    render={({ field: controllerField }) => (
+                      <Input
+                        id={field.name}
+                        type={field.type}
+                        placeholder={field.placeholder}
+                        title={field.title}
+                        {...controllerField}
+                      />
+                    )}
+                  />
+                )}
+
+                {errors[field.name] && (
+                  <p className="text-xs text-red-500">{errors[field.name]?.message}</p>
                 )}
               </div>
             ))}
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
