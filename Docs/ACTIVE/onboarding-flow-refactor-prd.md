@@ -246,11 +246,11 @@ graph TD
 **Dependencies**: Task #1  
 **Acceptance Criteria**:
 
-- [ ] Remove/modify Better Auth onCreate hooks
-- [ ] Update session creation to handle org-less users
-- [ ] Redirect new users to onboarding flow
-- [ ] Maintain backwards compatibility for existing users
-- [ ] Integration tests for both auth methods
+- [x] Remove/modify Better Auth onCreate hooks
+- [x] Update session creation to handle org-less users
+- [x] Redirect new users to onboarding flow
+- [x] Maintain backwards compatibility for existing users
+- [x] Integration tests for both auth methods
 
 ### Task #5: Build Organization Detection Step
 
