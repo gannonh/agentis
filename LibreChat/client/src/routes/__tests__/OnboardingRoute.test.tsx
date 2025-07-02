@@ -120,8 +120,8 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should show onboarding content
-    expect(screen.getByText('Onboarding content will go here')).toBeInTheDocument();
+    // Should show onboarding content (now showing organization form)
+    expect(screen.getByRole('heading', { name: 'Create Your Organization' })).toBeInTheDocument();
     expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
   });
 
@@ -162,5 +162,25 @@ describe('OnboardingRoute', () => {
 
     // Should show organization step heading
     expect(screen.getByRole('heading', { name: 'Create Your Organization' })).toBeInTheDocument();
+  });
+
+  it('should render organization step content when on organization step', () => {
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    // Should show organization form elements
+    expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 });
