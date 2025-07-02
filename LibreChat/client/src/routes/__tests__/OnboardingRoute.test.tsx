@@ -144,4 +144,23 @@ describe('OnboardingRoute', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
   });
+
+  it('should display the current step name in the heading', () => {
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    // Should show organization step heading
+    expect(screen.getByRole('heading', { name: 'Create Your Organization' })).toBeInTheDocument();
+  });
 });

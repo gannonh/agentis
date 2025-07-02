@@ -46,9 +46,19 @@ export default function OnboardingRoute() {
 
   const progress = getProgress();
 
+  const stepTitles = {
+    organization: 'Create Your Organization',
+    profile: 'Complete Your Profile',
+    team: 'Invite Team Members',
+    welcome: 'Welcome to Agentis',
+  };
+
   return (
     <div>
       <div className="p-4">
+        <h1 className="text-2xl font-semibold mb-4 text-center">
+          {stepTitles[state.currentStep]}
+        </h1>
         <div 
           role="progressbar" 
           aria-valuenow={progress.percentage} 
