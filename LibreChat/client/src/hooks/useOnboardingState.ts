@@ -61,10 +61,20 @@ export function useOnboardingState() {
     const prevIndex = Math.max(currentIndex - 1, 0);
     const prevStep = allSteps[prevIndex];
 
-    setState((prevState) => ({
-      ...prevState,
-      currentStep: prevStep,
-    }));
+    setState((prevState) => {
+      // When going back, remove steps from completed that come after the target step
+      const newCompletedSteps = prevState.completedSteps.filter((step) => {
+        const stepIndex = allSteps.indexOf(step);
+        const targetIndex = allSteps.indexOf(prevStep);
+        return stepIndex < targetIndex;
+      });
+
+      return {
+        ...prevState,
+        currentStep: prevStep,
+        completedSteps: newCompletedSteps,
+      };
+    });
   };
 
   const getProgress = () => {

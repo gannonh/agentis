@@ -59,104 +59,36 @@ describe('Onboarding Step Components', () => {
   });
 
   describe('OrganizationStep', () => {
-    // This test will fail until we implement the component
-    it('should render organization detection interface', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should handle organization creation flow', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should handle organization joining flow', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should validate organization name input', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should validate organization slug input', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
+    // TODO: Implement these tests after creating the OrganizationStep components in Issue #102-104
+    it.todo('should render organization detection interface');
+    it.todo('should handle organization creation flow');
+    it.todo('should handle organization joining flow');
+    it.todo('should validate organization name input');
+    it.todo('should validate organization slug input');
   });
 
   describe('ProfileStep', () => {
-    // This test will fail until we implement the component
-    it('should render profile setup form', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should validate required fields', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should handle profile update submission', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should pre-populate fields from session data', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
+    // TODO: Implement these tests after creating the ProfileStep component in Issue #105
+    it.todo('should render profile setup form');
+    it.todo('should validate required fields');
+    it.todo('should handle profile update submission');
+    it.todo('should pre-populate fields from session data');
   });
 
   describe('TeamStep', () => {
-    // This test will fail until we implement the component
-    it('should render team invitation interface', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should validate email addresses', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should handle invitation sending', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should allow skipping team invitations', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should handle invitation errors gracefully', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
+    // TODO: Implement these tests after creating the TeamStep component in Issue #105
+    it.todo('should render team invitation interface');
+    it.todo('should validate email addresses');
+    it.todo('should handle invitation sending');
+    it.todo('should allow skipping team invitations');
+    it.todo('should handle invitation errors gracefully');
   });
 
   describe('WelcomeStep', () => {
-    // This test will fail until we implement the component
-    it('should render welcome message', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should show completion summary', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should handle completion navigation', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should clear onboarding state on completion', async () => {
-      // We'll implement this test after creating the component
-      expect(true).toBe(true); // Placeholder
-    });
+    // TODO: Implement these tests after creating the WelcomeStep component in Issue #105
+    it.todo('should render welcome message');
+    it.todo('should show completion summary');
+    it.todo('should handle completion navigation');
+    it.todo('should clear onboarding state on completion');
   });
 });
