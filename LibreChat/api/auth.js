@@ -247,21 +247,27 @@ mongoose.connection.once('open', () => {
           adminUserIds: process.env.ADMIN_USER_IDS ? process.env.ADMIN_USER_IDS.split(',') : [],
         }),
         organization({
-          async onCreate({ user, organization }) {
-            try {
-              logger.info('📍 Organization created:', organization);
-              if (user?.email) {
-                await handleOrganizationAssignment(authInstance, user.email, user.id);
-                logger.info('✅ Organization assignment completed for user:', user.email);
-              } else {
-                logger.warn('⚠️ User has no email, skipping organization assignment');
-              }
-            } catch (error) {
-              logger.error('❌ Failed to handle organization assignment:', error);
-              // Don't throw the error to prevent breaking the organization creation
-              // The organization is still created successfully, just without auto-assignment
-            }
-          },
+          // DISABLED: Auto-organization creation removed for Issue #101
+          // Users must explicitly create organizations through onboarding flow
+          // 
+          // The onCreate hook previously auto-created organizations based on email domain
+          // This has been disabled to allow users to control their organization creation
+          // and prevent automatic organization creation for public email domains.
+          //
+          // async onCreate({ user, organization }) {
+          //   try {
+          //     logger.info('📍 Organization created:', organization);
+          //     if (user?.email) {
+          //       await handleOrganizationAssignment(authInstance, user.email, user.id);
+          //       logger.info('✅ Organization assignment completed for user:', user.email);
+          //     } else {
+          //       logger.warn('⚠️ User has no email, skipping organization assignment');
+          //     }
+          //   } catch (error) {
+          //     logger.error('❌ Failed to handle organization assignment:', error);
+          //     // Don't throw the error to prevent breaking the organization creation
+          //   }
+          // },
         }),
         magicLink({
           expiresIn: 300, // 5 minutes

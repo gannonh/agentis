@@ -39,7 +39,7 @@ export default function AuthGuard() {
   // Has session but no organizations - redirect to onboarding
   if (!organizations || organizations.length === 0) {
     console.log('AuthGuard: User has no organizations, redirecting to onboarding');
-    return <Navigate to="/register" replace={true} />;
+    return <Navigate to="/onboarding" replace={true} />;
   }
 
   // User is authenticated with organizations - redirect to chat
