@@ -11,7 +11,7 @@ import { useOnboardingState } from '~/hooks/useOnboardingState';
 
 export default function OnboardingRoute() {
   const localize = useLocalize();
-  const { state, getProgress } = useOnboardingState();
+  const { state, getProgress, goToNextStep } = useOnboardingState();
   
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
@@ -91,6 +91,7 @@ export default function OnboardingRoute() {
             <button
               type="button"
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+              onClick={goToNextStep}
             >
               Continue
             </button>
