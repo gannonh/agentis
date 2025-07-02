@@ -124,4 +124,24 @@ describe('OnboardingRoute', () => {
     expect(screen.getByText('Onboarding content will go here')).toBeInTheDocument();
     expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
   });
+
+  it('should show progress bar with current step information', () => {
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    // Should show progress bar
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+  });
 });

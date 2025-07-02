@@ -7,9 +7,11 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 import { useLocalize } from '~/hooks';
+import { useOnboardingState } from '~/hooks/useOnboardingState';
 
 export default function OnboardingRoute() {
   const localize = useLocalize();
+  const { state, getProgress } = useOnboardingState();
   
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
@@ -42,5 +44,28 @@ export default function OnboardingRoute() {
     return <Navigate to="/c/new" replace={true} />;
   }
 
-  return <div>Onboarding content will go here</div>;
+  const progress = getProgress();
+
+  return (
+    <div>
+      <div className="p-4">
+        <div 
+          role="progressbar" 
+          aria-valuenow={progress.percentage} 
+          aria-valuemin={0} 
+          aria-valuemax={100}
+          className="w-full bg-gray-200 rounded-full h-2 mb-4"
+        >
+          <div 
+            className="bg-blue-600 h-2 rounded-full transition-all"
+            style={{ width: `${progress.percentage}%` }}
+          />
+        </div>
+        <div className="text-center text-sm text-gray-600">
+          Step {progress.current} of {progress.total}
+        </div>
+      </div>
+      <div>Onboarding content will go here</div>
+    </div>
+  );
 }
