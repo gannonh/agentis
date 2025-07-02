@@ -311,4 +311,170 @@ describe('OnboardingRoute', () => {
     // Should show loading state
     expect(screen.getByRole('button', { name: 'Creating Organization...' })).toBeDisabled();
   });
+
+  it('should handle form validation error states correctly', async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    
+    // Test that button is disabled when input is empty
+    expect(continueButton).toBeDisabled();
+    
+    // Test with invalid input - this should trigger validation
+    await user.type(orgNameInput, 'A'); // Too short
+    expect(continueButton).not.toBeDisabled(); // Button should be enabled with input
+    
+    await user.click(continueButton);
+    
+    // Should show validation error
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
+    
+    // Form should remain in error state until corrected
+    expect(continueButton).not.toBeDisabled(); // Still enabled for retry
+  });
+
+  it('should respect maxLength attribute preventing input over 50 characters', async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    
+    // Verify the input has maxLength attribute
+    expect(orgNameInput).toHaveAttribute('maxLength', '50');
+    
+    // Try to type more than 50 characters - should be truncated
+    const longName = 'A'.repeat(60); // Try 60 characters
+    await user.type(orgNameInput, longName);
+    
+    // Should only have 50 characters
+    expect(orgNameInput).toHaveValue('A'.repeat(50));
+    
+    // The form validation logic should handle server-side validation for edge cases
+    // where maxLength might be bypassed (e.g., programmatic input, copy-paste with JS disabled)
+    
+    // Button should be enabled with valid length input
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    expect(continueButton).not.toBeDisabled();
+  });
+
+  it('should handle button state correctly with whitespace input', async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    
+    // Initially button should be disabled
+    expect(continueButton).toBeDisabled();
+    
+    // Test with only whitespace - button should be disabled due to trim() check
+    await user.type(orgNameInput, '   ');
+    expect(continueButton).toBeDisabled(); // Button disabled because trim() returns empty string
+    
+    // Test with single character plus whitespace - button should be enabled but form validation should catch it
+    await user.clear(orgNameInput);
+    await user.type(orgNameInput, '  A  ');
+    expect(continueButton).not.toBeDisabled(); // Button enabled because there's non-whitespace content
+    
+    await user.click(continueButton);
+    
+    // Should show validation error for too short after trimming
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
+    
+    // Test with valid name after trimming whitespace - should succeed
+    await user.clear(orgNameInput);
+    await user.type(orgNameInput, '  Valid Org  ');
+    expect(continueButton).not.toBeDisabled();
+    
+    await user.click(continueButton);
+    
+    // Should proceed to next step (no error alert)
+    await new Promise(resolve => setTimeout(resolve, 600));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Complete Your Profile' })).toBeInTheDocument();
+  });
+
+  it('should clear error state when input is corrected after validation error', async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    
+    // First, cause a validation error
+    await user.type(orgNameInput, 'A'); // Too short
+    await user.click(continueButton);
+    
+    // Should show error
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
+    
+    // Now correct the input
+    await user.clear(orgNameInput);
+    await user.type(orgNameInput, 'Valid Organization');
+    await user.click(continueButton);
+    
+    // Wait for submission
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    // Error should be cleared and we should proceed to next step
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Complete Your Profile' })).toBeInTheDocument();
+  });
 });
