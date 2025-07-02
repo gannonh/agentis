@@ -56,7 +56,7 @@ export const OAuthOnboardingRedirect: React.FC<{ children: React.ReactNode }> = 
       if (!hasRedirected) {
         console.log('🔄 REDIRECTING: User has no organizations, needs onboarding');
         setHasRedirected(true);
-        navigate('/register', { replace: true });
+        navigate('/onboarding', { replace: true });
       }
       return;
     }

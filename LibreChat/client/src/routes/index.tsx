@@ -24,6 +24,7 @@ import AdminRoute from './AdminRoute';
 import Search from './Search';
 import Root from './Root';
 import AuthGuard from './AuthGuard';
+import OnboardingRoute from './OnboardingRoute';
 
 const AuthLayout = () => (
   <>
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: <ProgressiveRegistration />,
+      },
+      {
+        path: 'onboarding',
+        element: <OnboardingRoute />,
       },
     ],
   },
