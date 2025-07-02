@@ -32,6 +32,7 @@ import {
   // validatePasswordReset,
 } from '#server/middleware/index.js';
 import { organizationService } from '#server/services/OrganizationService.js';
+import { checkDomainOrganizations } from '#server/services/OrganizationDetectionService.js';
 import { logger } from '#config/index.js';
 
 const router = express.Router();
@@ -152,6 +153,28 @@ router.all('/sign-up/*', prepareBetterAuthRequest);
 router.all('/sign-out', prepareBetterAuthRequest);
 router.all('/session', prepareBetterAuthRequest);
 router.all('/admin/*', prepareBetterAuthRequest); // Admin plugin endpoints
+
+// Organization detection endpoint - MUST come BEFORE catch-all route
+router.post('/organization/detect-domain', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email is required',
+      });
+    }
+
+    const result = await checkDomainOrganizations(email);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error detecting organization domain:', error);
+    res.status(500).json({
+      error: 'Failed to detect organization',
+      message: error.message,
+    });
+  }
+});
 
 // Organization domain checking endpoint - MUST come BEFORE catch-all route
 router.get('/organization/check-domain', async (req, res) => {
