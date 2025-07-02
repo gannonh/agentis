@@ -21,7 +21,7 @@ describe('Disable Auto-Organization Creation - Integration Tests', () => {
     // Start in-memory MongoDB server for testing
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
-    
+
     mongoClient = new MongoClient(uri);
     await mongoClient.connect();
     db = mongoClient.db('test-agentis');
@@ -50,11 +50,11 @@ describe('Disable Auto-Organization Creation - Integration Tests', () => {
       secret: 'test-secret-key-for-testing',
       baseURL: 'http://localhost:3001',
       basePath: '/api/auth',
-      
+
       emailAndPassword: {
         enabled: true,
       },
-      
+
       plugins: [
         organization({
           // This is the key test: onCreate hook is DISABLED/commented out
@@ -66,7 +66,7 @@ describe('Disable Auto-Organization Creation - Integration Tests', () => {
           sendMagicLink: async () => ({ success: true }), // Mock email sending
         }),
       ],
-      
+
       socialProviders: {
         google: {
           clientId: 'test-client-id',
@@ -194,7 +194,7 @@ describe('Disable Auto-Organization Creation - Integration Tests', () => {
       const organizations = await db.collection('organization').find({}).toArray();
       expect(organizations).toHaveLength(0);
 
-      // Verify NO memberships were auto-created  
+      // Verify NO memberships were auto-created
       const memberships = await db.collection('member').find({}).toArray();
       expect(memberships).toHaveLength(0);
     });
@@ -246,13 +246,19 @@ describe('Disable Auto-Organization Creation - Integration Tests', () => {
         const orgsAfterManualCreation = await db.collection('organization').find({}).toArray();
         expect(orgsAfterManualCreation).toHaveLength(1);
 
-        const memberships = await db.collection('member').find({ userId: userResult.user.id }).toArray();
+        const memberships = await db
+          .collection('member')
+          .find({ userId: userResult.user.id })
+          .toArray();
         expect(memberships).toHaveLength(1);
         expect(memberships[0].role).toBe('owner');
       } catch (error) {
         // If API-based organization creation doesn't work in test environment,
         // the key point is that no organization was auto-created during signup
-        console.log('Manual organization creation test skipped due to auth complexity:', error.message);
+        console.log(
+          'Manual organization creation test skipped due to auth complexity:',
+          error.message,
+        );
       }
     });
   });
@@ -283,7 +289,7 @@ describe('Disable Auto-Organization Creation - Integration Tests', () => {
       };
 
       const orgInsertResult = await db.collection('organization').insertOne(orgDoc);
-      
+
       const memberDoc = {
         userId: existingUser.user.id,
         organizationId: orgInsertResult.insertedId.toString(),
@@ -298,7 +304,10 @@ describe('Disable Auto-Organization Creation - Integration Tests', () => {
       const organizations = await db.collection('organization').find({}).toArray();
       expect(organizations).toHaveLength(1);
 
-      const memberships = await db.collection('member').find({ userId: existingUser.user.id }).toArray();
+      const memberships = await db
+        .collection('member')
+        .find({ userId: existingUser.user.id })
+        .toArray();
       expect(memberships).toHaveLength(1);
       expect(memberships[0].role).toBe('owner');
     });

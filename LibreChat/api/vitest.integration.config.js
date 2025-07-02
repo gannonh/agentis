@@ -11,16 +11,10 @@ export default defineConfig({
     environment: 'node',
 
     // Only include integration tests
-    include: [
-      '**/*.integration.vitest.{js,mjs,ts}',
-    ],
+    include: ['**/*.integration.vitest.{js,mjs,ts}'],
 
     // Exclude other files
-    exclude: [
-      'node_modules/**',
-      'dist/**',
-      'coverage/**',
-    ],
+    exclude: ['node_modules/**', 'dist/**', 'coverage/**'],
 
     // Setup files
     setupFiles: ['./test/vitestSetup.js'],
