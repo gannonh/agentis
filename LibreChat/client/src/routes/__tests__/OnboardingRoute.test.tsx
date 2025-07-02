@@ -82,7 +82,7 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Should not show onboarding content when not authenticated
-    expect(screen.queryByText('Onboarding content will go here')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Create Your Organization' })).not.toBeInTheDocument();
     expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
   });
 
@@ -102,7 +102,7 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Should not show onboarding content when user has organizations
-    expect(screen.queryByText('Onboarding content will go here')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Create Your Organization' })).not.toBeInTheDocument();
     expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
   });
 
