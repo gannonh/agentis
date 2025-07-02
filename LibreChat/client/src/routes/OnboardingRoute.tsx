@@ -9,6 +9,39 @@ import { authClient } from '~/config/betterAuth';
 import { useLocalize } from '~/hooks';
 import { useOnboardingState } from '~/hooks/useOnboardingState';
 
+/**
+ * Onboarding route component for new user flow
+ *
+ * Handles the complete onboarding experience for new users including:
+ * - Authentication state checking
+ * - Organization detection and creation
+ * - Step-by-step guided setup
+ * - Progress tracking and navigation
+ * - Form validation and error handling
+ *
+ * The component implements proper routing guards:
+ * - Redirects unauthenticated users to login
+ * - Redirects users with existing organizations to chat
+ * - Shows onboarding flow for authenticated users without organizations
+ *
+ * Features:
+ * - Real-time form validation with accessibility support
+ * - Loading states during async operations
+ * - Error handling with user-friendly messages
+ * - Progress visualization with step counter
+ * - Responsive design with mobile support
+ *
+ * @returns {JSX.Element} The onboarding route component
+ *
+ * @example
+ * ```tsx
+ * // Used in router configuration
+ * {
+ *   path: '/onboarding',
+ *   element: <OnboardingRoute />
+ * }
+ * ```
+ */
 export default function OnboardingRoute() {
   const localize = useLocalize();
   const { state, getProgress, goToNextStep } = useOnboardingState();

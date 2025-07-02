@@ -5,15 +5,29 @@
 
 import { useState } from 'react';
 
+/**
+ * Enumeration of onboarding steps in the flow
+ * @enum {string}
+ */
 export enum OnboardingStep {
+  /** Organization setup step */
   ORGANIZATION = 'organization',
+  /** User profile completion step */
   PROFILE = 'profile',
+  /** Team member invitation step */
   TEAM = 'team',
+  /** Welcome/completion step */
   WELCOME = 'welcome',
 }
 
+/**
+ * Interface representing the current state of the onboarding flow
+ * @interface OnboardingState
+ */
 export interface OnboardingState {
+  /** The current step the user is on */
   currentStep: OnboardingStep;
+  /** Array of steps that have been completed */
   completedSteps: OnboardingStep[];
 }
 
@@ -24,6 +38,35 @@ const allSteps = [
   OnboardingStep.WELCOME,
 ];
 
+/**
+ * Custom hook for managing onboarding flow state and navigation
+ *
+ * Provides state management for a multi-step onboarding process including:
+ * - Current step tracking
+ * - Completed steps history
+ * - Navigation between steps with state consistency
+ * - Progress calculation
+ *
+ * @returns {Object} Hook interface with state and navigation functions
+ * @returns {OnboardingState} returns.state - Current onboarding state
+ * @returns {Function} returns.goToNextStep - Navigate to the next step
+ * @returns {Function} returns.goToPreviousStep - Navigate to the previous step
+ * @returns {Function} returns.getProgress - Get current progress information
+ *
+ * @example
+ * ```tsx
+ * const { state, goToNextStep, goToPreviousStep, getProgress } = useOnboardingState();
+ *
+ * // Check current step
+ * if (state.currentStep === OnboardingStep.ORGANIZATION) {
+ *   // Show organization setup form
+ * }
+ *
+ * // Get progress for display
+ * const progress = getProgress();
+ * console.log(`Step ${progress.current} of ${progress.total} (${progress.percentage}%)`);
+ * ```
+ */
 export function useOnboardingState() {
   const [state, setState] = useState<OnboardingState>({
     currentStep: OnboardingStep.ORGANIZATION,
