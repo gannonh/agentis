@@ -249,7 +249,7 @@ mongoose.connection.once('open', () => {
         organization({
           // DISABLED: Auto-organization creation removed for Issue #101
           // Users must explicitly create organizations through onboarding flow
-          // 
+          //
           // The onCreate hook previously auto-created organizations based on email domain
           // This has been disabled to allow users to control their organization creation
           // and prevent automatic organization creation for public email domains.

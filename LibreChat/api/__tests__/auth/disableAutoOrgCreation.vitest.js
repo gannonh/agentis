@@ -27,19 +27,19 @@ describe('Disable Auto-Organization Creation', () => {
       id: 'test-user-1',
       email: 'testuser@gmail.com',
       name: 'Test User',
-      provider: 'google'
+      provider: 'google',
     };
 
     mockOrganization = {
       id: 'test-org-1',
       name: 'Test Company',
-      slug: 'test-company'
+      slug: 'test-company',
     };
 
     mockMember = {
       userId: mockUser.id,
       organizationId: mockOrganization.id,
-      role: 'owner'
+      role: 'owner',
     };
   });
 
@@ -75,7 +75,7 @@ describe('Disable Auto-Organization Creation', () => {
         id: 'test-user-2',
         email: 'testuser2@example.com',
         name: 'Test User 2',
-        provider: 'email'
+        provider: 'email',
       };
 
       mockAuth.api.signUpEmail.mockResolvedValue({
@@ -100,7 +100,7 @@ describe('Disable Auto-Organization Creation', () => {
       const orglessUser = {
         id: 'test-user-3',
         email: 'orgless@gmail.com',
-        name: 'Orgless User'
+        name: 'Orgless User',
       };
 
       // Mock session without organization
@@ -108,12 +108,12 @@ describe('Disable Auto-Organization Creation', () => {
         user: orglessUser,
         data: {
           // activeOrganizationId should be undefined
-        }
+        },
       });
 
       const session = await mockAuth.api.session({
         headers: { authorization: 'Bearer mock-token' },
-        body: { userId: orglessUser.id }
+        body: { userId: orglessUser.id },
       });
 
       expect(session).toBeDefined();
@@ -125,20 +125,20 @@ describe('Disable Auto-Organization Creation', () => {
       const userWithOrg = {
         id: 'test-user-4',
         email: 'withorg@company.com',
-        name: 'User With Org'
+        name: 'User With Org',
       };
 
       // Mock session with organization
       mockAuth.api.session.mockResolvedValue({
         user: userWithOrg,
         data: {
-          activeOrganizationId: mockOrganization.id
-        }
+          activeOrganizationId: mockOrganization.id,
+        },
       });
 
       const session = await mockAuth.api.session({
         headers: { authorization: 'Bearer mock-token' },
-        body: { userId: userWithOrg.id }
+        body: { userId: userWithOrg.id },
       });
 
       expect(session).toBeDefined();
@@ -179,19 +179,19 @@ describe('Disable Auto-Organization Creation', () => {
       const existingUser = {
         id: 'existing-user-1',
         email: 'legacy@oldcompany.com',
-        name: 'Legacy User'
+        name: 'Legacy User',
       };
 
       // Mock that existing user has organization
       mockAuth.api.session.mockResolvedValue({
         user: existingUser,
         data: {
-          activeOrganizationId: mockOrganization.id
-        }
+          activeOrganizationId: mockOrganization.id,
+        },
       });
 
       const session = await mockAuth.api.session({
-        headers: { authorization: 'Bearer mock-existing-token' }
+        headers: { authorization: 'Bearer mock-existing-token' },
       });
 
       expect(session.user).toBeDefined();
@@ -202,7 +202,7 @@ describe('Disable Auto-Organization Creation', () => {
       const newUser = {
         id: 'new-user-1',
         email: 'new@example.com',
-        name: 'New User'
+        name: 'New User',
       };
 
       // Mock that new user has no organization
@@ -210,11 +210,11 @@ describe('Disable Auto-Organization Creation', () => {
         user: newUser,
         data: {
           // No activeOrganizationId
-        }
+        },
       });
 
       const session = await mockAuth.api.session({
-        headers: { authorization: 'Bearer mock-new-token' }
+        headers: { authorization: 'Bearer mock-new-token' },
       });
 
       expect(session.user).toBeDefined();
@@ -226,9 +226,9 @@ describe('Disable Auto-Organization Creation', () => {
     it('should not call organization creation hooks for new users', () => {
       // This test validates that the onCreate hook for organizations is disabled
       // Since we're mocking the behavior, we verify the expected outcome
-      
+
       const mockOnCreateHook = vi.fn();
-      
+
       // Simulate user creation without triggering org creation
       const createUserWithoutOrg = (user) => {
         // In the actual implementation, this would NOT call mockOnCreateHook
@@ -236,7 +236,7 @@ describe('Disable Auto-Organization Creation', () => {
       };
 
       const result = createUserWithoutOrg(mockUser);
-      
+
       expect(result.user).toBeDefined();
       expect(result.organization).toBeNull();
       expect(mockOnCreateHook).not.toHaveBeenCalled();
@@ -246,16 +246,16 @@ describe('Disable Auto-Organization Creation', () => {
       // Test that session creation works when user has no organization
       const createSessionForUser = (user, membership = null) => {
         const sessionData = { userId: user.id };
-        
+
         if (membership && membership.organizationId) {
           sessionData.activeOrganizationId = membership.organizationId;
         }
-        
+
         return { data: sessionData };
       };
 
       const session = createSessionForUser(mockUser, null);
-      
+
       expect(session.data.userId).toBe(mockUser.id);
       expect(session.data.activeOrganizationId).toBeUndefined();
     });
