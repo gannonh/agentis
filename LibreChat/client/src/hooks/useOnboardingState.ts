@@ -39,11 +39,14 @@ export function useOnboardingState() {
       // Only add to completed steps if we're actually moving to a different step
       // and the current step isn't already in completed steps
       const isMovingToNewStep = nextStep !== prevState.currentStep;
-      const isCurrentStepAlreadyCompleted = prevState.completedSteps.includes(prevState.currentStep);
-      
-      const newCompletedSteps = isMovingToNewStep && !isCurrentStepAlreadyCompleted
-        ? [...prevState.completedSteps, prevState.currentStep]
-        : prevState.completedSteps;
+      const isCurrentStepAlreadyCompleted = prevState.completedSteps.includes(
+        prevState.currentStep,
+      );
+
+      const newCompletedSteps =
+        isMovingToNewStep && !isCurrentStepAlreadyCompleted
+          ? [...prevState.completedSteps, prevState.currentStep]
+          : prevState.completedSteps;
 
       return {
         ...prevState,

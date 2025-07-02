@@ -82,7 +82,9 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Should not show onboarding content when not authenticated
-    expect(screen.queryByRole('heading', { name: 'Create Your Organization' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Create Your Organization' }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
   });
 
@@ -102,7 +104,9 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Should not show onboarding content when user has organizations
-    expect(screen.queryByRole('heading', { name: 'Create Your Organization' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Create Your Organization' }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
   });
 
@@ -202,12 +206,109 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
+    // Fill in organization name
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    await user.type(orgNameInput, 'Test Organization');
+
     // Click continue button
     const continueButton = screen.getByRole('button', { name: 'Continue' });
     await user.click(continueButton);
 
+    // Wait for async submission
+    await new Promise((resolve) => setTimeout(resolve, 600)); // Wait for simulated API call
+
     // Should show profile step heading
     expect(screen.getByRole('heading', { name: 'Complete Your Profile' })).toBeInTheDocument();
     expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
+  });
+
+  it('should disable continue button when organization name is empty', async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    // Button should be disabled when input is empty
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    expect(continueButton).toBeDisabled();
+
+    // Type something to enable button
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    await user.type(orgNameInput, 'Test');
+    expect(continueButton).not.toBeDisabled();
+
+    // Clear input - button should be disabled again
+    await user.clear(orgNameInput);
+    expect(continueButton).toBeDisabled();
+  });
+
+  it('should show validation error when organization name is too short', async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    // Enter a name that's too short
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    await user.type(orgNameInput, 'A');
+
+    // Submit the form
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    await user.click(continueButton);
+
+    // Should show validation error
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
+  });
+
+  it('should disable button when submitting and show loading state', async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated user without organizations
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: { user: { id: '1', email: 'test@example.com' } },
+      isPending: false,
+    } as any);
+
+    vi.mocked(authClient.useListOrganizations).mockReturnValue({
+      data: [],
+      isPending: false,
+    } as any);
+
+    const Wrapper = createWrapper();
+    render(<OnboardingRoute />, { wrapper: Wrapper });
+
+    // Fill in organization name
+    const orgNameInput = screen.getByLabelText('Organization Name');
+    await user.type(orgNameInput, 'Test Organization');
+
+    // Click continue button
+    const continueButton = screen.getByRole('button', { name: 'Continue' });
+    await user.click(continueButton);
+
+    // Should show loading state
+    expect(screen.getByRole('button', { name: 'Creating Organization...' })).toBeDisabled();
   });
 });

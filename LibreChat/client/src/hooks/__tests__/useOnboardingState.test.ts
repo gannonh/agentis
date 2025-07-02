@@ -89,7 +89,7 @@ describe('useOnboardingState', () => {
       result.current.goToNextStep(); // profile -> team
     });
     act(() => {
-      result.current.goToNextStep(); // team -> welcome  
+      result.current.goToNextStep(); // team -> welcome
     });
 
     // Now we're on welcome step
@@ -102,7 +102,7 @@ describe('useOnboardingState', () => {
 
     // Call goToNextStep multiple times on the last step - should not add duplicates
     const completedStepsBeforeExtra = [...result.current.state.completedSteps];
-    
+
     act(() => {
       result.current.goToNextStep();
     });

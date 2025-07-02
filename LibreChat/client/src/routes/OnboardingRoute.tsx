@@ -3,7 +3,7 @@
  * @module routes/OnboardingRoute
  */
 
-import React from 'react';
+import React, { useState, FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 import { useLocalize } from '~/hooks';
@@ -13,8 +13,47 @@ export default function OnboardingRoute() {
   const localize = useLocalize();
   const { state, getProgress, goToNextStep } = useOnboardingState();
 
+  // Form state
+  const [orgName, setOrgName] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
+
+  // Handle organization form submission
+  const handleOrgSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const trimmedOrgName = orgName.trim();
+    if (!trimmedOrgName) {
+      setError('Organization name is required');
+      return;
+    }
+
+    if (trimmedOrgName.length < 2) {
+      setError('Organization name must be at least 2 characters');
+      return;
+    }
+
+    if (trimmedOrgName.length > 50) {
+      setError('Organization name must be 50 characters or less');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // TODO: In Task #6 (Issue #103), this will integrate with actual organization creation
+      // For now, just simulate the process and move to next step
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
+      goToNextStep();
+    } catch (err) {
+      setError('Failed to create organization. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Show loading while checking auth state
   if (sessionLoading || orgsLoading) {
@@ -73,7 +112,7 @@ export default function OnboardingRoute() {
       </div>
       <div className="px-4">
         {state.currentStep === 'organization' && (
-          <form className="mx-auto max-w-md">
+          <form className="mx-auto max-w-md" onSubmit={handleOrgSubmit}>
             <div className="mb-4">
               <label htmlFor="org-name" className="mb-2 block text-sm font-medium text-gray-700">
                 Organization Name
@@ -81,15 +120,42 @@ export default function OnboardingRoute() {
               <input
                 id="org-name"
                 type="text"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                disabled={isSubmitting}
+                className={`w-full rounded-md border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
+                  error
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                } ${isSubmitting ? 'cursor-not-allowed bg-gray-100' : ''}`}
+                aria-describedby={error ? 'org-name-error' : undefined}
+                aria-invalid={error ? 'true' : 'false'}
+                placeholder="Enter your organization name"
+                minLength={2}
+                maxLength={50}
               />
+              {error && (
+                <div
+                  id="org-name-error"
+                  role="alert"
+                  className="mt-2 text-sm text-red-600"
+                  aria-live="polite"
+                >
+                  {error}
+                </div>
+              )}
             </div>
             <button
-              type="button"
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-              onClick={goToNextStep}
+              type="submit"
+              disabled={isSubmitting || !orgName.trim()}
+              className={`w-full rounded-md px-4 py-2 text-white transition-colors ${
+                isSubmitting || !orgName.trim()
+                  ? 'cursor-not-allowed bg-gray-400'
+                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              }`}
             >
-              Continue
+              {isSubmitting ? 'Creating Organization...' : 'Continue'}
             </button>
           </form>
         )}
