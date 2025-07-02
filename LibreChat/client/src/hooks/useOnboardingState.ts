@@ -35,11 +35,22 @@ export function useOnboardingState() {
     const nextIndex = Math.min(currentIndex + 1, allSteps.length - 1);
     const nextStep = allSteps[nextIndex];
 
-    setState((prevState) => ({
-      ...prevState,
-      currentStep: nextStep,
-      completedSteps: [...prevState.completedSteps, prevState.currentStep],
-    }));
+    setState((prevState) => {
+      // Only add to completed steps if we're actually moving to a different step
+      // and the current step isn't already in completed steps
+      const isMovingToNewStep = nextStep !== prevState.currentStep;
+      const isCurrentStepAlreadyCompleted = prevState.completedSteps.includes(prevState.currentStep);
+      
+      const newCompletedSteps = isMovingToNewStep && !isCurrentStepAlreadyCompleted
+        ? [...prevState.completedSteps, prevState.currentStep]
+        : prevState.completedSteps;
+
+      return {
+        ...prevState,
+        currentStep: nextStep,
+        completedSteps: newCompletedSteps,
+      };
+    });
   };
 
   const goToPreviousStep = () => {

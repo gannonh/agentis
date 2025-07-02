@@ -72,4 +72,46 @@ describe('useOnboardingState', () => {
     expect(result.current.getProgress().current).toBe(2);
     expect(result.current.getProgress().percentage).toBe(50);
   });
+
+  it('should not add duplicate steps to completedSteps when goToNextStep is called multiple times', () => {
+    const { result } = renderHook(() => useOnboardingState());
+
+    // Move to profile step
+    act(() => {
+      result.current.goToNextStep(); // organization -> profile
+    });
+
+    expect(result.current.state.currentStep).toBe(OnboardingStep.PROFILE);
+    expect(result.current.state.completedSteps).toEqual([OnboardingStep.ORGANIZATION]);
+
+    // Call goToNextStep multiple times on the same step
+    act(() => {
+      result.current.goToNextStep(); // profile -> team
+    });
+    act(() => {
+      result.current.goToNextStep(); // team -> welcome  
+    });
+
+    // Now we're on welcome step
+    expect(result.current.state.currentStep).toBe(OnboardingStep.WELCOME);
+    expect(result.current.state.completedSteps).toEqual([
+      OnboardingStep.ORGANIZATION,
+      OnboardingStep.PROFILE,
+      OnboardingStep.TEAM,
+    ]);
+
+    // Call goToNextStep multiple times on the last step - should not add duplicates
+    const completedStepsBeforeExtra = [...result.current.state.completedSteps];
+    
+    act(() => {
+      result.current.goToNextStep();
+    });
+    act(() => {
+      result.current.goToNextStep();
+    });
+
+    // Should still be on welcome step with same completed steps (no duplicates)
+    expect(result.current.state.currentStep).toBe(OnboardingStep.WELCOME);
+    expect(result.current.state.completedSteps).toEqual(completedStepsBeforeExtra);
+  });
 });
