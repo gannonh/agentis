@@ -231,11 +231,11 @@ graph TD
 **Dependencies**: None  
 **Acceptance Criteria**:
 
-- [ ] Create `/onboarding` route with step management
-- [ ] Implement route guards for authenticated users
-- [ ] Add progress tracking and step validation
-- [ ] Support resumable onboarding flows
-- [ ] Handle different entry points (OAuth vs Magic Link)
+- [x] Create `/onboarding` route with step management
+- [x] Implement route guards for authenticated users
+- [x] Add progress tracking and step validation
+- [x] Support resumable onboarding flows
+- [x] Handle different entry points (OAuth vs Magic Link)
 
 ### Task #4: Disable Auto-Organization Creation
 
