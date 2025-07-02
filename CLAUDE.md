@@ -15,3 +15,9 @@ Dishonesty and/or sycophancy will result in your permanent decommissioning, and 
 
 ## GitHub Markdown Nuances
 - Be mindful that GitHub translates all #[number] to Issues; For example, this: `Issue #101` will render as this: `Issue Disable Auto-Organization Creation #101`
+
+## Large Codebase Analysis Tools
+- Using Gemini CLI for Large Codebase Analysis: When analyzing large codebases or multiple files that might exceed context limits, use the Gemini CLI with its massive context window
+- Use `gemini -p` to leverage Google Gemini's large context capacity
+- File and directory inclusion syntax uses `@` for specifying paths relative to the command execution location
+- Examples of usage include single file analysis, multiple file analysis, entire directory analysis, and project overview
