@@ -38,11 +38,38 @@ export function useOnboardingState() {
     setState(prevState => ({
       ...prevState,
       currentStep: nextStep,
+      completedSteps: [...prevState.completedSteps, prevState.currentStep],
     }));
+  };
+
+  const goToPreviousStep = () => {
+    const currentIndex = allSteps.indexOf(state.currentStep);
+    const prevIndex = Math.max(currentIndex - 1, 0);
+    const prevStep = allSteps[prevIndex];
+    
+    setState(prevState => ({
+      ...prevState,
+      currentStep: prevStep,
+    }));
+  };
+
+  const getProgress = () => {
+    const currentIndex = allSteps.indexOf(state.currentStep);
+    const current = currentIndex + 1;
+    const total = allSteps.length;
+    const percentage = Math.round((current / total) * 100);
+    
+    return {
+      current,
+      total,
+      percentage,
+    };
   };
 
   return {
     state,
     goToNextStep,
+    goToPreviousStep,
+    getProgress,
   };
 }
