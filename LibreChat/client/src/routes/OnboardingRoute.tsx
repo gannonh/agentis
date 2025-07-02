@@ -12,7 +12,7 @@ import { useOnboardingState } from '~/hooks/useOnboardingState';
 export default function OnboardingRoute() {
   const localize = useLocalize();
   const { state, getProgress, goToNextStep } = useOnboardingState();
-  
+
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
 
@@ -21,14 +21,12 @@ export default function OnboardingRoute() {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div 
+          <div
             className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"
             role="progressbar"
             aria-label={localize('com_ui_loading')}
           />
-          <div className="text-gray-600 dark:text-gray-400">
-            {localize('com_ui_loading')}...
-          </div>
+          <div className="text-gray-600 dark:text-gray-400">{localize('com_ui_loading')}...</div>
         </div>
       </div>
     );
@@ -56,18 +54,16 @@ export default function OnboardingRoute() {
   return (
     <div>
       <div className="p-4">
-        <h1 className="text-2xl font-semibold mb-4 text-center">
-          {stepTitles[state.currentStep]}
-        </h1>
-        <div 
-          role="progressbar" 
-          aria-valuenow={progress.percentage} 
-          aria-valuemin={0} 
+        <h1 className="mb-4 text-center text-2xl font-semibold">{stepTitles[state.currentStep]}</h1>
+        <div
+          role="progressbar"
+          aria-valuenow={progress.percentage}
+          aria-valuemin={0}
           aria-valuemax={100}
-          className="w-full bg-gray-200 rounded-full h-2 mb-4"
+          className="mb-4 h-2 w-full rounded-full bg-gray-200"
         >
-          <div 
-            className="bg-blue-600 h-2 rounded-full transition-all"
+          <div
+            className="h-2 rounded-full bg-blue-600 transition-all"
             style={{ width: `${progress.percentage}%` }}
           />
         </div>
@@ -77,20 +73,20 @@ export default function OnboardingRoute() {
       </div>
       <div className="px-4">
         {state.currentStep === 'organization' && (
-          <form className="max-w-md mx-auto">
+          <form className="mx-auto max-w-md">
             <div className="mb-4">
-              <label htmlFor="org-name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="org-name" className="mb-2 block text-sm font-medium text-gray-700">
                 Organization Name
               </label>
               <input
                 id="org-name"
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <button
               type="button"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+              className="w-full rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
               onClick={goToNextStep}
             >
               Continue

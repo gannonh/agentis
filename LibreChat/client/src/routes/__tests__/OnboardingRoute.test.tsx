@@ -187,7 +187,7 @@ describe('OnboardingRoute', () => {
 
   it('should navigate to profile step when clicking continue on organization step', async () => {
     const user = userEvent.setup();
-    
+
     // Mock authenticated user without organizations
     vi.mocked(authClient.useSession).mockReturnValue({
       data: { user: { id: '1', email: 'test@example.com' } },

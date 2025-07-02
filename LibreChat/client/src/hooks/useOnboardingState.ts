@@ -34,8 +34,8 @@ export function useOnboardingState() {
     const currentIndex = allSteps.indexOf(state.currentStep);
     const nextIndex = Math.min(currentIndex + 1, allSteps.length - 1);
     const nextStep = allSteps[nextIndex];
-    
-    setState(prevState => ({
+
+    setState((prevState) => ({
       ...prevState,
       currentStep: nextStep,
       completedSteps: [...prevState.completedSteps, prevState.currentStep],
@@ -46,8 +46,8 @@ export function useOnboardingState() {
     const currentIndex = allSteps.indexOf(state.currentStep);
     const prevIndex = Math.max(currentIndex - 1, 0);
     const prevStep = allSteps[prevIndex];
-    
-    setState(prevState => ({
+
+    setState((prevState) => ({
       ...prevState,
       currentStep: prevStep,
     }));
@@ -58,7 +58,7 @@ export function useOnboardingState() {
     const current = currentIndex + 1;
     const total = allSteps.length;
     const percentage = Math.round((current / total) * 100);
-    
+
     return {
       current,
       total,
