@@ -157,7 +157,7 @@ router.all('/admin/*', prepareBetterAuthRequest); // Admin plugin endpoints
 // Organization detection endpoint - MUST come BEFORE catch-all route
 router.post('/organization/detect-domain', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, inviteToken } = req.body;
 
     if (!email) {
       return res.status(400).json({
@@ -165,7 +165,20 @@ router.post('/organization/detect-domain', async (req, res) => {
       });
     }
 
-    const result = await checkDomainOrganizations(email);
+    // Build invite context if token is provided
+    let inviteContext = null;
+    if (inviteToken) {
+      // TODO: Validate invitation token and fetch organization details
+      // For now, creating basic context structure
+      inviteContext = {
+        inviteToken,
+        // These would normally come from token validation
+        organizationId: 'invited-org-123',
+        organizationName: 'Invited Company',
+      };
+    }
+
+    const result = await checkDomainOrganizations(email, inviteContext);
     res.json(result);
   } catch (error) {
     logger.error('Error detecting organization domain:', error);
