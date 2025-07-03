@@ -168,13 +168,8 @@ router.post('/organization/detect-domain', async (req, res) => {
     // Build invite context if token is provided
     let inviteContext = null;
     if (inviteToken) {
-      // TODO: Validate invitation token and fetch organization details
-      // For now, creating basic context structure
       inviteContext = {
         inviteToken,
-        // These would normally come from token validation
-        organizationId: 'invited-org-123',
-        organizationName: 'Invited Company',
       };
     }
 

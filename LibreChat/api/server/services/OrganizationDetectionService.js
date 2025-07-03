@@ -5,6 +5,7 @@
 
 import Organization from '#models/Organization';
 import PublicDomainService from './PublicDomainService.js';
+import { validateInvitationToken } from './InvitationValidationService.js';
 
 /**
  * Get organizations by domain
@@ -27,15 +28,15 @@ export async function getOrganizationsByDomain(domain) {
  * @returns {Promise<Object>} Detection result with organization information
  */
 export async function checkDomainOrganizations(email, inviteContext) {
-  // Handle invitation context first - validate before processing
-  if (inviteContext && inviteContext.organizationId) {
-    // Check if invitation has expired
-    if (inviteContext.expiresAt && new Date() > new Date(inviteContext.expiresAt)) {
-      // Invitation expired - fall back to normal domain detection
+  // Handle invitation context first - validate token if provided
+  if (inviteContext && inviteContext.inviteToken) {
+    const validatedInvitation = await validateInvitationToken(inviteContext.inviteToken);
+    
+    if (!validatedInvitation) {
+      // Invalid or expired invitation - fall back to normal domain detection
       const domain = email.split('@')[1];
       const isPublicDomain = PublicDomainService.isPublicDomain(domain);
-
-      // Check for existing organizations by domain for normal detection
+      
       const organizations = await getOrganizationsByDomain(domain);
       const hasOrganization = organizations.length > 0;
       const canAutoJoin = organizations.length === 1 && organizations[0].allowDomainJoin === true;
@@ -46,7 +47,7 @@ export async function checkDomainOrganizations(email, inviteContext) {
         hasOrganization,
         organizations,
         canAutoJoin,
-        invitationError: 'Invitation has expired',
+        invitationError: 'Invalid or expired invitation',
       };
     }
 
@@ -61,13 +62,13 @@ export async function checkDomainOrganizations(email, inviteContext) {
       hasOrganization: true,
       organizations: [
         {
-          _id: inviteContext.organizationId,
-          name: inviteContext.organizationName,
+          _id: validatedInvitation.organizationId,
+          name: validatedInvitation.organization.name,
         },
       ],
       canAutoJoin: true,
       isInvited: true,
-      invitation: inviteContext,
+      invitation: validatedInvitation,
     };
   }
 

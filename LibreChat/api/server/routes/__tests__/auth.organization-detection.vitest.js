@@ -37,8 +37,6 @@ describe('POST /api/auth/organization/detect-domain', () => {
         if (inviteToken) {
           inviteContext = {
             inviteToken,
-            organizationId: 'invited-org-123',
-            organizationName: 'Invited Company',
           };
         }
 
