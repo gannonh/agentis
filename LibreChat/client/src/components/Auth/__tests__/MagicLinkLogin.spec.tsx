@@ -63,16 +63,16 @@ describe('MagicLinkLogin', () => {
 
   it('renders email input form', () => {
     renderComponent();
-    expect(screen.getByLabelText('com_auth_email')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     expect(screen.getByTestId('login-button')).toBeInTheDocument();
-    expect(screen.getByText('com_auth_continue_with_email')).toBeInTheDocument();
+    expect(screen.getByText('Sign In With Email')).toBeInTheDocument();
   });
 
   it('validates email format', async () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const emailInput = screen.getByLabelText('com_auth_email');
+    const emailInput = screen.getByLabelText('Email address');
     const submitButton = screen.getByTestId('login-button');
 
     // Test invalid email
@@ -80,7 +80,7 @@ describe('MagicLinkLogin', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('com_auth_email_pattern')).toBeInTheDocument();
+      expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument();
     });
   });
 
@@ -88,7 +88,7 @@ describe('MagicLinkLogin', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const emailInput = screen.getByLabelText('com_auth_email');
+    const emailInput = screen.getByLabelText('Email address');
     const submitButton = screen.getByTestId('login-button');
 
     await user.type(emailInput, 'test@example.com');
@@ -106,15 +106,15 @@ describe('MagicLinkLogin', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const emailInput = screen.getByLabelText('com_auth_email');
+    const emailInput = screen.getByLabelText('Email address');
     const submitButton = screen.getByTestId('login-button');
 
     await user.type(emailInput, 'test@example.com');
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('com_auth_check_your_email')).toBeInTheDocument();
-      expect(screen.getByText('com_auth_magic_link_sent')).toBeInTheDocument();
+      expect(screen.getByText('Check your email')).toBeInTheDocument();
+      expect(screen.getByText(/We sent a magic link to/)).toBeInTheDocument();
       expect(screen.getByText('test@example.com')).toBeInTheDocument();
     });
   });
@@ -127,7 +127,7 @@ describe('MagicLinkLogin', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const emailInput = screen.getByLabelText('com_auth_email');
+    const emailInput = screen.getByLabelText('Email address');
     const submitButton = screen.getByTestId('login-button');
 
     await user.type(emailInput, 'test@example.com');
@@ -143,18 +143,18 @@ describe('MagicLinkLogin', () => {
     renderComponent();
 
     // First send
-    const emailInput = screen.getByLabelText('com_auth_email');
+    const emailInput = screen.getByLabelText('Email address');
     const submitButton = screen.getByTestId('login-button');
 
     await user.type(emailInput, 'test@example.com');
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('com_auth_resend_link')).toBeInTheDocument();
+      expect(screen.getByText('Resend link')).toBeInTheDocument();
     });
 
     // Resend
-    const resendButton = screen.getByText('com_auth_resend_link');
+    const resendButton = screen.getByText('Resend link');
     await user.click(resendButton);
 
     await waitFor(() => {

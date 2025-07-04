@@ -81,16 +81,21 @@ function AuthLayout({
           className={
             pathname.includes('onboarding')
               ? 'w-full overflow-hidden px-6 py-4'
-              : 'w-authPageWidth overflow-hidden bg-white px-6 py-4 dark:bg-gray-900 sm:max-w-md sm:rounded-lg'
+              : 'w-full max-w-md overflow-hidden bg-white px-8 py-8 dark:bg-gray-900 sm:rounded-xl sm:shadow-lg'
           }
         >
           {!hasStartupConfigError && !isFetching && (
-            <h1
-              className="mb-4 text-center text-3xl font-semibold text-black dark:text-white"
-              style={{ userSelect: 'none' }}
-            >
-              {header}
-            </h1>
+            <div className="mb-8 text-center">
+              <h1
+                className="mb-2 text-4xl font-bold text-black dark:text-white"
+                style={{ userSelect: 'none' }}
+              >
+                {header}
+              </h1>
+              {(pathname.includes('login') || pathname.includes('register')) && (
+                <p className="text-lg text-gray-600 dark:text-gray-400">Sign in or register</p>
+              )}
+            </div>
           )}
           {children}
           {!pathname.includes('2fa') &&
