@@ -111,6 +111,32 @@ test('should display login page with updated design', async ({ browser }) => {
   }
 });
 
+test('should show magic link confirmation screen', async ({ browser }) => {
+  logProgress('🚀 Testing magic link confirmation screen...');
+  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  try {
+    await page.goto('http://localhost:3080/login');
+    
+    // Fill email and submit
+    await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
+    await page.getByTestId('login-button').click();
+    
+    // Verify magic link confirmation screen
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    await expect(page.getByText('We sent a magic link to')).toBeVisible();
+    await expect(page.getByText(TEST_EMAILS.GENERIC_TEST)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Resend link' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Use a different email' })).toBeVisible();
+    
+    logProgress('✅ Magic link confirmation screen verified');
+  } finally {
+    await context.close();
+  }
+});
+
 // TODO: Implement the following test scenarios one by one:
 
 /**
