@@ -164,6 +164,39 @@ test('should initiate Google OAuth flow', async ({ browser }) => {
   }
 });
 
+test('should handle Google OAuth cancellation', async ({ browser }) => {
+  logProgress('🚀 Testing Google OAuth cancellation...');
+  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  try {
+    await page.goto('http://localhost:3080/login');
+    
+    // Click Google OAuth button
+    await page.getByTestId('google').click();
+    
+    // Wait for navigation to complete
+    await page.waitForLoadState('networkidle');
+    
+    // Verify we're on Google's OAuth page
+    expect(page.url()).toContain('accounts.google.com');
+    
+    // Navigate back to simulate cancellation
+    await page.goBack();
+    await page.waitForLoadState('networkidle');
+    
+    // Should return to login page gracefully
+    expect(page.url()).toContain('localhost:3080/login');
+    await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
+    await expect(page.getByTestId('google')).toBeVisible();
+    
+    logProgress('✅ Google OAuth cancellation handled gracefully');
+  } finally {
+    await context.close();
+  }
+});
+
 // TODO: Implement the following test scenarios one by one:
 
 /**
