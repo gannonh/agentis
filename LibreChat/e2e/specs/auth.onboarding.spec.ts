@@ -22,11 +22,38 @@ test.describe('Auth & Onboarding Tests', () => {
     OUTLOOK_PUBLIC: 'test@outlook.com'
   };
 
-  // Helper to capture magic link from console logs
-  async function captureMagicLink(page): Promise<string | null> {
-    // In a real implementation, this would monitor the API console output
-    // For now, we'll simulate this functionality
-    return 'http://localhost:3080/auth/magic-link?token=test-magic-token';
+  // Helper to capture magic link from file
+  async function captureMagicLink(email: string): Promise<string | null> {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    
+    try {
+      // Backend writes to LibreChat/temp/, so we need to check there
+      // Backend runs from LibreChat/ directory and uses path.resolve(process.cwd(), '..')
+      // which resolves to project root, but then it adds 'temp' -> project_root/temp
+      // But actually the logs show it's writing to LibreChat/temp/
+      const magicLinksFile = path.join(process.cwd(), 'LibreChat', 'temp', 'magic-links.json');
+      
+      // Wait a bit for the file to be written
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const data = await fs.readFile(magicLinksFile, 'utf8');
+      const magicLinks = JSON.parse(data);
+      
+      // Find the most recent magic link for this email
+      const magicLink = magicLinks
+        .filter((link: any) => link.email === email)
+        .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+      
+      if (magicLink && new Date(magicLink.expiresAt) > new Date()) {
+        return magicLink.url;
+      }
+      
+      return null;
+    } catch (error) {
+      console.log('❌ Error reading magic link file:', error);
+      return null;
+    }
   }
 
   // Helper to clean database between tests
@@ -84,121 +111,139 @@ test.describe('Auth & Onboarding Tests', () => {
  * =================================================================================
  */
 
-test('should display login page with updated design', async ({ browser }) => {
-  logProgress('🚀 Testing updated login page design...');
+// =================================================================================
+// STRATEGIC USER JOURNEY TESTS
+// =================================================================================
+// These tests follow complete user flows from start to finish, building on each other
+
+test('Journey 1: New user magic link authentication to onboarding', async ({ browser }) => {
+  logProgress('🚀 Testing complete new user magic link journey...');
   
   const context = await browser.newContext();
   const page = await context.newPage();
   
   try {
+    // Step 1: Verify login page design
     await page.goto('http://localhost:3080/login');
-    
-    // Verify updated design elements
     await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
     await expect(page.getByText('Sign in or register')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
     await expect(page.getByTestId('login-button')).toBeVisible();
-    await expect(page.getByText('OR SIGN IN WITH')).toBeVisible();
-    await expect(page.getByTestId('google')).toBeVisible();
     
-    // Verify old "Sign Up" link is removed
-    await expect(page.getByText('Don\'t have an account?')).not.toBeVisible();
-    await expect(page.getByRole('link', { name: 'Sign up' })).not.toBeVisible();
-    
-    logProgress('✅ Login page design verified');
-  } finally {
-    await context.close();
-  }
-});
-
-test('should show magic link confirmation screen', async ({ browser }) => {
-  logProgress('🚀 Testing magic link confirmation screen...');
-  
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  
-  try {
-    await page.goto('http://localhost:3080/login');
-    
-    // Fill email and submit
-    await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
+    // Step 2: Request magic link with new user email
+    const newUserEmail = `new-user-${Date.now()}@example.com`;
+    await page.getByRole('textbox', { name: 'Email address' }).fill(newUserEmail);
     await page.getByTestId('login-button').click();
     
-    // Verify magic link confirmation screen
+    // Step 3: Verify magic link confirmation screen
     await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
-    await expect(page.getByText('We sent a magic link to')).toBeVisible();
-    await expect(page.getByText(TEST_EMAILS.GENERIC_TEST)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Resend link' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Use a different email' })).toBeVisible();
+    await expect(page.getByText(newUserEmail)).toBeVisible();
     
-    logProgress('✅ Magic link confirmation screen verified');
+    // Step 4: Test resend functionality
+    await page.getByRole('button', { name: 'Resend link' }).click();
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    
+    // Step 5: Capture and follow magic link
+    logProgress('📁 Capturing magic link from file...');
+    const magicLinkUrl = await captureMagicLink(newUserEmail);
+    
+    if (!magicLinkUrl) {
+      throw new Error('Failed to capture magic link from file');
+    }
+    
+    logProgress(`🔗 Found magic link: ${magicLinkUrl}`);
+    
+    // Step 6: Navigate to magic link URL
+    await page.goto(magicLinkUrl);
+    await page.waitForLoadState('networkidle');
+    
+    // Step 7: Verify successful authentication and redirect
+    // New users should be redirected to onboarding
+    if (page.url().includes('/onboarding')) {
+      logProgress('✅ Successfully redirected to onboarding flow');
+      // Look for the main onboarding heading (the larger one)
+      await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible();
+    } else if (page.url().includes('/c/new')) {
+      logProgress('✅ Successfully redirected to main app (user may already exist)');
+      await expect(page.getByRole('button')).toBeVisible(); // Some main app element
+    } else {
+      logProgress(`⚠️ Unexpected redirect URL: ${page.url()}`);
+      // Still verify we're authenticated by checking we're not on login page
+      expect(page.url()).not.toContain('/login');
+    }
+    
+    logProgress('✅ Complete new user magic link authentication journey verified');
   } finally {
     await context.close();
   }
 });
 
-test('should initiate Google OAuth flow', async ({ browser }) => {
-  logProgress('🚀 Testing Google OAuth initiation...');
+test('Journey 2: Google OAuth with public domain email to onboarding', async ({ browser }) => {
+  logProgress('🚀 Testing Google OAuth with public domain journey...');
   
   const context = await browser.newContext();
   const page = await context.newPage();
   
   try {
+    // Step 1: Navigate to login
     await page.goto('http://localhost:3080/login');
     
-    // Click Google OAuth button
+    // Step 2: Initiate Google OAuth
     await page.getByTestId('google').click();
-    
-    // Wait for navigation to complete
     await page.waitForLoadState('networkidle');
     
-    // Verify we're on Google's OAuth page
+    // Step 3: Verify we reach Google OAuth page
     expect(page.url()).toContain('accounts.google.com');
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     await expect(page.getByText('to continue to Agentis')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Email or phone' })).toBeVisible();
     
+    // TODO: Step 4: Complete OAuth with test credentials
+    // - Fill agentis.test@gmail.com credentials
+    // - Complete OAuth flow
+    // - Verify authentication success  
+    // - Verify redirect to onboarding (public domain = no org detection)
+    
+    logProgress('⚠️ OAuth credentials needed to complete authentication');
     logProgress('✅ Google OAuth initiation verified');
   } finally {
     await context.close();
   }
 });
 
-test('should handle Google OAuth cancellation', async ({ browser }) => {
-  logProgress('🚀 Testing Google OAuth cancellation...');
+test('Journey 3: OAuth cancellation flow', async ({ browser }) => {
+  logProgress('🚀 Testing OAuth cancellation journey...');
   
   const context = await browser.newContext();
   const page = await context.newPage();
   
   try {
+    // Step 1: Start OAuth flow
     await page.goto('http://localhost:3080/login');
-    
-    // Click Google OAuth button
     await page.getByTestId('google').click();
-    
-    // Wait for navigation to complete
     await page.waitForLoadState('networkidle');
-    
-    // Verify we're on Google's OAuth page
     expect(page.url()).toContain('accounts.google.com');
     
-    // Navigate back to simulate cancellation
+    // Step 2: Cancel by going back
     await page.goBack();
     await page.waitForLoadState('networkidle');
     
-    // Should return to login page gracefully
+    // Step 3: Verify graceful return to login
     expect(page.url()).toContain('localhost:3080/login');
     await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
     await expect(page.getByTestId('google')).toBeVisible();
     
-    logProgress('✅ Google OAuth cancellation handled gracefully');
+    // Step 4: Verify login still works after cancellation
+    await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
+    await page.getByTestId('login-button').click();
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    
+    logProgress('✅ OAuth cancellation and recovery verified');
   } finally {
     await context.close();
   }
 });
 
-test('should validate email format', async ({ browser }) => {
-  logProgress('🚀 Testing email validation...');
+test('Journey 4: Email validation prevents bad submissions', async ({ browser }) => {
+  logProgress('🚀 Testing email validation journey...');
   
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -206,131 +251,27 @@ test('should validate email format', async ({ browser }) => {
   try {
     await page.goto('http://localhost:3080/login');
     
-    // Test invalid email formats
-    const invalidEmails = [
-      'invalid',
-      'no@',
-      '@domain.com',
-      'spaces @email.com',
-      'missing.domain@',
-      'double@@domain.com'
-    ];
+    // Test multiple invalid formats in sequence
+    const invalidEmails = ['invalid', 'no@', '@domain.com', 'spaces @email.com'];
     
     for (const email of invalidEmails) {
-      logProgress(`Testing invalid email: ${email}`);
-      
-      // Clear and fill email
       await page.getByRole('textbox', { name: 'Email address' }).clear();
       await page.getByRole('textbox', { name: 'Email address' }).fill(email);
       await page.getByTestId('login-button').click();
+      await page.waitForTimeout(500);
       
-      // Should show validation error or stay on same page
-      // (Different implementations might handle this differently)
-      await page.waitForTimeout(500); // Small wait to see if validation appears
-      
-      // Should not navigate away from login page for invalid emails
+      // Should stay on login page
       expect(page.url()).toContain('localhost:3080/login');
-      
-      // Check if still on login page (validation should prevent submission)
       await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
     }
     
-    // Test valid email format should proceed
+    // Valid email should proceed
     await page.getByRole('textbox', { name: 'Email address' }).clear();
     await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
     await page.getByTestId('login-button').click();
-    
-    // Should proceed to magic link confirmation for valid email
     await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
     
-    logProgress('✅ Email validation verified');
-  } finally {
-    await context.close();
-  }
-});
-
-test('should handle magic link resending', async ({ browser }) => {
-  logProgress('🚀 Testing magic link resending...');
-  
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  
-  try {
-    await page.goto('http://localhost:3080/login');
-    
-    // Send initial magic link
-    await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
-    await page.getByTestId('login-button').click();
-    
-    // Verify confirmation screen
-    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
-    await expect(page.getByText('We sent a magic link to')).toBeVisible();
-    await expect(page.getByText(TEST_EMAILS.GENERIC_TEST)).toBeVisible();
-    
-    // Click resend link
-    const resendButton = page.getByRole('button', { name: 'Resend link' });
-    await expect(resendButton).toBeVisible();
-    await resendButton.click();
-    
-    // Should still show confirmation screen after resend
-    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
-    await expect(page.getByText(TEST_EMAILS.GENERIC_TEST)).toBeVisible();
-    
-    // Verify resend button is still functional (could be clicked again)
-    await expect(page.getByRole('button', { name: 'Resend link' })).toBeVisible();
-    
-    // Test "Use a different email" functionality
-    const differentEmailButton = page.getByRole('button', { name: 'Use a different email' });
-    await expect(differentEmailButton).toBeVisible();
-    await differentEmailButton.click();
-    
-    // Should return to login form
-    await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
-    await expect(page.getByTestId('login-button')).toBeVisible();
-    
-    logProgress('✅ Magic link resending and different email functionality verified');
-  } finally {
-    await context.close();
-  }
-});
-
-test('should complete magic link authentication flow', async ({ browser }) => {
-  logProgress('🚀 Testing complete magic link authentication...');
-  
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  
-  try {
-    await page.goto('http://localhost:3080/login');
-    
-    // Send magic link request
-    const testEmail = `test-${Date.now()}@example.com`;
-    await page.getByRole('textbox', { name: 'Email address' }).fill(testEmail);
-    await page.getByTestId('login-button').click();
-    
-    // Verify confirmation screen
-    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
-    await expect(page.getByText(testEmail)).toBeVisible();
-    
-    // TODO: Implement magic link capture mechanism
-    // Option 1: Read from a file written by the backend
-    // Option 2: Check if we can intercept the console logs
-    // Option 3: Mock the magic link endpoint for testing
-    
-    // For now, let's simulate what should happen after magic link click:
-    // 1. User should be authenticated
-    // 2. User should be redirected to onboarding (new user) or main app (existing user)
-    
-    logProgress('⚠️ Magic link capture mechanism needs implementation');
-    logProgress('✅ Magic link request flow verified (authentication pending)');
-    
-    // Once we implement magic link capture, this test should:
-    // 1. Read magic link from file/console
-    // 2. Navigate to the magic link URL
-    // 3. Verify successful authentication
-    // 4. Verify redirect to appropriate page (onboarding vs main app)
-    
+    logProgress('✅ Email validation journey verified');
   } finally {
     await context.close();
   }

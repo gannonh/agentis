@@ -277,15 +277,78 @@ mongoose.connection.once('open', () => {
             logger.info(`🔗 Magic link URL: ${url}`);
             logger.info(`🎫 Magic link token: ${token}`);
 
-            // In development, log the magic link
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`
+            // In development/test, write magic link to file for e2e testing
+            logger.info(`🔍 Magic link debug - NODE_ENV: ${process.env.NODE_ENV}, CI: ${process.env.CI}`);
+            const shouldWriteFile = process.env.NODE_ENV === 'development' || 
+                                  process.env.NODE_ENV === 'test' || 
+                                  process.env.NODE_ENV === 'CI' ||
+                                  process.env.CI === 'true' ||
+                                  process.env.CI;
+            logger.info(`🔍 Should write magic link file: ${shouldWriteFile}`);
+            if (shouldWriteFile) {
+              logger.info(`📁 Magic link file writing enabled for environment: ${process.env.NODE_ENV}`);
+              try {
+                const fs = await import('fs/promises');
+                const path = await import('path');
+                
+                // Create temp directory if it doesn't exist
+                // Use absolute path to project root, not LibreChat directory
+                const projectRoot = path.resolve(process.cwd(), '..');
+                const tempDir = path.join(projectRoot, 'temp');
+                try {
+                  await fs.mkdir(tempDir, { recursive: true });
+                } catch (err) {
+                  // Directory might already exist
+                }
+                
+                // Write magic link data to file for e2e tests to read
+                const magicLinkData = {
+                  email,
+                  token,
+                  url,
+                  timestamp: new Date().toISOString(),
+                  expiresAt: new Date(Date.now() + 300 * 1000).toISOString() // 5 minutes from now
+                };
+                
+                const magicLinksFile = path.join(tempDir, 'magic-links.json');
+                
+                // Read existing magic links or create new array
+                let magicLinks = [];
+                try {
+                  const existingData = await fs.readFile(magicLinksFile, 'utf8');
+                  magicLinks = JSON.parse(existingData);
+                } catch (err) {
+                  // File doesn't exist or is invalid, start with empty array
+                }
+                
+                // Add new magic link (keep last 10 for cleanup)
+                magicLinks.push(magicLinkData);
+                if (magicLinks.length > 10) {
+                  magicLinks = magicLinks.slice(-10);
+                }
+                
+                // Write back to file
+                await fs.writeFile(magicLinksFile, JSON.stringify(magicLinks, null, 2));
+                
+                logger.info(`📁 Magic link written to file: ${magicLinksFile}`);
+                logger.info(`📁 Total magic links in file: ${magicLinks.length}`);
+                logger.info(`📁 Latest magic link email: ${email}`);
+                
+                // Also log to console for development
+                console.log(`
 🪄 ===== DEVELOPMENT MAGIC LINK =====
 📧 Email: ${email}
 🔗 Click this link to authenticate: ${url}
 🎫 Token: ${token}
+📁 Also written to: ${magicLinksFile}
 ====================================
-              `);
+                `);
+              } catch (error) {
+                logger.error('❌ Failed to write magic link to file:', error);
+                logger.error('❌ File path was:', tempDir);
+                logger.error('❌ Error details:', error.message);
+                logger.error('❌ Error stack:', error.stack);
+              }
             }
 
             // TODO: Implement email sending (for now just log)
