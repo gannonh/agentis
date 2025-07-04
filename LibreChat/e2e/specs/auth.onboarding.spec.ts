@@ -137,6 +137,33 @@ test('should show magic link confirmation screen', async ({ browser }) => {
   }
 });
 
+test('should initiate Google OAuth flow', async ({ browser }) => {
+  logProgress('🚀 Testing Google OAuth initiation...');
+  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  try {
+    await page.goto('http://localhost:3080/login');
+    
+    // Click Google OAuth button
+    await page.getByTestId('google').click();
+    
+    // Wait for navigation to complete
+    await page.waitForLoadState('networkidle');
+    
+    // Verify we're on Google's OAuth page
+    expect(page.url()).toContain('accounts.google.com');
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByText('to continue to Agentis')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Email or phone' })).toBeVisible();
+    
+    logProgress('✅ Google OAuth initiation verified');
+  } finally {
+    await context.close();
+  }
+});
+
 // TODO: Implement the following test scenarios one by one:
 
 /**
