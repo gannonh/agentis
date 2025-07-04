@@ -197,6 +197,58 @@ test('should handle Google OAuth cancellation', async ({ browser }) => {
   }
 });
 
+test('should validate email format', async ({ browser }) => {
+  logProgress('🚀 Testing email validation...');
+  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  try {
+    await page.goto('http://localhost:3080/login');
+    
+    // Test invalid email formats
+    const invalidEmails = [
+      'invalid',
+      'no@',
+      '@domain.com',
+      'spaces @email.com',
+      'missing.domain@',
+      'double@@domain.com'
+    ];
+    
+    for (const email of invalidEmails) {
+      logProgress(`Testing invalid email: ${email}`);
+      
+      // Clear and fill email
+      await page.getByRole('textbox', { name: 'Email address' }).clear();
+      await page.getByRole('textbox', { name: 'Email address' }).fill(email);
+      await page.getByTestId('login-button').click();
+      
+      // Should show validation error or stay on same page
+      // (Different implementations might handle this differently)
+      await page.waitForTimeout(500); // Small wait to see if validation appears
+      
+      // Should not navigate away from login page for invalid emails
+      expect(page.url()).toContain('localhost:3080/login');
+      
+      // Check if still on login page (validation should prevent submission)
+      await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
+    }
+    
+    // Test valid email format should proceed
+    await page.getByRole('textbox', { name: 'Email address' }).clear();
+    await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
+    await page.getByTestId('login-button').click();
+    
+    // Should proceed to magic link confirmation for valid email
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    
+    logProgress('✅ Email validation verified');
+  } finally {
+    await context.close();
+  }
+});
+
 // TODO: Implement the following test scenarios one by one:
 
 /**
