@@ -249,6 +249,52 @@ test('should validate email format', async ({ browser }) => {
   }
 });
 
+test('should handle magic link resending', async ({ browser }) => {
+  logProgress('🚀 Testing magic link resending...');
+  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  try {
+    await page.goto('http://localhost:3080/login');
+    
+    // Send initial magic link
+    await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
+    await page.getByTestId('login-button').click();
+    
+    // Verify confirmation screen
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    await expect(page.getByText('We sent a magic link to')).toBeVisible();
+    await expect(page.getByText(TEST_EMAILS.GENERIC_TEST)).toBeVisible();
+    
+    // Click resend link
+    const resendButton = page.getByRole('button', { name: 'Resend link' });
+    await expect(resendButton).toBeVisible();
+    await resendButton.click();
+    
+    // Should still show confirmation screen after resend
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    await expect(page.getByText(TEST_EMAILS.GENERIC_TEST)).toBeVisible();
+    
+    // Verify resend button is still functional (could be clicked again)
+    await expect(page.getByRole('button', { name: 'Resend link' })).toBeVisible();
+    
+    // Test "Use a different email" functionality
+    const differentEmailButton = page.getByRole('button', { name: 'Use a different email' });
+    await expect(differentEmailButton).toBeVisible();
+    await differentEmailButton.click();
+    
+    // Should return to login form
+    await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+    await expect(page.getByTestId('login-button')).toBeVisible();
+    
+    logProgress('✅ Magic link resending and different email functionality verified');
+  } finally {
+    await context.close();
+  }
+});
+
 // TODO: Implement the following test scenarios one by one:
 
 /**
