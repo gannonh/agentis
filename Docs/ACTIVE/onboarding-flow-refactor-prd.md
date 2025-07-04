@@ -298,7 +298,7 @@ graph TD
 - [ ] Send notifications to org admins
 - [ ] Handle approval/rejection flows
 
-### Task #8: Update Profile Setup Integration
+### Task #8: Update Profile Setup Integration.
 
 <https://github.com/gannonh/agentis/issues/105>
 
