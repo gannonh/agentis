@@ -42,10 +42,10 @@ export async function validateInvitationToken(invitationId) {
     const now = new Date();
     const expiresAt = new Date(invitation.expiresAt);
     if (expiresAt < now) {
-      logger.debug('Invitation has expired', { 
-        invitationId, 
+      logger.debug('Invitation has expired', {
+        invitationId,
         expiresAt: invitation.expiresAt,
-        now: now.toISOString() 
+        now: now.toISOString(),
       });
       return null;
     }
@@ -56,9 +56,9 @@ export async function validateInvitationToken(invitationId) {
     });
 
     if (!organization) {
-      logger.warn('Organization not found for invitation', { 
-        invitationId, 
-        organizationId: invitation.organizationId 
+      logger.warn('Organization not found for invitation', {
+        invitationId,
+        organizationId: invitation.organizationId,
       });
       return null;
     }

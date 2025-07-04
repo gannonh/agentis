@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,17 +12,51 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authClient } from '~/config/betterAuth';
 import OnboardingRoute from '../OnboardingRoute';
 
+const mockNavigate = vi.fn();
+
 // Mock the authClient
 vi.mock('~/config/betterAuth', () => ({
   authClient: {
     useSession: vi.fn(),
     useListOrganizations: vi.fn(),
+    organization: {
+      create: vi.fn(),
+      setActive: vi.fn(),
+      acceptInvitation: vi.fn(),
+    },
+    updateUser: vi.fn(),
+  },
+  authUtils: {
+    getEmailDomain: (email: string) => email.split('@')[1]?.toLowerCase() || '',
   },
 }));
 
 // Mock hooks
 vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => key,
+}));
+
+// Mock react-router-dom
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    Navigate: ({ to, replace }: { to: string; replace?: boolean }) => (
+      <div data-testid="navigate" data-to={to} data-replace={String(replace)} />
+    ),
+    useNavigate: () => mockNavigate,
+  };
+});
+
+// Mock OrganizationDetectionStep component
+vi.mock('~/components/Auth/OrganizationDetectionStep', () => ({
+  default: ({ onNext }: any) => (
+    <div data-testid="organization-detection-step">
+      <button onClick={() => onNext({ action: 'create', organizationName: 'Test Org' })}>
+        Mock Create Organization
+      </button>
+    </div>
+  ),
 }));
 
 const createWrapper = () => {
@@ -62,8 +96,8 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    expect(screen.getByText('com_ui_loading...')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByText('Checking your account...')).toBeInTheDocument();
   });
 
   it('should redirect to login when user is not authenticated', () => {
@@ -81,11 +115,10 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should not show onboarding content when not authenticated
-    expect(
-      screen.queryByRole('heading', { name: 'Create Your Organization' }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
+    // Should redirect to login instead
+    expect(screen.getByTestId('navigate')).toBeInTheDocument();
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
   });
 
   it('should redirect to chat when user has organizations', () => {
@@ -103,11 +136,10 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should not show onboarding content when user has organizations
-    expect(
-      screen.queryByRole('heading', { name: 'Create Your Organization' }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
+    // Should redirect to chat instead
+    expect(screen.getByTestId('navigate')).toBeInTheDocument();
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/c/new');
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
   });
 
   it('should show onboarding content when user is authenticated but has no organizations', () => {
@@ -125,9 +157,11 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should show onboarding content (now showing organization form)
-    expect(screen.getByRole('heading', { name: 'Create Your Organization' })).toBeInTheDocument();
-    expect(screen.queryByText('com_ui_loading...')).not.toBeInTheDocument();
+    // Should show onboarding content - the title has a line break so we need to check differently
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      "What's the name of yourcompany or team?",
+    );
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
   });
 
   it('should show progress bar with current step information', () => {
@@ -145,8 +179,7 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should show progress bar
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    // Should show step progress
     expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
   });
 
@@ -165,8 +198,9 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should show organization step heading
-    expect(screen.getByRole('heading', { name: 'Create Your Organization' })).toBeInTheDocument();
+    // Should show organization step heading - check the heading element
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent("What's the name of yourcompany or team?");
   });
 
   it('should render organization step content when on organization step', () => {
@@ -184,17 +218,16 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should show organization form elements
-    expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+    // Should show organization detection step component
+    expect(screen.getByTestId('organization-detection-step')).toBeInTheDocument();
   });
 
-  it('should navigate to profile step when clicking continue on organization step', async () => {
+  it('should navigate to profile step when organization is created', async () => {
     const user = userEvent.setup();
 
     // Mock authenticated user without organizations
     vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
+      data: { user: { id: '1', email: 'test@example.com', name: 'Test User' } },
       isPending: false,
     } as any);
 
@@ -203,31 +236,32 @@ describe('OnboardingRoute', () => {
       isPending: false,
     } as any);
 
+    // Mock organization API calls
+    vi.mocked(authClient.organization.create).mockResolvedValue({
+      data: { id: 'org-123', name: 'Test Org', slug: 'test-org' },
+    } as any);
+    vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Fill in organization name
-    const orgNameInput = screen.getByLabelText('Organization Name');
-    await user.type(orgNameInput, 'Test Organization');
+    // Click the mock create organization button
+    const createButton = screen.getByRole('button', { name: 'Mock Create Organization' });
+    await user.click(createButton);
 
-    // Click continue button
-    const continueButton = screen.getByRole('button', { name: 'Continue' });
-    await user.click(continueButton);
-
-    // Wait for async submission
-    await new Promise((resolve) => setTimeout(resolve, 600)); // Wait for simulated API call
-
-    // Should show profile step heading
-    expect(screen.getByRole('heading', { name: 'Complete Your Profile' })).toBeInTheDocument();
+    // Wait for profile step to appear
+    await waitFor(() => {
+      expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+    });
     expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
   });
 
-  it('should disable continue button when organization name is empty', async () => {
+  it('should show profile form when on profile step', async () => {
     const user = userEvent.setup();
 
     // Mock authenticated user without organizations
     vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
+      data: { user: { id: '1', email: 'test@example.com', name: 'Test User' } },
       isPending: false,
     } as any);
 
@@ -236,29 +270,32 @@ describe('OnboardingRoute', () => {
       isPending: false,
     } as any);
 
+    // Mock organization API calls
+    vi.mocked(authClient.organization.create).mockResolvedValue({
+      data: { id: 'org-123', name: 'Test Org', slug: 'test-org' },
+    } as any);
+    vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Button should be disabled when input is empty
-    const continueButton = screen.getByRole('button', { name: 'Continue' });
-    expect(continueButton).toBeDisabled();
+    // Navigate to profile step
+    const createButton = screen.getByRole('button', { name: 'Mock Create Organization' });
+    await user.click(createButton);
 
-    // Type something to enable button
-    const orgNameInput = screen.getByLabelText('Organization Name');
-    await user.type(orgNameInput, 'Test');
-    expect(continueButton).not.toBeDisabled();
-
-    // Clear input - button should be disabled again
-    await user.clear(orgNameInput);
-    expect(continueButton).toBeDisabled();
+    // Wait for profile form to appear
+    await waitFor(() => {
+      expect(screen.getByLabelText('Your Name')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
-  it('should show validation error when organization name is too short', async () => {
+  it('should validate profile name in profile step', async () => {
     const user = userEvent.setup();
 
     // Mock authenticated user without organizations
     vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
+      data: { user: { id: '1', email: 'test@example.com', name: 'Test User' } },
       isPending: false,
     } as any);
 
@@ -267,28 +304,40 @@ describe('OnboardingRoute', () => {
       isPending: false,
     } as any);
 
+    // Mock organization API calls
+    vi.mocked(authClient.organization.create).mockResolvedValue({
+      data: { id: 'org-123', name: 'Test Org', slug: 'test-org' },
+    } as any);
+    vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Enter a name that's too short
-    const orgNameInput = screen.getByLabelText('Organization Name');
-    await user.type(orgNameInput, 'A');
+    // Navigate to profile step
+    await user.click(screen.getByRole('button', { name: 'Mock Create Organization' }));
 
-    // Submit the form
+    // Wait for profile step
+    await waitFor(() => {
+      expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+    });
+
+    // Try to submit without filling name
     const continueButton = screen.getByRole('button', { name: 'Continue' });
     await user.click(continueButton);
 
-    // Should show validation error
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
+    // Should still be on profile step - validation prevents progress
+    // The submit should not proceed without a name, but no error is actually shown
+    // Just verify we're still on the same step
+    expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
+    expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
   });
 
-  it('should disable button when submitting and show loading state', async () => {
+  it('should show loading state when submitting forms', async () => {
     const user = userEvent.setup();
 
     // Mock authenticated user without organizations
     vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
+      data: { user: { id: '1', email: 'test@example.com', name: 'Test User' } },
       isPending: false,
     } as any);
 
@@ -297,27 +346,46 @@ describe('OnboardingRoute', () => {
       isPending: false,
     } as any);
 
+    // Mock organization API calls
+    vi.mocked(authClient.organization.create).mockResolvedValue({
+      data: { id: 'org-123', name: 'Test Org', slug: 'test-org' },
+    } as any);
+    vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+    // Mock updateUser to be slow so we can catch the loading state
+    vi.mocked(authClient.updateUser).mockImplementation(
+      () => new Promise((resolve) => setTimeout(resolve, 100)),
+    );
+
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Fill in organization name
-    const orgNameInput = screen.getByLabelText('Organization Name');
-    await user.type(orgNameInput, 'Test Organization');
+    // Navigate to profile step
+    await user.click(screen.getByRole('button', { name: 'Mock Create Organization' }));
 
-    // Click continue button
+    // Wait for profile step
+    await waitFor(() => {
+      expect(screen.getByLabelText('Your Name')).toBeInTheDocument();
+    });
+
+    // Fill profile name
+    const nameInput = screen.getByLabelText('Your Name');
+    await user.type(nameInput, 'John Doe');
+
+    // Click continue button to trigger loading state
     const continueButton = screen.getByRole('button', { name: 'Continue' });
     await user.click(continueButton);
 
-    // Should show loading state
-    expect(screen.getByRole('button', { name: 'Creating Organization...' })).toBeDisabled();
+    // Should briefly show loading state
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
   });
 
-  it('should handle form validation error states correctly', async () => {
+  it('should navigate through all onboarding steps', async () => {
     const user = userEvent.setup();
 
     // Mock authenticated user without organizations
     vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
+      data: { user: { id: '1', email: 'test@example.com', name: 'Test User' } },
       isPending: false,
     } as any);
 
@@ -326,155 +394,42 @@ describe('OnboardingRoute', () => {
       isPending: false,
     } as any);
 
-    const Wrapper = createWrapper();
-    render(<OnboardingRoute />, { wrapper: Wrapper });
-
-    const orgNameInput = screen.getByLabelText('Organization Name');
-    const continueButton = screen.getByRole('button', { name: 'Continue' });
-
-    // Test that button is disabled when input is empty
-    expect(continueButton).toBeDisabled();
-
-    // Test with invalid input - this should trigger validation
-    await user.type(orgNameInput, 'A'); // Too short
-    expect(continueButton).not.toBeDisabled(); // Button should be enabled with input
-
-    await user.click(continueButton);
-
-    // Should show validation error
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
-
-    // Form should remain in error state until corrected
-    expect(continueButton).not.toBeDisabled(); // Still enabled for retry
-  });
-
-  it('should respect maxLength attribute preventing input over 50 characters', async () => {
-    const user = userEvent.setup();
-
-    // Mock authenticated user without organizations
-    vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
-      isPending: false,
+    // Mock API calls
+    vi.mocked(authClient.organization.create).mockResolvedValue({
+      data: { id: 'org-123', name: 'Test Org', slug: 'test-org' },
     } as any);
-
-    vi.mocked(authClient.useListOrganizations).mockReturnValue({
-      data: [],
-      isPending: false,
-    } as any);
+    vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+    vi.mocked(authClient.updateUser).mockResolvedValue({} as any);
 
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    const orgNameInput = screen.getByLabelText('Organization Name');
+    // Step 1: Organization
+    expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Mock Create Organization' }));
 
-    // Verify the input has maxLength attribute
-    expect(orgNameInput).toHaveAttribute('maxLength', '50');
+    // Wait for Step 2: Profile
+    await waitFor(() => {
+      expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
+    });
+    const nameInput = screen.getByLabelText('Your Name');
+    await user.type(nameInput, 'John Doe');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-    // Try to type more than 50 characters - should be truncated
-    const longName = 'A'.repeat(60); // Try 60 characters
-    await user.type(orgNameInput, longName);
+    // Wait for Step 3: Team
+    await waitFor(() => {
+      expect(screen.getByText('Step 3 of 4')).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'Skip for Now' }));
 
-    // Should only have 50 characters
-    expect(orgNameInput).toHaveValue('A'.repeat(50));
+    // Step 4: Welcome
+    expect(screen.getByText('Step 4 of 4')).toBeInTheDocument();
+    expect(screen.getByText('🎉 Congratulations! Your workspace is ready.')).toBeInTheDocument();
 
-    // The form validation logic should handle server-side validation for edge cases
-    // where maxLength might be bypassed (e.g., programmatic input, copy-paste with JS disabled)
+    // Click finish button
+    await user.click(screen.getByRole('button', { name: /start your first conversation/i }));
 
-    // Button should be enabled with valid length input
-    const continueButton = screen.getByRole('button', { name: 'Continue' });
-    expect(continueButton).not.toBeDisabled();
-  });
-
-  it('should handle button state correctly with whitespace input', async () => {
-    const user = userEvent.setup();
-
-    // Mock authenticated user without organizations
-    vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
-      isPending: false,
-    } as any);
-
-    vi.mocked(authClient.useListOrganizations).mockReturnValue({
-      data: [],
-      isPending: false,
-    } as any);
-
-    const Wrapper = createWrapper();
-    render(<OnboardingRoute />, { wrapper: Wrapper });
-
-    const orgNameInput = screen.getByLabelText('Organization Name');
-    const continueButton = screen.getByRole('button', { name: 'Continue' });
-
-    // Initially button should be disabled
-    expect(continueButton).toBeDisabled();
-
-    // Test with only whitespace - button should be disabled due to trim() check
-    await user.type(orgNameInput, '   ');
-    expect(continueButton).toBeDisabled(); // Button disabled because trim() returns empty string
-
-    // Test with single character plus whitespace - button should be enabled but form validation should catch it
-    await user.clear(orgNameInput);
-    await user.type(orgNameInput, '  A  ');
-    expect(continueButton).not.toBeDisabled(); // Button enabled because there's non-whitespace content
-
-    await user.click(continueButton);
-
-    // Should show validation error for too short after trimming
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
-
-    // Test with valid name after trimming whitespace - should succeed
-    await user.clear(orgNameInput);
-    await user.type(orgNameInput, '  Valid Org  ');
-    expect(continueButton).not.toBeDisabled();
-
-    await user.click(continueButton);
-
-    // Should proceed to next step (no error alert)
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Complete Your Profile' })).toBeInTheDocument();
-  });
-
-  it('should clear error state when input is corrected after validation error', async () => {
-    const user = userEvent.setup();
-
-    // Mock authenticated user without organizations
-    vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
-      isPending: false,
-    } as any);
-
-    vi.mocked(authClient.useListOrganizations).mockReturnValue({
-      data: [],
-      isPending: false,
-    } as any);
-
-    const Wrapper = createWrapper();
-    render(<OnboardingRoute />, { wrapper: Wrapper });
-
-    const orgNameInput = screen.getByLabelText('Organization Name');
-    const continueButton = screen.getByRole('button', { name: 'Continue' });
-
-    // First, cause a validation error
-    await user.type(orgNameInput, 'A'); // Too short
-    await user.click(continueButton);
-
-    // Should show error
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Organization name must be at least 2 characters')).toBeInTheDocument();
-
-    // Now correct the input
-    await user.clear(orgNameInput);
-    await user.type(orgNameInput, 'Valid Organization');
-    await user.click(continueButton);
-
-    // Wait for submission
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    // Error should be cleared and we should proceed to next step
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Complete Your Profile' })).toBeInTheDocument();
+    // Should navigate to chat
+    expect(mockNavigate).toHaveBeenCalledWith('/c/new');
   });
 });

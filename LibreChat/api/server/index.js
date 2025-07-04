@@ -120,6 +120,41 @@ const startServer = async () => {
     }),
   );
 
+  /* Organization detection endpoint - outside /api/auth to avoid Better Auth conflicts */
+  app.post('/api/organization/detect-domain', express.json(), async (req, res) => {
+    try {
+      const { checkDomainOrganizations } = await import(
+        './services/OrganizationDetectionService.js'
+      );
+      const { logger } = await import('#config/index.js');
+
+      const { email, inviteToken } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          error: 'Email is required',
+        });
+      }
+
+      // Build invite context if token is provided
+      let inviteContext = null;
+      if (inviteToken) {
+        inviteContext = {
+          inviteToken,
+        };
+      }
+
+      const result = await checkDomainOrganizations(email, inviteContext);
+      res.json(result);
+    } catch (error) {
+      logger.error('Error detecting organization domain:', error);
+      res.status(500).json({
+        error: 'Failed to detect organization',
+        message: error.message,
+      });
+    }
+  });
+
   /* Better Auth handler - MUST come before JSON parsing per docs */
   app.all('/api/auth/*', (req, res) => {
     const authInstance = getAuth();
@@ -213,7 +248,6 @@ const startServer = async () => {
   });
 
   /* API Endpoints */
-  // Auth routes already mounted above (before Better Auth handler)
   app.use('/api/actions', routes.actions);
   app.use('/api/keys', routes.keys);
   app.use('/api/user', routes.user);

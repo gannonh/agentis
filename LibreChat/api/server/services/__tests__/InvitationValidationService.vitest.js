@@ -34,16 +34,16 @@ describe('InvitationValidationService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Set up mock database collections
     mockInvitationCollection = {
       findOne: vi.fn(),
     };
-    
+
     mockOrganizationCollection = {
       findOne: vi.fn(),
     };
-    
+
     mockDb = {
       collection: vi.fn((name) => {
         if (name === 'invitation') return mockInvitationCollection;
@@ -51,7 +51,7 @@ describe('InvitationValidationService', () => {
         return null;
       }),
     };
-    
+
     // Mock mongoose connection
     mongoose.connection.db = mockDb;
   });
@@ -59,30 +59,32 @@ describe('InvitationValidationService', () => {
   describe('validateInvitationToken', () => {
     it('should return null when no invitation ID provided', async () => {
       const result = await validateInvitationToken(null);
-      
+
       expect(result).toBeNull();
       expect(logger.debug).toHaveBeenCalledWith('No invitation ID provided for validation');
     });
 
     it('should return null when database connection not available', async () => {
       mongoose.connection.db = null;
-      
-      await expect(validateInvitationToken('invite-123')).rejects.toThrow('Database connection not available');
+
+      await expect(validateInvitationToken('invite-123')).rejects.toThrow(
+        'Database connection not available',
+      );
     });
 
     it('should return null when invitation not found', async () => {
       mockInvitationCollection.findOne.mockResolvedValue(null);
-      
+
       const result = await validateInvitationToken('invalid-invite-id');
-      
+
       expect(mockInvitationCollection.findOne).toHaveBeenCalledWith({
         id: 'invalid-invite-id',
         status: 'pending',
       });
-      
+
       expect(result).toBeNull();
-      expect(logger.debug).toHaveBeenCalledWith('Invitation not found or not pending', { 
-        invitationId: 'invalid-invite-id' 
+      expect(logger.debug).toHaveBeenCalledWith('Invitation not found or not pending', {
+        invitationId: 'invalid-invite-id',
       });
     });
 
@@ -95,11 +97,11 @@ describe('InvitationValidationService', () => {
         status: 'pending',
         expiresAt: expiredDate,
       };
-      
+
       mockInvitationCollection.findOne.mockResolvedValue(mockInvitation);
-      
+
       const result = await validateInvitationToken('expired-invite-123');
-      
+
       expect(result).toBeNull();
       expect(logger.debug).toHaveBeenCalledWith('Invitation has expired', {
         invitationId: 'expired-invite-123',
@@ -117,16 +119,16 @@ describe('InvitationValidationService', () => {
         status: 'pending',
         expiresAt: futureDate,
       };
-      
+
       mockInvitationCollection.findOne.mockResolvedValue(mockInvitation);
       mockOrganizationCollection.findOne.mockResolvedValue(null);
-      
+
       const result = await validateInvitationToken('invite-123');
-      
+
       expect(mockOrganizationCollection.findOne).toHaveBeenCalledWith({
         id: 'non-existent-org',
       });
-      
+
       expect(result).toBeNull();
       expect(logger.warn).toHaveBeenCalledWith('Organization not found for invitation', {
         invitationId: 'invite-123',
@@ -137,7 +139,7 @@ describe('InvitationValidationService', () => {
     it('should return invitation details with organization when valid', async () => {
       const futureDate = new Date(Date.now() + 86400000); // 24 hours from now
       const createdDate = new Date('2024-12-01');
-      
+
       const mockInvitation = {
         id: 'valid-invite-123',
         email: 'user@company.com',
@@ -147,28 +149,28 @@ describe('InvitationValidationService', () => {
         expiresAt: futureDate,
         createdAt: createdDate,
       };
-      
+
       const mockOrganization = {
         id: 'org-456',
         name: 'Company Inc',
         domain: 'company.com',
         slug: 'company-inc',
       };
-      
+
       mockInvitationCollection.findOne.mockResolvedValue(mockInvitation);
       mockOrganizationCollection.findOne.mockResolvedValue(mockOrganization);
-      
+
       const result = await validateInvitationToken('valid-invite-123');
-      
+
       expect(mockInvitationCollection.findOne).toHaveBeenCalledWith({
         id: 'valid-invite-123',
         status: 'pending',
       });
-      
+
       expect(mockOrganizationCollection.findOne).toHaveBeenCalledWith({
         id: 'org-456',
       });
-      
+
       expect(result).toEqual({
         id: 'valid-invite-123',
         email: 'user@company.com',
@@ -184,7 +186,7 @@ describe('InvitationValidationService', () => {
           slug: 'company-inc',
         },
       });
-      
+
       expect(logger.debug).toHaveBeenCalledWith('Invitation validated successfully', {
         invitationId: 'valid-invite-123',
         email: 'user@company.com',
@@ -196,9 +198,11 @@ describe('InvitationValidationService', () => {
     it('should handle database errors gracefully', async () => {
       const dbError = new Error('Database connection failed');
       mockInvitationCollection.findOne.mockRejectedValue(dbError);
-      
-      await expect(validateInvitationToken('invite-123')).rejects.toThrow('Database connection failed');
-      
+
+      await expect(validateInvitationToken('invite-123')).rejects.toThrow(
+        'Database connection failed',
+      );
+
       expect(logger.error).toHaveBeenCalledWith('Error validating invitation token', {
         error: 'Database connection failed',
         invitationId: 'invite-123',
@@ -215,13 +219,15 @@ describe('InvitationValidationService', () => {
         status: 'pending',
         expiresAt: futureDate,
       };
-      
+
       const orgError = new Error('Organization lookup failed');
       mockInvitationCollection.findOne.mockResolvedValue(mockInvitation);
       mockOrganizationCollection.findOne.mockRejectedValue(orgError);
-      
-      await expect(validateInvitationToken('invite-123')).rejects.toThrow('Organization lookup failed');
-      
+
+      await expect(validateInvitationToken('invite-123')).rejects.toThrow(
+        'Organization lookup failed',
+      );
+
       expect(logger.error).toHaveBeenCalledWith('Error validating invitation token', {
         error: 'Organization lookup failed',
         invitationId: 'invite-123',
@@ -231,23 +237,23 @@ describe('InvitationValidationService', () => {
 
     it('should handle empty invitation ID', async () => {
       const result = await validateInvitationToken('');
-      
+
       expect(result).toBeNull();
       expect(logger.debug).toHaveBeenCalledWith('No invitation ID provided for validation');
     });
 
     it('should handle undefined invitation ID', async () => {
       const result = await validateInvitationToken(undefined);
-      
+
       expect(result).toBeNull();
       expect(logger.debug).toHaveBeenCalledWith('No invitation ID provided for validation');
     });
 
     it('should only find pending invitations', async () => {
       mockInvitationCollection.findOne.mockResolvedValue(null);
-      
+
       await validateInvitationToken('accepted-invite-123');
-      
+
       expect(mockInvitationCollection.findOne).toHaveBeenCalledWith({
         id: 'accepted-invite-123',
         status: 'pending', // Only looks for pending invitations

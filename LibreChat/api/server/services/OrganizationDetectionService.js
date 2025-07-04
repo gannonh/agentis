@@ -3,9 +3,10 @@
  * @module services/OrganizationDetectionService
  */
 
-import Organization from '#models/Organization';
-import PublicDomainService from './PublicDomainService.js';
+import mongoose from 'mongoose';
+import { isPublicDomain } from './PublicDomainService.js';
 import { validateInvitationToken } from './InvitationValidationService.js';
+import { logger } from '#config/index.js';
 
 /**
  * Get organizations by domain
@@ -17,8 +18,28 @@ export async function getOrganizationsByDomain(domain) {
     return [];
   }
 
-  const organizations = await Organization.find({ domain }).lean();
-  return organizations;
+  // Use Better Auth's organization collection directly
+  const db = mongoose.connection.db;
+  if (!db) {
+    logger.warn('MongoDB connection not available for organization lookup');
+    return [];
+  }
+
+  const organizations = await db
+    .collection('organization')
+    .find({
+      'metadata.domain': domain,
+    })
+    .toArray();
+
+  // Transform to expected format
+  return organizations.map((org) => ({
+    _id: org.id,
+    name: org.name,
+    domain: org.metadata?.domain,
+    allowDomainJoin: org.metadata?.allowDomainJoin || false,
+    slug: org.slug,
+  }));
 }
 
 /**
@@ -28,21 +49,24 @@ export async function getOrganizationsByDomain(domain) {
  * @returns {Promise<Object>} Detection result with organization information
  */
 export async function checkDomainOrganizations(email, inviteContext) {
+  logger.debug('Checking domain organizations for email:', email);
+
   // Handle invitation context first - validate token if provided
   if (inviteContext && inviteContext.inviteToken) {
+    logger.debug('Invitation token provided:', inviteContext.inviteToken);
     const validatedInvitation = await validateInvitationToken(inviteContext.inviteToken);
-    
+
     if (!validatedInvitation) {
       // Invalid or expired invitation - fall back to normal domain detection
       const domain = email.split('@')[1];
-      const isPublicDomain = PublicDomainService.isPublicDomain(domain);
-      
+      const isPublic = isPublicDomain(domain);
+
       const organizations = await getOrganizationsByDomain(domain);
       const hasOrganization = organizations.length > 0;
       const canAutoJoin = organizations.length === 1 && organizations[0].allowDomainJoin === true;
 
       return {
-        isPublicDomain,
+        isPublicDomain: isPublic,
         domain,
         hasOrganization,
         organizations,
@@ -53,10 +77,10 @@ export async function checkDomainOrganizations(email, inviteContext) {
 
     // Valid invitation - bypass domain detection
     const domain = email.split('@')[1];
-    const isPublicDomain = PublicDomainService.isPublicDomain(domain);
+    const isPublic = isPublicDomain(domain);
 
     return {
-      isPublicDomain, // Accurately reflects actual domain status
+      isPublicDomain: isPublic, // Accurately reflects actual domain status
       bypassDomainCheck: true, // Indicates invitation bypasses normal logic
       domain,
       hasOrganization: true,
@@ -98,9 +122,9 @@ export async function checkDomainOrganizations(email, inviteContext) {
   const domain = emailParts[1];
 
   // Check if it's a public domain
-  const isPublicDomain = PublicDomainService.isPublicDomain(domain);
+  const isPublic = isPublicDomain(domain);
 
-  if (isPublicDomain) {
+  if (isPublic) {
     return {
       isPublicDomain: true,
       domain,

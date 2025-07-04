@@ -1,6 +1,6 @@
 /**
- * @fileoverview Tests for OrganizationDetectionStep component
- * @module components/Auth/__tests__/OrganizationDetectionStep.test
+ * @fileoverview Tests for OrganizationCreationStep component
+ * @module components/Auth/__tests__/OrganizationCreationStep.test
  */
 
 import React from 'react';
@@ -21,7 +21,7 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useSearchParams: () => [mockSearchParams, mockSetSearchParams],
-    useNavigate: () => vi.fn()
+    useNavigate: () => vi.fn(),
   };
 });
 
@@ -33,37 +33,33 @@ vi.mock('lucide-react', () => ({
   ArrowRight: () => <div data-testid="arrow-right-icon" />,
   Shield: () => <div data-testid="shield-icon" />,
   Mail: () => <div data-testid="mail-icon" />,
-  CheckCircle: () => <div data-testid="check-circle-icon" />
+  CheckCircle: () => <div data-testid="check-circle-icon" />,
 }));
 
 // Mock useLocalize hook
 vi.mock('~/hooks', () => ({
-  useLocalize: () => (key: string) => key
+  useLocalize: () => (key: string) => key,
 }));
 
 // Mock Button component
 vi.mock('~/components/ui', () => ({
   Button: ({ children, onClick, disabled, className, ...props }: any) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={className}
-      {...props}
-    >
+    <button onClick={onClick} disabled={disabled} className={className} {...props}>
       {children}
     </button>
-  )
+  ),
 }));
 
 const renderWithRouter = (component: React.ReactElement) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
 
-describe('OrganizationDetectionStep', () => {
+describe('OrganizationCreationStep', () => {
   const mockOnNext = vi.fn();
   const defaultProps = {
     email: 'user@example.com',
-    onNext: mockOnNext
+    userName: 'Test User',
+    onNext: mockOnNext,
   };
 
   beforeEach(() => {
@@ -77,7 +73,7 @@ describe('OrganizationDetectionStep', () => {
 
     renderWithRouter(<OrganizationDetectionStep {...defaultProps} />);
 
-    expect(screen.getByText('Detecting your organization...')).toBeInTheDocument();
+    expect(screen.getByText('Setting up your workspace...')).toBeInTheDocument();
   });
 
   it('handles invitation flow correctly', async () => {
@@ -92,144 +88,251 @@ describe('OrganizationDetectionStep', () => {
           id: 'org-456',
           name: 'Test Company',
           domain: 'testcompany.com',
-          slug: 'test-company'
-        }
+          slug: 'test-company',
+        },
       },
-      organizations: [{
-        _id: 'org-456',
-        name: 'Test Company'
-      }]
+      organizations: [
+        {
+          _id: 'org-456',
+          name: 'Test Company',
+        },
+      ],
     };
 
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockInvitation)
+      json: () => Promise.resolve(mockInvitation),
     });
 
     renderWithRouter(<OrganizationDetectionStep {...defaultProps} />);
 
     await waitFor(() => {
       expect(screen.getByText("You're invited!")).toBeInTheDocument();
-      expect(screen.getAllByText('Test Company')).toHaveLength(2); // Appears in subtitle and details
-      expect(screen.getByText('member')).toBeInTheDocument();
+      expect(screen.getByText(/You've been invited to join/)).toBeInTheDocument();
+      expect(screen.getByText('Test Company')).toBeInTheDocument();
     });
 
     const joinButton = screen.getByRole('button', { name: /Join Test Company/i });
     fireEvent.click(joinButton);
 
     expect(mockOnNext).toHaveBeenCalledWith({
-      selectedOrganization: { _id: 'org-456', name: 'Test Company' },
-      action: 'invite'
+      action: 'invite',
+      organizationId: 'org-456',
     });
   });
 
-  it('handles public domain flow', async () => {
+  it('shows organization creation form for public domains', async () => {
     const mockResult = {
       isPublicDomain: true,
       domain: 'gmail.com',
       hasOrganization: false,
       organizations: [],
-      canAutoJoin: false
     };
 
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockResult)
+      json: () => Promise.resolve(mockResult),
     });
 
     renderWithRouter(<OrganizationDetectionStep {...defaultProps} email="user@gmail.com" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Create Your Organization')).toBeInTheDocument();
-      expect(screen.getByText(/Since you're using a personal email \(gmail.com\)/)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
+      // Should not show domain checkbox for public domains
+      expect(screen.queryByText(/Let anyone with an @/)).not.toBeInTheDocument();
     });
 
-    const createButton = screen.getByText('Create New Organization');
+    // Test organization creation
+    const input = screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.');
+    fireEvent.change(input, { target: { value: 'My Company' } });
+
+    const createButton = screen.getByText('Next');
     fireEvent.click(createButton);
 
     expect(mockOnNext).toHaveBeenCalledWith({
-      selectedOrganization: undefined,
-      action: 'create'
+      action: 'create',
+      organizationName: 'My Company',
+      enableDomainJoin: false,
     });
   });
 
-  it('handles corporate domain with existing organization', async () => {
-    const mockResult = {
-      isPublicDomain: false,
-      domain: 'company.com',
-      hasOrganization: true,
-      organizations: [{
-        _id: 'org-123',
-        name: 'Company Inc',
-        domain: 'company.com',
-        memberCount: 15
-      }],
-      canAutoJoin: true
-    };
-
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockResult)
-    });
-
-    renderWithRouter(<OrganizationDetectionStep {...defaultProps} email="user@company.com" />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Join Your Organization')).toBeInTheDocument();
-      expect(screen.getByText('Company Inc')).toBeInTheDocument();
-    });
-
-    // Select organization
-    const orgCard = screen.getByText('Company Inc').closest('div');
-    if (orgCard) {
-      fireEvent.click(orgCard);
-    }
-
-    const joinButton = screen.getByText('Join Organization');
-    fireEvent.click(joinButton);
-
-    expect(mockOnNext).toHaveBeenCalledWith({
-      selectedOrganization: {
-        _id: 'org-123',
-        name: 'Company Inc',
-        domain: 'company.com',
-        memberCount: 15
-      },
-      action: 'join'
-    });
-  });
-
-  it('handles invitation error correctly', async () => {
+  it('handles skip for personal workspace', async () => {
     const mockResult = {
       isPublicDomain: true,
       domain: 'gmail.com',
       hasOrganization: false,
       organizations: [],
-      canAutoJoin: false,
-      invitationError: 'Invalid or expired invitation'
     };
 
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockResult)
+      json: () => Promise.resolve(mockResult),
     });
 
     renderWithRouter(<OrganizationDetectionStep {...defaultProps} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Invitation Issue')).toBeInTheDocument();
-      expect(screen.getByText('Invalid or expired invitation')).toBeInTheDocument();
+      expect(screen.getByText('Skip for now')).toBeInTheDocument();
+    });
+
+    const skipButton = screen.getByText('Skip for now');
+    fireEvent.click(skipButton);
+
+    expect(mockOnNext).toHaveBeenCalledWith({
+      action: 'skip',
+      organizationName: "Test's workspace",
+      enableDomainJoin: false,
+    });
+  });
+
+  it('blocks creation for corporate domain with existing organization', async () => {
+    const mockResult = {
+      isPublicDomain: false,
+      domain: 'company.com',
+      hasOrganization: true,
+      organizations: [
+        {
+          _id: 'org-123',
+          name: 'Company Inc',
+          domain: 'company.com',
+        },
+      ],
+    };
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockResult),
+    });
+
+    renderWithRouter(<OrganizationDetectionStep {...defaultProps} email="user@company.com" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Organization exists for company.com')).toBeInTheDocument();
+      expect(
+        screen.getByText(/An organization already exists for your domain/),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Create personal workspace instead')).toBeInTheDocument();
+    });
+
+    // Can only create personal workspace
+    const personalButton = screen.getByText('Create personal workspace instead');
+    fireEvent.click(personalButton);
+
+    expect(mockOnNext).toHaveBeenCalledWith({
+      action: 'skip',
+      organizationName: "Test's workspace",
+      enableDomainJoin: false,
+    });
+  });
+
+  it('shows domain checkbox for corporate domains without existing org', async () => {
+    const mockResult = {
+      isPublicDomain: false,
+      domain: 'newcompany.com',
+      hasOrganization: false,
+      organizations: [],
+    };
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockResult),
+    });
+
+    renderWithRouter(<OrganizationDetectionStep {...defaultProps} email="user@newcompany.com" />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Let anyone with an @newcompany.com email join this workspace'),
+      ).toBeInTheDocument();
+    });
+
+    // Test with domain join enabled
+    const input = screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.');
+    fireEvent.change(input, { target: { value: 'New Company' } });
+
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+
+    const createButton = screen.getByText('Next');
+    fireEvent.click(createButton);
+
+    expect(mockOnNext).toHaveBeenCalledWith({
+      action: 'create',
+      organizationName: 'New Company',
+      enableDomainJoin: true,
+    });
+  });
+
+  it('validates organization name input', async () => {
+    const mockResult = {
+      isPublicDomain: true,
+      domain: 'gmail.com',
+      hasOrganization: false,
+      organizations: [],
+    };
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockResult),
+    });
+
+    renderWithRouter(<OrganizationDetectionStep {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.')).toBeInTheDocument();
+    });
+
+    const createButton = screen.getByText('Next');
+    const input = screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.');
+
+    // Test empty name
+    fireEvent.click(createButton);
+    expect(mockOnNext).not.toHaveBeenCalled();
+
+    // Test short name
+    fireEvent.change(input, { target: { value: 'A' } });
+    fireEvent.click(createButton);
+    await waitFor(() => {
+      expect(
+        screen.getByText('Organization name must be at least 2 characters'),
+      ).toBeInTheDocument();
+    });
+
+    // Test valid name
+    fireEvent.change(input, { target: { value: 'Valid Company Name' } });
+    fireEvent.click(createButton);
+    expect(mockOnNext).toHaveBeenCalledWith({
+      action: 'create',
+      organizationName: 'Valid Company Name',
+      enableDomainJoin: false,
     });
   });
 
   it('handles API errors gracefully', async () => {
+    // Mock fetch to fail
     (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
     renderWithRouter(<OrganizationDetectionStep {...defaultProps} />);
 
+    // Should show organization creation form as fallback
     await waitFor(() => {
+      expect(screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.')).toBeInTheDocument();
       expect(screen.getByText('Network error')).toBeInTheDocument();
-      expect(screen.getByText('Try Again')).toBeInTheDocument();
+    });
+
+    // Should still be able to create organization despite error
+    const input = screen.getByPlaceholderText('Acme Inc., Marketing Team, etc.');
+    fireEvent.change(input, { target: { value: 'Fallback Org' } });
+
+    const createButton = screen.getByText('Next');
+    fireEvent.click(createButton);
+
+    expect(mockOnNext).toHaveBeenCalledWith({
+      action: 'create',
+      organizationName: 'Fallback Org',
+      enableDomainJoin: false,
     });
   });
 
@@ -239,25 +342,26 @@ describe('OrganizationDetectionStep', () => {
 
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        isPublicDomain: true,
-        domain: 'gmail.com',
-        hasOrganization: false,
-        organizations: [],
-        canAutoJoin: false
-      })
+      json: () =>
+        Promise.resolve({
+          isPublicDomain: true,
+          domain: 'gmail.com',
+          hasOrganization: false,
+          organizations: [],
+          canAutoJoin: false,
+        }),
     });
 
     renderWithRouter(<OrganizationDetectionStep {...defaultProps} />);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/auth/organization/detect-domain', {
+      expect(global.fetch).toHaveBeenCalledWith('/api/organization/detect-domain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: 'user@example.com',
-          inviteToken: 'test-token-123'
-        })
+          inviteToken: 'test-token-123',
+        }),
       });
     });
   });

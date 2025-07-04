@@ -154,35 +154,7 @@ router.all('/sign-out', prepareBetterAuthRequest);
 router.all('/session', prepareBetterAuthRequest);
 router.all('/admin/*', prepareBetterAuthRequest); // Admin plugin endpoints
 
-// Organization detection endpoint - MUST come BEFORE catch-all route
-router.post('/organization/detect-domain', async (req, res) => {
-  try {
-    const { email, inviteToken } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        error: 'Email is required',
-      });
-    }
-
-    // Build invite context if token is provided
-    let inviteContext = null;
-    if (inviteToken) {
-      inviteContext = {
-        inviteToken,
-      };
-    }
-
-    const result = await checkDomainOrganizations(email, inviteContext);
-    res.json(result);
-  } catch (error) {
-    logger.error('Error detecting organization domain:', error);
-    res.status(500).json({
-      error: 'Failed to detect organization',
-      message: error.message,
-    });
-  }
-});
+// Organization detection endpoint moved to /api/organization/detect-domain to avoid Better Auth routing conflicts
 
 // Organization domain checking endpoint - MUST come BEFORE catch-all route
 router.get('/organization/check-domain', async (req, res) => {

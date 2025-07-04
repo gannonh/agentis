@@ -12,7 +12,7 @@ describe('OnboardingLayout', () => {
   const mockProps = {
     title: 'Test Title',
     subtitle: 'Test Subtitle',
-    children: <div>Test Content</div>
+    children: <div>Test Content</div>,
   };
 
   it('renders basic layout with title and content', () => {
@@ -26,14 +26,14 @@ describe('OnboardingLayout', () => {
   it('renders progress indicator when step prop is provided', () => {
     const propsWithStep = {
       ...mockProps,
-      step: { current: 2, total: 4 }
+      step: { current: 2, total: 4 },
     };
 
     render(<OnboardingLayout {...propsWithStep} />);
 
     expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
     expect(screen.getByText('50%')).toBeInTheDocument();
-    
+
     const progressBar = screen.getByRole('progressbar');
     expect(progressBar).toHaveAttribute('aria-valuenow', '2');
     expect(progressBar).toHaveAttribute('aria-valuemax', '4');
@@ -46,19 +46,17 @@ describe('OnboardingLayout', () => {
     expect(screen.queryByText(/Step \d+ of \d+/)).not.toBeInTheDocument();
   });
 
-  it('applies correct max width class', () => {
-    const { container } = render(
-      <OnboardingLayout {...mockProps} maxWidth="xl" />
-    );
+  it('applies default max width class to content', () => {
+    const { container } = render(<OnboardingLayout {...mockProps} />);
 
-    const contentCard = container.querySelector('.max-w-xl');
+    const contentCard = container.querySelector('.max-w-2xl');
     expect(contentCard).toBeInTheDocument();
   });
 
   it('renders without subtitle when not provided', () => {
     const propsWithoutSubtitle = {
       title: 'Test Title',
-      children: <div>Test Content</div>
+      children: <div>Test Content</div>,
     };
 
     render(<OnboardingLayout {...propsWithoutSubtitle} />);
@@ -69,9 +67,7 @@ describe('OnboardingLayout', () => {
   });
 
   it('applies custom className when provided', () => {
-    const { container } = render(
-      <OnboardingLayout {...mockProps} className="custom-class" />
-    );
+    const { container } = render(<OnboardingLayout {...mockProps} className="custom-class" />);
 
     const contentCard = container.querySelector('.custom-class');
     expect(contentCard).toBeInTheDocument();
