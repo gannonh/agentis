@@ -295,6 +295,47 @@ test('should handle magic link resending', async ({ browser }) => {
   }
 });
 
+test('should complete magic link authentication flow', async ({ browser }) => {
+  logProgress('🚀 Testing complete magic link authentication...');
+  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  try {
+    await page.goto('http://localhost:3080/login');
+    
+    // Send magic link request
+    const testEmail = `test-${Date.now()}@example.com`;
+    await page.getByRole('textbox', { name: 'Email address' }).fill(testEmail);
+    await page.getByTestId('login-button').click();
+    
+    // Verify confirmation screen
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    await expect(page.getByText(testEmail)).toBeVisible();
+    
+    // TODO: Implement magic link capture mechanism
+    // Option 1: Read from a file written by the backend
+    // Option 2: Check if we can intercept the console logs
+    // Option 3: Mock the magic link endpoint for testing
+    
+    // For now, let's simulate what should happen after magic link click:
+    // 1. User should be authenticated
+    // 2. User should be redirected to onboarding (new user) or main app (existing user)
+    
+    logProgress('⚠️ Magic link capture mechanism needs implementation');
+    logProgress('✅ Magic link request flow verified (authentication pending)');
+    
+    // Once we implement magic link capture, this test should:
+    // 1. Read magic link from file/console
+    // 2. Navigate to the magic link URL
+    // 3. Verify successful authentication
+    // 4. Verify redirect to appropriate page (onboarding vs main app)
+    
+  } finally {
+    await context.close();
+  }
+});
+
 // TODO: Implement the following test scenarios one by one:
 
 /**
