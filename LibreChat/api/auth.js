@@ -334,7 +334,7 @@ mongoose.connection.once('open', () => {
                 // Create temp directory if it doesn't exist
                 // Use file location to reliably find project root regardless of process.cwd()
                 const currentFileDir = path.dirname(fileURLToPath(import.meta.url));
-                const projectRoot = path.resolve(currentFileDir, '../../'); // api/auth.js -> ../..
+                const projectRoot = path.resolve(currentFileDir, '../'); // api/auth.js -> ../
                 tempDir = path.join(projectRoot, 'temp');
                 try {
                   await fs.mkdir(tempDir, { recursive: true });

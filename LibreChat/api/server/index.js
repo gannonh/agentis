@@ -184,6 +184,13 @@ const startServer = async () => {
         });
       }
 
+      // Validate organizationId format (should be a string, not necessarily ObjectId)
+      if (typeof organizationId !== 'string' || organizationId.trim() === '') {
+        return res.status(400).json({
+          error: 'Invalid organization ID format',
+        });
+      }
+
       // Validate domain format (should be a valid domain, not email)
       const domainRegex =
         /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
@@ -210,9 +217,10 @@ const startServer = async () => {
         });
       }
 
-      // Update organization to enable domain join
+      // CRITICAL FIX: Use 'id' field instead of '_id' for Better Auth compatibility
+      // Better Auth uses string 'id' field as primary key, not MongoDB ObjectId '_id'
       const result = await db.collection('organization').updateOne(
-        { _id: mongoose.Types.ObjectId.createFromHexString(organizationId) },
+        { id: organizationId },
         {
           $set: {
             'metadata.domain': domain,
