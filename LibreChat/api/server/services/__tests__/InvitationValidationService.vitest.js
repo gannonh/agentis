@@ -153,8 +153,11 @@ describe('InvitationValidationService', () => {
       const mockOrganization = {
         id: 'org-456',
         name: 'Company Inc',
-        domain: 'company.com',
         slug: 'company-inc',
+        metadata: {
+          domain: 'company.com',
+          allowDomainJoin: true,
+        },
       };
 
       mockInvitationCollection.findOne.mockResolvedValue(mockInvitation);
@@ -257,6 +260,78 @@ describe('InvitationValidationService', () => {
       expect(mockInvitationCollection.findOne).toHaveBeenCalledWith({
         id: 'accepted-invite-123',
         status: 'pending', // Only looks for pending invitations
+      });
+    });
+
+    it('should correctly access domain from organization metadata field', async () => {
+      const futureDate = new Date(Date.now() + 86400000);
+      const mockInvitation = {
+        id: 'metadata-test-invite-123',
+        email: 'user@acmecorp.com',
+        organizationId: 'org-metadata-test',
+        role: 'member',
+        status: 'pending',
+        expiresAt: futureDate,
+        createdAt: new Date(),
+      };
+
+      // Organization with domain in metadata field (as it's actually stored)
+      const mockOrganization = {
+        id: 'org-metadata-test',
+        name: 'Acme Corporation',
+        slug: 'acme-corp',
+        metadata: {
+          domain: 'acmecorp.com',
+          allowDomainJoin: true,
+        },
+      };
+
+      mockInvitationCollection.findOne.mockResolvedValue(mockInvitation);
+      mockOrganizationCollection.findOne.mockResolvedValue(mockOrganization);
+
+      const result = await validateInvitationToken('metadata-test-invite-123');
+
+      // Verify that domain is correctly extracted from metadata.domain
+      expect(result.organization.domain).toBe('acmecorp.com');
+      expect(result.organization).toEqual({
+        id: 'org-metadata-test',
+        name: 'Acme Corporation',
+        domain: 'acmecorp.com', // Should come from metadata.domain
+        slug: 'acme-corp',
+      });
+    });
+
+    it('should handle organization without metadata gracefully', async () => {
+      const futureDate = new Date(Date.now() + 86400000);
+      const mockInvitation = {
+        id: 'no-metadata-invite-123',
+        email: 'user@example.com',
+        organizationId: 'org-no-metadata',
+        status: 'pending',
+        expiresAt: futureDate,
+        createdAt: new Date(),
+      };
+
+      // Organization without metadata field
+      const mockOrganization = {
+        id: 'org-no-metadata',
+        name: 'Example Organization',
+        slug: 'example-org',
+        // No metadata field
+      };
+
+      mockInvitationCollection.findOne.mockResolvedValue(mockInvitation);
+      mockOrganizationCollection.findOne.mockResolvedValue(mockOrganization);
+
+      const result = await validateInvitationToken('no-metadata-invite-123');
+
+      // Should handle missing metadata gracefully with undefined domain
+      expect(result.organization.domain).toBeUndefined();
+      expect(result.organization).toEqual({
+        id: 'org-no-metadata',
+        name: 'Example Organization',
+        domain: undefined, // metadata?.domain when metadata doesn't exist
+        slug: 'example-org',
       });
     });
   });

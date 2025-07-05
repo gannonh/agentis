@@ -82,7 +82,7 @@ export async function validateInvitationToken(invitationId) {
       organization: {
         id: organization.id,
         name: organization.name,
-        domain: organization.domain,
+        domain: organization.metadata?.domain,
         slug: organization.slug,
       },
     };
