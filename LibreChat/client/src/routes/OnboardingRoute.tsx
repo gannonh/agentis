@@ -42,6 +42,23 @@ export default function OnboardingRoute() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
 
+  // Robust slug generation function with fallbacks
+  const generateSlug = (name: string, fallbackPrefix = 'org'): string => {
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 50);
+    
+    // If slug is empty after processing (e.g., "!!!" -> ""), use fallback
+    if (!baseSlug) {
+      const timestamp = Date.now().toString().slice(-6); // Last 6 digits for uniqueness
+      return `${fallbackPrefix}-${timestamp}`;
+    }
+    
+    return baseSlug;
+  };
+
   // Handle organization creation/join result
   const handleOrganizationAction = async (data: {
     action: 'create' | 'skip' | 'join' | 'invite';
@@ -54,12 +71,8 @@ export default function OnboardingRoute() {
 
     try {
       if (data.action === 'create' && data.organizationName) {
-        // Create organization with slug based on name
-        const slug = data.organizationName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .substring(0, 50);
+        // Create organization with robust slug generation
+        const slug = generateSlug(data.organizationName);
 
         const result = await authClient.organization.create({
           name: data.organizationName,
@@ -92,8 +105,10 @@ export default function OnboardingRoute() {
           }
         }
       } else if (data.action === 'skip' && data.organizationName) {
-        // Create personal workspace
-        const slug = `personal-${session?.user?.id || Date.now()}`;
+        // Create personal workspace with robust slug generation
+        const baseSlug = generateSlug(data.organizationName, 'personal');
+        const userSuffix = session?.user?.id?.slice(-6) || Date.now().toString().slice(-6);
+        const slug = `${baseSlug}-${userSuffix}`;
 
         const result = await authClient.organization.create({
           name: data.organizationName,

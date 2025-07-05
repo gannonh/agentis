@@ -488,7 +488,7 @@ describe('OnboardingRoute', () => {
       // Verify organization.create was called with personal workspace
       expect(vi.mocked(authClient.organization.create)).toHaveBeenCalledWith({
         name: 'Personal workspace',
-        slug: 'personal-1',
+        slug: 'personal-workspace-1',
       });
     });
 
@@ -645,6 +645,195 @@ describe('OnboardingRoute', () => {
 
       // acceptInvitation should not be called without token
       expect(vi.mocked(authClient.organization.acceptInvitation)).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Slug Generation Robustness', () => {
+    const mockUser = { id: 'user123', email: 'test@example.com', name: 'Test User' };
+    const mockSession = { data: { user: mockUser }, isPending: false };
+    const mockOrganizations = { data: [], isPending: false };
+
+    // Helper function to set up mock organization action for testing different scenarios
+    const setMockAction = (action: typeof mockOrganizationAction) => {
+      mockOrganizationAction = action;
+    };
+
+    beforeEach(() => {
+      vi.mocked(authClient.useSession).mockReturnValue(mockSession as any);
+      vi.mocked(authClient.useListOrganizations).mockReturnValue(mockOrganizations as any);
+      // Reset mock organization action to default
+      mockOrganizationAction = { action: 'create', organizationName: 'Test Org' };
+    });
+
+    it('should handle organization names with only special characters', async () => {
+      const user = userEvent.setup();
+      
+      // Set mock to trigger 'create' action with special characters only
+      setMockAction({ 
+        action: 'create', 
+        organizationName: '!!!' // Only special characters
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'fallback-org-123', name: '!!!', slug: 'org-123456' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify organization.create was called with a non-empty slug
+      expect(vi.mocked(authClient.organization.create)).toHaveBeenCalledWith({
+        name: '!!!',
+        slug: expect.stringMatching(/^org-\d{6}$/), // Should be 'org-' + 6 digits
+      });
+    });
+
+    it('should handle organization names with mixed content', async () => {
+      const user = userEvent.setup();
+      
+      // Set mock to trigger 'create' action with mixed content
+      setMockAction({ 
+        action: 'create', 
+        organizationName: 'My!@#$%^&*()Company++Name' 
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'mixed-org-123', name: 'My!@#$%^&*()Company++Name', slug: 'my-company-name' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify organization.create was called with cleaned slug
+      expect(vi.mocked(authClient.organization.create)).toHaveBeenCalledWith({
+        name: 'My!@#$%^&*()Company++Name',
+        slug: 'my-company-name', // Should be cleaned but not empty
+      });
+    });
+
+    it('should handle skip action with special character names', async () => {
+      const user = userEvent.setup();
+      
+      // Set mock to trigger 'skip' action with special characters
+      setMockAction({ 
+        action: 'skip', 
+        organizationName: '@@@Personal@@@' 
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'personal-skip-123', name: '@@@Personal@@@', slug: 'personal-user12' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock skip organization button
+      const skipButton = screen.getByRole('button', { name: 'Mock skip Organization' });
+      await user.click(skipButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify organization.create was called with proper personal workspace slug
+      expect(vi.mocked(authClient.organization.create)).toHaveBeenCalledWith({
+        name: '@@@Personal@@@',
+        slug: expect.stringMatching(/^personal-.*ser123$/), // Should be 'personal-' + base + '-user123'
+      });
+    });
+
+    it('should handle very long organization names', async () => {
+      const user = userEvent.setup();
+      
+      const longName = 'A'.repeat(100) + '!'.repeat(50); // 150 characters
+      
+      // Set mock to trigger 'create' action with very long name
+      setMockAction({ 
+        action: 'create', 
+        organizationName: longName
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'long-org-123', name: longName, slug: 'a'.repeat(50) },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify slug is truncated to 50 characters max
+      const createCall = vi.mocked(authClient.organization.create).mock.calls[0][0];
+      expect(createCall.slug.length).toBeLessThanOrEqual(50);
+      expect(createCall.slug).toBe('a'.repeat(50)); // Should be truncated 'a's
+    });
+
+    it('should handle empty organization name gracefully', async () => {
+      const user = userEvent.setup();
+      
+      // Set mock to trigger 'create' action with empty name (edge case)
+      setMockAction({ 
+        action: 'create', 
+        organizationName: '   ' // Only whitespace
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'empty-org-123', name: '   ', slug: 'org-123456' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify organization.create was called with fallback slug
+      expect(vi.mocked(authClient.organization.create)).toHaveBeenCalledWith({
+        name: '   ',
+        slug: expect.stringMatching(/^org-\d{6}$/), // Should be fallback 'org-' + timestamp
+      });
     });
   });
 });
