@@ -32,6 +32,21 @@ describe('POST /api/auth/organization/detect-domain', () => {
           });
         }
 
+        // Validate email format and ensure domain exists
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({
+            error: 'Invalid email format',
+          });
+        }
+
+        const emailParts = email.split('@');
+        if (emailParts.length !== 2 || !emailParts[1] || emailParts[1].trim() === '') {
+          return res.status(400).json({
+            error: 'Invalid email format - missing or empty domain',
+          });
+        }
+
         // Build invite context if token is provided
         let inviteContext = null;
         if (inviteToken) {
@@ -58,6 +73,27 @@ describe('POST /api/auth/organization/detect-domain', () => {
     expect(response.body).toEqual({
       error: 'Email is required',
     });
+  });
+
+  it('should return 400 for invalid email formats', async () => {
+    const invalidEmails = [
+      'user@', // Missing domain
+      '@domain.com', // Missing user
+      'user@.com', // Domain starts with dot
+      'user@domain', // No TLD
+      'user domain.com', // Missing @
+      'user@@domain.com', // Double @
+      'user@   ', // Whitespace domain
+    ];
+
+    for (const email of invalidEmails) {
+      const response = await request(app)
+        .post('/api/auth/organization/detect-domain')
+        .send({ email });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/Invalid email format/);
+    }
   });
 
   it('should return detection result for valid email', async () => {

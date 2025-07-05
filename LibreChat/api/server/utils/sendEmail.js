@@ -83,7 +83,7 @@ const sendEmail = async ({ email, subject, payload, template, throwError = true 
         transporterOptions.service = process.env.EMAIL_SERVICE;
       } else {
         transporterOptions.host = process.env.EMAIL_HOST;
-        transporterOptions.port = process.env.EMAIL_PORT ?? 25;
+        transporterOptions.port = parseInt(process.env.EMAIL_PORT) || 25;
       }
     }
 

@@ -48,12 +48,20 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+// Variable to control mock organization action for flexible testing
+let mockOrganizationAction: {
+  action: 'create' | 'skip' | 'invite';
+  organizationName?: string;
+  organizationId?: string;
+  enableDomainJoin?: boolean;
+} = { action: 'create', organizationName: 'Test Org' };
+
 // Mock OrganizationDetectionStep component
 vi.mock('~/components/Auth/OrganizationDetectionStep', () => ({
   default: ({ onNext }: any) => (
     <div data-testid="organization-detection-step">
-      <button onClick={() => onNext({ action: 'create', organizationName: 'Test Org' })}>
-        Mock Create Organization
+      <button onClick={() => onNext(mockOrganizationAction)}>
+        Mock {mockOrganizationAction.action} Organization
       </button>
     </div>
   ),
@@ -79,6 +87,8 @@ const createWrapper = () => {
 describe('OnboardingRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock organization action to default 'create' behavior
+    mockOrganizationAction = { action: 'create', organizationName: 'Test Org' };
   });
 
   it('should render loading state while checking authentication', () => {
@@ -246,7 +256,7 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Click the mock create organization button
-    const createButton = screen.getByRole('button', { name: 'Mock Create Organization' });
+    const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
     await user.click(createButton);
 
     // Wait for profile step to appear
@@ -280,7 +290,7 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Navigate to profile step
-    const createButton = screen.getByRole('button', { name: 'Mock Create Organization' });
+    const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
     await user.click(createButton);
 
     // Wait for profile form to appear
@@ -314,7 +324,7 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Navigate to profile step
-    await user.click(screen.getByRole('button', { name: 'Mock Create Organization' }));
+    await user.click(screen.getByRole('button', { name: 'Mock create Organization' }));
 
     // Wait for profile step
     await waitFor(() => {
@@ -361,7 +371,7 @@ describe('OnboardingRoute', () => {
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
     // Navigate to profile step
-    await user.click(screen.getByRole('button', { name: 'Mock Create Organization' }));
+    await user.click(screen.getByRole('button', { name: 'Mock create Organization' }));
 
     // Wait for profile step
     await waitFor(() => {
@@ -406,7 +416,7 @@ describe('OnboardingRoute', () => {
 
     // Step 1: Organization
     expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Mock Create Organization' }));
+    await user.click(screen.getByRole('button', { name: 'Mock create Organization' }));
 
     // Wait for Step 2: Profile
     await waitFor(() => {
@@ -431,5 +441,210 @@ describe('OnboardingRoute', () => {
 
     // Should navigate to chat
     expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+  });
+
+  describe('Organization Detection Scenarios', () => {
+    const mockUser = { id: '1', email: 'test@example.com', name: 'Test User' };
+    const mockSession = { data: { user: mockUser }, isPending: false };
+    const mockOrganizations = { data: [], isPending: false };
+
+    // Helper function to set up mock organization action for testing different scenarios
+    const setMockAction = (action: typeof mockOrganizationAction) => {
+      mockOrganizationAction = action;
+    };
+
+    beforeEach(() => {
+      vi.mocked(authClient.useSession).mockReturnValue(mockSession as any);
+      vi.mocked(authClient.useListOrganizations).mockReturnValue(mockOrganizations as any);
+    });
+
+    it('should handle skip organization action', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'skip' action
+      setMockAction({
+        action: 'skip',
+        organizationName: 'Personal workspace',
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'personal-123', name: 'Personal workspace', slug: 'personal-workspace' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock skip organization button
+      const skipButton = screen.getByRole('button', { name: 'Mock skip Organization' });
+      await user.click(skipButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify organization.create was called with personal workspace
+      expect(vi.mocked(authClient.organization.create)).toHaveBeenCalledWith({
+        name: 'Personal workspace',
+        slug: 'personal-1',
+      });
+    });
+
+    it('should handle invite acceptance action', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'invite' action
+      setMockAction({
+        action: 'invite',
+        organizationId: 'invited-org-123',
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.acceptInvitation).mockResolvedValue({} as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Mock URL search params for invitation token
+      Object.defineProperty(window, 'location', {
+        value: {
+          search: '?invite=invitation-token-123',
+        },
+        writable: true,
+      });
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock invite organization button
+      const inviteButton = screen.getByRole('button', { name: 'Mock invite Organization' });
+      await user.click(inviteButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify acceptInvitation was called
+      expect(vi.mocked(authClient.organization.acceptInvitation)).toHaveBeenCalledWith({
+        invitationId: 'invitation-token-123',
+      });
+      // Verify setActive was called with invited organization
+      expect(vi.mocked(authClient.organization.setActive)).toHaveBeenCalledWith({
+        organizationId: 'invited-org-123',
+      });
+    });
+
+    it('should handle create organization action with domain join enabled', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'create' action with domain join
+      setMockAction({
+        action: 'create',
+        organizationName: 'Acme Corp',
+        enableDomainJoin: true,
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'acme-123', name: 'Acme Corp', slug: 'acme-corp' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Mock fetch for domain join endpoint
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true }),
+      } as any);
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify organization.create was called
+      expect(vi.mocked(authClient.organization.create)).toHaveBeenCalledWith({
+        name: 'Acme Corp',
+        slug: 'acme-corp',
+      });
+
+      // Verify domain join endpoint was called
+      expect(global.fetch).toHaveBeenCalledWith('/api/organization/enable-domain-join', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organizationId: 'acme-123',
+          domain: 'example.com',
+        }),
+      });
+    });
+
+    it('should handle organization action errors gracefully', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'create' action
+      setMockAction({
+        action: 'create',
+        organizationName: 'Failed Org',
+      });
+
+      // Mock organization API to throw error
+      vi.mocked(authClient.organization.create).mockRejectedValue(
+        new Error('Failed to create organization'),
+      );
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Should stay on organization step and show error (implementation detail)
+      // The exact error handling depends on the component implementation
+      expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+    });
+
+    it('should handle missing invitation token gracefully', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'invite' action but without invitation token in URL
+      setMockAction({
+        action: 'invite',
+        organizationId: 'invited-org-123',
+      });
+
+      // Clear search params
+      Object.defineProperty(window, 'location', {
+        value: {
+          search: '',
+        },
+        writable: true,
+      });
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock invite organization button
+      const inviteButton = screen.getByRole('button', { name: 'Mock invite Organization' });
+      await user.click(inviteButton);
+
+      // Should progress to next step even without token (graceful handling)
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // acceptInvitation should not be called without token
+      expect(vi.mocked(authClient.organization.acceptInvitation)).not.toHaveBeenCalled();
+    });
   });
 });

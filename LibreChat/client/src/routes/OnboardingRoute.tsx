@@ -73,10 +73,22 @@ export default function OnboardingRoute() {
           });
 
           // If domain join is enabled, update organization settings
-          // Note: This would require a custom endpoint in your backend
-          if (data.enableDomainJoin && !session?.user?.email?.includes('@gmail.com')) {
-            // TODO: Add domain auto-join functionality via custom endpoint
-            console.log('Domain auto-join enabled for:', session?.user?.email?.split('@')[1]);
+          if (data.enableDomainJoin) {
+            try {
+              await fetch('/api/organization/enable-domain-join', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  organizationId: result.data.id,
+                  domain: session?.user?.email?.split('@')[1],
+                }),
+              });
+            } catch (error) {
+              console.error('Failed to enable domain join:', error);
+              // Non-critical error - don't block the flow
+            }
           }
         }
       } else if (data.action === 'skip' && data.organizationName) {

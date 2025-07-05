@@ -92,6 +92,18 @@ describe('OrganizationDetectionService', () => {
         },
       ]);
     });
+
+    it('should handle database errors gracefully', async () => {
+      const dbError = new Error('Database connection failed');
+      mockOrganizationCollection.find.mockImplementation(() => {
+        throw dbError;
+      });
+
+      const result = await getOrganizationsByDomain('test.com');
+
+      expect(result).toEqual([]);
+      // Note: Error logging is verified by stdout in test output
+    });
   });
 
   describe('checkDomainOrganizations', () => {
@@ -105,6 +117,30 @@ describe('OrganizationDetectionService', () => {
         organizations: [],
         canAutoJoin: false,
       });
+    });
+
+    it('should handle invalid email formats', async () => {
+      const invalidEmails = [
+        'user@', // Missing domain
+        '@domain.com', // Missing user
+        'user@.com', // Domain starts with dot
+        'user@domain', // No TLD
+        'user domain.com', // Missing @
+        'user@@domain.com', // Double @
+        '', // Empty string
+        'user@   ', // Whitespace domain
+      ];
+
+      for (const email of invalidEmails) {
+        const result = await checkDomainOrganizations(email);
+        expect(result).toEqual({
+          isPublicDomain: true,
+          domain: null,
+          hasOrganization: false,
+          organizations: [],
+          canAutoJoin: false,
+        });
+      }
     });
 
     it('should detect public domain', async () => {
@@ -145,15 +181,7 @@ describe('OrganizationDetectionService', () => {
         isPublicDomain: false,
         domain: 'acme.com',
         hasOrganization: true,
-        organizations: [
-          {
-            _id: 'org1',
-            name: 'Acme Corp',
-            domain: 'acme.com',
-            allowDomainJoin: true,
-            slug: 'acme-corp',
-          },
-        ],
+        organizations: [], // Empty array for security - prevents information disclosure
         canAutoJoin: true,
       });
     });

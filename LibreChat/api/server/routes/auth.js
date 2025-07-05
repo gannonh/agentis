@@ -32,7 +32,7 @@ import {
   // validatePasswordReset,
 } from '#server/middleware/index.js';
 import { organizationService } from '#server/services/OrganizationService.js';
-import { checkDomainOrganizations } from '#server/services/OrganizationDetectionService.js';
+
 import { logger } from '#config/index.js';
 
 const router = express.Router();

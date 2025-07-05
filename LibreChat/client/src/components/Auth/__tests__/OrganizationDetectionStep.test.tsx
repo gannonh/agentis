@@ -1,6 +1,6 @@
 /**
- * @fileoverview Tests for OrganizationCreationStep component
- * @module components/Auth/__tests__/OrganizationCreationStep.test
+ * @fileoverview Tests for OrganizationDetectionStep component
+ * @module components/Auth/__tests__/OrganizationDetectionStep.test
  */
 
 import React from 'react';
@@ -54,7 +54,7 @@ const renderWithRouter = (component: React.ReactElement) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
 
-describe('OrganizationCreationStep', () => {
+describe('OrganizationDetectionStep', () => {
   const mockOnNext = vi.fn();
   const defaultProps = {
     email: 'user@example.com',

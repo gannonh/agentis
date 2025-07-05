@@ -10,6 +10,7 @@ import { betterAuth } from 'better-auth';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 import { organization, magicLink, admin } from 'better-auth/plugins';
 import mongoose from 'mongoose';
+import { fileURLToPath } from 'url';
 import { logger } from '#config/index.js';
 import { betterAuthConfig } from '#config/betterAuth.js';
 import { handleOrganizationAssignment } from '#utils/organization.js';
@@ -331,8 +332,9 @@ mongoose.connection.once('open', () => {
                 const path = await import('path');
 
                 // Create temp directory if it doesn't exist
-                // Use absolute path to project root, not LibreChat directory
-                const projectRoot = path.resolve(process.cwd(), '..');
+                // Use file location to reliably find project root regardless of process.cwd()
+                const currentFileDir = path.dirname(fileURLToPath(import.meta.url));
+                const projectRoot = path.resolve(currentFileDir, '../../'); // api/auth.js -> ../..
                 tempDir = path.join(projectRoot, 'temp');
                 try {
                   await fs.mkdir(tempDir, { recursive: true });

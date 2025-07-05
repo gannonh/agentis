@@ -25,30 +25,35 @@ export async function getOrganizationsByDomain(domain) {
     return [];
   }
 
-  const organizations = await db
-    .collection('organization')
-    .find({
-      'metadata.domain': domain,
-    })
-    .toArray();
+  try {
+    const organizations = await db
+      .collection('organization')
+      .find({
+        'metadata.domain': domain,
+      })
+      .toArray();
 
-  // Transform to expected format
-  return organizations.map((org) => ({
-    _id: org._id || org.id,
-    name: org.name,
-    domain: org.metadata?.domain,
-    allowDomainJoin: org.metadata?.allowDomainJoin || false,
-    slug: org.slug,
-  }));
+    // Transform to expected format
+    return organizations.map((org) => ({
+      _id: org._id || org.id,
+      name: org.name,
+      domain: org.metadata?.domain,
+      allowDomainJoin: org.metadata?.allowDomainJoin || false,
+      slug: org.slug,
+    }));
+  } catch (error) {
+    logger.error(`Error querying organizations for domain ${domain}:`, error);
+    return [];
+  }
 }
 
 /**
  * Check domain organizations for a given email
- * 
+ *
  * SECURITY NOTE: This function intentionally does NOT return organization names
  * or counts to prevent information disclosure about other customers. The frontend
  * only needs to know if organization(s) exist for the domain, not specifics.
- * 
+ *
  * @param {string} email - The email address to check
  * @param {Object} inviteContext - Optional invitation context
  * @returns {Promise<Object>} Detection result with organization information
@@ -112,9 +117,23 @@ export async function checkDomainOrganizations(email, inviteContext) {
     };
   }
 
+  // Validate email format and ensure domain exists
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    logger.warn(`Invalid email format provided: ${email}`);
+    return {
+      isPublicDomain: true,
+      domain: null,
+      hasOrganization: false,
+      organizations: [],
+      canAutoJoin: false,
+    };
+  }
+
   // Extract domain from email
   const emailParts = email.split('@');
-  if (emailParts.length < 2) {
+  if (emailParts.length !== 2 || !emailParts[1] || emailParts[1].trim() === '') {
+    logger.warn(`Invalid email domain in: ${email}`);
     return {
       isPublicDomain: true,
       domain: null,
