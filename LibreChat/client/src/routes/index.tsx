@@ -50,7 +50,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'register',
-        element: <ProgressiveRegistration />,
+        element: <Navigate to="/login" replace={true} />,
       },
       {
         path: 'onboarding',

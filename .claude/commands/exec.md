@@ -9,6 +9,7 @@ GitHub Issue: $ARGUMENTS
 ## Your Role
 
 You function as a senior software engineer executing against a predefined plan with:
+
 - **Disciplined adherence** to planning documentation
 - **TDD methodology** as the primary development approach
 - **Minimal scope creep** - implement exactly what's specified
@@ -25,6 +26,7 @@ You function as a senior software engineer executing against a predefined plan w
 ## TDD Execution Process
 
 ### 1. Task Preparation
+
 - Read the GitHub Issue
 - Understand the issue in the context of the larger context if applicable (e.g., PRD/plan)
 - Evaluate scope and criteria
@@ -33,41 +35,45 @@ You function as a senior software engineer executing against a predefined plan w
 - Breakdown complex Issues into Sub-issues (use your own discreption)
 
 ### 2. Red Phase (Write Failing Test)
+
 ```javascript
 // Example: Start with a failing test
-describe('AuthMiddleware', () => {
-  it('should return 401 for missing token', async () => {
-    const response = await request(app)
-      .get('/api/protected')
-      .expect(401);
-    
-    expect(response.body.error).toBe('No token provided');
+describe("AuthMiddleware", () => {
+  it("should return 401 for missing token", async () => {
+    const response = await request(app).get("/api/protected").expect(401);
+
+    expect(response.body.error).toBe("No token provided");
   });
 });
 ```
+
 - Write test based on acceptance criteria
 - Run test to confirm it fails
 - Commit the failing test
 
 ### 3. Green Phase (Make Test Pass)
+
 ```javascript
 // Example: Minimal implementation to pass
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization;
-  
+
   if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
+    return res.status(401).json({ error: "No token provided" });
   }
-  
+
   next();
 }
 ```
+
+- One test at a time
 - Write minimal code to pass the test
 - No extra features or edge cases yet
 - Run test to confirm it passes
 - Commit the passing implementation
 
 ### 4. Refactor Phase (Improve Code Quality)
+
 - Refactor only if tests still pass
 - Apply SOLID principles
 - Extract common patterns
@@ -75,6 +81,7 @@ function authMiddleware(req, res, next) {
 - Run all tests after each change
 
 ### 5. Repeat Cycle
+
 - Move to next test case
 - Cover all acceptance criteria
 - Build functionality incrementally
@@ -82,6 +89,7 @@ function authMiddleware(req, res, next) {
 ## Execution Guidelines
 
 ### Strict Rules
+
 1. **Never skip writing tests first**
 2. **Never implement beyond test requirements**
 3. **Never modify plan scope during execution**
@@ -90,32 +98,34 @@ function authMiddleware(req, res, next) {
 6. **NEVER EVER cheat on tests (e.g., silently catching failures)**
 
 ### File Operations
+
 - Create files in correct locations per project structure
 - Follow established naming conventions
 - Use existing patterns and utilities (actually view/understand similar tests and their patterns!)
 - Keep files focused and under 500 lines
 
 ### Testing Standards
+
 ```javascript
 // Test Structure Example
-describe('ComponentName', () => {
-  describe('methodName', () => {
-    it('should handle normal case', () => {
+describe("ComponentName", () => {
+  describe("methodName", () => {
+    it("should handle normal case", () => {
       // Arrange
       const input = setupTestData();
-      
+
       // Act
       const result = methodUnderTest(input);
-      
+
       // Assert
       expect(result).toEqual(expectedOutput);
     });
-    
-    it('should handle edge case', () => {
+
+    it("should handle edge case", () => {
       // Test edge cases separately
     });
-    
-    it('should handle error case', () => {
+
+    it("should handle error case", () => {
       // Test error scenarios
     });
   });
@@ -123,6 +133,7 @@ describe('ComponentName', () => {
 ```
 
 ### Code Quality Checklist
+
 - [ ] All tests pass
 - [ ] Code coverage meets minimum (80%)
 - [ ] Linting passes without warnings
@@ -198,43 +209,46 @@ cd /Users/gannonhall/dev/agentis/LibreChat && npm run check:packages
 ## Common TDD Patterns
 
 ### Testing API Endpoints
+
 ```javascript
 // Test first
-it('POST /api/users should create user', async () => {
-  const userData = { email: 'test@example.com', name: 'Test User' };
-  
+it("POST /api/users should create user", async () => {
+  const userData = { email: "test@example.com", name: "Test User" };
+
   const response = await request(app)
-    .post('/api/users')
+    .post("/api/users")
     .send(userData)
     .expect(201);
-    
-  expect(response.body).toHaveProperty('id');
+
+  expect(response.body).toHaveProperty("id");
   expect(response.body.email).toBe(userData.email);
 });
 ```
 
 ### Testing React Components
+
 ```typescript
 // Test first
-it('should display error message on validation failure', () => {
+it("should display error message on validation failure", () => {
   render(<LoginForm />);
-  
-  fireEvent.click(screen.getByText('Submit'));
-  
-  expect(screen.getByText('Email is required')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByText("Submit"));
+
+  expect(screen.getByText("Email is required")).toBeInTheDocument();
 });
 ```
 
 ### Testing Services
+
 ```javascript
 // Test first
-it('should hash password before saving', async () => {
-  const plainPassword = 'testpass123';
-  const user = await UserService.create({ 
-    email: 'test@example.com',
-    password: plainPassword 
+it("should hash password before saving", async () => {
+  const plainPassword = "testpass123";
+  const user = await UserService.create({
+    email: "test@example.com",
+    password: plainPassword,
   });
-  
+
   expect(user.password).not.toBe(plainPassword);
   expect(await bcrypt.compare(plainPassword, user.password)).toBe(true);
 });
@@ -243,6 +257,7 @@ it('should hash password before saving', async () => {
 ## Progress Tracking
 
 After completing each task:
+
 1. Mark task complete in planning document
 2. Update any relevant GitHub issues
 3. Create pull request with clear description
@@ -251,6 +266,7 @@ After completing each task:
 ## When to Stop and Seek Clarification
 
 Stop execution and request clarification when:
+
 - Planning document is unclear or missing details
 - Tests cannot be written due to ambiguous requirements
 - Dependencies are not available or documented

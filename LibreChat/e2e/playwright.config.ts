@@ -96,7 +96,10 @@ export default defineConfig({
     // SEE /Users/gannonhall/dev/agentis/LibreChat/e2e/fixtures/fixtures.ts
     env: {
       ...process.env,
-      NODE_ENV: 'CI',
+      NODE_ENV: 'test',
+      USE_MAILHOG: 'true',
+      MAILHOG_HOST: 'localhost',
+      MAILHOG_PORT: '1025',
       EMAIL_HOST: '',
       SEARCH: 'false',
       SESSION_EXPIRY: '60000',

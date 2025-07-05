@@ -132,13 +132,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 test('renders login form', () => {
-  const { getByLabelText, getByRole, getByTestId } = setup();
+  const { getByLabelText, getByTestId } = setup();
 
   // Check if login form is rendered (email only for magic link)
-  expect(getByLabelText(/com_auth_email/i)).toBeInTheDocument();
+  expect(getByLabelText('Email address')).toBeInTheDocument();
   expect(getByTestId('login-button')).toBeInTheDocument();
-  expect(getByRole('link', { name: /com_auth_sign_up/i })).toBeInTheDocument();
-  expect(getByRole('link', { name: /com_auth_sign_up/i })).toHaveAttribute('href', '/register');
 
   // Social login buttons are now button elements with aria-labels
   expect(getByTestId('google')).toBeInTheDocument();
@@ -159,7 +157,7 @@ test('calls loginUser.mutate on login', async () => {
     },
   });
 
-  const emailInput = getByLabelText(/com_auth_email/i);
+  const emailInput = getByLabelText('Email address');
   const submitButton = getByTestId(document.body, 'login-button');
 
   await userEvent.type(emailInput, 'test@test.com');
@@ -188,7 +186,7 @@ test('Navigates to / on successful login', async () => {
     },
   });
 
-  const emailInput = getByLabelText(/com_auth_email/i);
+  const emailInput = getByLabelText('Email address');
   const submitButton = getByTestId(document.body, 'login-button');
 
   await userEvent.type(emailInput, 'test@test.com');

@@ -1,88 +1,211 @@
 /**
- * @fileoverview Onboarding route component
+ * @fileoverview Onboarding route component with organization detection
  * @module routes/OnboardingRoute
  */
 
 import React, { useState, FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
-import { useLocalize } from '~/hooks';
-import { useOnboardingState } from '~/hooks/useOnboardingState';
+import { useOnboardingState, OnboardingStep } from '~/hooks/useOnboardingState';
+import OnboardingLayout from '~/components/Auth/OnboardingLayout';
+import OrganizationDetectionStep from '~/components/Auth/OrganizationDetectionStep';
+import { Button } from '~/components/ui';
+import { useToastContext } from '~/Providers/ToastContext';
+import { NotificationSeverity } from '~/common/types';
 
 /**
- * Onboarding route component for new user flow
+ * Onboarding route component for new user flow with modern design
  *
  * Handles the complete onboarding experience for new users including:
  * - Authentication state checking
- * - Organization detection and creation
- * - Step-by-step guided setup
+ * - Organization detection based on email domain and invitation tokens
+ * - Step-by-step guided setup with Slack-inspired design
  * - Progress tracking and navigation
  * - Form validation and error handling
  *
- * The component implements proper routing guards:
- * - Redirects unauthenticated users to login
- * - Redirects users with existing organizations to chat
- * - Shows onboarding flow for authenticated users without organizations
- *
  * Features:
- * - Real-time form validation with accessibility support
- * - Loading states during async operations
- * - Error handling with user-friendly messages
- * - Progress visualization with step counter
- * - Responsive design with mobile support
+ * - Modern Slack-inspired layout with generous spacing
+ * - URL parameter handling for invitation tokens
+ * - Real-time organization detection
+ * - Different UI states for various organization scenarios
+ * - Accessibility compliant design
  *
- * @returns {JSX.Element} The onboarding route component
- *
- * @example
- * ```tsx
- * // Used in router configuration
- * {
- *   path: '/onboarding',
- *   element: <OnboardingRoute />
- * }
- * ```
+ * @returns The onboarding route component
  */
 export default function OnboardingRoute() {
-  const localize = useLocalize();
+  const navigate = useNavigate();
   const { state, getProgress, goToNextStep } = useOnboardingState();
+  const { showToast } = useToastContext();
 
   // Form state
-  const [orgName, setOrgName] = useState('');
+  const [profileName, setProfileName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
 
-  // Handle organization form submission
-  const handleOrgSubmit = async (e: FormEvent) => {
+  // Robust slug generation function with fallbacks
+  const generateSlug = (name: string, fallbackPrefix = 'org'): string => {
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 50);
+
+    // If slug is empty after processing (e.g., "!!!" -> ""), use fallback
+    if (!baseSlug) {
+      const timestamp = Date.now().toString().slice(-6); // Last 6 digits for uniqueness
+      return `${fallbackPrefix}-${timestamp}`;
+    }
+
+    return baseSlug;
+  };
+
+  // Handle organization creation/join result
+  const handleOrganizationAction = async (data: {
+    action: 'create' | 'skip' | 'join' | 'invite';
+    organizationName?: string;
+    enableDomainJoin?: boolean;
+    organizationId?: string;
+  }) => {
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      if (data.action === 'create' && data.organizationName) {
+        // Create organization with robust slug generation
+        const slug = generateSlug(data.organizationName);
+
+        const result = await authClient.organization.create({
+          name: data.organizationName,
+          slug,
+        });
+
+        if (result.data) {
+          // Set the newly created organization as active
+          await authClient.organization.setActive({
+            organizationId: result.data.id,
+          });
+
+          // If domain join is enabled, update organization settings
+          if (data.enableDomainJoin) {
+            const domain = session?.user?.email?.split('@')[1];
+            if (!domain) {
+              console.warn('Cannot enable domain join: user email domain not found');
+            } else {
+              try {
+                const response = await fetch('/api/organization/enable-domain-join', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  credentials: 'include', // Include authentication cookies
+                  body: JSON.stringify({
+                    organizationId: result.data.id,
+                    domain: domain,
+                  }),
+                });
+
+                if (!response.ok) {
+                  const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                  throw new Error(
+                    `HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`,
+                  );
+                }
+
+                const responseData = await response.json();
+                console.log('Domain join enabled successfully:', responseData);
+                showToast({
+                  message: 'Automatic team joining enabled successfully!',
+                  severity: NotificationSeverity.SUCCESS,
+                  showIcon: true,
+                  duration: 3000,
+                });
+              } catch (error) {
+                console.error('Failed to enable domain join:', error);
+                showToast({
+                  message:
+                    'Failed to enable automatic team joining. You can set this up later in organization settings.',
+                  severity: NotificationSeverity.WARNING,
+                  showIcon: true,
+                  duration: 5000,
+                });
+                // Don't block onboarding flow, but inform the user
+              }
+            }
+          }
+        }
+      } else if (data.action === 'skip' && data.organizationName) {
+        // Create personal workspace with robust slug generation
+        const baseSlug = generateSlug(data.organizationName, 'personal');
+        const userSuffix = session?.user?.id?.slice(-6) || Date.now().toString().slice(-6);
+        const slug = `${baseSlug}-${userSuffix}`;
+
+        const result = await authClient.organization.create({
+          name: data.organizationName,
+          slug,
+        });
+
+        if (result.data) {
+          // Set the personal workspace as active
+          await authClient.organization.setActive({
+            organizationId: result.data.id,
+          });
+        }
+      } else if (data.action === 'invite' && data.organizationId) {
+        // Accept invitation - check all possible URL parameter names for consistency with OrganizationDetectionStep
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteToken =
+          urlParams.get('invitation') || urlParams.get('invite') || urlParams.get('inviteToken');
+
+        if (!inviteToken) {
+          throw new Error('No invitation token found in URL parameters');
+        }
+
+        await authClient.organization.acceptInvitation({
+          invitationId: inviteToken,
+        });
+
+        // Set the joined organization as active
+        await authClient.organization.setActive({
+          organizationId: data.organizationId,
+        });
+      }
+
+      goToNextStep();
+    } catch (err) {
+      console.error('Organization action error:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to process organization action. Please try again.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle profile completion
+  const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const trimmedOrgName = orgName.trim();
-    if (!trimmedOrgName) {
-      setError('Organization name is required');
-      return;
-    }
-
-    if (trimmedOrgName.length < 2) {
-      setError('Organization name must be at least 2 characters');
-      return;
-    }
-
-    if (trimmedOrgName.length > 50) {
-      setError('Organization name must be 50 characters or less');
+    const trimmedUserName = profileName.trim();
+    if (!trimmedUserName) {
+      setError('Name is required');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // TODO: In Task #6 (Issue #103), this will integrate with actual organization creation
-      // For now, just simulate the process and move to next step
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
+      // Update user profile
+      await authClient.updateUser({
+        name: trimmedUserName,
+      });
       goToNextStep();
     } catch (err) {
-      setError('Failed to create organization. Please try again.');
+      setError('Failed to update profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -91,16 +214,14 @@ export default function OnboardingRoute() {
   // Show loading while checking auth state
   if (sessionLoading || orgsLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"
-            role="progressbar"
-            aria-label={localize('com_ui_loading')}
-          />
-          <div className="text-gray-600 dark:text-gray-400">{localize('com_ui_loading')}...</div>
+      <OnboardingLayout title="Loading...">
+        <div className="py-8 text-center">
+          <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+            <span>Checking your account...</span>
+          </div>
         </div>
-      </div>
+      </OnboardingLayout>
     );
   }
 
@@ -110,89 +231,148 @@ export default function OnboardingRoute() {
   }
 
   // Has session and organizations - redirect to chat
+  // Only redirect if they have completed onboarding (have organizations)
   if (organizations && organizations.length > 0) {
     return <Navigate to="/c/new" replace={true} />;
   }
 
   const progress = getProgress();
+  const userEmail = session?.user?.email || '';
+  const userName = session?.user?.name || '';
 
-  const stepTitles = {
-    organization: 'Create Your Organization',
-    profile: 'Complete Your Profile',
-    team: 'Invite Team Members',
-    welcome: 'Welcome to Agentis',
+  const stepConfig = {
+    [OnboardingStep.ORGANIZATION]: {
+      title: (
+        <>
+          What&apos;s the name of your
+          <br />
+          company or team?
+        </>
+      ),
+      subtitle: 'This will be the name of your Agentis workspace.',
+    },
+    [OnboardingStep.PROFILE]: {
+      title: 'Complete Your Profile',
+      subtitle: 'Tell us a bit about yourself to personalize your experience.',
+    },
+    [OnboardingStep.TEAM]: {
+      title: 'Invite Your Team',
+      subtitle: 'Collaboration is better together. Invite your teammates to join.',
+    },
+    [OnboardingStep.WELCOME]: {
+      title: 'Welcome to Agentis!',
+      subtitle: "You're all set up. Let's start your AI conversation journey.",
+    },
   };
 
+  const currentStepConfig = stepConfig[state.currentStep];
+
   return (
-    <div>
-      <div className="p-4">
-        <h1 className="mb-4 text-center text-2xl font-semibold">{stepTitles[state.currentStep]}</h1>
-        <div
-          role="progressbar"
-          aria-valuenow={progress.percentage}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          className="mb-4 h-2 w-full rounded-full bg-gray-200"
-        >
-          <div
-            className="h-2 rounded-full bg-blue-600 transition-all"
-            style={{ width: `${progress.percentage}%` }}
-          />
-        </div>
-        <div className="text-center text-sm text-gray-600">
-          Step {progress.current} of {progress.total}
-        </div>
-      </div>
-      <div className="px-4">
-        {state.currentStep === 'organization' && (
-          <form className="mx-auto max-w-md" onSubmit={handleOrgSubmit}>
-            <div className="mb-4">
-              <label htmlFor="org-name" className="mb-2 block text-sm font-medium text-gray-700">
-                Organization Name
-              </label>
-              <input
-                id="org-name"
-                type="text"
-                required
-                value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
-                disabled={isSubmitting}
-                className={`w-full rounded-md border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
-                  error
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                } ${isSubmitting ? 'cursor-not-allowed bg-gray-100' : ''}`}
-                aria-describedby={error ? 'org-name-error' : undefined}
-                aria-invalid={error ? 'true' : 'false'}
-                placeholder="Enter your organization name"
-                minLength={2}
-                maxLength={50}
-              />
-              {error && (
-                <div
-                  id="org-name-error"
-                  role="alert"
-                  className="mt-2 text-sm text-red-600"
-                  aria-live="polite"
-                >
-                  {error}
-                </div>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={isSubmitting || !orgName.trim()}
-              className={`w-full rounded-md px-4 py-2 text-white transition-colors ${
-                isSubmitting || !orgName.trim()
-                  ? 'cursor-not-allowed bg-gray-400'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-              }`}
+    <OnboardingLayout
+      title={currentStepConfig.title}
+      subtitle={currentStepConfig.subtitle}
+      step={{
+        current: progress.current,
+        total: progress.total,
+      }}
+    >
+      {/* Organization Creation Step */}
+      {state.currentStep === OnboardingStep.ORGANIZATION && (
+        <OrganizationDetectionStep
+          email={userEmail}
+          userName={userName}
+          onNext={handleOrganizationAction}
+          className={isSubmitting ? 'pointer-events-none opacity-50' : ''}
+        />
+      )}
+
+      {/* Profile Completion Step */}
+      {state.currentStep === OnboardingStep.PROFILE && (
+        <form onSubmit={handleProfileSubmit} className="space-y-6">
+          <div>
+            <label
+              htmlFor="user-name"
+              className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              {isSubmitting ? 'Creating Organization...' : 'Continue'}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+              Your Name
+            </label>
+            <input
+              id="user-name"
+              type="text"
+              required
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              disabled={isSubmitting}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+              placeholder="Enter your full name"
+              maxLength={100}
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            disabled={isSubmitting || !profileName.trim()}
+            className="w-full"
+            size="lg"
+          >
+            {isSubmitting ? 'Saving...' : 'Continue'}
+          </Button>
+        </form>
+      )}
+
+      {/* Team Invitation Step */}
+      {state.currentStep === OnboardingStep.TEAM && (
+        <div className="space-y-6 text-center">
+          <div className="text-gray-600 dark:text-gray-300">
+            <p className="mb-4">
+              You can invite team members now or skip this step and do it later from your workspace
+              settings.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Button onClick={goToNextStep} className="w-full" size="lg">
+              Skip for Now
+            </Button>
+
+            <Button
+              onClick={() => {
+                // TODO: Implement team invitation flow
+                console.log('Team invitation flow');
+                goToNextStep();
+              }}
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
+              Invite Team Members
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome Step */}
+      {state.currentStep === OnboardingStep.WELCOME && (
+        <div className="space-y-6 text-center">
+          <div className="text-gray-600 dark:text-gray-300">
+            <p className="mb-4 text-lg">🎉 Congratulations! Your workspace is ready.</p>
+            <p>
+              You can now start having conversations with AI, create agents, execute code, and
+              collaborate with your team.
+            </p>
+          </div>
+
+          <Button onClick={() => navigate('/c/new')} className="w-full" size="lg">
+            Start Your First Conversation
+          </Button>
+        </div>
+      )}
+    </OnboardingLayout>
   );
 }

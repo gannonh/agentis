@@ -264,8 +264,8 @@ export default defineConfig({
    # From LibreChat directory (not e2e/)
    npm install
    
-   # Ensure MongoDB is running
-   docker-compose -f docker-compose.dev.yml up -d mongodb
+   # Ensure MongoDB and MailHog are running
+   docker-compose -f docker-compose.dev.yml up -d mongodb mailhog
    
    # Set environment variables in .env
    GOOGLE_TEST_ACCOUNT_1_EMAIL="agentis.test@gmail.com"
@@ -447,6 +447,130 @@ test('Use Google Multi Agent', async ({ browser }) => {
   const page2 = await handleExistingAccountAuth(page, 'Google Docs');
   const page3 = await handleExistingAccountAuthSingle(page, 'Google Sheets');
 });
+```
+
+## Email Testing with MailHog
+
+### How MailHog Works
+
+MailHog is an email testing tool that acts as a fake SMTP server. It captures all outgoing emails instead of actually sending them, making it perfect for testing.
+
+### Current Configuration
+
+Emails are routed to MailHog in the following environments:
+
+```javascript
+// From sendEmail.js
+if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'ci' || process.env.NODE_ENV === 'development' || process.env.USE_MAILHOG === 'true') {
+  transporterOptions = {
+    host: process.env.MAILHOG_HOST || 'localhost',
+    port: process.env.MAILHOG_PORT || 1025,
+    secure: false,
+    auth: false,
+    tls: {
+      rejectUnauthorized: false,
+    },
+  };
+}
+```
+
+### Environment Email Routing
+
+- **Production** (`NODE_ENV=production`): Uses configured SMTP service
+- **Development** (`NODE_ENV=development`): Routes to MailHog  
+- **Testing** (`NODE_ENV=test` or `NODE_ENV=ci`): Routes to MailHog
+- **Manual Control**: Set `USE_MAILHOG=true` to force MailHog usage
+
+### MailHog Service
+
+In `docker-compose.dev.yml`:
+
+```yaml
+mailhog:
+  image: mailhog/mailhog:latest
+  container_name: agentis-mailhog
+  ports:
+    - "1025:1025"  # SMTP server
+    - "8025:8025"  # Web UI
+```
+
+### How It Works in Tests
+
+1. **Email Capture**: When tests run, all emails are sent to MailHog on port 1025
+2. **API Access**: Tests use the MailHog API on port 8025 to retrieve emails
+3. **Magic Link Extraction**: The `mailhog.js` utility extracts magic links from the HTML email body
+
+### Email Testing Helper Functions
+
+The e2e tests use MailHog to capture and verify emails:
+
+```typescript
+// Helper to capture magic link using MailHog
+async function captureMagicLink(email: string): Promise<string | null> {
+  const { createMailHog } = await import('../utils/mailhog.js');
+  const mailhog = createMailHog();
+
+  try {
+    logProgress(`📧 Waiting for magic link email to ${email}`);
+    const magicLink = await mailhog.waitForMagicLink(email, 15000);
+    
+    if (magicLink) {
+      logProgress(`✅ Found magic link: ${magicLink}`);
+      return magicLink;
+    } else {
+      logProgress(`❌ No magic link found for ${email}`);
+      return null;
+    }
+  } catch (error) {
+    logProgress(`❌ Error getting magic link from MailHog: ${error}`);
+    return null;
+  }
+}
+```
+
+### MailHog Utilities
+
+The `mailhog.js` utility provides several methods:
+
+- **`getMessages()`**: Retrieve all emails from MailHog
+- **`getLatestMessage(email)`**: Get the most recent email for a specific address
+- **`extractMagicLink(message)`**: Extract magic link URL from email HTML
+- **`waitForMagicLink(email, timeout)`**: Wait for and extract magic link
+- **`clearMessages()`**: Clear all emails from MailHog
+- **`getMessageCount()`**: Get total number of emails
+
+### Magic Link Extraction
+
+The utility handles various email encoding formats:
+
+```javascript
+// Handles HTML entities and quoted-printable encoding
+body = body
+  .replace(/=\r\n/g, '') // Remove quoted-printable line breaks
+  .replace(/&#x3D;/g, '=') // Decode &#x3D; to =
+  .replace(/&amp;/g, '&') // Decode &amp; to &
+  .replace(/&quot;/g, '"') // Decode &quot; to "
+  .replace(/=3D/g, '=') // Decode quoted-printable =3D to =
+  .replace(/\r\n/g, ' '); // Replace line breaks with spaces
+```
+
+### Benefits of MailHog in Development
+
+1. **Safety**: No accidental emails sent to real users during development
+2. **Easy Testing**: All emails visible in MailHog's web UI at http://localhost:8025
+3. **Consistency**: Same email testing experience across development and test environments
+4. **Debugging**: Full access to email headers, content, and attachments
+
+### Accessing Emails in Development
+
+```bash
+# Ensure MailHog is running
+docker-compose -f docker-compose.dev.yml up -d mailhog
+
+# Access MailHog UI
+open http://localhost:8025
+
+# All emails sent by the application will appear here
 ```
 
 ## OAuth Integration Testing

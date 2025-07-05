@@ -5,10 +5,10 @@ import { useGetStartupConfig } from '~/data-provider';
 import AuthLayout from '~/components/Auth/AuthLayout';
 import { TranslationKeys, useLocalize } from '~/hooks';
 
-const headerMap: Record<string, TranslationKeys> = {
-  '/login': 'com_auth_welcome_back',
-  '/register': 'com_auth_create_account',
-  '/login/2fa': 'com_auth_verify_your_identity',
+const headerMap: Record<string, string> = {
+  '/login': 'Welcome',
+  '/register': 'Welcome',
+  '/login/2fa': 'Verify Your Identity',
 };
 
 export default function StartupLayout({ isAuthenticated }: { isAuthenticated?: boolean }) {
@@ -56,7 +56,13 @@ export default function StartupLayout({ isAuthenticated }: { isAuthenticated?: b
 
   return (
     <AuthLayout
-      header={headerText ? localize(headerText) : localize(headerMap[location.pathname])}
+      header={
+        headerText
+          ? typeof headerText === 'string'
+            ? headerText
+            : localize(headerText)
+          : headerMap[location.pathname] || 'Welcome'
+      }
       isFetching={isFetching}
       startupConfig={startupConfig}
       startupConfigError={startupConfigError}

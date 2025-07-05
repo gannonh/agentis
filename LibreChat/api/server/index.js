@@ -120,6 +120,132 @@ const startServer = async () => {
     }),
   );
 
+  /* Organization detection endpoint - outside /api/auth to avoid Better Auth conflicts */
+  app.post('/api/organization/detect-domain', express.json(), async (req, res) => {
+    try {
+      const { checkDomainOrganizations } = await import(
+        './services/OrganizationDetectionService.js'
+      );
+      const { logger } = await import('#config/index.js');
+
+      const { email, inviteToken } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          error: 'Email is required',
+        });
+      }
+
+      // Validate email format and ensure domain exists
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          error: 'Invalid email format',
+        });
+      }
+
+      const emailParts = email.split('@');
+      if (emailParts.length !== 2 || !emailParts[1] || emailParts[1].trim() === '') {
+        return res.status(400).json({
+          error: 'Invalid email format - missing or empty domain',
+        });
+      }
+
+      // Build invite context if token is provided
+      let inviteContext = null;
+      if (inviteToken) {
+        inviteContext = {
+          inviteToken,
+        };
+      }
+
+      const result = await checkDomainOrganizations(email, inviteContext);
+      res.json(result);
+    } catch (error) {
+      logger.error('Error detecting organization domain:', error);
+      res.status(500).json({
+        error: 'Failed to detect organization',
+        message: error.message,
+      });
+    }
+  });
+
+  /* Enable domain join for organization */
+  app.post('/api/organization/enable-domain-join', express.json(), async (req, res) => {
+    try {
+      const { isPublicDomain } = await import('./services/PublicDomainService.js');
+      const { logger } = await import('#config/index.js');
+
+      const { organizationId, domain } = req.body;
+
+      if (!organizationId || !domain) {
+        return res.status(400).json({
+          error: 'Organization ID and domain are required',
+        });
+      }
+
+      // Validate organizationId format (should be a string, not necessarily ObjectId)
+      if (typeof organizationId !== 'string' || organizationId.trim() === '') {
+        return res.status(400).json({
+          error: 'Invalid organization ID format',
+        });
+      }
+
+      // Validate domain format (should be a valid domain, not email)
+      const domainRegex =
+        /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+      if (!domainRegex.test(domain)) {
+        return res.status(400).json({
+          error: 'Invalid domain format',
+        });
+      }
+
+      // Security check: Prevent enabling domain join for public domains
+      if (isPublicDomain(domain)) {
+        logger.warn(`Attempt to enable domain join for public domain: ${domain}`);
+        return res.status(400).json({
+          error: 'Cannot enable domain join for public email domains',
+        });
+      }
+
+      // Use Better Auth's organization collection directly
+      const db = mongoose.connection.db;
+      if (!db) {
+        logger.warn('MongoDB connection not available for organization update');
+        return res.status(503).json({
+          error: 'Database connection not available',
+        });
+      }
+
+      // CRITICAL FIX: Use 'id' field instead of '_id' for Better Auth compatibility
+      // Better Auth uses string 'id' field as primary key, not MongoDB ObjectId '_id'
+      const result = await db.collection('organization').updateOne(
+        { id: organizationId },
+        {
+          $set: {
+            'metadata.domain': domain,
+            'metadata.allowDomainJoin': true,
+          },
+        },
+      );
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({
+          error: 'Organization not found',
+        });
+      }
+
+      logger.info(`Domain join enabled for organization ${organizationId} with domain ${domain}`);
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Error enabling domain join:', error);
+      res.status(500).json({
+        error: 'Failed to enable domain join',
+        message: error.message,
+      });
+    }
+  });
+
   /* Better Auth handler - MUST come before JSON parsing per docs */
   app.all('/api/auth/*', (req, res) => {
     const authInstance = getAuth();
@@ -213,7 +339,6 @@ const startServer = async () => {
   });
 
   /* API Endpoints */
-  // Auth routes already mounted above (before Better Auth handler)
   app.use('/api/actions', routes.actions);
   app.use('/api/keys', routes.keys);
   app.use('/api/user', routes.user);

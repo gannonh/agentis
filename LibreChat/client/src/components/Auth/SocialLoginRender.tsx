@@ -104,12 +104,15 @@ function SocialLoginRender({
       <>
         {startupConfig.emailLoginEnabled && (
           <>
-            <div className="relative mt-6 flex w-full items-center justify-center border border-t border-gray-300 uppercase dark:border-gray-600">
-              <div className="absolute bg-white px-3 text-xs text-black dark:bg-gray-900 dark:text-white">
-                {localize('com_auth_or')}
+            <div className="relative mt-8 flex w-full items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+              </div>
+              <div className="relative bg-white px-4 text-sm font-medium text-gray-500 dark:bg-gray-900 dark:text-gray-400">
+                OR SIGN IN WITH
               </div>
             </div>
-            <div className="mt-8" />
+            <div className="mt-6" />
           </>
         )}
         <div className="mt-2">

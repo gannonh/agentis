@@ -85,6 +85,16 @@ services:
     networks:
       - agentis_network
 
+  mailhog:
+    container_name: agentis-mailhog
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - agentis_network
+
 networks:
   agentis_network:
     driver: bridge

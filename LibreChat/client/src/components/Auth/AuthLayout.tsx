@@ -58,7 +58,9 @@ function AuthLayout({
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-white dark:bg-gray-900">
+    <div
+      className={`relative flex min-h-screen flex-col ${pathname.includes('onboarding') ? 'bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800' : 'bg-white dark:bg-gray-900'}`}
+    >
       <Banner />
       <BlinkAnimation active={isFetching}>
         <div className="mt-6 h-10 w-full bg-cover">
@@ -75,14 +77,25 @@ function AuthLayout({
       </div>
 
       <div className="flex flex-grow items-center justify-center">
-        <div className="w-authPageWidth overflow-hidden bg-white px-6 py-4 dark:bg-gray-900 sm:max-w-md sm:rounded-lg">
+        <div
+          className={
+            pathname.includes('onboarding')
+              ? 'w-full overflow-hidden px-6 py-4'
+              : 'w-full max-w-md overflow-hidden bg-white px-8 py-8 dark:bg-gray-900 sm:rounded-xl sm:shadow-lg'
+          }
+        >
           {!hasStartupConfigError && !isFetching && (
-            <h1
-              className="mb-4 text-center text-3xl font-semibold text-black dark:text-white"
-              style={{ userSelect: 'none' }}
-            >
-              {header}
-            </h1>
+            <div className="mb-8 text-center">
+              <h1
+                className="mb-2 text-4xl font-bold text-black dark:text-white"
+                style={{ userSelect: 'none' }}
+              >
+                {header}
+              </h1>
+              {(pathname.includes('login') || pathname.includes('register')) && (
+                <p className="text-lg text-gray-600 dark:text-gray-400">Sign in or register</p>
+              )}
+            </div>
           )}
           {children}
           {!pathname.includes('2fa') &&

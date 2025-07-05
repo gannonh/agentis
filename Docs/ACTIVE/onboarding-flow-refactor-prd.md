@@ -298,7 +298,7 @@ graph TD
 - [ ] Send notifications to org admins
 - [ ] Handle approval/rejection flows
 
-### Task #8: Update Profile Setup Integration
+### Task #8: Update Profile Setup Integration.
 
 <https://github.com/gannonh/agentis/issues/105>
 
@@ -341,21 +341,6 @@ graph TD
 - [ ] Record time spent per step
 - [ ] Add error tracking
 - [ ] Create analytics dashboard
-
-### Task #11: Create Migration for Existing Users
-
-<https://github.com/gannonh/agentis/issues/108>
-
-**Priority**: High  
-**Estimated Size**: L  
-**Dependencies**: Tasks #4-7  
-**Acceptance Criteria**:
-
-- [ ] Identify users with auto-created orgs
-- [ ] Flag organizations for review
-- [ ] Create migration script
-- [ ] Test with production data subset
-- [ ] Implement rollback mechanism
 
 ### Task #12: Update Documentation
 

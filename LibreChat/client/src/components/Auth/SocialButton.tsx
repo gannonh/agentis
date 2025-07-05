@@ -32,15 +32,15 @@ const SocialButton = ({ id, enabled, serverDomain, oauthPath, Icon, label }) => 
   };
 
   return (
-    <div className="mt-2 flex gap-x-2">
+    <div className="mt-3 flex gap-x-2">
       <button
         aria-label={`${label}`}
-        className="flex w-full items-center space-x-3 rounded-2xl border border-border-light bg-surface-primary px-5 py-3 text-text-primary transition-colors duration-200 hover:bg-surface-tertiary"
+        className="flex w-full items-center justify-center space-x-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 transition-colors duration-200 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
         onClick={handleSocialLogin}
         data-testid={id}
       >
         <Icon />
-        <p>{label}</p>
+        <span className="font-medium">{label}</span>
       </button>
     </div>
   );

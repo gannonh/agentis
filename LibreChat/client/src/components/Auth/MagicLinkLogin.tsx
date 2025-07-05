@@ -160,10 +160,10 @@ export const MagicLinkLogin: React.FC = () => {
       <div className="flex flex-col items-center justify-center space-y-6">
         <div className="text-center">
           <h2 className="mb-2 text-2xl font-bold text-gray-800 dark:text-white">
-            {localize('com_auth_check_your_email')}
+            Check your email
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            {localize('com_auth_magic_link_sent')}{' '}
+            We sent a magic link to{' '}
             <span className="font-medium text-gray-800 dark:text-gray-200">{email}</span>
           </p>
         </div>
@@ -178,10 +178,10 @@ export const MagicLinkLogin: React.FC = () => {
             {isSubmitting ? (
               <>
                 <Spinner className="mr-2" />
-                {localize('com_auth_sending')}
+                Sending...
               </>
             ) : (
-              localize('com_auth_resend_link')
+              'Resend link'
             )}
           </Button>
 
@@ -192,7 +192,7 @@ export const MagicLinkLogin: React.FC = () => {
             }}
             className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            {localize('com_auth_use_different_email')}
+            Use a different email
           </button>
         </div>
 
@@ -207,38 +207,30 @@ export const MagicLinkLogin: React.FC = () => {
 
       <form
         className="mt-6"
-        aria-label={localize('com_auth_login_form')}
+        aria-label="Login form"
         method="POST"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <div className="mb-4">
-          <div className="relative">
-            <input
-              type="email"
-              id="email"
-              autoComplete="email"
-              aria-label={localize('com_auth_email')}
-              {...register('email', {
-                required: localize('com_auth_email_required'),
-                pattern: {
-                  value: /\S+@\S+\.\S+/,
-                  message: localize('com_auth_email_pattern'),
-                },
-              })}
-              aria-invalid={!!errors.email}
-              className="webkit-dark-styles transition-color peer w-full rounded-2xl border border-border-light bg-surface-primary px-3.5 pb-2.5 pt-3 text-text-primary duration-200 focus:border-green-500 focus:outline-none"
-              placeholder=" "
-              disabled={isSubmitting}
-            />
-            <label
-              htmlFor="email"
-              className="absolute start-3 top-1.5 z-10 origin-[0] -translate-y-4 scale-75 transform bg-surface-primary px-2 text-sm text-text-secondary-alt duration-200 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-1.5 peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:px-2 peer-focus:text-green-600 dark:peer-focus:text-green-500 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4"
-            >
-              {localize('com_auth_email_address')}
-            </label>
-          </div>
+        <div className="mb-6">
+          <input
+            type="email"
+            id="email"
+            autoComplete="email"
+            aria-label="Email address"
+            {...register('email', {
+              required: 'Email is required',
+              pattern: {
+                value: /\S+@\S+\.\S+/,
+                message: 'Please enter a valid email address',
+              },
+            })}
+            aria-invalid={!!errors.email}
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+            placeholder="name@work-email.com"
+            disabled={isSubmitting}
+          />
           {errors.email && (
-            <span role="alert" className="mt-1 text-sm text-red-500 dark:text-red-900">
+            <span role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
               {errors.email.message}
             </span>
           )}
@@ -246,23 +238,19 @@ export const MagicLinkLogin: React.FC = () => {
 
         <div className="mt-6">
           <button
-            aria-label={localize('com_auth_continue')}
+            aria-label="Continue with email"
             data-testid="login-button"
             type="submit"
             disabled={isSubmitting}
-            className={cn(
-              'w-full rounded-2xl bg-green-600 px-4 py-3 text-sm font-medium text-white transition-colors',
-              'hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600',
-              'dark:bg-green-600 dark:hover:bg-green-700',
-            )}
+            className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center">
                 <Spinner className="mr-2" />
-                {localize('com_auth_sending_magic_link')}
+                Sending magic link...
               </div>
             ) : (
-              localize('com_auth_continue_with_email')
+              'Sign In With Email'
             )}
           </button>
         </div>
