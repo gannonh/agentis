@@ -668,12 +668,12 @@ describe('OnboardingRoute', () => {
 
     it('should handle domain join API errors gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Set mock to trigger 'create' action with domain join
-      setMockAction({ 
-        action: 'create', 
+      setMockAction({
+        action: 'create',
         organizationName: 'Test Corp',
-        enableDomainJoin: true
+        enableDomainJoin: true,
       });
 
       // Mock organization API calls
@@ -705,14 +705,12 @@ describe('OnboardingRoute', () => {
       });
 
       // Verify error was logged
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to enable domain join:',
-        expect.any(Error)
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to enable domain join:', expect.any(Error));
 
       // Verify warning toast was shown
       expect(mockShowToast).toHaveBeenCalledWith({
-        message: 'Failed to enable automatic team joining. You can set this up later in organization settings.',
+        message:
+          'Failed to enable automatic team joining. You can set this up later in organization settings.',
         severity: 'warning',
         showIcon: true,
         duration: 5000,
@@ -723,17 +721,17 @@ describe('OnboardingRoute', () => {
 
     it('should handle missing user email domain gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Mock user without email domain
       const mockUserNoEmail = { id: '1', name: 'Test User' }; // No email field
       const mockSessionNoEmail = { data: { user: mockUserNoEmail }, isPending: false };
       vi.mocked(authClient.useSession).mockReturnValue(mockSessionNoEmail as any);
-      
+
       // Set mock to trigger 'create' action with domain join
-      setMockAction({ 
-        action: 'create', 
+      setMockAction({
+        action: 'create',
         organizationName: 'Test Corp',
-        enableDomainJoin: true
+        enableDomainJoin: true,
       });
 
       // Mock organization API calls
@@ -759,7 +757,7 @@ describe('OnboardingRoute', () => {
 
       // Verify warning was logged and fetch was not called
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'Cannot enable domain join: user email domain not found'
+        'Cannot enable domain join: user email domain not found',
       );
       expect(global.fetch).not.toHaveBeenCalled();
 
@@ -768,12 +766,12 @@ describe('OnboardingRoute', () => {
 
     it('should handle domain join network errors gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Set mock to trigger 'create' action with domain join
-      setMockAction({ 
-        action: 'create', 
+      setMockAction({
+        action: 'create',
         organizationName: 'Network Test Corp',
-        enableDomainJoin: true
+        enableDomainJoin: true,
       });
 
       // Mock organization API calls
@@ -801,14 +799,12 @@ describe('OnboardingRoute', () => {
       });
 
       // Verify error was logged
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to enable domain join:',
-        expect.any(Error)
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to enable domain join:', expect.any(Error));
 
       // Verify warning toast was shown
       expect(mockShowToast).toHaveBeenCalledWith({
-        message: 'Failed to enable automatic team joining. You can set this up later in organization settings.',
+        message:
+          'Failed to enable automatic team joining. You can set this up later in organization settings.',
         severity: 'warning',
         showIcon: true,
         duration: 5000,
@@ -837,11 +833,11 @@ describe('OnboardingRoute', () => {
 
     it('should handle organization names with only special characters', async () => {
       const user = userEvent.setup();
-      
+
       // Set mock to trigger 'create' action with special characters only
-      setMockAction({ 
-        action: 'create', 
-        organizationName: '!!!' // Only special characters
+      setMockAction({
+        action: 'create',
+        organizationName: '!!!', // Only special characters
       });
 
       // Mock organization API calls
@@ -871,11 +867,11 @@ describe('OnboardingRoute', () => {
 
     it('should handle organization names with mixed content', async () => {
       const user = userEvent.setup();
-      
+
       // Set mock to trigger 'create' action with mixed content
-      setMockAction({ 
-        action: 'create', 
-        organizationName: 'My!@#$%^&*()Company++Name' 
+      setMockAction({
+        action: 'create',
+        organizationName: 'My!@#$%^&*()Company++Name',
       });
 
       // Mock organization API calls
@@ -905,11 +901,11 @@ describe('OnboardingRoute', () => {
 
     it('should handle skip action with special character names', async () => {
       const user = userEvent.setup();
-      
+
       // Set mock to trigger 'skip' action with special characters
-      setMockAction({ 
-        action: 'skip', 
-        organizationName: '@@@Personal@@@' 
+      setMockAction({
+        action: 'skip',
+        organizationName: '@@@Personal@@@',
       });
 
       // Mock organization API calls
@@ -939,13 +935,13 @@ describe('OnboardingRoute', () => {
 
     it('should handle very long organization names', async () => {
       const user = userEvent.setup();
-      
+
       const longName = 'A'.repeat(100) + '!'.repeat(50); // 150 characters
-      
+
       // Set mock to trigger 'create' action with very long name
-      setMockAction({ 
-        action: 'create', 
-        organizationName: longName
+      setMockAction({
+        action: 'create',
+        organizationName: longName,
       });
 
       // Mock organization API calls
@@ -974,11 +970,11 @@ describe('OnboardingRoute', () => {
 
     it('should handle empty organization name gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Set mock to trigger 'create' action with empty name (edge case)
-      setMockAction({ 
-        action: 'create', 
-        organizationName: '   ' // Only whitespace
+      setMockAction({
+        action: 'create',
+        organizationName: '   ', // Only whitespace
       });
 
       // Mock organization API calls

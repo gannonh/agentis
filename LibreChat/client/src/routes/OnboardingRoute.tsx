@@ -11,6 +11,7 @@ import OnboardingLayout from '~/components/Auth/OnboardingLayout';
 import OrganizationDetectionStep from '~/components/Auth/OrganizationDetectionStep';
 import { Button } from '~/components/ui';
 import { useToastContext } from '~/Providers/ToastContext';
+import { NotificationSeverity } from '~/common/types';
 
 /**
  * Onboarding route component for new user flow with modern design
@@ -51,13 +52,13 @@ export default function OnboardingRoute() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .substring(0, 50);
-    
+
     // If slug is empty after processing (e.g., "!!!" -> ""), use fallback
     if (!baseSlug) {
       const timestamp = Date.now().toString().slice(-6); // Last 6 digits for uniqueness
       return `${fallbackPrefix}-${timestamp}`;
     }
-    
+
     return baseSlug;
   };
 
@@ -108,22 +109,25 @@ export default function OnboardingRoute() {
 
                 if (!response.ok) {
                   const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                  throw new Error(`HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`);
+                  throw new Error(
+                    `HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`,
+                  );
                 }
 
                 const responseData = await response.json();
                 console.log('Domain join enabled successfully:', responseData);
                 showToast({
                   message: 'Automatic team joining enabled successfully!',
-                  severity: 'success',
+                  severity: NotificationSeverity.SUCCESS,
                   showIcon: true,
                   duration: 3000,
                 });
               } catch (error) {
                 console.error('Failed to enable domain join:', error);
                 showToast({
-                  message: 'Failed to enable automatic team joining. You can set this up later in organization settings.',
-                  severity: 'warning',
+                  message:
+                    'Failed to enable automatic team joining. You can set this up later in organization settings.',
+                  severity: NotificationSeverity.WARNING,
                   showIcon: true,
                   duration: 5000,
                 });
