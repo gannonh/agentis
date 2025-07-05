@@ -1,9 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import handlebars from 'handlebars';
 import { isEnabled } from './handleText.js';
 import logger from '../../config/winston.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Sends an email using the specified template, subject, and payload.
@@ -34,32 +38,53 @@ import logger from '../../config/winston.js';
  */
 const sendEmail = async ({ email, subject, payload, template, throwError = true }) => {
   try {
-    const transporterOptions = {
-      // Use STARTTLS by default instead of obligatory TLS
-      secure: process.env.EMAIL_ENCRYPTION === 'tls',
-      // If explicit STARTTLS is set, require it when connecting
-      requireTls: process.env.EMAIL_ENCRYPTION === 'starttls',
-      tls: {
-        // Whether to accept unsigned certificates
-        rejectUnauthorized: !isEnabled(process.env.EMAIL_ALLOW_SELFSIGNED),
-      },
-      auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    };
+    let transporterOptions;
 
-    if (process.env.EMAIL_ENCRYPTION_HOSTNAME) {
-      // Check the certificate against this name explicitly
-      transporterOptions.tls.servername = process.env.EMAIL_ENCRYPTION_HOSTNAME;
-    }
-
-    // Mailer service definition has precedence
-    if (process.env.EMAIL_SERVICE) {
-      transporterOptions.service = process.env.EMAIL_SERVICE;
+    // Use MailHog for testing and development environments
+    if (
+      process.env.NODE_ENV === 'test' ||
+      process.env.NODE_ENV === 'ci' ||
+      process.env.NODE_ENV === 'development' ||
+      process.env.USE_MAILHOG === 'true'
+    ) {
+      transporterOptions = {
+        host: process.env.MAILHOG_HOST || 'localhost',
+        port: process.env.MAILHOG_PORT || 1025,
+        secure: false,
+        auth: false,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      };
     } else {
-      transporterOptions.host = process.env.EMAIL_HOST;
-      transporterOptions.port = process.env.EMAIL_PORT ?? 25;
+      // Production/development email configuration
+      transporterOptions = {
+        // Use STARTTLS by default instead of obligatory TLS
+        secure: process.env.EMAIL_ENCRYPTION === 'tls',
+        // If explicit STARTTLS is set, require it when connecting
+        requireTls: process.env.EMAIL_ENCRYPTION === 'starttls',
+        tls: {
+          // Whether to accept unsigned certificates
+          rejectUnauthorized: !isEnabled(process.env.EMAIL_ALLOW_SELFSIGNED),
+        },
+        auth: {
+          user: process.env.EMAIL_USERNAME,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      };
+
+      if (process.env.EMAIL_ENCRYPTION_HOSTNAME) {
+        // Check the certificate against this name explicitly
+        transporterOptions.tls.servername = process.env.EMAIL_ENCRYPTION_HOSTNAME;
+      }
+
+      // Mailer service definition has precedence
+      if (process.env.EMAIL_SERVICE) {
+        transporterOptions.service = process.env.EMAIL_SERVICE;
+      } else {
+        transporterOptions.host = process.env.EMAIL_HOST;
+        transporterOptions.port = process.env.EMAIL_PORT ?? 25;
+      }
     }
 
     const transporter = nodemailer.createTransport(transporterOptions);

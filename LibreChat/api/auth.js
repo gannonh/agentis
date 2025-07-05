@@ -277,41 +277,80 @@ mongoose.connection.once('open', () => {
             logger.info(`🔗 Magic link URL: ${url}`);
             logger.info(`🎫 Magic link token: ${token}`);
 
-            // In development/test, write magic link to file for e2e testing
-            logger.info(`🔍 Magic link debug - NODE_ENV: ${process.env.NODE_ENV}, CI: ${process.env.CI}`);
-            const shouldWriteFile = process.env.NODE_ENV === 'development' || 
-                                  process.env.NODE_ENV === 'test' || 
-                                  process.env.NODE_ENV === 'CI' ||
-                                  process.env.CI === 'true' ||
-                                  process.env.CI;
+            // Import email utility
+            const sendEmail = (await import('#server/utils/sendEmail.js')).default;
+
+            // Check if email is configured
+            const emailConfigured = process.env.EMAIL_SERVICE || process.env.EMAIL_HOST;
+
+            if (emailConfigured) {
+              try {
+                // Send actual email using existing email infrastructure
+                const emailResult = await sendEmail({
+                  email,
+                  subject: `Sign in to ${process.env.APP_TITLE || 'Agentis'}`,
+                  template: 'magicLink.handlebars',
+                  payload: {
+                    name: email.split('@')[0], // Use email prefix as name
+                    appName: process.env.APP_TITLE || 'Agentis',
+                    magicLink: url,
+                    year: new Date().getFullYear(),
+                  },
+                });
+
+                logger.info(`✅ Magic link email sent successfully to: ${email}`);
+                logger.info(`📮 Email result:`, emailResult?.messageId || 'No message ID');
+              } catch (emailError) {
+                logger.error('❌ Failed to send magic link email:', emailError);
+                // Continue with file writing as fallback
+              }
+            } else {
+              logger.warn(
+                '⚠️ Email service not configured, using file-based magic links for development',
+              );
+            }
+
+            // In development/test, also write magic link to file for e2e testing
+            logger.info(
+              `🔍 Magic link debug - NODE_ENV: ${process.env.NODE_ENV}, CI: ${process.env.CI}`,
+            );
+            const shouldWriteFile =
+              process.env.NODE_ENV === 'development' ||
+              process.env.NODE_ENV === 'test' ||
+              process.env.NODE_ENV === 'CI' ||
+              process.env.CI === 'true' ||
+              process.env.CI;
             logger.info(`🔍 Should write magic link file: ${shouldWriteFile}`);
             if (shouldWriteFile) {
-              logger.info(`📁 Magic link file writing enabled for environment: ${process.env.NODE_ENV}`);
+              logger.info(
+                `📁 Magic link file writing enabled for environment: ${process.env.NODE_ENV}`,
+              );
+              let tempDir;
               try {
                 const fs = await import('fs/promises');
                 const path = await import('path');
-                
+
                 // Create temp directory if it doesn't exist
                 // Use absolute path to project root, not LibreChat directory
                 const projectRoot = path.resolve(process.cwd(), '..');
-                const tempDir = path.join(projectRoot, 'temp');
+                tempDir = path.join(projectRoot, 'temp');
                 try {
                   await fs.mkdir(tempDir, { recursive: true });
                 } catch (err) {
                   // Directory might already exist
                 }
-                
+
                 // Write magic link data to file for e2e tests to read
                 const magicLinkData = {
                   email,
                   token,
                   url,
                   timestamp: new Date().toISOString(),
-                  expiresAt: new Date(Date.now() + 300 * 1000).toISOString() // 5 minutes from now
+                  expiresAt: new Date(Date.now() + 300 * 1000).toISOString(), // 5 minutes from now
                 };
-                
+
                 const magicLinksFile = path.join(tempDir, 'magic-links.json');
-                
+
                 // Read existing magic links or create new array
                 let magicLinks = [];
                 try {
@@ -320,29 +359,27 @@ mongoose.connection.once('open', () => {
                 } catch (err) {
                   // File doesn't exist or is invalid, start with empty array
                 }
-                
+
                 // Add new magic link (keep last 10 for cleanup)
                 magicLinks.push(magicLinkData);
                 if (magicLinks.length > 10) {
                   magicLinks = magicLinks.slice(-10);
                 }
-                
+
                 // Write back to file
                 await fs.writeFile(magicLinksFile, JSON.stringify(magicLinks, null, 2));
-                
+
                 logger.info(`📁 Magic link written to file: ${magicLinksFile}`);
                 logger.info(`📁 Total magic links in file: ${magicLinks.length}`);
                 logger.info(`📁 Latest magic link email: ${email}`);
-                
-                // Also log to console for development
-                console.log(`
-🪄 ===== DEVELOPMENT MAGIC LINK =====
-📧 Email: ${email}
-🔗 Click this link to authenticate: ${url}
-🎫 Token: ${token}
-📁 Also written to: ${magicLinksFile}
-====================================
-                `);
+
+                // Log magic link details for development
+                logger.info('🪄 ===== DEVELOPMENT MAGIC LINK =====');
+                logger.info(`📧 Email: ${email}`);
+                logger.info(`🔗 Click this link to authenticate: ${url}`);
+                logger.info(`🎫 Token: ${token}`);
+                logger.info(`📁 Also written to: ${magicLinksFile}`);
+                logger.info('====================================');
               } catch (error) {
                 logger.error('❌ Failed to write magic link to file:', error);
                 logger.error('❌ File path was:', tempDir);
@@ -351,7 +388,6 @@ mongoose.connection.once('open', () => {
               }
             }
 
-            // TODO: Implement email sending (for now just log)
             return { success: true };
           },
         }),
