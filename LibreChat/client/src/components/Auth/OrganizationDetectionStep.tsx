@@ -70,7 +70,8 @@ export default function OrganizationCreationStep({
   const [isLoading, setIsLoading] = useState(true);
   const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
 
-  const inviteToken = searchParams.get('invite') || searchParams.get('inviteToken');
+  const inviteToken =
+    searchParams.get('invitation') || searchParams.get('invite') || searchParams.get('inviteToken');
   const emailDomain = authUtils.getEmailDomain(email);
 
   useEffect(() => {

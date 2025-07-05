@@ -342,21 +342,6 @@ graph TD
 - [ ] Add error tracking
 - [ ] Create analytics dashboard
 
-### Task #11: Create Migration for Existing Users
-
-<https://github.com/gannonh/agentis/issues/108>
-
-**Priority**: High  
-**Estimated Size**: L  
-**Dependencies**: Tasks #4-7  
-**Acceptance Criteria**:
-
-- [ ] Identify users with auto-created orgs
-- [ ] Flag organizations for review
-- [ ] Create migration script
-- [ ] Test with production data subset
-- [ ] Implement rollback mechanism
-
 ### Task #12: Update Documentation
 
 <https://github.com/gannonh/agentis/issues/109>
