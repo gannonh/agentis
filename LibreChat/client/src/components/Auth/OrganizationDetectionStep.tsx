@@ -209,6 +209,8 @@ export default function OrganizationCreationStep({
   }
 
   // If domain already has an organization, prevent creating another
+  // SECURITY: We intentionally do NOT show how many organizations exist or their names
+  // to prevent information disclosure about other customers
   if (detectionResult.hasOrganization && !detectionResult.isPublicDomain) {
     return (
       <div className={cn('space-y-6', className)}>

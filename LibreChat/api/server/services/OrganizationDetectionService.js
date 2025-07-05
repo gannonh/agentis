@@ -34,7 +34,7 @@ export async function getOrganizationsByDomain(domain) {
 
   // Transform to expected format
   return organizations.map((org) => ({
-    _id: org.id,
+    _id: org._id || org.id,
     name: org.name,
     domain: org.metadata?.domain,
     allowDomainJoin: org.metadata?.allowDomainJoin || false,
@@ -44,6 +44,11 @@ export async function getOrganizationsByDomain(domain) {
 
 /**
  * Check domain organizations for a given email
+ * 
+ * SECURITY NOTE: This function intentionally does NOT return organization names
+ * or counts to prevent information disclosure about other customers. The frontend
+ * only needs to know if organization(s) exist for the domain, not specifics.
+ * 
  * @param {string} email - The email address to check
  * @param {Object} inviteContext - Optional invitation context
  * @returns {Promise<Object>} Detection result with organization information
@@ -143,11 +148,14 @@ export async function checkDomainOrganizations(email, inviteContext) {
   // 2. That organization has allowDomainJoin enabled
   const canAutoJoin = organizations.length === 1 && organizations[0].allowDomainJoin === true;
 
+  // SECURITY: We intentionally do NOT return the organizations array
+  // to prevent information disclosure about other customers.
+  // Frontend only needs to know if organization(s) exist, not details.
   return {
     isPublicDomain: false,
     domain,
     hasOrganization,
-    organizations,
+    organizations: [], // Empty array for security
     canAutoJoin,
   };
 }
