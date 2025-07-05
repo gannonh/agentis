@@ -29,13 +29,23 @@ const mockUseGetStartupConfig = useGetStartupConfig as Mock;
 describe('AuthGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock the startup config and terms queries with default values
+    mockUseGetStartupConfig.mockReturnValue({
+      data: { interface: { termsOfService: { modalAcceptance: true } } },
+    });
+    mockUseUserTermsQuery.mockReturnValue({
+      data: { termsAccepted: true },
+      isLoading: false,
+    });
   });
 
   const renderAuthGuard = () => {
     return render(
-      <MemoryRouter>
-        <AuthGuard />
-      </MemoryRouter>,
+      <RecoilRoot>
+        <MemoryRouter>
+          <AuthGuard />
+        </MemoryRouter>
+      </RecoilRoot>,
     );
   };
 
@@ -94,9 +104,9 @@ describe('AuthGuard', () => {
   });
 
   describe('Authenticated User Redirect', () => {
-    it('redirects to /c/new when user is authenticated with organizations', () => {
+    it('redirects to /c/new when user has completed onboarding (organization + profile + terms)', () => {
       mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
+        data: { user: { id: 'test-user', email: 'test@example.com', name: 'Test User' } },
         isPending: false,
       });
       mockUseListOrganizations.mockReturnValue({
@@ -110,7 +120,7 @@ describe('AuthGuard', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('redirects to /register when user has no organizations', () => {
+    it('redirects to /onboarding when user has no organizations', () => {
       mockUseSession.mockReturnValue({
         data: { user: { id: 'test-user', email: 'test@example.com' } },
         isPending: false,
@@ -122,11 +132,11 @@ describe('AuthGuard', () => {
 
       const { container } = renderAuthGuard();
 
-      // Should redirect to /register - no content should be rendered
+      // Should redirect to /onboarding - no content should be rendered
       expect(container.firstChild).toBeNull();
     });
 
-    it('redirects to /register when organizations data is null', () => {
+    it('redirects to /onboarding when organizations data is null', () => {
       mockUseSession.mockReturnValue({
         data: { user: { id: 'test-user', email: 'test@example.com' } },
         isPending: false,
@@ -138,7 +148,23 @@ describe('AuthGuard', () => {
 
       const { container } = renderAuthGuard();
 
-      // Should redirect to /register - no content should be rendered
+      // Should redirect to /onboarding - no content should be rendered
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('redirects to /onboarding when user has organizations but no profile name', () => {
+      mockUseSession.mockReturnValue({
+        data: { user: { id: 'test-user', email: 'test@example.com' } }, // No name
+        isPending: false,
+      });
+      mockUseListOrganizations.mockReturnValue({
+        data: [{ id: 'org1', name: 'Test Org' }],
+        isPending: false,
+      });
+
+      const { container } = renderAuthGuard();
+
+      // Should redirect to /onboarding to complete profile - no content should be rendered
       expect(container.firstChild).toBeNull();
     });
   });
@@ -276,13 +302,7 @@ describe('AuthGuard', () => {
         isPending: false,
       });
 
-      const { container } = render(
-        <RecoilRoot>
-          <MemoryRouter>
-            <AuthGuard />
-          </MemoryRouter>
-        </RecoilRoot>,
-      );
+      const { container } = renderAuthGuard();
 
       // Should redirect - no content rendered
       expect(container.firstChild).toBeNull();
@@ -316,7 +336,7 @@ describe('AuthGuard', () => {
 
       const { container } = renderAuthGuard();
 
-      // Should redirect to register - no content should be rendered
+      // Should redirect to onboarding - no content should be rendered
       expect(container.firstChild).toBeNull();
     });
 
@@ -343,7 +363,7 @@ describe('AuthGuard', () => {
       });
       mockUseUserTermsQuery.mockReturnValue({
         data: { termsAccepted: false },
-        isPending: false,
+        isLoading: false,
       });
       mockUseSession.mockReturnValue({
         data: { user: { id: 'test-user', email: 'test@example.com', name: 'Test User' } },
@@ -366,7 +386,7 @@ describe('AuthGuard', () => {
       });
       mockUseUserTermsQuery.mockReturnValue({
         data: undefined,
-        isPending: true,
+        isLoading: true,
       });
       mockUseSession.mockReturnValue({
         data: { user: { id: 'test-user', email: 'test@example.com', name: 'Test User' } },

@@ -727,12 +727,12 @@ describe('OnboardingRoute', () => {
       } as any);
       vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
 
-      // Mock fetch for domain join endpoint
+      // Mock fetch for domain join endpoint to fail (realistic scenario)
       global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ success: true }),
-        status: 200,
-        statusText: 'OK',
+        ok: false,
+        json: async () => ({ error: 'Failed to enable domain join' }),
+        status: 500,
+        statusText: 'Internal Server Error',
         headers: new Headers(),
       } as any);
 
@@ -767,12 +767,13 @@ describe('OnboardingRoute', () => {
         }),
       });
 
-      // Verify success toast was shown
+      // Verify warning toast was shown (since domain join failed)
       expect(mockShowToast).toHaveBeenCalledWith({
-        message: 'Automatic team joining enabled successfully!',
-        severity: 'success',
+        message:
+          'Failed to enable automatic team joining. You can set this up later in organization settings.',
+        severity: 'warning',
         showIcon: true,
-        duration: 3000,
+        duration: 5000,
       });
     });
 

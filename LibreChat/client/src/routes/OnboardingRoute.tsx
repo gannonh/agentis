@@ -100,9 +100,9 @@ export default function OnboardingRoute() {
                   organizationIdType: typeof result.data.id,
                   organizationData: result.data,
                   domain: domain,
-                  userEmail: session?.user?.email
+                  userEmail: session?.user?.email,
                 });
-                
+
                 const response = await fetch('/api/organization/enable-domain-join', {
                   method: 'POST',
                   headers: {
@@ -114,11 +114,11 @@ export default function OnboardingRoute() {
                     domain: domain,
                   }),
                 });
-                
+
                 console.log('Domain join API response:', {
                   status: response.status,
                   statusText: response.statusText,
-                  headers: Object.fromEntries(response.headers.entries())
+                  headers: Object.fromEntries(response.headers.entries()),
                 });
 
                 if (!response.ok) {
@@ -126,7 +126,7 @@ export default function OnboardingRoute() {
                   console.error('Domain join API error:', {
                     status: response.status,
                     statusText: response.statusText,
-                    errorData
+                    errorData,
                   });
                   throw new Error(
                     `HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`,

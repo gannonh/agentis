@@ -196,7 +196,7 @@ const startServer = async () => {
         organizationId,
         organizationIdType: typeof organizationId,
         domain,
-        body: req.body
+        body: req.body,
       });
 
       if (!organizationId || !domain) {
@@ -241,10 +241,10 @@ const startServer = async () => {
         // Use Better Auth's organization API to update the organization
         // This should handle the ID conversion and querying properly
         const db = mongoose.connection.db;
-        
+
         // Better Auth stores organizations with string IDs, let's try both approaches
         let result;
-        
+
         // First try: Use the organizationId as-is (Better Auth string ID)
         result = await db.collection('organization').updateOne(
           { id: organizationId },
@@ -255,7 +255,7 @@ const startServer = async () => {
             },
           },
         );
-        
+
         // If no match, try converting to ObjectId for _id field
         if (result.matchedCount === 0) {
           const mongoose = await import('mongoose');
@@ -272,17 +272,20 @@ const startServer = async () => {
             );
             logger.info(`Used _id field for organization update: ${organizationId}`);
           } catch (convertError) {
-            logger.error(`Failed to convert organizationId to ObjectId: ${organizationId}`, convertError);
+            logger.error(
+              `Failed to convert organizationId to ObjectId: ${organizationId}`,
+              convertError,
+            );
           }
         } else {
           logger.info(`Used id field for organization update: ${organizationId}`);
         }
-        
+
         logger.info(`Domain join update result:`, {
           organizationId,
           matchedCount: result.matchedCount,
           modifiedCount: result.modifiedCount,
-          acknowledged: result.acknowledged
+          acknowledged: result.acknowledged,
         });
 
         if (result.matchedCount === 0) {

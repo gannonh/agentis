@@ -11,7 +11,7 @@ export default function AuthGuard() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
   const { data: config } = useGetStartupConfig();
-  const { data: termsData, isPending: termsLoading } = useUserTermsQuery({
+  const { data: termsData, isLoading: termsLoading } = useUserTermsQuery({
     enabled: !!session?.user && config?.interface?.termsOfService?.modalAcceptance === true,
   });
 
@@ -59,14 +59,16 @@ export default function AuthGuard() {
       hasOrganizations: hasOrganization,
       hasName: hasCompletedProfile,
       termsAccepted: termsAccepted,
-      onboardingComplete: hasCompletedOnboarding
+      onboardingComplete: hasCompletedOnboarding,
     });
     return <Navigate to="/onboarding" replace={true} />;
   }
 
   // User has completed onboarding but not accepted terms - redirect to chat (terms modal will show)
   if (!termsAccepted) {
-    console.log('AuthGuard: User completed onboarding but needs to accept terms, redirecting to chat');
+    console.log(
+      'AuthGuard: User completed onboarding but needs to accept terms, redirecting to chat',
+    );
     return <Navigate to="/c/new" replace={true} />;
   }
 

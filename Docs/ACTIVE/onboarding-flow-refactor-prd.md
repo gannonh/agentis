@@ -261,11 +261,11 @@ graph TD
 **Dependencies**: Tasks #2, #3  
 **Acceptance Criteria**:
 
-- [ ] Check if user's domain is public/private
-- [ ] Search for existing organizations by domain
-- [ ] Display appropriate UI (create vs join)
-- [ ] Handle edge cases (no org exists, multiple orgs)
-- [ ] E2E tests for detection logic
+- [x] Check if user's domain is public/private
+- [x] Search for existing organizations by domain
+- [x] Display appropriate UI (create vs join)
+- [x] Handle edge cases (no org exists, multiple orgs)
+- [x] E2E tests for detection logic
 
 ### Task #6: Implement Organization Creation Flow
 
