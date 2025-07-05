@@ -154,21 +154,25 @@ export default function OnboardingRoute() {
           });
         }
       } else if (data.action === 'invite' && data.organizationId) {
-        // Accept invitation
+        // Accept invitation - check all possible URL parameter names for consistency with OrganizationDetectionStep
+        const urlParams = new URLSearchParams(window.location.search);
         const inviteToken =
-          new URLSearchParams(window.location.search).get('invite') ||
-          new URLSearchParams(window.location.search).get('inviteToken');
+          urlParams.get('invitation') ||
+          urlParams.get('invite') ||
+          urlParams.get('inviteToken');
 
-        if (inviteToken) {
-          await authClient.organization.acceptInvitation({
-            invitationId: inviteToken,
-          });
-
-          // Set the joined organization as active
-          await authClient.organization.setActive({
-            organizationId: data.organizationId,
-          });
+        if (!inviteToken) {
+          throw new Error('No invitation token found in URL parameters');
         }
+
+        await authClient.organization.acceptInvitation({
+          invitationId: inviteToken,
+        });
+
+        // Set the joined organization as active
+        await authClient.organization.setActive({
+          organizationId: data.organizationId,
+        });
       }
 
       goToNextStep();

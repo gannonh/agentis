@@ -545,6 +545,171 @@ describe('OnboardingRoute', () => {
       });
     });
 
+    it('should handle invite acceptance with "invitation" parameter', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'invite' action
+      setMockAction({
+        action: 'invite',
+        organizationId: 'invited-org-456',
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.acceptInvitation).mockResolvedValue({} as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Mock URL search params with "invitation" parameter (first priority)
+      Object.defineProperty(window, 'location', {
+        value: {
+          search: '?invitation=invitation-param-token',
+        },
+        writable: true,
+      });
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock invite organization button
+      const inviteButton = screen.getByRole('button', { name: 'Mock invite Organization' });
+      await user.click(inviteButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify acceptInvitation was called with the "invitation" parameter token
+      expect(vi.mocked(authClient.organization.acceptInvitation)).toHaveBeenCalledWith({
+        invitationId: 'invitation-param-token',
+      });
+      expect(vi.mocked(authClient.organization.setActive)).toHaveBeenCalledWith({
+        organizationId: 'invited-org-456',
+      });
+    });
+
+    it('should handle invite acceptance with "inviteToken" parameter', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'invite' action
+      setMockAction({
+        action: 'invite',
+        organizationId: 'invited-org-789',
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.acceptInvitation).mockResolvedValue({} as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Mock URL search params with "inviteToken" parameter (third priority)
+      Object.defineProperty(window, 'location', {
+        value: {
+          search: '?inviteToken=invitetoken-param-token',
+        },
+        writable: true,
+      });
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock invite organization button
+      const inviteButton = screen.getByRole('button', { name: 'Mock invite Organization' });
+      await user.click(inviteButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify acceptInvitation was called with the "inviteToken" parameter token
+      expect(vi.mocked(authClient.organization.acceptInvitation)).toHaveBeenCalledWith({
+        invitationId: 'invitetoken-param-token',
+      });
+      expect(vi.mocked(authClient.organization.setActive)).toHaveBeenCalledWith({
+        organizationId: 'invited-org-789',
+      });
+    });
+
+    it('should prioritize "invitation" parameter over others when multiple are present', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'invite' action
+      setMockAction({
+        action: 'invite',
+        organizationId: 'invited-org-priority',
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.acceptInvitation).mockResolvedValue({} as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Mock URL search params with ALL parameters - "invitation" should have priority
+      Object.defineProperty(window, 'location', {
+        value: {
+          search: '?invitation=priority-token&invite=secondary-token&inviteToken=tertiary-token',
+        },
+        writable: true,
+      });
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock invite organization button
+      const inviteButton = screen.getByRole('button', { name: 'Mock invite Organization' });
+      await user.click(inviteButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify acceptInvitation was called with the "invitation" parameter (highest priority)
+      expect(vi.mocked(authClient.organization.acceptInvitation)).toHaveBeenCalledWith({
+        invitationId: 'priority-token',
+      });
+    });
+
+    it('should show error when no invitation token is found in URL', async () => {
+      const user = userEvent.setup();
+
+      // Set mock to trigger 'invite' action
+      setMockAction({
+        action: 'invite',
+        organizationId: 'invited-org-no-token',
+      });
+
+      // Mock URL search params with NO invitation parameters
+      Object.defineProperty(window, 'location', {
+        value: {
+          search: '?someOtherParam=value',
+        },
+        writable: true,
+      });
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Verify we're still on the organization step
+      expect(screen.getByText(/What's the name of your/)).toBeInTheDocument();
+      expect(screen.getByText(/company or team/)).toBeInTheDocument();
+
+      // Click the mock invite organization button
+      const inviteButton = screen.getByRole('button', { name: 'Mock invite Organization' });
+      await user.click(inviteButton);
+
+      // Wait and verify we stayed on the organization step (didn't proceed)
+      await waitFor(() => {
+        expect(screen.getByText(/What's the name of your/)).toBeInTheDocument();
+        expect(screen.getByText(/company or team/)).toBeInTheDocument();
+      });
+
+      // Should NOT see the profile step
+      expect(screen.queryByText('Complete Your Profile')).not.toBeInTheDocument();
+
+      // Verify acceptInvitation was NOT called
+      expect(vi.mocked(authClient.organization.acceptInvitation)).not.toHaveBeenCalled();
+      expect(vi.mocked(authClient.organization.setActive)).not.toHaveBeenCalled();
+    });
+
     it('should handle create organization action with domain join enabled', async () => {
       const user = userEvent.setup();
 
@@ -633,7 +798,7 @@ describe('OnboardingRoute', () => {
       expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
     });
 
-    it('should handle missing invitation token gracefully', async () => {
+    it('should handle missing invitation token by staying on current step', async () => {
       const user = userEvent.setup();
 
       // Set mock to trigger 'invite' action but without invitation token in URL
@@ -653,14 +818,20 @@ describe('OnboardingRoute', () => {
       const Wrapper = createWrapper();
       render(<OnboardingRoute />, { wrapper: Wrapper });
 
+      // Verify we're on the organization step
+      expect(screen.getByText(/What's the name of your/)).toBeInTheDocument();
+
       // Click the mock invite organization button
       const inviteButton = screen.getByRole('button', { name: 'Mock invite Organization' });
       await user.click(inviteButton);
 
-      // Should progress to next step even without token (graceful handling)
+      // Should stay on the organization step due to missing token error
       await waitFor(() => {
-        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+        expect(screen.getByText(/What's the name of your/)).toBeInTheDocument();
       });
+
+      // Should NOT progress to the profile step
+      expect(screen.queryByText('Complete Your Profile')).not.toBeInTheDocument();
 
       // acceptInvitation should not be called without token
       expect(vi.mocked(authClient.organization.acceptInvitation)).not.toHaveBeenCalled();
