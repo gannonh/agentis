@@ -157,9 +157,7 @@ export default function OnboardingRoute() {
         // Accept invitation - check all possible URL parameter names for consistency with OrganizationDetectionStep
         const urlParams = new URLSearchParams(window.location.search);
         const inviteToken =
-          urlParams.get('invitation') ||
-          urlParams.get('invite') ||
-          urlParams.get('inviteToken');
+          urlParams.get('invitation') || urlParams.get('invite') || urlParams.get('inviteToken');
 
         if (!inviteToken) {
           throw new Error('No invitation token found in URL parameters');
