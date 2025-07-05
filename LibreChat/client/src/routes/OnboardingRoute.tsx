@@ -10,6 +10,7 @@ import { useOnboardingState, OnboardingStep } from '~/hooks/useOnboardingState';
 import OnboardingLayout from '~/components/Auth/OnboardingLayout';
 import OrganizationDetectionStep from '~/components/Auth/OrganizationDetectionStep';
 import { Button } from '~/components/ui';
+import { useToastContext } from '~/Providers/ToastContext';
 
 /**
  * Onboarding route component for new user flow with modern design
@@ -33,6 +34,7 @@ import { Button } from '~/components/ui';
 export default function OnboardingRoute() {
   const navigate = useNavigate();
   const { state, getProgress, goToNextStep } = useOnboardingState();
+  const { showToast } = useToastContext();
 
   // Form state
   const [profileName, setProfileName] = useState('');
@@ -87,20 +89,46 @@ export default function OnboardingRoute() {
 
           // If domain join is enabled, update organization settings
           if (data.enableDomainJoin) {
-            try {
-              await fetch('/api/organization/enable-domain-join', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  organizationId: result.data.id,
-                  domain: session?.user?.email?.split('@')[1],
-                }),
-              });
-            } catch (error) {
-              console.error('Failed to enable domain join:', error);
-              // Non-critical error - don't block the flow
+            const domain = session?.user?.email?.split('@')[1];
+            if (!domain) {
+              console.warn('Cannot enable domain join: user email domain not found');
+            } else {
+              try {
+                const response = await fetch('/api/organization/enable-domain-join', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  credentials: 'include', // Include authentication cookies
+                  body: JSON.stringify({
+                    organizationId: result.data.id,
+                    domain: domain,
+                  }),
+                });
+
+                if (!response.ok) {
+                  const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                  throw new Error(`HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`);
+                }
+
+                const responseData = await response.json();
+                console.log('Domain join enabled successfully:', responseData);
+                showToast({
+                  message: 'Automatic team joining enabled successfully!',
+                  severity: 'success',
+                  showIcon: true,
+                  duration: 3000,
+                });
+              } catch (error) {
+                console.error('Failed to enable domain join:', error);
+                showToast({
+                  message: 'Failed to enable automatic team joining. You can set this up later in organization settings.',
+                  severity: 'warning',
+                  showIcon: true,
+                  duration: 5000,
+                });
+                // Don't block onboarding flow, but inform the user
+              }
             }
           }
         }

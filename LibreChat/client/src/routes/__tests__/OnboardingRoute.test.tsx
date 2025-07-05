@@ -36,6 +36,14 @@ vi.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => key,
 }));
 
+// Mock ToastContext
+const mockShowToast = vi.fn();
+vi.mock('~/Providers/ToastContext', () => ({
+  useToastContext: () => ({
+    showToast: mockShowToast,
+  }),
+}));
+
 // Mock react-router-dom
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -89,6 +97,8 @@ describe('OnboardingRoute', () => {
     vi.clearAllMocks();
     // Reset mock organization action to default 'create' behavior
     mockOrganizationAction = { action: 'create', organizationName: 'Test Org' };
+    // Clear toast mock
+    mockShowToast.mockClear();
   });
 
   it('should render loading state while checking authentication', () => {
@@ -575,16 +585,25 @@ describe('OnboardingRoute', () => {
         slug: 'acme-corp',
       });
 
-      // Verify domain join endpoint was called
+      // Verify domain join endpoint was called with proper headers
       expect(global.fetch).toHaveBeenCalledWith('/api/organization/enable-domain-join', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Should include authentication
         body: JSON.stringify({
           organizationId: 'acme-123',
           domain: 'example.com',
         }),
+      });
+
+      // Verify success toast was shown
+      expect(mockShowToast).toHaveBeenCalledWith({
+        message: 'Automatic team joining enabled successfully!',
+        severity: 'success',
+        showIcon: true,
+        duration: 3000,
       });
     });
 
@@ -645,6 +664,157 @@ describe('OnboardingRoute', () => {
 
       // acceptInvitation should not be called without token
       expect(vi.mocked(authClient.organization.acceptInvitation)).not.toHaveBeenCalled();
+    });
+
+    it('should handle domain join API errors gracefully', async () => {
+      const user = userEvent.setup();
+      
+      // Set mock to trigger 'create' action with domain join
+      setMockAction({ 
+        action: 'create', 
+        organizationName: 'Test Corp',
+        enableDomainJoin: true
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'test-corp-123', name: 'Test Corp', slug: 'test-corp' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Mock fetch to return error response
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Cannot enable domain join for public email domains' }),
+      } as any);
+
+      // Spy on console.error to verify error is logged
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear (should continue despite domain join error)
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify error was logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to enable domain join:',
+        expect.any(Error)
+      );
+
+      // Verify warning toast was shown
+      expect(mockShowToast).toHaveBeenCalledWith({
+        message: 'Failed to enable automatic team joining. You can set this up later in organization settings.',
+        severity: 'warning',
+        showIcon: true,
+        duration: 5000,
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle missing user email domain gracefully', async () => {
+      const user = userEvent.setup();
+      
+      // Mock user without email domain
+      const mockUserNoEmail = { id: '1', name: 'Test User' }; // No email field
+      const mockSessionNoEmail = { data: { user: mockUserNoEmail }, isPending: false };
+      vi.mocked(authClient.useSession).mockReturnValue(mockSessionNoEmail as any);
+      
+      // Set mock to trigger 'create' action with domain join
+      setMockAction({ 
+        action: 'create', 
+        organizationName: 'Test Corp',
+        enableDomainJoin: true
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'test-corp-123', name: 'Test Corp', slug: 'test-corp' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Spy on console.warn to verify warning is logged
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify warning was logged and fetch was not called
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Cannot enable domain join: user email domain not found'
+      );
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle domain join network errors gracefully', async () => {
+      const user = userEvent.setup();
+      
+      // Set mock to trigger 'create' action with domain join
+      setMockAction({ 
+        action: 'create', 
+        organizationName: 'Network Test Corp',
+        enableDomainJoin: true
+      });
+
+      // Mock organization API calls
+      vi.mocked(authClient.organization.create).mockResolvedValue({
+        data: { id: 'network-test-123', name: 'Network Test Corp', slug: 'network-test-corp' },
+      } as any);
+      vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
+
+      // Mock fetch to throw network error
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+      // Spy on console.error to verify error is logged
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const Wrapper = createWrapper();
+      render(<OnboardingRoute />, { wrapper: Wrapper });
+
+      // Click the mock create organization button
+      const createButton = screen.getByRole('button', { name: 'Mock create Organization' });
+      await user.click(createButton);
+
+      // Wait for profile step to appear (should continue despite network error)
+      await waitFor(() => {
+        expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
+      });
+
+      // Verify error was logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to enable domain join:',
+        expect.any(Error)
+      );
+
+      // Verify warning toast was shown
+      expect(mockShowToast).toHaveBeenCalledWith({
+        message: 'Failed to enable automatic team joining. You can set this up later in organization settings.',
+        severity: 'warning',
+        showIcon: true,
+        duration: 5000,
+      });
+
+      consoleSpy.mockRestore();
     });
   });
 
