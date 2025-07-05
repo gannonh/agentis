@@ -35,3 +35,4 @@ LibreChat/e2e/fixtures/*.png
 LibreChat/e2e/data/admin2-auth.json
 LibreChat/e2e/data/*.json
 LibreChat/temp/
+temp/magic-links.json
