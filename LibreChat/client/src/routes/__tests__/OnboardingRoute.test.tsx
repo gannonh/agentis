@@ -141,10 +141,10 @@ describe('OnboardingRoute', () => {
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
   });
 
-  it('should redirect to chat when user has organizations', () => {
-    // Mock authenticated user with organizations
+  it('should show onboarding when user has organizations but no profile name', () => {
+    // Mock authenticated user with organizations but no name (incomplete profile)
     vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
+      data: { user: { id: '1', email: 'test@example.com' } }, // No name property
       isPending: false,
     } as any);
 
@@ -156,10 +156,11 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should redirect to chat instead
-    expect(screen.getByTestId('navigate')).toBeInTheDocument();
-    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/c/new');
-    expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
+    // Should show onboarding content, not redirect to chat
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      "What's the name of yourcompany or team?",
+    );
+    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
   });
 
   it('should show onboarding content when user is authenticated but has no organizations', () => {
@@ -730,6 +731,9 @@ describe('OnboardingRoute', () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ success: true }),
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
       } as any);
 
       const Wrapper = createWrapper();

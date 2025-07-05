@@ -28,7 +28,7 @@ test.describe('Organization Detection Tests - Issue #102', () => {
     try {
       logProgress(`📧 Waiting for magic link email to ${email}`);
       const magicLink = await mailhog.waitForMagicLink(email, 15000);
-      
+
       if (magicLink) {
         logProgress(`✅ Found magic link: ${magicLink}`);
         return magicLink;
@@ -144,7 +144,9 @@ test.describe('Organization Detection Tests - Issue #102', () => {
       logProgress('✅ Join request messaging displayed correctly');
 
       // Step 7: Verify alternative option is available
-      await expect(page.getByRole('button', { name: 'Create personal workspace instead' })).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Create personal workspace instead' }),
+      ).toBeVisible();
       logProgress('✅ Personal workspace option available');
 
       logProgress('✅ Journey 7 completed - all assertions passed');
@@ -247,7 +249,9 @@ test.describe('Organization Detection Tests - Issue #102', () => {
     }
   });
 
-  test('Journey 10: Multiple organizations per domain shows secure generic message', async ({ browser }) => {
+  test('Journey 10: Multiple organizations per domain shows secure generic message', async ({
+    browser,
+  }) => {
     logProgress('🚀 Testing multiple organizations per domain security...');
 
     const context = await browser.newContext();
@@ -264,9 +268,12 @@ test.describe('Organization Detection Tests - Issue #102', () => {
       await createTestOrganization('Acme Corp', 'acme.com');
       await createTestOrganization('Acme Labs', 'acme.com');
       await createTestOrganization('Acme Research', 'acme.com');
-      
+
       // Verify organizations were created
-      const orgs = await db.collection('organization').find({ 'metadata.domain': 'acme.com' }).toArray();
+      const orgs = await db
+        .collection('organization')
+        .find({ 'metadata.domain': 'acme.com' })
+        .toArray();
       logProgress(`📊 Found ${orgs.length} organizations for acme.com in database`);
 
       // Step 2: Complete authentication with corporate email
@@ -320,7 +327,7 @@ test.describe('Organization Detection Tests - Issue #102', () => {
    * =================================================================================
    * These tests require functionality from other issues:
    * - Journey 6: Requires invitation validation (#106)
-   * - Journey 9: Requires invitation creation (#106) 
+   * - Journey 9: Requires invitation creation (#106)
    */
 
   // Note: Additional journeys moved to appropriate issues:

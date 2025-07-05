@@ -95,6 +95,14 @@ export default function OnboardingRoute() {
               console.warn('Cannot enable domain join: user email domain not found');
             } else {
               try {
+                console.log('Attempting to enable domain join:', {
+                  organizationId: result.data.id,
+                  organizationIdType: typeof result.data.id,
+                  organizationData: result.data,
+                  domain: domain,
+                  userEmail: session?.user?.email
+                });
+                
                 const response = await fetch('/api/organization/enable-domain-join', {
                   method: 'POST',
                   headers: {
@@ -106,9 +114,20 @@ export default function OnboardingRoute() {
                     domain: domain,
                   }),
                 });
+                
+                console.log('Domain join API response:', {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: Object.fromEntries(response.headers.entries())
+                });
 
                 if (!response.ok) {
                   const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                  console.error('Domain join API error:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorData
+                  });
                   throw new Error(
                     `HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`,
                   );
@@ -230,11 +249,9 @@ export default function OnboardingRoute() {
     return <Navigate to="/login" replace={true} />;
   }
 
-  // Has session and organizations - redirect to chat
-  // Only redirect if they have completed onboarding (have organizations)
-  if (organizations && organizations.length > 0) {
-    return <Navigate to="/c/new" replace={true} />;
-  }
+  // Don't redirect to chat based on organizations alone
+  // Users should complete the full onboarding flow regardless of having organizations
+  // The only redirect to chat should happen when clicking "Start Your First Conversation"
 
   const progress = getProgress();
   const userEmail = session?.user?.email || '';

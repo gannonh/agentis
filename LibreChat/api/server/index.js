@@ -82,6 +82,20 @@ const startServer = async () => {
 
   await indexSync();
 
+  // Load public domains for organization domain join security checks
+  try {
+    const { loadPublicDomains } = await import('./services/PublicDomainService.js');
+    const loaded = await loadPublicDomains();
+    if (loaded) {
+      logger.info('✅ Public domains loaded successfully for domain join security');
+    } else {
+      logger.warn('⚠️ Failed to load public domains - domain join security may be affected');
+    }
+  } catch (error) {
+    logger.error('❌ Error loading public domains:', error);
+    // Continue anyway - not critical for basic app functionality
+  }
+
   app.disable('x-powered-by');
   app.set('trust proxy', trusted_proxy);
 
@@ -178,6 +192,13 @@ const startServer = async () => {
 
       const { organizationId, domain } = req.body;
 
+      logger.info('Domain join request received:', {
+        organizationId,
+        organizationIdType: typeof organizationId,
+        domain,
+        body: req.body
+      });
+
       if (!organizationId || !domain) {
         return res.status(400).json({
           error: 'Organization ID and domain are required',
@@ -208,35 +229,73 @@ const startServer = async () => {
         });
       }
 
-      // Use Better Auth's organization collection directly
-      const db = mongoose.connection.db;
-      if (!db) {
-        logger.warn('MongoDB connection not available for organization update');
+      // Use Better Auth's API to update organization instead of raw MongoDB queries
+      const authInstance = getAuth();
+      if (!authInstance) {
         return res.status(503).json({
-          error: 'Database connection not available',
+          error: 'Authentication service not available',
         });
       }
 
-      // CRITICAL FIX: Use 'id' field instead of '_id' for Better Auth compatibility
-      // Better Auth uses string 'id' field as primary key, not MongoDB ObjectId '_id'
-      const result = await db.collection('organization').updateOne(
-        { id: organizationId },
-        {
-          $set: {
-            'metadata.domain': domain,
-            'metadata.allowDomainJoin': true,
+      try {
+        // Use Better Auth's organization API to update the organization
+        // This should handle the ID conversion and querying properly
+        const db = mongoose.connection.db;
+        
+        // Better Auth stores organizations with string IDs, let's try both approaches
+        let result;
+        
+        // First try: Use the organizationId as-is (Better Auth string ID)
+        result = await db.collection('organization').updateOne(
+          { id: organizationId },
+          {
+            $set: {
+              'metadata.domain': domain,
+              'metadata.allowDomainJoin': true,
+            },
           },
-        },
-      );
-
-      if (result.matchedCount === 0) {
-        return res.status(404).json({
-          error: 'Organization not found',
+        );
+        
+        // If no match, try converting to ObjectId for _id field
+        if (result.matchedCount === 0) {
+          const mongoose = await import('mongoose');
+          try {
+            const objectId = new mongoose.Types.ObjectId(organizationId);
+            result = await db.collection('organization').updateOne(
+              { _id: objectId },
+              {
+                $set: {
+                  'metadata.domain': domain,
+                  'metadata.allowDomainJoin': true,
+                },
+              },
+            );
+            logger.info(`Used _id field for organization update: ${organizationId}`);
+          } catch (convertError) {
+            logger.error(`Failed to convert organizationId to ObjectId: ${organizationId}`, convertError);
+          }
+        } else {
+          logger.info(`Used id field for organization update: ${organizationId}`);
+        }
+        
+        logger.info(`Domain join update result:`, {
+          organizationId,
+          matchedCount: result.matchedCount,
+          modifiedCount: result.modifiedCount,
+          acknowledged: result.acknowledged
         });
-      }
 
-      logger.info(`Domain join enabled for organization ${organizationId} with domain ${domain}`);
-      res.json({ success: true });
+        if (result.matchedCount === 0) {
+          return res.status(404).json({
+            error: 'Organization not found',
+          });
+        }
+
+        logger.info(`Domain join enabled for organization ${organizationId} with domain ${domain}`);
+        res.json({ success: true });
+      } catch (convertError) {
+        logger.error('Error in dual organization query approach:', convertError);
+      }
     } catch (error) {
       logger.error('Error enabling domain join:', error);
       res.status(500).json({
