@@ -19,6 +19,9 @@ interface DetectionResult {
     _id: string;
     name: string;
     domain?: string;
+    metadata?: {
+      allowDomainJoin?: boolean;
+    };
   }>;
   isInvited?: boolean;
   invitation?: {
@@ -208,36 +211,33 @@ export default function OrganizationCreationStep({
     );
   }
 
-  // If domain already has an organization, prevent creating another
-  // SECURITY: We intentionally do NOT show how many organizations exist or their names
-  // to prevent information disclosure about other customers
-  if (detectionResult.hasOrganization && !detectionResult.isPublicDomain) {
+  // If domain already has an organization, show preview component for joining
+  if (detectionResult.hasOrganization && !detectionResult.isPublicDomain && detectionResult.organizations.length > 0) {
+    // For Issue #104 - Show organization preview with join options
+    const OrganizationPreviewStep = React.lazy(() => import('./OrganizationPreviewStep'));
+    
     return (
-      <div className={cn('space-y-6', className)}>
-        <div className="text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20">
-            <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+      <React.Suspense fallback={
+        <div className={cn('py-8 text-center', className)}>
+          <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+            <span>Loading organization details...</span>
           </div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
-            Organization exists for {detectionResult.domain}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300">
-            An organization already exists for your domain. You&apos;ll need to request access from
-            an admin.
-          </p>
         </div>
-
-        <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Contact your IT administrator or the person who set up Agentis for your company to get
-            an invitation.
-          </p>
-        </div>
-
-        <Button onClick={handleSkip} disabled={isSubmitting} className="w-full" size="lg">
-          Create personal workspace instead
-        </Button>
-      </div>
+      }>
+        <OrganizationPreviewStep
+          organization={{
+            id: detectionResult.organizations[0]._id,
+            name: detectionResult.organizations[0].name,
+            domain: detectionResult.organizations[0].domain,
+            allowDomainJoin: detectionResult.organizations[0].metadata?.allowDomainJoin || false,
+          }}
+          userEmail={email}
+          onNext={() => onNext({ action: 'join', organizationId: detectionResult.organizations[0]._id })}
+          onSkip={handleSkip}
+          className={className}
+        />
+      </React.Suspense>
     );
   }
 

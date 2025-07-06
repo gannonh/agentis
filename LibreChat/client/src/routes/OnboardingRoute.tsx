@@ -73,7 +73,13 @@ export default function OnboardingRoute() {
     setError('');
 
     try {
-      if (data.action === 'create' && data.organizationName) {
+      if (data.action === 'join' && data.organizationId) {
+        // User joined an existing organization through preview step
+        // Set the joined organization as active
+        await authClient.organization.setActive({
+          organizationId: data.organizationId,
+        });
+      } else if (data.action === 'create' && data.organizationName) {
         // Create organization with robust slug generation
         const slug = generateSlug(data.organizationName);
 
