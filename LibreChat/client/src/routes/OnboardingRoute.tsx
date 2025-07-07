@@ -42,7 +42,7 @@ export default function OnboardingRoute() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const { data: session, isPending: sessionLoading, refetch: refetchSession } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
 
   // Robust slug generation function with fallbacks
@@ -286,9 +286,37 @@ export default function OnboardingRoute() {
       title: 'Welcome to Agentis!',
       subtitle: "You're all set up. Let's start your AI conversation journey.",
     },
+    // Handle 'complete' step for edge cases
+    'complete': {
+      title: 'Setup Complete!',
+      subtitle: 'Redirecting you to your workspace...',
+    },
   };
 
   const currentStepConfig = stepConfig[state.currentStep];
+
+  // Safety check - if currentStepConfig is undefined, provide defaults
+  if (!currentStepConfig) {
+    console.error('❌ No config found for current step:', state.currentStep);
+    console.error('❌ Available steps:', Object.keys(stepConfig));
+    return (
+      <OnboardingLayout
+        title="Loading..."
+        subtitle="Setting up your workspace..."
+        step={{
+          current: progress.current,
+          total: progress.total,
+        }}
+      >
+        <div className="py-8 text-center">
+          <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+            <span>Loading onboarding step...</span>
+          </div>
+        </div>
+      </OnboardingLayout>
+    );
+  }
 
   return (
     <OnboardingLayout
@@ -391,7 +419,37 @@ export default function OnboardingRoute() {
             </p>
           </div>
 
-          <Button onClick={() => navigate('/c/new')} className="w-full" size="lg">
+          <Button 
+            onClick={async () => {
+              try {
+                console.log('Welcome button clicked - completing onboarding...');
+                
+                // Mark onboarding as complete
+                await authClient.updateUser({
+                  onboardingStep: 'complete',
+                });
+                console.log('✅ Updated user onboarding step to: complete');
+                
+                // Refresh session to ensure OnboardGuard sees the update
+                try {
+                  await refetchSession();
+                  console.log('✅ Refreshed session after completing onboarding');
+                } catch (sessionError) {
+                  console.warn('⚠️ Session refresh failed but continuing:', sessionError);
+                }
+                
+                // Navigate to chat - use hard navigation to avoid React Router issues
+                console.log('🚀 Navigating to /c/new...');
+                window.location.href = '/c/new';
+              } catch (error) {
+                console.error('❌ Failed to complete onboarding:', error);
+                console.log('🚀 Navigating anyway to avoid blocking user...');
+                window.location.href = '/c/new';
+              }
+            }} 
+            className="w-full" 
+            size="lg"
+          >
             Start Your First Conversation
           </Button>
         </div>

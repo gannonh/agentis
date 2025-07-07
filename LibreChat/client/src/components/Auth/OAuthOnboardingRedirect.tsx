@@ -51,7 +51,18 @@ export const OAuthOnboardingRedirect: React.FC<{ children: React.ReactNode }> = 
     }
 
     // User is authenticated, check organization status
+    // BUT: Don't redirect users who have completed onboarding
+    const hasCompletedOnboarding = session?.user?.onboardingStep === 'complete';
+    
     if (!organizations || organizations.length === 0) {
+      if (hasCompletedOnboarding) {
+        // User completed onboarding but may not have organizations visible yet
+        // This can happen due to timing issues with Better Auth organization sync
+        console.log('⚠️ User completed onboarding but no orgs found - allowing access anyway');
+        setRedirectState('ALLOW_ACCESS');
+        return;
+      }
+      
       setRedirectState('NEED_ONBOARDING');
       if (!hasRedirected) {
         console.log('🔄 REDIRECTING: User has no organizations, needs onboarding');

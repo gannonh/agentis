@@ -1,9 +1,10 @@
 /**
- * @fileoverview Hook for managing onboarding state
+ * @fileoverview Hook for managing onboarding state with database synchronization
  * @module hooks/useOnboardingState
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { authClient } from '~/config/betterAuth';
 
 /**
  * Enumeration of onboarding steps in the flow
@@ -39,17 +40,18 @@ const allSteps = [
 ];
 
 /**
- * Custom hook for managing onboarding flow state and navigation
+ * Custom hook for managing onboarding flow state and navigation with database synchronization
  *
  * Provides state management for a multi-step onboarding process including:
- * - Current step tracking
+ * - Current step tracking synced with database
  * - Completed steps history
- * - Navigation between steps with state consistency
+ * - Navigation between steps with database updates
  * - Progress calculation
+ * - URL parameter support for resuming onboarding
  *
  * @returns {Object} Hook interface with state and navigation functions
  * @returns {OnboardingState} returns.state - Current onboarding state
- * @returns {Function} returns.goToNextStep - Navigate to the next step
+ * @returns {Function} returns.goToNextStep - Navigate to the next step and update database
  * @returns {Function} returns.goToPreviousStep - Navigate to the previous step
  * @returns {Function} returns.getProgress - Get current progress information
  *
@@ -68,15 +70,55 @@ const allSteps = [
  * ```
  */
 export function useOnboardingState() {
+  const { data: session, refetch: refetchSession } = authClient.useSession();
+  
+  // Initialize state from URL parameter or user's database step
+  const getInitialStep = (): OnboardingStep => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const stepParam = urlParams.get('step') as OnboardingStep;
+    
+    // If URL has a valid step parameter, use it
+    if (stepParam && allSteps.includes(stepParam)) {
+      return stepParam;
+    }
+    
+    // Otherwise use user's current onboarding step from database
+    return (session?.user?.onboardingStep as OnboardingStep) || OnboardingStep.ORGANIZATION;
+  };
+
   const [state, setState] = useState<OnboardingState>({
-    currentStep: OnboardingStep.ORGANIZATION,
+    currentStep: getInitialStep(),
     completedSteps: [],
   });
 
-  const goToNextStep = () => {
+  // Update state when session changes or URL parameters change
+  useEffect(() => {
+    const currentStep = getInitialStep();
+    setState(prevState => ({
+      ...prevState,
+      currentStep,
+    }));
+  }, [session?.user?.onboardingStep, window.location.search]);
+
+  const goToNextStep = async () => {
     const currentIndex = allSteps.indexOf(state.currentStep);
     const nextIndex = Math.min(currentIndex + 1, allSteps.length - 1);
     const nextStep = allSteps[nextIndex];
+
+    // Update database with new onboarding step using Better Auth
+    try {
+      await authClient.updateUser({
+        onboardingStep: nextStep,
+      });
+      console.log('Updated user onboarding step to:', nextStep);
+      
+      // Use Better Auth's built-in refetch method to refresh session cache
+      await refetchSession();
+      console.log('Refreshed session after onboarding step update');
+    } catch (error) {
+      console.error('Failed to update onboarding step in database:', error);
+      // Continue with local state update even if database update fails
+    }
 
     setState((prevState) => {
       // Only add to completed steps if we're actually moving to a different step

@@ -15,7 +15,9 @@ import {
   adminClient,
   magicLinkClient,
   usernameClient,
+  inferAdditionalFields,
 } from 'better-auth/client/plugins';
+import type { auth } from '../../../api/auth';
 
 /**
  * Base URL for the Better Auth backend server
@@ -37,7 +39,13 @@ const baseURL = import.meta.env.VITE_API_HOST || 'http://localhost:3080';
 export const authClient = createAuthClient({
   baseURL,
   basePath: '/api/auth',
-  plugins: [organizationClient(), adminClient(), magicLinkClient(), usernameClient()],
+  plugins: [
+    organizationClient(), 
+    adminClient(), 
+    magicLinkClient(), 
+    usernameClient(),
+    inferAdditionalFields<typeof auth>(),
+  ],
 });
 
 /**

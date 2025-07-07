@@ -53,6 +53,10 @@ test.describe('Organization Join Flow - Issue #104', () => {
 
   // Clean database helper
   async function cleanDatabase() {
+    // TEMPORARILY DISABLED FOR DEBUGGING
+    // console.log('🔧 Database cleanup temporarily disabled for debugging');
+    // return;
+
     const { getTestDatabase } = await import('../utils/testAuth');
     const { db } = await getTestDatabase();
 
@@ -239,8 +243,31 @@ test.describe('Organization Join Flow - Issue #104', () => {
       expect(org?.metadata?.domain).toBe('testcorp.com');
       expect(org?.metadata?.allowDomainJoin).toBe(true);
 
+      // Debug: Log organization details
+      console.log('🔍 Organization found:', {
+        id: org?.id,
+        _id: org?._id,
+        name: org?.name,
+        domain: org?.metadata?.domain,
+        allowDomainJoin: org?.metadata?.allowDomainJoin,
+      });
+
       // Verify both users are members of the organization
-      const members = await db.collection('member').find({ organizationId: org?.id }).toArray();
+      // Now that we fixed the service to use ObjectIds properly, all members should use ObjectId format
+      const members = await db.collection('member').find({ organizationId: org?._id }).toArray();
+
+      console.log('🔍 Members found:', members.length);
+      console.log(
+        '🔍 Members:',
+        members.map((m) => ({
+          role: m.role,
+          userId: m.userId,
+          organizationId: m.organizationId,
+          userIdType: typeof m.userId,
+          orgIdType: typeof m.organizationId,
+        })),
+      );
+
       expect(members).toHaveLength(2);
 
       const user1Member = members.find(

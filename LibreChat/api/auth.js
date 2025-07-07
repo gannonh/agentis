@@ -122,6 +122,18 @@ mongoose.connection.once('open', () => {
       emailVerification: betterAuthConfig.emailVerification,
       session: betterAuthConfig.session,
 
+      // User configuration with additional fields
+      user: {
+        additionalFields: {
+          onboardingStep: {
+            type: "string",
+            required: false,
+            defaultValue: "organization",
+            input: true, // Allow setting during updates
+          },
+        },
+      },
+
       // Account linking - allow OAuth to link to existing magic link users
       account: {
         accountLinking: {

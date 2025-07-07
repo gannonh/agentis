@@ -24,6 +24,7 @@ import AdminRoute from './AdminRoute';
 import Search from './Search';
 import Root from './Root';
 import AuthGuard from './AuthGuard';
+import OnboardGuard from './OnboardGuard';
 import OnboardingRoute from './OnboardingRoute';
 
 const AuthLayout = () => (
@@ -46,7 +47,13 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <AuthGuard />,
+        element: (
+          <AuthGuard>
+            <OnboardGuard>
+              <Navigate to="/c/new" replace={true} />
+            </OnboardGuard>
+          </AuthGuard>
+        ),
       },
       {
         path: 'register',
@@ -110,7 +117,13 @@ export const router = createBrowserRouter([
       },
       {
         path: '/',
-        element: <Root />,
+        element: (
+          <AuthGuard>
+            <OnboardGuard>
+              <Root />
+            </OnboardGuard>
+          </AuthGuard>
+        ),
         children: [
           {
             index: true,

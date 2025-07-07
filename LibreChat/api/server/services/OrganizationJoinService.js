@@ -64,8 +64,8 @@ class OrganizationJoinService {
       const memberCollection = db.collection('member');
       const memberResult = await memberCollection.insertOne({
         _id: new mongoose.Types.ObjectId(),
-        userId,
-        organizationId,
+        userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
+        organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
         role: 'member',
         createdAt: new Date(),
       });
@@ -285,8 +285,8 @@ class OrganizationJoinService {
       const memberCollection = db.collection('member');
       const memberResult = await memberCollection.insertOne({
         _id: new mongoose.Types.ObjectId(),
-        userId: request.userId,
-        organizationId,
+        userId: mongoose.Types.ObjectId.isValid(request.userId) ? new mongoose.Types.ObjectId(request.userId) : request.userId,
+        organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
         role: 'member',
         createdAt: new Date(),
       });

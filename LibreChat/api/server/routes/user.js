@@ -23,6 +23,45 @@ router.get('/', requireBetterAuth, getUserController);
 router.get('/terms', requireBetterAuth, getTermsStatusController);
 router.post('/terms/accept', requireBetterAuth, acceptTermsController);
 router.post('/plugins', requireBetterAuth, updateUserPluginsController);
+router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
+  try {
+    const { onboardingStep } = req.body;
+    const userId = req.user.id;
+
+    // Validate onboarding step
+    const validSteps = ['organization', 'profile', 'team', 'welcome', 'complete'];
+    if (!onboardingStep || !validSteps.includes(onboardingStep)) {
+      return res.status(400).json({ 
+        error: 'Invalid onboarding step',
+        validSteps 
+      });
+    }
+
+    // Update user's onboarding step
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { onboardingStep },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    logger.info('Updated user onboarding step', {
+      userId,
+      onboardingStep,
+    });
+
+    res.json({ 
+      success: true,
+      onboardingStep: updatedUser.onboardingStep 
+    });
+  } catch (error) {
+    logger.error('Failed to update onboarding step', error);
+    res.status(500).json({ error: 'Failed to update onboarding step' });
+  }
+});
 router.delete('/delete', requireBetterAuth, canDeleteAccount, deleteUserController);
 router.post('/verify', verifyEmailController);
 router.post('/verify/resend', verifyEmailLimiter, resendVerificationController);
