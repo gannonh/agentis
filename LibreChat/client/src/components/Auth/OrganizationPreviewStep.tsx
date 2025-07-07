@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Building2, Users, Globe, CheckCircle, UserPlus, Send } from 'lucide-react';
+import { authClient } from '~/config/betterAuth';
 import { cn } from '~/utils';
 import { Button } from '~/components/ui';
 import { NotificationSeverity } from '~/common/types';
@@ -112,6 +113,20 @@ export default function OrganizationPreviewStep({
         showIcon: true,
         duration: 3000,
       });
+
+      // CRITICAL: Set the organization as active after successful join
+      try {
+        await authClient.organization.setActive({
+          organizationId: organization.id,
+        });
+        console.log('Successfully set active organization after auto-join');
+      } catch (error) {
+        console.error('Failed to set active organization after auto-join:', error);
+        // Don't fail the join flow, but log the error
+      }
+
+      // Small delay to allow Better Auth to process the join
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Proceed to next step
       onNext();

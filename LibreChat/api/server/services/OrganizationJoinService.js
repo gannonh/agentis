@@ -8,7 +8,6 @@
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { getAuth } from '#auth.js';
 import { logger } from '#config/index.js';
 
 /**
@@ -51,44 +50,40 @@ class OrganizationJoinService {
       }
 
       // 4. Check if user is already a member
-      const authInstance = getAuth();
-      try {
-        const existingMember = await authInstance.api.organization.getMember({
-          organizationId,
-          userId,
-        });
-        
-        if (existingMember?.data) {
-          throw new Error('User is already a member of this organization');
-        }
-      } catch (error) {
-        // If getMember throws, user is not a member (expected for new joins)
-        if (!error.message.includes('not found') && !error.message.includes('not a member')) {
-          throw error;
-        }
-      }
-
-      // 5. Add user as member via Better Auth
-      const memberResult = await authInstance.api.organization.addMember({
+      const db = mongoose.connection.db;
+      const existingMember = await db.collection('member').findOne({
         organizationId,
         userId,
+      });
+      
+      if (existingMember) {
+        throw new Error('User is already a member of this organization');
+      }
+
+      // 5. Add user as member via direct MongoDB
+      const memberCollection = db.collection('member');
+      const memberResult = await memberCollection.insertOne({
+        _id: new mongoose.Types.ObjectId(),
+        userId,
+        organizationId,
         role: 'member',
+        createdAt: new Date(),
       });
 
-      if (!memberResult?.data) {
+      if (!memberResult.insertedId) {
         throw new Error('Failed to create membership');
       }
 
       logger.info('Successfully auto-joined user to organization', {
         userId,
         organizationId,
-        membershipId: memberResult.data.id,
+        membershipId: memberResult.insertedId.toString(),
       });
 
       return {
         success: true,
-        membershipId: memberResult.data.id,
-        role: memberResult.data.role,
+        membershipId: memberResult.insertedId.toString(),
+        role: 'member',
         organizationId,
       };
 
@@ -286,15 +281,17 @@ class OrganizationJoinService {
         throw new Error(`Join request is already ${request.status}`);
       }
 
-      // Add user as member via Better Auth
-      const authInstance = getAuth();
-      const memberResult = await authInstance.api.organization.addMember({
-        organizationId,
+      // Add user as member via direct MongoDB
+      const memberCollection = db.collection('member');
+      const memberResult = await memberCollection.insertOne({
+        _id: new mongoose.Types.ObjectId(),
         userId: request.userId,
+        organizationId,
         role: 'member',
+        createdAt: new Date(),
       });
 
-      if (!memberResult?.data) {
+      if (!memberResult.insertedId) {
         throw new Error('Failed to add user as member');
       }
 
@@ -317,12 +314,12 @@ class OrganizationJoinService {
         requestId,
         userId: request.userId,
         organizationId,
-        membershipId: memberResult.data.id,
+        membershipId: memberResult.insertedId.toString(),
       });
 
       return {
         success: true,
-        membershipId: memberResult.data.id,
+        membershipId: memberResult.insertedId.toString(),
         userId: request.userId,
         organizationId,
       };
