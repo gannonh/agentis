@@ -9,7 +9,7 @@
  */
 
 import express from 'express';
-import { requireBetterAuth } from '../middleware/betterAuth.js';
+import requireBetterAuth from '../middleware/requireBetterAuth.js';
 import OrganizationJoinService from '../services/OrganizationJoinService.js';
 import { logger } from '#config/index.js';
 

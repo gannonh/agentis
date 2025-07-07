@@ -30,8 +30,8 @@ export default function AuthGuard() {
     termsAccepted,
   });
 
-  // Show loading while checking auth state
-  if (sessionLoading || orgsLoading || (termsRequired && termsLoading)) {
+  // Show loading while checking auth state (but not for terms if no session)
+  if (sessionLoading || (session?.user && orgsLoading) || (session?.user && termsRequired && termsLoading)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
