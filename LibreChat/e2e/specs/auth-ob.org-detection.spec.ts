@@ -1,11 +1,17 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
+import {
+  TEST_EMAILS,
+  TEST_VIEWPORT,
+  captureMagicLink,
+  cleanDatabase,
+  generateTestEmail,
+  createTestOrganization,
+  TEST_PATTERNS,
+} from '../utils/authOnboardingUtils';
 
 test.use({
-  viewport: {
-    height: 1700,
-    width: 1600,
-  },
+  viewport: TEST_VIEWPORT,
 });
 
 // Tests in this file run in order. Retries, if any, run independently.

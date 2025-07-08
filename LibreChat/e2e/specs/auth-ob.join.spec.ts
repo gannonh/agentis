@@ -6,10 +6,23 @@
 
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
+import {
+  TEST_VIEWPORT,
+  captureMagicLink,
+  cleanDatabase,
+  generateTestEmail,
+  handleTermsOfService,
+  completeFullOnboarding,
+  verifyOrganizationJoinPreview,
+  joinOrganization,
+  verifyOrganizationInDatabase,
+  verifyOrganizationMembership,
+  TEST_PATTERNS,
+} from '../utils/authOnboardingUtils';
 
 // Use the same test configuration as other tests
 test.use({
-  viewport: { width: 1600, height: 1700 },
+  viewport: TEST_VIEWPORT,
 });
 
 test.describe.configure({ mode: 'default' });
@@ -118,7 +131,7 @@ test.describe('Organization Join Flow - Issue #104', () => {
       await page1.waitForLoadState('networkidle');
 
       // Should be on onboarding (organization creation)
-      await expect(page1).toHaveURL(/.*\/onboarding.*/, { timeout: 10000 });
+      await expect(page1).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 });
       logProgress('✅ User 1: Reached organization creation screen');
 
       // Create organization with domain join enabled
@@ -151,7 +164,7 @@ test.describe('Organization Join Flow - Issue #104', () => {
       await page1.waitForTimeout(1000);
 
       await handleTermsOfService(page1);
-      await expect(page1).toHaveURL(/.*\/c\/new/, { timeout: 10000 });
+      await expect(page1).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
       logProgress('✅ User 1: Completed full onboarding flow');
 
       // =================================================================
@@ -228,7 +241,7 @@ test.describe('Organization Join Flow - Issue #104', () => {
       await page2.waitForTimeout(1000);
 
       await handleTermsOfService(page2);
-      await expect(page2).toHaveURL(/.*\/c\/new/, { timeout: 10000 });
+      await expect(page2).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
       logProgress('✅ User 2: Completed full onboarding flow after joining organization');
 
       // =================================================================

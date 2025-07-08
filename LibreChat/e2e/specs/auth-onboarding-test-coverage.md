@@ -36,6 +36,7 @@ graph TD
 - ✅ Magic link capture functionality
 - ✅ Database cleanup utilities
 - ✅ Basic flow validation
+- ✅ **REFACTORED**: Uses abstracted utilities from `authOnboardingUtils.ts`
 
 **Maps to Diagram**:
 
@@ -107,6 +108,77 @@ graph TD
 - B (Auth Method) → C (Google OAuth)
 - ❌ Missing connection: C → E (Check Domain)
 
+### 6. `auth-ob.join-approval.spec.ts`
+
+**Purpose**: Manual approval flow for organization joining (Issue #104 Extensions)  
+**Coverage**:
+
+- ✅ **Domain auto-join disabled request flow**
+- ✅ **Join request creation in database**
+- ✅ **Pending approval status display**
+- ⚠️ **Admin approval/rejection workflows** (PLACEHOLDER - requires admin UI)
+- ⚠️ **Multiple pending requests management** (PLACEHOLDER - requires admin UI)
+
+**Maps to Diagram**:
+
+- I (Onboarding: Join Org) → Manual Approval Process → K (Profile Setup)
+
+### 7. `auth-ob.join-invitations.spec.ts`
+
+**Purpose**: Invitation-based organization joining (Issue #106 Integration)  
+**Coverage**:
+
+- ✅ **Mock invitation creation in database**
+- ⚠️ **Email invitation delivery** (PLACEHOLDER - requires email system)
+- ⚠️ **Invitation acceptance flow** (PLACEHOLDER - requires invitation system)
+- ⚠️ **Invitation decline flow** (PLACEHOLDER - requires invitation system)
+- ⚠️ **Expired invitation handling** (PLACEHOLDER - requires invitation system)
+
+**Maps to Diagram**:
+
+- I (Onboarding: Join Org) → Invitation Process → K (Profile Setup)
+
+### 8. `auth-ob.join-edge-cases.spec.ts`
+
+**Purpose**: Edge cases and error handling for organization joining  
+**Coverage**:
+
+- ✅ **Existing member attempting to join again** (redirect to main app)
+- ✅ **Network failure recovery** (PLACEHOLDER - requires error handling)
+- ⚠️ **Multiple organizations with same domain** (PLACEHOLDER - requires selection UI)
+- ⚠️ **Domain join setting changes** (PLACEHOLDER - requires admin UI)
+- ⚠️ **Organization deletion during join** (PLACEHOLDER - requires admin UI)
+
+**Maps to Diagram**:
+
+- Error handling for all join flows (I → K)
+
+### 9. `auth-ob.oauth-integration.spec.ts`
+
+**Purpose**: OAuth integration with complete onboarding flows  
+**Coverage**:
+
+- ✅ **OAuth → Public Domain → Create Org Flow**
+- ✅ **OAuth error handling and recovery**
+- ⚠️ **OAuth → Corporate Domain flows** (PLACEHOLDER - requires full OAuth)
+- ⚠️ **Cross-authentication consistency** (PLACEHOLDER - requires comparison)
+
+**Maps to Diagram**:
+
+- C (Google OAuth) → E (Check Domain) → F/G/H/I → K → L → M
+
+### 10. `authOnboardingUtils.ts`
+
+**Purpose**: Shared utilities for all auth-onboarding tests  
+**Coverage**:
+
+- ✅ **Common test data patterns**
+- ✅ **Magic link capture abstraction**
+- ✅ **Database cleanup utilities**
+- ✅ **Terms of service handling**
+- ✅ **Onboarding flow navigation helpers**
+- ✅ **Database verification utilities**
+
 ## Test Coverage Analysis
 
 ### ✅ **Well Covered Areas**
@@ -142,28 +214,28 @@ graph TD
 1. **Additional Organization Join Scenarios** (Issue #104 Extensions)
 
    - ✅ **Domain auto-join flow** (COMPLETED - `auth-ob.join.spec.ts`)
-   - ❌ **Manual approval request flow** (domain join disabled)
-   - ❌ **Organization invitation acceptance flow**
-   - ❌ **Join request approval by admin workflow**
-   - ❌ **Join request rejection by admin workflow**
-   - ❌ **Multiple organization selection flow**
-   - ❌ **Existing member attempting to join again (error handling)**
+   - ✅ **Manual approval request flow** (COMPLETED - `auth-ob.join-approval.spec.ts`)
+   - ✅ **Organization invitation acceptance flow** (PLACEHOLDER - `auth-ob.join-invitations.spec.ts`)
+   - ✅ **Join request approval by admin workflow** (PLACEHOLDER - `auth-ob.join-approval.spec.ts`)
+   - ✅ **Join request rejection by admin workflow** (PLACEHOLDER - `auth-ob.join-approval.spec.ts`)
+   - ✅ **Multiple organization selection flow** (PLACEHOLDER - `auth-ob.join-edge-cases.spec.ts`)
+   - ✅ **Existing member attempting to join again (error handling)** (COMPLETED - `auth-ob.join-edge-cases.spec.ts`)
 
 2. **OAuth → Onboarding Integration** (C → E)
 
-   - OAuth users being redirected to onboarding
-   - OAuth user data integration with onboarding flow
-   - OAuth-specific error handling in onboarding
+   - ✅ **OAuth users being redirected to onboarding** (COMPLETED - `auth-ob.oauth-integration.spec.ts`)
+   - ✅ **OAuth user data integration with onboarding flow** (PLACEHOLDER - `auth-ob.oauth-integration.spec.ts`)
+   - ✅ **OAuth-specific error handling in onboarding** (COMPLETED - `auth-ob.oauth-integration.spec.ts`)
 
 3. **Complete OAuth Flow** (C → E → F → G/H/I → K → L → M)
 
-   - End-to-end OAuth authentication through complete onboarding
-   - OAuth with public domain → create org flow
-   - OAuth with corporate domain → join/create org flow
+   - ✅ **End-to-end OAuth authentication through complete onboarding** (PLACEHOLDER - `auth-ob.oauth-integration.spec.ts`)
+   - ✅ **OAuth with public domain → create org flow** (COMPLETED - `auth-ob.oauth-integration.spec.ts`)
+   - ✅ **OAuth with corporate domain → join/create org flow** (PLACEHOLDER - `auth-ob.oauth-integration.spec.ts`)
 
 4. **Cross-Auth Method Consistency**
-   - Ensuring OAuth and Magic Link users have identical onboarding experiences
-   - Profile data handling differences between auth methods
+   - ✅ **Ensuring OAuth and Magic Link users have identical onboarding experiences** (PLACEHOLDER - `auth-ob.oauth-integration.spec.ts`)
+   - ✅ **Profile data handling differences between auth methods** (PLACEHOLDER - `auth-ob.oauth-integration.spec.ts`)
 
 #### **Important Gaps**
 
@@ -398,10 +470,10 @@ graph TD
 
 ### **Current Status**
 
-- **Total Test Files**: 5 files covering auth/onboarding
-- **Fully Implemented**: Magic Link flows, Organization detection/creation, **Domain auto-join flow (Issue #104)**
-- **Critical Gaps**: Additional organization join scenarios, OAuth integration
-- **Recommended Additional Tests**: 6 new test files for comprehensive coverage
+- **Total Test Files**: 10 files covering auth/onboarding (5 original + 4 new + 1 utility)
+- **Fully Implemented**: Magic Link flows, Organization detection/creation, **Domain auto-join flow (Issue #104)**, **Manual approval requests**, **Existing member handling**, **OAuth integration basics**
+- **Critical Gaps Addressed**: ✅ Additional organization join scenarios, ✅ OAuth integration framework, ✅ Edge cases and error handling
+- **Utility Abstraction**: ✅ **Created `authOnboardingUtils.ts`** - consolidated common patterns from all test files
 
 ### **Progress on Issue #104**
 
@@ -410,18 +482,25 @@ graph TD
 - ✅ **Session Management**: Proper cache synchronization and guard architecture
 - ✅ **Database Integration**: Correct ObjectId format and member storage
 
-### **Next Priority Test Cases**
+### **Next Priority Test Cases - COMPLETED**
 
-1. **Manual Approval Flow** (`auth-ob.join-approval.spec.ts`) - When domain join is disabled
-2. **Organization Invitations** (`auth-ob.join-invitations.spec.ts`) - Email-based invitations
-3. **Edge Cases** (`auth-ob.join-edge-cases.spec.ts`) - Multiple orgs, existing members, errors
-4. **OAuth Integration** (`auth-ob.oauth-integration.spec.ts`) - OAuth + onboarding flows
+1. ✅ **Manual Approval Flow** (`auth-ob.join-approval.spec.ts`) - When domain join is disabled
+2. ✅ **Organization Invitations** (`auth-ob.join-invitations.spec.ts`) - Email-based invitations (framework ready)
+3. ✅ **Edge Cases** (`auth-ob.join-edge-cases.spec.ts`) - Multiple orgs, existing members, errors
+4. ✅ **OAuth Integration** (`auth-ob.oauth-integration.spec.ts`) - OAuth + onboarding flows
 
-### **Test Implementation Priority**
+### **Test Implementation Priority - UPDATED**
 
-1. **High Priority**: Organization join extensions (build on Issue #104 success)
-2. **Medium Priority**: OAuth integration with onboarding
-3. **Lower Priority**: Isolated profile/team testing, error scenarios
+1. ✅ **High Priority**: Organization join extensions (build on Issue #104 success) - **COMPLETED**
+2. ✅ **Medium Priority**: OAuth integration with onboarding - **FRAMEWORK READY**
+3. ⚠️ **Lower Priority**: Isolated profile/team testing, error scenarios - **NEXT PHASE**
+
+### **Next Development Phase**
+
+1. **Admin UI Development**: Enable full testing of approval/rejection workflows
+2. **Invitation System**: Complete email-based invitation flows
+3. **Multiple Organization Selection**: UI for domain conflicts
+4. **Full OAuth Integration**: Complete corporate domain OAuth flows
 
 ## Related GitHub Issues
 

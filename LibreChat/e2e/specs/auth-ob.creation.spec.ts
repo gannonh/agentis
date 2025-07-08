@@ -12,76 +12,28 @@
 
 import { test, expect, Page } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
+import {
+  TEST_VIEWPORT,
+  captureMagicLink,
+  cleanDatabase,
+  generateTestEmail,
+  handleTermsOfService,
+  completeFullOnboarding,
+  TEST_PATTERNS,
+} from '../utils/authOnboardingUtils';
 
 test.use({
-  viewport: { width: 1600, height: 1700 },
+  viewport: TEST_VIEWPORT,
 });
 
 test.describe.configure({ mode: 'default' });
 
 test.describe('Organization Creation Flow - Issue #103', () => {
-  // Helper to capture magic link using MailHog
-  async function captureMagicLink(email: string): Promise<string | null> {
-    const { createMailHog } = await import('../utils/mailhog.js');
-    const mailhog = createMailHog();
+  // Magic link capture helper imported from authOnboardingUtils
 
-    try {
-      logProgress(`📧 Waiting for magic link email to ${email}`);
-      const magicLink = await mailhog.waitForMagicLink(email, 15000);
+  // Terms of Service helper imported from authOnboardingUtils
 
-      if (magicLink) {
-        logProgress(`✅ Found magic link: ${magicLink}`);
-        return magicLink;
-      } else {
-        logProgress(`❌ No magic link found for ${email}`);
-        return null;
-      }
-    } catch (error) {
-      logProgress(`❌ Error getting magic link from MailHog: ${error}`);
-      return null;
-    }
-  }
-
-  // Helper to handle Terms of Service modal if it appears
-
-  async function handleTermsOfService(page: Page) {
-    const termsModal = page.getByText('Terms of Service for Agentis');
-    const termsHeading = page.getByRole('heading', { name: 'Terms and Conditions for Agentis' });
-
-    if ((await termsModal.isVisible()) || (await termsHeading.isVisible())) {
-      logProgress('📋 Terms of Service modal appeared - accepting terms');
-      await page.getByRole('button', { name: 'I accept' }).click();
-      logProgress('✅ Terms of Service accepted');
-      return true;
-    }
-    return false;
-  }
-
-  // Clean database helper
-  async function cleanDatabase() {
-    const { getTestDatabase } = await import('../utils/testAuth');
-    const { db } = await getTestDatabase();
-
-    await db.collection('session').deleteMany({
-      $or: [{ userId: { $regex: /test.*/ } }, {}],
-    });
-    await db.collection('member').deleteMany({
-      $or: [{ userId: { $regex: /test.*/ } }, { organizationId: { $regex: /test.*/ } }],
-    });
-    await db.collection('account').deleteMany({
-      userId: { $regex: /test.*/ },
-    });
-    await db.collection('organization').deleteMany({
-      $or: [
-        { name: { $regex: /Test.*/ } },
-        { slug: { $regex: /test.*/ } },
-        { 'metadata.domain': { $regex: /testcorp.*/ } },
-      ],
-    });
-    await db.collection('user').deleteMany({
-      email: { $regex: /test.*@/ },
-    });
-  }
+  // Database cleanup helper imported from authOnboardingUtils
 
   test.beforeEach(async () => {
     await cleanDatabase();
