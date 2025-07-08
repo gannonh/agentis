@@ -94,6 +94,12 @@ describe('OrganizationPreviewStep', () => {
         }),
       });
 
+      // Mock membership status check for waitForMembershipConfirmation
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ isMember: true }),
+      });
+
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
