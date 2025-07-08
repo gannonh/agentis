@@ -7,7 +7,7 @@
  * - Request to join if manual approval is required
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Building2, Users, Globe, CheckCircle, UserPlus, Send } from 'lucide-react';
 import { authClient } from '~/config/betterAuth';
 import { cn } from '~/utils';
@@ -58,12 +58,7 @@ export default function OrganizationPreviewStep({
   const userDomain = userEmail.split('@')[1];
   const domainMatches = organization.domain === userDomain;
 
-  useEffect(() => {
-    checkJoinEligibility();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organization.id, userEmail]);
-
-  const checkJoinEligibility = async () => {
+  const checkJoinEligibility = useCallback(async () => {
     try {
       const response = await fetch(`/api/organization/check-join-eligibility?organizationId=${organization.id}`, {
         method: 'GET',
@@ -84,7 +79,11 @@ export default function OrganizationPreviewStep({
     } finally {
       setEligibilityChecked(true);
     }
-  };
+  }, [organization.id]);
+
+  useEffect(() => {
+    checkJoinEligibility();
+  }, [checkJoinEligibility]);
 
   const handleAutoJoin = async () => {
     setIsSubmitting(true);
