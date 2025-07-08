@@ -130,26 +130,28 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       // Fill organization details
       const orgName = 'TestCorp Engineering';
       logProgress('📝 Filling in organization name...');
-      await page.getByRole('textbox').first().fill(orgName);
-      await page.waitForTimeout(1500); // Pause to see the input
+      const orgNameInput = page.getByRole('textbox').first();
+      await orgNameInput.fill(orgName);
+      await expect(orgNameInput).toHaveValue(orgName);
 
       // Step 5: Verify domain join checkbox for corporate domain
       const domainJoinLabel = page.getByText(/let anyone with an @testcorp.com email join/i);
       await expect(domainJoinLabel).toBeVisible();
       logProgress('✅ Domain join option available for corporate domain');
-      await page.waitForTimeout(1000); // Pause to see checkbox
+      await expect(page.getByRole('checkbox')).toBeVisible();
 
       // Enable domain join
       logProgress('☑️ Enabling domain join...');
-      await page.getByRole('checkbox').check();
-      await page.waitForTimeout(1000); // Pause to see checkbox checked
+      const domainJoinCheckbox = page.getByRole('checkbox');
+      await domainJoinCheckbox.check();
+      await expect(domainJoinCheckbox).toBeChecked();
 
       // Step 6: Submit organization creation
       logProgress('🖱️ Clicking Next button to create organization...');
       await page.getByRole('button', { name: 'Next' }).click();
 
-      // Wait a moment for any error toasts
-      await page.waitForTimeout(2000);
+      // Wait for navigation or error handling
+      await page.waitForLoadState('networkidle');
 
       // Step 7: CRITICAL - Verify NO error toast about domain join
       const errorToast = page.getByText(/failed to.*enable.*domain.*join/i);
@@ -168,51 +170,56 @@ test.describe('Organization Creation Flow - Issue #103', () => {
 
       // Complete profile
       logProgress('📝 Filling in profile name...');
-      await page.getByRole('textbox', { name: /your name/i }).fill('Test User');
-      await page.waitForTimeout(1500); // Pause to see the input
+      const profileNameInput = page.getByRole('textbox', { name: /your name/i });
+      await profileNameInput.fill('Test User');
+      await expect(profileNameInput).toHaveValue('Test User');
       
       logProgress('🖱️ Clicking Continue button on profile...');
       await page.getByRole('button', { name: 'Continue' }).click();
       
-      // Wait to see the transition
-      await page.waitForTimeout(3000);
+      // Wait for profile submission to complete
+      await page.waitForLoadState('networkidle');
       logProgress('⏳ Waiting for profile submission to complete...');
 
       // Step 10: Should advance to Team invitation step
-      await expect(page.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      const teamHeading = page.getByRole('heading', { name: /Invite Your Team/i });
+      await expect(teamHeading).toBeVisible({
         timeout: 10000,
       });
       logProgress('✅ Step 3/4: Advanced to Team invitation');
-      await page.waitForTimeout(2000); // Pause to see team step
+      await expect(page.getByRole('button', { name: 'Skip for Now' })).toBeVisible();
 
       // Skip team invites for now
       logProgress('🖱️ Clicking Skip for Now on team step...');
       await page.getByRole('button', { name: 'Skip for Now' }).click();
       
-      // Wait to see the transition
-      await page.waitForTimeout(3000);
+      // Wait for team step to complete
+      await page.waitForLoadState('networkidle');
       logProgress('⏳ Waiting for team step to complete...');
 
       // Step 11: Should reach Welcome step
-      await expect(page.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({
+      const welcomeHeading = page.getByRole('heading', { name: /Welcome to Agentis/i });
+      await expect(welcomeHeading).toBeVisible({
         timeout: 10000,
       });
       logProgress('✅ Step 4/4: Reached Welcome step');
-      await page.waitForTimeout(2000); // Pause to see welcome step
+      await expect(page.getByRole('button', { name: /Start Your First Conversation/i })).toBeVisible();
 
       // Complete onboarding
       logProgress('🖱️ Clicking Start Your First Conversation...');
       await page.getByRole('button', { name: /Start Your First Conversation/i }).click();
-      await page.waitForTimeout(2000); // Pause to see the click
+      await page.waitForLoadState('networkidle');
 
       // Step 8: Handle Terms of Service modal if it appears
-      await handleTermsOfService(page);
-      await page.waitForTimeout(1000); // Pause after terms
+      const termsHandled = await handleTermsOfService(page);
+      if (termsHandled) {
+        await page.waitForLoadState('networkidle');
+      }
 
       // Step 12: Finally should redirect to chat
       await expect(page).toHaveURL(/.*\/c\/new/, { timeout: 10000 });
       logProgress('✅ Successfully completed full onboarding flow!');
-      await page.waitForTimeout(2000); // Final pause to see chat
+      await expect(page.getByTestId('text-input')).toBeVisible();
 
       // Verify organization was created in database
       const { getTestDatabase } = await import('../utils/testAuth');
