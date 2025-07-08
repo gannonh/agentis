@@ -68,16 +68,6 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           },
         });
 
-        // Mock Better Auth successful member addition
-        mockAuth.api.organization.addMember.mockResolvedValue({
-          data: {
-            id: 'member-789',
-            userId,
-            organizationId,
-            role: 'member',
-          },
-        });
-
         // Act
         const result = await OrganizationJoinService.autoJoinOrganization({
           userId,
@@ -86,18 +76,20 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         });
 
         // Assert
-        expect(result).toEqual({
+        expect(result).toMatchObject({
           success: true,
-          membershipId: 'member-789',
+          membershipId: expect.any(String),
           role: 'member',
           organizationId,
         });
 
-        expect(mockAuth.api.organization.addMember).toHaveBeenCalledWith({
-          organizationId,
-          userId,
-          role: 'member',
+        // Verify member was added to database
+        const member = await db.collection('member').findOne({
+          userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
+          organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
         });
+        expect(member).toBeTruthy();
+        expect(member.role).toBe('member');
       });
 
       it('should reject auto-join when organization does not allow domain join', async () => {
@@ -190,14 +182,13 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           },
         });
 
-        // Mock user already being a member
-        mockAuth.api.organization.getMember.mockResolvedValue({
-          data: {
-            id: 'existing-member-456',
-            userId,
-            organizationId,
-            role: 'member',
-          },
+        // Create existing member record
+        await db.collection('member').insertOne({
+          _id: new mongoose.Types.ObjectId(),
+          userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
+          organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
+          role: 'member',
+          createdAt: new Date(),
         });
 
         // Act & Assert
@@ -212,9 +203,9 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         expect(mockAuth.api.organization.addMember).not.toHaveBeenCalled();
       });
 
-      it('should handle Better Auth API failures gracefully', async () => {
+      it('should handle invalid ObjectId format gracefully', async () => {
         // Arrange
-        const userId = 'user-123';
+        const userId = 'invalid-id-format';
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
         
@@ -228,24 +219,20 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           },
         });
 
-        // Mock membership check to pass (user not a member)
-        mockAuth.api.organization.getMember.mockRejectedValue(
-          new Error('User not found')
-        );
+        // Act - should still succeed with string IDs
+        const result = await OrganizationJoinService.autoJoinOrganization({
+          userId,
+          organizationId,
+          userEmail,
+        });
 
-        // Mock Better Auth failure
-        mockAuth.api.organization.addMember.mockRejectedValue(
-          new Error('Better Auth API error')
-        );
-
-        // Act & Assert
-        await expect(
-          OrganizationJoinService.autoJoinOrganization({
-            userId,
-            organizationId,
-            userEmail,
-          })
-        ).rejects.toThrow('Failed to add user to organization: Better Auth API error');
+        // Assert - should handle non-ObjectId strings gracefully
+        expect(result).toMatchObject({
+          success: true,
+          membershipId: expect.any(String),
+          role: 'member',
+          organizationId,
+        });
       });
     });
 
@@ -466,16 +453,6 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           },
         });
 
-        // Mock successful member addition
-        mockAuth.api.organization.addMember.mockResolvedValue({
-          data: {
-            id: 'member-789',
-            userId,
-            organizationId,
-            role: 'member',
-          },
-        });
-
         // Act
         const result = await OrganizationJoinService.approveJoinRequest({
           requestId,
@@ -484,9 +461,9 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         });
 
         // Assert
-        expect(result).toEqual({
+        expect(result).toMatchObject({
           success: true,
-          membershipId: 'member-789',
+          membershipId: expect.any(String),
           userId,
           organizationId,
         });
@@ -498,12 +475,13 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         expect(request.reviewedBy).toBe(reviewerId);
         expect(request.reviewedAt).toBeInstanceOf(Date);
 
-        // Verify Better Auth API was called
-        expect(mockAuth.api.organization.addMember).toHaveBeenCalledWith({
-          organizationId,
-          userId,
-          role: 'member',
+        // Verify member was added to database
+        const member = await db.collection('member').findOne({
+          userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
+          organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
         });
+        expect(member).toBeTruthy();
+        expect(member.role).toBe('member');
       });
 
       it('should reject approval of non-existent request', async () => {
