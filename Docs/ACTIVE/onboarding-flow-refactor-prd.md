@@ -276,12 +276,14 @@ graph TD
 **Dependencies**: Task #5  
 **Acceptance Criteria**:
 
-- [ ] Organization name and slug input
-- [ ] Domain verification for corporate emails
-- [ ] "Allow domain join" checkbox option
-- [ ] Create organization via Better Auth API
-- [ ] Assign user as organization owner
-- [ ] Form validation and error handling
+- [x] Organization name and slug input
+- [x] Domain verification for corporate emails
+- [x] "Allow domain join" checkbox option
+- [x] Create organization via Better Auth API
+- [x] Assign user as organization owner
+- [x] Form validation and error handling
+- [x] **Magic Link implementation complete**
+- [x] Basic OAuth integration (OAuth → Create Org flow)
 
 ### Task #7: Implement Organization Join Flow
 
@@ -292,13 +294,16 @@ graph TD
 **Dependencies**: Task #5  
 **Acceptance Criteria**:
 
-- [ ] Display organization details before joining
-- [ ] Request to join (if domain join disabled)
-- [ ] Auto-join (if domain join enabled)
-- [ ] Send notifications to org admins
-- [ ] Handle approval/rejection flows
+- [x] Display organization details before joining
+- [x] Request to join (if domain join disabled)
+- [x] Auto-join (if domain join enabled)
+- [x] Send notifications to org admins  
+- [x] Handle manual approval request flows
+- [ ] Complete edge cases testing (multiple orgs, network failures, etc.)
+- [ ] **Magic Link implementation** (auto + manual approval flows complete)
+- [ ] OAuth integration (deferred to Task #11)
 
-### Task #8: Update Profile Setup Integration.
+### Task #8: Update Profile Setup Integration
 
 <https://github.com/gannonh/agentis/issues/105>
 
@@ -308,9 +313,10 @@ graph TD
 **Acceptance Criteria**:
 
 - [ ] Ensure profile setup works after org creation/join
-- [ ] Pre-fill data from OAuth providers
-- [ ] Update user record with profile data
+- [ ] Update user record with profile data  
 - [ ] Handle profile image uploads
+- [ ] **Magic Link implementation** (profile setup integration)
+- [ ] OAuth data pre-filling (deferred to Task #11)
 
 ### Task #9: Implement Team Invitation Flow
 
@@ -326,6 +332,8 @@ graph TD
 - [ ] Skip option for solo users
 - [ ] Send invitation emails
 - [ ] Track invitation metrics
+- [ ] **Magic Link implementation** (team invitation flow)
+- [ ] OAuth integration (deferred to Task #11)
 
 ### Task #10: Add Onboarding Analytics
 
@@ -341,6 +349,22 @@ graph TD
 - [ ] Record time spent per step
 - [ ] Add error tracking
 - [ ] Create analytics dashboard
+
+### Task #11: OAuth Integration for All Onboarding Flows
+
+**Priority**: Medium  
+**Estimated Size**: L  
+**Dependencies**: Tasks #6-9 (Magic Link flows complete)  
+**Acceptance Criteria**:
+
+- [ ] OAuth → Organization Detection (all scenarios)
+- [ ] OAuth → Organization Join Flow (auto + manual approval + edge cases)
+- [ ] OAuth → Profile Setup with pre-filled data
+- [ ] OAuth → Team Invitation Flow
+- [ ] OAuth error handling and recovery
+- [ ] Cross-authentication method consistency testing
+
+**Implementation Strategy**: Sequential approach - complete all Magic Link flows first, then systematically add OAuth variants to ensure feature parity across authentication methods.
 
 ### Task #12: Update Documentation
 

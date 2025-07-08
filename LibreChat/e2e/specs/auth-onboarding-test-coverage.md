@@ -4,6 +4,26 @@
 
 This document maps existing E2E tests against the onboarding flow diagram and identifies gaps in test coverage.
 
+## Implementation Strategy
+
+**Sequential Approach**: Complete all Magic Link authentication flows first, then systematically add OAuth variants to ensure feature parity.
+
+### Rationale
+1. **Risk Management**: Validate complete user journeys work before adding OAuth complexity
+2. **Debugging Clarity**: Separate auth-specific issues from flow-specific issues  
+3. **Backend Reuse**: Most backend services work for both auth methods with minimal changes
+4. **Current Momentum**: Successfully established this pattern with organization detection/creation/joining
+
+### Current Phase: Magic Link Implementation
+- Focus on completing Issues #104-106 for Magic Link authentication
+- Build robust test utilities and patterns
+- Establish complete onboarding user experience
+
+### Future Phase: OAuth Integration (Task #11)
+- Systematically add OAuth variants of all Magic Link flows
+- Ensure cross-authentication consistency
+- Leverage existing backend services and test utilities
+
 ## Flow Diagram Reference
 
 ```mermaid
@@ -113,15 +133,20 @@ graph TD
 **Purpose**: Manual approval flow for organization joining (Issue #104 Extensions)  
 **Coverage**:
 
-- ✅ **Domain auto-join disabled request flow**
-- ✅ **Join request creation in database**
-- ✅ **Pending approval status display**
-- ⚠️ **Admin approval/rejection workflows** (PLACEHOLDER - requires admin UI)
-- ⚠️ **Multiple pending requests management** (PLACEHOLDER - requires admin UI)
+- ✅ **IMPLEMENTED**: Domain auto-join disabled request flow  
+- ✅ **IMPLEMENTED**: Join request creation in organization metadata
+- ✅ **IMPLEMENTED**: Toast confirmation display ("Join request sent! An admin will review your request")
+- ✅ **IMPLEMENTED**: Database verification of pending join requests
+- ✅ **IMPLEMENTED**: Organization discovery via domain metadata (fixed root cause)
+- ⚠️ **PLACEHOLDER**: Admin approval/rejection workflows (requires admin UI)
+- ⚠️ **PLACEHOLDER**: Multiple pending requests management (requires admin UI)
 
 **Maps to Diagram**:
 
 - I (Onboarding: Join Org) → Manual Approval Process → K (Profile Setup)
+
+**Test Status**: ✅ **FULLY IMPLEMENTED AND PASSING**  
+**Issue #104**: ✅ **COMPLETE** - Manual approval flow working end-to-end
 
 ### 7. `auth-ob.join-invitations.spec.ts`
 
@@ -214,10 +239,10 @@ graph TD
 1. **Additional Organization Join Scenarios** (Issue #104 Extensions)
 
    - ✅ **Domain auto-join flow** (COMPLETED - `auth-ob.join.spec.ts`)
-   - ✅ **Manual approval request flow** (COMPLETED - `auth-ob.join-approval.spec.ts`)
+   - ✅ **Manual approval request flow** (COMPLETED - `auth-ob.join-approval.spec.ts`) 🎉
    - ✅ **Organization invitation acceptance flow** (PLACEHOLDER - `auth-ob.join-invitations.spec.ts`)
-   - ✅ **Join request approval by admin workflow** (PLACEHOLDER - `auth-ob.join-approval.spec.ts`)
-   - ✅ **Join request rejection by admin workflow** (PLACEHOLDER - `auth-ob.join-approval.spec.ts`)
+   - ⚠️ **Join request approval by admin workflow** (PLACEHOLDER - `auth-ob.join-approval.spec.ts`)
+   - ⚠️ **Join request rejection by admin workflow** (PLACEHOLDER - `auth-ob.join-approval.spec.ts`)
    - ✅ **Multiple organization selection flow** (PLACEHOLDER - `auth-ob.join-edge-cases.spec.ts`)
    - ✅ **Existing member attempting to join again (error handling)** (COMPLETED - `auth-ob.join-edge-cases.spec.ts`)
 
@@ -438,69 +463,93 @@ graph TD
 
 ## Flow Path Coverage Status
 
-### **Core Authentication & Onboarding Flows**
+### **Magic Link Authentication Flows (Primary Implementation)**
 
 | Flow Path                                       | Status          | Test File(s)                                                |
 | ----------------------------------------------- | --------------- | ----------------------------------------------------------- |
 | Magic Link → Public Domain → Create Org         | ✅ Complete     | `auth-ob.basic.spec.ts`, `auth-ob.creation.spec.ts`         |
 | Magic Link → Corporate Domain → Join Org (Auto) | ✅ **Complete** | `auth-ob.join.spec.ts` **(Issue #104)**                     |
+| Magic Link → Corporate Domain → Join Org (Manual) | ✅ **Complete** | `auth-ob.join-approval.spec.ts` **(Issue #104)**          |
 | Magic Link → Corporate Domain → Create Org      | ✅ Complete     | `auth-ob.creation.spec.ts`                                  |
-| OAuth → Public Domain → Create Org              | ❌ Missing      | **Needs `auth-ob.oauth-integration.spec.ts`**               |
-| OAuth → Corporate Domain → Join Org             | ❌ Missing      | **Needs `auth-ob.oauth-integration.spec.ts`**               |
-| OAuth → Corporate Domain → Create Org           | ❌ Missing      | **Needs `auth-ob.oauth-integration.spec.ts`**               |
-| Profile Setup (all paths)                       | ❌ Missing      | Issue [#105](https://github.com/gannonh/agentis/issues/105) |
-| Team Invites (all paths)                        | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| Magic Link → Profile Setup                      | ❌ Missing      | Issue [#105](https://github.com/gannonh/agentis/issues/105) |
+| Magic Link → Team Invites                       | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+
+### **OAuth Authentication Flows (Future Implementation - Task #11)**
+
+| Flow Path                                       | Status          | Test File(s)                                                |
+| ----------------------------------------------- | --------------- | ----------------------------------------------------------- |
+| OAuth → Public Domain → Create Org              | ✅ **Partial**  | `auth-ob.creation.spec.ts` (basic OAuth → Create flow)      |
+| OAuth → Corporate Domain → Join Org (Auto)      | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
+| OAuth → Corporate Domain → Join Org (Manual)    | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
+| OAuth → Corporate Domain → Create Org           | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
+| OAuth → Profile Setup (Pre-filled)              | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
+| OAuth → Team Invites                            | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
 
 ### **Organization Join Scenarios (Issue #104 Extensions)**
 
 | Join Scenario                                | Status          | Test File(s)                                                |
 | -------------------------------------------- | --------------- | ----------------------------------------------------------- |
 | Domain Auto-Join (Enabled)                   | ✅ **Complete** | `auth-ob.join.spec.ts`                                      |
-| Manual Approval Request (Auto-Join Disabled) | ❌ Missing      | **Needs `auth-ob.join-approval.spec.ts`**                   |
-| Admin Approves Join Request                  | ❌ Missing      | **Needs `auth-ob.join-approval.spec.ts`**                   |
-| Admin Rejects Join Request                   | ❌ Missing      | **Needs `auth-ob.join-approval.spec.ts`**                   |
-| Organization Invitation (Email Link)         | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
-| User Accepts Invitation                      | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
-| User Declines Invitation                     | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
-| Multiple Organizations (Same Domain)         | ❌ Missing      | **Needs `auth-ob.join-edge-cases.spec.ts`**                 |
-| Existing Member Attempts Re-join             | ❌ Missing      | **Needs `auth-ob.join-edge-cases.spec.ts`**                 |
-| Expired Invitation Handling                  | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| Manual Approval Request (Auto-Join Disabled) | ✅ **Complete** | `auth-ob.join-approval.spec.ts` 🎉                          |
+| Admin Approves Join Request                  | ⚠️ **Placeholder** | **Needs End User Admin UI (separate project)**              |
+| Admin Rejects Join Request                   | ⚠️ **Placeholder** | **Needs End User Admin UI (separate project)**              |
+| Organization Invitation (Email Link)         | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| User Accepts Invitation                      | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| User Declines Invitation                     | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| Multiple Organizations (Same Domain)         | ⏳ **Can Implement** | **Needs selection UI - `auth-ob.join-edge-cases.spec.ts`** |
+| Existing Member Attempts Re-join             | ✅ **Complete** | `auth-ob.join-edge-cases.spec.ts`                           |
+| Domain Join Disabled After Request          | ⏳ **Can Implement** | **Database simulation - `auth-ob.join-edge-cases.spec.ts`** |
+| Organization Deleted During Join            | ⏳ **Can Implement** | **Database simulation - `auth-ob.join-edge-cases.spec.ts`** |
+| Network Failure Recovery                    | ⏳ **Can Implement** | **Offline simulation - `auth-ob.join-edge-cases.spec.ts`**  |
+| Expired Invitation Handling                  | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 
 ## Summary
 
-### **Current Status**
+### **Current Status - Sequential Implementation Strategy**
 
+**Magic Link Implementation (Primary Focus)**:
 - **Total Test Files**: 10 files covering auth/onboarding (5 original + 4 new + 1 utility)
-- **Fully Implemented**: Magic Link flows, Organization detection/creation, **Domain auto-join flow (Issue #104)**, **Manual approval requests**, **Existing member handling**, **OAuth integration basics**
-- **Critical Gaps Addressed**: ✅ Additional organization join scenarios, ✅ OAuth integration framework, ✅ Edge cases and error handling
+- **Fully Implemented**: Magic Link flows, Organization detection/creation, **Domain auto-join flow (Issue #104)**, **Manual approval requests**, **Existing member handling**
 - **Utility Abstraction**: ✅ **Created `authOnboardingUtils.ts`** - consolidated common patterns from all test files
 
-### **Progress on Issue #104**
+**OAuth Integration (Future Task #11)**:
+- **Partial Implementation**: OAuth → Create Org flow in `auth-ob.creation.spec.ts`
+- **Deferred**: All other OAuth flows until Magic Link implementation is complete
+
+### **Progress on Issue #104 (Magic Link Focus)**
 
 - ✅ **Domain Auto-Join Flow**: FULLY IMPLEMENTED AND PASSING
-- ✅ **End-to-End Flow**: User 1 creates org → User 2 joins → Both complete onboarding
+- ✅ **Manual Approval Flow**: FULLY IMPLEMENTED AND PASSING 🎉
+- ✅ **End-to-End Flow**: User 1 creates org → User 2 joins/requests → Both complete onboarding
 - ✅ **Session Management**: Proper cache synchronization and guard architecture
 - ✅ **Database Integration**: Correct ObjectId format and member storage
+- ✅ **Domain Metadata Fix**: Organizations discoverable regardless of auto-join setting
+- ✅ **Join Request Storage**: Proper ID field handling and database updates
+- ⏳ **Edge Cases**: Can be completed without end user admin UI
 
-### **Next Priority Test Cases - COMPLETED**
+### **Issue #104 Status: ⏳ NEARLY COMPLETE (Magic Link)**
 
-1. ✅ **Manual Approval Flow** (`auth-ob.join-approval.spec.ts`) - When domain join is disabled
-2. ✅ **Organization Invitations** (`auth-ob.join-invitations.spec.ts`) - Email-based invitations (framework ready)
-3. ✅ **Edge Cases** (`auth-ob.join-edge-cases.spec.ts`) - Multiple orgs, existing members, errors
-4. ✅ **OAuth Integration** (`auth-ob.oauth-integration.spec.ts`) - OAuth + onboarding flows
+Core flows for Issue #104 Magic Link implementation:
+1. ✅ **Auto-Join Flow** (domain join enabled) - Working end-to-end
+2. ✅ **Manual Approval Flow** (domain join disabled) - Working end-to-end
+3. ⏳ **Edge Cases** - Can implement most without end user admin UI
 
-### **Test Implementation Priority - UPDATED**
+### **Sequential Implementation Roadmap**
 
-1. ✅ **High Priority**: Organization join extensions (build on Issue #104 success) - **COMPLETED**
-2. ✅ **Medium Priority**: OAuth integration with onboarding - **FRAMEWORK READY**
-3. ⚠️ **Lower Priority**: Isolated profile/team testing, error scenarios - **NEXT PHASE**
+**Phase 1: Complete Magic Link Flows (Current)**
+1. ⏳ **Complete Issue #104**: Implement remaining edge cases in `auth-ob.join-edge-cases.spec.ts`
+2. ⏳ **Issue #105**: Profile Setup Integration (Magic Link)
+3. ⏳ **Issue #106**: Team Invitation Flow (Magic Link)
 
-### **Next Development Phase**
+**Phase 2: OAuth Integration (Task #11)**
+1. ⚠️ **OAuth Join Flows**: Auto + manual approval + edge cases
+2. ⚠️ **OAuth Profile Setup**: Pre-filled data integration
+3. ⚠️ **OAuth Team Invitations**: Consistent with Magic Link flows
+4. ⚠️ **Cross-Auth Consistency**: Ensure identical user experiences
 
-1. **Admin UI Development**: Enable full testing of approval/rejection workflows
-2. **Invitation System**: Complete email-based invitation flows
-3. **Multiple Organization Selection**: UI for domain conflicts
-4. **Full OAuth Integration**: Complete corporate domain OAuth flows
+**Phase 3: Advanced Features (Post-Onboarding)**
+1. ⚠️ **End User Admin UI**: Organization management for join request approval/rejection
+2. ⚠️ **Advanced Edge Cases**: Multiple org selection, complex error scenarios
 
 ## Related GitHub Issues
 
