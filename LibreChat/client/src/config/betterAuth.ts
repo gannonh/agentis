@@ -17,7 +17,7 @@ import {
   usernameClient,
   inferAdditionalFields,
 } from 'better-auth/client/plugins';
-import type { auth } from '../../../api/auth';
+import type { getAuth } from '../../../api/auth';
 
 /**
  * Base URL for the Better Auth backend server
@@ -44,7 +44,7 @@ export const authClient = createAuthClient({
     adminClient(),
     magicLinkClient(),
     usernameClient(),
-    inferAdditionalFields<typeof auth>(),
+    inferAdditionalFields<ReturnType<typeof getAuth>>(),
   ],
 });
 

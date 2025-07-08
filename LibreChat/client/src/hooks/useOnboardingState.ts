@@ -3,7 +3,7 @@
  * @module hooks/useOnboardingState
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 
@@ -75,7 +75,7 @@ export function useOnboardingState() {
   const [searchParams] = useSearchParams();
 
   // Initialize state from URL parameter or user's database step
-  const getInitialStep = (): OnboardingStep => {
+  const getInitialStep = useCallback((): OnboardingStep => {
     const stepParam = searchParams.get('step') as OnboardingStep;
 
     // If URL has a valid step parameter, use it
@@ -85,7 +85,7 @@ export function useOnboardingState() {
 
     // Otherwise use user's current onboarding step from database
     return (session?.user?.onboardingStep as OnboardingStep) || OnboardingStep.ORGANIZATION;
-  };
+  }, [searchParams, session?.user?.onboardingStep]);
 
   const [state, setState] = useState<OnboardingState>({
     currentStep: getInitialStep(),
@@ -99,7 +99,7 @@ export function useOnboardingState() {
       ...prevState,
       currentStep,
     }));
-  }, [session?.user?.onboardingStep, searchParams]);
+  }, [session?.user?.onboardingStep, searchParams, getInitialStep]);
 
   const goToNextStep = async () => {
     const currentIndex = allSteps.indexOf(state.currentStep);
