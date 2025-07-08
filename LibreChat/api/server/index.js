@@ -195,12 +195,13 @@ const startServer = async () => {
       const { isPublicDomain } = await import('./services/PublicDomainService.js');
       const { logger } = await import('#config/index.js');
 
-      const { organizationId, domain } = req.body;
+      const { organizationId, domain, enableDomainJoin = true } = req.body;
 
-      logger.info('Domain join request received:', {
+      logger.info('Organization domain setup request received:', {
         organizationId,
         organizationIdType: typeof organizationId,
         domain,
+        enableDomainJoin,
         body: req.body,
       });
 
@@ -226,11 +227,11 @@ const startServer = async () => {
         });
       }
 
-      // Security check: Prevent enabling domain join for public domains
-      if (isPublicDomain(domain)) {
-        logger.warn(`Attempt to enable domain join for public domain: ${domain}`);
+      // Security check: Only prevent public domains when enabling auto-join
+      if (enableDomainJoin && isPublicDomain(domain)) {
+        logger.warn(`Attempt to enable domain auto-join for public domain: ${domain}`);
         return res.status(400).json({
-          error: 'Cannot enable domain join for public email domains',
+          error: 'Cannot enable automatic domain joining for public email domains',
         });
       }
 
@@ -250,15 +251,16 @@ const startServer = async () => {
         // Better Auth stores organizations with string IDs, let's try both approaches
         let result;
 
+        // Prepare update object - always set domain, conditionally set allowDomainJoin
+        const updateFields = {
+          'metadata.domain': domain,
+          'metadata.allowDomainJoin': enableDomainJoin,
+        };
+
         // First try: Use the organizationId as-is (Better Auth string ID)
         result = await db.collection('organization').updateOne(
           { id: organizationId },
-          {
-            $set: {
-              'metadata.domain': domain,
-              'metadata.allowDomainJoin': true,
-            },
-          },
+          { $set: updateFields },
         );
 
         // If no match, try converting to ObjectId for _id field
@@ -267,12 +269,7 @@ const startServer = async () => {
             const objectId = new mongoose.Types.ObjectId(organizationId);
             result = await db.collection('organization').updateOne(
               { _id: objectId },
-              {
-                $set: {
-                  'metadata.domain': domain,
-                  'metadata.allowDomainJoin': true,
-                },
-              },
+              { $set: updateFields },
             );
             logger.info(`Used _id field for organization update: ${organizationId}`);
           } catch (convertError) {
@@ -285,8 +282,10 @@ const startServer = async () => {
           logger.info(`Used id field for organization update: ${organizationId}`);
         }
 
-        logger.info(`Domain join update result:`, {
+        logger.info(`Organization domain update result:`, {
           organizationId,
+          domain,
+          enableDomainJoin,
           matchedCount: result.matchedCount,
           modifiedCount: result.modifiedCount,
           acknowledged: result.acknowledged,
@@ -298,12 +297,20 @@ const startServer = async () => {
           });
         }
 
-        logger.info(`Domain join enabled for organization ${organizationId} with domain ${domain}`);
-        res.json({ success: true });
+        const actionDescription = enableDomainJoin 
+          ? `Domain auto-join enabled for organization ${organizationId} with domain ${domain}`
+          : `Domain metadata set for organization ${organizationId} with domain ${domain} (auto-join disabled)`;
+        
+        logger.info(actionDescription);
+        res.json({ 
+          success: true, 
+          domain,
+          allowDomainJoin: enableDomainJoin,
+        });
       } catch (error) {
-        logger.error('Error enabling domain join:', error);
+        logger.error('Error setting organization domain:', error);
         res.status(500).json({
-          error: 'Failed to enable domain join',
+          error: 'Failed to set organization domain',
           message: error.message,
         });
       }

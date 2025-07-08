@@ -158,7 +158,7 @@ describe('OrganizationDetectionService', () => {
       });
     });
 
-    it('should handle corporate domain with organization', async () => {
+    it('should handle corporate domain with organization (auto-join enabled)', async () => {
       isPublicDomain.mockReturnValue(false);
       const mockOrg = {
         id: 'org1',
@@ -191,6 +191,42 @@ describe('OrganizationDetectionService', () => {
           },
         ],
         canAutoJoin: true,
+      });
+    });
+
+    it('should handle corporate domain with organization (auto-join disabled - manual approval)', async () => {
+      isPublicDomain.mockReturnValue(false);
+      const mockOrg = {
+        id: 'org2',
+        name: 'TestCorp Engineering',
+        slug: 'testcorp-engineering',
+        metadata: {
+          domain: 'testcorp.com',
+          allowDomainJoin: false, // Manual approval required
+        },
+      };
+      mockOrganizationCollection.toArray.mockResolvedValue([mockOrg]);
+
+      const result = await checkDomainOrganizations('user@testcorp.com');
+
+      expect(isPublicDomain).toHaveBeenCalledWith('testcorp.com');
+      expect(mockOrganizationCollection.find).toHaveBeenCalledWith({
+        'metadata.domain': 'testcorp.com',
+      });
+      expect(result).toEqual({
+        isPublicDomain: false,
+        domain: 'testcorp.com',
+        hasOrganization: true,
+        organizations: [
+          {
+            _id: 'org2',
+            name: 'TestCorp Engineering',
+            domain: 'testcorp.com',
+            allowDomainJoin: false,
+            slug: 'testcorp-engineering',
+          },
+        ],
+        canAutoJoin: false, // Should be false because allowDomainJoin is false
       });
     });
 

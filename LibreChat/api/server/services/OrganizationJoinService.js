@@ -212,7 +212,8 @@ class OrganizationJoinService {
       };
 
       // Add request to organization metadata
-      await db.collection('organization').updateOne(
+      // Use same fallback strategy as domain metadata update
+      let result = await db.collection('organization').updateOne(
         { id: organizationId },
         {
           $push: {
@@ -220,6 +221,33 @@ class OrganizationJoinService {
           },
         },
       );
+
+      // If no match, try converting to ObjectId for _id field
+      if (result.matchedCount === 0) {
+        try {
+          const objectId = new mongoose.Types.ObjectId(organizationId);
+          result = await db.collection('organization').updateOne(
+            { _id: objectId },
+            {
+              $push: {
+                'metadata.joinRequests': joinRequest,
+              },
+            },
+          );
+          logger.info(`Used _id field for join request: ${organizationId}`);
+        } catch (convertError) {
+          logger.error(
+            `Failed to convert organizationId to ObjectId: ${organizationId}`,
+            convertError,
+          );
+        }
+      } else {
+        logger.info(`Used id field for join request: ${organizationId}`);
+      }
+
+      if (result.matchedCount === 0) {
+        throw new Error('Organization not found for join request update');
+      }
 
       logger.info('Join request created successfully', {
         requestId,

@@ -98,70 +98,75 @@ export default function OnboardingRoute() {
             organizationId: result.data.id,
           });
 
-          // If domain join is enabled, update organization settings
-          if (data.enableDomainJoin) {
-            const domain = session?.user?.email?.split('@')[1];
-            if (!domain) {
-              console.warn('Cannot enable domain join: user email domain not found');
-            } else {
-              try {
-                console.log('Attempting to enable domain join:', {
+          // Always set the domain metadata for organization detection, regardless of auto-join setting
+          const domain = session?.user?.email?.split('@')[1];
+          if (!domain) {
+            console.warn('Cannot set organization domain: user email domain not found');
+          } else {
+            try {
+              console.log('Setting organization domain:', {
+                organizationId: result.data.id,
+                organizationIdType: typeof result.data.id,
+                organizationData: result.data,
+                domain: domain,
+                userEmail: session?.user?.email,
+                enableDomainJoin: data.enableDomainJoin,
+              });
+
+              const response = await fetch('/api/organization/enable-domain-join', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include', // Include authentication cookies
+                body: JSON.stringify({
                   organizationId: result.data.id,
-                  organizationIdType: typeof result.data.id,
-                  organizationData: result.data,
                   domain: domain,
-                  userEmail: session?.user?.email,
-                });
+                  enableDomainJoin: data.enableDomainJoin, // Pass the auto-join setting
+                }),
+              });
 
-                const response = await fetch('/api/organization/enable-domain-join', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  credentials: 'include', // Include authentication cookies
-                  body: JSON.stringify({
-                    organizationId: result.data.id,
-                    domain: domain,
-                  }),
-                });
+              console.log('Organization domain API response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries()),
+              });
 
-                console.log('Domain join API response:', {
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Organization domain API error:', {
                   status: response.status,
                   statusText: response.statusText,
-                  headers: Object.fromEntries(response.headers.entries()),
+                  errorData,
                 });
+                throw new Error(
+                  `HTTP ${response.status}: ${errorData.error || 'Failed to set organization domain'}`,
+                );
+              }
 
-                if (!response.ok) {
-                  const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                  console.error('Domain join API error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    errorData,
-                  });
-                  throw new Error(
-                    `HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`,
-                  );
-                }
-
-                const responseData = await response.json();
-                console.log('Domain join enabled successfully:', responseData);
+              const responseData = await response.json();
+              console.log('Organization domain set successfully:', responseData);
+              
+              if (data.enableDomainJoin) {
                 showToast({
                   message: 'Automatic team joining enabled successfully!',
                   severity: NotificationSeverity.SUCCESS,
                   showIcon: true,
                   duration: 3000,
                 });
-              } catch (error) {
-                console.error('Failed to enable domain join:', error);
-                showToast({
-                  message:
-                    'Failed to enable automatic team joining. You can set this up later in organization settings.',
-                  severity: NotificationSeverity.WARNING,
-                  showIcon: true,
-                  duration: 5000,
-                });
-                // Don't block onboarding flow, but inform the user
               }
+            } catch (error) {
+              console.error('Failed to set organization domain:', error);
+              const message = data.enableDomainJoin 
+                ? 'Failed to enable automatic team joining. You can set this up later in organization settings.'
+                : 'Failed to set organization domain. This may affect team discovery.';
+              showToast({
+                message,
+                severity: NotificationSeverity.WARNING,
+                showIcon: true,
+                duration: 5000,
+              });
+              // Don't block onboarding flow, but inform the user
             }
           }
         }
