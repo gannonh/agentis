@@ -19,6 +19,15 @@ vi.mock('~/Providers/ToastContext', () => ({
   ToastProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// Mock authClient
+vi.mock('~/config/betterAuth', () => ({
+  authClient: {
+    organization: {
+      setActive: vi.fn().mockResolvedValue({}),
+    },
+  },
+}));
+
 describe('OrganizationPreviewStep', () => {
   const defaultProps = {
     organization: {
@@ -117,8 +126,10 @@ describe('OrganizationPreviewStep', () => {
         duration: 3000,
       });
 
-      // Verify onNext was called
-      expect(defaultProps.onNext).toHaveBeenCalled();
+      // Verify onNext was called after async operations complete
+      await waitFor(() => {
+        expect(defaultProps.onNext).toHaveBeenCalled();
+      });
     });
 
     it('should show request form if auto-join fails', async () => {

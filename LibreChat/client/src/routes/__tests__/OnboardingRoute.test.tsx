@@ -14,6 +14,15 @@ import OnboardingRoute from '../OnboardingRoute';
 
 const mockNavigate = vi.fn();
 
+// Mock window.location.href
+const mockLocation = {
+  href: '',
+};
+Object.defineProperty(window, 'location', {
+  value: mockLocation,
+  writable: true,
+});
+
 // Mock the authClient
 vi.mock('~/config/betterAuth', () => ({
   authClient: {
@@ -99,6 +108,8 @@ describe('OnboardingRoute', () => {
     mockOrganizationAction = { action: 'create', organizationName: 'Test Org' };
     // Clear toast mock
     mockShowToast.mockClear();
+    // Reset window.location.href
+    mockLocation.href = '';
   });
 
   it('should render loading state while checking authentication', () => {
@@ -408,6 +419,7 @@ describe('OnboardingRoute', () => {
     vi.mocked(authClient.useSession).mockReturnValue({
       data: { user: { id: '1', email: 'test@example.com', name: 'Test User' } },
       isPending: false,
+      refetch: vi.fn().mockResolvedValue({}),
     } as any);
 
     vi.mocked(authClient.useListOrganizations).mockReturnValue({
@@ -450,8 +462,10 @@ describe('OnboardingRoute', () => {
     // Click finish button
     await user.click(screen.getByRole('button', { name: /start your first conversation/i }));
 
-    // Should navigate to chat
-    expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+    // Should navigate to chat via window.location.href
+    await waitFor(() => {
+      expect(mockLocation.href).toBe('/c/new');
+    });
   });
 
   describe('Organization Detection Scenarios', () => {
