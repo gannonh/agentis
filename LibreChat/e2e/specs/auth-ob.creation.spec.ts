@@ -10,7 +10,7 @@
  * - Complete flow through all onboarding steps
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { logProgress } from '../utils/testLogger';
 
 test.use({
@@ -43,7 +43,8 @@ test.describe('Organization Creation Flow - Issue #103', () => {
   }
 
   // Helper to handle Terms of Service modal if it appears
-  async function handleTermsOfService(page: any) {
+
+  async function handleTermsOfService(page: Page) {
     const termsModal = page.getByText('Terms of Service for Agentis');
     const termsHeading = page.getByRole('heading', { name: 'Terms and Conditions for Agentis' });
 
@@ -173,10 +174,10 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       const profileNameInput = page.getByRole('textbox', { name: /your name/i });
       await profileNameInput.fill('Test User');
       await expect(profileNameInput).toHaveValue('Test User');
-      
+
       logProgress('🖱️ Clicking Continue button on profile...');
       await page.getByRole('button', { name: 'Continue' }).click();
-      
+
       // Wait for profile submission to complete
       await page.waitForLoadState('networkidle');
       logProgress('⏳ Waiting for profile submission to complete...');
@@ -192,7 +193,7 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       // Skip team invites for now
       logProgress('🖱️ Clicking Skip for Now on team step...');
       await page.getByRole('button', { name: 'Skip for Now' }).click();
-      
+
       // Wait for team step to complete
       await page.waitForLoadState('networkidle');
       logProgress('⏳ Waiting for team step to complete...');
@@ -203,7 +204,9 @@ test.describe('Organization Creation Flow - Issue #103', () => {
         timeout: 10000,
       });
       logProgress('✅ Step 4/4: Reached Welcome step');
-      await expect(page.getByRole('button', { name: /Start Your First Conversation/i })).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: /Start Your First Conversation/i }),
+      ).toBeVisible();
 
       // Complete onboarding
       logProgress('🖱️ Clicking Start Your First Conversation...');
