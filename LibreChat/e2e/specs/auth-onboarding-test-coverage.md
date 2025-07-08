@@ -77,7 +77,7 @@ graph TD
 **Purpose**: Organization joining flow testing (Issue #104)  
 **Coverage**:
 
-- ✅ **Domain auto-join flow with proper session management** 
+- ✅ **Domain auto-join flow with proper session management**
 - ✅ **User 1 creates organization with domain join enabled**
 - ✅ **User 2 joins existing organization through auto-join**
 - ✅ **Complete end-to-end flow through all onboarding steps**
@@ -143,7 +143,7 @@ graph TD
 
    - ✅ **Domain auto-join flow** (COMPLETED - `auth-ob.join.spec.ts`)
    - ❌ **Manual approval request flow** (domain join disabled)
-   - ❌ **Organization invitation acceptance flow** 
+   - ❌ **Organization invitation acceptance flow**
    - ❌ **Join request approval by admin workflow**
    - ❌ **Join request rejection by admin workflow**
    - ❌ **Multiple organization selection flow**
@@ -206,21 +206,21 @@ graph TD
        // User 2 attempts to join, should see "Request to Join" flow
        // Verify join request is created in organization metadata
      });
-     
+
      test('Admin approves join request', async () => {
        // Admin sees pending join request
        // Admin approves request
        // User gets added to organization as member
        // User receives notification of approval
      });
-     
+
      test('Admin rejects join request', async () => {
        // Admin sees pending join request
        // Admin rejects with reason
        // User receives notification of rejection
        // User cannot join organization
      });
-     
+
      test('Multiple pending requests management', async () => {
        // Multiple users request to join
        // Admin can see all pending requests
@@ -239,21 +239,21 @@ graph TD
        // Invitation email sent via MailHog
        // User receives invitation link
      });
-     
+
      test('User accepts organization invitation', async () => {
        // User clicks invitation link
        // User goes through onboarding with pre-selected organization
        // User completes profile → team → welcome → chat
        // User is added as member with correct role
      });
-     
+
      test('User declines organization invitation', async () => {
        // User clicks invitation link
        // User declines invitation
        // User goes through normal organization creation flow
        // Invitation marked as declined
      });
-     
+
      test('Expired invitation handling', async () => {
        // Invitation expires after set time
        // User cannot accept expired invitation
@@ -272,21 +272,21 @@ graph TD
        // System detects existing membership
        // User redirected to main app with existing role
      });
-     
+
      test('Multiple organizations with same domain', async () => {
        // Create 2 orgs with same domain and auto-join enabled
        // User with matching domain sees multiple options
        // User can choose which organization to join
        // User joins selected organization correctly
      });
-     
+
      test('Domain join disabled after request sent', async () => {
        // User requests to join organization
        // Admin disables domain join
        // User still in pending state
        // Admin can still approve/reject existing request
      });
-     
+
      test('Organization deleted during join process', async () => {
        // User in middle of join flow
        // Organization gets deleted
@@ -368,53 +368,57 @@ graph TD
 
 ### **Core Authentication & Onboarding Flows**
 
-| Flow Path                                  | Status      | Test File(s)                                        |
-| ------------------------------------------ | ----------- | --------------------------------------------------- |
-| Magic Link → Public Domain → Create Org    | ✅ Complete | `auth-ob.basic.spec.ts`, `auth-ob.creation.spec.ts` |
-| Magic Link → Corporate Domain → Join Org (Auto) | ✅ **Complete** | `auth-ob.join.spec.ts` **(Issue #104)** |
-| Magic Link → Corporate Domain → Create Org | ✅ Complete | `auth-ob.creation.spec.ts`                          |
-| OAuth → Public Domain → Create Org         | ❌ Missing  | **Needs `auth-ob.oauth-integration.spec.ts`**      |
-| OAuth → Corporate Domain → Join Org        | ❌ Missing  | **Needs `auth-ob.oauth-integration.spec.ts`**      |
-| OAuth → Corporate Domain → Create Org      | ❌ Missing  | **Needs `auth-ob.oauth-integration.spec.ts`**      |
-| Profile Setup (all paths)                  | ⚠️ Partial  | Covered in creation tests only                      |
-| Team Invites (all paths)                   | ⚠️ Partial  | Covered in creation tests only                      |
+| Flow Path                                       | Status          | Test File(s)                                                |
+| ----------------------------------------------- | --------------- | ----------------------------------------------------------- |
+| Magic Link → Public Domain → Create Org         | ✅ Complete     | `auth-ob.basic.spec.ts`, `auth-ob.creation.spec.ts`         |
+| Magic Link → Corporate Domain → Join Org (Auto) | ✅ **Complete** | `auth-ob.join.spec.ts` **(Issue #104)**                     |
+| Magic Link → Corporate Domain → Create Org      | ✅ Complete     | `auth-ob.creation.spec.ts`                                  |
+| OAuth → Public Domain → Create Org              | ❌ Missing      | **Needs `auth-ob.oauth-integration.spec.ts`**               |
+| OAuth → Corporate Domain → Join Org             | ❌ Missing      | **Needs `auth-ob.oauth-integration.spec.ts`**               |
+| OAuth → Corporate Domain → Create Org           | ❌ Missing      | **Needs `auth-ob.oauth-integration.spec.ts`**               |
+| Profile Setup (all paths)                       | ❌ Missing      | Issue [#105](https://github.com/gannonh/agentis/issues/105) |
+| Team Invites (all paths)                        | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 
 ### **Organization Join Scenarios (Issue #104 Extensions)**
 
-| Join Scenario                              | Status      | Test File(s)                                        |
-| ------------------------------------------ | ----------- | --------------------------------------------------- |
-| Domain Auto-Join (Enabled)                | ✅ **Complete** | `auth-ob.join.spec.ts`                          |
-| Manual Approval Request (Auto-Join Disabled) | ❌ Missing  | **Needs `auth-ob.join-approval.spec.ts`**       |
-| Admin Approves Join Request                | ❌ Missing  | **Needs `auth-ob.join-approval.spec.ts`**       |
-| Admin Rejects Join Request                 | ❌ Missing  | **Needs `auth-ob.join-approval.spec.ts`**       |
-| Organization Invitation (Email Link)       | ❌ Missing  | **Needs `auth-ob.join-invitations.spec.ts`**    |
-| User Accepts Invitation                    | ❌ Missing  | **Needs `auth-ob.join-invitations.spec.ts`**    |
-| User Declines Invitation                   | ❌ Missing  | **Needs `auth-ob.join-invitations.spec.ts`**    |
-| Multiple Organizations (Same Domain)       | ❌ Missing  | **Needs `auth-ob.join-edge-cases.spec.ts`**     |
-| Existing Member Attempts Re-join          | ❌ Missing  | **Needs `auth-ob.join-edge-cases.spec.ts`**     |
-| Expired Invitation Handling               | ❌ Missing  | **Needs `auth-ob.join-invitations.spec.ts`**    |
+| Join Scenario                                | Status          | Test File(s)                                                |
+| -------------------------------------------- | --------------- | ----------------------------------------------------------- |
+| Domain Auto-Join (Enabled)                   | ✅ **Complete** | `auth-ob.join.spec.ts`                                      |
+| Manual Approval Request (Auto-Join Disabled) | ❌ Missing      | **Needs `auth-ob.join-approval.spec.ts`**                   |
+| Admin Approves Join Request                  | ❌ Missing      | **Needs `auth-ob.join-approval.spec.ts`**                   |
+| Admin Rejects Join Request                   | ❌ Missing      | **Needs `auth-ob.join-approval.spec.ts`**                   |
+| Organization Invitation (Email Link)         | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| User Accepts Invitation                      | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| User Declines Invitation                     | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
+| Multiple Organizations (Same Domain)         | ❌ Missing      | **Needs `auth-ob.join-edge-cases.spec.ts`**                 |
+| Existing Member Attempts Re-join             | ❌ Missing      | **Needs `auth-ob.join-edge-cases.spec.ts`**                 |
+| Expired Invitation Handling                  | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 
 ## Summary
 
 ### **Current Status**
+
 - **Total Test Files**: 5 files covering auth/onboarding
 - **Fully Implemented**: Magic Link flows, Organization detection/creation, **Domain auto-join flow (Issue #104)**
 - **Critical Gaps**: Additional organization join scenarios, OAuth integration
 - **Recommended Additional Tests**: 6 new test files for comprehensive coverage
 
 ### **Progress on Issue #104**
+
 - ✅ **Domain Auto-Join Flow**: FULLY IMPLEMENTED AND PASSING
 - ✅ **End-to-End Flow**: User 1 creates org → User 2 joins → Both complete onboarding
 - ✅ **Session Management**: Proper cache synchronization and guard architecture
 - ✅ **Database Integration**: Correct ObjectId format and member storage
 
 ### **Next Priority Test Cases**
+
 1. **Manual Approval Flow** (`auth-ob.join-approval.spec.ts`) - When domain join is disabled
 2. **Organization Invitations** (`auth-ob.join-invitations.spec.ts`) - Email-based invitations
 3. **Edge Cases** (`auth-ob.join-edge-cases.spec.ts`) - Multiple orgs, existing members, errors
 4. **OAuth Integration** (`auth-ob.oauth-integration.spec.ts`) - OAuth + onboarding flows
 
 ### **Test Implementation Priority**
+
 1. **High Priority**: Organization join extensions (build on Issue #104 success)
 2. **Medium Priority**: OAuth integration with onboarding
 3. **Lower Priority**: Isolated profile/team testing, error scenarios
@@ -431,17 +435,21 @@ graph TD
 ## Organization Join Test Coverage Roadmap
 
 ### **Phase 1: Core Join Flows** ✅ COMPLETE
+
 - Domain auto-join with session management (`auth-ob.join.spec.ts`)
 
 ### **Phase 2: Extended Join Scenarios** ⏭️ NEXT
+
 - Manual approval requests (`auth-ob.join-approval.spec.ts`)
-- Email invitations (`auth-ob.join-invitations.spec.ts`) 
+- Email invitations (`auth-ob.join-invitations.spec.ts`)
 - Edge cases and error handling (`auth-ob.join-edge-cases.spec.ts`)
 
 ### **Phase 3: OAuth Integration** 🔄 FUTURE
+
 - OAuth + onboarding flows (`auth-ob.oauth-integration.spec.ts`)
 - Cross-authentication consistency testing
 
 ### **Phase 4: Isolated Component Testing** 📋 BACKLOG
+
 - Profile setup workflows (`auth-ob.profile-setup.spec.ts`)
 - Team invitation management (`auth-ob.team-invites.spec.ts`)
