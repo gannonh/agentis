@@ -138,6 +138,66 @@ describe('OrganizationPreviewStep', () => {
       });
     });
 
+    it('should fail when membership confirmation fails', async () => {
+      const user = userEvent.setup();
+      
+      // Mock eligibility check
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ canAutoJoin: true }),
+      });
+
+      // Mock auto-join request success
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          membership: { id: 'member-456', role: 'member' },
+        }),
+      });
+
+      // Mock membership status check failure (membership not confirmed)
+      // The function polls up to 10 times, so we need to mock all attempts as failures
+      for (let i = 0; i < 10; i++) {
+        (global.fetch as any).mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ isMember: false }),
+        });
+      }
+
+      render(
+        <ToastProvider>
+          <OrganizationPreviewStep {...defaultProps} />
+        </ToastProvider>
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Join ACME Corporation/i })).toBeInTheDocument();
+      });
+
+      // Click join button
+      await user.click(screen.getByRole('button', { name: /Join ACME Corporation/i }));
+
+      // Verify error toast is shown (longer timeout due to polling delay)
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith({
+          message: 'Failed to confirm organization membership. Please try again or contact support.',
+          severity: 'error',
+          showIcon: true,
+          duration: 5000,
+        });
+      }, { timeout: 10000 });
+
+      // Verify onNext was NOT called
+      expect(defaultProps.onNext).not.toHaveBeenCalled();
+      
+      // Verify request form is shown as fallback
+      await waitFor(() => {
+        expect(screen.getByText(/request to join/i)).toBeInTheDocument();
+      });
+    });
+
     it('should show request form if auto-join fails', async () => {
       const user = userEvent.setup();
       

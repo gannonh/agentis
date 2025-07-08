@@ -136,13 +136,6 @@ export default function OrganizationPreviewStep({
         throw new Error(data.error || 'Failed to join organization');
       }
 
-      showToast({
-        message: `Successfully joined ${organization.name}!`,
-        severity: NotificationSeverity.SUCCESS,
-        showIcon: true,
-        duration: 3000,
-      });
-
       // CRITICAL: Set the organization as active after successful join
       try {
         await authClient.organization.setActive({
@@ -158,10 +151,18 @@ export default function OrganizationPreviewStep({
       const membershipConfirmed = await waitForMembershipConfirmation();
       
       if (!membershipConfirmed) {
-        console.warn('Membership confirmation timed out, but proceeding anyway');
+        throw new Error('Failed to confirm organization membership. Please try again or contact support.');
       }
 
-      // Proceed to next step
+      // Show success toast only after membership is confirmed
+      showToast({
+        message: `Successfully joined ${organization.name}!`,
+        severity: NotificationSeverity.SUCCESS,
+        showIcon: true,
+        duration: 3000,
+      });
+
+      // Proceed to next step only if membership is confirmed
       onNext();
     } catch (error) {
       console.error('Auto-join failed:', error);
