@@ -660,4 +660,111 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
       });
     });
   });
+
+  describe('Membership Status Check', () => {
+    describe('checkUserMembership', () => {
+      it('should return true when user is a member', async () => {
+        // Arrange
+        const userId = 'user-123';
+        const organizationId = 'org-456';
+
+        // Create test membership
+        await db.collection('member').insertOne({
+          userId,
+          organizationId,
+          role: 'member',
+        });
+
+        // Act
+        const result = await OrganizationJoinService.checkUserMembership({
+          userId,
+          organizationId,
+        });
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return false when user is not a member', async () => {
+        // Arrange
+        const userId = 'user-123';
+        const organizationId = 'org-456';
+
+        // Act (no membership record created)
+        const result = await OrganizationJoinService.checkUserMembership({
+          userId,
+          organizationId,
+        });
+
+        // Assert
+        expect(result).toBe(false);
+      });
+
+      it('should return true for admin members', async () => {
+        // Arrange
+        const userId = 'admin-123';
+        const organizationId = 'org-456';
+
+        // Create test admin membership
+        await db.collection('member').insertOne({
+          userId,
+          organizationId,
+          role: 'admin',
+        });
+
+        // Act
+        const result = await OrganizationJoinService.checkUserMembership({
+          userId,
+          organizationId,
+        });
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should return true for owner members', async () => {
+        // Arrange
+        const userId = 'owner-123';
+        const organizationId = 'org-456';
+
+        // Create test owner membership
+        await db.collection('member').insertOne({
+          userId,
+          organizationId,
+          role: 'owner',
+        });
+
+        // Act
+        const result = await OrganizationJoinService.checkUserMembership({
+          userId,
+          organizationId,
+        });
+
+        // Assert
+        expect(result).toBe(true);
+      });
+
+      it('should handle ObjectId format consistently', async () => {
+        // Arrange
+        const userId = new mongoose.Types.ObjectId();
+        const organizationId = new mongoose.Types.ObjectId();
+
+        // Create test membership with ObjectId
+        await db.collection('member').insertOne({
+          userId,
+          organizationId,
+          role: 'member',
+        });
+
+        // Act - test with string representation
+        const result = await OrganizationJoinService.checkUserMembership({
+          userId: userId.toString(),
+          organizationId: organizationId.toString(),
+        });
+
+        // Assert
+        expect(result).toBe(true);
+      });
+    });
+  });
 });

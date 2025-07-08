@@ -485,6 +485,58 @@ class OrganizationJoinService {
       throw error;
     }
   }
+
+  /**
+   * Check if a user is a member of an organization
+   * @param {Object} params - Check parameters
+   * @param {string} params.userId - User ID to check
+   * @param {string} params.organizationId - Organization ID to check
+   * @returns {Promise<boolean>} True if user is a member, false otherwise
+   */
+  static async checkUserMembership({ userId, organizationId }) {
+    logger.info('Checking user membership', {
+      userId,
+      organizationId,
+    });
+
+    try {
+      const db = mongoose.connection.db;
+      const memberCollection = db.collection('member');
+
+      // Normalize IDs to handle both string and ObjectId formats
+      const normalizedUserId = mongoose.Types.ObjectId.isValid(userId) 
+        ? new mongoose.Types.ObjectId(userId) 
+        : userId;
+      const normalizedOrgId = mongoose.Types.ObjectId.isValid(organizationId) 
+        ? new mongoose.Types.ObjectId(organizationId) 
+        : organizationId;
+
+      // Check if user is a member of the organization
+      const membership = await memberCollection.findOne({
+        $or: [
+          { userId: normalizedUserId, organizationId: normalizedOrgId },
+          { userId: userId, organizationId: organizationId },
+        ],
+      });
+
+      const isMember = !!membership;
+
+      logger.info('User membership checked', {
+        userId,
+        organizationId,
+        isMember,
+      });
+
+      return isMember;
+    } catch (error) {
+      logger.error('Error checking user membership', {
+        userId,
+        organizationId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
 }
 
 export default OrganizationJoinService;
