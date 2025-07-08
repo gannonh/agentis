@@ -258,7 +258,6 @@ const startServer = async () => {
 
         // If no match, try converting to ObjectId for _id field
         if (result.matchedCount === 0) {
-          const mongoose = await import('mongoose');
           try {
             const objectId = new mongoose.Types.ObjectId(organizationId);
             result = await db.collection('organization').updateOne(
@@ -296,13 +295,17 @@ const startServer = async () => {
 
         logger.info(`Domain join enabled for organization ${organizationId} with domain ${domain}`);
         res.json({ success: true });
-      } catch (convertError) {
-        logger.error('Error in dual organization query approach:', convertError);
+      } catch (error) {
+        logger.error('Error enabling domain join:', error);
+        res.status(500).json({
+          error: 'Failed to enable domain join',
+          message: error.message,
+        });
       }
     } catch (error) {
-      logger.error('Error enabling domain join:', error);
+      logger.error('Error in route handler:', error);
       res.status(500).json({
-        error: 'Failed to enable domain join',
+        error: 'Internal server error',
         message: error.message,
       });
     }
