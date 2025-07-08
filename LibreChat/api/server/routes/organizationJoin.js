@@ -337,6 +337,57 @@ router.post(
 );
 
 /**
+ * GET /api/organization/membership-status
+ * Check if user is a member of an organization
+ */
+router.get('/membership-status', requireBetterAuth, async (req, res) => {
+  try {
+    const { organizationId } = req.query;
+    const userId = req.user.id;
+
+    logger.info('Membership status check requested', {
+      userId,
+      organizationId,
+    });
+
+    // Validate required fields
+    if (!organizationId) {
+      return res.status(400).json({
+        error: 'Organization ID is required',
+      });
+    }
+
+    // Check if user is a member of the organization
+    const isMember = await OrganizationJoinService.checkUserMembership({
+      userId,
+      organizationId,
+    });
+
+    logger.info('Membership status checked', {
+      userId,
+      organizationId,
+      isMember,
+    });
+
+    res.json({
+      success: true,
+      isMember,
+    });
+  } catch (error) {
+    logger.error('Membership status check failed', {
+      userId: req.user?.id,
+      organizationId: req.query?.organizationId,
+      error: error.message,
+    });
+
+    res.status(500).json({
+      error: 'Failed to check membership status',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/organization/check-join-eligibility
  * Check if user can auto-join or needs to request to join an organization
  */
