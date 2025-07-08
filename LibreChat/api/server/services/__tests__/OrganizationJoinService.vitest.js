@@ -40,7 +40,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
     db = mongoose.connection.db;
-    
+
     // Clear all mocks
     vi.clearAllMocks();
   });
@@ -57,7 +57,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const userId = 'user-123';
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
-        
+
         // Create test organization with domain join enabled
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -85,8 +85,12 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
 
         // Verify member was added to database
         const member = await db.collection('member').findOne({
-          userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
-          organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
+          userId: mongoose.Types.ObjectId.isValid(userId)
+            ? new mongoose.Types.ObjectId(userId)
+            : userId,
+          organizationId: mongoose.Types.ObjectId.isValid(organizationId)
+            ? new mongoose.Types.ObjectId(organizationId)
+            : organizationId,
         });
         expect(member).toBeTruthy();
         expect(member.role).toBe('member');
@@ -97,7 +101,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const userId = 'user-123';
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
-        
+
         // Create test organization with domain join disabled
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -114,7 +118,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
             userId,
             organizationId,
             userEmail,
-          })
+          }),
         ).rejects.toThrow('Organization does not allow automatic domain joining');
 
         expect(mockAuth.api.organization.addMember).not.toHaveBeenCalled();
@@ -125,7 +129,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const userId = 'user-123';
         const organizationId = 'org-456';
         const userEmail = 'john@wrongdomain.com';
-        
+
         // Create test organization
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -142,7 +146,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
             userId,
             organizationId,
             userEmail,
-          })
+          }),
         ).rejects.toThrow('User email domain does not match organization domain');
 
         expect(mockAuth.api.organization.addMember).not.toHaveBeenCalled();
@@ -160,7 +164,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
             userId,
             organizationId,
             userEmail,
-          })
+          }),
         ).rejects.toThrow('Organization not found');
 
         expect(mockAuth.api.organization.addMember).not.toHaveBeenCalled();
@@ -171,7 +175,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const userId = 'user-123';
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
-        
+
         // Create test organization
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -185,8 +189,12 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         // Create existing member record
         await db.collection('member').insertOne({
           _id: new mongoose.Types.ObjectId(),
-          userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
-          organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
+          userId: mongoose.Types.ObjectId.isValid(userId)
+            ? new mongoose.Types.ObjectId(userId)
+            : userId,
+          organizationId: mongoose.Types.ObjectId.isValid(organizationId)
+            ? new mongoose.Types.ObjectId(organizationId)
+            : organizationId,
           role: 'member',
           createdAt: new Date(),
         });
@@ -197,7 +205,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
             userId,
             organizationId,
             userEmail,
-          })
+          }),
         ).rejects.toThrow('User is already a member of this organization');
 
         expect(mockAuth.api.organization.addMember).not.toHaveBeenCalled();
@@ -208,7 +216,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const userId = 'invalid-id-format';
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
-        
+
         // Create test organization
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -241,7 +249,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         // Arrange
         const userEmail = 'john@acme.com';
         const organizationId = 'org-456';
-        
+
         // Create test organization
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -274,7 +282,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         // Arrange
         const userEmail = 'john@acme.com';
         const organizationId = 'org-456';
-        
+
         // Create test organization with domain join disabled
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -314,7 +322,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
         const requestMessage = 'I would like to join your team.';
-        
+
         // Create test organization
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -359,7 +367,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const userId = 'user-123';
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
-        
+
         // Create test organization with existing join request
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -367,13 +375,15 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           metadata: {
             domain: 'acme.com',
             allowDomainJoin: false,
-            joinRequests: [{
-              id: 'request-123',
-              userId,
-              userEmail,
-              status: 'pending',
-              requestedAt: new Date(),
-            }],
+            joinRequests: [
+              {
+                id: 'request-123',
+                userId,
+                userEmail,
+                status: 'pending',
+                requestedAt: new Date(),
+              },
+            ],
           },
         });
 
@@ -383,7 +393,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
             userId,
             organizationId,
             userEmail,
-          })
+          }),
         ).rejects.toThrow('User already has a pending join request for this organization');
       });
 
@@ -392,7 +402,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const userId = 'user-123';
         const organizationId = 'org-456';
         const userEmail = 'john@acme.com';
-        
+
         // Create test organization with rejected join request
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -400,14 +410,16 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           metadata: {
             domain: 'acme.com',
             allowDomainJoin: false,
-            joinRequests: [{
-              id: 'request-123',
-              userId,
-              userEmail,
-              status: 'rejected',
-              requestedAt: new Date(),
-              reviewedAt: new Date(),
-            }],
+            joinRequests: [
+              {
+                id: 'request-123',
+                userId,
+                userEmail,
+                status: 'rejected',
+                requestedAt: new Date(),
+                reviewedAt: new Date(),
+              },
+            ],
           },
         });
 
@@ -421,10 +433,12 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
 
         // Assert
         expect(result.success).toBe(true);
-        
+
         // Verify new request was added
         const organization = await db.collection('organization').findOne({ id: organizationId });
-        const pendingRequests = organization.metadata.joinRequests.filter(r => r.status === 'pending');
+        const pendingRequests = organization.metadata.joinRequests.filter(
+          (r) => r.status === 'pending',
+        );
         expect(pendingRequests).toHaveLength(1);
       });
     });
@@ -436,20 +450,22 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const organizationId = 'org-456';
         const userId = 'user-123';
         const reviewerId = 'admin-789';
-        
+
         // Create test organization with pending request
         await db.collection('organization').insertOne({
           id: organizationId,
           name: 'ACME Corp',
           metadata: {
             domain: 'acme.com',
-            joinRequests: [{
-              id: requestId,
-              userId,
-              userEmail: 'john@acme.com',
-              status: 'pending',
-              requestedAt: new Date(),
-            }],
+            joinRequests: [
+              {
+                id: requestId,
+                userId,
+                userEmail: 'john@acme.com',
+                status: 'pending',
+                requestedAt: new Date(),
+              },
+            ],
           },
         });
 
@@ -470,15 +486,19 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
 
         // Verify request status updated
         const organization = await db.collection('organization').findOne({ id: organizationId });
-        const request = organization.metadata.joinRequests.find(r => r.id === requestId);
+        const request = organization.metadata.joinRequests.find((r) => r.id === requestId);
         expect(request.status).toBe('approved');
         expect(request.reviewedBy).toBe(reviewerId);
         expect(request.reviewedAt).toBeInstanceOf(Date);
 
         // Verify member was added to database
         const member = await db.collection('member').findOne({
-          userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
-          organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
+          userId: mongoose.Types.ObjectId.isValid(userId)
+            ? new mongoose.Types.ObjectId(userId)
+            : userId,
+          organizationId: mongoose.Types.ObjectId.isValid(organizationId)
+            ? new mongoose.Types.ObjectId(organizationId)
+            : organizationId,
         });
         expect(member).toBeTruthy();
         expect(member.role).toBe('member');
@@ -489,7 +509,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const requestId = 'nonexistent-request';
         const organizationId = 'org-456';
         const reviewerId = 'admin-789';
-        
+
         // Create test organization without the request
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -506,7 +526,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
             requestId,
             organizationId,
             reviewerId,
-          })
+          }),
         ).rejects.toThrow('Join request not found');
       });
     });
@@ -518,20 +538,22 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         const organizationId = 'org-456';
         const reviewerId = 'admin-789';
         const rejectionReason = 'Not a good fit for the team at this time.';
-        
+
         // Create test organization with pending request
         await db.collection('organization').insertOne({
           id: organizationId,
           name: 'ACME Corp',
           metadata: {
             domain: 'acme.com',
-            joinRequests: [{
-              id: requestId,
-              userId: 'user-123',
-              userEmail: 'john@acme.com',
-              status: 'pending',
-              requestedAt: new Date(),
-            }],
+            joinRequests: [
+              {
+                id: requestId,
+                userId: 'user-123',
+                userEmail: 'john@acme.com',
+                status: 'pending',
+                requestedAt: new Date(),
+              },
+            ],
           },
         });
 
@@ -552,7 +574,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
 
         // Verify request status updated
         const organization = await db.collection('organization').findOne({ id: organizationId });
-        const request = organization.metadata.joinRequests.find(r => r.id === requestId);
+        const request = organization.metadata.joinRequests.find((r) => r.id === requestId);
         expect(request.status).toBe('rejected');
         expect(request.reviewedBy).toBe(reviewerId);
         expect(request.reviewedAt).toBeInstanceOf(Date);
@@ -578,7 +600,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           status: 'approved',
           requestedAt: new Date(),
         };
-        
+
         // Create test organization with requests
         await db.collection('organization').insertOne({
           id: organizationId,
@@ -597,12 +619,14 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
 
         // Assert
         expect(result).toEqual({
-          requests: [expect.objectContaining({
-            id: 'request-123',
-            userId: 'user-123',
-            userEmail: 'john@acme.com',
-            status: 'pending',
-          })],
+          requests: [
+            expect.objectContaining({
+              id: 'request-123',
+              userId: 'user-123',
+              userEmail: 'john@acme.com',
+              status: 'pending',
+            }),
+          ],
           total: 1,
         });
       });
@@ -610,7 +634,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
       it('should return all join requests when no status filter provided', async () => {
         // Arrange
         const organizationId = 'org-456';
-        
+
         // Create test organization with multiple requests
         await db.collection('organization').insertOne({
           id: organizationId,

@@ -126,9 +126,9 @@ mongoose.connection.once('open', () => {
       user: {
         additionalFields: {
           onboardingStep: {
-            type: "string",
+            type: 'string',
             required: false,
-            defaultValue: "organization",
+            defaultValue: 'organization',
             input: true, // Allow setting during updates
           },
         },

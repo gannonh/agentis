@@ -1,7 +1,7 @@
 /**
  * @fileoverview Organization Join Service - TDD implementation for Issue #104
  * @module server/services/OrganizationJoinService
- * 
+ *
  * Implements auto-join and request-to-join flows for organizations
  * with domain-based membership and admin approval workflows.
  */
@@ -44,7 +44,7 @@ class OrganizationJoinService {
       // 3. Validate user email domain matches organization domain
       const userDomain = userEmail.split('@')[1]?.toLowerCase();
       const orgDomain = organization.metadata?.domain?.toLowerCase();
-      
+
       if (userDomain !== orgDomain) {
         throw new Error('User email domain does not match organization domain');
       }
@@ -55,7 +55,7 @@ class OrganizationJoinService {
         organizationId,
         userId,
       });
-      
+
       if (existingMember) {
         throw new Error('User is already a member of this organization');
       }
@@ -64,8 +64,12 @@ class OrganizationJoinService {
       const memberCollection = db.collection('member');
       const memberResult = await memberCollection.insertOne({
         _id: new mongoose.Types.ObjectId(),
-        userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
-        organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
+        userId: mongoose.Types.ObjectId.isValid(userId)
+          ? new mongoose.Types.ObjectId(userId)
+          : userId,
+        organizationId: mongoose.Types.ObjectId.isValid(organizationId)
+          ? new mongoose.Types.ObjectId(organizationId)
+          : organizationId,
         role: 'member',
         createdAt: new Date(),
       });
@@ -86,7 +90,6 @@ class OrganizationJoinService {
         role: 'member',
         organizationId,
       };
-
     } catch (error) {
       logger.error('Auto-join failed', {
         userId,
@@ -143,7 +146,7 @@ class OrganizationJoinService {
       // Validate email domain matches organization domain
       const userDomain = userEmail.split('@')[1]?.toLowerCase();
       const orgDomain = organization.metadata?.domain?.toLowerCase();
-      
+
       if (userDomain !== orgDomain) {
         return {
           eligible: false,
@@ -156,7 +159,6 @@ class OrganizationJoinService {
         eligible: true,
         organization: orgData,
       };
-
     } catch (error) {
       logger.error('Error validating auto-join eligibility', {
         userEmail,
@@ -186,7 +188,7 @@ class OrganizationJoinService {
     try {
       const db = mongoose.connection.db;
       const organization = await this._getOrganization(organizationId);
-      
+
       if (!organization) {
         throw new Error('Organization not found');
       }
@@ -194,7 +196,7 @@ class OrganizationJoinService {
       // Check for existing pending request
       const existingRequests = organization.metadata?.joinRequests || [];
       const pendingRequest = existingRequests.find(
-        req => req.userId === userId && req.status === 'pending'
+        (req) => req.userId === userId && req.status === 'pending',
       );
 
       if (pendingRequest) {
@@ -219,7 +221,7 @@ class OrganizationJoinService {
           $push: {
             'metadata.joinRequests': joinRequest,
           },
-        }
+        },
       );
 
       logger.info('Join request created successfully', {
@@ -235,7 +237,6 @@ class OrganizationJoinService {
         organizationId,
         userId,
       };
-
     } catch (error) {
       logger.error('Failed to create join request', {
         userId,
@@ -264,15 +265,15 @@ class OrganizationJoinService {
     try {
       const db = mongoose.connection.db;
       const organization = await this._getOrganization(organizationId);
-      
+
       if (!organization) {
         throw new Error('Organization not found');
       }
 
       // Find the join request
       const joinRequests = organization.metadata?.joinRequests || [];
-      const request = joinRequests.find(req => req.id === requestId);
-      
+      const request = joinRequests.find((req) => req.id === requestId);
+
       if (!request) {
         throw new Error('Join request not found');
       }
@@ -285,8 +286,12 @@ class OrganizationJoinService {
       const memberCollection = db.collection('member');
       const memberResult = await memberCollection.insertOne({
         _id: new mongoose.Types.ObjectId(),
-        userId: mongoose.Types.ObjectId.isValid(request.userId) ? new mongoose.Types.ObjectId(request.userId) : request.userId,
-        organizationId: mongoose.Types.ObjectId.isValid(organizationId) ? new mongoose.Types.ObjectId(organizationId) : organizationId,
+        userId: mongoose.Types.ObjectId.isValid(request.userId)
+          ? new mongoose.Types.ObjectId(request.userId)
+          : request.userId,
+        organizationId: mongoose.Types.ObjectId.isValid(organizationId)
+          ? new mongoose.Types.ObjectId(organizationId)
+          : organizationId,
         role: 'member',
         createdAt: new Date(),
       });
@@ -297,7 +302,7 @@ class OrganizationJoinService {
 
       // Update request status
       await db.collection('organization').updateOne(
-        { 
+        {
           id: organizationId,
           'metadata.joinRequests.id': requestId,
         },
@@ -307,7 +312,7 @@ class OrganizationJoinService {
             'metadata.joinRequests.$.reviewedBy': reviewerId,
             'metadata.joinRequests.$.reviewedAt': new Date(),
           },
-        }
+        },
       );
 
       logger.info('Join request approved successfully', {
@@ -323,7 +328,6 @@ class OrganizationJoinService {
         userId: request.userId,
         organizationId,
       };
-
     } catch (error) {
       logger.error('Failed to approve join request', {
         requestId,
@@ -353,15 +357,15 @@ class OrganizationJoinService {
     try {
       const db = mongoose.connection.db;
       const organization = await this._getOrganization(organizationId);
-      
+
       if (!organization) {
         throw new Error('Organization not found');
       }
 
       // Find the join request
       const joinRequests = organization.metadata?.joinRequests || [];
-      const request = joinRequests.find(req => req.id === requestId);
-      
+      const request = joinRequests.find((req) => req.id === requestId);
+
       if (!request) {
         throw new Error('Join request not found');
       }
@@ -382,11 +386,11 @@ class OrganizationJoinService {
       }
 
       await db.collection('organization').updateOne(
-        { 
+        {
           id: organizationId,
           'metadata.joinRequests.id': requestId,
         },
-        { $set: updateFields }
+        { $set: updateFields },
       );
 
       logger.info('Join request rejected successfully', {
@@ -399,7 +403,6 @@ class OrganizationJoinService {
         requestId,
         status: 'rejected',
       };
-
     } catch (error) {
       logger.error('Failed to reject join request', {
         requestId,
@@ -425,7 +428,7 @@ class OrganizationJoinService {
 
     try {
       const organization = await this._getOrganization(organizationId);
-      
+
       if (!organization) {
         throw new Error('Organization not found');
       }
@@ -434,7 +437,7 @@ class OrganizationJoinService {
 
       // Filter by status if provided
       if (status) {
-        requests = requests.filter(req => req.status === status);
+        requests = requests.filter((req) => req.status === status);
       }
 
       // Sort by request date (newest first)
@@ -444,7 +447,6 @@ class OrganizationJoinService {
         requests,
         total: requests.length,
       };
-
     } catch (error) {
       logger.error('Failed to get join requests', {
         organizationId,
@@ -463,14 +465,14 @@ class OrganizationJoinService {
   static async _getOrganization(organizationId) {
     try {
       const db = mongoose.connection.db;
-      
+
       // Try by Better Auth string ID first
       let organization = await db.collection('organization').findOne({ id: organizationId });
-      
+
       // If not found, try by MongoDB ObjectId
       if (!organization && mongoose.Types.ObjectId.isValid(organizationId)) {
-        organization = await db.collection('organization').findOne({ 
-          _id: new mongoose.Types.ObjectId(organizationId) 
+        organization = await db.collection('organization').findOne({
+          _id: new mongoose.Types.ObjectId(organizationId),
         });
       }
 

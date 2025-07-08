@@ -1,7 +1,7 @@
 /**
  * @fileoverview Organization Join API routes - Issue #104
  * @module server/routes/organizationJoin
- * 
+ *
  * REST endpoints for organization joining functionality including:
  * - Auto-join flow for domain-enabled organizations
  * - Request-to-join flow with admin approval
@@ -10,6 +10,7 @@
 
 import express from 'express';
 import requireBetterAuth from '../middleware/requireBetterAuth.js';
+import { checkOrganizationAdmin } from '../middleware/roles/index.js';
 import OrganizationJoinService from '../services/OrganizationJoinService.js';
 import { logger } from '#config/index.js';
 
@@ -81,7 +82,6 @@ router.post('/auto-join', requireBetterAuth, async (req, res) => {
       },
       organization: eligibility.organization,
     });
-
   } catch (error) {
     logger.error('Auto-join failed', {
       userId: req.user?.id,
@@ -148,7 +148,6 @@ router.post('/request-join', requireBetterAuth, async (req, res) => {
         organizationId: result.organizationId,
       },
     });
-
   } catch (error) {
     logger.error('Join request creation failed', {
       userId: req.user?.id,
@@ -167,166 +166,175 @@ router.post('/request-join', requireBetterAuth, async (req, res) => {
  * GET /api/organization/:organizationId/join-requests
  * Get join requests for an organization (admin only)
  */
-router.get('/:organizationId/join-requests', requireBetterAuth, async (req, res) => {
-  try {
-    const { organizationId } = req.params;
-    const { status } = req.query;
-    const userId = req.user.id;
+router.get(
+  '/:organizationId/join-requests',
+  requireBetterAuth,
+  checkOrganizationAdmin,
+  async (req, res) => {
+    try {
+      const { organizationId } = req.params;
+      const { status } = req.query;
+      const userId = req.user.id;
 
-    logger.info('Join requests fetch requested', {
-      userId,
-      organizationId,
-      status,
-    });
+      logger.info('Join requests fetch requested', {
+        userId,
+        organizationId,
+        status,
+      });
 
-    // TODO: Add organization admin permission check
-    // For now, assume authenticated user has access
-    
-    // Get join requests
-    const result = await OrganizationJoinService.getJoinRequests({
-      organizationId,
-      status,
-    });
+      // Organization admin permission check handled by checkOrganizationAdmin middleware
 
-    logger.info('Join requests fetched successfully', {
-      userId,
-      organizationId,
-      count: result.total,
-    });
+      // Get join requests
+      const result = await OrganizationJoinService.getJoinRequests({
+        organizationId,
+        status,
+      });
 
-    res.json({
-      success: true,
-      requests: result.requests,
-      total: result.total,
-    });
+      logger.info('Join requests fetched successfully', {
+        userId,
+        organizationId,
+        count: result.total,
+      });
 
-  } catch (error) {
-    logger.error('Failed to fetch join requests', {
-      userId: req.user?.id,
-      organizationId: req.params?.organizationId,
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        requests: result.requests,
+        total: result.total,
+      });
+    } catch (error) {
+      logger.error('Failed to fetch join requests', {
+        userId: req.user?.id,
+        organizationId: req.params?.organizationId,
+        error: error.message,
+      });
 
-    res.status(500).json({
-      error: 'Failed to fetch join requests',
-      message: error.message,
-    });
-  }
-});
+      res.status(500).json({
+        error: 'Failed to fetch join requests',
+        message: error.message,
+      });
+    }
+  },
+);
 
 /**
  * POST /api/organization/:organizationId/join-requests/:requestId/approve
  * Approve a join request (admin only)
  */
-router.post('/:organizationId/join-requests/:requestId/approve', requireBetterAuth, async (req, res) => {
-  try {
-    const { organizationId, requestId } = req.params;
-    const reviewerId = req.user.id;
+router.post(
+  '/:organizationId/join-requests/:requestId/approve',
+  requireBetterAuth,
+  checkOrganizationAdmin,
+  async (req, res) => {
+    try {
+      const { organizationId, requestId } = req.params;
+      const reviewerId = req.user.id;
 
-    logger.info('Join request approval requested', {
-      reviewerId,
-      organizationId,
-      requestId,
-    });
+      logger.info('Join request approval requested', {
+        reviewerId,
+        organizationId,
+        requestId,
+      });
 
-    // TODO: Add organization admin permission check
-    // For now, assume authenticated user has admin rights
+      // Organization admin permission check handled by checkOrganizationAdmin middleware
 
-    // Approve join request
-    const result = await OrganizationJoinService.approveJoinRequest({
-      requestId,
-      organizationId,
-      reviewerId,
-    });
+      // Approve join request
+      const result = await OrganizationJoinService.approveJoinRequest({
+        requestId,
+        organizationId,
+        reviewerId,
+      });
 
-    logger.info('Join request approved successfully', {
-      reviewerId,
-      organizationId,
-      requestId,
-      membershipId: result.membershipId,
-    });
+      logger.info('Join request approved successfully', {
+        reviewerId,
+        organizationId,
+        requestId,
+        membershipId: result.membershipId,
+      });
 
-    res.json({
-      success: true,
-      message: 'Join request approved successfully',
-      membership: {
-        id: result.membershipId,
-        userId: result.userId,
-        organizationId: result.organizationId,
-      },
-    });
+      res.json({
+        success: true,
+        message: 'Join request approved successfully',
+        membership: {
+          id: result.membershipId,
+          userId: result.userId,
+          organizationId: result.organizationId,
+        },
+      });
+    } catch (error) {
+      logger.error('Join request approval failed', {
+        reviewerId: req.user?.id,
+        organizationId: req.params?.organizationId,
+        requestId: req.params?.requestId,
+        error: error.message,
+      });
 
-  } catch (error) {
-    logger.error('Join request approval failed', {
-      reviewerId: req.user?.id,
-      organizationId: req.params?.organizationId,
-      requestId: req.params?.requestId,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to approve join request',
-      message: error.message,
-    });
-  }
-});
+      res.status(500).json({
+        error: 'Failed to approve join request',
+        message: error.message,
+      });
+    }
+  },
+);
 
 /**
  * POST /api/organization/:organizationId/join-requests/:requestId/reject
  * Reject a join request (admin only)
  */
-router.post('/:organizationId/join-requests/:requestId/reject', requireBetterAuth, async (req, res) => {
-  try {
-    const { organizationId, requestId } = req.params;
-    const { rejectionReason } = req.body;
-    const reviewerId = req.user.id;
+router.post(
+  '/:organizationId/join-requests/:requestId/reject',
+  requireBetterAuth,
+  checkOrganizationAdmin,
+  async (req, res) => {
+    try {
+      const { organizationId, requestId } = req.params;
+      const { rejectionReason } = req.body;
+      const reviewerId = req.user.id;
 
-    logger.info('Join request rejection requested', {
-      reviewerId,
-      organizationId,
-      requestId,
-    });
+      logger.info('Join request rejection requested', {
+        reviewerId,
+        organizationId,
+        requestId,
+      });
 
-    // TODO: Add organization admin permission check
-    // For now, assume authenticated user has admin rights
+      // Organization admin permission check handled by checkOrganizationAdmin middleware
 
-    // Reject join request
-    const result = await OrganizationJoinService.rejectJoinRequest({
-      requestId,
-      organizationId,
-      reviewerId,
-      rejectionReason,
-    });
+      // Reject join request
+      const result = await OrganizationJoinService.rejectJoinRequest({
+        requestId,
+        organizationId,
+        reviewerId,
+        rejectionReason,
+      });
 
-    logger.info('Join request rejected successfully', {
-      reviewerId,
-      organizationId,
-      requestId,
-    });
+      logger.info('Join request rejected successfully', {
+        reviewerId,
+        organizationId,
+        requestId,
+      });
 
-    res.json({
-      success: true,
-      message: 'Join request rejected successfully',
-      request: {
-        id: result.requestId,
-        status: result.status,
-      },
-    });
+      res.json({
+        success: true,
+        message: 'Join request rejected successfully',
+        request: {
+          id: result.requestId,
+          status: result.status,
+        },
+      });
+    } catch (error) {
+      logger.error('Join request rejection failed', {
+        reviewerId: req.user?.id,
+        organizationId: req.params?.organizationId,
+        requestId: req.params?.requestId,
+        error: error.message,
+      });
 
-  } catch (error) {
-    logger.error('Join request rejection failed', {
-      reviewerId: req.user?.id,
-      organizationId: req.params?.organizationId,
-      requestId: req.params?.requestId,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to reject join request',
-      message: error.message,
-    });
-  }
-});
+      res.status(500).json({
+        error: 'Failed to reject join request',
+        message: error.message,
+      });
+    }
+  },
+);
 
 /**
  * GET /api/organization/check-join-eligibility
@@ -375,7 +383,6 @@ router.get('/check-join-eligibility', requireBetterAuth, async (req, res) => {
       reason: result.reason,
       organization: result.organization,
     });
-
   } catch (error) {
     logger.error('Join eligibility check failed', {
       userId: req.user?.id,

@@ -31,9 +31,9 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
     // Validate onboarding step
     const validSteps = ['organization', 'profile', 'team', 'welcome', 'complete'];
     if (!onboardingStep || !validSteps.includes(onboardingStep)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid onboarding step',
-        validSteps 
+        validSteps,
       });
     }
 
@@ -41,7 +41,7 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { onboardingStep },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedUser) {
@@ -53,9 +53,9 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
       onboardingStep,
     });
 
-    res.json({ 
+    res.json({
       success: true,
-      onboardingStep: updatedUser.onboardingStep 
+      onboardingStep: updatedUser.onboardingStep,
     });
   } catch (error) {
     logger.error('Failed to update onboarding step', error);
