@@ -35,7 +35,7 @@ export const betterAuthConfig = {
   clientURL: process.env.DOMAIN_CLIENT,
   trustedOrigins: [
     'http://localhost:3090', // Dev frontend server
-    'http://localhost:3080', // Backend + production frontend
+    'http://localhost:3080', // Backend + production frontend (also used for E2E tests)
     'http://localhost:3000', // Alternative dev port
     'https://agentis.ai', // Production domain
   ],

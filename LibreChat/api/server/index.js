@@ -129,7 +129,7 @@ const startServer = async () => {
   /* CORS must be applied before Better Auth */
   app.use(
     cors({
-      origin: ['http://localhost:3090', 'http://localhost:3000', 'https://agentis.ai'],
+      origin: ['http://localhost:3090', 'http://localhost:3080', 'http://localhost:3000', 'https://agentis.ai'],
       credentials: true,
     }),
   );
@@ -319,6 +319,7 @@ const startServer = async () => {
         error: 'Authentication service is starting up. Please try again in a moment.',
       });
     }
+
 
     // Debug magic link requests (development only)
     if (req.path.includes('magic-link') && process.env.NODE_ENV === 'development') {
