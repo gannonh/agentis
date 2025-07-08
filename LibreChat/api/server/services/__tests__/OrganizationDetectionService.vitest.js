@@ -181,7 +181,15 @@ describe('OrganizationDetectionService', () => {
         isPublicDomain: false,
         domain: 'acme.com',
         hasOrganization: true,
-        organizations: [], // Empty array for security - prevents information disclosure
+        organizations: [
+          {
+            _id: 'org1',
+            name: 'Acme Corp',
+            domain: 'acme.com',
+            allowDomainJoin: true,
+            slug: 'acme-corp',
+          },
+        ],
         canAutoJoin: true,
       });
     });
