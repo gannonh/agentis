@@ -9,6 +9,7 @@
     "test": "cross-env NODE_ENV=test vitest",
     "test:run": "cross-env NODE_ENV=test vitest run",
     "test:ci": "cross-env NODE_ENV=test vitest run --reporter=verbose",
+    "test:unit": "cross-env NODE_ENV=test vitest run --exclude '**/*.integration.vitest.js'",
     "test:integration": "cross-env NODE_ENV=test TEST_MODE=integration vitest run -c vitest.config.integration.js",
     "test:ui": "cross-env NODE_ENV=test vitest --ui",
     "test:coverage": "cross-env NODE_ENV=test vitest run --coverage",
