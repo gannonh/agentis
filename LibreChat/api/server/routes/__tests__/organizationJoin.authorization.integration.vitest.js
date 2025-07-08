@@ -44,7 +44,7 @@ describe('Organization Join Routes - Authorization Tests', () => {
   async function createTestApp(userId) {
     const app = express();
     app.use(express.json());
-    
+
     // Mock user authentication
     app.use((req, res, next) => {
       if (userId) {
@@ -55,19 +55,24 @@ describe('Organization Join Routes - Authorization Tests', () => {
 
     // Import the authorization middleware
     const { checkOrganizationAdmin } = await import('../../middleware/roles/index.js');
-    
+
     // Import the OrganizationJoinService
-    const OrganizationJoinService = (await import('../../services/OrganizationJoinService.js')).default;
+    const OrganizationJoinService = (await import('../../services/OrganizationJoinService.js'))
+      .default;
 
     // Create simple test endpoint for admin routes
-    app.get('/api/organization/:organizationId/join-requests', checkOrganizationAdmin, (req, res) => {
-      res.json({
-        success: true,
-        message: 'Authorization successful',
-        user: req.user,
-        organizationRole: req.organizationRole,
-      });
-    });
+    app.get(
+      '/api/organization/:organizationId/join-requests',
+      checkOrganizationAdmin,
+      (req, res) => {
+        res.json({
+          success: true,
+          message: 'Authorization successful',
+          user: req.user,
+          organizationRole: req.organizationRole,
+        });
+      },
+    );
 
     // Add the membership-status endpoint directly
     app.get('/api/organization/membership-status', async (req, res) => {
@@ -236,9 +241,7 @@ describe('Organization Join Routes - Authorization Tests', () => {
     it('should require organization ID parameter', async () => {
       const app = await createTestApp(regularUserId);
 
-      const response = await request(app)
-        .get('/api/organization/membership-status')
-        .expect(400);
+      const response = await request(app).get('/api/organization/membership-status').expect(400);
 
       expect(response.body.error).toBe('Organization ID is required');
     });

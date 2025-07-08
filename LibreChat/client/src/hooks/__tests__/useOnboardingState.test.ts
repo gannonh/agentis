@@ -36,13 +36,13 @@ describe('useOnboardingState', () => {
     vi.clearAllMocks();
     // Reset URL search params - return empty URLSearchParams by default
     mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
-    
+
     // Default mock - user with no onboarding step
     mockUseSession.mockReturnValue({
       data: { user: { id: '1', email: 'test@example.com' } },
       refetch: mockRefetchSession,
     });
-    
+
     mockUpdateUser.mockResolvedValue({});
     mockRefetchSession.mockResolvedValue({});
   });
@@ -58,7 +58,7 @@ describe('useOnboardingState', () => {
     const searchParams = new URLSearchParams();
     searchParams.set('step', 'profile');
     mockUseSearchParams.mockReturnValue([searchParams]);
-    
+
     const { result } = renderHook(() => useOnboardingState());
 
     expect(result.current.state.currentStep).toBe(OnboardingStep.PROFILE);
@@ -69,7 +69,7 @@ describe('useOnboardingState', () => {
     const searchParams = new URLSearchParams();
     searchParams.set('step', 'invalid-step');
     mockUseSearchParams.mockReturnValue([searchParams]);
-    
+
     const { result } = renderHook(() => useOnboardingState());
 
     expect(result.current.state.currentStep).toBe(OnboardingStep.ORGANIZATION);

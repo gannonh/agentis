@@ -42,7 +42,11 @@ export default function OnboardingRoute() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: session, isPending: sessionLoading, refetch: refetchSession } = authClient.useSession();
+  const {
+    data: session,
+    isPending: sessionLoading,
+    refetch: refetchSession,
+  } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
 
   // Robust slug generation function with fallbacks
@@ -287,7 +291,7 @@ export default function OnboardingRoute() {
       subtitle: "You're all set up. Let's start your AI conversation journey.",
     },
     // Handle 'complete' step for edge cases
-    'complete': {
+    complete: {
       title: 'Setup Complete!',
       subtitle: 'Redirecting you to your workspace...',
     },
@@ -419,17 +423,17 @@ export default function OnboardingRoute() {
             </p>
           </div>
 
-          <Button 
+          <Button
             onClick={async () => {
               try {
                 console.log('Welcome button clicked - completing onboarding...');
-                
+
                 // Mark onboarding as complete
                 await authClient.updateUser({
                   onboardingStep: 'complete',
                 });
                 console.log('✅ Updated user onboarding step to: complete');
-                
+
                 // Refresh session to ensure OnboardGuard sees the update
                 try {
                   await refetchSession();
@@ -437,7 +441,7 @@ export default function OnboardingRoute() {
                 } catch (sessionError) {
                   console.warn('⚠️ Session refresh failed but continuing:', sessionError);
                 }
-                
+
                 // Navigate to chat - use hard navigation to avoid React Router issues
                 console.log('🚀 Navigating to /c/new...');
                 window.location.href = '/c/new';
@@ -446,8 +450,8 @@ export default function OnboardingRoute() {
                 console.log('🚀 Navigating anyway to avoid blocking user...');
                 window.location.href = '/c/new';
               }
-            }} 
-            className="w-full" 
+            }}
+            className="w-full"
             size="lg"
           >
             Start Your First Conversation

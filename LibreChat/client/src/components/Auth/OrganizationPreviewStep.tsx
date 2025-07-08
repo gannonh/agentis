@@ -1,7 +1,7 @@
 /**
  * @fileoverview Organization preview step component for Issue #104
  * @module components/Auth/OrganizationPreviewStep
- * 
+ *
  * Shows organization details and allows users to either:
  * - Auto-join if domain join is enabled
  * - Request to join if manual approval is required
@@ -34,10 +34,10 @@ interface OrganizationPreviewStepProps {
 
 /**
  * Organization preview step component
- * 
+ *
  * Displays organization information and allows users to join.
  * Handles both auto-join (domain-based) and request-to-join flows.
- * 
+ *
  * @param props - Component props
  * @returns JSX.Element
  */
@@ -60,13 +60,16 @@ export default function OrganizationPreviewStep({
 
   const checkJoinEligibility = useCallback(async () => {
     try {
-      const response = await fetch(`/api/organization/check-join-eligibility?organizationId=${organization.id}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `/api/organization/check-join-eligibility?organizationId=${organization.id}`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -81,35 +84,41 @@ export default function OrganizationPreviewStep({
     }
   }, [organization.id]);
 
-  const waitForMembershipConfirmation = useCallback(async (maxAttempts = 10, intervalMs = 500) => {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        const response = await fetch(`/api/organization/membership-status?organizationId=${organization.id}`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+  const waitForMembershipConfirmation = useCallback(
+    async (maxAttempts = 10, intervalMs = 500) => {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const response = await fetch(
+            `/api/organization/membership-status?organizationId=${organization.id}`,
+            {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            },
+          );
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.isMember) {
-            return true; // Membership confirmed
+          if (response.ok) {
+            const data = await response.json();
+            if (data.isMember) {
+              return true; // Membership confirmed
+            }
           }
+        } catch (error) {
+          console.error(`Membership check attempt ${attempt + 1} failed:`, error);
         }
-      } catch (error) {
-        console.error(`Membership check attempt ${attempt + 1} failed:`, error);
+
+        // Wait before next attempt (except on last attempt)
+        if (attempt < maxAttempts - 1) {
+          await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
       }
 
-      // Wait before next attempt (except on last attempt)
-      if (attempt < maxAttempts - 1) {
-        await new Promise(resolve => setTimeout(resolve, intervalMs));
-      }
-    }
-
-    return false; // Membership not confirmed after max attempts
-  }, [organization.id]);
+      return false; // Membership not confirmed after max attempts
+    },
+    [organization.id],
+  );
 
   useEffect(() => {
     checkJoinEligibility();
@@ -149,9 +158,11 @@ export default function OrganizationPreviewStep({
 
       // Wait for membership confirmation using polling
       const membershipConfirmed = await waitForMembershipConfirmation();
-      
+
       if (!membershipConfirmed) {
-        throw new Error('Failed to confirm organization membership. Please try again or contact support.');
+        throw new Error(
+          'Failed to confirm organization membership. Please try again or contact support.',
+        );
       }
 
       // Show success toast only after membership is confirmed
@@ -290,12 +301,7 @@ export default function OrganizationPreviewStep({
           </div>
 
           <div className="space-y-3">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full"
-              size="lg"
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full" size="lg">
               {isSubmitting ? 'Sending request...' : 'Request to Join'}
               <Send className="ml-2 h-4 w-4" />
             </Button>
@@ -361,12 +367,7 @@ export default function OrganizationPreviewStep({
 
       {/* Action buttons */}
       <div className="space-y-3">
-        <Button
-          onClick={handleAutoJoin}
-          disabled={isSubmitting}
-          className="w-full"
-          size="lg"
-        >
+        <Button onClick={handleAutoJoin} disabled={isSubmitting} className="w-full" size="lg">
           {isSubmitting ? 'Joining...' : `Join ${organization.name}`}
           <UserPlus className="ml-2 h-4 w-4" />
         </Button>

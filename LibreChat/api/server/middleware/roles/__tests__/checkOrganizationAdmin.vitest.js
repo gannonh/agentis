@@ -79,7 +79,7 @@ describe('checkOrganizationAdmin middleware', () => {
         expect.objectContaining({
           userId: 'user123',
           path: '/test/path',
-        })
+        }),
       );
     });
 
@@ -98,7 +98,7 @@ describe('checkOrganizationAdmin middleware', () => {
         expect.objectContaining({
           organizationId: '507f1f77bcf86cd799439011',
           path: '/test/path',
-        })
+        }),
       );
     });
 
@@ -119,7 +119,7 @@ describe('checkOrganizationAdmin middleware', () => {
           userId: 'user123',
           organizationId: 'invalid-id',
           path: '/test/path',
-        })
+        }),
       );
     });
   });
@@ -146,7 +146,7 @@ describe('checkOrganizationAdmin middleware', () => {
           userId: 'user123',
           organizationId: '507f1f77bcf86cd799439011',
           path: '/test/path',
-        })
+        }),
       );
     });
 
@@ -175,7 +175,7 @@ describe('checkOrganizationAdmin middleware', () => {
           organizationId: '507f1f77bcf86cd799439011',
           role: 'admin',
           path: '/test/path',
-        })
+        }),
       );
     });
 
@@ -204,7 +204,7 @@ describe('checkOrganizationAdmin middleware', () => {
           organizationId: '507f1f77bcf86cd799439011',
           role: 'owner',
           path: '/test/path',
-        })
+        }),
       );
     });
   });
@@ -228,7 +228,7 @@ describe('checkOrganizationAdmin middleware', () => {
           organizationId: '507f1f77bcf86cd799439011',
           path: '/test/path',
           error: 'Database connection failed',
-        })
+        }),
       );
     });
   });

@@ -73,16 +73,16 @@ const allSteps = [
 export function useOnboardingState() {
   const { data: session, refetch: refetchSession } = authClient.useSession();
   const [searchParams] = useSearchParams();
-  
+
   // Initialize state from URL parameter or user's database step
   const getInitialStep = (): OnboardingStep => {
     const stepParam = searchParams.get('step') as OnboardingStep;
-    
+
     // If URL has a valid step parameter, use it
     if (stepParam && allSteps.includes(stepParam)) {
       return stepParam;
     }
-    
+
     // Otherwise use user's current onboarding step from database
     return (session?.user?.onboardingStep as OnboardingStep) || OnboardingStep.ORGANIZATION;
   };
@@ -95,7 +95,7 @@ export function useOnboardingState() {
   // Update state when session changes or URL parameters change
   useEffect(() => {
     const currentStep = getInitialStep();
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
       currentStep,
     }));
@@ -112,7 +112,7 @@ export function useOnboardingState() {
         onboardingStep: nextStep,
       });
       console.log('Updated user onboarding step to:', nextStep);
-      
+
       // Use Better Auth's built-in refetch method to refresh session cache
       await refetchSession();
       console.log('Refreshed session after onboarding step update');

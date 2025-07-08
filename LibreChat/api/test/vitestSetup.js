@@ -4,8 +4,9 @@
  */
 
 // Check if running integration tests that need real database
-const needsRealDatabase = process.env.TEST_MODE === 'integration' || 
-                         process.argv.some(arg => arg.includes('vitest.config.integration.js'));
+const needsRealDatabase =
+  process.env.TEST_MODE === 'integration' ||
+  process.argv.some((arg) => arg.includes('vitest.config.integration.js'));
 
 if (needsRealDatabase) {
   // Integration test environment

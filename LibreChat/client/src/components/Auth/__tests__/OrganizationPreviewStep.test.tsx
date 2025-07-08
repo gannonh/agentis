@@ -58,7 +58,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait for eligibility check
@@ -78,7 +78,7 @@ describe('OrganizationPreviewStep', () => {
 
     it('should successfully auto-join organization when button clicked', async () => {
       const user = userEvent.setup();
-      
+
       // Mock eligibility check
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -103,7 +103,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait for component to load
@@ -140,7 +140,7 @@ describe('OrganizationPreviewStep', () => {
 
     it('should fail when membership confirmation fails', async () => {
       const user = userEvent.setup();
-      
+
       // Mock eligibility check
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -168,7 +168,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait for component to load
@@ -180,18 +180,22 @@ describe('OrganizationPreviewStep', () => {
       await user.click(screen.getByRole('button', { name: /Join ACME Corporation/i }));
 
       // Verify error toast is shown (longer timeout due to polling delay)
-      await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith({
-          message: 'Failed to confirm organization membership. Please try again or contact support.',
-          severity: 'error',
-          showIcon: true,
-          duration: 5000,
-        });
-      }, { timeout: 10000 });
+      await waitFor(
+        () => {
+          expect(mockShowToast).toHaveBeenCalledWith({
+            message:
+              'Failed to confirm organization membership. Please try again or contact support.',
+            severity: 'error',
+            showIcon: true,
+            duration: 5000,
+          });
+        },
+        { timeout: 10000 },
+      );
 
       // Verify onNext was NOT called
       expect(defaultProps.onNext).not.toHaveBeenCalled();
-      
+
       // Verify request form is shown as fallback
       await waitFor(() => {
         expect(screen.getByText(/request to join/i)).toBeInTheDocument();
@@ -200,7 +204,7 @@ describe('OrganizationPreviewStep', () => {
 
     it('should show request form if auto-join fails', async () => {
       const user = userEvent.setup();
-      
+
       // Mock eligibility check
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -216,7 +220,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait and click join
@@ -253,7 +257,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait for eligibility check
@@ -264,12 +268,14 @@ describe('OrganizationPreviewStep', () => {
       // Should show request form
       expect(screen.getByText('Message to admin (optional)')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Request to Join/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Continue with personal workspace/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Continue with personal workspace/i }),
+      ).toBeInTheDocument();
     });
 
     it('should successfully submit join request', async () => {
       const user = userEvent.setup();
-      
+
       // Mock eligibility check
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -288,7 +294,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait for form
@@ -299,7 +305,7 @@ describe('OrganizationPreviewStep', () => {
       // Fill message and submit
       await user.type(
         screen.getByRole('textbox', { name: /Message to admin/i }),
-        'I would like to join the team'
+        'I would like to join the team',
       );
       await user.click(screen.getByRole('button', { name: /Request to Join/i }));
 
@@ -330,7 +336,7 @@ describe('OrganizationPreviewStep', () => {
 
     it('should handle join request errors gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Mock eligibility check
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -346,7 +352,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait and submit
@@ -374,7 +380,7 @@ describe('OrganizationPreviewStep', () => {
   describe('UI Interactions', () => {
     it('should allow switching from auto-join to request form', async () => {
       const user = userEvent.setup();
-      
+
       // Mock eligibility check
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -384,7 +390,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait for auto-join UI
@@ -402,7 +408,7 @@ describe('OrganizationPreviewStep', () => {
 
     it('should call onSkip when skip button clicked', async () => {
       const user = userEvent.setup();
-      
+
       // Mock eligibility check
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -412,12 +418,14 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait and click skip
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Continue with personal workspace/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /Continue with personal workspace/i }),
+        ).toBeInTheDocument();
       });
 
       await user.click(screen.getByRole('button', { name: /Continue with personal workspace/i }));
@@ -432,7 +440,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       expect(screen.getByText('Checking organization settings...')).toBeInTheDocument();
@@ -447,7 +455,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...defaultProps} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Should show request form as fallback
@@ -468,7 +476,7 @@ describe('OrganizationPreviewStep', () => {
       render(
         <ToastProvider>
           <OrganizationPreviewStep {...propsWithoutSkip} />
-        </ToastProvider>
+        </ToastProvider>,
       );
 
       // Wait for form
@@ -477,7 +485,9 @@ describe('OrganizationPreviewStep', () => {
       });
 
       // Should not show skip button
-      expect(screen.queryByRole('button', { name: /Continue with personal workspace/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Continue with personal workspace/i }),
+      ).not.toBeInTheDocument();
     });
   });
 });

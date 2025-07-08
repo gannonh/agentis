@@ -40,9 +40,9 @@ export const authClient = createAuthClient({
   baseURL,
   basePath: '/api/auth',
   plugins: [
-    organizationClient(), 
-    adminClient(), 
-    magicLinkClient(), 
+    organizationClient(),
+    adminClient(),
+    magicLinkClient(),
     usernameClient(),
     inferAdditionalFields<typeof auth>(),
   ],

@@ -212,19 +212,25 @@ export default function OrganizationCreationStep({
   }
 
   // If domain already has an organization, show preview component for joining
-  if (detectionResult.hasOrganization && !detectionResult.isPublicDomain && detectionResult.organizations.length > 0) {
+  if (
+    detectionResult.hasOrganization &&
+    !detectionResult.isPublicDomain &&
+    detectionResult.organizations.length > 0
+  ) {
     // For Issue #104 - Show organization preview with join options
     const OrganizationPreviewStep = React.lazy(() => import('./OrganizationPreviewStep'));
-    
+
     return (
-      <React.Suspense fallback={
-        <div className={cn('py-8 text-center', className)}>
-          <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
-            <span>Loading organization details...</span>
+      <React.Suspense
+        fallback={
+          <div className={cn('py-8 text-center', className)}>
+            <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+              <span>Loading organization details...</span>
+            </div>
           </div>
-        </div>
-      }>
+        }
+      >
         <OrganizationPreviewStep
           organization={{
             id: detectionResult.organizations[0]._id,
@@ -233,7 +239,9 @@ export default function OrganizationCreationStep({
             allowDomainJoin: detectionResult.organizations[0].metadata?.allowDomainJoin || false,
           }}
           userEmail={email}
-          onNext={() => onNext({ action: 'join', organizationId: detectionResult.organizations[0]._id })}
+          onNext={() =>
+            onNext({ action: 'join', organizationId: detectionResult.organizations[0]._id })
+          }
           onSkip={handleSkip}
           className={className}
         />

@@ -97,11 +97,8 @@ class OrganizationJoinService {
         error: error.message,
       });
 
-      // Re-throw with more context for API errors
-      if (error.message.includes('Better Auth') || error.message.includes('API')) {
-        throw new Error(`Failed to add user to organization: ${error.message}`);
-      }
-      throw error;
+      // Re-throw with more context for all errors
+      throw new Error(`Failed to add user to organization: ${error.message}`);
     }
   }
 
@@ -504,11 +501,11 @@ class OrganizationJoinService {
       const memberCollection = db.collection('member');
 
       // Normalize IDs to handle both string and ObjectId formats
-      const normalizedUserId = mongoose.Types.ObjectId.isValid(userId) 
-        ? new mongoose.Types.ObjectId(userId) 
+      const normalizedUserId = mongoose.Types.ObjectId.isValid(userId)
+        ? new mongoose.Types.ObjectId(userId)
         : userId;
-      const normalizedOrgId = mongoose.Types.ObjectId.isValid(organizationId) 
-        ? new mongoose.Types.ObjectId(organizationId) 
+      const normalizedOrgId = mongoose.Types.ObjectId.isValid(organizationId)
+        ? new mongoose.Types.ObjectId(organizationId)
         : organizationId;
 
       // Check if user is a member of the organization
