@@ -15,23 +15,27 @@ vi.mock('~/config/betterAuth', () => ({
   },
 }));
 
+// Mock React Router's useSearchParams hook
+vi.mock('react-router-dom', () => ({
+  useSearchParams: vi.fn(),
+}));
+
 const mockUseSession = vi.fn();
 const mockUpdateUser = vi.fn();
 const mockRefetchSession = vi.fn();
 
-// Import the mocked module to get typed access
+// Import the mocked modules to get typed access
 const { authClient } = await import('~/config/betterAuth');
+const { useSearchParams } = await import('react-router-dom');
 (authClient.useSession as any).mockImplementation(() => mockUseSession());
 (authClient.updateUser as any).mockImplementation(mockUpdateUser);
+const mockUseSearchParams = useSearchParams as any;
 
 describe('useOnboardingState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock URL search params
-    Object.defineProperty(window, 'location', {
-      value: { search: '' },
-      writable: true,
-    });
+    // Reset URL search params - return empty URLSearchParams by default
+    mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
     
     // Default mock - user with no onboarding step
     mockUseSession.mockReturnValue({
@@ -44,6 +48,28 @@ describe('useOnboardingState', () => {
   });
 
   it('should initialize with organization step as current step', () => {
+    const { result } = renderHook(() => useOnboardingState());
+
+    expect(result.current.state.currentStep).toBe(OnboardingStep.ORGANIZATION);
+  });
+
+  it('should initialize with step from URL parameter when provided', () => {
+    // Set URL parameter
+    const searchParams = new URLSearchParams();
+    searchParams.set('step', 'profile');
+    mockUseSearchParams.mockReturnValue([searchParams]);
+    
+    const { result } = renderHook(() => useOnboardingState());
+
+    expect(result.current.state.currentStep).toBe(OnboardingStep.PROFILE);
+  });
+
+  it('should ignore invalid step parameter and use default', () => {
+    // Set invalid URL parameter
+    const searchParams = new URLSearchParams();
+    searchParams.set('step', 'invalid-step');
+    mockUseSearchParams.mockReturnValue([searchParams]);
+    
     const { result } = renderHook(() => useOnboardingState());
 
     expect(result.current.state.currentStep).toBe(OnboardingStep.ORGANIZATION);

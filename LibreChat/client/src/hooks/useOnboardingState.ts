@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 
 /**
@@ -71,11 +72,11 @@ const allSteps = [
  */
 export function useOnboardingState() {
   const { data: session, refetch: refetchSession } = authClient.useSession();
+  const [searchParams] = useSearchParams();
   
   // Initialize state from URL parameter or user's database step
   const getInitialStep = (): OnboardingStep => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const stepParam = urlParams.get('step') as OnboardingStep;
+    const stepParam = searchParams.get('step') as OnboardingStep;
     
     // If URL has a valid step parameter, use it
     if (stepParam && allSteps.includes(stepParam)) {
@@ -98,7 +99,7 @@ export function useOnboardingState() {
       ...prevState,
       currentStep,
     }));
-  }, [session?.user?.onboardingStep, window.location.search]);
+  }, [session?.user?.onboardingStep, searchParams]);
 
   const goToNextStep = async () => {
     const currentIndex = allSteps.indexOf(state.currentStep);
