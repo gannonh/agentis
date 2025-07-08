@@ -81,6 +81,36 @@ export default function OrganizationPreviewStep({
     }
   }, [organization.id]);
 
+  const waitForMembershipConfirmation = useCallback(async (maxAttempts = 10, intervalMs = 500) => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await fetch(`/api/organization/membership-status?organizationId=${organization.id}`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.isMember) {
+            return true; // Membership confirmed
+          }
+        }
+      } catch (error) {
+        console.error(`Membership check attempt ${attempt + 1} failed:`, error);
+      }
+
+      // Wait before next attempt (except on last attempt)
+      if (attempt < maxAttempts - 1) {
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      }
+    }
+
+    return false; // Membership not confirmed after max attempts
+  }, [organization.id]);
+
   useEffect(() => {
     checkJoinEligibility();
   }, [checkJoinEligibility]);
@@ -124,8 +154,12 @@ export default function OrganizationPreviewStep({
         // Don't fail the join flow, but log the error
       }
 
-      // Small delay to allow Better Auth to process the join
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for membership confirmation using polling
+      const membershipConfirmed = await waitForMembershipConfirmation();
+      
+      if (!membershipConfirmed) {
+        console.warn('Membership confirmation timed out, but proceeding anyway');
+      }
 
       // Proceed to next step
       onNext();
