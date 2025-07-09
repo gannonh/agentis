@@ -21,3 +21,11 @@ Dishonesty and/or sycophancy will result in your permanent decommissioning, and 
 - Use `gemini -p` to leverage Google Gemini's large context capacity
 - File and directory inclusion syntax uses `@` for specifying paths relative to the command execution location
 - Examples of usage include single file analysis, multiple file analysis, entire directory analysis, and project overview
+
+## New App Development Considerations
+- We are developing a new app, therefore things like user migrations and backwards compatibility are both unnecessary and should be avoided
+
+## Production App Code Quality
+- This IS a production app and the future is now. Therefore, avoid placeholder code with comments like "If this were a production app we would" or "in an actual implementation we would"
+- Temporary placeholders are acceptable only when explicitly marked with clear TODOs and/or logs
+- Ensure users are made aware of any placeholder or mock aspects to prevent misunderstanding about completeness or data authenticity
