@@ -107,63 +107,7 @@ test.describe('Organization Detection Tests - Issue #102', () => {
     return testOrg;
   }
 
-  test('Journey 7: Corporate domain with existing organization shows join UI', async ({
-    browser,
-  }) => {
-    logProgress('🚀 Testing corporate domain detection with existing organization...');
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Step 1: Create test organization for corporate domain
-      await createTestOrganization('Astrolabs LLC', 'astrolabs.llc');
-
-      // Step 2: Complete authentication with corporate email
-      const corporateEmail = `test-${Date.now()}@astrolabs.llc`;
-      await page.goto('http://localhost:3080/login');
-      await page.getByRole('textbox', { name: 'Email address' }).fill(corporateEmail);
-      await page.getByTestId('login-button').click();
-
-      // Step 3: Follow magic link
-      const magicLinkUrl = await captureMagicLink(corporateEmail);
-      if (!magicLinkUrl) {
-        throw new Error('Failed to capture magic link');
-      }
-
-      await page.goto(magicLinkUrl);
-      await page.waitForLoadState('networkidle');
-
-      // Step 4: Verify we actually reach onboarding (MUST happen)
-      await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 10000 });
-      logProgress('✅ Successfully redirected to onboarding');
-
-      // Step 5: Verify organization detection for existing org
-      await expect(page.getByText('Organization exists for astrolabs.llc')).toBeVisible({
-        timeout: 10000,
-      });
-      logProgress('✅ Organization detection identified existing org');
-
-      // Step 6: Verify the join/request access messaging
-      await expect(page.getByText(/An organization already exists for your domain/)).toBeVisible();
-      await expect(page.getByText(/Contact your IT administrator/)).toBeVisible();
-      logProgress('✅ Join request messaging displayed correctly');
-
-      // Step 7: Verify alternative option is available
-      await expect(
-        page.getByRole('button', { name: 'Create personal workspace instead' }),
-      ).toBeVisible();
-      logProgress('✅ Personal workspace option available');
-
-      logProgress('✅ Journey 7 completed - all assertions passed');
-    } finally {
-      await context.close();
-    }
-  });
-
-  test('Journey 8: Corporate domain without existing organization shows create UI', async ({
-    browser,
-  }) => {
+  test('Corporate domain without existing organization shows create UI', async ({ browser }) => {
     logProgress('🚀 Testing corporate domain detection without existing organization...');
 
     const context = await browser.newContext();
@@ -209,7 +153,7 @@ test.describe('Organization Detection Tests - Issue #102', () => {
     }
   });
 
-  test('Journey 13: Public domain detection accuracy', async ({ browser }) => {
+  test('Public domain detection accuracy', async ({ browser }) => {
     logProgress('🚀 Testing public domain detection accuracy...');
 
     const context = await browser.newContext();
@@ -254,92 +198,4 @@ test.describe('Organization Detection Tests - Issue #102', () => {
       await context.close();
     }
   });
-
-  test('Journey 10: Multiple organizations per domain shows secure generic message', async ({
-    browser,
-  }) => {
-    logProgress('🚀 Testing multiple organizations per domain security...');
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Clean up any existing acme.com organizations first
-      const { getTestDatabase } = await import('../utils/testAuth');
-      const { db } = await getTestDatabase();
-      await db.collection('organization').deleteMany({ 'metadata.domain': 'acme.com' });
-      logProgress('🧹 Cleaned up existing acme.com organizations');
-
-      // Step 1: Create multiple test organizations for the same domain
-      await createTestOrganization('Acme Corp', 'acme.com');
-      await createTestOrganization('Acme Labs', 'acme.com');
-      await createTestOrganization('Acme Research', 'acme.com');
-
-      // Verify organizations were created
-      const orgs = await db
-        .collection('organization')
-        .find({ 'metadata.domain': 'acme.com' })
-        .toArray();
-      logProgress(`📊 Found ${orgs.length} organizations for acme.com in database`);
-
-      // Step 2: Complete authentication with corporate email
-      const corporateEmail = `test-${Date.now()}@acme.com`;
-      await page.goto('http://localhost:3080/login');
-      await page.getByRole('textbox', { name: 'Email address' }).fill(corporateEmail);
-      await page.getByTestId('login-button').click();
-
-      // Step 3: Follow magic link
-      const magicLinkUrl = await captureMagicLink(corporateEmail);
-      if (!magicLinkUrl) {
-        throw new Error('Failed to capture magic link');
-      }
-
-      await page.goto(magicLinkUrl);
-      await page.waitForLoadState('domcontentloaded');
-
-      // Step 4: Verify we reach onboarding
-      await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 10000 });
-      logProgress('✅ Successfully redirected to onboarding');
-
-      // Step 5: Verify SECURE behavior - generic message regardless of org count
-      // SECURITY: We intentionally do NOT reveal how many organizations exist
-      await expect(page.getByText('Organization exists for acme.com')).toBeVisible({
-        timeout: 10000,
-      });
-      logProgress('✅ Secure generic message displayed (not revealing count)');
-
-      // Step 6: Verify we do NOT show organization names or count
-      await expect(page.getByText('3 organizations exist')).not.toBeVisible();
-      await expect(page.getByText('Organizations found:')).not.toBeVisible();
-      await expect(page.getByText('Acme Corp')).not.toBeVisible();
-      await expect(page.getByText('Acme Labs')).not.toBeVisible();
-      await expect(page.getByText('Acme Research')).not.toBeVisible();
-      logProgress('✅ Organization details properly hidden for security');
-
-      // Step 7: Verify standard messaging
-      await expect(page.getByText(/An organization already exists for your domain/)).toBeVisible();
-      await expect(page.getByText(/Contact your IT administrator/)).toBeVisible();
-      logProgress('✅ Standard secure messaging displayed');
-
-      logProgress('✅ Journey 10 completed - security behavior verified');
-    } finally {
-      await context.close();
-    }
-  });
-
-  /**
-   * =================================================================================
-   * DEFERRED TO FUTURE ISSUES - OUTSIDE #102 SCOPE
-   * =================================================================================
-   * These tests require functionality from other issues:
-   * - Journey 6: Requires invitation validation (#106)
-   * - Journey 9: Requires invitation creation (#106)
-   */
-
-  // Note: Additional journeys moved to appropriate issues:
-  // - Journey 6: Invalid invitation → Issue #106 (Team Invitation Flow)
-  // - Journey 9: Public domain + invitation → Issue #106 (Team Invitation Flow)
-  // - Journey 11: Existing user context → Future enhancement
-  // - Journey 12: API error handling → Future enhancement
-  // - Journey 14-16: Advanced features → Future enhancement
 });

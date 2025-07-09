@@ -16,7 +16,7 @@ test.use({
 // Tests in this file run in order. Retries, if any, run independently.
 test.describe.configure({ mode: 'default' });
 
-test.describe('Auth & Onboarding Tests', () => {
+test.describe('Basic Auth & Onboarding Tests', () => {
   // Test data imported from authOnboardingUtils
 
   // Magic link capture helper imported from authOnboardingUtils
@@ -42,7 +42,7 @@ test.describe('Auth & Onboarding Tests', () => {
   // =================================================================================
   // These tests follow complete user flows from start to finish, building on each other
 
-  test('Journey 1: New user magic link authentication to onboarding', async ({ browser }) => {
+  test('New user magic link authentication to onboarding', async ({ browser }) => {
     logProgress('🚀 Testing complete new user magic link journey...');
 
     const context = await browser.newContext();
@@ -98,7 +98,7 @@ test.describe('Auth & Onboarding Tests', () => {
     }
   });
 
-  test('Journey 2: Google OAuth with public domain email to onboarding', async ({ browser }) => {
+  test('Google OAuth with public domain email to onboarding', async ({ browser }) => {
     logProgress('🚀 Testing Google OAuth with public domain journey...');
 
     const context = await browser.newContext();
@@ -149,7 +149,7 @@ test.describe('Auth & Onboarding Tests', () => {
 
       // Must NOT be on Google OAuth page anymore
       await expect(page).not.toHaveURL(/.*accounts\.google\.com.*/, { timeout: 10000 });
-      
+
       // Must be redirected to onboarding for public domain users
       await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
       logProgress('✅ Successfully redirected to onboarding flow');
@@ -166,7 +166,7 @@ test.describe('Auth & Onboarding Tests', () => {
     }
   });
 
-  test('Journey 3: OAuth cancellation flow', async ({ browser }) => {
+  test('OAuth cancellation flow', async ({ browser }) => {
     logProgress('🚀 Testing OAuth cancellation journey...');
 
     const context = await browser.newContext();
@@ -199,7 +199,7 @@ test.describe('Auth & Onboarding Tests', () => {
     }
   });
 
-  test('Journey 4: Email validation prevents bad submissions', async ({ browser }) => {
+  test('Email validation prevents bad submissions', async ({ browser }) => {
     logProgress('🚀 Testing email validation journey...');
 
     const context = await browser.newContext();
