@@ -58,10 +58,12 @@ export class MailHog {
    */
   extractMagicLink(message) {
     if (!message || !message.Content || !message.Content.Body) {
+      console.log('📧 No message content found');
       return null;
     }
 
     let body = message.Content.Body;
+    console.log('📧 Raw email body length:', body.length);
     
     // Decode HTML entities and clean up the email body
     body = body
@@ -72,33 +74,23 @@ export class MailHog {
       .replace(/=3D/g, '=') // Decode quoted-printable =3D to =
       .replace(/\r\n/g, ' '); // Replace line breaks with spaces
     
-    // Look for magic link URL in href attributes
-    const hrefPattern = /href=3D?['"]?(https?:\/\/[^'">\s]*\/api\/auth\/magic-link\/verify[^'">\s]*?)['"]?/gi;
-    const hrefMatches = body.match(hrefPattern);
+    console.log('📧 Cleaned email body length:', body.length);
     
-    if (hrefMatches && hrefMatches.length > 0) {
-      // Extract just the URL part from href="URL" 
-      const urlMatch = hrefMatches[0].match(/(https?:\/\/[^'">\s]*)/);
-      if (urlMatch) {
-        let url = urlMatch[0];
-        // URL decode any remaining entities
-        url = url.replace(/%3A/g, ':').replace(/%2F/g, '/').replace(/%3D/g, '=').replace(/%26/g, '&');
-        return url;
-      }
-    }
-    
-    // Fallback: look for any magic-link URL in the text
-    const urlPattern = /(https?:\/\/[^\s<>"']*magic-link[^\s<>"']*)/gi;
+    // Look for magic link URL - capture everything including query params
+    const urlPattern = /(https?:\/\/[^\s<>"']*magic-link\/verify[^\s<>"']*)/gi;
     const urlMatches = body.match(urlPattern);
     
     if (urlMatches && urlMatches.length > 0) {
+      console.log('📧 Found URL matches:', urlMatches.length);
       let url = urlMatches[0];
       // Clean up any trailing characters and decode
       url = url.replace(/['">\)]*$/, ''); // Remove trailing quotes, brackets
       url = url.replace(/%3A/g, ':').replace(/%2F/g, '/').replace(/%3D/g, '=').replace(/%26/g, '&');
+      console.log('📧 Extracted URL:', url);
       return url;
     }
     
+    console.log('📧 No magic link found in email body');
     return null;
   }
 
@@ -109,12 +101,38 @@ export class MailHog {
    * @returns {Promise<string|null>} Magic link URL or null if not found
    */
   async waitForMagicLink(email, timeout = 10000) {
-    const message = await this.getLatestMessage(email, timeout);
-    if (!message) {
-      return null;
+    console.log(`📧 Starting magic link wait for ${email}`);
+    
+    // Wait 1 second for the email to arrive
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    try {
+      const messages = await this.getMessages();
+      
+      // Get the newest message for this email
+      const emailMessages = messages
+        .filter(msg => 
+          msg.To && msg.To.some(to => to.Mailbox && to.Domain && 
+            `${to.Mailbox}@${to.Domain}`.toLowerCase() === email.toLowerCase())
+        )
+        .sort((a, b) => new Date(b.Created) - new Date(a.Created)); // Newest first
+      
+      if (emailMessages.length > 0) {
+        const latestMessage = emailMessages[0];
+        console.log(`📧 Found latest message for ${email}, created: ${latestMessage.Created}`);
+        
+        const magicLink = this.extractMagicLink(latestMessage);
+        if (magicLink) {
+          console.log(`📧 Extracted magic link: ${magicLink}`);
+          return magicLink;
+        }
+      }
+    } catch (error) {
+      console.log(`📧 Error getting messages: ${error.message}`);
     }
     
-    return this.extractMagicLink(message);
+    console.log(`📧 No magic link found for ${email}`);
+    return null;
   }
 
   /**

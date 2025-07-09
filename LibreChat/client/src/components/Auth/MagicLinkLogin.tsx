@@ -25,6 +25,18 @@ export const MagicLinkLogin: React.FC = () => {
   // Better Auth session detection
   const { data: session } = authClient.useSession();
 
+  // Debug component mount and session state
+  useEffect(() => {
+    console.log('🔗 MagicLinkLogin component mounted/updated:', {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      searchParams: Object.fromEntries(searchParams.entries()),
+      hasSession: !!session,
+      sessionData: session,
+      timestamp: new Date().toISOString()
+    });
+  }, [session, searchParams]);
+
   const {
     register,
     handleSubmit,
@@ -53,32 +65,267 @@ export const MagicLinkLogin: React.FC = () => {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
 
-      // Force session refresh
-      authClient
-        .getSession()
-        .then((sessionData) => {
-          console.log('🔗 Session after magic link:', sessionData);
+      // Add a small delay to ensure the session is fully processed, then try multiple times
+      let attempts = 0;
+      const maxAttempts = 5;
+      const attemptDelay = 1000; // 1 second between attempts
+      
+      const checkSessionAndRedirect = async () => {
+        attempts++;
+        console.log(`🔗 Magic link session check attempt ${attempts}/${maxAttempts}`);
+        
+        try {
+          const sessionData = await authClient.getSession();
+          console.log('🔗 Session data:', JSON.stringify(sessionData, null, 2));
+          
           if (sessionData?.data?.user && isMountedRef.current) {
             console.log('🔗 Magic link authentication successful!');
-            // Redirect to main app
-            navigate('/c/new');
+            
+            // CRITICAL: Get fresh user data from database to ensure accurate onboarding step
+            // Better Auth session may have stale data, so we need to fetch current state
+            try {
+              const userResponse = await fetch('/api/user', {
+                method: 'GET',
+                credentials: 'include', // Include session cookies
+              });
+              
+              if (userResponse.ok) {
+                const freshUserData = await userResponse.json();
+                console.log('🔗 Fresh user data from database:', JSON.stringify(freshUserData, null, 2));
+                
+                const onboardingStep = freshUserData.onboardingStep || 'organization';
+                
+                console.log('🔗 User onboarding status (fresh from DB):', { 
+                  onboardingStep,
+                  sessionOnboardingStep: sessionData.data.user.onboardingStep,
+                  freshOnboardingStep: freshUserData.onboardingStep,
+                  usingFreshData: true
+                });
+                
+                // If user hasn't completed onboarding, redirect to onboarding
+                if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
+                  console.log('🔗 Redirecting to onboarding with fresh step:', `/onboarding?step=${onboardingStep}`);
+                  navigate(`/onboarding?step=${onboardingStep}`);
+                  return;
+                } else {
+                  // If onboarding is complete, redirect to main app
+                  console.log('🔗 Redirecting to main app');
+                  navigate('/c/new');
+                  return;
+                }
+              } else {
+                console.warn('🔗 Failed to fetch fresh user data, falling back to session data');
+                // Fall back to session data if API call fails
+                const user = sessionData.data.user;
+                const onboardingStep = user.onboardingStep || 'organization';
+                
+                console.log('🔗 User onboarding status (fallback):', { 
+                  onboardingStep, 
+                  userObject: user,
+                  hasOnboardingStep: 'onboardingStep' in user,
+                  onboardingStepValue: user.onboardingStep 
+                });
+                
+                // If user hasn't completed onboarding, redirect to onboarding
+                if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
+                  console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
+                  navigate(`/onboarding?step=${onboardingStep}`);
+                  return;
+                } else {
+                  // If onboarding is complete, redirect to main app
+                  console.log('🔗 Redirecting to main app');
+                  navigate('/c/new');
+                  return;
+                }
+              }
+            } catch (fetchError) {
+              console.error('🔗 Error fetching fresh user data:', fetchError);
+              // Fall back to session data
+              const user = sessionData.data.user;
+              const onboardingStep = user.onboardingStep || 'organization';
+              
+              console.log('🔗 User onboarding status (error fallback):', { 
+                onboardingStep, 
+                userObject: user,
+                hasOnboardingStep: 'onboardingStep' in user,
+                onboardingStepValue: user.onboardingStep 
+              });
+              
+              // If user hasn't completed onboarding, redirect to onboarding
+              if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
+                console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
+                navigate(`/onboarding?step=${onboardingStep}`);
+                return;
+              } else {
+                // If onboarding is complete, redirect to main app
+                console.log('🔗 Redirecting to main app');
+                navigate('/c/new');
+                return;
+              }
+            }
           }
-        })
-        .catch((error) => {
-          console.error('🔗 Error getting session after magic link:', error);
-          if (isMountedRef.current) {
-            setError(localize('com_auth_error_magic_link'));
+          
+          // If we don't have session data and haven't exceeded max attempts, try again
+          if (attempts < maxAttempts) {
+            console.log(`🔗 No session data yet, retrying in ${attemptDelay}ms...`);
+            setTimeout(checkSessionAndRedirect, attemptDelay);
+          } else {
+            console.error('🔗 Failed to get session after maximum attempts');
+            if (isMountedRef.current) {
+              setError(localize('com_auth_error_magic_link'));
+            }
           }
-        });
+        } catch (error) {
+          console.error(`🔗 Error getting session (attempt ${attempts}):`, error);
+          if (attempts < maxAttempts) {
+            console.log(`🔗 Retrying in ${attemptDelay}ms...`);
+            setTimeout(checkSessionAndRedirect, attemptDelay);
+          } else {
+            console.error('🔗 Failed after maximum attempts');
+            if (isMountedRef.current) {
+              setError(localize('com_auth_error_magic_link'));
+            }
+          }
+        }
+      };
+
+      // Start checking after initial delay
+      setTimeout(checkSessionAndRedirect, 500);
     }
   }, [searchParams, navigate, localize]);
 
-  // If user is already authenticated, redirect
+  // If user is already authenticated, redirect based on onboarding status
   useEffect(() => {
+    console.log('🔗 Checking existing session for redirect:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      magicLinkSent,
+      sessionData: session,
+      user: session?.user,
+      onboardingStep: session?.user?.onboardingStep
+    });
+    
     if (session?.user && !magicLinkSent) {
-      navigate('/c/new');
+      // CRITICAL: Get fresh user data from database to ensure accurate onboarding step
+      // Better Auth session may have stale data, so we need to fetch current state
+      const fetchFreshUserDataAndRedirect = async () => {
+        try {
+          const userResponse = await fetch('/api/user', {
+            method: 'GET',
+            credentials: 'include', // Include session cookies
+          });
+          
+          if (userResponse.ok) {
+            const freshUserData = await userResponse.json();
+            console.log('🔗 Fresh user data from database (existing session):', JSON.stringify(freshUserData, null, 2));
+            
+            const onboardingStep = freshUserData.onboardingStep || 'organization';
+            
+            console.log('🔗 User is authenticated, redirecting based on fresh onboarding step:', {
+              onboardingStep,
+              sessionOnboardingStep: session.user.onboardingStep,
+              freshOnboardingStep: freshUserData.onboardingStep,
+              shouldRedirectToOnboarding: onboardingStep !== 'complete' && onboardingStep !== 'welcome'
+            });
+            
+            // If user hasn't completed onboarding, redirect to onboarding
+            if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
+              console.log('🔗 Redirecting to onboarding with fresh step:', `/onboarding?step=${onboardingStep}`);
+              navigate(`/onboarding?step=${onboardingStep}`);
+            } else {
+              // If onboarding is complete, redirect to main app
+              console.log('🔗 Redirecting to main app');
+              navigate('/c/new');
+            }
+          } else {
+            console.warn('🔗 Failed to fetch fresh user data in existing session, falling back to session data');
+            // Fall back to session data if API call fails
+            const user = session.user;
+            const onboardingStep = user.onboardingStep || 'organization';
+            
+            console.log('🔗 User is authenticated, redirecting based on onboarding step (fallback):', {
+              onboardingStep,
+              shouldRedirectToOnboarding: onboardingStep !== 'complete' && onboardingStep !== 'welcome'
+            });
+            
+            // If user hasn't completed onboarding, redirect to onboarding
+            if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
+              console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
+              navigate(`/onboarding?step=${onboardingStep}`);
+            } else {
+              // If onboarding is complete, redirect to main app
+              console.log('🔗 Redirecting to main app');
+              navigate('/c/new');
+            }
+          }
+        } catch (fetchError) {
+          console.error('🔗 Error fetching fresh user data in existing session:', fetchError);
+          // Fall back to session data
+          const user = session.user;
+          const onboardingStep = user.onboardingStep || 'organization';
+          
+          console.log('🔗 User is authenticated, redirecting based on onboarding step (error fallback):', {
+            onboardingStep,
+            shouldRedirectToOnboarding: onboardingStep !== 'complete' && onboardingStep !== 'welcome'
+          });
+          
+          // If user hasn't completed onboarding, redirect to onboarding
+          if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
+            console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
+            navigate(`/onboarding?step=${onboardingStep}`);
+          } else {
+            // If onboarding is complete, redirect to main app
+            console.log('🔗 Redirecting to main app');
+            navigate('/c/new');
+          }
+        }
+      };
+      
+      fetchFreshUserDataAndRedirect();
     }
   }, [session, navigate, magicLinkSent]);
+
+  // Additional effect to handle the case where user lands on login after magic link
+  // but session is not immediately available - retry session checking
+  useEffect(() => {
+    // If no session yet and no magic link was sent (meaning user didn't manually request one)
+    // this might be a post-magic-link redirect, so we should check for session
+    if (!session && !magicLinkSent) {
+      console.log('🔗 No session found on login page, checking if this is post-magic-link redirect');
+      
+      let attempts = 0;
+      const maxAttempts = 5;
+      const checkInterval = 1000; // 1 second
+      
+      const checkForSession = async () => {
+        attempts++;
+        console.log(`🔗 Session check attempt ${attempts}/${maxAttempts} for post-magic-link redirect`);
+        
+        try {
+          const sessionData = await authClient.getSession();
+          console.log('🔗 Session check result:', sessionData);
+          
+          if (sessionData?.data?.user) {
+            console.log('🔗 Found session after magic link redirect, triggering redirect logic');
+            // The session useEffect will handle the redirect
+          } else if (attempts < maxAttempts) {
+            console.log('🔗 No session yet, retrying in 1 second...');
+            setTimeout(checkForSession, checkInterval);
+          } else {
+            console.log('🔗 No session found after maximum attempts, user needs to authenticate');
+          }
+        } catch (error) {
+          console.error('🔗 Error checking session:', error);
+          if (attempts < maxAttempts) {
+            setTimeout(checkForSession, checkInterval);
+          }
+        }
+      };
+      
+      // Start checking after a short delay
+      setTimeout(checkForSession, 500);
+    }
+  }, []); // Only run once on mount
 
   // Cleanup on unmount
   useEffect(() => {

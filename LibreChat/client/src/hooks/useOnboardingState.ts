@@ -106,12 +106,25 @@ export function useOnboardingState() {
     const nextIndex = Math.min(currentIndex + 1, allSteps.length - 1);
     const nextStep = allSteps[nextIndex];
 
-    // Update database with new onboarding step using Better Auth
+    // Update database with new onboarding step using direct API call
     try {
-      await authClient.updateUser({
-        onboardingStep: nextStep,
+      const response = await fetch('/api/user/update-onboarding-step', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for session authentication
+        body: JSON.stringify({
+          onboardingStep: nextStep,
+        }),
       });
-      console.log('Updated user onboarding step to:', nextStep);
+
+      if (!response.ok) {
+        throw new Error(`Failed to update onboarding step: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Updated user onboarding step to:', nextStep, result);
 
       // Use Better Auth's built-in refetch method to refresh session cache
       await refetchSession();

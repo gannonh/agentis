@@ -43,6 +43,11 @@ interface OrganizationCreationStepProps {
     organizationId?: string;
   }) => void;
   className?: string;
+  // Form persistence props
+  organizationName?: string;
+  enableDomainJoin?: boolean;
+  onOrganizationNameChange?: (value: string) => void;
+  onEnableDomainJoinChange?: (value: boolean) => void;
 }
 
 /**
@@ -63,11 +68,15 @@ export default function OrganizationCreationStep({
   userName,
   onNext,
   className,
+  organizationName: initialOrganizationName = '',
+  enableDomainJoin: initialEnableDomainJoin = false,
+  onOrganizationNameChange,
+  onEnableDomainJoinChange,
 }: OrganizationCreationStepProps) {
   const localize = useLocalize();
   const [searchParams] = useSearchParams();
-  const [organizationName, setOrganizationName] = useState('');
-  const [enableDomainJoin, setEnableDomainJoin] = useState(false);
+  const [organizationName, setOrganizationName] = useState(initialOrganizationName);
+  const [enableDomainJoin, setEnableDomainJoin] = useState(initialEnableDomainJoin);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -259,7 +268,11 @@ export default function OrganizationCreationStep({
             type="text"
             required
             value={organizationName}
-            onChange={(e) => setOrganizationName(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setOrganizationName(value);
+              onOrganizationNameChange?.(value);
+            }}
             disabled={isSubmitting}
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
             placeholder="Acme Inc., Marketing Team, etc."
@@ -275,7 +288,11 @@ export default function OrganizationCreationStep({
               type="checkbox"
               id="domain-join"
               checked={enableDomainJoin}
-              onChange={(e) => setEnableDomainJoin(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setEnableDomainJoin(checked);
+                onEnableDomainJoinChange?.(checked);
+              }}
               disabled={isSubmitting}
               className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             />

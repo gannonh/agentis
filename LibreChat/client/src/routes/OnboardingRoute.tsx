@@ -3,7 +3,7 @@
  * @module routes/OnboardingRoute
  */
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState, useEffect, useCallback, FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 import { useOnboardingState, OnboardingStep } from '~/hooks/useOnboardingState';
@@ -37,10 +37,14 @@ export default function OnboardingRoute() {
   const { state, getProgress, goToNextStep } = useOnboardingState();
   const { showToast } = useToastContext();
 
-  // Form state
+  // Form state with persistence
   const [profileName, setProfileName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Organization form state with persistence
+  const [organizationName, setOrganizationName] = useState('');
+  const [enableDomainJoin, setEnableDomainJoin] = useState(false);
 
   const {
     data: session,
@@ -48,6 +52,74 @@ export default function OnboardingRoute() {
     refetch: refetchSession,
   } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
+
+  // Form data persistence keys
+  const ONBOARDING_STORAGE_KEY = `onboarding_${session?.user?.id}`;
+  
+  // Load persisted form data on component mount
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const savedData = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        
+        // Restore form data based on current step
+        if (parsedData.profileName && state.currentStep === 'profile') {
+          setProfileName(parsedData.profileName);
+        }
+        if (parsedData.organizationName && state.currentStep === 'organization') {
+          setOrganizationName(parsedData.organizationName);
+        }
+        if (typeof parsedData.enableDomainJoin === 'boolean' && state.currentStep === 'organization') {
+          setEnableDomainJoin(parsedData.enableDomainJoin);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load persisted onboarding data:', error);
+    }
+  }, [session?.user?.id, state.currentStep, ONBOARDING_STORAGE_KEY]);
+
+  // Save form data to localStorage whenever it changes
+  const saveFormData = useCallback((data: Partial<{
+    profileName: string;
+    organizationName: string;
+    enableDomainJoin: boolean;
+  }>) => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const existingData = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      const currentData = existingData ? JSON.parse(existingData) : {};
+      const updatedData = { ...currentData, ...data };
+      
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
+    } catch (error) {
+      console.warn('Failed to save onboarding data:', error);
+    }
+  }, [session?.user?.id, ONBOARDING_STORAGE_KEY]);
+
+  // Clear form data from localStorage when onboarding is complete
+  const clearFormData = useCallback(() => {
+    if (!session?.user?.id) return;
+    
+    try {
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    } catch (error) {
+      console.warn('Failed to clear onboarding data:', error);
+    }
+  }, [session?.user?.id, ONBOARDING_STORAGE_KEY]);
+
+  // Clear form data when user navigates to main app (onboarding complete)
+  useEffect(() => {
+    return () => {
+      // Component unmounting (likely navigating away from onboarding)
+      if (session?.user?.id) {
+        clearFormData();
+      }
+    };
+  }, [session?.user?.id, clearFormData]);
 
   // Robust slug generation function with fallbacks
   const generateSlug = (name: string, fallbackPrefix = 'org'): string => {
@@ -207,6 +279,9 @@ export default function OnboardingRoute() {
         });
       }
 
+      // Clear organization form data since step is completed
+      saveFormData({ organizationName: undefined, enableDomainJoin: undefined });
+      
       goToNextStep();
     } catch (err) {
       console.error('Organization action error:', err);
@@ -218,6 +293,22 @@ export default function OnboardingRoute() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Enhanced form change handlers that save data
+  const handleProfileNameChange = (value: string) => {
+    setProfileName(value);
+    saveFormData({ profileName: value });
+  };
+
+  const handleOrganizationNameChange = (value: string) => {
+    setOrganizationName(value);
+    saveFormData({ organizationName: value });
+  };
+
+  const handleEnableDomainJoinChange = (value: boolean) => {
+    setEnableDomainJoin(value);
+    saveFormData({ enableDomainJoin: value });
   };
 
   // Handle profile completion
@@ -237,6 +328,10 @@ export default function OnboardingRoute() {
       await authClient.updateUser({
         name: trimmedUserName,
       });
+      
+      // Clear form data for profile step since it's completed
+      saveFormData({ profileName: undefined });
+      
       goToNextStep();
     } catch (err) {
       setError('Failed to update profile. Please try again.');
@@ -343,6 +438,10 @@ export default function OnboardingRoute() {
           userName={userName}
           onNext={handleOrganizationAction}
           className={isSubmitting ? 'pointer-events-none opacity-50' : ''}
+          organizationName={organizationName}
+          enableDomainJoin={enableDomainJoin}
+          onOrganizationNameChange={handleOrganizationNameChange}
+          onEnableDomainJoinChange={handleEnableDomainJoinChange}
         />
       )}
 
@@ -361,7 +460,7 @@ export default function OnboardingRoute() {
               type="text"
               required
               value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
+              onChange={(e) => handleProfileNameChange(e.target.value)}
               disabled={isSubmitting}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               placeholder="Enter your full name"

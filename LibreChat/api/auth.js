@@ -115,6 +115,9 @@ mongoose.connection.once('open', () => {
         },
       },
 
+      // Note: Server-side redirect hooks removed due to Better Auth compatibility issues
+      // Onboarding resumption logic is implemented client-side in MagicLinkLogin.tsx
+
       // Use betterAuthConfig for consistent settings
       emailAndPassword: {
         enabled: true, // Required for admin.createUser to work, though users still authenticate via OAuth/magic links
@@ -283,7 +286,7 @@ mongoose.connection.once('open', () => {
           // },
         }),
         magicLink({
-          expiresIn: 300, // 5 minutes
+          expiresIn: 600, // 10 minutes
           disableSignUp: false, // Allow new user registration via magic link
           sendMagicLink: async ({ email, token, url }, request) => {
             logger.info(`📧 Magic link request received for: ${email}`);

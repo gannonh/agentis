@@ -37,28 +37,52 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
       });
     }
 
-    // Update user's onboarding step
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { onboardingStep },
-      { new: true, runValidators: true },
+    // Update user in Better Auth's database directly to ensure session synchronization
+    // Better Auth uses the 'user' collection for user data
+    const mongoose = await import('mongoose');
+    const db = mongoose.default.connection.getClient().db('Agentis');
+    const userCollection = db.collection('user');
+
+    const updateResult = await userCollection.updateOne(
+      { _id: new mongoose.default.Types.ObjectId(userId) },
+      { 
+        $set: { 
+          onboardingStep,
+          updatedAt: new Date()
+        } 
+      }
     );
 
-    if (!updatedUser) {
+    if (updateResult.matchedCount === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    logger.info('Updated user onboarding step', {
+    if (updateResult.modifiedCount === 0) {
+      logger.warn('User onboarding step was not modified - may already be set to this value', {
+        userId,
+        onboardingStep,
+      });
+    }
+
+    // Get the updated user data
+    const updatedUser = await userCollection.findOne(
+      { _id: new mongoose.default.Types.ObjectId(userId) }
+    );
+
+    logger.info('Updated user onboarding step in Better Auth database', {
       userId,
       onboardingStep,
+      matchedCount: updateResult.matchedCount,
+      modifiedCount: updateResult.modifiedCount,
+      currentOnboardingStep: updatedUser?.onboardingStep,
     });
 
     res.json({
       success: true,
-      onboardingStep: updatedUser.onboardingStep,
+      onboardingStep: updatedUser?.onboardingStep || onboardingStep,
     });
   } catch (error) {
-    logger.error('Failed to update onboarding step', error);
+    logger.error('Failed to update onboarding step in Better Auth database', error);
     res.status(500).json({ error: 'Failed to update onboarding step' });
   }
 });
