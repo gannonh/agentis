@@ -16,6 +16,9 @@ if (needsRealDatabase) {
   process.env.CREDS_KEY = 'c3301ad2f69681295e022fb135e92787afb6ecfeaa012a10f8bb4ddf6b669e6d';
   process.env.CREDS_IV = 'cd02538f4be2fa37aba9420b5924389f';
   process.env.BETTER_AUTH_SECRET = 'test-better-auth-secret-key-for-agentis-integration';
+  // Required Better Auth environment variables
+  process.env.DOMAIN_SERVER = 'http://localhost:3080';
+  process.env.DOMAIN_CLIENT = 'http://localhost:3080';
   console.log('🔗 Integration tests: using real database');
 } else {
   // Unit test environment (dummy values) - also used for integration tests with MongoMemoryServer
@@ -24,7 +27,10 @@ if (needsRealDatabase) {
   process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret';
   process.env.CREDS_KEY = 'test-creds-key';
   process.env.CREDS_IV = 'test-creds-iv';
-  process.env.BETTER_AUTH_SECRET = 'test-better-auth-secret';
+  process.env.BETTER_AUTH_SECRET = 'test-better-auth-secret-key-minimum-32-characters';
+  // Required Better Auth environment variables
+  process.env.DOMAIN_SERVER = 'http://localhost:3080';
+  process.env.DOMAIN_CLIENT = 'http://localhost:3080';
   console.log('🎭 Unit tests: using dummy database');
 }
 

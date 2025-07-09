@@ -3,23 +3,37 @@
  * @module server/routes/__tests__/organization-domain-metadata.integration.vitest
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import app from '../../index.js';
+import express from 'express';
+import organizationJoinRouter from '../organizationJoin.js';
 
 describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
   let mongoServer;
   let db;
+  let app;
 
   beforeEach(async () => {
+    // Create minimal Express app for testing (like the working unit test)
+    app = express();
+    app.use(express.json());
+    
+    // Disconnect any existing connection before connecting to memory server
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
+    
     // Start in-memory MongoDB instance
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
     
     await mongoose.connect(mongoUri);
     db = mongoose.connection.db;
+    
+    // Mount the organizationJoin router (this is what was missing!)
+    app.use('/api/organization', organizationJoinRouter);
     
     console.log('🧪 Integration test database connected');
   });
