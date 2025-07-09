@@ -778,6 +778,7 @@ describe('OnboardingRoute', () => {
         body: JSON.stringify({
           organizationId: 'acme-123',
           domain: 'example.com',
+          enableDomainJoin: true,
         }),
       });
 
@@ -895,7 +896,7 @@ describe('OnboardingRoute', () => {
       });
 
       // Verify error was logged
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to enable domain join:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to set organization domain:', expect.any(Error));
 
       // Verify warning toast was shown
       expect(mockShowToast).toHaveBeenCalledWith({
@@ -945,11 +946,25 @@ describe('OnboardingRoute', () => {
         expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
       });
 
-      // Verify warning was logged and fetch was not called
+      // Verify warning was logged and domain join API was not called
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'Cannot enable domain join: user email domain not found',
+        'Cannot set organization domain: user email domain not found',
       );
-      expect(global.fetch).not.toHaveBeenCalled();
+      
+      // Should not call domain join API, but should call onboarding step update
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        '/api/organization/enable-domain-join',
+        expect.any(Object)
+      );
+      
+      // Should call onboarding step update to advance to profile
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/user/update-onboarding-step',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ onboardingStep: 'profile' }),
+        })
+      );
 
       consoleWarnSpy.mockRestore();
     });
@@ -989,7 +1004,7 @@ describe('OnboardingRoute', () => {
       });
 
       // Verify error was logged
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to enable domain join:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to set organization domain:', expect.any(Error));
 
       // Verify warning toast was shown
       expect(mockShowToast).toHaveBeenCalledWith({

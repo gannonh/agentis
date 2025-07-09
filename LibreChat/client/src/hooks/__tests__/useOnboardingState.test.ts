@@ -24,6 +24,9 @@ const mockUseSession = vi.fn();
 const mockUpdateUser = vi.fn();
 const mockRefetchSession = vi.fn();
 
+// Mock fetch for API calls
+const mockFetch = vi.fn();
+
 // Import the mocked modules to get typed access
 const { authClient } = await import('~/config/betterAuth');
 const { useSearchParams } = await import('react-router-dom');
@@ -34,6 +37,14 @@ const mockUseSearchParams = useSearchParams as any;
 describe('useOnboardingState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Mock global fetch
+    global.fetch = mockFetch;
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+    });
+    
     // Reset URL search params - return empty URLSearchParams by default
     mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
 
@@ -89,8 +100,15 @@ describe('useOnboardingState', () => {
     });
 
     expect(result.current.state.currentStep).toBe(OnboardingStep.PROFILE);
-    expect(mockUpdateUser).toHaveBeenCalledWith({
-      onboardingStep: OnboardingStep.PROFILE,
+    expect(mockFetch).toHaveBeenCalledWith('/api/user/update-onboarding-step', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        onboardingStep: OnboardingStep.PROFILE,
+      }),
     });
   });
 

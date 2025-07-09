@@ -28,71 +28,9 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Organization Join Flow - Issue #104', () => {
-  // Helper to capture magic link using MailHog
-  async function captureMagicLink(email: string): Promise<string | null> {
-    const { createMailHog } = await import('../utils/mailhog.js');
-    const mailhog = createMailHog();
-
-    try {
-      logProgress(`📧 Waiting for magic link email to ${email}`);
-      const magicLink = await mailhog.waitForMagicLink(email, 15000);
-
-      if (magicLink) {
-        logProgress(`✅ Found magic link: ${magicLink}`);
-        return magicLink;
-      } else {
-        logProgress(`❌ No magic link found for ${email}`);
-        return null;
-      }
-    } catch (error) {
-      logProgress(`❌ Error getting magic link from MailHog: ${error}`);
-      return null;
-    }
-  }
 
   // Helper to handle Terms of Service modal if it appears
-  async function handleTermsOfService(page: any) {
-    const termsModal = page.getByText('Terms of Service for Agentis');
-    const termsHeading = page.getByRole('heading', { name: 'Terms and Conditions for Agentis' });
 
-    if ((await termsModal.isVisible()) || (await termsHeading.isVisible())) {
-      logProgress('📋 Terms of Service modal appeared - accepting terms');
-      await page.getByRole('button', { name: 'I accept' }).click();
-      logProgress('✅ Terms of Service accepted');
-      return true;
-    }
-    return false;
-  }
-
-  // Clean database helper
-  async function cleanDatabase() {
-    // TEMPORARILY DISABLED FOR DEBUGGING
-    // console.log('🔧 Database cleanup temporarily disabled for debugging');
-    // return;
-
-    const { getTestDatabase } = await import('../utils/testAuth');
-    const { db } = await getTestDatabase();
-
-    await db.collection('session').deleteMany({
-      $or: [{ userId: { $regex: /test.*/ } }, {}],
-    });
-    await db.collection('member').deleteMany({
-      $or: [{ userId: { $regex: /test.*/ } }, { organizationId: { $regex: /test.*/ } }],
-    });
-    await db.collection('account').deleteMany({
-      userId: { $regex: /test.*/ },
-    });
-    await db.collection('organization').deleteMany({
-      $or: [
-        { name: { $regex: /Test.*/ } },
-        { slug: { $regex: /test.*/ } },
-        { 'metadata.domain': { $regex: /testcorp.*/ } },
-      ],
-    });
-    await db.collection('user').deleteMany({
-      email: { $regex: /test.*@/ },
-    });
-  }
 
   test.beforeEach(async () => {
     await cleanDatabase();
@@ -302,5 +240,4 @@ test.describe('Organization Join Flow - Issue #104', () => {
       await context2.close();
     }
   });
-
 });

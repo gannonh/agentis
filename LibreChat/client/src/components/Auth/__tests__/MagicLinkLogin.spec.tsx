@@ -162,7 +162,17 @@ describe('MagicLinkLogin', () => {
     });
   });
 
-  it('redirects to main app if user is already authenticated', () => {
+  it('redirects to main app if user is already authenticated', async () => {
+    // Mock fetch for fresh user data
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        id: '123',
+        email: 'user@example.com',
+        onboardingStep: 'complete', // User has completed onboarding
+      }),
+    });
+
     vi.mocked(authClient.useSession).mockReturnValue({
       data: { user: { id: '123', email: 'user@example.com' } },
       isPending: false,
@@ -172,6 +182,9 @@ describe('MagicLinkLogin', () => {
 
     renderComponent();
 
-    expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+    // Wait for the async fetch and navigation
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+    });
   });
 });
