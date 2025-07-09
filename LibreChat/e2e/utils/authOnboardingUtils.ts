@@ -126,9 +126,10 @@ export async function cleanDatabase(): Promise<void> {
  * Helper to create test organization for detection tests
  * @param name - Organization name
  * @param domain - Organization domain
+ * @param allowDomainJoin - Whether to enable domain auto-join (default: false)
  * @returns Promise with created organization object
  */
-export async function createTestOrganization(name: string, domain: string) {
+export async function createTestOrganization(name: string, domain: string, allowDomainJoin: boolean = false) {
   const { getTestDatabase } = await import('./testAuth');
   const { db } = await getTestDatabase();
 
@@ -136,13 +137,16 @@ export async function createTestOrganization(name: string, domain: string) {
     _id: new (await import('mongodb')).ObjectId(),
     name: name,
     slug: name.toLowerCase().replace(/\s+/g, '-'),
-    metadata: { domain: domain },
+    metadata: { 
+      domain: domain,
+      allowDomainJoin: allowDomainJoin
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   await db.collection('organization').insertOne(testOrg);
-  logProgress(`✅ Created test organization: ${testOrg.name} for domain ${domain}`);
+  logProgress(`✅ Created test organization: ${testOrg.name} for domain ${domain} (allowDomainJoin: ${allowDomainJoin})`);
   return testOrg;
 }
 
