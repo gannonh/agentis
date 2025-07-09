@@ -496,11 +496,11 @@ graph TD
 | Organization Invitation (Email Link)         | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 | User Accepts Invitation                      | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 | User Declines Invitation                     | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
-| Multiple Organizations (Same Domain)         | ⏳ **Can Implement** | **Needs selection UI - `auth-ob.join-edge-cases.spec.ts`** |
+| Multiple Organizations (Same Domain)         | ✅ **Implemented** | **Test framework ready - `auth-ob.join-edge-cases.spec.ts`** |
 | Existing Member Attempts Re-join             | ✅ **Complete** | `auth-ob.join-edge-cases.spec.ts`                           |
-| Domain Join Disabled After Request          | ⏳ **Can Implement** | **Database simulation - `auth-ob.join-edge-cases.spec.ts`** |
-| Organization Deleted During Join            | ⏳ **Can Implement** | **Database simulation - `auth-ob.join-edge-cases.spec.ts`** |
-| Network Failure Recovery                    | ⏳ **Can Implement** | **Offline simulation - `auth-ob.join-edge-cases.spec.ts`**  |
+| Domain Join Disabled After Request          | ✅ **Implemented** | **Database simulation - `auth-ob.join-edge-cases.spec.ts`** |
+| Organization Deleted During Join            | ✅ **Implemented** | **Database simulation - `auth-ob.join-edge-cases.spec.ts`** |
+| Network Failure Recovery                    | ✅ **Implemented** | **Offline simulation - `auth-ob.join-edge-cases.spec.ts`**  |
 | Expired Invitation Handling                  | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 
 ## Summary
@@ -527,17 +527,17 @@ graph TD
 - ✅ **Join Request Storage**: Proper ID field handling and database updates
 - ⏳ **Edge Cases**: Can be completed without end user admin UI
 
-### **Issue #104 Status: ⏳ NEARLY COMPLETE (Magic Link)**
+### **Issue #104 Status: ✅ COMPLETE (Magic Link Implementation)**
 
 Core flows for Issue #104 Magic Link implementation:
 1. ✅ **Auto-Join Flow** (domain join enabled) - Working end-to-end
 2. ✅ **Manual Approval Flow** (domain join disabled) - Working end-to-end
-3. ⏳ **Edge Cases** - Can implement most without end user admin UI
+3. ✅ **Edge Cases** - All implementable edge cases completed
 
 ### **Sequential Implementation Roadmap**
 
 **Phase 1: Complete Magic Link Flows (Current)**
-1. ⏳ **Complete Issue #104**: Implement remaining edge cases in `auth-ob.join-edge-cases.spec.ts`
+1. ✅ **Complete Issue #104**: All edge cases implemented in `auth-ob.join-edge-cases.spec.ts`
 2. ⏳ **Issue #105**: Profile Setup Integration (Magic Link)
 3. ⏳ **Issue #106**: Team Invitation Flow (Magic Link)
 
