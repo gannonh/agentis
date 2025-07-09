@@ -4,6 +4,14 @@
  *
  * Implements auto-join and request-to-join flows for organizations
  * with domain-based membership and admin approval workflows.
+ * 
+ * TODO: Implement unique constraint on Organization.metadata.domain
+ * Business rule: Only 1 organization per domain should be allowed.
+ * This requires:
+ * 1. MongoDB unique index on Organization.metadata.domain
+ * 2. Proper error handling for constraint violations
+ * 3. Clear error messages when duplicate domain creation is attempted
+ * 4. Update tests to validate constraint behavior
  */
 
 import mongoose from 'mongoose';
