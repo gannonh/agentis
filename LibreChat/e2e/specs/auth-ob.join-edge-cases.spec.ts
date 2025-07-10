@@ -213,16 +213,16 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
 
       // Should show existing organization detected
-      await expect(page.getByText(/Organization detected for your domain/i)).toBeVisible();
-      logProgress('✅ User: Existing organization detected message shown');
+      await expect(page.getByText('Auto-join enabled')).toBeVisible();
+      logProgress("✅ User: 'Auto-join enabled' message shown");
 
       // Should show join option for existing organization
-      await expect(page.getByText('Acme Corp')).toBeVisible();
-      await expect(page.getByRole('button', { name: /Join.*Acme Corp/i })).toBeVisible();
+      await expect(page.getByText('Acme Corp').first()).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Join Acme Corp' })).toBeVisible();
       logProgress('✅ User: Join existing organization option displayed');
 
       // User should be able to join the existing organization
-      await page.getByRole('button', { name: /Join.*Acme Corp/i }).click();
+      await page.getByRole('button', { name: 'Join Acme Corp' }).click();
 
       // Should proceed to complete onboarding after joining
       await expect(page.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({
@@ -231,14 +231,6 @@ test.describe('Organization Join Edge Cases', () => {
       logProgress('✅ User: Successfully joined existing organization');
 
       logProgress('🎉 Domain uniqueness constraint test PASSED!');
-    } catch (error) {
-      // Log the error for debugging - this test should pass once UI is implemented
-      logProgress('⚠️ Domain uniqueness constraint test failed - UI may not be implemented yet');
-      logProgress(`Error: ${error}`);
-
-      // TODO: Once UI is implemented, this test should pass
-      // For now, we'll mark it as a known limitation
-      expect(true).toBe(true); // Allow test to pass while UI is being developed
     } finally {
       await context.close();
     }
@@ -568,11 +560,13 @@ test.describe('Organization Join Edge Cases', () => {
       // TODO: Profile form should remember the previously entered name (localStorage persistence not yet implemented)
       const nameInput = await page2.getByRole('textbox', { name: 'Your Name' });
       const nameValue = await nameInput.inputValue();
-      
+
       if (nameValue === 'Test User Resume') {
         logProgress('✅ Phase 2: Profile data preserved from previous session');
       } else {
-        logProgress('⚠️ Phase 2: Profile data not preserved (localStorage persistence not implemented yet)');
+        logProgress(
+          '⚠️ Phase 2: Profile data not preserved (localStorage persistence not implemented yet)',
+        );
         // Fill the form to continue the test
         await nameInput.fill('Test User Resume');
       }
@@ -583,7 +577,7 @@ test.describe('Organization Join Edge Cases', () => {
 
       // Wait for navigation to team step
       await page2.waitForTimeout(2000); // Allow time for navigation
-      
+
       // Should proceed to team step
       await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
         timeout: 10000,
@@ -600,7 +594,7 @@ test.describe('Organization Join Edge Cases', () => {
 
       // Wait for navigation to welcome step
       await page2.waitForTimeout(2000); // Allow time for navigation
-      
+
       // Complete welcome step
       await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({
         timeout: 10000,
@@ -649,7 +643,7 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       const context1 = await browser.newContext();
       const page1 = await context1.newPage();
-      
+
       logProgress('🖥️ Phase 1: Starting onboarding in first browser');
       await page1.goto('http://localhost:3080/login');
       await page1.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
@@ -684,7 +678,7 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       const context2 = await browser.newContext();
       const page2 = await context2.newPage();
-      
+
       logProgress('🖥️ Phase 2: Opening fresh browser with no stored data');
       await page2.goto('http://localhost:3080/login');
       await page2.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
