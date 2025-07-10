@@ -69,7 +69,7 @@
     "e2e:notion-mcp": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --project='Google Chrome' --config=e2e/playwright.config.ts e2e/specs/notion.mcp.spec.ts --headed",
     "e2e:agent-cta": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --project='Google Chrome' --config=e2e/playwright.config.ts e2e/specs/agent-cta-display.spec.ts --headed",
     "e2e:oauth-login": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test --project='Google Chrome' --config=e2e/playwright.config.ts e2e/specs/oauth.google.spec.ts --headed",
-    "e2e:org": "../scripts/dev.sh --stop && PWDEBUG=1 npx playwright test --project='Google Chrome' --config=e2e/playwright.config.ts e2e/specs/auth-ob.org-detection.spec.ts --headed",
+    "e2e:debug": "../scripts/dev.sh --stop && PWDEBUG=1 npx playwright test  --config=e2e/playwright.config.ts e2e/specs/auth-ob.join-edge-cases.spec.ts --headed",
     "lint": "eslint --fix \"./client/src/**/*.{js,jsx,ts,tsx}\" \"./api/**/*.{js,jsx,ts,tsx}\" \"./packages/**/*.{js,jsx,ts,tsx}\"",
     "lint:client": "eslint --fix \"./client/src/**/*.{js,jsx,ts,tsx}\"",
     "lint:api": "eslint --fix \"./api/**/*.{js,jsx,ts,tsx}\"",
