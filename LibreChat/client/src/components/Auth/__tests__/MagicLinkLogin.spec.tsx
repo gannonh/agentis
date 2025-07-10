@@ -166,11 +166,12 @@ describe('MagicLinkLogin', () => {
     // Mock fetch for fresh user data
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        id: '123',
-        email: 'user@example.com',
-        onboardingStep: 'complete', // User has completed onboarding
-      }),
+      json: () =>
+        Promise.resolve({
+          id: '123',
+          email: 'user@example.com',
+          onboardingStep: 'complete', // User has completed onboarding
+        }),
     });
 
     vi.mocked(authClient.useSession).mockReturnValue({

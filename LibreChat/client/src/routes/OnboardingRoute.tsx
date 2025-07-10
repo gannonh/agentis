@@ -41,7 +41,7 @@ export default function OnboardingRoute() {
   const [profileName, setProfileName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Organization form state with persistence
   const [organizationName, setOrganizationName] = useState('');
   const [enableDomainJoin, setEnableDomainJoin] = useState(false);
@@ -55,16 +55,16 @@ export default function OnboardingRoute() {
 
   // Form data persistence keys
   const ONBOARDING_STORAGE_KEY = `onboarding_${session?.user?.id}`;
-  
+
   // Load persisted form data on component mount
   useEffect(() => {
     if (!session?.user?.id) return;
-    
+
     try {
       const savedData = localStorage.getItem(ONBOARDING_STORAGE_KEY);
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        
+
         // Restore form data based on current step
         if (parsedData.profileName && state.currentStep === 'profile') {
           setProfileName(parsedData.profileName);
@@ -72,7 +72,10 @@ export default function OnboardingRoute() {
         if (parsedData.organizationName && state.currentStep === 'organization') {
           setOrganizationName(parsedData.organizationName);
         }
-        if (typeof parsedData.enableDomainJoin === 'boolean' && state.currentStep === 'organization') {
+        if (
+          typeof parsedData.enableDomainJoin === 'boolean' &&
+          state.currentStep === 'organization'
+        ) {
           setEnableDomainJoin(parsedData.enableDomainJoin);
         }
       }
@@ -82,28 +85,33 @@ export default function OnboardingRoute() {
   }, [session?.user?.id, state.currentStep, ONBOARDING_STORAGE_KEY]);
 
   // Save form data to localStorage whenever it changes
-  const saveFormData = useCallback((data: Partial<{
-    profileName: string;
-    organizationName: string;
-    enableDomainJoin: boolean;
-  }>) => {
-    if (!session?.user?.id) return;
-    
-    try {
-      const existingData = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-      const currentData = existingData ? JSON.parse(existingData) : {};
-      const updatedData = { ...currentData, ...data };
-      
-      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
-    } catch (error) {
-      console.warn('Failed to save onboarding data:', error);
-    }
-  }, [session?.user?.id, ONBOARDING_STORAGE_KEY]);
+  const saveFormData = useCallback(
+    (
+      data: Partial<{
+        profileName: string;
+        organizationName: string;
+        enableDomainJoin: boolean;
+      }>,
+    ) => {
+      if (!session?.user?.id) return;
+
+      try {
+        const existingData = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+        const currentData = existingData ? JSON.parse(existingData) : {};
+        const updatedData = { ...currentData, ...data };
+
+        localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
+      } catch (error) {
+        console.warn('Failed to save onboarding data:', error);
+      }
+    },
+    [session?.user?.id, ONBOARDING_STORAGE_KEY],
+  );
 
   // Clear form data from localStorage when onboarding is complete
   const clearFormData = useCallback(() => {
     if (!session?.user?.id) return;
-    
+
     try {
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
     } catch (error) {
@@ -218,7 +226,7 @@ export default function OnboardingRoute() {
 
               const responseData = await response.json();
               console.log('Organization domain set successfully:', responseData);
-              
+
               if (data.enableDomainJoin) {
                 showToast({
                   message: 'Automatic team joining enabled successfully!',
@@ -229,7 +237,7 @@ export default function OnboardingRoute() {
               }
             } catch (error) {
               console.error('Failed to set organization domain:', error);
-              const message = data.enableDomainJoin 
+              const message = data.enableDomainJoin
                 ? 'Failed to enable automatic team joining. You can set this up later in organization settings.'
                 : 'Failed to set organization domain. This may affect team discovery.';
               showToast({
@@ -281,7 +289,7 @@ export default function OnboardingRoute() {
 
       // Clear organization form data since step is completed
       saveFormData({ organizationName: undefined, enableDomainJoin: undefined });
-      
+
       goToNextStep();
     } catch (err) {
       console.error('Organization action error:', err);
@@ -328,10 +336,10 @@ export default function OnboardingRoute() {
       await authClient.updateUser({
         name: trimmedUserName,
       });
-      
+
       // Clear form data for profile step since it's completed
       saveFormData({ profileName: undefined });
-      
+
       goToNextStep();
     } catch (err) {
       setError('Failed to update profile. Please try again.');

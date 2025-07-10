@@ -33,7 +33,7 @@ export const MagicLinkLogin: React.FC = () => {
       searchParams: Object.fromEntries(searchParams.entries()),
       hasSession: !!session,
       sessionData: session,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }, [session, searchParams]);
 
@@ -69,18 +69,18 @@ export const MagicLinkLogin: React.FC = () => {
       let attempts = 0;
       const maxAttempts = 5;
       const attemptDelay = 1000; // 1 second between attempts
-      
+
       const checkSessionAndRedirect = async () => {
         attempts++;
         console.log(`🔗 Magic link session check attempt ${attempts}/${maxAttempts}`);
-        
+
         try {
           const sessionData = await authClient.getSession();
           console.log('🔗 Session data:', JSON.stringify(sessionData, null, 2));
-          
+
           if (sessionData?.data?.user && isMountedRef.current) {
             console.log('🔗 Magic link authentication successful!');
-            
+
             // CRITICAL: Get fresh user data from database to ensure accurate onboarding step
             // Better Auth session may have stale data, so we need to fetch current state
             try {
@@ -88,23 +88,29 @@ export const MagicLinkLogin: React.FC = () => {
                 method: 'GET',
                 credentials: 'include', // Include session cookies
               });
-              
+
               if (userResponse.ok) {
                 const freshUserData = await userResponse.json();
-                console.log('🔗 Fresh user data from database:', JSON.stringify(freshUserData, null, 2));
-                
+                console.log(
+                  '🔗 Fresh user data from database:',
+                  JSON.stringify(freshUserData, null, 2),
+                );
+
                 const onboardingStep = freshUserData.onboardingStep || 'organization';
-                
-                console.log('🔗 User onboarding status (fresh from DB):', { 
+
+                console.log('🔗 User onboarding status (fresh from DB):', {
                   onboardingStep,
                   sessionOnboardingStep: sessionData.data.user.onboardingStep,
                   freshOnboardingStep: freshUserData.onboardingStep,
-                  usingFreshData: true
+                  usingFreshData: true,
                 });
-                
+
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
-                  console.log('🔗 Redirecting to onboarding with fresh step:', `/onboarding?step=${onboardingStep}`);
+                  console.log(
+                    '🔗 Redirecting to onboarding with fresh step:',
+                    `/onboarding?step=${onboardingStep}`,
+                  );
                   navigate(`/onboarding?step=${onboardingStep}`);
                   return;
                 } else {
@@ -118,17 +124,20 @@ export const MagicLinkLogin: React.FC = () => {
                 // Fall back to session data if API call fails
                 const user = sessionData.data.user;
                 const onboardingStep = user.onboardingStep || 'organization';
-                
-                console.log('🔗 User onboarding status (fallback):', { 
-                  onboardingStep, 
+
+                console.log('🔗 User onboarding status (fallback):', {
+                  onboardingStep,
                   userObject: user,
                   hasOnboardingStep: 'onboardingStep' in user,
-                  onboardingStepValue: user.onboardingStep 
+                  onboardingStepValue: user.onboardingStep,
                 });
-                
+
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
-                  console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
+                  console.log(
+                    '🔗 Redirecting to onboarding:',
+                    `/onboarding?step=${onboardingStep}`,
+                  );
                   navigate(`/onboarding?step=${onboardingStep}`);
                   return;
                 } else {
@@ -143,14 +152,14 @@ export const MagicLinkLogin: React.FC = () => {
               // Fall back to session data
               const user = sessionData.data.user;
               const onboardingStep = user.onboardingStep || 'organization';
-              
-              console.log('🔗 User onboarding status (error fallback):', { 
-                onboardingStep, 
+
+              console.log('🔗 User onboarding status (error fallback):', {
+                onboardingStep,
                 userObject: user,
                 hasOnboardingStep: 'onboardingStep' in user,
-                onboardingStepValue: user.onboardingStep 
+                onboardingStepValue: user.onboardingStep,
               });
-              
+
               // If user hasn't completed onboarding, redirect to onboarding
               if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
                 console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
@@ -164,7 +173,7 @@ export const MagicLinkLogin: React.FC = () => {
               }
             }
           }
-          
+
           // If we don't have session data and haven't exceeded max attempts, try again
           if (attempts < maxAttempts) {
             console.log(`🔗 No session data yet, retrying in ${attemptDelay}ms...`);
@@ -202,9 +211,9 @@ export const MagicLinkLogin: React.FC = () => {
       magicLinkSent,
       sessionData: session,
       user: session?.user,
-      onboardingStep: session?.user?.onboardingStep
+      onboardingStep: session?.user?.onboardingStep,
     });
-    
+
     if (session?.user && !magicLinkSent) {
       // CRITICAL: Get fresh user data from database to ensure accurate onboarding step
       // Better Auth session may have stale data, so we need to fetch current state
@@ -214,23 +223,30 @@ export const MagicLinkLogin: React.FC = () => {
             method: 'GET',
             credentials: 'include', // Include session cookies
           });
-          
+
           if (userResponse.ok) {
             const freshUserData = await userResponse.json();
-            console.log('🔗 Fresh user data from database (existing session):', JSON.stringify(freshUserData, null, 2));
-            
+            console.log(
+              '🔗 Fresh user data from database (existing session):',
+              JSON.stringify(freshUserData, null, 2),
+            );
+
             const onboardingStep = freshUserData.onboardingStep || 'organization';
-            
+
             console.log('🔗 User is authenticated, redirecting based on fresh onboarding step:', {
               onboardingStep,
               sessionOnboardingStep: session.user.onboardingStep,
               freshOnboardingStep: freshUserData.onboardingStep,
-              shouldRedirectToOnboarding: onboardingStep !== 'complete' && onboardingStep !== 'welcome'
+              shouldRedirectToOnboarding:
+                onboardingStep !== 'complete' && onboardingStep !== 'welcome',
             });
-            
+
             // If user hasn't completed onboarding, redirect to onboarding
             if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
-              console.log('🔗 Redirecting to onboarding with fresh step:', `/onboarding?step=${onboardingStep}`);
+              console.log(
+                '🔗 Redirecting to onboarding with fresh step:',
+                `/onboarding?step=${onboardingStep}`,
+              );
               navigate(`/onboarding?step=${onboardingStep}`);
             } else {
               // If onboarding is complete, redirect to main app
@@ -238,16 +254,22 @@ export const MagicLinkLogin: React.FC = () => {
               navigate('/c/new');
             }
           } else {
-            console.warn('🔗 Failed to fetch fresh user data in existing session, falling back to session data');
+            console.warn(
+              '🔗 Failed to fetch fresh user data in existing session, falling back to session data',
+            );
             // Fall back to session data if API call fails
             const user = session.user;
             const onboardingStep = user.onboardingStep || 'organization';
-            
-            console.log('🔗 User is authenticated, redirecting based on onboarding step (fallback):', {
-              onboardingStep,
-              shouldRedirectToOnboarding: onboardingStep !== 'complete' && onboardingStep !== 'welcome'
-            });
-            
+
+            console.log(
+              '🔗 User is authenticated, redirecting based on onboarding step (fallback):',
+              {
+                onboardingStep,
+                shouldRedirectToOnboarding:
+                  onboardingStep !== 'complete' && onboardingStep !== 'welcome',
+              },
+            );
+
             // If user hasn't completed onboarding, redirect to onboarding
             if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
               console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
@@ -263,12 +285,16 @@ export const MagicLinkLogin: React.FC = () => {
           // Fall back to session data
           const user = session.user;
           const onboardingStep = user.onboardingStep || 'organization';
-          
-          console.log('🔗 User is authenticated, redirecting based on onboarding step (error fallback):', {
-            onboardingStep,
-            shouldRedirectToOnboarding: onboardingStep !== 'complete' && onboardingStep !== 'welcome'
-          });
-          
+
+          console.log(
+            '🔗 User is authenticated, redirecting based on onboarding step (error fallback):',
+            {
+              onboardingStep,
+              shouldRedirectToOnboarding:
+                onboardingStep !== 'complete' && onboardingStep !== 'welcome',
+            },
+          );
+
           // If user hasn't completed onboarding, redirect to onboarding
           if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
             console.log('🔗 Redirecting to onboarding:', `/onboarding?step=${onboardingStep}`);
@@ -280,7 +306,7 @@ export const MagicLinkLogin: React.FC = () => {
           }
         }
       };
-      
+
       fetchFreshUserDataAndRedirect();
     }
   }, [session, navigate, magicLinkSent]);
@@ -291,20 +317,24 @@ export const MagicLinkLogin: React.FC = () => {
     // If no session yet and no magic link was sent (meaning user didn't manually request one)
     // this might be a post-magic-link redirect, so we should check for session
     if (!session && !magicLinkSent) {
-      console.log('🔗 No session found on login page, checking if this is post-magic-link redirect');
-      
+      console.log(
+        '🔗 No session found on login page, checking if this is post-magic-link redirect',
+      );
+
       let attempts = 0;
       const maxAttempts = 5;
       const checkInterval = 1000; // 1 second
-      
+
       const checkForSession = async () => {
         attempts++;
-        console.log(`🔗 Session check attempt ${attempts}/${maxAttempts} for post-magic-link redirect`);
-        
+        console.log(
+          `🔗 Session check attempt ${attempts}/${maxAttempts} for post-magic-link redirect`,
+        );
+
         try {
           const sessionData = await authClient.getSession();
           console.log('🔗 Session check result:', sessionData);
-          
+
           if (sessionData?.data?.user) {
             console.log('🔗 Found session after magic link redirect, triggering redirect logic');
             // The session useEffect will handle the redirect
@@ -321,10 +351,11 @@ export const MagicLinkLogin: React.FC = () => {
           }
         }
       };
-      
+
       // Start checking after a short delay
       setTimeout(checkForSession, 500);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
   // Cleanup on unmount

@@ -37,14 +37,14 @@ const mockUseSearchParams = useSearchParams as any;
 describe('useOnboardingState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock global fetch
     global.fetch = mockFetch;
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: true }),
     });
-    
+
     // Reset URL search params - return empty URLSearchParams by default
     mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
 
