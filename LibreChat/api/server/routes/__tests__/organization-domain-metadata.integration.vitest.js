@@ -19,22 +19,22 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
     // Create minimal Express app for testing (like the working unit test)
     app = express();
     app.use(express.json());
-    
+
     // Disconnect any existing connection before connecting to memory server
     if (mongoose.connection.readyState !== 0) {
       await mongoose.connection.close();
     }
-    
+
     // Start in-memory MongoDB instance
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
-    
+
     await mongoose.connect(mongoUri);
     db = mongoose.connection.db;
-    
+
     // Mount the organizationJoin router (this is what was missing!)
     app.use('/api/organization', organizationJoinRouter);
-    
+
     console.log('🧪 Integration test database connected');
   });
 
@@ -43,7 +43,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
     await mongoServer.stop();
-    
+
     console.log('🧹 Integration test database cleaned');
   });
 
@@ -58,7 +58,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
         updatedAt: new Date(),
         metadata: {},
       };
-      
+
       await db.collection('organization').insertOne(testOrg);
 
       // Call the domain join API with enableDomainJoin=true
@@ -93,7 +93,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
         updatedAt: new Date(),
         metadata: {},
       };
-      
+
       await db.collection('organization').insertOne(testOrg);
 
       // Call the domain join API with enableDomainJoin=false
@@ -113,7 +113,9 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
       });
 
       // Verify database was updated correctly - domain should be saved even when auto-join is disabled
-      const updatedOrg = await db.collection('organization').findOne({ id: 'test-org-manual-approval' });
+      const updatedOrg = await db
+        .collection('organization')
+        .findOne({ id: 'test-org-manual-approval' });
       expect(updatedOrg.metadata.domain).toBe('testcorpmanual.com');
       expect(updatedOrg.metadata.allowDomainJoin).toBe(false);
     });
@@ -133,7 +135,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
           allowDomainJoin: true,
         },
       };
-      
+
       await db.collection('organization').insertOne(autoJoinOrg);
 
       // Test organization detection
@@ -172,7 +174,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
           allowDomainJoin: false,
         },
       };
-      
+
       await db.collection('organization').insertOne(manualApprovalOrg);
 
       // Test organization detection
@@ -210,7 +212,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
           // No domain metadata
         },
       };
-      
+
       await db.collection('organization').insertOne(legacyOrg);
 
       // Test organization detection - should not find the organization
@@ -243,7 +245,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
         updatedAt: new Date(),
         metadata: {},
       };
-      
+
       await db.collection('organization').insertOne(testOrg);
 
       // Step 2: Set domain metadata with manual approval

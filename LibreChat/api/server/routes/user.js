@@ -45,12 +45,12 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
 
     const updateResult = await userCollection.updateOne(
       { _id: new mongoose.default.Types.ObjectId(userId) },
-      { 
-        $set: { 
+      {
+        $set: {
           onboardingStep,
-          updatedAt: new Date()
-        } 
-      }
+          updatedAt: new Date(),
+        },
+      },
     );
 
     if (updateResult.matchedCount === 0) {
@@ -65,9 +65,9 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
     }
 
     // Get the updated user data
-    const updatedUser = await userCollection.findOne(
-      { _id: new mongoose.default.Types.ObjectId(userId) }
-    );
+    const updatedUser = await userCollection.findOne({
+      _id: new mongoose.default.Types.ObjectId(userId),
+    });
 
     logger.info('Updated user onboarding step in Better Auth database', {
       userId,

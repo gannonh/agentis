@@ -4,7 +4,7 @@
  *
  * Implements auto-join and request-to-join flows for organizations
  * with domain-based membership and admin approval workflows.
- * 
+ *
  * TODO: Implement unique constraint on Organization.metadata.domain
  * Business rule: Only 1 organization per domain should be allowed.
  * This requires:

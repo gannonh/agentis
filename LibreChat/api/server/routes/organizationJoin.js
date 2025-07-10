@@ -571,19 +571,17 @@ router.post('/enable-domain-join', async (req, res) => {
       };
 
       // First try: Use the organizationId as-is (Better Auth string ID)
-      result = await db.collection('organization').updateOne(
-        { id: organizationId },
-        { $set: updateFields },
-      );
+      result = await db
+        .collection('organization')
+        .updateOne({ id: organizationId }, { $set: updateFields });
 
       // If no match, try converting to ObjectId for _id field
       if (result.matchedCount === 0) {
         try {
           const objectId = new mongoose.default.Types.ObjectId(organizationId);
-          result = await db.collection('organization').updateOne(
-            { _id: objectId },
-            { $set: updateFields },
-          );
+          result = await db
+            .collection('organization')
+            .updateOne({ _id: objectId }, { $set: updateFields });
           logger.info(`Used _id field for organization update: ${organizationId}`);
         } catch (convertError) {
           logger.error(
@@ -610,13 +608,13 @@ router.post('/enable-domain-join', async (req, res) => {
         });
       }
 
-      const actionDescription = enableDomainJoin 
+      const actionDescription = enableDomainJoin
         ? `Domain auto-join enabled for organization ${organizationId} with domain ${domain}`
         : `Domain metadata set for organization ${organizationId} with domain ${domain} (auto-join disabled)`;
-      
+
       logger.info(actionDescription);
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         domain,
         allowDomainJoin: enableDomainJoin,
       });
