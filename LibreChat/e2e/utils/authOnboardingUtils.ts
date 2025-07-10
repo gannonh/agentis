@@ -111,8 +111,13 @@ export async function cleanDatabase(): Promise<void> {
   await db.collection('organization').deleteMany({
     $or: [
       { name: { $regex: /Test.*/ } },
+      { name: { $regex: /TechCorp.*/ } }, // Handle TechCorp organizations from edge case tests
+      { name: { $regex: /Acme Corp.*/ } }, // Handle Acme Corp organizations
       { slug: { $regex: /test.*/ } },
+      { slug: { $regex: /techcorp.*/ } }, // Handle techcorp slugs
+      { slug: { $regex: /acme-corp.*/ } }, // Handle acme-corp slugs
       { 'metadata.domain': { $regex: /testcorp.*/ } },
+      { 'metadata.domain': { $regex: /techcorp.*/ } }, // Handle techcorp domains
     ],
   });
 
