@@ -7,7 +7,9 @@ import mongoose from 'mongoose';
 import { logger } from '#config/index.js';
 
 /**
- * Middleware to check if authenticated user has admin or owner permissions for the specified organization
+ * Middleware to check if authenticated user has admin or owner permissions for the specified organization.
+ * Supports organizationId from both req.params and req.body (for enable-domain-join endpoint).
+ * Handles both Better Auth string IDs and MongoDB ObjectId formats.
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
@@ -15,14 +17,17 @@ import { logger } from '#config/index.js';
  */
 async function checkOrganizationAdmin(req, res, next) {
   try {
-    const { organizationId } = req.params;
+    // Get organizationId from params (working endpoints) or body (enable-domain-join)
+    const organizationId = req.params?.organizationId || req.body?.organizationId;
     const userId = req.user?.id;
 
     // Validate required parameters
     if (!organizationId) {
-      logger.warn('Organization admin check failed: missing organizationId in params', {
+      logger.warn('Organization admin check failed: missing organizationId in params or body', {
         userId,
         path: req.path,
+        hasParams: !!req.params?.organizationId,
+        hasBody: !!req.body?.organizationId,
       });
       return res.status(400).json({
         error: 'Organization ID is required',
@@ -39,11 +44,15 @@ async function checkOrganizationAdmin(req, res, next) {
       });
     }
 
-    // Validate organizationId format
-    if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+    // Validate organizationId format - accept both Better Auth strings and ObjectIds
+    const isObjectId = mongoose.Types.ObjectId.isValid(organizationId);
+    const isBetterAuthId = typeof organizationId === 'string' && organizationId.length > 0;
+    
+    if (!isObjectId && !isBetterAuthId) {
       logger.warn('Organization admin check failed: invalid organizationId format', {
         userId,
         organizationId,
+        organizationIdType: typeof organizationId,
         path: req.path,
       });
       return res.status(400).json({
@@ -51,16 +60,58 @@ async function checkOrganizationAdmin(req, res, next) {
       });
     }
 
+    logger.debug('Organization admin check: ID format detected', {
+      userId,
+      organizationId,
+      isObjectId,
+      isBetterAuthId,
+      path: req.path,
+    });
+
     // Get database connection
     const db = mongoose.connection.db;
     const memberCollection = db.collection('member');
 
-    // Check if user is a member of the organization with admin or owner role
-    const membership = await memberCollection.findOne({
+    // Flexible membership lookup - handle both string and ObjectId formats
+    let membership = null;
+
+    // First: Try direct lookup with provided formats
+    membership = await memberCollection.findOne({
       userId,
       organizationId,
       role: { $in: ['admin', 'owner'] },
     });
+
+    // Second: If no match and we have convertible IDs, try ObjectId conversion
+    if (!membership) {
+      const query = { role: { $in: ['admin', 'owner'] } };
+      
+      // Convert userId to ObjectId if possible
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        query.userId = new mongoose.Types.ObjectId(userId);
+      } else {
+        query.userId = userId;
+      }
+      
+      // Convert organizationId to ObjectId if possible
+      if (mongoose.Types.ObjectId.isValid(organizationId)) {
+        query.organizationId = new mongoose.Types.ObjectId(organizationId);
+      } else {
+        query.organizationId = organizationId;
+      }
+
+      membership = await memberCollection.findOne(query);
+      
+      if (membership) {
+        logger.debug('Organization admin check: Found membership with ObjectId conversion', {
+          userId,
+          organizationId,
+          originalQuery: { userId, organizationId },
+          convertedQuery: query,
+          path: req.path,
+        });
+      }
+    }
 
     if (!membership) {
       logger.warn('Organization admin check failed: user lacks admin/owner permissions', {

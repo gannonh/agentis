@@ -503,9 +503,9 @@ router.post('/detect-domain', async (req, res) => {
 
 /**
  * POST /api/organization/enable-domain-join
- * Enable domain join for organization
+ * Enable domain join for organization (admin only)
  */
-router.post('/enable-domain-join', async (req, res) => {
+router.post('/enable-domain-join', requireBetterAuth, checkOrganizationAdmin, async (req, res) => {
   try {
     const { isPublicDomain } = await import('../services/PublicDomainService.js');
     const { logger } = await import('#config/index.js');
@@ -561,36 +561,35 @@ router.post('/enable-domain-join', async (req, res) => {
     }
 
     try {
-      // Better Auth stores organizations with string IDs, let's try both approaches
-      let result;
-
       // Prepare update object - always set domain, conditionally set allowDomainJoin
       const updateFields = {
         'metadata.domain': domain,
         'metadata.allowDomainJoin': enableDomainJoin,
       };
 
-      // First try: Use the organizationId as-is (Better Auth string ID)
+      // Smart organization update - try both Better Auth and ObjectId formats
+      let result;
+
+      // First try: Better Auth string ID format
       result = await db
         .collection('organization')
         .updateOne({ id: organizationId }, { $set: updateFields });
 
-      // If no match, try converting to ObjectId for _id field
-      if (result.matchedCount === 0) {
-        try {
-          const objectId = new mongoose.default.Types.ObjectId(organizationId);
-          result = await db
-            .collection('organization')
-            .updateOne({ _id: objectId }, { $set: updateFields });
-          logger.info(`Used _id field for organization update: ${organizationId}`);
-        } catch (convertError) {
-          logger.error(
-            `Failed to convert organizationId to ObjectId: ${organizationId}`,
-            convertError,
-          );
-        }
-      } else {
-        logger.info(`Used id field for organization update: ${organizationId}`);
+      // Fallback: ObjectId format if no match and ID is convertible
+      if (result.matchedCount === 0 && mongoose.default.Types.ObjectId.isValid(organizationId)) {
+        const objectId = new mongoose.default.Types.ObjectId(organizationId);
+        result = await db
+          .collection('organization')
+          .updateOne({ _id: objectId }, { $set: updateFields });
+        
+        logger.debug('Organization domain update: Used ObjectId format', {
+          organizationId,
+          objectId: objectId.toString(),
+        });
+      } else if (result.matchedCount > 0) {
+        logger.debug('Organization domain update: Used Better Auth string format', {
+          organizationId,
+        });
       }
 
       logger.info(`Organization domain update result:`, {
