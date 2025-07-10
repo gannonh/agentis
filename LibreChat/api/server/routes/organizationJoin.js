@@ -581,7 +581,7 @@ router.post('/enable-domain-join', requireBetterAuth, checkOrganizationAdmin, as
         result = await db
           .collection('organization')
           .updateOne({ _id: objectId }, { $set: updateFields });
-        
+
         logger.debug('Organization domain update: Used ObjectId format', {
           organizationId,
           objectId: objectId.toString(),

@@ -51,7 +51,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
   // Helper function to create organization with membership
   async function createTestOrganization(orgData) {
     await db.collection('organization').insertOne(orgData);
-    
+
     // Create membership record so user has admin permissions
     const membership = {
       _id: new mongoose.Types.ObjectId(),
@@ -60,7 +60,7 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
       role: 'owner',
       createdAt: new Date(),
     };
-    
+
     await db.collection('member').insertOne(membership);
   }
 
@@ -71,9 +71,9 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
 
     // Mock authenticated user
     app.use((req, res, next) => {
-      req.user = { 
+      req.user = {
         id: 'test-user-123',
-        email: 'test@example.com'
+        email: 'test@example.com',
       };
       next();
     });
@@ -155,8 +155,8 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
           isPublicDomain: false,
           domain,
           hasOrganization: organizations.length > 0,
-          canAutoJoin: organizations.some(org => org.metadata?.allowDomainJoin === true),
-          organizations: organizations.map(org => ({
+          canAutoJoin: organizations.some((org) => org.metadata?.allowDomainJoin === true),
+          organizations: organizations.map((org) => ({
             name: org.name,
             domain: org.metadata?.domain,
             allowDomainJoin: org.metadata?.allowDomainJoin || false,
@@ -338,9 +338,9 @@ describe('Organization Domain Metadata Integration Tests - Issue #104', () => {
 
       // Mock user WITHOUT admin permissions (no membership record)
       app.use((req, res, next) => {
-        req.user = { 
+        req.user = {
           id: 'non-admin-user',
-          email: 'user@example.com'
+          email: 'user@example.com',
         };
         next();
       });

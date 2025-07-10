@@ -47,7 +47,7 @@ async function checkOrganizationAdmin(req, res, next) {
     // Validate organizationId format - accept both Better Auth strings and ObjectIds
     const isObjectId = mongoose.Types.ObjectId.isValid(organizationId);
     const isBetterAuthId = typeof organizationId === 'string' && organizationId.length > 0;
-    
+
     if (!isObjectId && !isBetterAuthId) {
       logger.warn('Organization admin check failed: invalid organizationId format', {
         userId,
@@ -85,14 +85,14 @@ async function checkOrganizationAdmin(req, res, next) {
     // Second: If no match and we have convertible IDs, try ObjectId conversion
     if (!membership) {
       const query = { role: { $in: ['admin', 'owner'] } };
-      
+
       // Convert userId to ObjectId if possible
       if (mongoose.Types.ObjectId.isValid(userId)) {
         query.userId = new mongoose.Types.ObjectId(userId);
       } else {
         query.userId = userId;
       }
-      
+
       // Convert organizationId to ObjectId if possible
       if (mongoose.Types.ObjectId.isValid(organizationId)) {
         query.organizationId = new mongoose.Types.ObjectId(organizationId);
@@ -101,7 +101,7 @@ async function checkOrganizationAdmin(req, res, next) {
       }
 
       membership = await memberCollection.findOne(query);
-      
+
       if (membership) {
         logger.debug('Organization admin check: Found membership with ObjectId conversion', {
           userId,
