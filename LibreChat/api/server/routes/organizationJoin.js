@@ -450,9 +450,9 @@ router.get('/check-join-eligibility', requireBetterAuth, async (req, res) => {
 
 /**
  * POST /api/organization/detect-domain
- * Organization detection endpoint - detects organizations by email domain
+ * Organization detection endpoint - detects organizations by email domain (authenticated users only)
  */
-router.post('/detect-domain', async (req, res) => {
+router.post('/detect-domain', requireBetterAuth, async (req, res) => {
   try {
     const { checkDomainOrganizations } = await import(
       '../services/OrganizationDetectionService.js'
