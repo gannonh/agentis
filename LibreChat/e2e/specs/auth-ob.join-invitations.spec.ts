@@ -1,14 +1,14 @@
 /**
  * @fileoverview Organization Join Invitation Flow Tests
  * @module e2e/specs/auth-ob.join-invitations
- * 
+ *
  * Tests invitation-based organization joining flow:
  * - Admin invites user to organization
  * - User accepts organization invitation
  * - User declines organization invitation
  * - Expired invitation handling
  * - Email verification and delivery
- * 
+ *
  * Related to Issue #106 (Team Invitation Flow) but focused on organization joining
  */
 
@@ -68,7 +68,7 @@ test.describe('Organization Invitation Flow', () => {
 
       // Complete organization creation
       await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 });
-      
+
       const orgName = 'TestCorp Engineering';
       await completeOrganizationStep(page, orgName, false); // Domain join disabled
       await completeProfileStep(page, 'Admin User');
@@ -82,13 +82,13 @@ test.describe('Organization Invitation Flow', () => {
       // =================================================================
       // INVITATION CREATION (Future implementation)
       // =================================================================
-      
+
       // This would require:
       // 1. Admin navigates to team management
       // 2. Admin enters email address to invite
       // 3. System sends invitation email via MailHog
       // 4. Invitation contains unique token/link
-      
+
       // For now, we'll create a mock invitation in the database
       const { getTestDatabase } = await import('../utils/testAuth');
       const { db } = await getTestDatabase();
@@ -110,10 +110,10 @@ test.describe('Organization Invitation Flow', () => {
               invitedBy: adminEmail,
               invitedAt: new Date(),
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-              status: 'pending'
-            } as any
-          }
-        }
+              status: 'pending',
+            } as any,
+          },
+        },
       );
 
       logProgress('✅ Mock invitation created in database');
@@ -128,7 +128,7 @@ test.describe('Organization Invitation Flow', () => {
 
       // TODO: Verify invitation email sent via MailHog
       // This would require implementing the actual invitation email sending
-      
+
       logProgress('⚠️ Invitation email delivery - to be implemented when email system is ready');
     } finally {
       await context.close();
@@ -137,7 +137,7 @@ test.describe('Organization Invitation Flow', () => {
 
   test('User accepts organization invitation', async ({ browser }) => {
     logProgress('🚀 Testing user acceptance of organization invitation...');
-
+    // TODO: Implement user acceptance flow for organization invitation
     // This test would require:
     // 1. User clicks invitation link from email
     // 2. User goes through onboarding with pre-selected organization
@@ -146,12 +146,14 @@ test.describe('Organization Invitation Flow', () => {
     // 5. Invitation is marked as accepted
 
     // For now, marking as placeholder for future implementation
-    logProgress('⚠️ Invitation acceptance flow - to be implemented when invitation system is ready');
+    logProgress(
+      '⚠️ Invitation acceptance flow - to be implemented when invitation system is ready',
+    );
   });
 
   test('User declines organization invitation', async ({ browser }) => {
     logProgress('🚀 Testing user declining of organization invitation...');
-
+    // TODO: Implement user declining flow for organization invitation
     // This test would require:
     // 1. User clicks invitation link from email
     // 2. User declines invitation
@@ -164,7 +166,7 @@ test.describe('Organization Invitation Flow', () => {
 
   test('Expired invitation handling', async ({ browser }) => {
     logProgress('🚀 Testing expired invitation handling...');
-
+    // TODO: Implement expired invitation handling
     // This test would require:
     // 1. Create invitation that expires after set time
     // 2. User attempts to use expired invitation
@@ -172,6 +174,8 @@ test.describe('Organization Invitation Flow', () => {
     // 4. User gets appropriate error message
 
     // For now, marking as placeholder for future implementation
-    logProgress('⚠️ Expired invitation handling - to be implemented when invitation system is ready');
+    logProgress(
+      '⚠️ Expired invitation handling - to be implemented when invitation system is ready',
+    );
   });
 });
