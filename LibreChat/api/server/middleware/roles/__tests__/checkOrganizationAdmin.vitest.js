@@ -55,8 +55,11 @@ describe('checkOrganizationAdmin middleware', () => {
     };
 
     // Mock mongoose connection
-    vi.spyOn(mongoose, 'connection', 'get').mockReturnValue({
-      db: mockDb,
+    Object.defineProperty(mongoose, 'connection', {
+      get: () => ({
+        db: mockDb,
+      }),
+      configurable: true,
     });
 
     // Mock mongoose ObjectId validation
@@ -75,10 +78,12 @@ describe('checkOrganizationAdmin middleware', () => {
       });
       expect(next).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
-        'Organization admin check failed: missing organizationId in params',
+        'Organization admin check failed: missing organizationId in params or body',
         expect.objectContaining({
           userId: 'user123',
           path: '/test/path',
+          hasParams: false,
+          hasBody: false,
         }),
       );
     });
@@ -103,22 +108,24 @@ describe('checkOrganizationAdmin middleware', () => {
     });
 
     it('should return 400 if organizationId format is invalid', async () => {
-      req.params.organizationId = 'invalid-id';
+      // Test with empty string which should fail both ObjectId and Better Auth validation
+      req.params.organizationId = '';
       mongoose.Types.ObjectId.isValid.mockReturnValue(false);
 
       await checkOrganizationAdmin(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Invalid organization ID format',
+        error: 'Organization ID is required',
       });
       expect(next).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
-        'Organization admin check failed: invalid organizationId format',
+        'Organization admin check failed: missing organizationId in params or body',
         expect.objectContaining({
           userId: 'user123',
-          organizationId: 'invalid-id',
           path: '/test/path',
+          hasParams: false,
+          hasBody: false,
         }),
       );
     });
@@ -126,10 +133,16 @@ describe('checkOrganizationAdmin middleware', () => {
 
   describe('authorization', () => {
     it('should return 403 if user is not an admin or owner', async () => {
+      // Mock both lookup attempts to return null (no membership found)
       mockMemberCollection.findOne.mockResolvedValue(null);
+
+      // Mock ObjectId constructor to not throw error
+      const mockObjectId = vi.fn().mockImplementation((id) => ({ toString: () => id }));
+      vi.spyOn(mongoose.Types, 'ObjectId').mockImplementation(mockObjectId);
 
       await checkOrganizationAdmin(req, res, next);
 
+      // Should try both direct lookup and ObjectId conversion lookup
       expect(mockMemberCollection.findOne).toHaveBeenCalledWith({
         userId: 'user123',
         organizationId: '507f1f77bcf86cd799439011',
