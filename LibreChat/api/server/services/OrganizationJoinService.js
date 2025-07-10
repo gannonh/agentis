@@ -336,7 +336,14 @@ class OrganizationJoinService {
       // Update request status
       await db.collection('organization').updateOne(
         {
-          id: organizationId,
+          $or: [
+            { id: organizationId },
+            {
+              _id: mongoose.Types.ObjectId.isValid(organizationId)
+                ? new mongoose.Types.ObjectId(organizationId)
+                : null,
+            },
+          ],
           'metadata.joinRequests.id': requestId,
         },
         {
@@ -420,7 +427,14 @@ class OrganizationJoinService {
 
       await db.collection('organization').updateOne(
         {
-          id: organizationId,
+          $or: [
+            { id: organizationId },
+            {
+              _id: mongoose.Types.ObjectId.isValid(organizationId)
+                ? new mongoose.Types.ObjectId(organizationId)
+                : null,
+            },
+          ],
           'metadata.joinRequests.id': requestId,
         },
         { $set: updateFields },

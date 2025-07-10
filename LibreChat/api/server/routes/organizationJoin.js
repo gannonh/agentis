@@ -12,6 +12,7 @@ import express from 'express';
 import requireBetterAuth from '../middleware/requireBetterAuth.js';
 import { checkOrganizationAdmin } from '../middleware/roles/index.js';
 import OrganizationJoinService from '../services/OrganizationJoinService.js';
+import { checkDomainOrganizations } from '../services/OrganizationDetectionService.js';
 import { logger } from '#config/index.js';
 
 const router = express.Router();
@@ -454,11 +455,6 @@ router.get('/check-join-eligibility', requireBetterAuth, async (req, res) => {
  */
 router.post('/detect-domain', requireBetterAuth, async (req, res) => {
   try {
-    const { checkDomainOrganizations } = await import(
-      '../services/OrganizationDetectionService.js'
-    );
-    const { logger } = await import('#config/index.js');
-
     const { email, inviteToken } = req.body;
 
     if (!email) {
