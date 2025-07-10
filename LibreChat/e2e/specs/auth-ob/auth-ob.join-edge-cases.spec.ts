@@ -109,19 +109,8 @@ test.describe('Organization Join Edge Cases', () => {
       // Check if we have a magic link error (indicates potential issue)
       const hasError = await page2.getByText(/There was an error with the magic link/i).isVisible();
       if (hasError) {
-        logProgress('⚠️ Magic link error detected - may indicate session/token issue');
-        // Try to proceed anyway by checking if user can authenticate
-        await page2.goto('http://localhost:3080/login');
-        await page2.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
-        await page2.getByTestId('login-button').click();
-
-        // Wait for a new magic link
-        await page2.waitForTimeout(2000);
-        const newMagicLink = await captureMagicLink(userEmail);
-        if (newMagicLink) {
-          await page2.goto(newMagicLink);
-          await page2.waitForLoadState('networkidle');
-        }
+        logProgress('❌ Magic link error detected - this indicates a failure in the authentication system');
+        throw new Error('Magic link authentication failed for existing user - this should not happen');
       }
 
       // Check current URL and determine where we are
@@ -137,23 +126,18 @@ test.describe('Organization Join Edge Cases', () => {
         logProgress('✅ User: Onboarding correctly skipped for existing member');
       } else if (currentUrl.includes('/onboarding')) {
         logProgress(
-          '⚠️ User: Went to onboarding instead of main app - this may indicate membership detection needs improvement',
+          '❌ User: Went to onboarding instead of main app - membership detection failed',
         );
-        // For now, let's check if this is expected behavior
-        await expect(page2).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 });
+        throw new Error('Existing member was incorrectly sent to onboarding flow - membership detection is broken');
       } else {
-        logProgress(`⚠️ User: Unexpected URL: ${currentUrl}`);
-        // Try to wait for either main app or onboarding
-        try {
-          await Promise.race([
-            page2.waitForURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 }),
-            page2.waitForURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 }),
-          ]);
-          const finalUrl = await page2.url();
-          logProgress(`✅ User: Finally reached: ${finalUrl}`);
-        } catch (e) {
-          logProgress(`⚠️ User: Timeout waiting for expected URL. Current: ${currentUrl}`);
-        }
+        logProgress(`❌ User: Unexpected URL: ${currentUrl}`);
+        // Wait for either main app or onboarding with proper error handling
+        await Promise.race([
+          page2.waitForURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 }),
+          page2.waitForURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 }),
+        ]);
+        const finalUrl = await page2.url();
+        logProgress(`✅ User: Finally reached: ${finalUrl}`);
       }
 
       // =================================================================
@@ -432,7 +416,8 @@ test.describe('Organization Join Edge Cases', () => {
           logProgress('✅ User: Generic error message displayed');
           errorFound = true;
         } catch (e) {
-          logProgress('⚠️ No error message found - may need better error handling');
+          // No error message found - this is a test failure
+          throw new Error('No error message displayed when trying to join deleted organization - error handling is missing');
         }
       }
 
@@ -441,31 +426,20 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
 
       // Check if user can proceed to create new organization
-      try {
-        // Look for organization creation form or retry option
-        const hasCreateOption = await Promise.race([
-          page.getByRole('heading', { name: /What's the name of your/i }).isVisible(),
-          page.getByRole('button', { name: /create.*organization/i }).isVisible(),
-          page.getByRole('button', { name: /retry/i }).isVisible(),
-          page.getByRole('button', { name: /try again/i }).isVisible(),
-        ]);
+      const hasCreateOption = await Promise.race([
+        page.getByRole('heading', { name: /What's the name of your/i }).isVisible(),
+        page.getByRole('button', { name: /create.*organization/i }).isVisible(),
+        page.getByRole('button', { name: /retry/i }).isVisible(),
+        page.getByRole('button', { name: /try again/i }).isVisible(),
+      ]);
 
-        if (hasCreateOption) {
-          logProgress('✅ User: Recovery option available (create org or retry)');
-        } else {
-          logProgress('⚠️ User: May be stuck - needs better recovery flow');
-        }
-      } catch (e) {
-        logProgress('⚠️ User: Recovery flow needs implementation');
+      if (hasCreateOption) {
+        logProgress('✅ User: Recovery option available (create org or retry)');
+      } else {
+        throw new Error('User cannot recover from deleted organization error - no retry or create organization option available');
       }
 
       logProgress('🎉 Organization deletion handling test COMPLETED!');
-    } catch (error) {
-      // Expected to have some issues until proper error handling is fully implemented
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logProgress(
-        `⚠️ Organization deletion test completed with expected limitations: ${errorMessage}`,
-      );
     } finally {
       await context.close();
     }
