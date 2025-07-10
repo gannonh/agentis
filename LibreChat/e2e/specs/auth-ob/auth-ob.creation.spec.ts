@@ -11,7 +11,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
 import {
   TEST_VIEWPORT,
   captureMagicLink,
@@ -20,7 +20,7 @@ import {
   handleTermsOfService,
   completeFullOnboarding,
   TEST_PATTERNS,
-} from '../utils/authOnboardingUtils';
+} from '../../utils/authOnboardingUtils';
 
 test.use({
   viewport: TEST_VIEWPORT,
@@ -177,7 +177,7 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       await expect(page.getByTestId('text-input')).toBeVisible();
 
       // Verify organization was created in database
-      const { getTestDatabase } = await import('../utils/testAuth');
+      const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
 
       const org = await db.collection('organization').findOne({ name: orgName });
@@ -435,7 +435,7 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       expect(page.url()).toContain('accounts.google.com');
       logProgress('✅ Redirected to Google OAuth');
 
-      const { GOOGLE_CREDS } = await import('../utils/oAuth');
+      const { GOOGLE_CREDS } = await import('../../utils/oAuth');
       if (!GOOGLE_CREDS.email || !GOOGLE_CREDS.password) {
         logProgress('⚠️ OAuth credentials not available - skipping test');
         return;

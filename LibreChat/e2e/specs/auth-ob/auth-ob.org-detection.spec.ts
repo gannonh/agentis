@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
 import {
   TEST_EMAILS,
   TEST_VIEWPORT,
@@ -8,7 +8,7 @@ import {
   generateTestEmail,
   createTestOrganization,
   TEST_PATTERNS,
-} from '../utils/authOnboardingUtils';
+} from '../../utils/authOnboardingUtils';
 
 test.use({
   viewport: TEST_VIEWPORT,
@@ -28,7 +28,7 @@ test.describe('Organization Detection Tests - Issue #102', () => {
 
   // Helper to capture magic link using MailHog
   async function captureMagicLink(email: string): Promise<string | null> {
-    const { createMailHog } = await import('../utils/mailhog.js');
+    const { createMailHog } = await import('../../utils/mailhog.js');
     const mailhog = createMailHog();
 
     try {
@@ -50,7 +50,7 @@ test.describe('Organization Detection Tests - Issue #102', () => {
 
   // Helper to clean database between tests
   async function cleanDatabase() {
-    const { getTestDatabase } = await import('../utils/testAuth');
+    const { getTestDatabase } = await import('../../utils/testAuth');
     const { db } = await getTestDatabase();
 
     // Clean up test data in proper order
@@ -90,7 +90,7 @@ test.describe('Organization Detection Tests - Issue #102', () => {
 
   // Helper to create test organization for detection tests
   async function createTestOrganization(name: string, domain: string) {
-    const { getTestDatabase } = await import('../utils/testAuth');
+    const { getTestDatabase } = await import('../../utils/testAuth');
     const { db } = await getTestDatabase();
 
     const testOrg = {

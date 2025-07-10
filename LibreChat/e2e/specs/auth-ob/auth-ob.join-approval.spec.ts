@@ -1,18 +1,18 @@
 /**
  * @fileoverview Organization Join Manual Approval Flow Tests
  * @module e2e/specs/auth-ob.join-approval
- * 
+ *
  * Tests manual approval flow for organization joining when domain auto-join is disabled:
  * - User requests to join organization (domain join disabled)
  * - Admin approves/rejects join requests
  * - Multiple pending requests management
  * - Proper notification handling
- * 
+ *
  * Related to Issue #104 extensions - manual approval workflow
  */
 
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
 import {
   TEST_VIEWPORT,
   captureMagicLink,
@@ -25,7 +25,7 @@ import {
   verifyOrganizationInDatabase,
   verifyOrganizationMembership,
   TEST_PATTERNS,
-} from '../utils/authOnboardingUtils';
+} from '../../utils/authOnboardingUtils';
 
 test.use({
   viewport: TEST_VIEWPORT,
@@ -152,22 +152,22 @@ test.describe('Organization Join Manual Approval Flow', () => {
 
       // Should show confirmation that request was sent (toast message)
       await expect(page2.getByText('Join request sent! An admin')).toBeVisible();
-      logProgress('✅ User 2: Request sent confirmation displayed')
+      logProgress('✅ User 2: Request sent confirmation displayed');
 
       // =================================================================
       // VERIFICATION: Check database state
       // =================================================================
-      
+
       // Verify organization exists with domain join disabled
       await verifyOrganizationInDatabase(orgName, 'testcorp.com', false);
 
       // Verify join request was created in organization metadata
-      const { getTestDatabase } = await import('../utils/testAuth');
+      const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
 
       const org = await db.collection('organization').findOne({ name: orgName });
       expect(org).toBeTruthy();
-      
+
       // Check for pending join requests in organization metadata
       const joinRequests = org?.metadata?.joinRequests || [];
       expect(joinRequests).toHaveLength(1);

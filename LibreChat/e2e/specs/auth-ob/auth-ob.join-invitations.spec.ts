@@ -13,7 +13,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
 import {
   TEST_VIEWPORT,
   captureMagicLink,
@@ -27,7 +27,7 @@ import {
   verifyOrganizationInDatabase,
   verifyOrganizationMembership,
   TEST_PATTERNS,
-} from '../utils/authOnboardingUtils';
+} from '../../utils/authOnboardingUtils';
 
 test.use({
   viewport: TEST_VIEWPORT,
@@ -90,7 +90,7 @@ test.describe('Organization Invitation Flow', () => {
       // 4. Invitation contains unique token/link
 
       // For now, we'll create a mock invitation in the database
-      const { getTestDatabase } = await import('../utils/testAuth');
+      const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
 
       const org = await db.collection('organization').findOne({ name: orgName });

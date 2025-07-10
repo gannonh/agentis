@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
 import {
   TEST_EMAILS,
   TEST_VIEWPORT,
@@ -7,7 +7,7 @@ import {
   cleanDatabase,
   generateTestEmail,
   TEST_PATTERNS,
-} from '../utils/authOnboardingUtils';
+} from '../../utils/authOnboardingUtils';
 
 test.use({
   viewport: TEST_VIEWPORT,
@@ -119,7 +119,7 @@ test.describe('Basic Auth & Onboarding Tests', () => {
       logProgress('✅ Successfully redirected to Google OAuth');
 
       // Step 4: Complete OAuth with test credentials
-      const { GOOGLE_CREDS } = await import('../utils/oAuth');
+      const { GOOGLE_CREDS } = await import('../../utils/oAuth');
 
       if (!GOOGLE_CREDS.email || !GOOGLE_CREDS.password) {
         logProgress('⚠️ OAuth credentials not available - skipping authentication');

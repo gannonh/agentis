@@ -14,7 +14,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
 import {
   TEST_VIEWPORT,
   captureMagicLink,
@@ -29,7 +29,7 @@ import {
   verifyOrganizationInDatabase,
   verifyOrganizationMembership,
   TEST_PATTERNS,
-} from '../utils/authOnboardingUtils';
+} from '../../utils/authOnboardingUtils';
 
 test.use({
   viewport: TEST_VIEWPORT,
@@ -277,7 +277,7 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // PHASE 2: Simulate domain join being disabled after org creation
       // =================================================================
-      const { getTestDatabase } = await import('../utils/testAuth');
+      const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
 
       // Update organization to disable domain join
@@ -386,7 +386,7 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // PHASE 2: Simulate organization deletion
       // =================================================================
-      const { getTestDatabase } = await import('../utils/testAuth');
+      const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
 
       // Delete the organization from database

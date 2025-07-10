@@ -5,7 +5,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
 import {
   TEST_VIEWPORT,
   captureMagicLink,
@@ -18,7 +18,7 @@ import {
   verifyOrganizationInDatabase,
   verifyOrganizationMembership,
   TEST_PATTERNS,
-} from '../utils/authOnboardingUtils';
+} from '../../utils/authOnboardingUtils';
 
 // Use the same test configuration as other tests
 test.use({
@@ -28,9 +28,7 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Organization Join Flow - Issue #104', () => {
-
   // Helper to handle Terms of Service modal if it appears
-
 
   test.beforeEach(async () => {
     await cleanDatabase();
@@ -185,7 +183,7 @@ test.describe('Organization Join Flow - Issue #104', () => {
       // =================================================================
       // VERIFICATION: Check database state
       // =================================================================
-      const { getTestDatabase } = await import('../utils/testAuth');
+      const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
 
       // Verify organization exists with correct settings
