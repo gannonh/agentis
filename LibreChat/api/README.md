@@ -179,7 +179,7 @@ api/
 | POST   | `/api/organization/enable-domain-join` | Enable domain auto-join (admin only)  | ✅ Admin/Owner |
 | GET    | `/api/organization/membership-status` | Check user membership status           | ✅ Better Auth |
 | GET    | `/api/organization/check-join-eligibility` | Check auto-join eligibility      | ✅ Better Auth |
-| POST   | `/api/organization/detect-domain`     | Detect organizations by domain         | ❌ Public      |
+| POST   | `/api/organization/detect-domain`     | Detect organizations by domain         | ✅ Better Auth |
 
 ### Two-Factor Authentication
 
