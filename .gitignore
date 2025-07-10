@@ -36,3 +36,6 @@ LibreChat/e2e/data/admin2-auth.json
 LibreChat/e2e/data/*.json
 LibreChat/temp/
 temp/magic-links.json
+temp/Agentis.member.json
+.gitignore
+temp/Agentis.organization.json
