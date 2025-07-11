@@ -256,6 +256,31 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
         // Don't throw error - terms acceptance might not be enabled
       }
 
+      // Complete onboarding programmatically to bypass onboarding flow
+      logger.info(`🎯 Completing onboarding to bypass onboarding flow...`);
+      const completeOnboardingResponse = await fetch('http://localhost:3080/api/user/update-onboarding-step', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `better-auth.session_token=${sessionToken}`,
+        },
+        body: JSON.stringify({
+          onboardingStep: 'complete',
+        }),
+      });
+
+      logger.info(
+        `📡 Complete onboarding response: ${completeOnboardingResponse.status} ${completeOnboardingResponse.statusText}`,
+      );
+      if (completeOnboardingResponse.ok) {
+        const onboardingData = await completeOnboardingResponse.json();
+        logger.info(`✅ Onboarding completed successfully:`, onboardingData);
+      } else {
+        const errorText = await completeOnboardingResponse.text();
+        logger.warn(`⚠️ Onboarding completion failed: ${errorText}`);
+        // Don't throw error - might not break the test
+      }
+
       // Format session cookie for Playwright
       const sessionCookie = `better-auth.session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax`;
 
