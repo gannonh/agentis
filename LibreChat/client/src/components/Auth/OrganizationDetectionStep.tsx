@@ -11,6 +11,9 @@ import { useLocalize } from '~/hooks';
 import { Button } from '~/components/ui';
 import { authUtils } from '~/config/betterAuth';
 
+// Move React.lazy to module scope for optimal performance
+const OrganizationPreviewStep = React.lazy(() => import('./OrganizationPreviewStep'));
+
 interface DetectionResult {
   isPublicDomain: boolean;
   domain: string;
@@ -227,7 +230,6 @@ export default function OrganizationCreationStep({
     detectionResult.organizations.length > 0
   ) {
     // For Issue #104 - Show organization preview with join options
-    const OrganizationPreviewStep = React.lazy(() => import('./OrganizationPreviewStep'));
 
     return (
       <React.Suspense
