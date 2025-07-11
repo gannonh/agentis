@@ -83,21 +83,20 @@ test.describe('Organization Join Flow - Issue #104', () => {
 
       // Submit organization creation
       await page1.getByRole('button', { name: 'Next' }).click();
-      await page1.waitForTimeout(2000);
+      await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({ timeout: 10000 });
 
       // Complete User 1's onboarding flow quickly
       await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible();
       await page1.getByRole('textbox', { name: /your name/i }).fill('User One');
       await page1.getByRole('button', { name: 'Continue' }).click();
-      await page1.waitForTimeout(2000);
+      await expect(page1.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({ timeout: 10000 });
 
       await expect(page1.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible();
       await page1.getByRole('button', { name: 'Skip for Now' }).click();
-      await page1.waitForTimeout(2000);
+      await expect(page1.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({ timeout: 10000 });
 
       await expect(page1.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible();
       await page1.getByRole('button', { name: /Start Your First Conversation/i }).click();
-      await page1.waitForTimeout(1000);
 
       await handleTermsOfService(page1);
       await expect(page1).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
@@ -152,29 +151,27 @@ test.describe('Organization Join Flow - Issue #104', () => {
       logProgress('🖱️ User 2: Clicking join organization button...');
 
       await joinButton.click();
-      await page2.waitForTimeout(3000); // Wait a bit longer for join process
 
       // =================================================================
       // CRITICAL: Verify no redirect loops after join
       // =================================================================
       // Should advance to profile step (not loop back to preview)
       await expect(page2.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({
-        timeout: 10000,
+        timeout: 15000,
       });
       logProgress('✅ User 2: Successfully joined org and advanced to profile (no redirect loop!)');
 
       // Complete User 2's remaining onboarding
       await page2.getByRole('textbox', { name: /your name/i }).fill('User Two');
       await page2.getByRole('button', { name: 'Continue' }).click();
-      await page2.waitForTimeout(2000);
+      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({ timeout: 10000 });
 
       await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible();
       await page2.getByRole('button', { name: 'Skip for Now' }).click();
-      await page2.waitForTimeout(2000);
+      await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({ timeout: 10000 });
 
       await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible();
       await page2.getByRole('button', { name: /Start Your First Conversation/i }).click();
-      await page2.waitForTimeout(1000);
 
       await handleTermsOfService(page2);
       await expect(page2).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
