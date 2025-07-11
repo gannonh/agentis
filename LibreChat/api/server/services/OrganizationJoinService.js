@@ -513,13 +513,17 @@ class OrganizationJoinService {
     try {
       const db = mongoose.connection.db;
 
-      // Try by Better Auth string ID first
-      let organization = await db.collection('organization').findOne({ id: organizationId });
+      // Try by Better Auth string ID first, excluding soft-deleted organizations
+      let organization = await db.collection('organization').findOne({ 
+        id: organizationId,
+        deletedAt: { $exists: false }
+      });
 
-      // If not found, try by MongoDB ObjectId
+      // If not found, try by MongoDB ObjectId, excluding soft-deleted organizations
       if (!organization && mongoose.Types.ObjectId.isValid(organizationId)) {
         organization = await db.collection('organization').findOne({
           _id: new mongoose.Types.ObjectId(organizationId),
+          deletedAt: { $exists: false }
         });
       }
 
