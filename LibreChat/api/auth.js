@@ -44,8 +44,7 @@ mongoose.connection.once('open', () => {
   try {
     logger.info('🔧 MongoDB connection established, initializing Better Auth...');
 
-    const client = mongoose.connection.getClient();
-    const db = client.db('Agentis');
+    const db = mongoose.connection.db;
 
     // Debug Google OAuth credentials
     const googleClientId = process.env.GOOGLE_CLIENT_ID;

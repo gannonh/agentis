@@ -49,6 +49,7 @@ const mockConnection = {
   once: vi.fn(),
   on: vi.fn(), // Add missing on method
   getClient: vi.fn().mockReturnValue(mockClient),
+  db: mockDb, // Add db property for direct access
   readyState: 0, // Add readyState property
 };
 
@@ -151,8 +152,8 @@ describe('Better Auth Integration', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         '🔧 MongoDB connection established, initializing Better Auth...',
       );
-      expect(mockConnection.getClient).toHaveBeenCalled();
-      expect(mockClient.db).toHaveBeenCalledWith('Agentis');
+      // No longer expecting getClient to be called since we use connection.db directly
+      expect(mockConnection.getClient).not.toHaveBeenCalled();
       expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
       expect(mockBetterAuth).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -241,13 +242,15 @@ describe('Better Auth Integration', () => {
       );
     });
 
-    test('should use correct database name for MongoDB adapter', async () => {
+    test('should use database from mongoose connection directly', async () => {
       await import('./auth.js');
 
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
-      expect(mockClient.db).toHaveBeenCalledWith('Agentis');
+      // Should use connection.db directly, not call getClient
+      expect(mockConnection.getClient).not.toHaveBeenCalled();
+      expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
     });
   });
 
@@ -284,10 +287,17 @@ describe('Better Auth Integration', () => {
     });
 
     test('should handle database connection failure', async () => {
+      // Mock mongodbAdapter to throw an error when called with undefined
       const dbError = new Error('Database connection failed');
-      mockClient.db.mockImplementation(() => {
-        throw dbError;
+      mockMongodbAdapter.mockImplementation((db) => {
+        if (!db) {
+          throw dbError;
+        }
+        return 'mock-adapter';
       });
+      
+      // Mock connection.db to be undefined to simulate connection failure
+      mockConnection.db = undefined;
 
       await import('./auth.js');
 
@@ -295,6 +305,10 @@ describe('Better Auth Integration', () => {
 
       expect(() => connectionCallback()).toThrow(dbError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize Better Auth:', dbError);
+      
+      // Restore mocks for other tests
+      mockConnection.db = mockDb;
+      mockMongodbAdapter.mockReturnValue('mock-adapter');
     });
   });
 
@@ -370,14 +384,17 @@ describe('Better Auth Integration', () => {
 
   describe('Mongoose Integration', () => {
     test('should reuse existing mongoose connection', async () => {
+      // Ensure mockConnection.db is set properly
+      mockConnection.db = mockDb;
+      
       await import('./auth.js');
 
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
-      // Should use existing connection, not create a new one
-      expect(mockConnection.getClient).toHaveBeenCalled();
-      expect(mockClient.db).toHaveBeenCalledWith('Agentis');
+      // Should use connection.db directly
+      expect(mockConnection.getClient).not.toHaveBeenCalled();
+      expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
     });
 
     test('should wait for MongoDB connection before initializing', async () => {

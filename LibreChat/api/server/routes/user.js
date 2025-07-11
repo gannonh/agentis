@@ -40,7 +40,7 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
     // Update user in Better Auth's database directly to ensure session synchronization
     // Better Auth uses the 'user' collection for user data
     const mongoose = await import('mongoose');
-    const db = mongoose.default.connection.getClient().db('Agentis');
+    const db = mongoose.default.connection.db;
     const userCollection = db.collection('user');
 
     const updateResult = await userCollection.updateOne(
