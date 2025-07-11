@@ -11,6 +11,9 @@ import { useLocalize } from '~/hooks';
 import { Button } from '~/components/ui';
 import { authUtils } from '~/config/betterAuth';
 
+// Move React.lazy to module scope for optimal performance
+const OrganizationPreviewStep = React.lazy(() => import('./OrganizationPreviewStep'));
+
 interface DetectionResult {
   isPublicDomain: boolean;
   domain: string;
@@ -19,6 +22,9 @@ interface DetectionResult {
     _id: string;
     name: string;
     domain?: string;
+    metadata?: {
+      allowDomainJoin?: boolean;
+    };
   }>;
   isInvited?: boolean;
   invitation?: {
@@ -40,6 +46,11 @@ interface OrganizationCreationStepProps {
     organizationId?: string;
   }) => void;
   className?: string;
+  // Form persistence props
+  organizationName?: string;
+  enableDomainJoin?: boolean;
+  onOrganizationNameChange?: (value: string) => void;
+  onEnableDomainJoinChange?: (value: boolean) => void;
 }
 
 /**
@@ -60,11 +71,15 @@ export default function OrganizationCreationStep({
   userName,
   onNext,
   className,
+  organizationName: initialOrganizationName = '',
+  enableDomainJoin: initialEnableDomainJoin = false,
+  onOrganizationNameChange,
+  onEnableDomainJoinChange,
 }: OrganizationCreationStepProps) {
   const localize = useLocalize();
   const [searchParams] = useSearchParams();
-  const [organizationName, setOrganizationName] = useState('');
-  const [enableDomainJoin, setEnableDomainJoin] = useState(false);
+  const [organizationName, setOrganizationName] = useState(initialOrganizationName);
+  const [enableDomainJoin, setEnableDomainJoin] = useState(initialEnableDomainJoin);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -208,36 +223,40 @@ export default function OrganizationCreationStep({
     );
   }
 
-  // If domain already has an organization, prevent creating another
-  // SECURITY: We intentionally do NOT show how many organizations exist or their names
-  // to prevent information disclosure about other customers
-  if (detectionResult.hasOrganization && !detectionResult.isPublicDomain) {
+  // If domain already has an organization, show preview component for joining
+  if (
+    detectionResult.hasOrganization &&
+    !detectionResult.isPublicDomain &&
+    detectionResult.organizations.length > 0
+  ) {
+    // For Issue #104 - Show organization preview with join options
+
     return (
-      <div className={cn('space-y-6', className)}>
-        <div className="text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20">
-            <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+      <React.Suspense
+        fallback={
+          <div className={cn('py-8 text-center', className)}>
+            <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+              <span>Loading organization details...</span>
+            </div>
           </div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
-            Organization exists for {detectionResult.domain}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300">
-            An organization already exists for your domain. You&apos;ll need to request access from
-            an admin.
-          </p>
-        </div>
-
-        <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Contact your IT administrator or the person who set up Agentis for your company to get
-            an invitation.
-          </p>
-        </div>
-
-        <Button onClick={handleSkip} disabled={isSubmitting} className="w-full" size="lg">
-          Create personal workspace instead
-        </Button>
-      </div>
+        }
+      >
+        <OrganizationPreviewStep
+          organization={{
+            id: detectionResult.organizations[0]._id,
+            name: detectionResult.organizations[0].name,
+            domain: detectionResult.organizations[0].domain,
+            allowDomainJoin: detectionResult.organizations[0].metadata?.allowDomainJoin || false,
+          }}
+          userEmail={email}
+          onNext={() =>
+            onNext({ action: 'join', organizationId: detectionResult.organizations[0]._id })
+          }
+          onSkip={handleSkip}
+          className={className}
+        />
+      </React.Suspense>
     );
   }
 
@@ -251,7 +270,11 @@ export default function OrganizationCreationStep({
             type="text"
             required
             value={organizationName}
-            onChange={(e) => setOrganizationName(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setOrganizationName(value);
+              onOrganizationNameChange?.(value);
+            }}
             disabled={isSubmitting}
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
             placeholder="Acme Inc., Marketing Team, etc."
@@ -267,7 +290,11 @@ export default function OrganizationCreationStep({
               type="checkbox"
               id="domain-join"
               checked={enableDomainJoin}
-              onChange={(e) => setEnableDomainJoin(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setEnableDomainJoin(checked);
+                onEnableDomainJoinChange?.(checked);
+              }}
               disabled={isSubmitting}
               className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             />

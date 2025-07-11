@@ -3,7 +3,7 @@
  * @module routes/OnboardingRoute
  */
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState, useEffect, useCallback, FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 import { useOnboardingState, OnboardingStep } from '~/hooks/useOnboardingState';
@@ -37,13 +37,97 @@ export default function OnboardingRoute() {
   const { state, getProgress, goToNextStep } = useOnboardingState();
   const { showToast } = useToastContext();
 
-  // Form state
+  // Form state with persistence
   const [profileName, setProfileName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  // Organization form state with persistence
+  const [organizationName, setOrganizationName] = useState('');
+  const [enableDomainJoin, setEnableDomainJoin] = useState(false);
+
+  const {
+    data: session,
+    isPending: sessionLoading,
+    refetch: refetchSession,
+  } = authClient.useSession();
   const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
+
+  // Form data persistence keys
+  const ONBOARDING_STORAGE_KEY = `onboarding_${session?.user?.id}`;
+
+  // Load persisted form data on component mount
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    try {
+      const savedData = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+
+        // Restore form data based on current step
+        if (parsedData.profileName && state.currentStep === 'profile') {
+          setProfileName(parsedData.profileName);
+        }
+        if (parsedData.organizationName && state.currentStep === 'organization') {
+          setOrganizationName(parsedData.organizationName);
+        }
+        if (
+          typeof parsedData.enableDomainJoin === 'boolean' &&
+          state.currentStep === 'organization'
+        ) {
+          setEnableDomainJoin(parsedData.enableDomainJoin);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load persisted onboarding data:', error);
+    }
+  }, [session?.user?.id, state.currentStep, ONBOARDING_STORAGE_KEY]);
+
+  // Save form data to localStorage whenever it changes
+  const saveFormData = useCallback(
+    (
+      data: Partial<{
+        profileName: string;
+        organizationName: string;
+        enableDomainJoin: boolean;
+      }>,
+    ) => {
+      if (!session?.user?.id) return;
+
+      try {
+        const existingData = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+        const currentData = existingData ? JSON.parse(existingData) : {};
+        const updatedData = { ...currentData, ...data };
+
+        localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
+      } catch (error) {
+        console.warn('Failed to save onboarding data:', error);
+      }
+    },
+    [session?.user?.id, ONBOARDING_STORAGE_KEY],
+  );
+
+  // Clear form data from localStorage when onboarding is complete
+  const clearFormData = useCallback(() => {
+    if (!session?.user?.id) return;
+
+    try {
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    } catch (error) {
+      console.warn('Failed to clear onboarding data:', error);
+    }
+  }, [session?.user?.id, ONBOARDING_STORAGE_KEY]);
+
+  // Clear form data when user navigates to main app (onboarding complete)
+  useEffect(() => {
+    return () => {
+      // Component unmounting (likely navigating away from onboarding)
+      if (session?.user?.id) {
+        clearFormData();
+      }
+    };
+  }, [session?.user?.id, clearFormData]);
 
   // Robust slug generation function with fallbacks
   const generateSlug = (name: string, fallbackPrefix = 'org'): string => {
@@ -73,7 +157,13 @@ export default function OnboardingRoute() {
     setError('');
 
     try {
-      if (data.action === 'create' && data.organizationName) {
+      if (data.action === 'join' && data.organizationId) {
+        // User joined an existing organization through preview step
+        // Set the joined organization as active
+        await authClient.organization.setActive({
+          organizationId: data.organizationId,
+        });
+      } else if (data.action === 'create' && data.organizationName) {
         // Create organization with robust slug generation
         const slug = generateSlug(data.organizationName);
 
@@ -88,51 +178,75 @@ export default function OnboardingRoute() {
             organizationId: result.data.id,
           });
 
-          // If domain join is enabled, update organization settings
-          if (data.enableDomainJoin) {
-            const domain = session?.user?.email?.split('@')[1];
-            if (!domain) {
-              console.warn('Cannot enable domain join: user email domain not found');
-            } else {
-              try {
-                const response = await fetch('/api/organization/enable-domain-join', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  credentials: 'include', // Include authentication cookies
-                  body: JSON.stringify({
-                    organizationId: result.data.id,
-                    domain: domain,
-                  }),
+          // Always set the domain metadata for organization detection, regardless of auto-join setting
+          const domain = session?.user?.email?.split('@')[1];
+          if (!domain) {
+            console.warn('Cannot set organization domain: user email domain not found');
+          } else {
+            try {
+              console.log('Setting organization domain:', {
+                organizationId: result.data.id,
+                organizationIdType: typeof result.data.id,
+                organizationData: result.data,
+                domain: domain,
+                userEmail: session?.user?.email,
+                enableDomainJoin: data.enableDomainJoin,
+              });
+
+              const response = await fetch('/api/organization/enable-domain-join', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include', // Include authentication cookies
+                body: JSON.stringify({
+                  organizationId: result.data.id,
+                  domain: domain,
+                  enableDomainJoin: data.enableDomainJoin, // Pass the auto-join setting
+                }),
+              });
+
+              console.log('Organization domain API response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries()),
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Organization domain API error:', {
+                  status: response.status,
+                  statusText: response.statusText,
+                  errorData,
                 });
+                throw new Error(
+                  `HTTP ${response.status}: ${errorData.error || 'Failed to set organization domain'}`,
+                );
+              }
 
-                if (!response.ok) {
-                  const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                  throw new Error(
-                    `HTTP ${response.status}: ${errorData.error || 'Failed to enable domain join'}`,
-                  );
-                }
+              const responseData = await response.json();
+              console.log('Organization domain set successfully:', responseData);
 
-                const responseData = await response.json();
-                console.log('Domain join enabled successfully:', responseData);
+              if (data.enableDomainJoin) {
                 showToast({
                   message: 'Automatic team joining enabled successfully!',
                   severity: NotificationSeverity.SUCCESS,
                   showIcon: true,
                   duration: 3000,
                 });
-              } catch (error) {
-                console.error('Failed to enable domain join:', error);
-                showToast({
-                  message:
-                    'Failed to enable automatic team joining. You can set this up later in organization settings.',
-                  severity: NotificationSeverity.WARNING,
-                  showIcon: true,
-                  duration: 5000,
-                });
-                // Don't block onboarding flow, but inform the user
               }
+            } catch (error) {
+              console.error('Failed to set organization domain:', error);
+              const message = data.enableDomainJoin
+                ? 'Failed to enable automatic team joining. You can set this up later in organization settings.'
+                : 'Failed to set organization domain. This may affect team discovery.';
+              showToast({
+                message,
+                severity: NotificationSeverity.WARNING,
+                showIcon: true,
+                duration: 5000,
+              });
+              // Don't block onboarding flow, but inform the user
             }
           }
         }
@@ -173,6 +287,9 @@ export default function OnboardingRoute() {
         });
       }
 
+      // Clear organization form data since step is completed
+      saveFormData({ organizationName: undefined, enableDomainJoin: undefined });
+
       goToNextStep();
     } catch (err) {
       console.error('Organization action error:', err);
@@ -184,6 +301,22 @@ export default function OnboardingRoute() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Enhanced form change handlers that save data
+  const handleProfileNameChange = (value: string) => {
+    setProfileName(value);
+    saveFormData({ profileName: value });
+  };
+
+  const handleOrganizationNameChange = (value: string) => {
+    setOrganizationName(value);
+    saveFormData({ organizationName: value });
+  };
+
+  const handleEnableDomainJoinChange = (value: boolean) => {
+    setEnableDomainJoin(value);
+    saveFormData({ enableDomainJoin: value });
   };
 
   // Handle profile completion
@@ -203,6 +336,10 @@ export default function OnboardingRoute() {
       await authClient.updateUser({
         name: trimmedUserName,
       });
+
+      // Clear form data for profile step since it's completed
+      saveFormData({ profileName: undefined });
+
       goToNextStep();
     } catch (err) {
       setError('Failed to update profile. Please try again.');
@@ -230,11 +367,9 @@ export default function OnboardingRoute() {
     return <Navigate to="/login" replace={true} />;
   }
 
-  // Has session and organizations - redirect to chat
-  // Only redirect if they have completed onboarding (have organizations)
-  if (organizations && organizations.length > 0) {
-    return <Navigate to="/c/new" replace={true} />;
-  }
+  // Don't redirect to chat based on organizations alone
+  // Users should complete the full onboarding flow regardless of having organizations
+  // The only redirect to chat should happen when clicking "Start Your First Conversation"
 
   const progress = getProgress();
   const userEmail = session?.user?.email || '';
@@ -263,9 +398,37 @@ export default function OnboardingRoute() {
       title: 'Welcome to Agentis!',
       subtitle: "You're all set up. Let's start your AI conversation journey.",
     },
+    // Handle 'complete' step for edge cases
+    complete: {
+      title: 'Setup Complete!',
+      subtitle: 'Redirecting you to your workspace...',
+    },
   };
 
   const currentStepConfig = stepConfig[state.currentStep];
+
+  // Safety check - if currentStepConfig is undefined, provide defaults
+  if (!currentStepConfig) {
+    console.error('❌ No config found for current step:', state.currentStep);
+    console.error('❌ Available steps:', Object.keys(stepConfig));
+    return (
+      <OnboardingLayout
+        title="Loading..."
+        subtitle="Setting up your workspace..."
+        step={{
+          current: progress.current,
+          total: progress.total,
+        }}
+      >
+        <div className="py-8 text-center">
+          <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+            <span>Loading onboarding step...</span>
+          </div>
+        </div>
+      </OnboardingLayout>
+    );
+  }
 
   return (
     <OnboardingLayout
@@ -283,6 +446,10 @@ export default function OnboardingRoute() {
           userName={userName}
           onNext={handleOrganizationAction}
           className={isSubmitting ? 'pointer-events-none opacity-50' : ''}
+          organizationName={organizationName}
+          enableDomainJoin={enableDomainJoin}
+          onOrganizationNameChange={handleOrganizationNameChange}
+          onEnableDomainJoinChange={handleEnableDomainJoinChange}
         />
       )}
 
@@ -301,7 +468,7 @@ export default function OnboardingRoute() {
               type="text"
               required
               value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
+              onChange={(e) => handleProfileNameChange(e.target.value)}
               disabled={isSubmitting}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               placeholder="Enter your full name"
@@ -368,7 +535,37 @@ export default function OnboardingRoute() {
             </p>
           </div>
 
-          <Button onClick={() => navigate('/c/new')} className="w-full" size="lg">
+          <Button
+            onClick={async () => {
+              try {
+                console.log('Welcome button clicked - completing onboarding...');
+
+                // Mark onboarding as complete
+                await authClient.updateUser({
+                  onboardingStep: 'complete',
+                });
+                console.log('✅ Updated user onboarding step to: complete');
+
+                // Refresh session to ensure OnboardGuard sees the update
+                try {
+                  await refetchSession();
+                  console.log('✅ Refreshed session after completing onboarding');
+                } catch (sessionError) {
+                  console.warn('⚠️ Session refresh failed but continuing:', sessionError);
+                }
+
+                // Navigate to chat - use hard navigation to avoid React Router issues
+                console.log('🚀 Navigating to /c/new...');
+                window.location.href = '/c/new';
+              } catch (error) {
+                console.error('❌ Failed to complete onboarding:', error);
+                console.log('🚀 Navigating anyway to avoid blocking user...');
+                window.location.href = '/c/new';
+              }
+            }}
+            className="w-full"
+            size="lg"
+          >
             Start Your First Conversation
           </Button>
         </div>

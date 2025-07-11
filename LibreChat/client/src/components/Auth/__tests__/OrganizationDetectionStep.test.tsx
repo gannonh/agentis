@@ -50,6 +50,19 @@ vi.mock('~/components/ui', () => ({
   ),
 }));
 
+// Mock OrganizationPreviewStep component
+vi.mock('../OrganizationPreviewStep', () => ({
+  default: ({ organization, userEmail, onNext, onSkip }: any) => (
+    <div data-testid="organization-preview-step">
+      <h2>Organization Preview</h2>
+      <p>Organization: {organization.name}</p>
+      <p>Domain: {organization.domain}</p>
+      <button onClick={onNext}>Join Organization</button>
+      <button onClick={onSkip}>Skip</button>
+    </div>
+  ),
+}));
+
 const renderWithRouter = (component: React.ReactElement) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
@@ -186,7 +199,7 @@ describe('OrganizationDetectionStep', () => {
     });
   });
 
-  it('blocks creation for corporate domain with existing organization', async () => {
+  it('shows organization preview when domain has existing organization', async () => {
     const mockResult = {
       isPublicDomain: false,
       domain: 'company.com',
@@ -196,6 +209,9 @@ describe('OrganizationDetectionStep', () => {
           _id: 'org-123',
           name: 'Company Inc',
           domain: 'company.com',
+          metadata: {
+            allowDomainJoin: true,
+          },
         },
       ],
     };
@@ -207,17 +223,26 @@ describe('OrganizationDetectionStep', () => {
 
     renderWithRouter(<OrganizationDetectionStep {...defaultProps} email="user@company.com" />);
 
+    // Should show the OrganizationPreviewStep component
     await waitFor(() => {
-      expect(screen.getByText('Organization exists for company.com')).toBeInTheDocument();
-      expect(
-        screen.getByText(/An organization already exists for your domain/),
-      ).toBeInTheDocument();
-      expect(screen.getByText('Create personal workspace instead')).toBeInTheDocument();
+      expect(screen.getByTestId('organization-preview-step')).toBeInTheDocument();
+      expect(screen.getByText('Organization: Company Inc')).toBeInTheDocument();
+      expect(screen.getByText('Domain: company.com')).toBeInTheDocument();
     });
 
-    // Can only create personal workspace
-    const personalButton = screen.getByText('Create personal workspace instead');
-    fireEvent.click(personalButton);
+    // Test join organization button
+    const joinButton = screen.getByText('Join Organization');
+    fireEvent.click(joinButton);
+
+    expect(mockOnNext).toHaveBeenCalledWith({
+      action: 'join',
+      organizationId: 'org-123',
+    });
+
+    // Reset and test skip button
+    mockOnNext.mockClear();
+    const skipButton = screen.getByText('Skip');
+    fireEvent.click(skipButton);
 
     expect(mockOnNext).toHaveBeenCalledWith({
       action: 'skip',

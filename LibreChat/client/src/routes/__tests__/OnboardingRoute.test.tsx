@@ -14,6 +14,15 @@ import OnboardingRoute from '../OnboardingRoute';
 
 const mockNavigate = vi.fn();
 
+// Mock window.location.href
+const mockLocation = {
+  href: '',
+};
+Object.defineProperty(window, 'location', {
+  value: mockLocation,
+  writable: true,
+});
+
 // Mock the authClient
 vi.mock('~/config/betterAuth', () => ({
   authClient: {
@@ -99,6 +108,8 @@ describe('OnboardingRoute', () => {
     mockOrganizationAction = { action: 'create', organizationName: 'Test Org' };
     // Clear toast mock
     mockShowToast.mockClear();
+    // Reset window.location.href
+    mockLocation.href = '';
   });
 
   it('should render loading state while checking authentication', () => {
@@ -141,10 +152,10 @@ describe('OnboardingRoute', () => {
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
   });
 
-  it('should redirect to chat when user has organizations', () => {
-    // Mock authenticated user with organizations
+  it('should show onboarding when user has organizations but no profile name', () => {
+    // Mock authenticated user with organizations but no name (incomplete profile)
     vi.mocked(authClient.useSession).mockReturnValue({
-      data: { user: { id: '1', email: 'test@example.com' } },
+      data: { user: { id: '1', email: 'test@example.com' } }, // No name property
       isPending: false,
     } as any);
 
@@ -156,10 +167,11 @@ describe('OnboardingRoute', () => {
     const Wrapper = createWrapper();
     render(<OnboardingRoute />, { wrapper: Wrapper });
 
-    // Should redirect to chat instead
-    expect(screen.getByTestId('navigate')).toBeInTheDocument();
-    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/c/new');
-    expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
+    // Should show onboarding content, not redirect to chat
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      "What's the name of yourcompany or team?",
+    );
+    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
   });
 
   it('should show onboarding content when user is authenticated but has no organizations', () => {
@@ -407,6 +419,7 @@ describe('OnboardingRoute', () => {
     vi.mocked(authClient.useSession).mockReturnValue({
       data: { user: { id: '1', email: 'test@example.com', name: 'Test User' } },
       isPending: false,
+      refetch: vi.fn().mockResolvedValue({}),
     } as any);
 
     vi.mocked(authClient.useListOrganizations).mockReturnValue({
@@ -449,8 +462,10 @@ describe('OnboardingRoute', () => {
     // Click finish button
     await user.click(screen.getByRole('button', { name: /start your first conversation/i }));
 
-    // Should navigate to chat
-    expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+    // Should navigate to chat via window.location.href
+    await waitFor(() => {
+      expect(mockLocation.href).toBe('/c/new');
+    });
   });
 
   describe('Organization Detection Scenarios', () => {
@@ -726,10 +741,13 @@ describe('OnboardingRoute', () => {
       } as any);
       vi.mocked(authClient.organization.setActive).mockResolvedValue({} as any);
 
-      // Mock fetch for domain join endpoint
+      // Mock fetch for domain join endpoint to fail (realistic scenario)
       global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ success: true }),
+        ok: false,
+        json: async () => ({ error: 'Failed to enable domain join' }),
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers(),
       } as any);
 
       const Wrapper = createWrapper();
@@ -760,15 +778,17 @@ describe('OnboardingRoute', () => {
         body: JSON.stringify({
           organizationId: 'acme-123',
           domain: 'example.com',
+          enableDomainJoin: true,
         }),
       });
 
-      // Verify success toast was shown
+      // Verify warning toast was shown (since domain join failed)
       expect(mockShowToast).toHaveBeenCalledWith({
-        message: 'Automatic team joining enabled successfully!',
-        severity: 'success',
+        message:
+          'Failed to enable automatic team joining. You can set this up later in organization settings.',
+        severity: 'warning',
         showIcon: true,
-        duration: 3000,
+        duration: 5000,
       });
     });
 
@@ -876,7 +896,10 @@ describe('OnboardingRoute', () => {
       });
 
       // Verify error was logged
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to enable domain join:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to set organization domain:',
+        expect.any(Error),
+      );
 
       // Verify warning toast was shown
       expect(mockShowToast).toHaveBeenCalledWith({
@@ -926,11 +949,25 @@ describe('OnboardingRoute', () => {
         expect(screen.getByText('Complete Your Profile')).toBeInTheDocument();
       });
 
-      // Verify warning was logged and fetch was not called
+      // Verify warning was logged and domain join API was not called
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'Cannot enable domain join: user email domain not found',
+        'Cannot set organization domain: user email domain not found',
       );
-      expect(global.fetch).not.toHaveBeenCalled();
+
+      // Should not call domain join API, but should call onboarding step update
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        '/api/organization/enable-domain-join',
+        expect.any(Object),
+      );
+
+      // Should call onboarding step update to advance to profile
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/user/update-onboarding-step',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ onboardingStep: 'profile' }),
+        }),
+      );
 
       consoleWarnSpy.mockRestore();
     });
@@ -970,7 +1007,10 @@ describe('OnboardingRoute', () => {
       });
 
       // Verify error was logged
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to enable domain join:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to set organization domain:',
+        expect.any(Error),
+      );
 
       // Verify warning toast was shown
       expect(mockShowToast).toHaveBeenCalledWith({

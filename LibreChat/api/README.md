@@ -167,6 +167,20 @@ api/
 | POST   | `/api/auth/refresh`      | Token refresh                  |
 | POST   | `/api/auth/register`     | Legacy registration            |
 
+### Organization Management
+
+| Method | Endpoint                               | Description                            | Auth Required |
+|--------|----------------------------------------|----------------------------------------|---------------|
+| POST   | `/api/organization/auto-join`         | Auto-join organization by domain       | ✅ Better Auth |
+| POST   | `/api/organization/request-join`      | Request to join organization           | ✅ Better Auth |
+| GET    | `/api/organization/:id/join-requests` | Get join requests (admin only)         | ✅ Admin/Owner |
+| POST   | `/api/organization/:id/join-requests/:requestId/approve` | Approve join request | ✅ Admin/Owner |
+| POST   | `/api/organization/:id/join-requests/:requestId/reject`  | Reject join request  | ✅ Admin/Owner |
+| POST   | `/api/organization/enable-domain-join` | Enable domain auto-join (admin only)  | ✅ Admin/Owner |
+| GET    | `/api/organization/membership-status` | Check user membership status           | ✅ Better Auth |
+| GET    | `/api/organization/check-join-eligibility` | Check auto-join eligibility      | ✅ Better Auth |
+| POST   | `/api/organization/detect-domain`     | Detect organizations by domain         | ✅ Better Auth |
+
 ### Two-Factor Authentication
 
 | Method | Endpoint                      | Description                    |
@@ -414,8 +428,9 @@ import { requireBetterAuth } from '#server/middleware';
 
 ### API Security
 - **JWT token validation** with refresh mechanism
-- **Role-based access control** (RBAC)
+- **Role-based access control** (RBAC) with flexible ID format support
 - **Organization isolation** for multi-tenancy
+- **Dual-format ID handling** (Better Auth strings + MongoDB ObjectIds)
 - **Comprehensive logging** for audit trails
 - **Request validation** middleware
 
@@ -620,6 +635,19 @@ mongosh $MONGODB_URI
 db.users.countDocuments()
 db.conversations.find().sort({createdAt: -1}).limit(5)
 db.messages.find().sort({createdAt: -1}).limit(5)
+
+# Debug organization and membership ID formats
+db.organization.find().limit(3)
+db.member.find().limit(3)
+```
+
+**ID Format Debugging:**
+```bash
+# Check middleware ID handling in logs
+grep "Organization admin check" logs/debug-$(date +%Y-%m-%d).log
+
+# Monitor Better Auth vs ObjectId format usage
+grep "ID format detected" logs/debug-$(date +%Y-%m-%d).log
 ```
 
 ## 📚 Additional Resources
@@ -634,6 +662,8 @@ db.messages.find().sort({createdAt: -1}).limit(5)
 - **Shared Packages**: `../packages/*/README.md`
 - **Project Overview**: `../../README.md`
 - **Configuration Examples**: `../config/`
+- **Security Analysis**: `../../docs/ACTIVE/id-format-issue-analysis.md`
+- **System Requirements**: `../../docs/ACTIVE/id-format-system-requirements.md`
 
 ### External Resources
 - **Better Auth Documentation**: [better-auth.com](https://better-auth.com)

@@ -59,6 +59,7 @@ vi.mock('better-auth/client/plugins', () => ({
   adminClient: vi.fn(() => ({})),
   magicLinkClient: vi.fn(() => ({})),
   usernameClient: vi.fn(() => ({})),
+  inferAdditionalFields: vi.fn(() => ({})),
 }));
 
 describe('Better Auth Client Configuration', () => {

@@ -25,8 +25,6 @@ export default defineConfig({
       'node_modules/**',
       'dist/**',
       'coverage/**',
-      // Integration tests (run separately)
-      '**/*.integration.vitest.js',
       // Legacy test directories and files
       'app/clients/specs/**',
       'app/clients/tools/**/*.test.js',
@@ -50,8 +48,8 @@ export default defineConfig({
     // Setup files (will convert these to ESM)
     setupFiles: ['./test/vitestSetup.js'],
 
-    // Test timeout
-    testTimeout: 30000,
+    // Test timeout - longer for integration tests
+    testTimeout: 60000,
 
     // Coverage configuration
     coverage: {
@@ -63,6 +61,8 @@ export default defineConfig({
         'utils/organization.js',
         'server/services/OrganizationService.js',
         'server/services/InvitationService.js',
+        'server/middleware/roles/checkOrganizationAdmin.js',
+        'server/routes/organizationJoin.js',
         // Add more files as we write tests for them
       ],
     },

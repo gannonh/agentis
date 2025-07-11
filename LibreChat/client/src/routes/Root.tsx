@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import type { ContextType } from '~/common';
 import { useAssistantsMap, useAgentsMap, useFileMap, useSearchEnabled } from '~/hooks';
@@ -28,6 +28,7 @@ export default function Root() {
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: session } = authClient.useSession();
   const isAuthenticated = !!session?.user;
   const setQueriesEnabled = useSetRecoilState<boolean>(store.queriesEnabled);
@@ -70,9 +71,11 @@ export default function Root() {
 
   useEffect(() => {
     if (termsData) {
-      setShowTerms(!termsData.termsAccepted);
+      // Don't show terms modal during onboarding - wait until user reaches main app
+      const isInOnboarding = location.pathname === '/onboarding';
+      setShowTerms(!termsData.termsAccepted && !isInOnboarding);
     }
-  }, [termsData]);
+  }, [termsData, location.pathname]);
 
   const handleAcceptTerms = () => {
     setShowTerms(false);

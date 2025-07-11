@@ -30,6 +30,7 @@ import composio from './composio.js';
 import mcpDiagnostics from './mcp-diagnostics.js';
 import invitations from './invitations.js';
 import adminOrganizations from './adminOrganizations.js';
+import organizationJoin from './organizationJoin.js';
 
 export {
   ask,
@@ -63,4 +64,5 @@ export {
   mcpDiagnostics,
   invitations,
   adminOrganizations,
+  organizationJoin,
 };

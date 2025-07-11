@@ -1,20 +1,30 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { RecoilRoot } from 'recoil';
 import AuthGuard from '../AuthGuard';
 
 // Mock Better Auth client
 vi.mock('~/config/betterAuth', () => ({
   authClient: {
     useSession: vi.fn(),
-    useListOrganizations: vi.fn(),
   },
 }));
 
-// Import the mocked module to get typed access to the mocks
+// Mock react-router-dom Navigate component
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    Navigate: ({ to, replace }: { to: string; replace?: boolean }) => (
+      <div data-testid="navigate" data-to={to} data-replace={String(replace)} />
+    ),
+  };
+});
+
+// Import the mocked modules to get typed access to the mocks
 const { authClient } = await import('~/config/betterAuth');
 const mockUseSession = authClient.useSession as Mock;
-const mockUseListOrganizations = authClient.useListOrganizations as Mock;
 
 describe('AuthGuard', () => {
   beforeEach(() => {
@@ -23,9 +33,13 @@ describe('AuthGuard', () => {
 
   const renderAuthGuard = () => {
     return render(
-      <MemoryRouter>
-        <AuthGuard />
-      </MemoryRouter>,
+      <RecoilRoot>
+        <MemoryRouter>
+          <AuthGuard>
+            <div>Test Child</div>
+          </AuthGuard>
+        </MemoryRouter>
+      </RecoilRoot>,
     );
   };
 
@@ -34,10 +48,6 @@ describe('AuthGuard', () => {
       mockUseSession.mockReturnValue({
         data: undefined,
         isPending: true,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: false,
       });
 
       renderAuthGuard();
@@ -48,279 +58,110 @@ describe('AuthGuard', () => {
       expect(spinner).toBeInTheDocument();
     });
 
-    it('shows loading spinner when organizations query is loading', () => {
-      mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: true,
-      });
-
-      renderAuthGuard();
-
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
-      const spinner = document.querySelector('.animate-spin');
-      expect(spinner).toBeInTheDocument();
-    });
-
     it('displays correct loading message', () => {
       mockUseSession.mockReturnValue({
         data: undefined,
         isPending: true,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: false,
       });
 
       renderAuthGuard();
 
       const loadingText = screen.getByText('Loading...');
       expect(loadingText).toBeInTheDocument();
-      expect(loadingText).toHaveClass('text-gray-600');
     });
   });
 
-  describe('Authenticated User Redirect', () => {
-    it('redirects to /c/new when user is authenticated with organizations', () => {
+  describe('Authentication Flow', () => {
+    it('redirects to login when no session', () => {
       mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: [{ id: 'org1', name: 'Test Org' }],
-        isPending: false,
-      });
-
-      const { container } = renderAuthGuard();
-
-      // Should redirect to /c/new - no content should be rendered
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('redirects to /register when user has no organizations', () => {
-      mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: [],
-        isPending: false,
-      });
-
-      const { container } = renderAuthGuard();
-
-      // Should redirect to /register - no content should be rendered
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('redirects to /register when organizations data is null', () => {
-      mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
         data: null,
         isPending: false,
       });
 
-      const { container } = renderAuthGuard();
+      renderAuthGuard();
 
-      // Should redirect to /register - no content should be rendered
-      expect(container.firstChild).toBeNull();
+      expect(screen.getByTestId('navigate')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
     });
-  });
 
-  describe('Unauthenticated User Redirect', () => {
-    it('redirects to /login when no session', () => {
+    it('redirects to login when session user is undefined', () => {
       mockUseSession.mockReturnValue({
-        data: null,
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
+        data: { user: undefined },
         isPending: false,
       });
 
-      const { container } = renderAuthGuard();
+      renderAuthGuard();
 
-      // Should redirect to /login - no content should be rendered
-      expect(container.firstChild).toBeNull();
+      expect(screen.getByTestId('navigate')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
     });
 
-    it('redirects to /login when session has no user', () => {
+    it('redirects to login when session user is null', () => {
       mockUseSession.mockReturnValue({
         data: { user: null },
         isPending: false,
       });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: false,
-      });
 
-      const { container } = renderAuthGuard();
+      renderAuthGuard();
 
-      // Should redirect to /login - no content should be rendered
-      expect(container.firstChild).toBeNull();
+      expect(screen.getByTestId('navigate')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-replace', 'true');
     });
+  });
 
-    it('redirects to /login when session is undefined', () => {
+  describe('Authenticated User', () => {
+    it('renders children when user is authenticated', () => {
       mockUseSession.mockReturnValue({
-        data: undefined,
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
+        data: { user: { id: 'test-user', email: 'test@example.com' } },
         isPending: false,
       });
 
-      const { container } = renderAuthGuard();
+      renderAuthGuard();
 
-      // Should redirect to /login - no content should be rendered
-      expect(container.firstChild).toBeNull();
+      expect(screen.getByText('Test Child')).toBeInTheDocument();
     });
   });
 
   describe('Session Data Handling', () => {
-    it('shows loading state when session is loading', () => {
+    it('handles session without user property', () => {
       mockUseSession.mockReturnValue({
-        data: undefined,
-        isPending: true,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
+        data: {},
         isPending: false,
       });
 
       renderAuthGuard();
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
     });
 
-    it('shows loading state when organizations are loading', () => {
+    it('handles malformed session data', () => {
       mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
+        data: 'invalid-session-data',
         isPending: false,
       });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: true,
-      });
 
       renderAuthGuard();
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
-    });
-
-    it('shows loading state when both queries are loading', () => {
-      mockUseSession.mockReturnValue({
-        data: undefined,
-        isPending: true,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: true,
-      });
-
-      renderAuthGuard();
-
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
     });
   });
 
   describe('Edge Cases', () => {
-    it('handles rapid auth state changes', () => {
-      const { rerender } = render(
-        <MemoryRouter>
-          <AuthGuard />
-        </MemoryRouter>,
-      );
-
-      // Start with loading
-      mockUseSession.mockReturnValue({
-        data: undefined,
-        isPending: true,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: true,
-      });
-
-      rerender(
-        <MemoryRouter>
-          <AuthGuard />
-        </MemoryRouter>,
-      );
-
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
-
-      // Change to authenticated with organizations
-      mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: [{ id: 'org1', name: 'Test Org' }],
-        isPending: false,
-      });
-
-      const { container } = render(
-        <MemoryRouter>
-          <AuthGuard />
-        </MemoryRouter>,
-      );
-
-      // Should redirect - no content rendered
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('handles undefined session data gracefully', () => {
+    it('handles undefined session data', () => {
       mockUseSession.mockReturnValue({
         data: undefined,
         isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: false,
-      });
-
-      const { container } = renderAuthGuard();
-
-      // Should redirect to login - no content should be rendered
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('handles empty organizations array', () => {
-      mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: [],
-        isPending: false,
-      });
-
-      const { container } = renderAuthGuard();
-
-      // Should redirect to register - no content should be rendered
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('handles session with user but organizations still loading', () => {
-      mockUseSession.mockReturnValue({
-        data: { user: { id: 'test-user', email: 'test@example.com' } },
-        isPending: false,
-      });
-      mockUseListOrganizations.mockReturnValue({
-        data: undefined,
-        isPending: true,
       });
 
       renderAuthGuard();
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
     });
   });
 });

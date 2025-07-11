@@ -44,8 +44,7 @@ mongoose.connection.once('open', () => {
   try {
     logger.info('🔧 MongoDB connection established, initializing Better Auth...');
 
-    const client = mongoose.connection.getClient();
-    const db = client.db('Agentis');
+    const db = mongoose.connection.db;
 
     // Debug Google OAuth credentials
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -115,12 +114,27 @@ mongoose.connection.once('open', () => {
         },
       },
 
+      // Note: Server-side redirect hooks removed due to Better Auth compatibility issues
+      // Onboarding resumption logic is implemented client-side in MagicLinkLogin.tsx
+
       // Use betterAuthConfig for consistent settings
       emailAndPassword: {
         enabled: true, // Required for admin.createUser to work, though users still authenticate via OAuth/magic links
       },
       emailVerification: betterAuthConfig.emailVerification,
       session: betterAuthConfig.session,
+
+      // User configuration with additional fields
+      user: {
+        additionalFields: {
+          onboardingStep: {
+            type: 'string',
+            required: false,
+            defaultValue: 'organization',
+            input: true, // Allow setting during updates
+          },
+        },
+      },
 
       // Account linking - allow OAuth to link to existing magic link users
       account: {
@@ -271,7 +285,7 @@ mongoose.connection.once('open', () => {
           // },
         }),
         magicLink({
-          expiresIn: 300, // 5 minutes
+          expiresIn: 600, // 10 minutes
           disableSignUp: false, // Allow new user registration via magic link
           sendMagicLink: async ({ email, token, url }, request) => {
             logger.info(`📧 Magic link request received for: ${email}`);

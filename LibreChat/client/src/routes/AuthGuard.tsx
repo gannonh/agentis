@@ -3,23 +3,20 @@ import { Navigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 
 /**
- * AuthGuard component that handles root path routing using Better Auth
- * Uses declarative routing to avoid flashes
+ * AuthGuard component that handles authentication checking only
+ * Routes authenticated users to OnboardGuard for onboarding state checking
  */
-export default function AuthGuard() {
+export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
-  const { data: organizations, isPending: orgsLoading } = authClient.useListOrganizations();
 
-  console.log('AuthGuard Better Auth state:', {
+  console.log('AuthGuard state:', {
     sessionLoading,
-    orgsLoading,
     hasSession: !!session?.user,
     userEmail: session?.user?.email,
-    organizationsCount: organizations?.length || 0,
   });
 
   // Show loading while checking auth state
-  if (sessionLoading || orgsLoading) {
+  if (sessionLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -36,13 +33,7 @@ export default function AuthGuard() {
     return <Navigate to="/login" replace={true} />;
   }
 
-  // Has session but no organizations - redirect to onboarding
-  if (!organizations || organizations.length === 0) {
-    console.log('AuthGuard: User has no organizations, redirecting to onboarding');
-    return <Navigate to="/onboarding" replace={true} />;
-  }
-
-  // User is authenticated with organizations - redirect to chat
-  console.log('AuthGuard: User authenticated with organizations, redirecting to chat');
-  return <Navigate to="/c/new" replace={true} />;
+  // User is authenticated - pass to children (OnboardGuard or main app)
+  console.log('AuthGuard: User authenticated, proceeding to children');
+  return <>{children}</>;
 }

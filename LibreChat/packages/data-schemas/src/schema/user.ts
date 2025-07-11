@@ -31,6 +31,7 @@ export interface IUser extends Document {
   termsAccepted?: boolean;
   organizationId?: Types.ObjectId;
   orgRole?: 'account_owner' | 'member';
+  onboardingStep?: 'organization' | 'profile' | 'team' | 'welcome' | 'complete';
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -165,6 +166,11 @@ const User = new Schema<IUser>(
     orgRole: {
       type: String,
       enum: ['account_owner', 'member'],
+    },
+    onboardingStep: {
+      type: String,
+      enum: ['organization', 'profile', 'team', 'welcome', 'complete'],
+      default: 'organization',
     },
   },
   { timestamps: true },

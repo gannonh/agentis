@@ -23,6 +23,69 @@ router.get('/', requireBetterAuth, getUserController);
 router.get('/terms', requireBetterAuth, getTermsStatusController);
 router.post('/terms/accept', requireBetterAuth, acceptTermsController);
 router.post('/plugins', requireBetterAuth, updateUserPluginsController);
+router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
+  try {
+    const { onboardingStep } = req.body;
+    const userId = req.user.id;
+
+    // Validate onboarding step
+    const validSteps = ['organization', 'profile', 'team', 'welcome', 'complete'];
+    if (!onboardingStep || !validSteps.includes(onboardingStep)) {
+      return res.status(400).json({
+        error: 'Invalid onboarding step',
+        validSteps,
+      });
+    }
+
+    // Update user in Better Auth's database directly to ensure session synchronization
+    // Better Auth uses the 'user' collection for user data
+    const mongoose = await import('mongoose');
+    const db = mongoose.default.connection.db;
+    const userCollection = db.collection('user');
+
+    const updateResult = await userCollection.updateOne(
+      { _id: new mongoose.default.Types.ObjectId(userId) },
+      {
+        $set: {
+          onboardingStep,
+          updatedAt: new Date(),
+        },
+      },
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (updateResult.modifiedCount === 0) {
+      logger.warn('User onboarding step was not modified - may already be set to this value', {
+        userId,
+        onboardingStep,
+      });
+    }
+
+    // Get the updated user data
+    const updatedUser = await userCollection.findOne({
+      _id: new mongoose.default.Types.ObjectId(userId),
+    });
+
+    logger.info('Updated user onboarding step in Better Auth database', {
+      userId,
+      onboardingStep,
+      matchedCount: updateResult.matchedCount,
+      modifiedCount: updateResult.modifiedCount,
+      currentOnboardingStep: updatedUser?.onboardingStep,
+    });
+
+    res.json({
+      success: true,
+      onboardingStep: updatedUser?.onboardingStep || onboardingStep,
+    });
+  } catch (error) {
+    logger.error('Failed to update onboarding step in Better Auth database', error);
+    res.status(500).json({ error: 'Failed to update onboarding step' });
+  }
+});
 router.delete('/delete', requireBetterAuth, canDeleteAccount, deleteUserController);
 router.post('/verify', verifyEmailController);
 router.post('/verify/resend', verifyEmailLimiter, resendVerificationController);

@@ -167,14 +167,13 @@ export async function checkDomainOrganizations(email, inviteContext) {
   // 2. That organization has allowDomainJoin enabled
   const canAutoJoin = organizations.length === 1 && organizations[0].allowDomainJoin === true;
 
-  // SECURITY: We intentionally do NOT return the organizations array
-  // to prevent information disclosure about other customers.
-  // Frontend only needs to know if organization(s) exist, not details.
+  // For Issue #104 - Return organization details when there's a match
+  // This is needed for the organization preview/join functionality
   return {
     isPublicDomain: false,
     domain,
     hasOrganization,
-    organizations: [], // Empty array for security
+    organizations, // Return actual organizations for join flow
     canAutoJoin,
   };
 }

@@ -1,82 +1,27 @@
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
+import { logProgress } from '../../utils/testLogger';
+import {
+  TEST_EMAILS,
+  TEST_VIEWPORT,
+  captureMagicLink,
+  cleanDatabase,
+  generateTestEmail,
+  TEST_PATTERNS,
+} from '../../utils/authOnboardingUtils';
 
 test.use({
-  viewport: {
-    height: 1700,
-    width: 1600,
-  },
+  viewport: TEST_VIEWPORT,
 });
 
 // Tests in this file run in order. Retries, if any, run independently.
 test.describe.configure({ mode: 'default' });
 
-test.describe('Auth & Onboarding Tests', () => {
-  // Test data for consistent use across tests
-  const TEST_EMAILS = {
-    GMAIL_PUBLIC: 'agentis.test@gmail.com',
-    CORPORATE: 'gannon@astrolabs.llc',
-    GENERIC_TEST: 'test@example.com',
-    YAHOO_PUBLIC: 'test@yahoo.com',
-    OUTLOOK_PUBLIC: 'test@outlook.com',
-  };
+test.describe('Basic Auth & Onboarding Tests', () => {
+  // Test data imported from authOnboardingUtils
 
-  // Helper to capture magic link using MailHog
-  async function captureMagicLink(email: string): Promise<string | null> {
-    const { createMailHog } = await import('../utils/mailhog.js');
-    const mailhog = createMailHog();
+  // Magic link capture helper imported from authOnboardingUtils
 
-    try {
-      logProgress(`📧 Waiting for magic link email to ${email}`);
-      const magicLink = await mailhog.waitForMagicLink(email, 15000);
-
-      if (magicLink) {
-        logProgress(`✅ Found magic link: ${magicLink}`);
-        return magicLink;
-      } else {
-        logProgress(`❌ No magic link found for ${email}`);
-        return null;
-      }
-    } catch (error) {
-      logProgress(`❌ Error getting magic link from MailHog: ${error}`);
-      return null;
-    }
-  }
-
-  // Helper to clean database between tests
-  async function cleanDatabase() {
-    const { getTestDatabase } = await import('../utils/testAuth');
-    const { db } = await getTestDatabase();
-
-    // Clean up test data in proper order (foreign keys matter)
-    // 1. Delete sessions first
-    await db.collection('session').deleteMany({
-      $or: [
-        { userId: { $regex: /test.*/ } },
-        {}, // Clean all sessions for now since we're testing
-      ],
-    });
-
-    // 2. Delete member records
-    await db.collection('member').deleteMany({
-      $or: [{ userId: { $regex: /test.*/ } }, { organizationId: { $regex: /test.*/ } }],
-    });
-
-    // 3. Delete account records (OAuth linkages)
-    await db.collection('account').deleteMany({
-      userId: { $regex: /test.*/ },
-    });
-
-    // 4. Delete organizations
-    await db.collection('organization').deleteMany({
-      $or: [{ name: { $regex: /Test.*/ } }, { slug: { $regex: /test.*/ } }],
-    });
-
-    // 5. Delete users last
-    await db.collection('user').deleteMany({
-      email: { $regex: /test.*@/ },
-    });
-  }
+  // Database cleanup helper imported from authOnboardingUtils
 
   test.beforeEach(async () => {
     await cleanDatabase();
@@ -97,7 +42,7 @@ test.describe('Auth & Onboarding Tests', () => {
   // =================================================================================
   // These tests follow complete user flows from start to finish, building on each other
 
-  test('Journey 1: New user magic link authentication to onboarding', async ({ browser }) => {
+  test('New user magic link authentication to onboarding', async ({ browser }) => {
     logProgress('🚀 Testing complete new user magic link journey...');
 
     const context = await browser.newContext();
@@ -138,7 +83,7 @@ test.describe('Auth & Onboarding Tests', () => {
       await page.waitForLoadState('networkidle');
 
       // Step 7: NEW USERS MUST be redirected to onboarding - no exceptions
-      await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 10000 });
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 });
       logProgress('✅ Successfully redirected to onboarding flow');
 
       // Step 8: Verify specific onboarding organization step content
@@ -153,7 +98,7 @@ test.describe('Auth & Onboarding Tests', () => {
     }
   });
 
-  test('Journey 2: Google OAuth with public domain email to onboarding', async ({ browser }) => {
+  test('Google OAuth with public domain email to onboarding', async ({ browser }) => {
     logProgress('🚀 Testing Google OAuth with public domain journey...');
 
     const context = await browser.newContext();
@@ -174,7 +119,7 @@ test.describe('Auth & Onboarding Tests', () => {
       logProgress('✅ Successfully redirected to Google OAuth');
 
       // Step 4: Complete OAuth with test credentials
-      const { GOOGLE_CREDS } = await import('../utils/oAuth');
+      const { GOOGLE_CREDS } = await import('../../utils/oAuth');
 
       if (!GOOGLE_CREDS.email || !GOOGLE_CREDS.password) {
         logProgress('⚠️ OAuth credentials not available - skipping authentication');
@@ -204,9 +149,9 @@ test.describe('Auth & Onboarding Tests', () => {
 
       // Must NOT be on Google OAuth page anymore
       await expect(page).not.toHaveURL(/.*accounts\.google\.com.*/, { timeout: 10000 });
-      
+
       // Must be redirected to onboarding for public domain users
-      await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 15000 });
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
       logProgress('✅ Successfully redirected to onboarding flow');
 
       // Verify specific onboarding content for organization creation
@@ -221,7 +166,7 @@ test.describe('Auth & Onboarding Tests', () => {
     }
   });
 
-  test('Journey 3: OAuth cancellation flow', async ({ browser }) => {
+  test('OAuth cancellation flow', async ({ browser }) => {
     logProgress('🚀 Testing OAuth cancellation journey...');
 
     const context = await browser.newContext();
@@ -254,7 +199,7 @@ test.describe('Auth & Onboarding Tests', () => {
     }
   });
 
-  test('Journey 4: Email validation prevents bad submissions', async ({ browser }) => {
+  test('Email validation prevents bad submissions', async ({ browser }) => {
     logProgress('🚀 Testing email validation journey...');
 
     const context = await browser.newContext();
