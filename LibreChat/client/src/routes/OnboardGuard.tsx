@@ -2,6 +2,8 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { authClient } from '~/config/betterAuth';
 
+const DEFAULT_ONBOARDING_STEP = 'organization';
+
 /**
  * OnboardGuard component that handles onboarding completion checking
  * Routes users to appropriate onboarding step if not complete
@@ -34,10 +36,11 @@ export default function OnboardGuard({ children }: { children: React.ReactNode }
     return <Navigate to="/login" replace={true} />;
   }
 
-  const onboardingStep = session.user.onboardingStep || 'organization';
+  const onboardingStep = session.user.onboardingStep || DEFAULT_ONBOARDING_STEP;
 
   // Check if user has completed onboarding
   if (onboardingStep !== 'complete') {
+    // TODO: conditionally remove (!development) all client side debugging logs before production
     console.log('OnboardGuard: User needs to complete onboarding, redirecting to onboarding', {
       currentStep: onboardingStep,
     });
