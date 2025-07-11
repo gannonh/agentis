@@ -18,58 +18,8 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Organization Detection Tests - Issue #102', () => {
-  // Test data for consistent use across tests
-  const TEST_EMAILS = {
-    GMAIL_PUBLIC: 'test-user@gmail.com',
-    CORPORATE_EXISTING_ORG: 'test@astrolabs.llc', // Domain with existing org
-    CORPORATE_NO_ORG: 'test@newcompany.com', // Domain without existing org
-    CORPORATE_MULTI_ORG: 'test@multiorg.com', // Domain with multiple orgs
-  };
 
-  // Helper to capture magic link using MailHog
-  async function captureMagicLink(email: string): Promise<string | null> {
-    const { createMailHog } = await import('../../utils/mailhog.js');
-    const mailhog = createMailHog();
 
-    try {
-      logProgress(`📧 Waiting for magic link email to ${email}`);
-      const magicLink = await mailhog.waitForMagicLink(email, 15000);
-
-      if (magicLink) {
-        logProgress(`✅ Found magic link: ${magicLink}`);
-        return magicLink;
-      } else {
-        logProgress(`❌ No magic link found for ${email}`);
-        return null;
-      }
-    } catch (error) {
-      logProgress(`❌ Error getting magic link from MailHog: ${error}`);
-      return null;
-    }
-  }
-
-  // Helper to clean database between tests
-  async function cleanDatabase() {
-    const { getTestDatabase } = await import('../../utils/testAuth');
-    const { db } = await getTestDatabase();
-
-    // Clean up test data in proper order
-    await db.collection('session').deleteMany({
-      $or: [{ userId: { $regex: /test.*/ } }, {}],
-    });
-    await db.collection('member').deleteMany({
-      $or: [{ userId: { $regex: /test.*/ } }, { organizationId: { $regex: /test.*/ } }],
-    });
-    await db.collection('account').deleteMany({
-      userId: { $regex: /test.*/ },
-    });
-    await db.collection('organization').deleteMany({
-      $or: [{ name: { $regex: /Test.*/ } }, { slug: { $regex: /test.*/ } }],
-    });
-    await db.collection('user').deleteMany({
-      email: { $regex: /test.*@/ },
-    });
-  }
 
   test.beforeEach(async () => {
     await cleanDatabase();
@@ -88,24 +38,6 @@ test.describe('Organization Detection Tests - Issue #102', () => {
    * Invitation creation/management is handled in issue #106.
    */
 
-  // Helper to create test organization for detection tests
-  async function createTestOrganization(name: string, domain: string) {
-    const { getTestDatabase } = await import('../../utils/testAuth');
-    const { db } = await getTestDatabase();
-
-    const testOrg = {
-      _id: new (await import('mongodb')).ObjectId(),
-      name: name,
-      slug: name.toLowerCase().replace(/\s+/g, '-'),
-      metadata: { domain: domain },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    await db.collection('organization').insertOne(testOrg);
-    logProgress(`✅ Created test organization: ${testOrg.name} for domain ${domain}`);
-    return testOrg;
-  }
 
   test('Corporate domain without existing organization shows create UI', async ({ browser }) => {
     logProgress('🚀 Testing corporate domain detection without existing organization...');
