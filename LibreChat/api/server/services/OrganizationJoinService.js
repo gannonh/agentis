@@ -17,6 +17,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '#config/index.js';
+import { getAuth } from '#auth.js';
 import {
   flexibleFindOne,
   flexibleUpdateOne,
@@ -66,7 +67,7 @@ class OrganizationJoinService {
       // 4. Atomically create membership using upsert to prevent race condition
       const db = mongoose.connection.db;
       const memberCollection = db.collection('member');
-      
+
       // Use upsert with the unique compound index to prevent duplicates
       const memberResult = await memberCollection.updateOne(
         {
@@ -94,6 +95,35 @@ class OrganizationJoinService {
 
       if (!memberResult.upsertedId) {
         throw new Error('Failed to create membership');
+      }
+
+      // 5. Notify Better Auth about the new membership
+      try {
+        const auth = getAuth();
+        if (auth?.api?.organization?.addMember) {
+          await auth.api.organization.addMember({
+            userId,
+            organizationId,
+            role: 'member',
+          });
+          logger.info('Successfully notified Better Auth of new membership', {
+            userId,
+            organizationId,
+          });
+        } else {
+          logger.warn('Better Auth organization API not available, skipping notification', {
+            userId,
+            organizationId,
+          });
+        }
+      } catch (authError) {
+        logger.error('Failed to notify Better Auth of new membership', {
+          userId,
+          organizationId,
+          error: authError.message,
+        });
+        // Don't fail the entire operation if Better Auth notification fails
+        // The membership was successfully created in the database
       }
 
       logger.info('Successfully auto-joined user to organization', {
@@ -310,6 +340,35 @@ class OrganizationJoinService {
 
       if (!memberResult.insertedId) {
         throw new Error('Failed to add user as member');
+      }
+
+      // Notify Better Auth about the new membership
+      try {
+        const auth = getAuth();
+        if (auth?.api?.organization?.addMember) {
+          await auth.api.organization.addMember({
+            userId: request.userId,
+            organizationId,
+            role: 'member',
+          });
+          logger.info('Successfully notified Better Auth of approved membership', {
+            userId: request.userId,
+            organizationId,
+          });
+        } else {
+          logger.warn('Better Auth organization API not available, skipping notification', {
+            userId: request.userId,
+            organizationId,
+          });
+        }
+      } catch (authError) {
+        logger.error('Failed to notify Better Auth of approved membership', {
+          userId: request.userId,
+          organizationId,
+          error: authError.message,
+        });
+        // Don't fail the entire operation if Better Auth notification fails
+        // The membership was successfully created in the database
       }
 
       // Update request status using flexible query

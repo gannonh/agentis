@@ -94,6 +94,13 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         });
         expect(member).toBeTruthy();
         expect(member.role).toBe('member');
+
+        // Verify Better Auth API was called to add member
+        expect(mockAuth.api.organization.addMember).toHaveBeenCalledWith({
+          userId,
+          organizationId,
+          role: 'member',
+        });
       });
 
       it('should reject auto-join when organization does not allow domain join', async () => {
@@ -240,6 +247,13 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           membershipId: expect.any(String),
           role: 'member',
           organizationId,
+        });
+
+        // Verify Better Auth API was called to add member
+        expect(mockAuth.api.organization.addMember).toHaveBeenCalledWith({
+          userId,
+          organizationId,
+          role: 'member',
         });
       });
     });
@@ -502,6 +516,13 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
         });
         expect(member).toBeTruthy();
         expect(member.role).toBe('member');
+
+        // Verify Better Auth API was called to add member
+        expect(mockAuth.api.organization.addMember).toHaveBeenCalledWith({
+          userId,
+          organizationId,
+          role: 'member',
+        });
       });
 
       it('should reject approval of non-existent request', async () => {
@@ -804,7 +825,7 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
           userId,
           organizationId,
           userEmail,
-        })
+        }),
       );
 
       // Execute all requests simultaneously
@@ -812,11 +833,11 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
 
       // Assert
       const successfulResults = results.filter(
-        (result) => result.status === 'fulfilled' && result.value.success
+        (result) => result.status === 'fulfilled' && result.value.success,
       );
       const failedResults = results.filter(
-        (result) => result.status === 'rejected' || 
-        (result.status === 'fulfilled' && !result.value.success)
+        (result) =>
+          result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success),
       );
 
       // At least one should succeed and the rest should fail
@@ -826,13 +847,13 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
       // Verify only one membership was created using flexible ID search
       const { findMembershipFlexible } = await import('../../utils/flexibleId.js');
       const membership = await findMembershipFlexible(db, userId, organizationId);
-      
+
       expect(membership).toBeTruthy();
       expect(membership.role).toBe('member');
 
       // Verify failed results have correct error message
-      const rejectedResults = results.filter(result => result.status === 'rejected');
-      rejectedResults.forEach(result => {
+      const rejectedResults = results.filter((result) => result.status === 'rejected');
+      rejectedResults.forEach((result) => {
         expect(result.reason.message).toContain('User is already a member of this organization');
       });
     });
