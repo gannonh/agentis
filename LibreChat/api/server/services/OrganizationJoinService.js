@@ -63,40 +63,48 @@ class OrganizationJoinService {
         throw new Error('User email domain does not match organization domain');
       }
 
-      // 4. Check if user is already a member
+      // 4. Atomically create membership using upsert to prevent race condition
       const db = mongoose.connection.db;
-      const existingMember = await db.collection('member').findOne({
-        organizationId,
-        userId,
-      });
+      const memberCollection = db.collection('member');
+      
+      // Use upsert with the unique compound index to prevent duplicates
+      const memberResult = await memberCollection.updateOne(
+        {
+          userId: normalizeId(userId),
+          organizationId: normalizeId(organizationId),
+        },
+        {
+          $setOnInsert: {
+            _id: new mongoose.Types.ObjectId(),
+            userId: normalizeId(userId),
+            organizationId: normalizeId(organizationId),
+            role: 'member',
+            createdAt: new Date(),
+          },
+        },
+        {
+          upsert: true,
+        },
+      );
 
-      if (existingMember) {
+      // Check if the user was already a member (no new document created)
+      if (memberResult.matchedCount > 0) {
         throw new Error('User is already a member of this organization');
       }
 
-      // 5. Add user as member via direct MongoDB
-      const memberCollection = db.collection('member');
-      const memberResult = await memberCollection.insertOne({
-        _id: new mongoose.Types.ObjectId(),
-        userId: normalizeId(userId),
-        organizationId: normalizeId(organizationId),
-        role: 'member',
-        createdAt: new Date(),
-      });
-
-      if (!memberResult.insertedId) {
+      if (!memberResult.upsertedId) {
         throw new Error('Failed to create membership');
       }
 
       logger.info('Successfully auto-joined user to organization', {
         userId,
         organizationId,
-        membershipId: memberResult.insertedId.toString(),
+        membershipId: memberResult.upsertedId.toString(),
       });
 
       return {
         success: true,
-        membershipId: memberResult.insertedId.toString(),
+        membershipId: memberResult.upsertedId.toString(),
         role: 'member',
         organizationId,
       };

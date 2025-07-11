@@ -170,7 +170,7 @@ export async function findMembershipFlexible(db, userId, organizationId, additio
     const membership = await memberCollection.findOne({ $or: queries });
 
     if (membership) {
-      logger.debug('Flexible membership lookup succeeded', {
+      logger.debug?.('Flexible membership lookup succeeded', {
         userId,
         organizationId,
         queryCount: queries.length,
@@ -231,7 +231,7 @@ function logIdOperation(operation, collection, id, result, startTime) {
 
   // Only log in debug mode or for slow operations
   if (logger.level === 'debug' || duration > 100) {
-    logger.debug(`Flexible ID ${operation}`, {
+    logger.debug?.(`Flexible ID ${operation}`, {
       collection,
       id,
       result,

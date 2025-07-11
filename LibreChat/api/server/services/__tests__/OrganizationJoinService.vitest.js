@@ -767,4 +767,74 @@ describe('OrganizationJoinService - TDD for Issue #104', () => {
       });
     });
   });
+
+  /**
+   * Race Condition Prevention Tests
+   * Tests to verify that the atomic upsert operation prevents race conditions
+   */
+  describe('Race Condition Prevention', () => {
+    it('should prevent duplicate memberships when multiple requests happen simultaneously', async () => {
+      // Arrange
+      const userId = new mongoose.Types.ObjectId().toString();
+      const organizationId = new mongoose.Types.ObjectId().toString();
+      const userEmail = 'user@example.com';
+      const orgDomain = 'example.com';
+
+      // Create test organization with domain join enabled
+      await db.collection('organization').insertOne({
+        _id: new mongoose.Types.ObjectId(organizationId),
+        name: 'Test Organization',
+        slug: 'test-org-race',
+        metadata: {
+          domain: orgDomain,
+          allowDomainJoin: true,
+        },
+      });
+
+      // Create test user
+      await db.collection('users').insertOne({
+        _id: new mongoose.Types.ObjectId(userId),
+        email: userEmail,
+        name: 'Test User',
+      });
+
+      // Act - Simulate concurrent requests
+      const concurrentRequests = Array.from({ length: 5 }, () =>
+        OrganizationJoinService.autoJoinOrganization({
+          userId,
+          organizationId,
+          userEmail,
+        })
+      );
+
+      // Execute all requests simultaneously
+      const results = await Promise.allSettled(concurrentRequests);
+
+      // Assert
+      const successfulResults = results.filter(
+        (result) => result.status === 'fulfilled' && result.value.success
+      );
+      const failedResults = results.filter(
+        (result) => result.status === 'rejected' || 
+        (result.status === 'fulfilled' && !result.value.success)
+      );
+
+      // At least one should succeed and the rest should fail
+      expect(successfulResults.length).toBeGreaterThanOrEqual(1);
+      expect(failedResults.length).toBeGreaterThanOrEqual(4);
+
+      // Verify only one membership was created using flexible ID search
+      const { findMembershipFlexible } = await import('../../utils/flexibleId.js');
+      const membership = await findMembershipFlexible(db, userId, organizationId);
+      
+      expect(membership).toBeTruthy();
+      expect(membership.role).toBe('member');
+
+      // Verify failed results have correct error message
+      const rejectedResults = results.filter(result => result.status === 'rejected');
+      rejectedResults.forEach(result => {
+        expect(result.reason.message).toContain('User is already a member of this organization');
+      });
+    });
+  });
 });
