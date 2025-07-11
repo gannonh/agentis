@@ -22,6 +22,25 @@ export const MagicLinkLogin: React.FC = () => {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [email, setEmail] = useState<string>('');
 
+  // Refs to track timeout IDs for cleanup
+  const timeoutRefs = useRef<Set<NodeJS.Timeout>>(new Set());
+  const sessionCheckingRef = useRef(false); // Prevent concurrent session checks
+
+  // Helper functions for timeout management
+  const addTimeout = (timeoutId: NodeJS.Timeout) => {
+    timeoutRefs.current.add(timeoutId);
+  };
+
+  const clearAllTimeouts = () => {
+    timeoutRefs.current.forEach(clearTimeout);
+    timeoutRefs.current.clear();
+  };
+
+  const clearAndRemoveTimeout = (timeoutId: NodeJS.Timeout) => {
+    clearTimeout(timeoutId);
+    timeoutRefs.current.delete(timeoutId);
+  };
+
   // Better Auth session detection
   const { data: session } = authClient.useSession();
 
@@ -177,7 +196,8 @@ export const MagicLinkLogin: React.FC = () => {
           // If we don't have session data and haven't exceeded max attempts, try again
           if (attempts < maxAttempts) {
             console.log(`🔗 No session data yet, retrying in ${attemptDelay}ms...`);
-            setTimeout(checkSessionAndRedirect, attemptDelay);
+            const timeoutId = setTimeout(checkSessionAndRedirect, attemptDelay);
+            addTimeout(timeoutId);
           } else {
             console.error('🔗 Failed to get session after maximum attempts');
             if (isMountedRef.current) {
@@ -188,7 +208,8 @@ export const MagicLinkLogin: React.FC = () => {
           console.error(`🔗 Error getting session (attempt ${attempts}):`, error);
           if (attempts < maxAttempts) {
             console.log(`🔗 Retrying in ${attemptDelay}ms...`);
-            setTimeout(checkSessionAndRedirect, attemptDelay);
+            const timeoutId = setTimeout(checkSessionAndRedirect, attemptDelay);
+            addTimeout(timeoutId);
           } else {
             console.error('🔗 Failed after maximum attempts');
             if (isMountedRef.current) {
@@ -199,7 +220,8 @@ export const MagicLinkLogin: React.FC = () => {
       };
 
       // Start checking after initial delay
-      setTimeout(checkSessionAndRedirect, 500);
+      const initialTimeoutId = setTimeout(checkSessionAndRedirect, 500);
+      addTimeout(initialTimeoutId);
     }
   }, [searchParams, navigate, localize]);
 
@@ -316,11 +338,12 @@ export const MagicLinkLogin: React.FC = () => {
   useEffect(() => {
     // If no session yet and no magic link was sent (meaning user didn't manually request one)
     // this might be a post-magic-link redirect, so we should check for session
-    if (!session && !magicLinkSent) {
+    if (!session && !magicLinkSent && !sessionCheckingRef.current) {
       console.log(
         '🔗 No session found on login page, checking if this is post-magic-link redirect',
       );
 
+      sessionCheckingRef.current = true; // Mark session checking as active
       let attempts = 0;
       const maxAttempts = 5;
       const checkInterval = 1000; // 1 second
@@ -337,31 +360,44 @@ export const MagicLinkLogin: React.FC = () => {
 
           if (sessionData?.data?.user) {
             console.log('🔗 Found session after magic link redirect, triggering redirect logic');
+            sessionCheckingRef.current = false; // Reset session checking flag
             // The session useEffect will handle the redirect
-          } else if (attempts < maxAttempts) {
+          } else if (attempts < maxAttempts && isMountedRef.current) {
             console.log('🔗 No session yet, retrying in 1 second...');
-            setTimeout(checkForSession, checkInterval);
+            const timeoutId = setTimeout(checkForSession, checkInterval);
+            addTimeout(timeoutId);
           } else {
             console.log('🔗 No session found after maximum attempts, user needs to authenticate');
+            sessionCheckingRef.current = false; // Reset session checking flag
           }
         } catch (error) {
           console.error('🔗 Error checking session:', error);
-          if (attempts < maxAttempts) {
-            setTimeout(checkForSession, checkInterval);
+          if (attempts < maxAttempts && isMountedRef.current) {
+            const timeoutId = setTimeout(checkForSession, checkInterval);
+            addTimeout(timeoutId);
+          } else {
+            sessionCheckingRef.current = false; // Reset session checking flag
           }
         }
       };
 
       // Start checking after a short delay
-      setTimeout(checkForSession, 500);
+      const initialTimeoutId = setTimeout(checkForSession, 500);
+      addTimeout(initialTimeoutId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+
+    return () => {
+      // Cleanup function to clear timeouts if dependencies change
+      clearAllTimeouts();
+      sessionCheckingRef.current = false;
+    };
+  }, [session, magicLinkSent]); // Add proper dependencies
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      clearAllTimeouts(); // Clear all timeouts on unmount
     };
   }, []);
 

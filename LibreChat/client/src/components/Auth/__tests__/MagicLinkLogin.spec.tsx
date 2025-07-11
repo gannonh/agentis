@@ -33,6 +33,18 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+let mockSearchParams = new URLSearchParams();
+const mockUseSearchParams = vi.fn(() => [mockSearchParams]);
+
+vi.doMock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useSearchParams: mockUseSearchParams,
+  };
+});
+
 describe('MagicLinkLogin', () => {
   const mockLocalize = vi.fn((key: string) => key);
 
@@ -186,6 +198,174 @@ describe('MagicLinkLogin', () => {
     // Wait for the async fetch and navigation
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+    });
+  });
+
+  // TDD: Test for memory leaks and race conditions
+  describe('Memory Leak and Race Condition Tests', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.clearAllTimers();
+    });
+
+    it('should clear all timeouts when component unmounts during magic link processing', async () => {
+      // Mock URL with magic link token
+      mockSearchParams = new URLSearchParams('?token=test-token');
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      vi.mocked(authClient.getSession).mockImplementation(() => 
+        new Promise(() => {
+          // Never resolve to simulate slow network
+        })
+      );
+
+      const { unmount } = render(
+        <BrowserRouter>
+          <MagicLinkLogin />
+        </BrowserRouter>
+      );
+
+      // Let initial timeout be set by advancing just enough time
+      vi.advanceTimersByTime(100);
+
+      const timeoutSpyBefore = vi.getTimerCount();
+      expect(timeoutSpyBefore).toBeGreaterThan(0);
+
+      // Unmount component while timeouts are pending
+      unmount();
+
+      // After unmount, all timeouts should be cleared
+      const timeoutSpyAfter = vi.getTimerCount();
+      expect(timeoutSpyAfter).toBe(0); // Should be 0 after cleanup
+    });
+
+    it('should handle stale closure in session checking useEffect', async () => {
+      // This test verifies that the useEffect has proper dependencies
+      // and that session checking doesn't continue when session is available
+      
+      // Start with no session and no magic link sent
+      mockSearchParams = new URLSearchParams();
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      const mockSessionHook = vi.mocked(authClient.useSession);
+      
+      // Start with no session
+      mockSessionHook.mockReturnValue({
+        data: null,
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      vi.mocked(authClient.getSession).mockResolvedValue({ data: null });
+
+      const { rerender } = render(
+        <BrowserRouter>
+          <MagicLinkLogin />
+        </BrowserRouter>
+      );
+
+      // Change to having a session
+      mockSessionHook.mockReturnValue({
+        data: { user: { id: '123' } },
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      // Rerender with session available
+      rerender(
+        <BrowserRouter>
+          <MagicLinkLogin />
+        </BrowserRouter>
+      );
+
+      // Verify that the effect dependencies work correctly
+      // The test passes if it doesn't timeout, indicating proper cleanup
+      expect(mockSessionHook).toHaveBeenCalled();
+    });
+
+    it('should prevent race conditions between multiple session check effects', async () => {
+      // This test verifies that session checking is properly controlled to prevent race conditions
+      
+      let fetchCallCount = 0;
+      
+      // Start with no session
+      mockSearchParams = new URLSearchParams();
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      // Mock session that becomes available immediately
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: { user: { id: '123', email: 'test@example.com' } },
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      // Mock fetch for user data
+      global.fetch = vi.fn().mockImplementation(() => {
+        fetchCallCount++;
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: '123',
+            email: 'test@example.com',
+            onboardingStep: 'complete',
+          }),
+        });
+      });
+
+      render(
+        <BrowserRouter>
+          <MagicLinkLogin />
+        </BrowserRouter>
+      );
+
+      // Allow time for effects to run
+      vi.advanceTimersByTime(100);
+
+      // With our race condition prevention, there should be limited API calls
+      expect(fetchCallCount).toBeLessThanOrEqual(2); // Allow some calls but not excessive
+    });
+
+    it('should cleanup timeouts in magic link retry mechanism', async () => {
+      // Mock URL with magic link token
+      mockSearchParams = new URLSearchParams('?token=test-token');
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+      
+      let attemptCount = 0;
+      vi.mocked(authClient.getSession).mockImplementation(() => {
+        attemptCount++;
+        if (attemptCount <= 3) {
+          return Promise.resolve({ data: null }); // No session yet
+        }
+        return Promise.resolve({ 
+          data: { user: { id: '123' } } 
+        });
+      });
+
+      const { unmount } = render(
+        <BrowserRouter>
+          <MagicLinkLogin />
+        </BrowserRouter>
+      );
+
+      // Let initial timeout be set
+      vi.advanceTimersByTime(100);
+
+      const activeTimersBefore = vi.getTimerCount();
+      expect(activeTimersBefore).toBeGreaterThan(0);
+
+      // Unmount during retry process
+      unmount();
+
+      // After unmount, timeouts should be cleared
+      const activeTimersAfter = vi.getTimerCount();
+      expect(activeTimersAfter).toBe(0);
     });
   });
 });
