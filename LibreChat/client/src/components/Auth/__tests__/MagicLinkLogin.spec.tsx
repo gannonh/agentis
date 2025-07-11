@@ -217,16 +217,17 @@ describe('MagicLinkLogin', () => {
       mockSearchParams = new URLSearchParams('?token=test-token');
       mockUseSearchParams.mockReturnValue([mockSearchParams]);
 
-      vi.mocked(authClient.getSession).mockImplementation(() => 
-        new Promise(() => {
-          // Never resolve to simulate slow network
-        })
+      vi.mocked(authClient.getSession).mockImplementation(
+        () =>
+          new Promise(() => {
+            // Never resolve to simulate slow network
+          }),
       );
 
       const { unmount } = render(
         <BrowserRouter>
           <MagicLinkLogin />
-        </BrowserRouter>
+        </BrowserRouter>,
       );
 
       // Let initial timeout be set by advancing just enough time
@@ -246,13 +247,13 @@ describe('MagicLinkLogin', () => {
     it('should handle stale closure in session checking useEffect', async () => {
       // This test verifies that the useEffect has proper dependencies
       // and that session checking doesn't continue when session is available
-      
+
       // Start with no session and no magic link sent
       mockSearchParams = new URLSearchParams();
       mockUseSearchParams.mockReturnValue([mockSearchParams]);
 
       const mockSessionHook = vi.mocked(authClient.useSession);
-      
+
       // Start with no session
       mockSessionHook.mockReturnValue({
         data: null,
@@ -266,7 +267,7 @@ describe('MagicLinkLogin', () => {
       const { rerender } = render(
         <BrowserRouter>
           <MagicLinkLogin />
-        </BrowserRouter>
+        </BrowserRouter>,
       );
 
       // Change to having a session
@@ -281,7 +282,7 @@ describe('MagicLinkLogin', () => {
       rerender(
         <BrowserRouter>
           <MagicLinkLogin />
-        </BrowserRouter>
+        </BrowserRouter>,
       );
 
       // Verify that the effect dependencies work correctly
@@ -291,9 +292,9 @@ describe('MagicLinkLogin', () => {
 
     it('should prevent race conditions between multiple session check effects', async () => {
       // This test verifies that session checking is properly controlled to prevent race conditions
-      
+
       let fetchCallCount = 0;
-      
+
       // Start with no session
       mockSearchParams = new URLSearchParams();
       mockUseSearchParams.mockReturnValue([mockSearchParams]);
@@ -311,18 +312,19 @@ describe('MagicLinkLogin', () => {
         fetchCallCount++;
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            id: '123',
-            email: 'test@example.com',
-            onboardingStep: 'complete',
-          }),
+          json: () =>
+            Promise.resolve({
+              id: '123',
+              email: 'test@example.com',
+              onboardingStep: 'complete',
+            }),
         });
       });
 
       render(
         <BrowserRouter>
           <MagicLinkLogin />
-        </BrowserRouter>
+        </BrowserRouter>,
       );
 
       // Allow time for effects to run
@@ -336,22 +338,22 @@ describe('MagicLinkLogin', () => {
       // Mock URL with magic link token
       mockSearchParams = new URLSearchParams('?token=test-token');
       mockUseSearchParams.mockReturnValue([mockSearchParams]);
-      
+
       let attemptCount = 0;
       vi.mocked(authClient.getSession).mockImplementation(() => {
         attemptCount++;
         if (attemptCount <= 3) {
           return Promise.resolve({ data: null }); // No session yet
         }
-        return Promise.resolve({ 
-          data: { user: { id: '123' } } 
+        return Promise.resolve({
+          data: { user: { id: '123' } },
         });
       });
 
       const { unmount } = render(
         <BrowserRouter>
           <MagicLinkLogin />
-        </BrowserRouter>
+        </BrowserRouter>,
       );
 
       // Let initial timeout be set
