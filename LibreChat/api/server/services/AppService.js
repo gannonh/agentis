@@ -66,7 +66,7 @@ const AppService = async (app) => {
     directory: paths.structuredTools,
   });
 
-  if (config.mcpServers != null && process.env.NODE_ENV !== 'test') {
+  if (config.mcpServers != null) {
     const mcpManager = getMCPManager();
 
     // Create connected account resolver for Composio
