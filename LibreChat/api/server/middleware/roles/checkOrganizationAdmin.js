@@ -5,6 +5,7 @@
 
 import mongoose from 'mongoose';
 import { logger } from '#config/index.js';
+import { findMembershipFlexible } from '#server/utils/flexibleId.js';
 
 /**
  * Middleware to check if authenticated user has admin or owner permissions for the specified organization.
@@ -70,48 +71,11 @@ async function checkOrganizationAdmin(req, res, next) {
 
     // Get database connection
     const db = mongoose.connection.db;
-    const memberCollection = db.collection('member');
 
-    // Flexible membership lookup - handle both string and ObjectId formats
-    let membership = null;
-
-    // First: Try direct lookup with provided formats
-    membership = await memberCollection.findOne({
-      userId,
-      organizationId,
+    // Use flexible membership lookup utility
+    const membership = await findMembershipFlexible(db, userId, organizationId, {
       role: { $in: ['admin', 'owner'] },
     });
-
-    // Second: If no match and we have convertible IDs, try ObjectId conversion
-    if (!membership) {
-      const query = { role: { $in: ['admin', 'owner'] } };
-
-      // Convert userId to ObjectId if possible
-      if (mongoose.Types.ObjectId.isValid(userId)) {
-        query.userId = new mongoose.Types.ObjectId(userId);
-      } else {
-        query.userId = userId;
-      }
-
-      // Convert organizationId to ObjectId if possible
-      if (mongoose.Types.ObjectId.isValid(organizationId)) {
-        query.organizationId = new mongoose.Types.ObjectId(organizationId);
-      } else {
-        query.organizationId = organizationId;
-      }
-
-      membership = await memberCollection.findOne(query);
-
-      if (membership) {
-        logger.debug('Organization admin check: Found membership with ObjectId conversion', {
-          userId,
-          organizationId,
-          originalQuery: { userId, organizationId },
-          convertedQuery: query,
-          path: req.path,
-        });
-      }
-    }
 
     if (!membership) {
       logger.warn('Organization admin check failed: user lacks admin/owner permissions', {

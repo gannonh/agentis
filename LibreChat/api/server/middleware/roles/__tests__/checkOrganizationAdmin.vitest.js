@@ -142,11 +142,15 @@ describe('checkOrganizationAdmin middleware', () => {
 
       await checkOrganizationAdmin(req, res, next);
 
-      // Should try both direct lookup and ObjectId conversion lookup
+      // Should try flexible lookup with $or query for multiple ID formats
       expect(mockMemberCollection.findOne).toHaveBeenCalledWith({
-        userId: 'user123',
-        organizationId: '507f1f77bcf86cd799439011',
-        role: { $in: ['admin', 'owner'] },
+        $or: expect.arrayContaining([
+          expect.objectContaining({
+            userId: 'user123',
+            organizationId: '507f1f77bcf86cd799439011',
+            role: { $in: ['admin', 'owner'] },
+          }),
+        ]),
       });
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
@@ -174,9 +178,13 @@ describe('checkOrganizationAdmin middleware', () => {
       await checkOrganizationAdmin(req, res, next);
 
       expect(mockMemberCollection.findOne).toHaveBeenCalledWith({
-        userId: 'user123',
-        organizationId: '507f1f77bcf86cd799439011',
-        role: { $in: ['admin', 'owner'] },
+        $or: expect.arrayContaining([
+          expect.objectContaining({
+            userId: 'user123',
+            organizationId: '507f1f77bcf86cd799439011',
+            role: { $in: ['admin', 'owner'] },
+          }),
+        ]),
       });
       expect(req.organizationRole).toBe('admin');
       expect(next).toHaveBeenCalled();
@@ -203,9 +211,13 @@ describe('checkOrganizationAdmin middleware', () => {
       await checkOrganizationAdmin(req, res, next);
 
       expect(mockMemberCollection.findOne).toHaveBeenCalledWith({
-        userId: 'user123',
-        organizationId: '507f1f77bcf86cd799439011',
-        role: { $in: ['admin', 'owner'] },
+        $or: expect.arrayContaining([
+          expect.objectContaining({
+            userId: 'user123',
+            organizationId: '507f1f77bcf86cd799439011',
+            role: { $in: ['admin', 'owner'] },
+          }),
+        ]),
       });
       expect(req.organizationRole).toBe('owner');
       expect(next).toHaveBeenCalled();

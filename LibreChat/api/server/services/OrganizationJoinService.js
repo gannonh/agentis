@@ -17,6 +17,12 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '#config/index.js';
+import {
+  flexibleFindOne,
+  flexibleUpdateOne,
+  buildFlexibleIdQuery,
+  normalizeId,
+} from '#server/utils/flexibleId.js';
 
 /**
  * Service class for handling organization join operations
@@ -72,12 +78,8 @@ class OrganizationJoinService {
       const memberCollection = db.collection('member');
       const memberResult = await memberCollection.insertOne({
         _id: new mongoose.Types.ObjectId(),
-        userId: mongoose.Types.ObjectId.isValid(userId)
-          ? new mongoose.Types.ObjectId(userId)
-          : userId,
-        organizationId: mongoose.Types.ObjectId.isValid(organizationId)
-          ? new mongoose.Types.ObjectId(organizationId)
-          : organizationId,
+        userId: normalizeId(userId),
+        organizationId: normalizeId(organizationId),
         role: 'member',
         createdAt: new Date(),
       });
@@ -219,39 +221,12 @@ class OrganizationJoinService {
         requestedAt: new Date(),
       };
 
-      // Add request to organization metadata
-      // Use same fallback strategy as domain metadata update
-      let result = await db.collection('organization').updateOne(
-        { id: organizationId },
-        {
-          $push: {
-            'metadata.joinRequests': joinRequest,
-          },
+      // Add request to organization metadata using flexible update
+      const result = await flexibleUpdateOne(db.collection('organization'), organizationId, {
+        $push: {
+          'metadata.joinRequests': joinRequest,
         },
-      );
-
-      // If no match, try converting to ObjectId for _id field
-      if (result.matchedCount === 0) {
-        try {
-          const objectId = new mongoose.Types.ObjectId(organizationId);
-          result = await db.collection('organization').updateOne(
-            { _id: objectId },
-            {
-              $push: {
-                'metadata.joinRequests': joinRequest,
-              },
-            },
-          );
-          logger.info(`Used _id field for join request: ${organizationId}`);
-        } catch (convertError) {
-          logger.error(
-            `Failed to convert organizationId to ObjectId: ${organizationId}`,
-            convertError,
-          );
-        }
-      } else {
-        logger.info(`Used id field for join request: ${organizationId}`);
-      }
+      });
 
       if (result.matchedCount === 0) {
         throw new Error('Organization not found for join request update');
@@ -319,12 +294,8 @@ class OrganizationJoinService {
       const memberCollection = db.collection('member');
       const memberResult = await memberCollection.insertOne({
         _id: new mongoose.Types.ObjectId(),
-        userId: mongoose.Types.ObjectId.isValid(request.userId)
-          ? new mongoose.Types.ObjectId(request.userId)
-          : request.userId,
-        organizationId: mongoose.Types.ObjectId.isValid(organizationId)
-          ? new mongoose.Types.ObjectId(organizationId)
-          : organizationId,
+        userId: normalizeId(request.userId),
+        organizationId: normalizeId(organizationId),
         role: 'member',
         createdAt: new Date(),
       });
@@ -333,27 +304,19 @@ class OrganizationJoinService {
         throw new Error('Failed to add user as member');
       }
 
-      // Update request status
-      await db.collection('organization').updateOne(
-        {
-          $or: [
-            { id: organizationId },
-            {
-              _id: mongoose.Types.ObjectId.isValid(organizationId)
-                ? new mongoose.Types.ObjectId(organizationId)
-                : null,
-            },
-          ],
-          'metadata.joinRequests.id': requestId,
+      // Update request status using flexible query
+      const query = {
+        ...buildFlexibleIdQuery(organizationId),
+        'metadata.joinRequests.id': requestId,
+      };
+
+      await db.collection('organization').updateOne(query, {
+        $set: {
+          'metadata.joinRequests.$.status': 'approved',
+          'metadata.joinRequests.$.reviewedBy': reviewerId,
+          'metadata.joinRequests.$.reviewedAt': new Date(),
         },
-        {
-          $set: {
-            'metadata.joinRequests.$.status': 'approved',
-            'metadata.joinRequests.$.reviewedBy': reviewerId,
-            'metadata.joinRequests.$.reviewedAt': new Date(),
-          },
-        },
-      );
+      });
 
       logger.info('Join request approved successfully', {
         requestId,
@@ -425,20 +388,13 @@ class OrganizationJoinService {
         updateFields['metadata.joinRequests.$.rejectionReason'] = rejectionReason;
       }
 
-      await db.collection('organization').updateOne(
-        {
-          $or: [
-            { id: organizationId },
-            {
-              _id: mongoose.Types.ObjectId.isValid(organizationId)
-                ? new mongoose.Types.ObjectId(organizationId)
-                : null,
-            },
-          ],
-          'metadata.joinRequests.id': requestId,
-        },
-        { $set: updateFields },
-      );
+      // Update request status using flexible query
+      const query = {
+        ...buildFlexibleIdQuery(organizationId),
+        'metadata.joinRequests.id': requestId,
+      };
+
+      await db.collection('organization').updateOne(query, { $set: updateFields });
 
       logger.info('Join request rejected successfully', {
         requestId,
@@ -512,20 +468,12 @@ class OrganizationJoinService {
   static async _getOrganization(organizationId) {
     try {
       const db = mongoose.connection.db;
+      const organizationCollection = db.collection('organization');
 
-      // Try by Better Auth string ID first, excluding soft-deleted organizations
-      let organization = await db.collection('organization').findOne({ 
-        id: organizationId,
-        deletedAt: { $exists: false }
+      // Use flexible find utility to handle both ID formats
+      const organization = await flexibleFindOne(organizationCollection, organizationId, 'id', {
+        deletedAt: { $exists: false },
       });
-
-      // If not found, try by MongoDB ObjectId, excluding soft-deleted organizations
-      if (!organization && mongoose.Types.ObjectId.isValid(organizationId)) {
-        organization = await db.collection('organization').findOne({
-          _id: new mongoose.Types.ObjectId(organizationId),
-          deletedAt: { $exists: false }
-        });
-      }
 
       return organization;
     } catch (error) {
@@ -554,18 +502,10 @@ class OrganizationJoinService {
       const db = mongoose.connection.db;
       const memberCollection = db.collection('member');
 
-      // Normalize IDs to handle both string and ObjectId formats
-      const normalizedUserId = mongoose.Types.ObjectId.isValid(userId)
-        ? new mongoose.Types.ObjectId(userId)
-        : userId;
-      const normalizedOrgId = mongoose.Types.ObjectId.isValid(organizationId)
-        ? new mongoose.Types.ObjectId(organizationId)
-        : organizationId;
-
-      // Check if user is a member of the organization
+      // Check if user is a member of the organization using flexible query
       const membership = await memberCollection.findOne({
         $or: [
-          { userId: normalizedUserId, organizationId: normalizedOrgId },
+          { userId: normalizeId(userId), organizationId: normalizeId(organizationId) },
           { userId: userId, organizationId: organizationId },
         ],
       });

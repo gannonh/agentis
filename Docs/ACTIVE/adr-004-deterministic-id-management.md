@@ -1,7 +1,10 @@
 # ADR-004: Deterministic ID Management
 
 ## Status
-**PROPOSED** - Under active implementation
+**SUPERSEDED** - Replaced by [ADR-005: Flexible ID Format Approach](./adr-005-flexible-id-format-approach.md)
+
+> **Note**: This ADR was superseded after implementation attempts revealed critical regressions. 
+> The flexible ID format approach documented in ADR-005 was adopted as a more pragmatic solution.
 
 ## Context
 
