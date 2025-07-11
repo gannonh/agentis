@@ -9,10 +9,12 @@
  */
 
 import express from 'express';
+import mongoose from 'mongoose';
 import requireBetterAuth from '../middleware/requireBetterAuth.js';
 import { checkOrganizationAdmin } from '../middleware/roles/index.js';
 import OrganizationJoinService from '../services/OrganizationJoinService.js';
 import { checkDomainOrganizations } from '../services/OrganizationDetectionService.js';
+import { isPublicDomain } from '../services/PublicDomainService.js';
 import { logger } from '#config/index.js';
 
 const router = express.Router();
@@ -123,6 +125,13 @@ router.post('/request-join', requireBetterAuth, async (req, res) => {
     if (!userEmail) {
       return res.status(400).json({
         error: 'User email is required',
+      });
+    }
+
+    // Validate requestMessage length
+    if (requestMessage && requestMessage.length > 500) {
+      return res.status(400).json({
+        error: 'Request message cannot exceed 500 characters',
       });
     }
 
@@ -503,10 +512,6 @@ router.post('/detect-domain', requireBetterAuth, async (req, res) => {
  */
 router.post('/enable-domain-join', requireBetterAuth, checkOrganizationAdmin, async (req, res) => {
   try {
-    const { isPublicDomain } = await import('../services/PublicDomainService.js');
-    const { logger } = await import('#config/index.js');
-    const mongoose = await import('mongoose');
-
     const { organizationId, domain, enableDomainJoin = true } = req.body;
 
     logger.info('Organization domain setup request received:', {
