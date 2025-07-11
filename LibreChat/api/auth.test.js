@@ -295,7 +295,7 @@ describe('Better Auth Integration', () => {
         }
         return 'mock-adapter';
       });
-      
+
       // Mock connection.db to be undefined to simulate connection failure
       mockConnection.db = undefined;
 
@@ -305,7 +305,7 @@ describe('Better Auth Integration', () => {
 
       expect(() => connectionCallback()).toThrow(dbError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize Better Auth:', dbError);
-      
+
       // Restore mocks for other tests
       mockConnection.db = mockDb;
       mockMongodbAdapter.mockReturnValue('mock-adapter');
@@ -386,7 +386,7 @@ describe('Better Auth Integration', () => {
     test('should reuse existing mongoose connection', async () => {
       // Ensure mockConnection.db is set properly
       mockConnection.db = mockDb;
-      
+
       await import('./auth.js');
 
       const connectionCallback = mockConnection.once.mock.calls[0][1];
