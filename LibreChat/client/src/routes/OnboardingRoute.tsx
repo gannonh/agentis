@@ -9,6 +9,7 @@ import { authClient } from '~/config/betterAuth';
 import { useOnboardingState, OnboardingStep } from '~/hooks/useOnboardingState';
 import OnboardingLayout from '~/components/Auth/OnboardingLayout';
 import OrganizationDetectionStep from '~/components/Auth/OrganizationDetectionStep';
+import { ProfileSetup } from '~/components/Auth/OnboardingFlow/ProfileSetup';
 import { Button } from '~/components/ui';
 import { useToastContext } from '~/Providers/ToastContext';
 import { NotificationSeverity } from '~/common/types';
@@ -319,29 +320,40 @@ export default function OnboardingRoute() {
     saveFormData({ enableDomainJoin: value });
   };
 
-  // Handle profile completion
-  const handleProfileSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  // Handle profile completion from ProfileSetup component
+  const handleProfileComplete = async (data: {
+    name: string;
+    username?: string;
+    avatar?: string;
+  }) => {
     setError('');
-
-    const trimmedUserName = profileName.trim();
-    if (!trimmedUserName) {
-      setError('Name is required');
-      return;
-    }
-
     setIsSubmitting(true);
+
     try {
-      // Update user profile
-      await authClient.updateUser({
-        name: trimmedUserName,
-      });
+      // Update user profile with all data
+      const updateData: any = {
+        name: data.name.trim(),
+      };
+
+      // Add optional fields if provided
+      // Only include avatar if it's a manually uploaded local avatar, not an OAuth URL
+      if (data.avatar && data.avatar.startsWith('/images/')) {
+        updateData.avatar = data.avatar;
+      }
+
+      // Add username directly to user object (already supported in schema)
+      if (data.username) {
+        updateData.username = data.username;
+      }
+
+      await authClient.updateUser(updateData);
 
       // Clear form data for profile step since it's completed
       saveFormData({ profileName: undefined });
 
       goToNextStep();
     } catch (err) {
+      console.error('Profile update error:', err);
       setError('Failed to update profile. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -455,42 +467,26 @@ export default function OnboardingRoute() {
 
       {/* Profile Completion Step */}
       {state.currentStep === OnboardingStep.PROFILE && (
-        <form onSubmit={handleProfileSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="user-name"
-              className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Your Name
-            </label>
-            <input
-              id="user-name"
-              type="text"
-              required
-              value={profileName}
-              onChange={(e) => handleProfileNameChange(e.target.value)}
-              disabled={isSubmitting}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-              placeholder="Enter your full name"
-              maxLength={100}
-            />
-          </div>
+        <>
+          <ProfileSetup
+            email={userEmail}
+            suggestedName={userName}
+            oauthData={{
+              name: session?.user?.name,
+              picture: (session?.user as any)?.image, // OAuth profile picture from 'image' field
+              email: session?.user?.email,
+            }}
+            onProfileComplete={handleProfileComplete}
+            isLoading={isSubmitting}
+            className=""
+          />
 
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
-
-          <Button
-            type="submit"
-            disabled={isSubmitting || !profileName.trim()}
-            className="w-full"
-            size="lg"
-          >
-            {isSubmitting ? 'Saving...' : 'Continue'}
-          </Button>
-        </form>
+        </>
       )}
 
       {/* Team Invitation Step */}

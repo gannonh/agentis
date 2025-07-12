@@ -184,4 +184,44 @@ router.get('/admin/check-email', requireBetterAuth, checkAdmin, async (req, res)
   }
 });
 
+/**
+ * GET /api/user/check-username
+ * Check if username is available for current user
+ */
+router.get('/check-username', requireBetterAuth, async (req, res) => {
+  try {
+    const { username } = req.query;
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username parameter is required' });
+    }
+
+    // Validate username format
+    if (typeof username !== 'string' || username.length < 3 || username.length > 20) {
+      return res.status(400).json({ error: 'Username must be 3-20 characters long' });
+    }
+
+    // Check if username contains only allowed characters
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return res.status(400).json({ 
+        error: 'Username can only contain letters, numbers, underscores, and hyphens' 
+      });
+    }
+
+    // Check if username exists in user schema (username field is in main schema)
+    const existingUser = await User.findOne({
+      username: username.toLowerCase(),
+      _id: { $ne: req.user.id }, // Exclude current user
+    });
+
+    res.json({
+      available: !existingUser,
+      username: username.toLowerCase(),
+    });
+  } catch (error) {
+    logger.error('Failed to check username availability', error);
+    res.status(500).json({ error: 'Failed to check username availability' });
+  }
+});
+
 export default router;

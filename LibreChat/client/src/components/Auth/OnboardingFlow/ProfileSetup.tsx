@@ -3,21 +3,31 @@
  * @module components/Auth/OnboardingFlow/ProfileSetup
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { User, Camera, Upload } from 'lucide-react';
+import { User, Camera, Upload, Check, X, AlertCircle } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
+import { useUploadAvatarMutation } from '~/data-provider';
+import useDebounce from '~/hooks/Input/useDebounce';
 
 interface ProfileSetupData {
   name: string;
+  username?: string;
   avatar?: string;
+}
+
+interface OAuthProfileData {
+  name?: string;
+  picture?: string;
+  email?: string;
 }
 
 interface ProfileSetupProps {
   email: string;
   suggestedName?: string;
+  oauthData?: OAuthProfileData;
   onProfileComplete: (data: ProfileSetupData) => void;
   isLoading?: boolean;
   className?: string;
@@ -30,12 +40,16 @@ interface ProfileSetupProps {
 export const ProfileSetup: React.FC<ProfileSetupProps> = ({
   email,
   suggestedName = '',
+  oauthData,
   onProfileComplete,
   isLoading = false,
   className = '',
 }) => {
-  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [avatarPreview, setAvatarPreview] = useState<string>(oauthData?.picture || '');
   const [avatarError, setAvatarError] = useState<string>('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const {
     register,
@@ -45,15 +59,52 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
     formState: { errors, isValid },
   } = useForm<ProfileSetupData>({
     defaultValues: {
-      name: suggestedName || email.split('@')[0],
-      avatar: '',
+      name: oauthData?.name || suggestedName || email.split('@')[0],
+      username: '',
+      avatar: oauthData?.picture || '',
     },
     mode: 'onChange',
   });
 
   const watchedName = watch('name');
+  const watchedUsername = watch('username');
+  const uploadAvatarMutation = useUploadAvatarMutation();
 
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Debounced username value
+  const debouncedUsername = useDebounce(watchedUsername || '', 500);
+
+  // Username availability checking
+  const checkUsernameAvailability = useCallback(async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setCheckingUsername(true);
+    try {
+      const response = await fetch(
+        `/api/user/check-username?username=${encodeURIComponent(username)}`,
+      );
+      const result = await response.json();
+      setUsernameAvailable(result.available);
+    } catch (error) {
+      console.error('Username check failed:', error);
+      setUsernameAvailable(null);
+    } finally {
+      setCheckingUsername(false);
+    }
+  }, []);
+
+  // Check username availability when debounced value changes
+  useEffect(() => {
+    if (debouncedUsername) {
+      checkUsernameAvailability(debouncedUsername);
+    }
+  }, [debouncedUsername, checkUsernameAvailability]);
+
+
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -63,22 +114,34 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
       return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarError('Image must be smaller than 2MB');
+    // Validate file size (max 5MB as per issue requirements)
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('Image must be smaller than 5MB');
       return;
     }
 
     setAvatarError('');
+    setAvatarUploading(true);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setAvatarPreview(result);
-      setValue('avatar', result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('manual', 'true'); // Ensure avatar is saved to user profile
+
+      // Upload through the avatar API
+      const uploadResult = await uploadAvatarMutation.mutateAsync(formData);
+
+      if (uploadResult?.url) {
+        setAvatarPreview(uploadResult.url);
+        setValue('avatar', uploadResult.url);
+      }
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+      setAvatarError('Failed to upload avatar. Please try again.');
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const removeAvatar = () => {
@@ -86,6 +149,39 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
     setValue('avatar', '');
     setAvatarError('');
   };
+
+  // Generate username suggestion from name or email
+  const generateUsernameSuggestion = (name: string, email: string) => {
+    const baseUsername = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 15);
+
+    if (baseUsername.length >= 3) {
+      return baseUsername;
+    }
+
+    return email
+      .split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 15);
+  };
+
+  // Auto-suggest username when name changes
+  useEffect(() => {
+    if (watchedName && !watchedUsername) {
+      const suggestion = generateUsernameSuggestion(watchedName, email);
+      setValue('username', suggestion);
+    }
+  }, [watchedName, watchedUsername, email, setValue]);
+
+  // Reset username availability when username changes
+  useEffect(() => {
+    if (watchedUsername !== debouncedUsername) {
+      setUsernameAvailable(null);
+    }
+  }, [watchedUsername, debouncedUsername]);
 
   const onSubmit = (data: ProfileSetupData) => {
     onProfileComplete(data);
@@ -117,7 +213,13 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
               <img
                 src={avatarPreview}
                 alt="Avatar preview"
+                data-testid="avatar-preview"
                 className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-lg dark:border-gray-700"
+                onLoad={() => console.log('✅ Avatar loaded successfully')}
+                onError={(e) => {
+                  console.warn('Avatar failed to load, showing initials instead:', avatarPreview);
+                  setAvatarPreview(''); // Clear broken image to show initials
+                }}
               />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-blue-500 to-purple-600 text-xl font-semibold text-white shadow-lg dark:border-gray-700">
@@ -129,7 +231,11 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
               htmlFor="avatar-upload"
               className="absolute -bottom-1 -right-1 cursor-pointer rounded-full border border-gray-200 bg-white p-2 shadow-lg hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600"
             >
-              <Camera className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              {avatarUploading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+              ) : (
+                <Camera className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              )}
             </label>
 
             <input
@@ -138,11 +244,14 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
               accept="image/*"
               onChange={handleAvatarUpload}
               className="hidden"
+              disabled={avatarUploading || isLoading}
             />
           </div>
 
           <div className="mt-2 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Upload a photo</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {avatarPreview ? 'Change photo' : 'Upload a photo'}
+            </p>
             {avatarPreview && (
               <button
                 type="button"
@@ -165,24 +274,86 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
             htmlFor="fullName"
             className="text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            Full name
+            Full name *
           </Label>
           <Input
             id="fullName"
+            data-testid="profile-name-input"
             {...register('name', {
               required: 'Name is required',
               minLength: {
                 value: 2,
                 message: 'Name must be at least 2 characters',
               },
+              maxLength: {
+                value: 50,
+                message: 'Name must be less than 50 characters',
+              },
             })}
             placeholder="Enter your full name"
             className="mt-1"
+            disabled={isLoading}
           />
           {errors.name && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name.message}</p>
           )}
         </div>
+
+        {/* Username input */}
+        <div>
+          <Label
+            htmlFor="username"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Username
+          </Label>
+          <div className="relative mt-1">
+            <Input
+              id="username"
+              data-testid="profile-username-input"
+              {...register('username', {
+                pattern: {
+                  value: /^[a-zA-Z0-9_-]+$/,
+                  message: 'Username can only contain letters, numbers, underscores, and hyphens',
+                },
+                minLength: {
+                  value: 3,
+                  message: 'Username must be at least 3 characters',
+                },
+                maxLength: {
+                  value: 20,
+                  message: 'Username must be less than 20 characters',
+                },
+              })}
+              placeholder="Choose a username"
+              disabled={isLoading}
+            />
+            {/* Username availability indicator */}
+            {watchedUsername && watchedUsername.length >= 3 && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {checkingUsername ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+                ) : usernameAvailable === true ? (
+                  <Check className="h-4 w-4 text-green-500" data-testid="username-available" />
+                ) : usernameAvailable === false ? (
+                  <X className="h-4 w-4 text-red-500" />
+                ) : null}
+              </div>
+            )}
+          </div>
+          {errors.username && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.username.message}</p>
+          )}
+          {usernameAvailable === false && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              This username is already taken
+            </p>
+          )}
+          {usernameAvailable === true && (
+            <p className="mt-1 text-sm text-green-600 dark:text-green-400">Username is available</p>
+          )}
+        </div>
+
 
         {/* Email display */}
         <div>
@@ -196,10 +367,16 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
         <Button
           type="submit"
-          disabled={!isValid || isLoading}
+          data-testid="profile-continue-button"
+          disabled={
+            !isValid ||
+            isLoading ||
+            avatarUploading ||
+            Boolean(watchedUsername && usernameAvailable === false)
+          }
           className="w-full bg-blue-600 text-white hover:bg-blue-700"
         >
-          {isLoading ? 'Saving...' : 'Continue'}
+          {isLoading || avatarUploading ? 'Saving...' : 'Continue'}
         </Button>
       </form>
     </div>
