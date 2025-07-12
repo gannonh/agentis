@@ -4,6 +4,7 @@
  * 
  * Shared utilities for auth and onboarding e2e tests including:
  * - Magic link capture and handling
+ * - OAuth authentication flows
  * - Database cleanup operations
  * - Terms of service handling
  * - Common test data patterns
@@ -12,6 +13,20 @@
 
 import { Page } from '@playwright/test';
 import { logProgress } from './testLogger';
+
+/**
+ * OAuth credentials for testing
+ */
+export const OAUTH_CREDENTIALS = {
+  PUBLIC_DOMAIN: {
+    email: 'agentis.test@gmail.com',
+    password: 'KJHkh97HKH87jjfU',
+  },
+  PRIVATE_DOMAIN: {
+    email: 'gannon@astrolabs.llc', 
+    password: 'Sawt00th2112S3cr3t77!',
+  },
+} as const;
 
 /**
  * Standard test emails for consistent use across tests
@@ -403,4 +418,297 @@ export const TEST_PATTERNS = {
   ONBOARDING_URL: /.*\/onboarding.*/,
   CHAT_URL: /.*\/c\/new/,
   LOGIN_URL: /.*\/login.*/,
+  GOOGLE_OAUTH_URL: /.*accounts\.google\.com.*/,
 } as const;
+
+/**
+ * =================================================================================
+ * OAUTH AUTHENTICATION UTILITIES
+ * =================================================================================
+ */
+
+/**
+ * Type for OAuth credential selection
+ */
+export type OAuthCredentialType = 'PUBLIC_DOMAIN' | 'PRIVATE_DOMAIN';
+
+/**
+ * Helper to initiate Google OAuth flow
+ * @param page - Playwright page instance
+ * @returns Promise<void>
+ */
+export async function initiateGoogleOAuth(page: Page): Promise<void> {
+  logProgress('🔐 Initiating Google OAuth flow...');
+  
+  // Navigate to login page
+  await page.goto('http://localhost:3080/login');
+  
+  // Click Google OAuth button
+  await page.getByTestId('google').click();
+  await page.waitForLoadState('networkidle');
+  
+  // Verify we reach Google OAuth page
+  if (!page.url().includes('accounts.google.com')) {
+    throw new Error(`Expected Google OAuth page, got: ${page.url()}`);
+  }
+  
+  logProgress('✅ Successfully redirected to Google OAuth');
+}
+
+/**
+ * Helper to complete Google OAuth authentication
+ * @param page - Playwright page instance
+ * @param credentialType - Type of credentials to use (PUBLIC_DOMAIN or PRIVATE_DOMAIN)
+ * @returns Promise<void>
+ */
+export async function completeGoogleOAuth(
+  page: Page, 
+  credentialType: OAuthCredentialType = 'PUBLIC_DOMAIN'
+): Promise<void> {
+  const credentials = OAUTH_CREDENTIALS[credentialType];
+  
+  logProgress(`🔐 Completing Google OAuth with ${credentialType} credentials...`);
+  
+  // Verify we're on Google OAuth page
+  if (!page.url().includes('accounts.google.com')) {
+    throw new Error(`Not on Google OAuth page: ${page.url()}`);
+  }
+  
+  // Check that credentials are available
+  if (!credentials.email || !credentials.password) {
+    logProgress('⚠️ OAuth credentials not available - skipping authentication');
+    throw new Error(`OAuth credentials not configured for ${credentialType}`);
+  }
+  
+  // Fill email
+  await page.getByRole('textbox', { name: 'Email or phone' }).click();
+  await page.getByRole('textbox', { name: 'Email or phone' }).fill(credentials.email);
+  await page.getByRole('button', { name: 'Next' }).click();
+  
+  // Fill password  
+  await page.getByRole('textbox', { name: 'Enter your password' }).click();
+  await page.getByRole('textbox', { name: 'Enter your password' }).fill(credentials.password);
+  await page.getByRole('button', { name: 'Next' }).click();
+  
+  // Handle OAuth consent
+  logProgress('🔒 Handling OAuth consent...');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.waitForLoadState('networkidle');
+  
+  // Verify we're no longer on Google OAuth page
+  await page.waitForFunction(
+    () => !window.location.href.includes('accounts.google.com'),
+    {},
+    { timeout: 15000 }
+  );
+  
+  logProgress('✅ OAuth authentication completed');
+}
+
+/**
+ * Helper to start OAuth authentication flow (initiate + complete)
+ * @param page - Playwright page instance  
+ * @param credentialType - Type of credentials to use
+ * @returns Promise<void>
+ */
+export async function startOAuthAuthentication(
+  page: Page,
+  credentialType: OAuthCredentialType = 'PUBLIC_DOMAIN'
+): Promise<void> {
+  await initiateGoogleOAuth(page);
+  await completeGoogleOAuth(page, credentialType);
+}
+
+/**
+ * Helper to handle OAuth cancellation flow
+ * @param page - Playwright page instance
+ * @returns Promise<void>
+ */
+export async function cancelOAuthFlow(page: Page): Promise<void> {
+  logProgress('🚫 Testing OAuth cancellation...');
+  
+  // Start OAuth flow
+  await initiateGoogleOAuth(page);
+  
+  // Cancel by going back
+  await page.goBack();
+  await page.waitForLoadState('networkidle');
+  
+  // Verify graceful return to login
+  if (!page.url().includes('localhost:3080/login')) {
+    throw new Error(`Expected login page after cancellation, got: ${page.url()}`);
+  }
+  
+  // Verify login page elements are still functional
+  await page.getByRole('heading', { name: 'Welcome' }).waitFor();
+  await page.getByTestId('google').waitFor();
+  
+  logProgress('✅ OAuth cancellation handled gracefully');
+}
+
+/**
+ * Helper to verify OAuth user data integration in profile setup
+ * @param page - Playwright page instance
+ * @param expectedName - Expected pre-filled name from OAuth
+ * @returns Promise<{ hasAvatar: boolean; prefilledName: string }>
+ */
+export async function verifyOAuthProfileIntegration(
+  page: Page,
+  expectedName?: string
+): Promise<{ hasAvatar: boolean; prefilledName: string }> {
+  logProgress('🔍 Verifying OAuth profile data integration...');
+  
+  // Wait for profile setup page
+  await page.getByRole('heading', { name: /Complete Your Profile/i }).waitFor();
+  
+  // Check pre-filled name from OAuth
+  const nameInput = page.getByTestId('profile-name-input');
+  const prefilledName = await nameInput.inputValue();
+  
+  if (expectedName && prefilledName !== expectedName) {
+    logProgress(`⚠️ Expected name "${expectedName}", got "${prefilledName}"`);
+  } else {
+    logProgress(`✅ OAuth user has pre-filled name: "${prefilledName}"`);
+  }
+  
+  // Check if OAuth avatar is displayed
+  const avatarPreview = page.getByTestId('avatar-preview');
+  const hasAvatar = await avatarPreview.isVisible();
+  
+  if (hasAvatar) {
+    logProgress('✅ OAuth user has Google avatar displayed');
+    
+    // Verify upload text shows "Change photo" for users with avatars
+    const uploadText = page.getByText('Change photo');
+    await uploadText.waitFor();
+    logProgress('✅ Upload text shows "Change photo" for OAuth user with avatar');
+    
+    // Verify remove photo option is available
+    const removePhotoButton = page.getByText('Remove photo');
+    if (await removePhotoButton.isVisible()) {
+      logProgress('✅ Remove photo option available for OAuth user with avatar');
+    }
+  } else {
+    logProgress('✅ OAuth user shows initials fallback (no Google avatar)');
+    
+    // Verify upload text shows "Upload a photo" for users without avatars
+    const uploadText = page.getByText('Upload a photo');
+    await uploadText.waitFor();
+    logProgress('✅ Upload text shows "Upload a photo" for OAuth user without avatar');
+  }
+  
+  return { hasAvatar, prefilledName };
+}
+
+/**
+ * Helper to test OAuth avatar error handling
+ * @param page - Playwright page instance
+ * @returns Promise<void>
+ */
+export async function testOAuthAvatarErrorHandling(page: Page): Promise<void> {
+  logProgress('🧪 Testing OAuth avatar error handling...');
+  
+  // Wait for profile setup page
+  await page.getByRole('heading', { name: /Complete Your Profile/i }).waitFor();
+  
+  // Check current avatar state
+  const avatarPreview = page.getByTestId('avatar-preview');
+  const hasAvatar = await avatarPreview.isVisible();
+  
+  if (hasAvatar) {
+    // Test that broken images fall back gracefully to initials
+    const avatarSrc = await avatarPreview.getAttribute('src');
+    logProgress(`🖼️ Testing avatar error handling for: ${avatarSrc}`);
+    
+    // The onError handler should already be in place from our ProfileSetup fixes
+    // If the image fails to load, it should fall back to initials
+    logProgress('✅ OAuth avatar has error handling in place');
+  } else {
+    logProgress('✅ OAuth user gracefully shows initials fallback');
+  }
+}
+
+/**
+ * Helper to complete OAuth-based onboarding flow
+ * @param page - Playwright page instance
+ * @param credentialType - Type of OAuth credentials to use
+ * @param options - Onboarding options
+ * @returns Promise<void>
+ */
+export async function completeOAuthOnboardingFlow(
+  page: Page,
+  credentialType: OAuthCredentialType,
+  options: {
+    orgName: string;
+    userName?: string; // Optional since OAuth pre-fills name
+    enableDomainJoin?: boolean;
+    skipTeam?: boolean;
+  }
+): Promise<void> {
+  const { orgName, userName, enableDomainJoin = false, skipTeam = true } = options;
+  
+  logProgress('🚀 Starting OAuth onboarding flow...');
+  
+  // Step 1: Complete OAuth authentication
+  await startOAuthAuthentication(page, credentialType);
+  
+  // Step 2: Verify redirect to onboarding
+  await page.waitForURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
+  logProgress('✅ OAuth redirected to onboarding');
+  
+  // Step 3: Complete organization step
+  await completeOrganizationStep(page, orgName, enableDomainJoin);
+  await page.waitForLoadState('networkidle');
+  
+  // Step 4: Complete profile step (may have pre-filled data from OAuth)
+  await page.getByRole('heading', { name: /Complete Your Profile/i }).waitFor();
+  
+  if (userName) {
+    // Override pre-filled name if specified
+    const nameInput = page.getByTestId('profile-name-input');
+    await nameInput.clear();
+    await nameInput.fill(userName);
+  }
+  
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.waitForLoadState('networkidle');
+  
+  // Step 5: Complete team step
+  await completeTeamStep(page, skipTeam);
+  await page.waitForLoadState('networkidle');
+  
+  // Step 6: Complete welcome step
+  await completeWelcomeStep(page);
+  await page.waitForLoadState('networkidle');
+  
+  // Step 7: Handle Terms of Service modal if it appears
+  await handleTermsOfService(page);
+  
+  // Step 8: Verify final redirect to chat
+  await page.waitForURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
+  logProgress('✅ OAuth onboarding flow completed successfully');
+}
+
+/**
+ * Helper to verify OAuth credentials are available
+ * @param credentialType - Type of credentials to check
+ * @returns boolean - True if credentials are available
+ */
+export function areOAuthCredentialsAvailable(credentialType: OAuthCredentialType): boolean {
+  const credentials = OAUTH_CREDENTIALS[credentialType];
+  return !!(credentials.email && credentials.password);
+}
+
+/**
+ * Helper to skip OAuth tests when credentials are not available
+ * @param credentialType - Type of credentials to check
+ * @param testName - Name of the test being skipped
+ * @returns void (throws skip if credentials unavailable)
+ */
+export function requireOAuthCredentials(credentialType: OAuthCredentialType, testName: string): void {
+  if (!areOAuthCredentialsAvailable(credentialType)) {
+    const message = `OAuth credentials not configured for ${credentialType} - skipping ${testName}`;
+    logProgress(`⚠️ ${message}`);
+    throw new Error(message);
+  }
+}

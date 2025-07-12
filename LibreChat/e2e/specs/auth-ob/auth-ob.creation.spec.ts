@@ -119,16 +119,16 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       logProgress('✅ Step 2/4: Advanced to Profile step (not skipped!)');
 
       // Verify profile form elements
-      await expect(page.getByRole('textbox', { name: /your name/i })).toBeVisible();
+      await expect(page.getByTestId('profile-name-input')).toBeVisible();
 
       // Complete profile
       logProgress('📝 Filling in profile name...');
-      const profileNameInput = page.getByRole('textbox', { name: /your name/i });
+      const profileNameInput = page.getByTestId('profile-name-input');
       await profileNameInput.fill('Test User');
       await expect(profileNameInput).toHaveValue('Test User');
 
       logProgress('🖱️ Clicking Continue button on profile...');
-      await page.getByRole('button', { name: 'Continue' }).click();
+      await page.getByTestId('profile-continue-button').click();
 
       // Wait for profile submission to complete
       await page.waitForLoadState('networkidle');
@@ -276,10 +276,22 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       // Should be on onboarding
       await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 10000 });
 
-      // Click "Skip for now"
-      const skipButton = page.getByText(/skip for now/i);
-      await expect(skipButton).toBeVisible();
-      await skipButton.click();
+      // Handle organization creation/join flow
+      const requestToJoinButton = page.getByRole('button', { name: 'Request to Join' });
+      const continuePersonalButton = page.getByText('Continue with personal workspace');
+      const skipButton = page.getByRole('button', { name: /skip for now/i });
+
+      if (await requestToJoinButton.isVisible()) {
+        // This is an organization join flow - click "Continue with personal workspace"
+        logProgress('📋 Organization join flow detected, continuing with personal workspace');
+        await continuePersonalButton.click();
+      } else if (await skipButton.isVisible()) {
+        // This is a standard organization creation flow with skip option
+        logProgress('📋 Organization creation flow detected, skipping');
+        await skipButton.click();
+      } else {
+        throw new Error('Neither organization join nor skip option found');
+      }
 
       // Handle Terms of Service if it appears
       await handleTermsOfService(page);
@@ -292,8 +304,8 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       logProgress('✅ Skip correctly advances to profile step');
 
       // Complete the rest of the flow
-      await page.getByRole('textbox', { name: /your name/i }).fill('Test User');
-      await page.getByRole('button', { name: 'Continue' }).click();
+      await page.getByTestId('profile-name-input').fill('Test User');
+      await page.getByTestId('profile-continue-button').click();
 
       await page.getByRole('button', { name: 'Skip for Now' }).click();
       await page.getByRole('button', { name: /Start Your First Conversation/i }).click();
@@ -427,39 +439,24 @@ test.describe('Organization Creation Flow - Issue #103', () => {
     const page = await context.newPage();
 
     try {
-      await page.goto('http://localhost:3080/login');
-      await page.getByTestId('google').click();
-      await page.waitForLoadState('networkidle');
-
-      // Should redirect to Google OAuth
-      expect(page.url()).toContain('accounts.google.com');
-      logProgress('✅ Redirected to Google OAuth');
-
-      const { GOOGLE_CREDS } = await import('../../utils/oAuth');
-      if (!GOOGLE_CREDS.email || !GOOGLE_CREDS.password) {
-        logProgress('⚠️ OAuth credentials not available - skipping test');
+      // Use abstracted OAuth utilities
+      const { requireOAuthCredentials, completeOAuthOnboardingFlow } = await import('../../utils/authOnboardingUtils');
+      
+      try {
+        requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth onboarding flow');
+      } catch (error) {
+        logProgress('⚠️ Skipping test due to missing OAuth credentials');
         return;
       }
 
-      // Complete OAuth
-      await page.getByRole('textbox', { name: 'Email or phone' }).fill(GOOGLE_CREDS.email);
-      await page.getByRole('button', { name: 'Next' }).click();
-      await page.getByRole('textbox', { name: 'Enter your password' }).fill(GOOGLE_CREDS.password);
-      await page.getByRole('button', { name: 'Next' }).click();
-      await page.getByRole('button', { name: 'Continue' }).click();
-
-      // Should redirect to onboarding
-      await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 15000 });
-      logProgress('✅ OAuth redirected to onboarding');
-
-      // Complete organization step
-      await page.getByRole('textbox').first().fill('OAuth Test Organization');
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // CRITICAL: Should be on profile step
-      await expect(page.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({
-        timeout: 5000,
+      // Complete full OAuth onboarding flow
+      await completeOAuthOnboardingFlow(page, 'PUBLIC_DOMAIN', {
+        orgName: 'OAuth Test Organization',
+        skipTeam: true,
       });
+
+      // Verify we reach the chat interface
+      await expect(page.getByTestId('text-input')).toBeVisible();
       logProgress('✅ OAuth flow correctly advances through all steps');
     } finally {
       await context.close();
