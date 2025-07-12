@@ -38,3 +38,4 @@ LibreChat/temp/
 temp/magic-links.json
 # Ignore transient Agentis JSON artefacts
 temp/Agentis.*.json
+e2e/temp/remove-avatar-test.png
