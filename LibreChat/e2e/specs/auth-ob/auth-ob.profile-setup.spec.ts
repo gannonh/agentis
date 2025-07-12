@@ -199,49 +199,21 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
     const page = await context.newPage();
 
     try {
-      // Step 1: Navigate to login
-      await page.goto('http://localhost:3080/login');
-
-      // Step 2: Initiate Google OAuth
-      await page.getByTestId('google').click();
-      await page.waitForLoadState('networkidle');
-
-      // Step 3: Verify we reach Google OAuth page
-      expect(page.url()).toContain('accounts.google.com');
-      await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-      await expect(page.getByText('to continue to Agentis')).toBeVisible();
-      logProgress('✅ Successfully redirected to Google OAuth');
-
-      // Step 4: Complete OAuth with test credentials
-      const { GOOGLE_CREDS } = await import('../../utils/oAuth');
-
-      if (!GOOGLE_CREDS.email || !GOOGLE_CREDS.password) {
-        logProgress('⚠️ OAuth credentials not available - skipping authentication');
+      // Step 1: Check if OAuth credentials are available
+      const { requireOAuthCredentials, startOAuthAuthentication, completeOrganizationStep } = await import('../../utils/authOnboardingUtils');
+      
+      try {
+        requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth user with Google avatar');
+      } catch (error) {
+        logProgress('⚠️ Skipping test due to missing OAuth credentials');
         return;
       }
 
-      logProgress('🔐 Completing Google OAuth authentication...');
+      // Step 2: Complete OAuth authentication flow
+      await startOAuthAuthentication(page, 'PUBLIC_DOMAIN');
 
-      // Fill email (with click first)
-      await page.getByRole('textbox', { name: 'Email or phone' }).click();
-      await page.getByRole('textbox', { name: 'Email or phone' }).fill(GOOGLE_CREDS.email);
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Fill password (with click first)
-      await page.getByRole('textbox', { name: 'Enter your password' }).click();
-      await page.getByRole('textbox', { name: 'Enter your password' }).fill(GOOGLE_CREDS.password);
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Step 5: Handle final Continue button
-      logProgress('🔒 Handling OAuth consent...');
-      await page.getByRole('button', { name: 'Continue' }).click();
-      await page.waitForLoadState('networkidle');
-
-      // Step 6: Verify successful authentication and redirect
+      // Step 3: Verify successful authentication and redirect
       logProgress('📍 Verifying authentication redirect...');
-
-      // Must NOT be on Google OAuth page anymore
-      await expect(page).not.toHaveURL(/.*accounts\.google\.com.*/, { timeout: 10000 });
 
       // Must be redirected to onboarding
       await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 15000 });
@@ -249,45 +221,13 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
 
       // Complete organization step
       await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible();
-      await page.getByRole('textbox').first().fill('OAuth Avatar Test Org');
-      await page.getByRole('button', { name: 'Next' }).click();
+      await completeOrganizationStep(page, 'OAuth Avatar Test Org');
 
-      // Step 6: Now on profile setup - OAuth user should have pre-filled data
-      await expect(page.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({
-        timeout: 10000,
-      });
-      logProgress('✅ Reached profile setup step with OAuth user');
-
-      // OAuth users should have pre-filled name from Google profile
-      const nameInput = page.getByTestId('profile-name-input');
-      const prefilledName = await nameInput.inputValue();
-      logProgress(`✅ OAuth user has pre-filled name: "${prefilledName}"`);
-
-      // Debug: Check what avatar data is actually present
-      const avatarPreview = page.locator('[data-testid="avatar-preview"]');
-      const hasAvatarPreview = await avatarPreview.isVisible();
-      logProgress(`🔍 Debug: avatar-preview element visible = ${hasAvatarPreview}`);
-
-      if (hasAvatarPreview) {
-        logProgress('✅ OAuth user has Google avatar displayed');
-
-        // Verify upload text shows "Change photo" for users with existing avatar
-        const changePhotoText = page.getByText('Change photo');
-        await expect(changePhotoText).toBeVisible();
-        logProgress('✅ Upload text shows "Change photo" for OAuth user with avatar');
-
-        // Verify remove photo option is available
-        const removePhotoText = page.getByText('Remove photo');
-        await expect(removePhotoText).toBeVisible();
-        logProgress('✅ Remove photo option available for OAuth user with avatar');
-      } else {
-        logProgress('✅ OAuth user shows initials fallback (no Google avatar)');
-
-        // Verify upload text shows "Upload a photo" for users without avatar
-        const uploadPhotoText = page.getByText('Upload a photo');
-        await expect(uploadPhotoText).toBeVisible();
-        logProgress('✅ Upload text shows "Upload a photo" for OAuth user without avatar');
-      }
+      // Step 4: Now on profile setup - use abstracted OAuth profile verification
+      const { verifyOAuthProfileIntegration } = await import('../../utils/authOnboardingUtils');
+      const { hasAvatar, prefilledName } = await verifyOAuthProfileIntegration(page);
+      
+      logProgress(`✅ OAuth profile integration verified - hasAvatar: ${hasAvatar}, name: "${prefilledName}"`);
 
       // Test avatar upload override capability
       const fileInput = page.locator('input[type="file"]');
@@ -358,118 +298,30 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
     const page = await context.newPage();
 
     try {
-      // Step 1: Navigate to login page and initiate Google OAuth
-      await page.goto('http://localhost:3080/login');
-
-      const googleButton = page.getByTestId('google');
-      const isOAuthConfigured = await googleButton.isVisible();
-
-      if (!isOAuthConfigured) {
-        logProgress('⚠️ Google OAuth not configured, skipping OAuth error handling test');
-        test.skip(true, 'Google OAuth not configured - check GOOGLE_CLIENT_ID/SECRET');
+      // Step 1: Check if OAuth credentials are available
+      const { requireOAuthCredentials, startOAuthAuthentication, completeOrganizationStep } = await import('../../utils/authOnboardingUtils');
+      
+      try {
+        requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth avatar error handling');
+      } catch (error) {
+        logProgress('⚠️ Skipping test due to missing OAuth credentials');
         return;
       }
 
-      logProgress('✅ Google OAuth is configured');
+      // Step 2: Complete OAuth authentication flow
+      await startOAuthAuthentication(page, 'PUBLIC_DOMAIN');
 
-      // Step 2: Initiate Google OAuth
-      await googleButton.click();
-      await page.waitForLoadState('networkidle');
-
-      // Step 3: Verify we reach Google OAuth page
-      expect(page.url()).toContain('accounts.google.com');
-      await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-      await expect(page.getByText(/continue to Agentis/)).toBeVisible();
-      logProgress('✅ Successfully redirected to Google OAuth');
-
-      // Step 4: Complete OAuth with test credentials
-      const { GOOGLE_CREDS } = await import('../../utils/oAuth');
-
-      if (!GOOGLE_CREDS.email || !GOOGLE_CREDS.password) {
-        logProgress('⚠️ OAuth credentials not available - skipping authentication');
-        test.skip(
-          true,
-          'OAuth credentials not configured - check GOOGLE_TEST_ACCOUNT_1_EMAIL/PASSWORD',
-        );
-        return;
-      }
-
-      logProgress('🔐 Completing Google OAuth authentication...');
-
-      // Fill email (with click first)
-      await page.getByRole('textbox', { name: 'Email or phone' }).click();
-      await page.getByRole('textbox', { name: 'Email or phone' }).fill(GOOGLE_CREDS.email);
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Fill password (with click first)
-      await page.getByRole('textbox', { name: 'Enter your password' }).click();
-      await page.getByRole('textbox', { name: 'Enter your password' }).fill(GOOGLE_CREDS.password);
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Step 5: Handle final Continue button
-      logProgress('🔒 Handling OAuth consent...');
-      await page.getByRole('button', { name: 'Continue' }).click();
-      await page.waitForLoadState('networkidle');
-
-      // Step 4: Should redirect to onboarding
+      // Step 3: Should redirect to onboarding
       await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 15000 });
       logProgress('✅ OAuth redirected to onboarding');
 
       // Complete organization step
       await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible();
-      await page.getByRole('textbox').first().fill('OAuth Error Test Org');
-      await page.getByRole('button', { name: 'Next' }).click();
+      await completeOrganizationStep(page, 'OAuth Error Test Org');
 
-      // Step 5: Profile setup - test error handling
-      await expect(page.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible();
-      logProgress('✅ Reached profile setup step');
-
-      // Monitor console for avatar-related errors
-      const consoleMessages: string[] = [];
-      page.on('console', (msg) => {
-        const text = msg.text();
-        if (
-          text.includes('Avatar') ||
-          text.includes('avatar') ||
-          text.includes('Error') ||
-          text.includes('error')
-        ) {
-          consoleMessages.push(text);
-        }
-      });
-
-      // OAuth users should have pre-filled name from Google profile
-      const nameInput = page.getByTestId('profile-name-input');
-      const prefilledName = await nameInput.inputValue();
-      logProgress(`✅ OAuth user has pre-filled name: "${prefilledName}"`);
-
-      // Test graceful handling of avatar loading issues
-      // The component should either show avatar or gracefully fall back to initials
-      const avatarPreview = page.locator('[data-testid="avatar-preview"]');
-
-      // Give some time for any avatar loading attempts
-      await page.waitForTimeout(3000);
-
-      const hasAvatarPreview = await avatarPreview.isVisible();
-
-      if (hasAvatarPreview) {
-        logProgress('✅ OAuth avatar loaded successfully');
-      } else {
-        logProgress('✅ OAuth user gracefully falls back to initials');
-
-        // Should show initials based on the pre-filled name
-        const firstChar = prefilledName.charAt(0).toUpperCase();
-        const avatarPlaceholder = page
-          .locator('div')
-          .filter({ hasText: new RegExp(`^${firstChar}`) });
-        await expect(avatarPlaceholder).toBeVisible();
-        logProgress(`✅ Initials "${firstChar}" displayed correctly as fallback`);
-      }
-
-      // Verify error handling doesn't break the form
-      const continueButton = page.getByTestId('profile-continue-button');
-      await expect(continueButton).toBeEnabled({ timeout: 5000 });
-      logProgress('✅ Form remains functional regardless of avatar loading status');
+      // Step 4: Profile setup - test error handling using abstracted utilities
+      const { testOAuthAvatarErrorHandling } = await import('../../utils/authOnboardingUtils');
+      await testOAuthAvatarErrorHandling(page);
 
       // Test username generation and availability
       await page.fill('[data-testid="profile-username-input"]', 'erroruser123');
@@ -478,10 +330,10 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
       });
       logProgress('✅ Username functionality works correctly');
 
-      // Check if any graceful error handling messages were logged
-      if (consoleMessages.length > 0) {
-        logProgress(`📝 Console messages during test: ${consoleMessages.join(', ')}`);
-      }
+      // Verify form remains functional
+      const continueButton = page.getByTestId('profile-continue-button');
+      await expect(continueButton).toBeEnabled({ timeout: 5000 });
+      logProgress('✅ Form remains functional regardless of avatar loading status');
 
       // Complete profile setup successfully
       await continueButton.click();
