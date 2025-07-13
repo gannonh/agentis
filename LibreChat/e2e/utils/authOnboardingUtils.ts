@@ -1,7 +1,7 @@
 /**
  * @fileoverview Auth & Onboarding Test Utilities
  * @module e2e/utils/authOnboardingUtils
- * 
+ *
  * Shared utilities for auth and onboarding e2e tests including:
  * - Magic link capture and handling
  * - OAuth authentication flows
@@ -23,8 +23,8 @@ export const OAUTH_CREDENTIALS = {
     password: 'KJHkh97HKH87jjfU',
   },
   PRIVATE_DOMAIN: {
-    email: 'gannon@astrolabs.llc', 
-    password: 'Sawt00th2112S3cr3t77!',
+    email: 'gannon@astrolabs.llc',
+    password: 'zarnUj-wiqfet-bagti4',
   },
 } as const;
 
@@ -56,7 +56,10 @@ export const TEST_VIEWPORT = {
  * @param timeout - Timeout in milliseconds (default: 15000)
  * @returns Promise<string | null> - Magic link URL or null if not found
  */
-export async function captureMagicLink(email: string, timeout: number = 15000): Promise<string | null> {
+export async function captureMagicLink(
+  email: string,
+  timeout: number = 15000,
+): Promise<string | null> {
   const { createMailHog } = await import('./mailhog.js');
   const mailhog = createMailHog();
 
@@ -119,7 +122,11 @@ export async function cleanDatabase(): Promise<void> {
 
   // 3. Delete account records (OAuth linkages)
   await db.collection('account').deleteMany({
-    userId: { $regex: /test.*/ },
+    $or: [
+      { userId: { $regex: /test.*/ } }, // Test users
+      { userId: { $regex: /.*gannon@astrolabs\.llc.*/ } }, // OAuth PRIVATE_DOMAIN user
+      { userId: { $regex: /.*agentis\.test@gmail\.com.*/ } }, // OAuth PUBLIC_DOMAIN user
+    ],
   });
 
   // 4. Delete organizations
@@ -128,17 +135,25 @@ export async function cleanDatabase(): Promise<void> {
       { name: { $regex: /Test.*/ } },
       { name: { $regex: /TechCorp.*/ } }, // Handle TechCorp organizations from edge case tests
       { name: { $regex: /Acme Corp.*/ } }, // Handle Acme Corp organizations
+      { name: { $regex: /Astrolabs.*/ } }, // Handle Astrolabs OAuth organizations
+      { name: { $regex: /OAuth.*/ } }, // Handle OAuth test organizations
       { slug: { $regex: /test.*/ } },
       { slug: { $regex: /techcorp.*/ } }, // Handle techcorp slugs
       { slug: { $regex: /acme-corp.*/ } }, // Handle acme-corp slugs
+      { slug: { $regex: /astrolabs.*/ } }, // Handle astrolabs slugs
       { 'metadata.domain': { $regex: /testcorp.*/ } },
       { 'metadata.domain': { $regex: /techcorp.*/ } }, // Handle techcorp domains
+      { 'metadata.domain': 'astrolabs.llc' }, // Handle OAuth corporate domain
     ],
   });
 
   // 5. Delete users last
   await db.collection('user').deleteMany({
-    email: { $regex: /test.*@/ },
+    $or: [
+      { email: { $regex: /test.*@/ } }, // Test emails
+      { email: 'gannon@astrolabs.llc' }, // OAuth PRIVATE_DOMAIN credential
+      { email: 'agentis.test@gmail.com' }, // OAuth PUBLIC_DOMAIN credential
+    ],
   });
 }
 
@@ -149,7 +164,11 @@ export async function cleanDatabase(): Promise<void> {
  * @param allowDomainJoin - Whether to enable domain auto-join (default: false)
  * @returns Promise with created organization object
  */
-export async function createTestOrganization(name: string, domain: string, allowDomainJoin: boolean = false) {
+export async function createTestOrganization(
+  name: string,
+  domain: string,
+  allowDomainJoin: boolean = false,
+) {
   const { getTestDatabase } = await import('./testAuth');
   const { db } = await getTestDatabase();
 
@@ -157,16 +176,18 @@ export async function createTestOrganization(name: string, domain: string, allow
     _id: new (await import('mongodb')).ObjectId(),
     name: name,
     slug: name.toLowerCase().replace(/\s+/g, '-'),
-    metadata: { 
+    metadata: {
       domain: domain,
-      allowDomainJoin: allowDomainJoin
+      allowDomainJoin: allowDomainJoin,
     },
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   await db.collection('organization').insertOne(testOrg);
-  logProgress(`✅ Created test organization: ${testOrg.name} for domain ${domain} (allowDomainJoin: ${allowDomainJoin})`);
+  logProgress(
+    `✅ Created test organization: ${testOrg.name} for domain ${domain} (allowDomainJoin: ${allowDomainJoin})`,
+  );
   return testOrg;
 }
 
@@ -212,11 +233,11 @@ export async function startMagicLinkAuth(page: Page, email: string): Promise<str
 export async function completeOrganizationStep(
   page: Page,
   orgName: string,
-  enableDomainJoin: boolean = false
+  enableDomainJoin: boolean = false,
 ): Promise<void> {
   // Fill organization name
   await page.getByRole('textbox').first().fill(orgName);
-  
+
   // Enable domain join if requested and available
   if (enableDomainJoin) {
     const domainJoinCheckbox = page.getByRole('checkbox');
@@ -238,12 +259,14 @@ export async function completeOrganizationStep(
 export async function completeProfileStep(page: Page, userName: string): Promise<void> {
   // Wait for profile step
   await page.getByRole('heading', { name: /Complete Your Profile/i }).waitFor();
-  
-  // Fill profile name
-  await page.getByRole('textbox', { name: /your name/i }).fill(userName);
-  
+
+  // Fill profile name - use data-testid for more reliable selection
+  const nameInput = page.getByTestId('profile-name-input');
+  await nameInput.waitFor();
+  await nameInput.fill(userName);
+
   // Submit profile
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByTestId('profile-continue-button').click();
 }
 
 /**
@@ -254,7 +277,7 @@ export async function completeProfileStep(page: Page, userName: string): Promise
 export async function completeTeamStep(page: Page, skipTeam: boolean = true): Promise<void> {
   // Wait for team step
   await page.getByRole('heading', { name: /Invite Your Team/i }).waitFor();
-  
+
   if (skipTeam) {
     await page.getByRole('button', { name: 'Skip for Now' }).click();
   }
@@ -268,7 +291,7 @@ export async function completeTeamStep(page: Page, skipTeam: boolean = true): Pr
 export async function completeWelcomeStep(page: Page): Promise<void> {
   // Wait for welcome step
   await page.getByRole('heading', { name: /Welcome to Agentis/i }).waitFor();
-  
+
   // Complete onboarding
   await page.getByRole('button', { name: /Start Your First Conversation/i }).click();
 }
@@ -285,7 +308,7 @@ export async function completeFullOnboarding(
     userName: string;
     enableDomainJoin?: boolean;
     skipTeam?: boolean;
-  }
+  },
 ): Promise<void> {
   const { orgName, userName, enableDomainJoin = false, skipTeam = true } = options;
 
@@ -348,7 +371,7 @@ export async function joinOrganization(page: Page, orgName: string): Promise<voi
 export async function verifyOrganizationInDatabase(
   orgName: string,
   domain: string,
-  allowDomainJoin: boolean = false
+  allowDomainJoin: boolean = false,
 ) {
   const { getTestDatabase } = await import('./testAuth');
   const { db } = await getTestDatabase();
@@ -363,7 +386,9 @@ export async function verifyOrganizationInDatabase(
   }
 
   if (org.metadata?.allowDomainJoin !== allowDomainJoin) {
-    throw new Error(`Expected allowDomainJoin ${allowDomainJoin}, got ${org.metadata?.allowDomainJoin}`);
+    throw new Error(
+      `Expected allowDomainJoin ${allowDomainJoin}, got ${org.metadata?.allowDomainJoin}`,
+    );
   }
 
   logProgress('✅ Organization created correctly in database');
@@ -376,10 +401,7 @@ export async function verifyOrganizationInDatabase(
  * @param expectedMemberCount - Expected number of members
  * @returns Array of member objects
  */
-export async function verifyOrganizationMembership(
-  orgName: string,
-  expectedMemberCount: number
-) {
+export async function verifyOrganizationMembership(orgName: string, expectedMemberCount: number) {
   const { getTestDatabase } = await import('./testAuth');
   const { db } = await getTestDatabase();
 
@@ -389,7 +411,7 @@ export async function verifyOrganizationMembership(
   }
 
   const members = await db.collection('member').find({ organizationId: org._id }).toArray();
-  
+
   if (members.length !== expectedMemberCount) {
     throw new Error(`Expected ${expectedMemberCount} members, got ${members.length}`);
   }
@@ -439,19 +461,19 @@ export type OAuthCredentialType = 'PUBLIC_DOMAIN' | 'PRIVATE_DOMAIN';
  */
 export async function initiateGoogleOAuth(page: Page): Promise<void> {
   logProgress('🔐 Initiating Google OAuth flow...');
-  
+
   // Navigate to login page
   await page.goto('http://localhost:3080/login');
-  
+
   // Click Google OAuth button
   await page.getByTestId('google').click();
   await page.waitForLoadState('networkidle');
-  
+
   // Verify we reach Google OAuth page
   if (!page.url().includes('accounts.google.com')) {
     throw new Error(`Expected Google OAuth page, got: ${page.url()}`);
   }
-  
+
   logProgress('✅ Successfully redirected to Google OAuth');
 }
 
@@ -462,58 +484,58 @@ export async function initiateGoogleOAuth(page: Page): Promise<void> {
  * @returns Promise<void>
  */
 export async function completeGoogleOAuth(
-  page: Page, 
-  credentialType: OAuthCredentialType = 'PUBLIC_DOMAIN'
+  page: Page,
+  credentialType: OAuthCredentialType = 'PUBLIC_DOMAIN',
 ): Promise<void> {
   const credentials = OAUTH_CREDENTIALS[credentialType];
-  
+
   logProgress(`🔐 Completing Google OAuth with ${credentialType} credentials...`);
-  
+
   // Verify we're on Google OAuth page
   if (!page.url().includes('accounts.google.com')) {
     throw new Error(`Not on Google OAuth page: ${page.url()}`);
   }
-  
+
   // Check that credentials are available
   if (!credentials.email || !credentials.password) {
     logProgress('⚠️ OAuth credentials not available - skipping authentication');
     throw new Error(`OAuth credentials not configured for ${credentialType}`);
   }
-  
+
   // Fill email
   await page.getByRole('textbox', { name: 'Email or phone' }).click();
   await page.getByRole('textbox', { name: 'Email or phone' }).fill(credentials.email);
   await page.getByRole('button', { name: 'Next' }).click();
-  
-  // Fill password  
+
+  // Fill password
   await page.getByRole('textbox', { name: 'Enter your password' }).click();
   await page.getByRole('textbox', { name: 'Enter your password' }).fill(credentials.password);
   await page.getByRole('button', { name: 'Next' }).click();
-  
+
   // Handle OAuth consent
   logProgress('🔒 Handling OAuth consent...');
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.waitForLoadState('networkidle');
-  
+
   // Verify we're no longer on Google OAuth page
   await page.waitForFunction(
     () => !window.location.href.includes('accounts.google.com'),
     {},
-    { timeout: 15000 }
+    { timeout: 15000 },
   );
-  
+
   logProgress('✅ OAuth authentication completed');
 }
 
 /**
  * Helper to start OAuth authentication flow (initiate + complete)
- * @param page - Playwright page instance  
+ * @param page - Playwright page instance
  * @param credentialType - Type of credentials to use
  * @returns Promise<void>
  */
 export async function startOAuthAuthentication(
   page: Page,
-  credentialType: OAuthCredentialType = 'PUBLIC_DOMAIN'
+  credentialType: OAuthCredentialType = 'PUBLIC_DOMAIN',
 ): Promise<void> {
   await initiateGoogleOAuth(page);
   await completeGoogleOAuth(page, credentialType);
@@ -526,23 +548,23 @@ export async function startOAuthAuthentication(
  */
 export async function cancelOAuthFlow(page: Page): Promise<void> {
   logProgress('🚫 Testing OAuth cancellation...');
-  
+
   // Start OAuth flow
   await initiateGoogleOAuth(page);
-  
+
   // Cancel by going back
   await page.goBack();
   await page.waitForLoadState('networkidle');
-  
+
   // Verify graceful return to login
   if (!page.url().includes('localhost:3080/login')) {
     throw new Error(`Expected login page after cancellation, got: ${page.url()}`);
   }
-  
+
   // Verify login page elements are still functional
   await page.getByRole('heading', { name: 'Welcome' }).waitFor();
   await page.getByTestId('google').waitFor();
-  
+
   logProgress('✅ OAuth cancellation handled gracefully');
 }
 
@@ -554,35 +576,35 @@ export async function cancelOAuthFlow(page: Page): Promise<void> {
  */
 export async function verifyOAuthProfileIntegration(
   page: Page,
-  expectedName?: string
+  expectedName?: string,
 ): Promise<{ hasAvatar: boolean; prefilledName: string }> {
   logProgress('🔍 Verifying OAuth profile data integration...');
-  
+
   // Wait for profile setup page
   await page.getByRole('heading', { name: /Complete Your Profile/i }).waitFor();
-  
+
   // Check pre-filled name from OAuth
   const nameInput = page.getByTestId('profile-name-input');
   const prefilledName = await nameInput.inputValue();
-  
+
   if (expectedName && prefilledName !== expectedName) {
     logProgress(`⚠️ Expected name "${expectedName}", got "${prefilledName}"`);
   } else {
     logProgress(`✅ OAuth user has pre-filled name: "${prefilledName}"`);
   }
-  
+
   // Check if OAuth avatar is displayed
   const avatarPreview = page.getByTestId('avatar-preview');
   const hasAvatar = await avatarPreview.isVisible();
-  
+
   if (hasAvatar) {
     logProgress('✅ OAuth user has Google avatar displayed');
-    
+
     // Verify upload text shows "Change photo" for users with avatars
     const uploadText = page.getByText('Change photo');
     await uploadText.waitFor();
     logProgress('✅ Upload text shows "Change photo" for OAuth user with avatar');
-    
+
     // Verify remove photo option is available
     const removePhotoButton = page.getByText('Remove photo');
     if (await removePhotoButton.isVisible()) {
@@ -590,13 +612,13 @@ export async function verifyOAuthProfileIntegration(
     }
   } else {
     logProgress('✅ OAuth user shows initials fallback (no Google avatar)');
-    
+
     // Verify upload text shows "Upload a photo" for users without avatars
     const uploadText = page.getByText('Upload a photo');
     await uploadText.waitFor();
     logProgress('✅ Upload text shows "Upload a photo" for OAuth user without avatar');
   }
-  
+
   return { hasAvatar, prefilledName };
 }
 
@@ -607,19 +629,19 @@ export async function verifyOAuthProfileIntegration(
  */
 export async function testOAuthAvatarErrorHandling(page: Page): Promise<void> {
   logProgress('🧪 Testing OAuth avatar error handling...');
-  
+
   // Wait for profile setup page
   await page.getByRole('heading', { name: /Complete Your Profile/i }).waitFor();
-  
+
   // Check current avatar state
   const avatarPreview = page.getByTestId('avatar-preview');
   const hasAvatar = await avatarPreview.isVisible();
-  
+
   if (hasAvatar) {
     // Test that broken images fall back gracefully to initials
     const avatarSrc = await avatarPreview.getAttribute('src');
     logProgress(`🖼️ Testing avatar error handling for: ${avatarSrc}`);
-    
+
     // The onError handler should already be in place from our ProfileSetup fixes
     // If the image fails to load, it should fall back to initials
     logProgress('✅ OAuth avatar has error handling in place');
@@ -643,47 +665,47 @@ export async function completeOAuthOnboardingFlow(
     userName?: string; // Optional since OAuth pre-fills name
     enableDomainJoin?: boolean;
     skipTeam?: boolean;
-  }
+  },
 ): Promise<void> {
   const { orgName, userName, enableDomainJoin = false, skipTeam = true } = options;
-  
+
   logProgress('🚀 Starting OAuth onboarding flow...');
-  
+
   // Step 1: Complete OAuth authentication
   await startOAuthAuthentication(page, credentialType);
-  
+
   // Step 2: Verify redirect to onboarding
   await page.waitForURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
   logProgress('✅ OAuth redirected to onboarding');
-  
+
   // Step 3: Complete organization step
   await completeOrganizationStep(page, orgName, enableDomainJoin);
   await page.waitForLoadState('networkidle');
-  
+
   // Step 4: Complete profile step (may have pre-filled data from OAuth)
   await page.getByRole('heading', { name: /Complete Your Profile/i }).waitFor();
-  
+
   if (userName) {
     // Override pre-filled name if specified
     const nameInput = page.getByTestId('profile-name-input');
     await nameInput.clear();
     await nameInput.fill(userName);
   }
-  
+
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.waitForLoadState('networkidle');
-  
+
   // Step 5: Complete team step
   await completeTeamStep(page, skipTeam);
   await page.waitForLoadState('networkidle');
-  
+
   // Step 6: Complete welcome step
   await completeWelcomeStep(page);
   await page.waitForLoadState('networkidle');
-  
+
   // Step 7: Handle Terms of Service modal if it appears
   await handleTermsOfService(page);
-  
+
   // Step 8: Verify final redirect to chat
   await page.waitForURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
   logProgress('✅ OAuth onboarding flow completed successfully');
@@ -705,7 +727,10 @@ export function areOAuthCredentialsAvailable(credentialType: OAuthCredentialType
  * @param testName - Name of the test being skipped
  * @returns void (throws skip if credentials unavailable)
  */
-export function requireOAuthCredentials(credentialType: OAuthCredentialType, testName: string): void {
+export function requireOAuthCredentials(
+  credentialType: OAuthCredentialType,
+  testName: string,
+): void {
   if (!areOAuthCredentialsAvailable(credentialType)) {
     const message = `OAuth credentials not configured for ${credentialType} - skipping ${testName}`;
     logProgress(`⚠️ ${message}`);

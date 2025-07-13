@@ -8,6 +8,8 @@ import {
   generateTestEmail,
   createTestOrganization,
   TEST_PATTERNS,
+  requireOAuthCredentials,
+  startOAuthAuthentication,
 } from '../../utils/authOnboardingUtils';
 
 test.use({
@@ -126,6 +128,182 @@ test.describe('Organization Detection Tests - Issue #102', () => {
       logProgress('✅ Public domain correctly detected - no domain join option shown');
 
       logProgress('✅ Journey 13 completed - all assertions passed');
+    } finally {
+      await context.close();
+    }
+  });
+
+  /**
+   * =================================================================================
+   * OAUTH CORPORATE DOMAIN DETECTION TESTS
+   * =================================================================================
+   * Tests OAuth authentication with corporate domains (PRIVATE_DOMAIN).
+   * Extends Issue #102 scope to include OAuth flows.
+   */
+
+  test('OAuth → Corporate Domain → Organization Detection (No Existing Org)', async ({ browser }) => {
+    logProgress('🚀 Testing OAuth corporate domain detection without existing organization...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Verify OAuth credentials are available (will fail test if missing)
+      requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth corporate domain detection');
+
+      // Step 2: Complete OAuth authentication with corporate domain (astrolabs.llc)
+      await startOAuthAuthentication(page, 'PRIVATE_DOMAIN');
+
+      // Step 3: Verify we reach onboarding
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
+      logProgress('✅ OAuth redirected to onboarding');
+
+      // Step 4: Verify organization creation UI is shown
+      await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible({
+        timeout: 10000,
+      });
+      logProgress('✅ Organization creation heading displayed');
+
+      // Step 5: Verify the organization name input field
+      await expect(page.getByRole('textbox').first()).toBeVisible();
+      logProgress('✅ Organization name input field displayed');
+
+      // Step 6: Verify domain auto-join option is available for corporate domain
+      await expect(page.getByText(/let anyone with an @astrolabs.llc email join/i)).toBeVisible();
+      logProgress('✅ Domain auto-join option shown for OAuth corporate domain');
+
+      logProgress('✅ OAuth corporate domain detection test completed');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('OAuth → Corporate Domain → Existing Organization Detection (Auto-Join Enabled)', async ({ browser }) => {
+    logProgress('🚀 Testing OAuth corporate domain with existing organization (auto-join enabled)...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Verify OAuth credentials are available (will fail test if missing)
+      requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth corporate domain with existing org');
+
+      // Step 2: Create test organization with auto-join enabled
+      const testOrg = await createTestOrganization('Astrolabs Test Corp', 'astrolabs.llc', true);
+      logProgress(`✅ Created test organization: ${testOrg.name} with auto-join enabled`);
+
+      // Step 3: Complete OAuth authentication with matching corporate domain
+      await startOAuthAuthentication(page, 'PRIVATE_DOMAIN');
+
+      // Step 4: Verify we reach onboarding
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
+      logProgress('✅ OAuth redirected to onboarding');
+
+      // Step 5: Should show organization join preview (not creation form)
+      await expect(page.getByRole('heading', { name: testOrg.name })).toBeVisible({
+        timeout: 10000,
+      });
+      logProgress('✅ Existing organization preview displayed');
+
+      // Step 6: Verify auto-join indicator
+      await expect(page.getByText(/Auto-join enabled/i)).toBeVisible();
+      logProgress('✅ Auto-join enabled indicator shown');
+
+      // Step 7: Verify join button is available
+      const joinButton = page.getByRole('button', { name: new RegExp(`Join ${testOrg.name}`, 'i') });
+      await expect(joinButton).toBeVisible();
+      logProgress('✅ Join organization button displayed');
+
+      logProgress('✅ OAuth corporate domain existing organization detection test completed');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('OAuth → Corporate Domain → Existing Organization Detection (Auto-Join Disabled)', async ({ browser }) => {
+    logProgress('🚀 Testing OAuth corporate domain with existing organization (auto-join disabled)...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Verify OAuth credentials are available (will fail test if missing)
+      requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth corporate domain manual approval');
+
+      // Step 2: Create test organization with auto-join disabled
+      const testOrg = await createTestOrganization('Astrolabs Manual Corp', 'astrolabs.llc', false);
+      logProgress(`✅ Created test organization: ${testOrg.name} with auto-join disabled`);
+
+      // Step 3: Complete OAuth authentication with matching corporate domain
+      await startOAuthAuthentication(page, 'PRIVATE_DOMAIN');
+
+      // Step 4: Verify we reach onboarding
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
+      logProgress('✅ OAuth redirected to onboarding');
+
+      // Step 5: Should show organization join preview (not creation form)
+      await expect(page.getByRole('heading', { name: testOrg.name })).toBeVisible({
+        timeout: 10000,
+      });
+      logProgress('✅ Existing organization preview displayed');
+
+      // Step 6: Verify auto-join disabled indicator
+      await expect(page.getByText(/Auto-join enabled/i)).not.toBeVisible();
+      logProgress('✅ Auto-join disabled correctly detected');
+
+      // Step 7: Verify request to join button is available
+      const requestJoinButton = page.getByRole('button', { name: 'Request to Join' });
+      await expect(requestJoinButton).toBeVisible();
+      logProgress('✅ Request to Join button displayed for manual approval');
+
+      // Step 8: Verify continue with personal workspace option
+      const continuePersonalButton = page.getByText('Continue with personal workspace');
+      await expect(continuePersonalButton).toBeVisible();
+      logProgress('✅ Continue with personal workspace option available');
+
+      logProgress('✅ OAuth corporate domain manual approval detection test completed');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('OAuth → Public Domain → No Organization Join Options', async ({ browser }) => {
+    logProgress('🚀 Testing OAuth public domain detection (no organization join)...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Verify OAuth credentials are available (will fail test if missing)
+      requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth public domain detection');
+
+      // Step 2: Complete OAuth authentication with public domain (gmail.com)
+      await startOAuthAuthentication(page, 'PUBLIC_DOMAIN');
+
+      // Step 3: Verify we reach onboarding
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
+      logProgress('✅ OAuth redirected to onboarding');
+
+      // Step 4: Verify organization creation UI is shown
+      await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible({
+        timeout: 10000,
+      });
+      logProgress('✅ Organization creation heading displayed');
+
+      // Step 5: Verify the organization name input field
+      await expect(page.getByRole('textbox').first()).toBeVisible();
+      logProgress('✅ Organization name input field displayed');
+
+      // Step 6: Verify NO domain join option for public domains
+      await expect(page.getByText(/let anyone with an @gmail.com email join/i)).not.toBeVisible();
+      logProgress('✅ Public domain correctly detected - no domain join option shown');
+
+      // Step 7: Verify no organization join preview is shown
+      await expect(page.getByText(/Auto-join enabled/i)).not.toBeVisible();
+      await expect(page.getByRole('button', { name: 'Request to Join' })).not.toBeVisible();
+      logProgress('✅ No organization join options shown for public domain');
+
+      logProgress('✅ OAuth public domain detection test completed');
     } finally {
       await context.close();
     }

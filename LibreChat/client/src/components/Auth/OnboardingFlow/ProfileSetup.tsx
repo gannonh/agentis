@@ -6,10 +6,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { User, Camera, Upload, Check, X, AlertCircle } from 'lucide-react';
+import { fileConfig as defaultFileConfig, mergeFileConfig } from 'librechat-data-provider';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import { Label } from '~/components/ui/Label';
-import { useUploadAvatarMutation } from '~/data-provider';
+import { useUploadAvatarMutation, useGetFileConfig } from '~/data-provider';
 import useDebounce from '~/hooks/Input/useDebounce';
 
 interface ProfileSetupData {
@@ -70,6 +71,11 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
   const watchedUsername = watch('username');
   const uploadAvatarMutation = useUploadAvatarMutation();
 
+  // Get file configuration from backend
+  const { data: fileConfig = defaultFileConfig } = useGetFileConfig({
+    select: (data) => mergeFileConfig(data),
+  });
+
   // Debounced username value
   const debouncedUsername = useDebounce(watchedUsername || '', 500);
 
@@ -108,15 +114,19 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setAvatarError('Please select a valid image file');
+    // Validate file type with specific supported formats
+    const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!supportedTypes.includes(file.type.toLowerCase())) {
+      setAvatarError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
       return;
     }
 
-    // Validate file size (max 5MB as per issue requirements)
-    if (file.size > 5 * 1024 * 1024) {
-      setAvatarError('Image must be smaller than 5MB');
+    // Validate file size using backend configuration
+    const maxSize = fileConfig.avatarSizeLimit;
+    const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+    if (file.size > maxSize) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      setAvatarError(`Image is too large (${fileSizeMB}MB). Please select an image smaller than ${maxSizeMB}MB.`);
       return;
     }
 
@@ -138,7 +148,27 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
       }
     } catch (error) {
       console.error('Avatar upload failed:', error);
-      setAvatarError('Failed to upload avatar. Please try again.');
+      
+      // Parse error message from backend for specific feedback
+      let errorMessage = 'Failed to upload avatar. Please try again.';
+      
+      if (error && typeof error === 'object' && 'message' in error) {
+        const backendMessage = error.message;
+        
+        // Check for common backend error patterns and provide user-friendly messages
+        const maxSizeMB = Math.round(fileConfig.avatarSizeLimit / (1024 * 1024));
+        if (backendMessage.includes('file too large') || backendMessage.includes('size')) {
+          errorMessage = `Image is too large. Please select an image smaller than ${maxSizeMB}MB.`;
+        } else if (backendMessage.includes('file type') || backendMessage.includes('format')) {
+          errorMessage = 'Invalid file format. Please select a JPEG, PNG, GIF, or WebP image.';
+        } else if (backendMessage.includes('network') || backendMessage.includes('timeout')) {
+          errorMessage = 'Upload failed due to network issues. Please check your connection and try again.';
+        } else if (backendMessage.includes('quota') || backendMessage.includes('limit')) {
+          errorMessage = 'Upload limit reached. Please try again later or contact support.';
+        }
+      }
+      
+      setAvatarError(errorMessage);
     } finally {
       setAvatarUploading(false);
     }
@@ -217,8 +247,18 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
                 className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-lg dark:border-gray-700"
                 onLoad={() => console.log('✅ Avatar loaded successfully')}
                 onError={(e) => {
-                  console.warn('Avatar failed to load, showing initials instead:', avatarPreview);
-                  setAvatarPreview(''); // Clear broken image to show initials
+                  const isOAuthAvatar = avatarPreview.includes('googleusercontent.com') || 
+                                       avatarPreview.includes('github.com') ||
+                                       oauthData?.picture === avatarPreview;
+                  
+                  if (isOAuthAvatar) {
+                    console.warn('OAuth avatar failed to load, keeping URL for retry:', avatarPreview);
+                    // Keep OAuth avatars even if they fail to load initially
+                    // They might load on retry or after CORS issues resolve
+                  } else {
+                    console.warn('User-uploaded avatar failed to load, showing initials instead:', avatarPreview);
+                    setAvatarPreview(''); // Only clear manually uploaded broken images
+                  }
                 }}
               />
             ) : (

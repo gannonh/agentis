@@ -149,7 +149,7 @@ mongoose.connection.once('open', () => {
         },
       },
 
-      // Add database hooks to handle OAuth user linking and session creation
+      // Restore working database hooks from before OAuth regression
       databaseHooks: {
         user: {
           create: {
@@ -160,9 +160,24 @@ mongoose.connection.once('open', () => {
                   user.email,
                 );
 
-                // Let Better Auth handle account linking internally
-                // Our previous approach was interfering with Better Auth's ID consistency
-                logger.info('Allowing Better Auth to handle user creation and linking for:', user.email);
+                // Check if user already exists with this email
+                const userCollection = db.collection('user');
+                const existingUser = await userCollection.findOne({ email: user.email });
+
+                if (existingUser) {
+                  logger.info('Found existing user with email:', user.email);
+                  logger.info('Existing user ID:', existingUser._id);
+
+                  // Return the user data with the existing ID to prevent duplicate creation
+                  const existingUserId = existingUser._id.toString();
+                  return {
+                    ...user,
+                    id: existingUserId,
+                    _id: existingUser._id,
+                  };
+                }
+
+                logger.info('No existing user found, allowing creation for:', user.email);
                 return user;
               } catch (error) {
                 logger.error('Error in user create hook:', error);
@@ -175,13 +190,23 @@ mongoose.connection.once('open', () => {
           create: {
             before: async (account) => {
               try {
-                logger.info('Account create hook - OAuth account linking:', {
+                logger.info('Account create hook - linking OAuth account:', {
                   providerId: account.providerId,
                   userId: account.userId,
                 });
 
-                // Let Better Auth handle account linking internally
-                logger.info('Allowing Better Auth to handle OAuth account linking');
+                // Ensure the account is linked to the correct user
+                if (account.providerId === 'google') {
+                  const userCollection = db.collection('user');
+                  const user = await userCollection.findOne({ _id: account.userId });
+
+                  if (!user) {
+                    logger.warn('User not found for account linking:', account.userId);
+                  } else {
+                    logger.info('Linking OAuth account to user:', user.email);
+                  }
+                }
+
                 return account;
               } catch (error) {
                 logger.error('Error in account create hook:', error);
@@ -389,11 +414,28 @@ mongoose.connection.once('open', () => {
                 clientSecret: googleClientSecret,
                 // OAuth redirects must go to backend (where Google OAuth is configured)
                 redirectURI: `${betterAuthConfig.baseURL}${betterAuthConfig.basePath}/callback/google`,
-                // Map OAuth profile to user data - let Better Auth handle linking
+                // Map OAuth profile to user data - Better Auth will handle account linking
                 mapProfileToUser: async (profile) => {
                   logger.info('🔍 OAuth profile mapping for:', profile.email);
-                  
-                  // Simple mapping - let Better Auth handle account linking internally
+
+                  // Check if user already exists to ensure proper ID handling
+                  const userCollection = db.collection('user');
+                  const existingUser = await userCollection.findOne({ email: profile.email });
+
+                  if (existingUser) {
+                    logger.info('🔗 Found existing user during OAuth mapping:', profile.email);
+                    // Return user data with existing ID to ensure consistency
+                    return {
+                      id: existingUser._id.toString(),
+                      email: profile.email,
+                      name: existingUser.name || profile.name,
+                      image: existingUser.image || profile.picture,
+                      emailVerified: existingUser.emailVerified || true,
+                    };
+                  }
+
+                  // New user - just map the OAuth profile data
+                  logger.info('👤 New user from OAuth:', profile.email);
                   return {
                     email: profile.email,
                     name: profile.name,
