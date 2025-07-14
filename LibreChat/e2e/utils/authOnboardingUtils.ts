@@ -43,6 +43,49 @@ export const TEST_EMAILS = {
 } as const;
 
 /**
+ * Database cleanup patterns for consistent test data removal
+ */
+export const CLEANUP_PATTERNS = {
+  // Email patterns for user cleanup
+  EMAIL: {
+    TEST_PREFIX: /test.*@/,           // Emails starting with "test"
+    FIRST_PREFIX: /first-.*@/,        // Emails starting with "first-"
+    SECOND_PREFIX: /second-.*@/,      // Emails starting with "second-"
+    USER_PREFIX: /user[12]?-.*@/,     // Emails starting with "user", "user1-", "user2-"
+    NEW_USER_PREFIX: /new-user-.*@/,  // Emails starting with "new-user-"
+  },
+  
+  // User ID patterns for session/membership cleanup
+  USER_ID: {
+    TEST_PREFIX: /test.*/,            // User IDs starting with "test"
+  },
+  
+  // Organization name patterns
+  ORG_NAME: {
+    TEST: /Test.*/,                   // Organizations starting with "Test"
+    TECHCORP: /TechCorp.*/,          // TechCorp organizations
+    ACME: /Acme Corp.*/,             // Acme Corp organizations
+    ASTROLABS: /Astrolabs.*/,        // Astrolabs organizations
+    OAUTH: /OAuth.*/,                // OAuth test organizations
+  },
+  
+  // Organization slug patterns
+  ORG_SLUG: {
+    TEST: /test.*/,                   // Slugs starting with "test"
+    TECHCORP: /techcorp.*/,          // TechCorp slugs
+    ACME: /acme-corp.*/,             // Acme Corp slugs
+    ASTROLABS: /astrolabs.*/,        // Astrolabs slugs
+  },
+  
+  // Domain patterns for organization metadata
+  DOMAIN: {
+    TESTCORP: /testcorp.*/,          // TestCorp domains
+    TECHCORP: /techcorp.*/,          // TechCorp domains
+    ASTROLABS: 'astrolabs.llc',      // OAuth corporate domain (exact match)
+  },
+} as const;
+
+/**
  * Test viewport configuration for consistent sizing
  */
 export const TEST_VIEWPORT = {
@@ -110,20 +153,23 @@ export async function cleanDatabase(): Promise<void> {
   // 1. Delete sessions first
   await db.collection('session').deleteMany({
     $or: [
-      { userId: { $regex: /test.*/ } },
+      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
       {}, // Clean all sessions for now since we're testing
     ],
   });
 
   // 2. Delete member records
   await db.collection('member').deleteMany({
-    $or: [{ userId: { $regex: /test.*/ } }, { organizationId: { $regex: /test.*/ } }],
+    $or: [
+      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } }, 
+      { organizationId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } }
+    ],
   });
 
   // 3. Delete account records (OAuth linkages)
   await db.collection('account').deleteMany({
     $or: [
-      { userId: { $regex: /test.*/ } }, // Test users
+      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } }, // Test users
       { userId: { $regex: /.*gannon@astrolabs\.llc.*/ } }, // OAuth PRIVATE_DOMAIN user
       { userId: { $regex: /.*agentis\.test@gmail\.com.*/ } }, // OAuth PUBLIC_DOMAIN user
     ],
@@ -132,27 +178,31 @@ export async function cleanDatabase(): Promise<void> {
   // 4. Delete organizations
   await db.collection('organization').deleteMany({
     $or: [
-      { name: { $regex: /Test.*/ } },
-      { name: { $regex: /TechCorp.*/ } }, // Handle TechCorp organizations from edge case tests
-      { name: { $regex: /Acme Corp.*/ } }, // Handle Acme Corp organizations
-      { name: { $regex: /Astrolabs.*/ } }, // Handle Astrolabs OAuth organizations
-      { name: { $regex: /OAuth.*/ } }, // Handle OAuth test organizations
-      { slug: { $regex: /test.*/ } },
-      { slug: { $regex: /techcorp.*/ } }, // Handle techcorp slugs
-      { slug: { $regex: /acme-corp.*/ } }, // Handle acme-corp slugs
-      { slug: { $regex: /astrolabs.*/ } }, // Handle astrolabs slugs
-      { 'metadata.domain': { $regex: /testcorp.*/ } },
-      { 'metadata.domain': { $regex: /techcorp.*/ } }, // Handle techcorp domains
-      { 'metadata.domain': 'astrolabs.llc' }, // Handle OAuth corporate domain
+      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.TEST } },
+      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.TECHCORP } },
+      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.ACME } },
+      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.ASTROLABS } },
+      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.OAUTH } },
+      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.TEST } },
+      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.TECHCORP } },
+      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.ACME } },
+      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.ASTROLABS } },
+      { 'metadata.domain': { $regex: CLEANUP_PATTERNS.DOMAIN.TESTCORP } },
+      { 'metadata.domain': { $regex: CLEANUP_PATTERNS.DOMAIN.TECHCORP } },
+      { 'metadata.domain': CLEANUP_PATTERNS.DOMAIN.ASTROLABS },
     ],
   });
 
-  // 5. Delete users last
+  // 5. Delete users last - now includes all test email patterns
   await db.collection('user').deleteMany({
     $or: [
-      { email: { $regex: /test.*@/ } }, // Test emails
-      { email: 'gannon@astrolabs.llc' }, // OAuth PRIVATE_DOMAIN credential
-      { email: 'agentis.test@gmail.com' }, // OAuth PUBLIC_DOMAIN credential
+      { email: { $regex: CLEANUP_PATTERNS.EMAIL.TEST_PREFIX } },
+      { email: { $regex: CLEANUP_PATTERNS.EMAIL.FIRST_PREFIX } },
+      { email: { $regex: CLEANUP_PATTERNS.EMAIL.SECOND_PREFIX } },
+      { email: { $regex: CLEANUP_PATTERNS.EMAIL.USER_PREFIX } },
+      { email: { $regex: CLEANUP_PATTERNS.EMAIL.NEW_USER_PREFIX } },
+      { email: OAUTH_CREDENTIALS.PRIVATE_DOMAIN.email },
+      { email: OAUTH_CREDENTIALS.PUBLIC_DOMAIN.email },
     ],
   });
 }

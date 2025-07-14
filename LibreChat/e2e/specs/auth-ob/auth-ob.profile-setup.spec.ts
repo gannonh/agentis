@@ -24,6 +24,11 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
     logProgress('🧹 Database cleaned for Issue #105 profile setup test');
   });
 
+  test.afterEach(async () => {
+    await cleanDatabase();
+    logProgress('🧹 Database cleaned after Issue #105 profile setup test');
+  });
+
   test('User can complete profile setup with name, username and avatar upload', async ({
     browser,
   }) => {

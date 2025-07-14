@@ -38,52 +38,47 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
       });
     }
 
-    // Update user in Better Auth's database directly to ensure session synchronization
-    // Better Auth uses the 'user' collection for user data
-    const mongoose = await import('mongoose');
-    const db = mongoose.default.connection.db;
-    const userCollection = db.collection('user');
-
-    const updateResult = await userCollection.updateOne(
-      { _id: new mongoose.default.Types.ObjectId(userId) },
+    // Update user using Mongoose model to ensure schema validations are applied
+    // Better Auth uses the 'user' collection which is already configured in the User model
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
       {
-        $set: {
-          onboardingStep,
-          updatedAt: new Date(),
-        },
+        onboardingStep,
+        updatedAt: new Date(),
       },
+      { 
+        new: true, // Return the updated document
+        runValidators: true // Ensure schema validations are applied
+      }
     );
 
-    if (updateResult.matchedCount === 0) {
+    if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (updateResult.modifiedCount === 0) {
+    // Check if the update actually modified the onboardingStep
+    const wasModified = updatedUser.onboardingStep === onboardingStep;
+    if (!wasModified) {
       logger.warn('User onboarding step was not modified - may already be set to this value', {
         userId,
         onboardingStep,
+        currentStep: updatedUser.onboardingStep,
       });
     }
 
-    // Get the updated user data
-    const updatedUser = await userCollection.findOne({
-      _id: new mongoose.default.Types.ObjectId(userId),
-    });
-
-    logger.info('Updated user onboarding step in Better Auth database', {
+    logger.info('Updated user onboarding step using Mongoose model', {
       userId,
       onboardingStep,
-      matchedCount: updateResult.matchedCount,
-      modifiedCount: updateResult.modifiedCount,
-      currentOnboardingStep: updatedUser?.onboardingStep,
+      wasModified,
+      currentOnboardingStep: updatedUser.onboardingStep,
     });
 
     res.json({
       success: true,
-      onboardingStep: updatedUser?.onboardingStep || onboardingStep,
+      onboardingStep: updatedUser.onboardingStep,
     });
   } catch (error) {
-    logger.error('Failed to update onboarding step in Better Auth database', error);
+    logger.error('Failed to update onboarding step using Mongoose model', error);
     res.status(500).json({ error: 'Failed to update onboarding step' });
   }
 });
