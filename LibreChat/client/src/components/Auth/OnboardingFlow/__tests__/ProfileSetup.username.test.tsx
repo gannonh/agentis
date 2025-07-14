@@ -210,10 +210,8 @@ describe('ProfileSetup Username Availability Integration', () => {
           expect(screen.getByTestId('username-available')).toBeInTheDocument();
           expect(screen.getByText('Username is available')).toBeInTheDocument();
 
-          // Button state depends on overall form validation
-          // This test verifies the username availability system works
-          const isEnabled = !continueButton.hasAttribute('disabled');
-          expect(typeof isEnabled).toBe('boolean'); // Valid state regardless
+          // Button should be enabled when username is available and form is valid
+          expect(continueButton).toBeEnabled();
         },
         { timeout: 3000 },
       );
