@@ -34,6 +34,34 @@ interface ProfileSetupProps {
   className?: string;
 }
 
+// URL sanitization utility to prevent XSS attacks
+const sanitizeAvatarUrl = (url: string): string => {
+  if (!url) return '';
+
+  // Block dangerous protocols
+  const dangerousProtocols = ['javascript:', 'vbscript:', 'file:', 'about:'];
+  const lowercaseUrl = url.toLowerCase().trim();
+
+  for (const protocol of dangerousProtocols) {
+    if (lowercaseUrl.startsWith(protocol)) {
+      return ''; // Return empty string for dangerous URLs
+    }
+  }
+
+  // Only allow http/https URLs, relative paths, or data URLs (for server uploads)
+  if (
+    lowercaseUrl.startsWith('http://') ||
+    lowercaseUrl.startsWith('https://') ||
+    lowercaseUrl.startsWith('/') ||
+    lowercaseUrl.startsWith('data:')
+  ) {
+    return url;
+  }
+
+  // If it doesn't match safe patterns, return empty
+  return '';
+};
+
 /**
  * Profile setup component for user name and avatar
  * Used in onboarding flow for both org creators and members
@@ -46,7 +74,9 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
   isLoading = false,
   className = '',
 }) => {
-  const [avatarPreview, setAvatarPreview] = useState<string>(oauthData?.picture || '');
+  const [avatarPreview, setAvatarPreview] = useState<string>(
+    sanitizeAvatarUrl(oauthData?.picture || ''),
+  );
   const [avatarError, setAvatarError] = useState<string>('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -62,7 +92,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
     defaultValues: {
       name: oauthData?.name || suggestedName || email.split('@')[0],
       username: '',
-      avatar: oauthData?.picture || '',
+      avatar: sanitizeAvatarUrl(oauthData?.picture || ''),
     },
     mode: 'onChange',
   });
@@ -143,8 +173,9 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
       const uploadResult = await uploadAvatarMutation.mutateAsync(formData);
 
       if (uploadResult?.url) {
-        setAvatarPreview(uploadResult.url);
-        setValue('avatar', uploadResult.url);
+        const sanitizedUrl = sanitizeAvatarUrl(uploadResult.url);
+        setAvatarPreview(sanitizedUrl);
+        setValue('avatar', sanitizedUrl);
       }
     } catch (error) {
       console.error('Avatar upload failed:', error);
@@ -261,7 +292,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
                 data-testid="avatar-preview"
                 className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-lg dark:border-gray-700"
                 onLoad={() => console.log('✅ Avatar loaded successfully')}
-                onError={(e) => {
+                onError={() => {
                   const isOAuthAvatar =
                     avatarPreview.includes('googleusercontent.com') ||
                     oauthData?.picture === avatarPreview;

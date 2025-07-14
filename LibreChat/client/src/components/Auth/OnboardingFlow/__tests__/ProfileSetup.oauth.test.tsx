@@ -244,7 +244,7 @@ describe('ProfileSetup OAuth Integration', () => {
       }
     });
 
-    it('should handle potential OAuth avatar XSS attempts', () => {
+    it('should sanitize malicious OAuth avatar URLs', () => {
       const maliciousOAuthData = {
         name: 'Malicious User',
         picture: 'javascript:alert("xss")', // XSS attempt
@@ -253,9 +253,14 @@ describe('ProfileSetup OAuth Integration', () => {
 
       render(<ProfileSetup {...defaultProps} oauthData={maliciousOAuthData} />);
 
-      // Should still render the src (browser will handle security)
-      const avatarImg = screen.getByTestId('avatar-preview');
-      expect(avatarImg).toHaveAttribute('src', 'javascript:alert("xss")');
+      // Since dangerous URL is sanitized, it should show fallback avatar (user initials)
+      // The avatar-preview img element should not exist - component shows initials instead
+      const avatarImg = screen.queryByTestId('avatar-preview');
+      expect(avatarImg).toBeNull();
+
+      // Should show user initials instead (first letters of name)
+      const initialsElement = screen.getByText('MU'); // "Malicious User" -> "MU"
+      expect(initialsElement).toBeInTheDocument();
     });
 
     it('should handle OAuth avatar CORS failures gracefully', async () => {

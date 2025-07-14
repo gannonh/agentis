@@ -87,17 +87,23 @@ test.describe('Organization Join Flow - Issue #104', () => {
 
       // Submit organization creation
       await page1.getByRole('button', { name: 'Next' }).click();
-      await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({ timeout: 10000 });
+      await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({
+        timeout: 10000,
+      });
 
       // Complete User 1's onboarding flow quickly
       await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible();
-      await page1.getByRole('textbox', { name: /your name/i }).fill('User One');
+      await page1.getByTestId('profile-name-input').fill('User One');
       await page1.getByRole('button', { name: 'Continue' }).click();
-      await expect(page1.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({ timeout: 10000 });
+      await expect(page1.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect(page1.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible();
       await page1.getByRole('button', { name: 'Skip for Now' }).click();
-      await expect(page1.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({ timeout: 10000 });
+      await expect(page1.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect(page1.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible();
       await page1.getByRole('button', { name: /Start Your First Conversation/i }).click();
@@ -166,13 +172,17 @@ test.describe('Organization Join Flow - Issue #104', () => {
       logProgress('✅ User 2: Successfully joined org and advanced to profile (no redirect loop!)');
 
       // Complete User 2's remaining onboarding
-      await page2.getByRole('textbox', { name: /your name/i }).fill('User Two');
+      await page2.getByTestId('profile-name-input').fill('User Two');
       await page2.getByRole('button', { name: 'Continue' }).click();
-      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({ timeout: 10000 });
+      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible();
       await page2.getByRole('button', { name: 'Skip for Now' }).click();
-      await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({ timeout: 10000 });
+      await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible();
       await page2.getByRole('button', { name: /Start Your First Conversation/i }).click();
@@ -394,7 +404,9 @@ test.describe('Organization Join Flow - Issue #104', () => {
     }
   });
 
-  test('OAuth → Corporate Domain → Join Existing Organization (Single User)', async ({ browser }) => {
+  test('OAuth → Corporate Domain → Join Existing Organization (Single User)', async ({
+    browser,
+  }) => {
     logProgress('🚀 Testing OAuth user joining pre-existing corporate organization...');
 
     // Verify OAuth credentials are available (will fail test if missing)
@@ -407,7 +419,11 @@ test.describe('Organization Join Flow - Issue #104', () => {
       // =================================================================
       // SETUP: Create organization via database (simulates existing org)
       // =================================================================
-      const testOrg = await createTestOrganization('Pre-existing Astrolabs Corp', 'astrolabs.llc', true);
+      const testOrg = await createTestOrganization(
+        'Pre-existing Astrolabs Corp',
+        'astrolabs.llc',
+        true,
+      );
       logProgress(`✅ Created pre-existing organization: ${testOrg.name} with auto-join enabled`);
 
       // =================================================================
@@ -426,7 +442,9 @@ test.describe('Organization Join Flow - Issue #104', () => {
       logProgress('✅ Existing organization preview displayed');
 
       // Join the organization
-      const joinButton = page.getByRole('button', { name: new RegExp(`Join ${testOrg.name}`, 'i') });
+      const joinButton = page.getByRole('button', {
+        name: new RegExp(`Join ${testOrg.name}`, 'i'),
+      });
       await expect(joinButton).toBeVisible();
       await joinButton.click();
       await page.waitForTimeout(3000);
@@ -448,7 +466,7 @@ test.describe('Organization Join Flow - Issue #104', () => {
       await page.getByRole('button', { name: 'Skip for Now' }).click();
       await page.getByRole('button', { name: /Start Your First Conversation/i }).click();
       await handleTermsOfService(page);
-      
+
       await expect(page).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
       logProgress('✅ Completed onboarding successfully');
 

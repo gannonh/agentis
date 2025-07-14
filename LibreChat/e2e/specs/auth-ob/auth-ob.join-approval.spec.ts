@@ -197,7 +197,7 @@ test.describe('Organization Join Manual Approval Flow', () => {
     }
   });
 
-  test('Admin approves join request', async () => {
+  test.skip('Admin approves join request', async () => {
     logProgress('🚀 Testing admin approval of join request...');
 
     // This test would require:
@@ -210,7 +210,7 @@ test.describe('Organization Join Manual Approval Flow', () => {
     logProgress('⚠️ Admin approval flow - to be implemented when admin UI is available');
   });
 
-  test('Admin rejects join request', async () => {
+  test.skip('Admin rejects join request', async () => {
     logProgress('🚀 Testing admin rejection of join request...');
 
     // This test would require:
@@ -223,7 +223,7 @@ test.describe('Organization Join Manual Approval Flow', () => {
     logProgress('⚠️ Admin rejection flow - to be implemented when admin UI is available');
   });
 
-  test('Multiple pending requests management', async () => {
+  test.skip('Multiple pending requests management', async () => {
     logProgress('🚀 Testing multiple pending requests...');
 
     // This test would require:
@@ -249,7 +249,7 @@ test.describe('Organization Join Manual Approval Flow', () => {
     // which is IMPOSSIBLE. We only have one OAuth account per domain (gannon@astrolabs.llc).
     // When the same OAuth account logs in twice, it's recognized as the existing user
     // and redirected to chat, not onboarding.
-    // 
+    //
     // To test manual approval flows, use Magic Link authentication with different email addresses.
     logProgress('🚀 Testing OAuth corporate domain manual approval request flow...');
 
@@ -362,14 +362,18 @@ test.describe('Organization Join Manual Approval Flow', () => {
     }
   });
 
-  test.skip('OAuth → Corporate Domain → Join Existing Manual Approval Organization', async ({ browser }) => {
+  test.skip('OAuth → Corporate Domain → Join Existing Manual Approval Organization', async ({
+    browser,
+  }) => {
     // SKIPPED: This test requires a pre-existing organization that an OAuth user can request to join.
     // However, creating the organization and then having an OAuth user join would require
     // two different users, which is impossible with our single OAuth account constraint.
-    // 
+    //
     // The same OAuth account (gannon@astrolabs.llc) cannot both create an org AND request to join it.
     // Use Magic Link tests for multi-user organization join scenarios.
-    logProgress('🚀 Testing OAuth user requesting to join pre-existing manual approval organization...');
+    logProgress(
+      '🚀 Testing OAuth user requesting to join pre-existing manual approval organization...',
+    );
 
     // Verify OAuth credentials are available (will fail test if missing)
     requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth join existing manual approval organization');
@@ -381,8 +385,14 @@ test.describe('Organization Join Manual Approval Flow', () => {
       // =================================================================
       // SETUP: Create organization via database with manual approval
       // =================================================================
-      const testOrg = await createTestOrganization('Pre-existing Manual Approval Corp', 'astrolabs.llc', false);
-      logProgress(`✅ Created pre-existing organization: ${testOrg.name} with manual approval required`);
+      const testOrg = await createTestOrganization(
+        'Pre-existing Manual Approval Corp',
+        'astrolabs.llc',
+        false,
+      );
+      logProgress(
+        `✅ Created pre-existing organization: ${testOrg.name} with manual approval required`,
+      );
 
       // =================================================================
       // TEST: OAuth user requests to join existing organization
@@ -432,7 +442,9 @@ test.describe('Organization Join Manual Approval Flow', () => {
         status: 'pending',
         requestedAt: expect.any(Date),
       });
-      logProgress('✅ Database verification: OAuth user join request added to existing organization');
+      logProgress(
+        '✅ Database verification: OAuth user join request added to existing organization',
+      );
 
       // No new members should be added yet (pending approval)
       const members = await db.collection('member').find({ organizationId: testOrg._id }).toArray();
