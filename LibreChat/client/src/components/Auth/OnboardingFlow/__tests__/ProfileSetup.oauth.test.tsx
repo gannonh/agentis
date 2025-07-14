@@ -161,7 +161,7 @@ describe('ProfileSetup OAuth Integration', () => {
   });
 
   describe('OAuth Avatar Loading and Error Handling', () => {
-    it('should keep Google OAuth avatar URL on loading failure', async () => {
+    it('should clear OAuth avatar state and show error message on loading failure', async () => {
       const googleOAuthData = {
         name: 'Google User',
         picture: 'https://lh3.googleusercontent.com/a/failed-avatar.jpg',
@@ -175,10 +175,21 @@ describe('ProfileSetup OAuth Integration', () => {
       // Simulate image load error
       fireEvent.error(avatarImg);
 
-      // OAuth avatar URL should be preserved (not cleared like manual uploads)
-      expect(avatarImg).toHaveAttribute('src', googleOAuthData.picture);
+      // Avatar should be cleared and show initials instead
+      await waitFor(() => {
+        expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
+        expect(screen.getByText('GU')).toBeInTheDocument(); // User initials
+      });
+
+      // Should show error message for OAuth avatar failure
+      expect(
+        screen.getByText(
+          'Avatar from your OAuth provider could not be loaded. Please upload a different image.',
+        ),
+      ).toBeInTheDocument();
+
       expect(console.warn).toHaveBeenCalledWith(
-        'OAuth avatar failed to load, keeping URL for retry:',
+        'OAuth avatar failed to load',
         googleOAuthData.picture,
       );
     });
@@ -374,10 +385,21 @@ describe('ProfileSetup OAuth Integration', () => {
       // Simulate CORS error (which manifests as a load error)
       fireEvent.error(avatarImg);
 
-      // OAuth avatar should remain (might load later)
-      expect(avatarImg).toHaveAttribute('src', corsFailingOAuth.picture);
+      // Avatar should be cleared and show initials instead
+      await waitFor(() => {
+        expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
+        expect(screen.getByText('CU')).toBeInTheDocument(); // User initials
+      });
+
+      // Should show error message for OAuth avatar failure
+      expect(
+        screen.getByText(
+          'Avatar from your OAuth provider could not be loaded. Please upload a different image.',
+        ),
+      ).toBeInTheDocument();
+
       expect(console.warn).toHaveBeenCalledWith(
-        'OAuth avatar failed to load, keeping URL for retry:',
+        'OAuth avatar failed to load',
         corsFailingOAuth.picture,
       );
     });
@@ -603,10 +625,20 @@ describe('ProfileSetup OAuth Integration', () => {
       // Simulate error on Google avatar
       fireEvent.error(avatarImg);
 
-      // Should detect it's a Google avatar and keep it
+      // Should detect it's a Google avatar and clear it with error message
       const isGoogleAvatar = googleOAuthData.picture.includes('googleusercontent.com');
       expect(isGoogleAvatar).toBe(true);
-      expect(avatarImg).toHaveAttribute('src', googleOAuthData.picture);
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
+        expect(screen.getByText('GU')).toBeInTheDocument(); // User initials
+      });
+
+      expect(
+        screen.getByText(
+          'Avatar from your OAuth provider could not be loaded. Please upload a different image.',
+        ),
+      ).toBeInTheDocument();
     });
 
     it('should identify and handle GitHub avatar URLs specifically', async () => {
@@ -623,10 +655,21 @@ describe('ProfileSetup OAuth Integration', () => {
       // Simulate error on GitHub avatar
       fireEvent.error(avatarImg);
 
-      // Should detect it's a GitHub avatar and keep it
+      // Should detect it's not a Google OAuth avatar and clear it
       const isGitHubAvatar = githubOAuthData.picture.includes('githubusercontent.com');
       expect(isGitHubAvatar).toBe(true);
-      expect(avatarImg).toHaveAttribute('src', githubOAuthData.picture);
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
+        expect(screen.getByText('GU')).toBeInTheDocument(); // User initials
+      });
+
+      // Since it's not a Google OAuth avatar, no specific error message should be shown
+      expect(
+        screen.queryByText(
+          'Avatar from your OAuth provider could not be loaded. Please upload a different image.',
+        ),
+      ).not.toBeInTheDocument();
     });
   });
 

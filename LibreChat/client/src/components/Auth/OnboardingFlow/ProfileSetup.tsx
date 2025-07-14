@@ -43,7 +43,7 @@ const sanitizeAvatarUrl = (url: string): string => {
 
   // Block dangerous protocols
   const dangerousProtocols = ['javascript:', 'vbscript:', 'file:', 'about:', 'data:'];
-  
+
   for (const protocol of dangerousProtocols) {
     if (lowercaseUrl.startsWith(protocol)) {
       return ''; // Return empty string for dangerous URLs
@@ -303,23 +303,25 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
                 className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-lg dark:border-gray-700"
                 onLoad={() => console.log('✅ Avatar loaded successfully')}
                 onError={() => {
-                  const isOAuthAvatar =
-                    avatarPreview.includes('googleusercontent.com') ||
-                    oauthData?.picture === avatarPreview;
+                  const isGoogleOAuthAvatar = avatarPreview.includes('googleusercontent.com');
+                  const isOAuthAvatar = oauthData?.picture === avatarPreview;
 
-                  if (isOAuthAvatar) {
-                    console.warn(
-                      'OAuth avatar failed to load, keeping URL for retry:',
-                      avatarPreview,
+                  console.warn(
+                    isOAuthAvatar
+                      ? 'OAuth avatar failed to load'
+                      : 'User-uploaded avatar failed to load',
+                    avatarPreview,
+                  );
+
+                  // Clear avatar state entirely when it fails to load
+                  setAvatarPreview('');
+                  setValue('avatar', '');
+
+                  // Set user-friendly error message for Google OAuth avatars specifically
+                  if (isGoogleOAuthAvatar) {
+                    setAvatarError(
+                      'Avatar from your OAuth provider could not be loaded. Please upload a different image.',
                     );
-                    // Keep OAuth avatars even if they fail to load initially
-                    // They might load on retry or after CORS issues resolve
-                  } else {
-                    console.warn(
-                      'User-uploaded avatar failed to load, showing initials instead:',
-                      avatarPreview,
-                    );
-                    setAvatarPreview(''); // Only clear manually uploaded broken images
                   }
                 }}
               />
