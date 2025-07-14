@@ -268,7 +268,7 @@ describe('Better Auth Comprehensive Tests', () => {
         email: 'newuser@example.com',
         name: 'New User',
         image: 'https://example.com/avatar.jpg',
-        emailVerified: true,
+        emailVerified: false, // Improved security: defaults to false unless explicitly verified
       });
 
       expect(mockUserCollection.findOne).toHaveBeenCalledWith({ email: 'newuser@example.com' });
@@ -307,7 +307,7 @@ describe('Better Auth Comprehensive Tests', () => {
         email: 'existing@example.com',
         name: 'Existing User', // Keeps existing name
         image: 'https://example.com/old-avatar.jpg', // Keeps existing image
-        emailVerified: true, // Updates to true
+        emailVerified: false, // Remains false since OAuth profile doesn't set verified_email
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -352,9 +352,9 @@ describe('Better Auth Comprehensive Tests', () => {
 
       expect(result).toEqual({
         email: 'minimal@example.com',
-        name: undefined,
-        image: undefined,
-        emailVerified: true,
+        name: null, // Changed from undefined to null per improved implementation
+        image: null, // Changed from undefined to null per improved implementation
+        emailVerified: false, // Changed from true to false for better security
       });
     });
 
@@ -1104,7 +1104,7 @@ describe('Better Auth Comprehensive Tests', () => {
       const mapProfileToUser = betterAuthConfigUsed.socialProviders.google.mapProfileToUser;
       const mappedUser = await mapProfileToUser(oauthProfile);
 
-      expect(mappedUser.emailVerified).toBe(true);
+      expect(mappedUser.emailVerified).toBe(false); // Improved security: defaults to false
 
       // Step 2: User creation hook (should check for existing user)
       const userCreateHook = betterAuthConfigUsed.databaseHooks.user.create.before;
