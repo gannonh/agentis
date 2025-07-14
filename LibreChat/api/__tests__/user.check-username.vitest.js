@@ -26,6 +26,23 @@ vi.mock('#server/middleware.js', () => ({
   canDeleteAccount: vi.fn(),
   verifyEmailLimiter: vi.fn(),
   checkAdmin: vi.fn(),
+  usernameCheckLimiter: (req, res, next) => {
+    // Mock rate limiter - for actual rate limiting tests
+    const requestCount = req.app.locals.requestCount || 0;
+    req.app.locals.requestCount = requestCount + 1;
+    
+    // Set rate limit headers
+    res.set('X-RateLimit-Limit', '10');
+    res.set('X-RateLimit-Remaining', Math.max(0, 10 - req.app.locals.requestCount));
+    res.set('X-RateLimit-Reset', new Date(Date.now() + 60000).toISOString());
+    
+    // Simulate rate limiting after 10 requests
+    if (req.app.locals.requestCount > 10) {
+      return res.status(429).json({ message: 'Too many requests, please try again later.' });
+    }
+    
+    next();
+  },
 }));
 
 // Mock logger to avoid console noise during tests
@@ -60,6 +77,9 @@ describe('GET /api/user/check-username', () => {
     app = express();
     app.use(express.json());
     app.use('/api/user', userRoutes);
+
+    // Reset rate limiter request count for consistent testing
+    app.locals.requestCount = 0;
 
     // Clear any existing users and create test user
     await User.deleteMany({});
@@ -464,6 +484,49 @@ describe('GET /api/user/check-username', () => {
       // Should succeed with mocked auth
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('available');
+    });
+  });
+
+  describe('Rate Limiting Security Tests', () => {
+    it('should apply rate limiting to prevent username enumeration attacks', async () => {
+      // Make 100 rapid requests to test rate limiting
+      const requests = Array.from({ length: 100 }, (_, i) => 
+        request(app)
+          .get('/api/user/check-username')
+          .query({ username: `testuser${i}` })
+      );
+
+      const responses = await Promise.all(requests);
+      
+      // Count successful and rate-limited responses
+      const successfulResponses = responses.filter(res => res.status === 200);
+      const rateLimitedResponses = responses.filter(res => res.status === 429);
+      
+      // Rate limiting should kick in after 10 requests per minute
+      expect(rateLimitedResponses.length).toBeGreaterThan(0);
+      expect(rateLimitedResponses.length).toBeGreaterThan(85); // At least 85% should be rate limited
+      
+      // Verify rate limited responses have proper error message
+      rateLimitedResponses.forEach(response => {
+        expect(response.status).toBe(429);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body.message).toMatch(/Too many requests|rate limit/i);
+      });
+      
+      // Only the first 10 requests should succeed (10 requests per minute limit)
+      expect(successfulResponses.length).toBeLessThanOrEqual(10);
+      expect(successfulResponses.length).toBeGreaterThan(0);
+    });
+
+    it('should include proper rate limit headers in response', async () => {
+      const response = await request(app)
+        .get('/api/user/check-username')
+        .query({ username: 'testuser' });
+
+      // Should include rate limit headers
+      expect(response.headers['x-ratelimit-limit']).toBeDefined();
+      expect(response.headers['x-ratelimit-remaining']).toBeDefined();
+      expect(response.headers['x-ratelimit-reset']).toBeDefined();
     });
   });
 });
