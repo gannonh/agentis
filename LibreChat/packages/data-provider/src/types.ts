@@ -121,6 +121,7 @@ export type TUser = {
   email: string;
   name: string;
   avatar: string;
+  image?: string; // OAuth profile picture from providers like Google
   role: string;
   provider: string;
   plugins?: string[];

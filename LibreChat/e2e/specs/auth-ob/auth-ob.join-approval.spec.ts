@@ -243,7 +243,9 @@ test.describe('Organization Join Manual Approval Flow', () => {
    * Tests OAuth authentication with corporate domain manual approval functionality.
    * Extends join-approval scope to include OAuth flows with PRIVATE_DOMAIN.
    */
-
+  // TODO: Implement OAuth corporate domain manual approval tests
+  // These tests will require a valid OAuth setup with PRIVATE_DOMAIN credentials.
+  // They will simulate OAuth users requesting to join organizations with manual approval.
   test.skip('OAuth → Corporate Domain → Manual Approval Request Flow', async ({ browser }) => {
     // SKIPPED: This test attempts to simulate two different users with the same OAuth account
     // which is IMPOSSIBLE. We only have one OAuth account per domain (gannon@astrolabs.llc).
@@ -361,7 +363,9 @@ test.describe('Organization Join Manual Approval Flow', () => {
       await context2.close();
     }
   });
-
+  // TODO: Implement OAuth corporate domain manual approval tests
+  // These tests will require a valid OAuth setup with PRIVATE_DOMAIN credentials.
+  // They will simulate OAuth users requesting to join organizations with manual approval.
   test.skip('OAuth → Corporate Domain → Join Existing Manual Approval Organization', async ({
     browser,
   }) => {

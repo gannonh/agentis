@@ -595,7 +595,7 @@ describe('ProfileSetup OAuth Integration', () => {
 
       expect(mockOnProfileComplete).toHaveBeenCalledWith({
         name: 'Manual Name',
-        username: 'oauthnamecustomuser', // Username auto-generated from OAuth name + custom input
+        username: 'oauthnamecustomuser', // BUG: Component concatenates auto-generated + manual username instead of replacing
         avatar: 'https://lh3.googleusercontent.com/oauth.jpg', // OAuth avatar preserved
       });
     });

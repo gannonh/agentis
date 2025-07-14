@@ -5,6 +5,28 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// Mock logger first for hoisting
+vi.mock('#config/index.js', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+vi.mock('#config/winston.js', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+// Import the actual mapProfileToUser function from the utility module
+import { createMapProfileToUser } from '#utils/oauthProfileMapper.js';
+
 // Mock database collections
 const mockUserCollection = {
   findOne: vi.fn(),
@@ -14,48 +36,8 @@ const mockDb = {
   collection: vi.fn(() => mockUserCollection),
 };
 
-// Mock logger
-const mockLogger = {
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-};
-
-vi.mock('#config/index.js', () => ({
-  logger: mockLogger,
-}));
-
-// Import the mapProfileToUser function by creating a test implementation
-// Since the actual function is embedded in auth.js, we'll test its behavior
-const createMapProfileToUser = (db) => async (profile) => {
-  mockLogger.info('🔍 OAuth profile mapping for:', profile.email);
-
-  // Check if user already exists to ensure proper ID handling
-  const userCollection = db.collection('user');
-  const existingUser = await userCollection.findOne({ email: profile.email });
-
-  if (existingUser) {
-    mockLogger.info('🔗 Found existing user during OAuth mapping:', profile.email);
-    // Return user data with existing ID to ensure consistency
-    return {
-      id: existingUser._id.toString(),
-      email: profile.email,
-      name: existingUser.name || profile.name,
-      image: existingUser.image || profile.picture,
-      emailVerified: existingUser.emailVerified || true,
-    };
-  }
-
-  // New user - just map the OAuth profile data
-  mockLogger.info('👤 New user from OAuth:', profile.email);
-  return {
-    email: profile.email,
-    name: profile.name,
-    image: profile.picture,
-    emailVerified: true,
-  };
-};
+// Access the mocked logger for test assertions
+const mockLogger = (await vi.importMock('#config/winston.js')).default;
 
 describe('OAuth Profile Mapping Integration', () => {
   let mapProfileToUser;

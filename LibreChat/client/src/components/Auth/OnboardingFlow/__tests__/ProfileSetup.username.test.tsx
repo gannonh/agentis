@@ -73,9 +73,9 @@ describe('ProfileSetup Username Availability Integration', () => {
       json: () => Promise.resolve({ available: true }),
     });
     // Suppress console output in tests
-    console.error = vi.fn();
-    console.warn = vi.fn();
-    console.log = vi.fn();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {

@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import { logger } from '#config/index.js';
 import { betterAuthConfig } from '#config/betterAuth.js';
 import { handleOrganizationAssignment } from '#utils/organization.js';
+import { createMapProfileToUser } from '#utils/oauthProfileMapper.js';
 
 /**
  * Better Auth instance, initialized after MongoDB connection
@@ -134,6 +135,11 @@ mongoose.connection.once('open', () => {
             input: true, // Allow setting during updates
           },
           username: {
+            type: 'string',
+            required: false,
+            input: true, // Allow setting during updates
+          },
+          image: {
             type: 'string',
             required: false,
             input: true, // Allow setting during updates
@@ -415,34 +421,7 @@ mongoose.connection.once('open', () => {
                 // OAuth redirects must go to backend (where Google OAuth is configured)
                 redirectURI: `${betterAuthConfig.baseURL}${betterAuthConfig.basePath}/callback/google`,
                 // Map OAuth profile to user data - Better Auth will handle account linking
-                mapProfileToUser: async (profile) => {
-                  logger.info('🔍 OAuth profile mapping for:', profile.email);
-
-                  // Check if user already exists to ensure proper ID handling
-                  const userCollection = db.collection('user');
-                  const existingUser = await userCollection.findOne({ email: profile.email });
-
-                  if (existingUser) {
-                    logger.info('🔗 Found existing user during OAuth mapping:', profile.email);
-                    // Return user data with existing ID to ensure consistency
-                    return {
-                      id: existingUser._id.toString(),
-                      email: profile.email,
-                      name: existingUser.name || profile.name,
-                      image: existingUser.image || profile.picture,
-                      emailVerified: existingUser.emailVerified || true,
-                    };
-                  }
-
-                  // New user - just map the OAuth profile data
-                  logger.info('👤 New user from OAuth:', profile.email);
-                  return {
-                    email: profile.email,
-                    name: profile.name,
-                    image: profile.picture,
-                    emailVerified: true,
-                  };
-                },
+                mapProfileToUser: createMapProfileToUser(db),
               },
             }
           : undefined,

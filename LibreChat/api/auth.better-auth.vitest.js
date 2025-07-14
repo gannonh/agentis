@@ -114,6 +114,10 @@ vi.mock('#config/index.js', () => ({
   logger: mockLogger,
 }));
 
+vi.mock('#config/winston.js', () => ({
+  default: mockLogger,
+}));
+
 vi.mock('#config/betterAuth.js', () => ({
   betterAuthConfig: mockBetterAuthConfig,
 }));
@@ -1006,6 +1010,11 @@ describe('Better Auth Comprehensive Tests', () => {
                 required: false,
                 input: true,
               },
+              image: {
+                type: 'string',
+                required: false,
+                input: true,
+              },
             },
           },
           account: {
@@ -1015,6 +1024,7 @@ describe('Better Auth Comprehensive Tests', () => {
             },
           },
           databaseHooks: expect.any(Object),
+          socialProviders: undefined,
           plugins: expect.arrayContaining([
             'admin-plugin',
             'organization-plugin',

@@ -722,10 +722,9 @@ export function areOAuthCredentialsAvailable(credentialType: OAuthCredentialType
 }
 
 /**
- * Helper to skip OAuth tests when credentials are not available
+ * Helper throw error when credentials are not available
  * @param credentialType - Type of credentials to check
  * @param testName - Name of the test being skipped
- * @returns void (throws skip if credentials unavailable)
  */
 export function requireOAuthCredentials(
   credentialType: OAuthCredentialType,
