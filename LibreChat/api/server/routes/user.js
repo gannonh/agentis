@@ -4,6 +4,7 @@ import {
   canDeleteAccount,
   verifyEmailLimiter,
   checkAdmin,
+  usernameCheckLimiter,
 } from '#server/middleware.js';
 import { User } from '#models/index.js';
 import logger from '#utils/logger.js';
@@ -188,7 +189,7 @@ router.get('/admin/check-email', requireBetterAuth, checkAdmin, async (req, res)
  * GET /api/user/check-username
  * Check if username is available for current user
  */
-router.get('/check-username', requireBetterAuth, async (req, res) => {
+router.get('/check-username', usernameCheckLimiter, requireBetterAuth, async (req, res) => {
   try {
     const { username } = req.query;
 
