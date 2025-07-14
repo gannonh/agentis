@@ -108,8 +108,6 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
     }
   }, [debouncedUsername, checkUsernameAvailability]);
 
-
-
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -122,11 +120,13 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
     }
 
     // Validate file size using backend configuration
-    const maxSize = fileConfig.avatarSizeLimit;
+    const maxSize = fileConfig.avatarSizeLimit ?? 5 * 1024 * 1024; // Default to 5MB
     const maxSizeMB = Math.round(maxSize / (1024 * 1024));
     if (file.size > maxSize) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      setAvatarError(`Image is too large (${fileSizeMB}MB). Please select an image smaller than ${maxSizeMB}MB.`);
+      setAvatarError(
+        `Image is too large (${fileSizeMB}MB). Please select an image smaller than ${maxSizeMB}MB.`,
+      );
       return;
     }
 
@@ -148,26 +148,41 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
       }
     } catch (error) {
       console.error('Avatar upload failed:', error);
-      
+
       // Parse error message from backend for specific feedback
       let errorMessage = 'Failed to upload avatar. Please try again.';
-      
+
       if (error && typeof error === 'object' && 'message' in error) {
-        const backendMessage = error.message;
-        
+        const backendMessage = error.message as string;
+
         // Check for common backend error patterns and provide user-friendly messages
-        const maxSizeMB = Math.round(fileConfig.avatarSizeLimit / (1024 * 1024));
-        if (backendMessage.includes('file too large') || backendMessage.includes('size')) {
+        const maxSizeMB = Math.round(
+          (fileConfig.avatarSizeLimit ?? 5 * 1024 * 1024) / (1024 * 1024),
+        );
+        if (
+          typeof backendMessage === 'string' &&
+          (backendMessage.includes('file too large') || backendMessage.includes('size'))
+        ) {
           errorMessage = `Image is too large. Please select an image smaller than ${maxSizeMB}MB.`;
-        } else if (backendMessage.includes('file type') || backendMessage.includes('format')) {
+        } else if (
+          typeof backendMessage === 'string' &&
+          (backendMessage.includes('file type') || backendMessage.includes('format'))
+        ) {
           errorMessage = 'Invalid file format. Please select a JPEG, PNG, GIF, or WebP image.';
-        } else if (backendMessage.includes('network') || backendMessage.includes('timeout')) {
-          errorMessage = 'Upload failed due to network issues. Please check your connection and try again.';
-        } else if (backendMessage.includes('quota') || backendMessage.includes('limit')) {
+        } else if (
+          typeof backendMessage === 'string' &&
+          (backendMessage.includes('network') || backendMessage.includes('timeout'))
+        ) {
+          errorMessage =
+            'Upload failed due to network issues. Please check your connection and try again.';
+        } else if (
+          typeof backendMessage === 'string' &&
+          (backendMessage.includes('quota') || backendMessage.includes('limit'))
+        ) {
           errorMessage = 'Upload limit reached. Please try again later or contact support.';
         }
       }
-      
+
       setAvatarError(errorMessage);
     } finally {
       setAvatarUploading(false);
@@ -247,16 +262,22 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
                 className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-lg dark:border-gray-700"
                 onLoad={() => console.log('✅ Avatar loaded successfully')}
                 onError={(e) => {
-                  const isOAuthAvatar = avatarPreview.includes('googleusercontent.com') || 
-                                       avatarPreview.includes('github.com') ||
-                                       oauthData?.picture === avatarPreview;
-                  
+                  const isOAuthAvatar =
+                    avatarPreview.includes('googleusercontent.com') ||
+                    oauthData?.picture === avatarPreview;
+
                   if (isOAuthAvatar) {
-                    console.warn('OAuth avatar failed to load, keeping URL for retry:', avatarPreview);
+                    console.warn(
+                      'OAuth avatar failed to load, keeping URL for retry:',
+                      avatarPreview,
+                    );
                     // Keep OAuth avatars even if they fail to load initially
                     // They might load on retry or after CORS issues resolve
                   } else {
-                    console.warn('User-uploaded avatar failed to load, showing initials instead:', avatarPreview);
+                    console.warn(
+                      'User-uploaded avatar failed to load, showing initials instead:',
+                      avatarPreview,
+                    );
                     setAvatarPreview(''); // Only clear manually uploaded broken images
                   }
                 }}
@@ -393,7 +414,6 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
             <p className="mt-1 text-sm text-green-600 dark:text-green-400">Username is available</p>
           )}
         </div>
-
 
         {/* Email display */}
         <div>
