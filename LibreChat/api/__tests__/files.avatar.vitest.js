@@ -89,11 +89,11 @@ describe('POST /api/files/images/avatar', () => {
         width: 100,
         height: 100,
         channels: 4,
-        background: { r: 255, g: 0, b: 0, alpha: 1 }
-      }
+        background: { r: 255, g: 0, b: 0, alpha: 1 },
+      },
     })
-    .png()
-    .toBuffer();
+      .png()
+      .toBuffer();
 
     // Create temp test image file
     const tempDir = path.join(__dirname, 'temp');
@@ -120,20 +120,20 @@ describe('POST /api/files/images/avatar', () => {
     // Setup express app with avatar router
     app = express();
     app.use(express.json());
-    
+
     // Setup app locals first (required by multer)
     app.locals.fileStrategy = FileSources.local;
     app.locals.imageOutputType = EImageOutputType.PNG;
     app.locals.paths = {
-      uploads: path.join(__dirname, 'temp')
+      uploads: path.join(__dirname, 'temp'),
     };
-    
+
     // Setup auth middleware
     app.use((req, res, next) => {
       req.user = mockUser;
       next();
     });
-    
+
     // Setup multer for file uploads
     upload = await createMulterInstance();
     app.use('/avatar', upload.single('file'), avatarRouter);
@@ -163,7 +163,7 @@ describe('POST /api/files/images/avatar', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        url: 'http://example.com/avatar.png'
+        url: 'http://example.com/avatar.png',
       });
 
       // Verify that file validation was called
@@ -173,30 +173,30 @@ describe('POST /api/files/images/avatar', () => {
           file: expect.objectContaining({
             path: expect.any(String),
             originalname: 'test-avatar.png',
-            mimetype: 'image/png'
-          })
+            mimetype: 'image/png',
+          }),
         }),
         file: expect.objectContaining({
           path: expect.any(String),
           originalname: 'test-avatar.png',
-          mimetype: 'image/png'
+          mimetype: 'image/png',
         }),
         image: true,
-        isAvatar: true
+        isAvatar: true,
       });
 
       // Verify that resize was called with correct parameters
       expect(resizeAvatar).toHaveBeenCalledWith({
         userId: mockUser.id,
         input: testImageBuffer,
-        desiredFormat: EImageOutputType.PNG
+        desiredFormat: EImageOutputType.PNG,
       });
 
       // Verify that processAvatar was called
       expect(mockProcessAvatar).toHaveBeenCalledWith({
         buffer: testImageBuffer,
         userId: mockUser.id,
-        manual: 'true'
+        manual: 'true',
       });
     });
 
@@ -207,11 +207,11 @@ describe('POST /api/files/images/avatar', () => {
           width: 100,
           height: 100,
           channels: 3,
-          background: { r: 0, g: 255, b: 0 }
-        }
+          background: { r: 0, g: 255, b: 0 },
+        },
       })
-      .jpeg()
-      .toBuffer();
+        .jpeg()
+        .toBuffer();
 
       const jpegPath = path.join(path.dirname(testImagePath), 'test-avatar.jpg');
       await fs.writeFile(jpegPath, jpegBuffer);
@@ -241,20 +241,18 @@ describe('POST /api/files/images/avatar', () => {
       expect(resizeAvatar).toHaveBeenCalledWith({
         userId: mockUser.id,
         input: testImageBuffer,
-        desiredFormat: EImageOutputType.WEBP
+        desiredFormat: EImageOutputType.WEBP,
       });
     });
 
     it('should work without manual flag', async () => {
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(200);
       expect(mockProcessAvatar).toHaveBeenCalledWith({
         buffer: testImageBuffer,
         userId: mockUser.id,
-        manual: undefined
+        manual: undefined,
       });
     });
   });
@@ -265,18 +263,14 @@ describe('POST /api/files/images/avatar', () => {
         throw new Error('File too large');
       });
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
     });
 
     it('should reject upload when no file is provided', async () => {
-      const response = await request(app)
-        .post('/avatar')
-        .field('manual', 'true');
+      const response = await request(app).post('/avatar').field('manual', 'true');
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
@@ -294,9 +288,7 @@ describe('POST /api/files/images/avatar', () => {
 
         vi.mocked(resizeAvatar).mockRejectedValue(new Error('Invalid image format'));
 
-        const response = await request(app)
-          .post('/avatar')
-          .attach('file', invalidImagePath);
+        const response = await request(app).post('/avatar').attach('file', invalidImagePath);
 
         expect(response.status).toBe(500);
         expect(response.body.message).toBe('An error occurred while uploading the profile picture');
@@ -313,9 +305,7 @@ describe('POST /api/files/images/avatar', () => {
     it('should require user authentication', async () => {
       // Test that the route works correctly with proper authentication
       // The auth middleware is mocked to provide a valid user
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       // With valid user auth, the upload should succeed
       expect(response.status).toBe(200);
@@ -327,13 +317,11 @@ describe('POST /api/files/images/avatar', () => {
       // We'll mock the avatar route to fail after multer succeeds
       vi.mocked(resizeAvatar).mockRejectedValue(new Error('User validation failed'));
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
-      
+
       // Restore mock for other tests
       vi.mocked(resizeAvatar).mockResolvedValue(testImageBuffer);
     });
@@ -343,33 +331,26 @@ describe('POST /api/files/images/avatar', () => {
     it('should handle image resize failures', async () => {
       vi.mocked(resizeAvatar).mockRejectedValue(new Error('Image processing failed'));
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
     });
 
     it('should pass correct parameters to resizeAvatar', async () => {
-      await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath)
-        .field('manual', 'true');
+      await request(app).post('/avatar').attach('file', testImagePath).field('manual', 'true');
 
       expect(resizeAvatar).toHaveBeenCalledWith({
         userId: mockUser.id,
         input: testImageBuffer,
-        desiredFormat: EImageOutputType.PNG
+        desiredFormat: EImageOutputType.PNG,
       });
     });
 
     it('should handle different file strategy configurations', async () => {
       app.locals.fileStrategy = FileSources.s3;
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(200);
       // Strategy functions should be called with S3 strategy
@@ -381,24 +362,19 @@ describe('POST /api/files/images/avatar', () => {
     it('should handle storage failures gracefully', async () => {
       mockProcessAvatar.mockRejectedValue(new Error('Storage service unavailable'));
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
     });
 
     it('should pass manual flag to storage processor', async () => {
-      await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath)
-        .field('manual', 'true');
+      await request(app).post('/avatar').attach('file', testImagePath).field('manual', 'true');
 
       expect(mockProcessAvatar).toHaveBeenCalledWith({
         buffer: testImageBuffer,
         userId: mockUser.id,
-        manual: 'true'
+        manual: 'true',
       });
     });
 
@@ -406,9 +382,7 @@ describe('POST /api/files/images/avatar', () => {
       const expectedUrl = 'https://cdn.example.com/avatars/user123.png';
       mockProcessAvatar.mockResolvedValue(expectedUrl);
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(200);
       expect(response.body.url).toBe(expectedUrl);
@@ -418,41 +392,35 @@ describe('POST /api/files/images/avatar', () => {
   describe('File Cleanup', () => {
     it('should clean up temporary files after successful upload', async () => {
       const fsSpy = vi.spyOn(fs, 'unlink');
-      
-      await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+
+      await request(app).post('/avatar').attach('file', testImagePath);
 
       // Should attempt to delete the temporary file
       expect(fsSpy).toHaveBeenCalledWith(expect.stringContaining('test-avatar.png'));
-      
+
       fsSpy.mockRestore();
     });
 
     it('should clean up temporary files even after upload failure', async () => {
       mockProcessAvatar.mockRejectedValue(new Error('Upload failed'));
       const fsSpy = vi.spyOn(fs, 'unlink');
-      
-      await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+
+      await request(app).post('/avatar').attach('file', testImagePath);
 
       // Should still attempt to delete the temporary file
       expect(fsSpy).toHaveBeenCalled();
-      
+
       fsSpy.mockRestore();
     });
 
     it('should handle cleanup errors gracefully', async () => {
       const fsSpy = vi.spyOn(fs, 'unlink').mockRejectedValue(new Error('File already deleted'));
-      
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       // Upload should still succeed even if cleanup fails
       expect(response.status).toBe(200);
-      
+
       fsSpy.mockRestore();
     });
   });
@@ -463,9 +431,7 @@ describe('POST /api/files/images/avatar', () => {
         throw new Error('Detailed internal error with sensitive information');
       });
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
@@ -477,9 +443,7 @@ describe('POST /api/files/images/avatar', () => {
       const originalReadFile = fs.readFile;
       fs.readFile = vi.fn().mockRejectedValue(new Error('File read failed'));
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
@@ -492,24 +456,27 @@ describe('POST /api/files/images/avatar', () => {
       // Mock multer to not set req.file
       const appNoFile = express();
       appNoFile.use(express.json());
-      
+
       // Setup app locals
       appNoFile.locals.fileStrategy = FileSources.local;
       appNoFile.locals.imageOutputType = EImageOutputType.PNG;
       appNoFile.locals.paths = {
-        uploads: path.join(__dirname, 'temp')
+        uploads: path.join(__dirname, 'temp'),
       };
-      
-      // Create a middleware that doesn't set req.file
-      appNoFile.use('/avatar', (req, res, next) => {
-        req.user = mockUser;
-        req.body = { manual: 'true' };
-        // Don't set req.file
-        next();
-      }, avatarRouter);
 
-      const response = await request(appNoFile)
-        .post('/avatar');
+      // Create a middleware that doesn't set req.file
+      appNoFile.use(
+        '/avatar',
+        (req, res, next) => {
+          req.user = mockUser;
+          req.body = { manual: 'true' };
+          // Don't set req.file
+          next();
+        },
+        avatarRouter,
+      );
+
+      const response = await request(appNoFile).post('/avatar');
 
       expect(response.status).toBe(500);
     });
@@ -526,9 +493,7 @@ describe('POST /api/files/images/avatar', () => {
           throw new Error('Unsupported file type');
         });
 
-        const response = await request(app)
-          .post('/avatar')
-          .attach('file', maliciousPath);
+        const response = await request(app).post('/avatar').attach('file', maliciousPath);
 
         expect(response.status).toBe(500);
         expect(filterFile).toHaveBeenCalled();
@@ -539,18 +504,16 @@ describe('POST /api/files/images/avatar', () => {
 
     it('should prevent path traversal attacks in file handling', async () => {
       // This test ensures the avatar service doesn't use user-controlled file paths
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       // Should succeed and not be vulnerable to path traversal
       expect(response.status).toBe(200);
-      
+
       // Verify that processAvatar was called with controlled parameters
       expect(mockProcessAvatar).toHaveBeenCalledWith({
         buffer: expect.any(Buffer),
         userId: mockUser.id,
-        manual: undefined
+        manual: undefined,
       });
     });
 
@@ -559,9 +522,7 @@ describe('POST /api/files/images/avatar', () => {
         throw new Error('File size limit exceeded');
       });
 
-      const response = await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
+      const response = await request(app).post('/avatar').attach('file', testImagePath);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('An error occurred while uploading the profile picture');
@@ -571,15 +532,12 @@ describe('POST /api/files/images/avatar', () => {
   describe('Performance Tests', () => {
     it('should handle concurrent uploads properly', async () => {
       const promises = Array.from({ length: 5 }, () =>
-        request(app)
-          .post('/avatar')
-          .attach('file', testImagePath)
-          .field('manual', 'true')
+        request(app).post('/avatar').attach('file', testImagePath).field('manual', 'true'),
       );
 
       const responses = await Promise.all(promises);
-      
-      responses.forEach(response => {
+
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.url).toBe('http://example.com/avatar.png');
       });
@@ -587,14 +545,12 @@ describe('POST /api/files/images/avatar', () => {
 
     it('should respond within reasonable time limits', async () => {
       const startTime = Date.now();
-      
-      await request(app)
-        .post('/avatar')
-        .attach('file', testImagePath);
-      
+
+      await request(app).post('/avatar').attach('file', testImagePath);
+
       const endTime = Date.now();
       const responseTime = endTime - startTime;
-      
+
       // Should complete within 5 seconds
       expect(responseTime).toBeLessThan(5000);
     });

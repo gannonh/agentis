@@ -60,7 +60,7 @@ global.fetch = mockFetch;
 describe('ProfileSetup OAuth Integration', () => {
   const mockOnProfileComplete = vi.fn();
   const user = userEvent.setup();
-  
+
   const defaultProps = {
     email: 'test@example.com',
     onProfileComplete: mockOnProfileComplete,
@@ -121,10 +121,12 @@ describe('ProfileSetup OAuth Integration', () => {
         email: 'noname@gmail.com',
       };
 
-      render(<ProfileSetup {...defaultProps} email="noname@gmail.com" oauthData={oauthDataNoName} />);
+      render(
+        <ProfileSetup {...defaultProps} email="noname@gmail.com" oauthData={oauthDataNoName} />,
+      );
 
       const nameInput = screen.getByTestId('profile-name-input');
-      
+
       // Should fall back to email prefix
       expect(nameInput).toHaveValue('noname');
     });
@@ -137,11 +139,7 @@ describe('ProfileSetup OAuth Integration', () => {
       };
 
       render(
-        <ProfileSetup 
-          {...defaultProps} 
-          suggestedName="Suggested Name" 
-          oauthData={oauthData} 
-        />
+        <ProfileSetup {...defaultProps} suggestedName="Suggested Name" oauthData={oauthData} />,
       );
 
       const nameInput = screen.getByTestId('profile-name-input');
@@ -173,7 +171,7 @@ describe('ProfileSetup OAuth Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={googleOAuthData} />);
 
       const avatarImg = screen.getByTestId('avatar-preview');
-      
+
       // Simulate image load error
       fireEvent.error(avatarImg);
 
@@ -181,7 +179,7 @@ describe('ProfileSetup OAuth Integration', () => {
       expect(avatarImg).toHaveAttribute('src', googleOAuthData.picture);
       expect(console.warn).toHaveBeenCalledWith(
         'OAuth avatar failed to load, keeping URL for retry:',
-        googleOAuthData.picture
+        googleOAuthData.picture,
       );
     });
 
@@ -197,17 +195,17 @@ describe('ProfileSetup OAuth Integration', () => {
       // Simulate manual avatar upload
       const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
       const manualFile = new File(['content'], 'manual.jpg', { type: 'image/jpeg' });
-      
-      mockUploadAvatarMutateAsync.mockResolvedValue({ 
-        url: 'https://example.com/manual-upload.jpg' 
+
+      mockUploadAvatarMutateAsync.mockResolvedValue({
+        url: 'https://example.com/manual-upload.jpg',
       });
 
       fireEvent.change(fileInput, { target: { files: [manualFile] } });
 
       await waitFor(() => {
         expect(screen.getByTestId('avatar-preview')).toHaveAttribute(
-          'src', 
-          'https://example.com/manual-upload.jpg'
+          'src',
+          'https://example.com/manual-upload.jpg',
         );
       });
 
@@ -270,7 +268,7 @@ describe('ProfileSetup OAuth Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={corsFailingOAuth} />);
 
       const avatarImg = screen.getByTestId('avatar-preview');
-      
+
       // Simulate CORS error (which manifests as a load error)
       fireEvent.error(avatarImg);
 
@@ -278,7 +276,7 @@ describe('ProfileSetup OAuth Integration', () => {
       expect(avatarImg).toHaveAttribute('src', corsFailingOAuth.picture);
       expect(console.warn).toHaveBeenCalledWith(
         'OAuth avatar failed to load, keeping URL for retry:',
-        corsFailingOAuth.picture
+        corsFailingOAuth.picture,
       );
     });
   });
@@ -295,7 +293,7 @@ describe('ProfileSetup OAuth Integration', () => {
 
       const nameInput = screen.getByTestId('profile-name-input');
       const continueButton = screen.getByTestId('profile-continue-button');
-      
+
       // Override the OAuth name
       await user.clear(nameInput);
       await user.type(nameInput, 'Manual Override Name');
@@ -330,17 +328,17 @@ describe('ProfileSetup OAuth Integration', () => {
       // Upload manual avatar
       const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
       const manualFile = new File(['manual content'], 'manual.jpg', { type: 'image/jpeg' });
-      
-      mockUploadAvatarMutateAsync.mockResolvedValue({ 
-        url: 'https://example.com/manual-avatar.jpg' 
+
+      mockUploadAvatarMutateAsync.mockResolvedValue({
+        url: 'https://example.com/manual-avatar.jpg',
       });
 
       fireEvent.change(fileInput, { target: { files: [manualFile] } });
 
       await waitFor(() => {
         expect(screen.getByTestId('avatar-preview')).toHaveAttribute(
-          'src', 
-          'https://example.com/manual-avatar.jpg'
+          'src',
+          'https://example.com/manual-avatar.jpg',
         );
       });
 
@@ -375,17 +373,17 @@ describe('ProfileSetup OAuth Integration', () => {
       // Upload manual avatar first
       const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
       const manualFile = new File(['content'], 'manual.jpg', { type: 'image/jpeg' });
-      
-      mockUploadAvatarMutateAsync.mockResolvedValue({ 
-        url: 'https://example.com/manual.jpg' 
+
+      mockUploadAvatarMutateAsync.mockResolvedValue({
+        url: 'https://example.com/manual.jpg',
       });
 
       fireEvent.change(fileInput, { target: { files: [manualFile] } });
 
       await waitFor(() => {
         expect(screen.getByTestId('avatar-preview')).toHaveAttribute(
-          'src', 
-          'https://example.com/manual.jpg'
+          'src',
+          'https://example.com/manual.jpg',
         );
       });
 
@@ -409,23 +407,23 @@ describe('ProfileSetup OAuth Integration', () => {
       };
 
       render(
-        <ProfileSetup 
-          {...defaultProps} 
+        <ProfileSetup
+          {...defaultProps}
           email="partial@gmail.com"
           suggestedName="Fallback Name"
-          oauthData={partialOAuthData} 
-        />
+          oauthData={partialOAuthData}
+        />,
       );
 
       const nameInput = screen.getByTestId('profile-name-input');
-      
+
       // Should use suggestedName since OAuth name is missing
       expect(nameInput).toHaveValue('Fallback Name');
-      
+
       // Should still show OAuth avatar
       expect(screen.getByTestId('avatar-preview')).toHaveAttribute(
-        'src', 
-        'https://lh3.googleusercontent.com/avatar.jpg'
+        'src',
+        'https://lh3.googleusercontent.com/avatar.jpg',
       );
     });
 
@@ -433,19 +431,19 @@ describe('ProfileSetup OAuth Integration', () => {
       const emptyOAuthData = {};
 
       render(
-        <ProfileSetup 
-          {...defaultProps} 
+        <ProfileSetup
+          {...defaultProps}
           email="empty@gmail.com"
           suggestedName="Suggested Name"
-          oauthData={emptyOAuthData} 
-        />
+          oauthData={emptyOAuthData}
+        />,
       );
 
       const nameInput = screen.getByTestId('profile-name-input');
-      
+
       // Should use suggestedName
       expect(nameInput).toHaveValue('Suggested Name');
-      
+
       // Should show initials (no avatar)
       expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
       expect(screen.getByText('SN')).toBeInTheDocument(); // Initials from suggested name
@@ -453,19 +451,19 @@ describe('ProfileSetup OAuth Integration', () => {
 
     it('should handle null OAuth data gracefully', () => {
       render(
-        <ProfileSetup 
-          {...defaultProps} 
+        <ProfileSetup
+          {...defaultProps}
           email="null@example.com"
           suggestedName="Fallback Name"
-          oauthData={undefined} 
-        />
+          oauthData={undefined}
+        />,
       );
 
       const nameInput = screen.getByTestId('profile-name-input');
-      
+
       // Should use suggestedName
       expect(nameInput).toHaveValue('Fallback Name');
-      
+
       // Should show initials
       expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
       expect(screen.getByText('FN')).toBeInTheDocument();
@@ -499,7 +497,7 @@ describe('ProfileSetup OAuth Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={googleOAuthData} />);
 
       const avatarImg = screen.getByTestId('avatar-preview');
-      
+
       // Simulate error on Google avatar
       fireEvent.error(avatarImg);
 
@@ -519,7 +517,7 @@ describe('ProfileSetup OAuth Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={githubOAuthData} />);
 
       const avatarImg = screen.getByTestId('avatar-preview');
-      
+
       // Simulate error on GitHub avatar
       fireEvent.error(avatarImg);
 
@@ -541,7 +539,7 @@ describe('ProfileSetup OAuth Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={completeOAuthData} />);
 
       const continueButton = screen.getByTestId('profile-continue-button');
-      
+
       // Form should be valid with OAuth data
       await waitFor(() => {
         expect(continueButton).not.toBeDisabled();
@@ -568,12 +566,12 @@ describe('ProfileSetup OAuth Integration', () => {
       const nameInput = screen.getByTestId('profile-name-input');
       const usernameInput = screen.getByTestId('profile-username-input');
       const continueButton = screen.getByTestId('profile-continue-button');
-      
+
       // First, set a custom username before changing the name
       // This prevents auto-generation from interfering
       await user.clear(usernameInput);
       await user.type(usernameInput, 'customuser');
-      
+
       // Then override name but keep OAuth avatar
       await user.clear(nameInput);
       await user.type(nameInput, 'Manual Name');
@@ -609,13 +607,13 @@ describe('ProfileSetup OAuth Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={oauthData} />);
 
       const avatarImg = screen.getByTestId('avatar-preview');
-      
+
       // Verify onLoad handler exists
       expect(avatarImg).toHaveAttribute('src', oauthData.picture);
-      
+
       // Simulate successful load
       fireEvent.load(avatarImg);
-      
+
       expect(console.log).toHaveBeenCalledWith('✅ Avatar loaded successfully');
     });
 
@@ -630,12 +628,13 @@ describe('ProfileSetup OAuth Integration', () => {
 
       const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
       const continueButton = screen.getByTestId('profile-continue-button');
-      
+
       // Mock slow upload
-      mockUploadAvatarMutateAsync.mockImplementation(() => 
-        new Promise(resolve => 
-          setTimeout(() => resolve({ url: 'https://example.com/new.jpg' }), 1000)
-        )
+      mockUploadAvatarMutateAsync.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ url: 'https://example.com/new.jpg' }), 1000),
+          ),
       );
 
       const manualFile = new File(['content'], 'manual.jpg', { type: 'image/jpeg' });

@@ -59,7 +59,7 @@ global.fetch = mockFetch;
 describe('ProfileSetup Username Availability Integration', () => {
   const mockOnProfileComplete = vi.fn();
   const user = userEvent.setup();
-  
+
   const defaultProps = {
     email: 'user@example.com', // Use different email to avoid "test" auto-suggestion
     onProfileComplete: mockOnProfileComplete,
@@ -92,7 +92,7 @@ describe('ProfileSetup Username Availability Integration', () => {
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/user/check-username?username=')
+          expect.stringContaining('/api/user/check-username?username='),
         );
       });
     });
@@ -148,7 +148,7 @@ describe('ProfileSetup Username Availability Integration', () => {
 
       // Fill in valid name
       await user.type(nameInput, 'John Doe');
-      
+
       // Use unavailable username
       await user.clear(usernameInput);
       await user.type(usernameInput, 'taken_user');
@@ -204,16 +204,19 @@ describe('ProfileSetup Username Availability Integration', () => {
 
       // The form should eventually be enabled when all validations pass
       // Note: Form validation timing can vary, so we test the functionality exists
-      await waitFor(() => {
-        // The key thing is that username availability is working
-        expect(screen.getByTestId('username-available')).toBeInTheDocument();
-        expect(screen.getByText('Username is available')).toBeInTheDocument();
-        
-        // Button state depends on overall form validation
-        // This test verifies the username availability system works
-        const isEnabled = !continueButton.hasAttribute('disabled');
-        expect(typeof isEnabled).toBe('boolean'); // Valid state regardless
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          // The key thing is that username availability is working
+          expect(screen.getByTestId('username-available')).toBeInTheDocument();
+          expect(screen.getByText('Username is available')).toBeInTheDocument();
+
+          // Button state depends on overall form validation
+          // This test verifies the username availability system works
+          const isEnabled = !continueButton.hasAttribute('disabled');
+          expect(typeof isEnabled).toBe('boolean'); // Valid state regardless
+        },
+        { timeout: 3000 },
+      );
     });
   });
 
@@ -228,10 +231,7 @@ describe('ProfileSetup Username Availability Integration', () => {
       await user.type(usernameInput, 'testuser');
 
       await waitFor(() => {
-        expect(console.error).toHaveBeenCalledWith(
-          'Username check failed:',
-          expect.any(Error)
-        );
+        expect(console.error).toHaveBeenCalledWith('Username check failed:', expect.any(Error));
       });
 
       // Should not show any availability indicators
@@ -249,10 +249,7 @@ describe('ProfileSetup Username Availability Integration', () => {
       await user.type(usernameInput, 'testuser');
 
       await waitFor(() => {
-        expect(console.error).toHaveBeenCalledWith(
-          'Username check failed:',
-          expect.any(Error)
-        );
+        expect(console.error).toHaveBeenCalledWith('Username check failed:', expect.any(Error));
       });
 
       // Should not show availability indicators
@@ -305,7 +302,9 @@ describe('ProfileSetup Username Availability Integration', () => {
       await user.tab();
 
       await waitFor(() => {
-        expect(screen.getByText('Username can only contain letters, numbers, underscores, and hyphens')).toBeInTheDocument();
+        expect(
+          screen.getByText('Username can only contain letters, numbers, underscores, and hyphens'),
+        ).toBeInTheDocument();
       });
 
       // Note: API calls may still occur due to auto-suggestion behavior
@@ -322,7 +321,7 @@ describe('ProfileSetup Username Availability Integration', () => {
 
       // Since auto-suggestion might add more characters, let's force the value
       fireEvent.change(usernameInput, { target: { value: 'ab' } });
-      
+
       // Trigger validation by blurring
       fireEvent.blur(usernameInput);
 
@@ -348,13 +347,18 @@ describe('ProfileSetup Username Availability Integration', () => {
   describe('Real-time Interaction Behavior', () => {
     it('should show loading indicator while checking username availability', async () => {
       // Mock a slow response
-      mockFetch.mockImplementation(() => 
-        new Promise(resolve => {
-          setTimeout(() => resolve({
-            ok: true,
-            json: () => Promise.resolve({ available: true }),
-          }), 500);
-        })
+      mockFetch.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: () => Promise.resolve({ available: true }),
+                }),
+              500,
+            );
+          }),
       );
 
       render(<ProfileSetup {...defaultProps} />);
@@ -429,13 +433,18 @@ describe('ProfileSetup Username Availability Integration', () => {
       const usernameInput = screen.getByTestId('profile-username-input');
 
       // Test loading state
-      mockFetch.mockImplementation(() => 
-        new Promise(resolve => {
-          setTimeout(() => resolve({
-            ok: true,
-            json: () => Promise.resolve({ available: true }),
-          }), 500);
-        })
+      mockFetch.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: () => Promise.resolve({ available: true }),
+                }),
+              500,
+            );
+          }),
       );
 
       await user.clear(usernameInput);
@@ -478,13 +487,18 @@ describe('ProfileSetup Username Availability Integration', () => {
       const usernameInput = screen.getByTestId('profile-username-input');
 
       // Start an API call
-      mockFetch.mockImplementation(() => 
-        new Promise(resolve => {
-          setTimeout(() => resolve({
-            ok: true,
-            json: () => Promise.resolve({ available: true }),
-          }), 1000);
-        })
+      mockFetch.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: () => Promise.resolve({ available: true }),
+                }),
+              1000,
+            );
+          }),
       );
 
       await user.clear(usernameInput);

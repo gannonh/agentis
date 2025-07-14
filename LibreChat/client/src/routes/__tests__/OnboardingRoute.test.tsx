@@ -366,7 +366,7 @@ describe('OnboardingRoute', () => {
     await waitFor(() => {
       const isStillOnProfile = screen.queryByText('Complete Your Profile');
       const isOnTeamStep = screen.queryByText('Invite Your Team');
-      
+
       // Form behavior may vary - either validation prevents progress or it advances
       expect(isStillOnProfile || isOnTeamStep).toBeTruthy();
     });

@@ -1,50 +1,50 @@
 /**
  * @fileoverview Comprehensive tests for Better Auth configuration and authentication flows
  * @module auth.better-auth.vitest
- * 
+ *
  * This test suite provides comprehensive coverage of the Better Auth integration in LibreChat,
  * testing critical authentication flows, database operations, and security features.
- * 
+ *
  * ## Test Coverage:
- * 
+ *
  * ### OAuth Profile Mapping (`mapProfileToUser`)
  * - New user registration via OAuth providers (Google)
  * - Existing user account linking and profile updates
  * - Handling of missing or incomplete OAuth profile data
  * - Preference for existing user data over OAuth updates
  * - OAuth provider configuration validation
- * 
+ *
  * ### Database Hooks
  * - **User Creation**: Prevents duplicate user creation, handles new users
  * - **Account Linking**: Links OAuth accounts to existing users, validates providers
  * - **Session Management**: Sets active organization in sessions, handles memberships
  * - **Error Handling**: Graceful degradation when database operations fail
- * 
+ *
  * ### Magic Link Authentication
  * - Email sending with configurable SMTP service
  * - File-based magic link storage for development/testing
  * - Magic link expiration and cleanup (10-link limit)
  * - Failure handling for email service and file system errors
  * - Template-based email generation with app branding
- * 
+ *
  * ### Configuration and Environment
  * - Environment variable validation (BETTER_AUTH_SECRET, URLs)
  * - URL format validation for baseURL and clientURL
  * - Admin user configuration and role assignment
  * - MongoDB connection handling and error recovery
- * 
+ *
  * ### Integration Scenarios
  * - Complete OAuth sign-up flow (profile mapping → user creation → account linking → session)
  * - OAuth sign-in for existing users with organization membership
  * - Magic link registration and authentication flow
  * - Error boundary testing with database failures
- * 
+ *
  * ### Security Testing
  * - Account linking validation and provider trust
  * - Session management with organization membership
  * - Authentication state management and error handling
  * - Profile data validation and sanitization
- * 
+ *
  * ## Key Testing Patterns:
  * - Uses extensive mocking of Better Auth, MongoDB, and file system operations
  * - Tests both successful operations and error scenarios
@@ -268,8 +268,14 @@ describe('Better Auth Comprehensive Tests', () => {
       });
 
       expect(mockUserCollection.findOne).toHaveBeenCalledWith({ email: 'newuser@example.com' });
-      expect(mockLogger.info).toHaveBeenCalledWith('🔍 OAuth profile mapping for:', 'newuser@example.com');
-      expect(mockLogger.info).toHaveBeenCalledWith('👤 New user from OAuth:', 'newuser@example.com');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '🔍 OAuth profile mapping for:',
+        'newuser@example.com',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '👤 New user from OAuth:',
+        'newuser@example.com',
+      );
     });
 
     test('should handle existing user during OAuth profile mapping', async () => {
@@ -302,7 +308,7 @@ describe('Better Auth Comprehensive Tests', () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         '🔗 Found existing user during OAuth mapping:',
-        'existing@example.com'
+        'existing@example.com',
       );
     });
 
@@ -362,7 +368,7 @@ describe('Better Auth Comprehensive Tests', () => {
       const config = mockBetterAuth.mock.calls[mockBetterAuth.mock.calls.length - 1][0];
       expect(config.socialProviders).toBeUndefined();
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Google OAuth credentials missing - Google provider will not be available'
+        'Google OAuth credentials missing - Google provider will not be available',
       );
     });
   });
@@ -398,7 +404,7 @@ describe('Better Auth Comprehensive Tests', () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Found existing user with email:',
-        'existing@example.com'
+        'existing@example.com',
       );
       expect(mockLogger.info).toHaveBeenCalledWith('Existing user ID:', existingUser._id);
     });
@@ -417,7 +423,7 @@ describe('Better Auth Comprehensive Tests', () => {
       expect(result).toEqual(newUserData);
       expect(mockLogger.info).toHaveBeenCalledWith(
         'No existing user found, allowing creation for:',
-        'newuser@example.com'
+        'newuser@example.com',
       );
     });
 
@@ -466,7 +472,10 @@ describe('Better Auth Comprehensive Tests', () => {
         providerId: 'google',
         userId: 'user-123',
       });
-      expect(mockLogger.info).toHaveBeenCalledWith('Linking OAuth account to user:', 'user@example.com');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Linking OAuth account to user:',
+        'user@example.com',
+      );
     });
 
     test('should warn when user not found during account linking', async () => {
@@ -484,7 +493,7 @@ describe('Better Auth Comprehensive Tests', () => {
       expect(result).toEqual(accountData);
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'User not found for account linking:',
-        'non-existent-user'
+        'non-existent-user',
       );
     });
 
@@ -551,7 +560,7 @@ describe('Better Auth Comprehensive Tests', () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Found organization membership, setting activeOrganizationId:',
-        'org-456'
+        'org-456',
       );
     });
 
@@ -569,7 +578,7 @@ describe('Better Auth Comprehensive Tests', () => {
       expect(result).toEqual(sessionData); // Returns original data
       expect(mockLogger.info).toHaveBeenCalledWith(
         'No organization membership found for user:',
-        'user-123'
+        'user-123',
       );
     });
 
@@ -596,7 +605,7 @@ describe('Better Auth Comprehensive Tests', () => {
       mockFs.mkdir.mockResolvedValue(undefined);
       mockFs.readFile.mockRejectedValue(new Error('File not found'));
       mockFs.writeFile.mockResolvedValue(undefined);
-      
+
       // Mock sendEmail
       mockSendEmail.mockResolvedValue({ messageId: 'test-message-id' });
 
@@ -618,7 +627,7 @@ describe('Better Auth Comprehensive Tests', () => {
           token: 'magic-token-123',
           url: 'http://localhost:3090/auth/magic-link?token=magic-token-123',
         },
-        {}
+        {},
       );
 
       expect(result).toEqual({ success: true });
@@ -634,7 +643,9 @@ describe('Better Auth Comprehensive Tests', () => {
         },
       });
 
-      expect(mockLogger.info).toHaveBeenCalledWith('✅ Magic link email sent successfully to: test@example.com');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '✅ Magic link email sent successfully to: test@example.com',
+      );
     });
 
     test('should write magic link to file in development/test environment', async () => {
@@ -649,7 +660,7 @@ describe('Better Auth Comprehensive Tests', () => {
           token: 'dev-token-123',
           url: 'http://localhost:3090/auth/magic-link?token=dev-token-123',
         },
-        {}
+        {},
       );
 
       // Verify file operations
@@ -688,7 +699,7 @@ describe('Better Auth Comprehensive Tests', () => {
           token: 'new-token-123',
           url: 'http://localhost:3090/auth/magic-link?token=new-token-123',
         },
-        {}
+        {},
       );
 
       const writtenData = JSON.parse(mockFs.writeFile.mock.calls[0][1]);
@@ -698,12 +709,14 @@ describe('Better Auth Comprehensive Tests', () => {
     });
 
     test('should limit magic links file to 10 entries', async () => {
-      const existingLinks = Array(10).fill(null).map((_, i) => ({
-        email: `user${i}@example.com`,
-        token: `token-${i}`,
-        url: `http://localhost:3090/auth/magic-link?token=token-${i}`,
-        timestamp: new Date(Date.now() - i * 1000).toISOString(),
-      }));
+      const existingLinks = Array(10)
+        .fill(null)
+        .map((_, i) => ({
+          email: `user${i}@example.com`,
+          token: `token-${i}`,
+          url: `http://localhost:3090/auth/magic-link?token=token-${i}`,
+          timestamp: new Date(Date.now() - i * 1000).toISOString(),
+        }));
       mockFs.readFile.mockResolvedValue(JSON.stringify(existingLinks));
 
       const magicLinkConfig = mockMagicLink.mock.calls[0][0];
@@ -715,7 +728,7 @@ describe('Better Auth Comprehensive Tests', () => {
           token: 'overflow-token',
           url: 'http://localhost:3090/auth/magic-link?token=overflow-token',
         },
-        {}
+        {},
       );
 
       const writtenData = JSON.parse(mockFs.writeFile.mock.calls[0][1]);
@@ -738,11 +751,14 @@ describe('Better Auth Comprehensive Tests', () => {
           token: 'fail-token',
           url: 'http://localhost:3090/auth/magic-link?token=fail-token',
         },
-        {}
+        {},
       );
 
       expect(result).toEqual({ success: true });
-      expect(mockLogger.error).toHaveBeenCalledWith('❌ Failed to send magic link email:', emailError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '❌ Failed to send magic link email:',
+        emailError,
+      );
       // Should still write to file as fallback
       expect(mockFs.writeFile).toHaveBeenCalled();
     });
@@ -760,11 +776,14 @@ describe('Better Auth Comprehensive Tests', () => {
           token: 'error-token',
           url: 'http://localhost:3090/auth/magic-link?token=error-token',
         },
-        {}
+        {},
       );
 
       expect(result).toEqual({ success: true });
-      expect(mockLogger.error).toHaveBeenCalledWith('❌ Failed to write magic link to file:', fileError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '❌ Failed to write magic link to file:',
+        fileError,
+      );
     });
 
     test('should configure magic link with correct expiration', async () => {
@@ -795,7 +814,7 @@ describe('Better Auth Comprehensive Tests', () => {
 
       // Reset and reimport
       vi.resetModules();
-      
+
       // Re-mock the modules after reset
       vi.doMock('#config/betterAuth.js', () => ({
         betterAuthConfig: mockBetterAuthConfig,
@@ -803,7 +822,7 @@ describe('Better Auth Comprehensive Tests', () => {
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
-      
+
       await import('./auth.js');
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
@@ -821,10 +840,10 @@ describe('Better Auth Comprehensive Tests', () => {
       const connectionCallback = mockConnection.once.mock.calls[0][1];
 
       expect(() => connectionCallback()).toThrow(
-        'BETTER_AUTH_SECRET environment variable is required but not set'
+        'BETTER_AUTH_SECRET environment variable is required but not set',
       );
       expect(mockLogger.error).toHaveBeenCalledWith(
-        '❌ BETTER_AUTH_SECRET environment variable is required'
+        '❌ BETTER_AUTH_SECRET environment variable is required',
       );
     });
 
@@ -836,7 +855,7 @@ describe('Better Auth Comprehensive Tests', () => {
           baseURL: undefined,
         },
       }));
-      
+
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
@@ -858,7 +877,7 @@ describe('Better Auth Comprehensive Tests', () => {
           clientURL: undefined,
         },
       }));
-      
+
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
@@ -880,7 +899,7 @@ describe('Better Auth Comprehensive Tests', () => {
           baseURL: 'not-a-valid-url',
         },
       }));
-      
+
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
@@ -899,7 +918,7 @@ describe('Better Auth Comprehensive Tests', () => {
       await import('./auth.js');
 
       // Test error event handler
-      const errorHandler = mockConnection.on.mock.calls.find(call => call[0] === 'error')[1];
+      const errorHandler = mockConnection.on.mock.calls.find((call) => call[0] === 'error')[1];
       const testError = new Error('MongoDB connection failed');
       errorHandler(testError);
 
@@ -910,7 +929,9 @@ describe('Better Auth Comprehensive Tests', () => {
       await import('./auth.js');
 
       // Test disconnected event handler
-      const disconnectHandler = mockConnection.on.mock.calls.find(call => call[0] === 'disconnected')[1];
+      const disconnectHandler = mockConnection.on.mock.calls.find(
+        (call) => call[0] === 'disconnected',
+      )[1];
       disconnectHandler();
 
       expect(mockLogger.warn).toHaveBeenCalledWith('⚠️ MongoDB disconnected');
@@ -923,7 +944,7 @@ describe('Better Auth Comprehensive Tests', () => {
       await import('./auth.js');
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        '🔧 MongoDB already connected, initializing Better Auth immediately...'
+        '🔧 MongoDB already connected, initializing Better Auth immediately...',
       );
     });
   });
@@ -932,7 +953,7 @@ describe('Better Auth Comprehensive Tests', () => {
     beforeEach(async () => {
       // Reset modules to ensure clean state
       vi.resetModules();
-      
+
       // Re-mock the modules after reset
       vi.doMock('#config/betterAuth.js', () => ({
         betterAuthConfig: mockBetterAuthConfig,
@@ -940,7 +961,7 @@ describe('Better Auth Comprehensive Tests', () => {
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
-      
+
       await import('./auth.js');
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
@@ -999,14 +1020,14 @@ describe('Better Auth Comprehensive Tests', () => {
             'organization-plugin',
             'magiclink-plugin',
           ]),
-        })
+        }),
       );
     });
 
     test('should log available API methods', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         '✅ Better Auth API methods available:',
-        expect.arrayContaining(['signInMagicLink'])
+        expect.arrayContaining(['signInMagicLink']),
       );
       expect(mockLogger.info).toHaveBeenCalledWith('✅ Magic link sign-in method available');
     });
@@ -1019,7 +1040,7 @@ describe('Better Auth Comprehensive Tests', () => {
 
       // Reset and reimport
       vi.resetModules();
-      
+
       // Re-mock the modules after reset
       vi.doMock('#config/betterAuth.js', () => ({
         betterAuthConfig: mockBetterAuthConfig,
@@ -1027,12 +1048,15 @@ describe('Better Auth Comprehensive Tests', () => {
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
-      
+
       await import('./auth.js');
       const connectionCallback = mockConnection.once.mock.calls[0][1];
 
       expect(() => connectionCallback()).toThrow(createError);
-      expect(mockLogger.error).toHaveBeenCalledWith('Error creating Better Auth instance:', createError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error creating Better Auth instance:',
+        createError,
+      );
     });
   });
 
@@ -1040,10 +1064,10 @@ describe('Better Auth Comprehensive Tests', () => {
     beforeEach(async () => {
       process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
       process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
-      
+
       // Reset modules to ensure clean state
       vi.resetModules();
-      
+
       // Re-mock the modules after reset
       vi.doMock('#config/betterAuth.js', () => ({
         betterAuthConfig: mockBetterAuthConfig,
@@ -1051,7 +1075,7 @@ describe('Better Auth Comprehensive Tests', () => {
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
-      
+
       await import('./auth.js');
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
@@ -1060,7 +1084,7 @@ describe('Better Auth Comprehensive Tests', () => {
     test('should handle complete OAuth sign-up flow', async () => {
       // Step 1: OAuth profile mapping (new user)
       mockUserCollection.findOne.mockResolvedValue(null);
-      
+
       const oauthProfile = {
         email: 'newuser@company.com',
         name: 'New User',
@@ -1147,7 +1171,7 @@ describe('Better Auth Comprehensive Tests', () => {
 
     test('should handle magic link sign-up flow', async () => {
       process.env.EMAIL_SERVICE = 'smtp';
-      
+
       // Step 1: Send magic link
       const magicLinkConfig = mockMagicLink.mock.calls[0][0];
       const sendMagicLink = magicLinkConfig.sendMagicLink;
@@ -1158,14 +1182,14 @@ describe('Better Auth Comprehensive Tests', () => {
           token: 'magic-token',
           url: 'http://localhost:3090/auth/magic-link?token=magic-token',
         },
-        {}
+        {},
       );
 
       expect(mockSendEmail).toHaveBeenCalled();
 
       // Step 2: User creation (when magic link is verified)
       mockUserCollection.findOne.mockResolvedValue(null);
-      
+
       const newUserData = {
         email: 'newuser@example.com',
         emailVerified: true,
@@ -1196,7 +1220,7 @@ describe('Better Auth Comprehensive Tests', () => {
 
       // Reset modules to ensure clean state
       vi.resetModules();
-      
+
       // Re-mock the modules after reset
       vi.doMock('#config/betterAuth.js', () => ({
         betterAuthConfig: mockBetterAuthConfig,
@@ -1229,7 +1253,7 @@ describe('Better Auth Comprehensive Tests', () => {
     test('should handle malformed data gracefully', async () => {
       // Reset modules to ensure clean state
       vi.resetModules();
-      
+
       // Re-mock the modules after reset
       vi.doMock('#config/betterAuth.js', () => ({
         betterAuthConfig: mockBetterAuthConfig,
@@ -1237,14 +1261,14 @@ describe('Better Auth Comprehensive Tests', () => {
       vi.doMock('#config/index.js', () => ({
         logger: mockLogger,
       }));
-      
+
       const authModule = await import('./auth.js');
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
       // Test with null/undefined data
       const userCreateHook = betterAuthConfigUsed.databaseHooks.user.create.before;
-      
+
       const resultNull = await userCreateHook(null);
       expect(resultNull).toBeNull();
 

@@ -64,7 +64,7 @@ global.URL.revokeObjectURL = vi.fn();
 describe('ProfileSetup Avatar Upload Integration', () => {
   const mockOnProfileComplete = vi.fn();
   const user = userEvent.setup();
-  
+
   const defaultProps = {
     email: 'test@example.com',
     onProfileComplete: mockOnProfileComplete,
@@ -163,7 +163,7 @@ describe('ProfileSetup Avatar Upload Integration', () => {
   describe('File Selection and Validation', () => {
     it('should accept valid image files', async () => {
       mockUploadAvatarMutateAsync.mockResolvedValue({ url: 'https://example.com/new-avatar.png' });
-      
+
       render(<ProfileSetup {...defaultProps} />);
 
       const avatarInput = getAvatarInput();
@@ -483,7 +483,7 @@ describe('ProfileSetup Avatar Upload Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={oauthData} />);
 
       const avatarImage = screen.getByTestId('avatar-preview');
-      
+
       // Simulate image load error
       fireEvent.error(avatarImage);
 
@@ -492,7 +492,9 @@ describe('ProfileSetup Avatar Upload Integration', () => {
     });
 
     it('should clear user-uploaded avatar if it fails to load', async () => {
-      mockUploadAvatarMutateAsync.mockResolvedValue({ url: 'https://example.com/broken-avatar.png' });
+      mockUploadAvatarMutateAsync.mockResolvedValue({
+        url: 'https://example.com/broken-avatar.png',
+      });
 
       render(<ProfileSetup {...defaultProps} />);
 
@@ -504,7 +506,7 @@ describe('ProfileSetup Avatar Upload Integration', () => {
       await waitFor(() => {
         const avatarImage = screen.getByTestId('avatar-preview');
         expect(avatarImage).toBeInTheDocument();
-        
+
         // Simulate image load error for user-uploaded image
         fireEvent.error(avatarImage);
       });
@@ -523,7 +525,7 @@ describe('ProfileSetup Avatar Upload Integration', () => {
       render(<ProfileSetup {...defaultProps} oauthData={oauthData} />);
 
       const avatarImage = screen.getByTestId('avatar-preview');
-      
+
       // Simulate load error on GitHub OAuth avatar
       fireEvent.error(avatarImage);
 
@@ -657,10 +659,10 @@ describe('ProfileSetup Avatar Upload Integration', () => {
 
       fireEvent.change(avatarInput, { target: { files: [file1] } });
       await waitFor(() => expect(mockUploadAvatarMutateAsync).toHaveBeenCalledTimes(1));
-      
+
       fireEvent.change(avatarInput, { target: { files: [file2] } });
       await waitFor(() => expect(mockUploadAvatarMutateAsync).toHaveBeenCalledTimes(2));
-      
+
       fireEvent.change(avatarInput, { target: { files: [file3] } });
       await waitFor(() => expect(mockUploadAvatarMutateAsync).toHaveBeenCalledTimes(3));
 

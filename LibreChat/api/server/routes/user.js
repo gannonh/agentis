@@ -203,8 +203,8 @@ router.get('/check-username', requireBetterAuth, async (req, res) => {
 
     // Check if username contains only allowed characters
     if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-      return res.status(400).json({ 
-        error: 'Username can only contain letters, numbers, underscores, and hyphens' 
+      return res.status(400).json({
+        error: 'Username can only contain letters, numbers, underscores, and hyphens',
       });
     }
 

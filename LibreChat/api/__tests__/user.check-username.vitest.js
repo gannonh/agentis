@@ -112,7 +112,7 @@ describe('GET /api/user/check-username', () => {
       });
     });
 
-    it('should return available=true when checking current user\'s own username', async () => {
+    it("should return available=true when checking current user's own username", async () => {
       // The test user already has username 'testuser'
       const response = await request(app)
         .get('/api/user/check-username')
@@ -159,9 +159,7 @@ describe('GET /api/user/check-username', () => {
 
   describe('Username Format Validation', () => {
     it('should reject usernames shorter than 3 characters', async () => {
-      const response = await request(app)
-        .get('/api/user/check-username')
-        .query({ username: 'ab' });
+      const response = await request(app).get('/api/user/check-username').query({ username: 'ab' });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Username must be 3-20 characters long');
@@ -187,9 +185,7 @@ describe('GET /api/user/check-username', () => {
       ];
 
       for (const username of validUsernames) {
-        const response = await request(app)
-          .get('/api/user/check-username')
-          .query({ username });
+        const response = await request(app).get('/api/user/check-username').query({ username });
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('available');
@@ -212,21 +208,17 @@ describe('GET /api/user/check-username', () => {
       ];
 
       for (const username of invalidUsernames) {
-        const response = await request(app)
-          .get('/api/user/check-username')
-          .query({ username });
+        const response = await request(app).get('/api/user/check-username').query({ username });
 
         expect(response.status).toBe(400);
         expect(response.body.error).toBe(
-          'Username can only contain letters, numbers, underscores, and hyphens'
+          'Username can only contain letters, numbers, underscores, and hyphens',
         );
       }
     });
 
     it('should reject non-string username values', async () => {
-      const response = await request(app)
-        .get('/api/user/check-username')
-        .query({ username: 123 });
+      const response = await request(app).get('/api/user/check-username').query({ username: 123 });
 
       // The API converts numbers to strings, so "123" is valid
       // This is expected behavior based on how query parameters work
@@ -240,17 +232,14 @@ describe('GET /api/user/check-username', () => {
 
   describe('Error Handling and Edge Cases', () => {
     it('should return 400 when username parameter is missing', async () => {
-      const response = await request(app)
-        .get('/api/user/check-username');
+      const response = await request(app).get('/api/user/check-username');
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Username parameter is required');
     });
 
     it('should return 400 when username parameter is empty string', async () => {
-      const response = await request(app)
-        .get('/api/user/check-username')
-        .query({ username: '' });
+      const response = await request(app).get('/api/user/check-username').query({ username: '' });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Username parameter is required');
@@ -328,15 +317,13 @@ describe('GET /api/user/check-username', () => {
     it('should handle SQL injection-like attempts in username parameter', async () => {
       const maliciousUsernames = [
         "'; DROP TABLE users; --",
-        '1\' OR \'1\'=\'1',
+        "1' OR '1'='1",
         '{ $ne: null }',
         '{ "$regex": ".*" }',
       ];
 
       for (const username of maliciousUsernames) {
-        const response = await request(app)
-          .get('/api/user/check-username')
-          .query({ username });
+        const response = await request(app).get('/api/user/check-username').query({ username });
 
         // Should either be rejected as invalid format or handled safely
         expect([400, 200]).toContain(response.status);
@@ -362,9 +349,7 @@ describe('GET /api/user/check-username', () => {
       // Spy on User.findOne to verify the query parameters
       const findOneSpy = vi.spyOn(User, 'findOne');
 
-      await request(app)
-        .get('/api/user/check-username')
-        .query({ username: 'testuser' });
+      await request(app).get('/api/user/check-username').query({ username: 'testuser' });
 
       expect(findOneSpy).toHaveBeenCalledWith({
         username: 'testuser',
@@ -377,9 +362,7 @@ describe('GET /api/user/check-username', () => {
     it('should use case-insensitive matching for usernames', async () => {
       const findOneSpy = vi.spyOn(User, 'findOne');
 
-      await request(app)
-        .get('/api/user/check-username')
-        .query({ username: 'TestUser' });
+      await request(app).get('/api/user/check-username').query({ username: 'TestUser' });
 
       expect(findOneSpy).toHaveBeenCalledWith({
         username: 'testuser', // Should be lowercase
@@ -438,15 +421,13 @@ describe('GET /api/user/check-username', () => {
   describe('Performance and Load Testing', () => {
     it('should handle multiple concurrent username checks', async () => {
       const usernames = Array.from({ length: 10 }, (_, i) => `user${i}`);
-      
-      const promises = usernames.map(username =>
-        request(app)
-          .get('/api/user/check-username')
-          .query({ username })
+
+      const promises = usernames.map((username) =>
+        request(app).get('/api/user/check-username').query({ username }),
       );
 
       const responses = await Promise.all(promises);
-      
+
       responses.forEach((response, index) => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual({
@@ -458,14 +439,12 @@ describe('GET /api/user/check-username', () => {
 
     it('should respond quickly for simple username checks', async () => {
       const startTime = Date.now();
-      
-      await request(app)
-        .get('/api/user/check-username')
-        .query({ username: 'quicktest' });
-      
+
+      await request(app).get('/api/user/check-username').query({ username: 'quicktest' });
+
       const endTime = Date.now();
       const responseTime = endTime - startTime;
-      
+
       // Response should be under 100ms for simple checks
       expect(responseTime).toBeLessThan(100);
     });
