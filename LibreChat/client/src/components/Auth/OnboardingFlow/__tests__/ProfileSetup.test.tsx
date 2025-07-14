@@ -203,9 +203,8 @@ describe('ProfileSetup Form Validation', () => {
 
       // With valid name, form should eventually be valid (may need username availability check)
       await waitFor(() => {
-        const isEnabled = !continueButton.hasAttribute('disabled');
-        // Button can be enabled or disabled, both are valid states depending on timing
-        expect(typeof isEnabled).toBe('boolean');
+        // Button should be enabled when form has valid data
+        expect(continueButton).toBeEnabled();
       });
     });
   });

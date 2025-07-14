@@ -244,13 +244,17 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
       .substring(0, 15);
   };
 
-  // Auto-suggest username when name changes
+  // Track when the initial auto-generation has happened
+  const [initialUsernameGenerated, setInitialUsernameGenerated] = useState(false);
+
+  // Auto-suggest username only on initial load when username is empty
   useEffect(() => {
-    if (watchedName && !watchedUsername) {
+    if (watchedName && !watchedUsername && !initialUsernameGenerated) {
       const suggestion = generateUsernameSuggestion(watchedName, email);
       setValue('username', suggestion);
+      setInitialUsernameGenerated(true);
     }
-  }, [watchedName, watchedUsername, email, setValue]);
+  }, [watchedName, watchedUsername, email, setValue, initialUsernameGenerated]);
 
   // Reset username availability when username changes
   useEffect(() => {
