@@ -271,8 +271,9 @@ describe('GET /api/user/check-username', () => {
         .get('/api/user/check-username')
         .query({ username: 'testuser' });
 
-      // Should either succeed or fail gracefully, not crash
-      expect([200, 500]).toContain(response.status);
+      // Should return 500 error when malformed ObjectId causes database issues
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('error', 'Failed to check username availability');
 
       // Restore original user
       Object.assign(mockUser, originalUser);
@@ -325,12 +326,14 @@ describe('GET /api/user/check-username', () => {
       for (const username of maliciousUsernames) {
         const response = await request(app).get('/api/user/check-username').query({ username });
 
-        // Should either be rejected as invalid format or handled safely
-        expect([400, 200]).toContain(response.status);
-        if (response.status === 200) {
-          expect(response.body).toHaveProperty('available');
-          expect(response.body).toHaveProperty('username');
-        }
+        // Malicious usernames should be rejected with 400 Bad Request
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error');
+        // Could fail on length validation or character validation
+        expect([
+          'Username must be 3-20 characters long',
+          'Username can only contain letters, numbers, underscores, and hyphens'
+        ]).toContain(response.body.error);
       }
     });
 
