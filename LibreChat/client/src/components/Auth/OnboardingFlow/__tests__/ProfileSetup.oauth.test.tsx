@@ -263,6 +263,103 @@ describe('ProfileSetup OAuth Integration', () => {
       expect(initialsElement).toBeInTheDocument();
     });
 
+    it('should sanitize vbscript URLs in OAuth data', () => {
+      const vbscriptOAuthData = {
+        name: 'VB User',
+        picture: 'vbscript:alert(1)',
+        email: 'vb@example.com',
+      };
+
+      render(<ProfileSetup {...defaultProps} oauthData={vbscriptOAuthData} />);
+
+      const avatarImg = screen.queryByTestId('avatar-preview');
+      expect(avatarImg).toBeNull();
+
+      const initialsElement = screen.getByText('VU');
+      expect(initialsElement).toBeInTheDocument();
+    });
+
+    it('should sanitize data URLs with script content in OAuth data', () => {
+      const dataUrlOAuthData = {
+        name: 'Data User',
+        picture: 'data:text/html,<script>alert(1)</script>',
+        email: 'data@example.com',
+      };
+
+      render(<ProfileSetup {...defaultProps} oauthData={dataUrlOAuthData} />);
+
+      const avatarImg = screen.queryByTestId('avatar-preview');
+      expect(avatarImg).toBeNull();
+
+      const initialsElement = screen.getByText('DU');
+      expect(initialsElement).toBeInTheDocument();
+    });
+
+    it('should sanitize SVG with onload event handlers in OAuth data', () => {
+      const svgOAuthData = {
+        name: 'SVG User',
+        picture: '<svg onload=alert(1)>',
+        email: 'svg@example.com',
+      };
+
+      render(<ProfileSetup {...defaultProps} oauthData={svgOAuthData} />);
+
+      const avatarImg = screen.queryByTestId('avatar-preview');
+      expect(avatarImg).toBeNull();
+
+      const initialsElement = screen.getByText('SU');
+      expect(initialsElement).toBeInTheDocument();
+    });
+
+    it('should sanitize javascript void URLs in OAuth data', () => {
+      const jsVoidOAuthData = {
+        name: 'JS Void User',
+        picture: 'javascript:void(0)',
+        email: 'jsvoid@example.com',
+      };
+
+      render(<ProfileSetup {...defaultProps} oauthData={jsVoidOAuthData} />);
+
+      const avatarImg = screen.queryByTestId('avatar-preview');
+      expect(avatarImg).toBeNull();
+
+      // Check for correct initials - JS Void User should generate "JV" (first letter of first two words)
+      const initialsElement = screen.getByText('JV');
+      expect(initialsElement).toBeInTheDocument();
+    });
+
+    it('should handle multiple XSS vectors comprehensively', () => {
+      const xssVectors = [
+        'vbscript:alert(1)',
+        'data:text/html,<script>alert(1)</script>',
+        '<svg onload=alert(1)>',
+        'javascript:void(0)',
+        'data:image/svg+xml,<svg onload=alert(1)>',
+        'javascript:eval("alert(1)")',
+      ];
+
+      xssVectors.forEach((vector, index) => {
+        const maliciousData = {
+          name: `XSS User ${index}`,
+          picture: vector,
+          email: `xss${index}@example.com`,
+        };
+
+        const { unmount } = render(<ProfileSetup {...defaultProps} oauthData={maliciousData} />);
+
+        // All malicious URLs should be sanitized and show initials instead
+        const avatarImg = screen.queryByTestId('avatar-preview');
+        expect(avatarImg).toBeNull();
+
+        // Should show user initials (first letters of name)
+        const expectedInitials = `XU`;
+        const initialsElement = screen.getByText(expectedInitials);
+        expect(initialsElement).toBeInTheDocument();
+
+        unmount();
+      });
+    });
+
     it('should handle OAuth avatar CORS failures gracefully', async () => {
       const corsFailingOAuth = {
         name: 'CORS User',

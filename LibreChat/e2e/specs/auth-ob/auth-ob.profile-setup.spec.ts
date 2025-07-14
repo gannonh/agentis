@@ -397,10 +397,8 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
         timeout: 10000,
       });
       await page.fill('[data-testid="profile-name-input"]', 'First User');
-      // Use unique username based on timestamp (max 20 chars)
-      const timestamp = Date.now().toString();
-      const uniqueUsername = `user${timestamp.slice(-12)}`; // Max 16 chars (user + 12 digits)
-      await page.fill('[data-testid="profile-username-input"]', uniqueUsername);
+      // Use consistent username for conflict testing
+      await page.fill('[data-testid="profile-username-input"]', 'testuser');
       await expect(page.locator('[data-testid="username-available"]')).toBeVisible({
         timeout: 10000,
       });

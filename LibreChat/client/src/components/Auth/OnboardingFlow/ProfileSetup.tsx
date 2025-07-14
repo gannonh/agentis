@@ -38,24 +38,30 @@ interface ProfileSetupProps {
 const sanitizeAvatarUrl = (url: string): string => {
   if (!url) return '';
 
-  // Block dangerous protocols
-  const dangerousProtocols = ['javascript:', 'vbscript:', 'file:', 'about:'];
-  const lowercaseUrl = url.toLowerCase().trim();
+  const trimmedUrl = url.trim();
+  const lowercaseUrl = trimmedUrl.toLowerCase();
 
+  // Block dangerous protocols
+  const dangerousProtocols = ['javascript:', 'vbscript:', 'file:', 'about:', 'data:'];
+  
   for (const protocol of dangerousProtocols) {
     if (lowercaseUrl.startsWith(protocol)) {
       return ''; // Return empty string for dangerous URLs
     }
   }
 
-  // Only allow http/https URLs, relative paths, or data URLs (for server uploads)
+  // Block any HTML/XML content that could contain event handlers
+  if (trimmedUrl.includes('<') || trimmedUrl.includes('>')) {
+    return '';
+  }
+
+  // Only allow http/https URLs or relative paths
   if (
     lowercaseUrl.startsWith('http://') ||
     lowercaseUrl.startsWith('https://') ||
-    lowercaseUrl.startsWith('/') ||
-    lowercaseUrl.startsWith('data:')
+    lowercaseUrl.startsWith('/')
   ) {
-    return url;
+    return trimmedUrl;
   }
 
   // If it doesn't match safe patterns, return empty
