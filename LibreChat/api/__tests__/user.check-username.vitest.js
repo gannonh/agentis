@@ -376,7 +376,7 @@ describe('GET /api/user/check-username', () => {
 
       expect(findOneSpy).toHaveBeenCalledWith({
         username: 'testuser',
-        _id: { $ne: mockUser.id },
+        _id: { $ne: new mongoose.Types.ObjectId(mockUser.id) }, // Fixed: now uses ObjectId
       });
 
       findOneSpy.mockRestore();
@@ -389,10 +389,67 @@ describe('GET /api/user/check-username', () => {
 
       expect(findOneSpy).toHaveBeenCalledWith({
         username: 'testuser', // Should be lowercase
-        _id: { $ne: mockUser.id },
+        _id: { $ne: new mongoose.Types.ObjectId(mockUser.id) }, // Fixed: now uses ObjectId
       });
 
       findOneSpy.mockRestore();
+    });
+  });
+
+  describe('Bug Verification Tests', () => {
+    it('should demonstrate MongoDB type coercion works correctly in this environment', async () => {
+      // Create a user with ObjectId _id (simulating real database behavior)
+      const realObjectId = new mongoose.Types.ObjectId();
+
+      // Create user directly in database with ObjectId
+      const testUserWithObjectId = await User.create({
+        _id: realObjectId,
+        email: 'objectid@example.com',
+        name: 'Object ID User',
+        provider: 'local',
+        username: 'objectiduser',
+        emailVerified: true,
+      });
+
+      // Mock the auth middleware to return string ID (like Better Auth does)
+      const originalMockUser = { ...mockUser };
+      mockUser.id = realObjectId.toString(); // String version of ObjectId
+
+      const response = await request(app)
+        .get('/api/user/check-username')
+        .query({ username: 'objectiduser' });
+
+      // In this test environment, MongoDB type coercion works and excludes the user properly
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        available: true, // User is properly excluded
+        username: 'objectiduser',
+      });
+
+      // Clean up
+      Object.assign(mockUser, originalMockUser);
+    });
+
+    it('should demonstrate case sensitivity works correctly due to lowercase schema', async () => {
+      // Create a user with uppercase username
+      await User.create({
+        email: 'case@example.com',
+        username: 'TestUser', // Will be stored as lowercase in DB due to schema
+        provider: 'local',
+        emailVerified: true,
+      });
+
+      // Try to check lowercase version
+      const response = await request(app)
+        .get('/api/user/check-username')
+        .query({ username: 'testuser' });
+
+      // This should return available=false because lowercase schema handles case-insensitivity
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        available: false,
+        username: 'testuser',
+      });
     });
   });
 

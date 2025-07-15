@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import {
   requireBetterAuth,
   canDeleteAccount,
@@ -207,7 +208,7 @@ router.get('/check-username', usernameCheckLimiter, requireBetterAuth, async (re
     // Check if username exists in user schema (username field is in main schema)
     const existingUser = await User.findOne({
       username: username.toLowerCase(),
-      _id: { $ne: req.user.id }, // Exclude current user
+      _id: { $ne: new mongoose.Types.ObjectId(req.user.id) }, // Convert string ID to ObjectId
     });
 
     res.json({

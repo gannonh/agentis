@@ -750,7 +750,7 @@ describe('ProfileSetup Form Validation', () => {
 
     it('should show username as optional in UI', () => {
       render(<ProfileSetup {...defaultProps} />);
-      
+
       // Username label should not have asterisk (indicating it's optional)
       expect(screen.getByText('Username')).toBeInTheDocument();
       expect(screen.queryByText('Username *')).not.toBeInTheDocument();
