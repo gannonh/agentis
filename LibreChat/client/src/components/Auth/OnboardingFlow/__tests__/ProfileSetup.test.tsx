@@ -717,6 +717,46 @@ describe('ProfileSetup Form Validation', () => {
     });
   });
 
+  describe('Username Optional Field Bug', () => {
+    it('should allow form submission with empty username (bug verification)', async () => {
+      render(<ProfileSetup {...defaultProps} />);
+      const nameInput = screen.getByTestId('profile-name-input');
+      const usernameInput = screen.getByTestId('profile-username-input');
+      const continueButton = screen.getByTestId('profile-continue-button');
+
+      // Fill in required name field
+      await user.clear(nameInput);
+      await user.type(nameInput, 'John Doe');
+
+      // Clear username to make it empty (should be optional)
+      await user.clear(usernameInput);
+
+      // Wait for form validation to process
+      await waitFor(() => {
+        // The button should be enabled since username is optional
+        // This test will fail with the current bug
+        expect(continueButton).not.toBeDisabled();
+      });
+
+      // Should be able to submit with empty username
+      await user.click(continueButton);
+
+      expect(mockOnProfileComplete).toHaveBeenCalledWith({
+        name: 'John Doe',
+        username: '',
+        avatar: '',
+      });
+    });
+
+    it('should show username as optional in UI', () => {
+      render(<ProfileSetup {...defaultProps} />);
+      
+      // Username label should not have asterisk (indicating it's optional)
+      expect(screen.getByText('Username')).toBeInTheDocument();
+      expect(screen.queryByText('Username *')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Accessibility and User Experience', () => {
     it('should have proper form labels and associations', () => {
       render(<ProfileSetup {...defaultProps} />);
