@@ -38,7 +38,19 @@ const createSession = async (userId, options = {}) => {
   // Check if Session model is disabled (null) due to Better Auth
   if (!Session) {
     logger.debug('[createSession] Session model disabled - using Better Auth session management');
-    throw new SessionError('Session creation handled by Better Auth', 'BETTER_AUTH_SESSIONS');
+
+    // Return a mock session object to maintain API contract consistency
+    // This follows the same pattern as other session functions when Session is disabled
+    return {
+      session: {
+        user: userId,
+        expiration: options.expiration || new Date(Date.now() + expires),
+        _id: null, // Better Auth manages session IDs
+        refreshTokenHash: null, // Better Auth manages refresh tokens
+        save: () => Promise.resolve({}), // Mock save method
+      },
+      refreshToken: 'better-auth-managed', // Indicate Better Auth management
+    };
   }
 
   try {
