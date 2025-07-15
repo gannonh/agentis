@@ -5,10 +5,16 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authClient } from '../config/betterAuth';
+import { useGetUserQuery } from '~/data-provider/Auth/queries';
 
 export function useAuthContext() {
   const { data: session } = authClient.useSession();
   const navigate = useNavigate();
+
+  // Fetch complete user data from database (only when authenticated)
+  const { data: dbUser } = useGetUserQuery({
+    enabled: !!session?.user?.id,
+  });
 
   const logout = async () => {
     try {
@@ -26,18 +32,30 @@ export function useAuthContext() {
   const user = session?.user
     ? {
         ...session.user,
-        // Add legacy fields that components expect
-        avatar: session.user.image || '',
-        provider: 'local', // Default provider
-        role: session.user.role || 'user', // Use actual role from Better Auth session
+        // Merge database user data if available
+        ...(dbUser && {
+          name: dbUser.name || session.user.name,
+          username: dbUser.username,
+          // Prioritize custom avatar from database over OAuth image
+          avatar: dbUser.avatar || session.user.image || '',
+          provider: dbUser.provider || 'local',
+          role: dbUser.role || session.user.role || 'user',
+          plugins: dbUser.plugins || [],
+          twoFactorEnabled: dbUser.twoFactorEnabled || false,
+          backupCodes: dbUser.backupCodes || [],
+        }),
+        // Fallback to session data if no database user
+        ...(!dbUser && {
+          avatar: session.user.image || '',
+          provider: 'local',
+          role: session.user.role || 'user',
+          plugins: [],
+          twoFactorEnabled: false,
+          backupCodes: [],
+        }),
         // Convert dates to strings to match TUser type
         createdAt: session.user.createdAt?.toISOString() || new Date().toISOString(),
         updatedAt: session.user.updatedAt?.toISOString() || new Date().toISOString(),
-        // Add missing fields with default values
-        plugins: (session.user as any).plugins || [],
-        twoFactorEnabled: (session.user as any).twoFactorEnabled || false,
-        backupCodes: (session.user as any).backupCodes || [],
-        // Keep all Better Auth fields
       }
     : null;
 
