@@ -46,10 +46,10 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
         onboardingStep,
         updatedAt: new Date(),
       },
-      { 
+      {
         new: true, // Return the updated document
-        runValidators: true // Ensure schema validations are applied
-      }
+        runValidators: true, // Ensure schema validations are applied
+      },
     );
 
     if (!updatedUser) {

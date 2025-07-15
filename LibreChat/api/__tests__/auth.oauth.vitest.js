@@ -434,7 +434,9 @@ describe('OAuth Profile Mapping Integration', () => {
           state: 'random-state-value',
         };
 
-        await expect(mapProfileToUser(errorResponse)).rejects.toThrow('OAuth Error: access_denied - The user denied the request');
+        await expect(mapProfileToUser(errorResponse)).rejects.toThrow(
+          'OAuth Error: access_denied - The user denied the request',
+        );
       });
 
       it('should throw OAuthError for invalid_token scenarios', async () => {
@@ -443,7 +445,9 @@ describe('OAuth Profile Mapping Integration', () => {
           error_description: 'The access token provided is expired, revoked, malformed, or invalid',
         };
 
-        await expect(mapProfileToUser(invalidTokenResponse)).rejects.toThrow('OAuth Error: invalid_token');
+        await expect(mapProfileToUser(invalidTokenResponse)).rejects.toThrow(
+          'OAuth Error: invalid_token',
+        );
       });
 
       it('should throw OAuthError for server_error with provider details', async () => {
@@ -453,7 +457,9 @@ describe('OAuth Profile Mapping Integration', () => {
           error_uri: 'https://provider.com/error-docs',
         };
 
-        await expect(mapProfileToUser(serverErrorResponse)).rejects.toThrow('OAuth Error: server_error');
+        await expect(mapProfileToUser(serverErrorResponse)).rejects.toThrow(
+          'OAuth Error: server_error',
+        );
       });
 
       it('should throw OAuthError for rate limiting with retry information', async () => {
@@ -463,60 +469,78 @@ describe('OAuth Profile Mapping Integration', () => {
           retry_after: 3600,
         };
 
-        await expect(mapProfileToUser(rateLimitResponse)).rejects.toThrow('OAuth Error: rate_limit_exceeded');
+        await expect(mapProfileToUser(rateLimitResponse)).rejects.toThrow(
+          'OAuth Error: rate_limit_exceeded',
+        );
       });
 
       it('should throw OAuthError for insufficient scope permissions', async () => {
         const scopeErrorResponse = {
           error: 'insufficient_scope',
-          error_description: 'The request requires higher privileges than provided by the access token',
+          error_description:
+            'The request requires higher privileges than provided by the access token',
           scope: 'email profile',
         };
 
-        await expect(mapProfileToUser(scopeErrorResponse)).rejects.toThrow('OAuth Error: insufficient_scope');
+        await expect(mapProfileToUser(scopeErrorResponse)).rejects.toThrow(
+          'OAuth Error: insufficient_scope',
+        );
       });
 
       it('should throw OAuthError for provider maintenance mode', async () => {
         const maintenanceResponse = {
           error: 'temporarily_unavailable',
-          error_description: 'The authorization server is currently unable to handle the request due to maintenance',
+          error_description:
+            'The authorization server is currently unable to handle the request due to maintenance',
           maintenance_mode: true,
         };
 
-        await expect(mapProfileToUser(maintenanceResponse)).rejects.toThrow('OAuth Error: temporarily_unavailable');
+        await expect(mapProfileToUser(maintenanceResponse)).rejects.toThrow(
+          'OAuth Error: temporarily_unavailable',
+        );
       });
     });
 
     describe('Input Validation', () => {
       it('should throw ValidationError for null input', async () => {
-        await expect(mapProfileToUser(null)).rejects.toThrow('Invalid OAuth profile: profile cannot be null or undefined');
+        await expect(mapProfileToUser(null)).rejects.toThrow(
+          'Invalid OAuth profile: profile cannot be null or undefined',
+        );
       });
 
       it('should throw ValidationError for undefined input', async () => {
-        await expect(mapProfileToUser(undefined)).rejects.toThrow('Invalid OAuth profile: profile cannot be null or undefined');
+        await expect(mapProfileToUser(undefined)).rejects.toThrow(
+          'Invalid OAuth profile: profile cannot be null or undefined',
+        );
       });
 
       it('should throw ValidationError for non-object input', async () => {
         const invalidInputs = ['string', 123, [], true];
 
         for (const input of invalidInputs) {
-          await expect(mapProfileToUser(input)).rejects.toThrow('Invalid OAuth profile: profile must be an object');
+          await expect(mapProfileToUser(input)).rejects.toThrow(
+            'Invalid OAuth profile: profile must be an object',
+          );
         }
       });
 
       it('should throw ValidationError for empty object', async () => {
-        await expect(mapProfileToUser({})).rejects.toThrow('Invalid OAuth profile: missing required fields');
+        await expect(mapProfileToUser({})).rejects.toThrow(
+          'Invalid OAuth profile: missing required fields',
+        );
       });
 
       it('should throw ValidationError for profile missing critical data', async () => {
         const incompleteProfiles = [
-          { name: 'Test User' },             // Missing id and email
-          { picture: 'http://test.com' },    // Missing id and email
+          { name: 'Test User' }, // Missing id and email
+          { picture: 'http://test.com' }, // Missing id and email
         ];
 
         for (const profile of incompleteProfiles) {
           mockUserCollection.findOne.mockResolvedValue(null);
-          await expect(mapProfileToUser(profile)).rejects.toThrow('Invalid OAuth profile: missing required fields');
+          await expect(mapProfileToUser(profile)).rejects.toThrow(
+            'Invalid OAuth profile: missing required fields',
+          );
         }
       });
 
@@ -551,7 +575,9 @@ describe('OAuth Profile Mapping Integration', () => {
           });
         });
 
-        await expect(mapProfileToUser(validProfile)).rejects.toThrow('Database Error: ETIMEDOUT: Connection timeout');
+        await expect(mapProfileToUser(validProfile)).rejects.toThrow(
+          'Database Error: ETIMEDOUT: Connection timeout',
+        );
       });
 
       it('should handle database connection failures', async () => {
@@ -565,7 +591,9 @@ describe('OAuth Profile Mapping Integration', () => {
 
         mockUserCollection.findOne.mockRejectedValue(new Error('ENOTFOUND: DNS lookup failed'));
 
-        await expect(mapProfileToUser(validProfile)).rejects.toThrow('Database Error: ENOTFOUND: DNS lookup failed');
+        await expect(mapProfileToUser(validProfile)).rejects.toThrow(
+          'Database Error: ENOTFOUND: DNS lookup failed',
+        );
       });
 
       it('should handle database authentication failures', async () => {
@@ -578,7 +606,9 @@ describe('OAuth Profile Mapping Integration', () => {
 
         mockUserCollection.findOne.mockRejectedValue(new Error('Authentication failed'));
 
-        await expect(mapProfileToUser(validProfile)).rejects.toThrow('Database Error: Authentication failed');
+        await expect(mapProfileToUser(validProfile)).rejects.toThrow(
+          'Database Error: Authentication failed',
+        );
       });
     });
 
@@ -605,8 +635,8 @@ describe('OAuth Profile Mapping Integration', () => {
 
       it('should validate required string fields are not empty', async () => {
         const invalidProfiles = [
-          { id: '', email: 'test@example.com', name: 'Test' },           // Empty ID
-          { id: null, email: 'test@example.com', name: 'Test' },         // Null ID
+          { id: '', email: 'test@example.com', name: 'Test' }, // Empty ID
+          { id: null, email: 'test@example.com', name: 'Test' }, // Null ID
         ];
 
         for (const profile of invalidProfiles) {

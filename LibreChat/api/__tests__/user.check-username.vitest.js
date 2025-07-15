@@ -30,17 +30,17 @@ vi.mock('#server/middleware.js', () => ({
     // Mock rate limiter - for actual rate limiting tests
     const requestCount = req.app.locals.requestCount || 0;
     req.app.locals.requestCount = requestCount + 1;
-    
+
     // Set rate limit headers
     res.set('X-RateLimit-Limit', '10');
     res.set('X-RateLimit-Remaining', Math.max(0, 10 - req.app.locals.requestCount));
     res.set('X-RateLimit-Reset', new Date(Date.now() + 60000).toISOString());
-    
+
     // Simulate rate limiting after 10 requests
     if (req.app.locals.requestCount > 10) {
       return res.status(429).json({ message: 'Too many requests, please try again later.' });
     }
-    
+
     next();
   },
 }));
@@ -352,7 +352,7 @@ describe('GET /api/user/check-username', () => {
         // Could fail on length validation or character validation
         expect([
           'Username must be 3-20 characters long',
-          'Username can only contain letters, numbers, underscores, and hyphens'
+          'Username can only contain letters, numbers, underscores, and hyphens',
         ]).toContain(response.body.error);
       }
     });
@@ -490,29 +490,29 @@ describe('GET /api/user/check-username', () => {
   describe('Rate Limiting Security Tests', () => {
     it('should apply rate limiting to prevent username enumeration attacks', async () => {
       // Make 100 rapid requests to test rate limiting
-      const requests = Array.from({ length: 100 }, (_, i) => 
+      const requests = Array.from({ length: 100 }, (_, i) =>
         request(app)
           .get('/api/user/check-username')
-          .query({ username: `testuser${i}` })
+          .query({ username: `testuser${i}` }),
       );
 
       const responses = await Promise.all(requests);
-      
+
       // Count successful and rate-limited responses
-      const successfulResponses = responses.filter(res => res.status === 200);
-      const rateLimitedResponses = responses.filter(res => res.status === 429);
-      
+      const successfulResponses = responses.filter((res) => res.status === 200);
+      const rateLimitedResponses = responses.filter((res) => res.status === 429);
+
       // Rate limiting should kick in after 10 requests per minute
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
       expect(rateLimitedResponses.length).toBeGreaterThan(85); // At least 85% should be rate limited
-      
+
       // Verify rate limited responses have proper error message
-      rateLimitedResponses.forEach(response => {
+      rateLimitedResponses.forEach((response) => {
         expect(response.status).toBe(429);
         expect(response.body).toHaveProperty('message');
         expect(response.body.message).toMatch(/Too many requests|rate limit/i);
       });
-      
+
       // Only the first 10 requests should succeed (10 requests per minute limit)
       expect(successfulResponses.length).toBeLessThanOrEqual(10);
       expect(successfulResponses.length).toBeGreaterThan(0);
