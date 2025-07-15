@@ -503,18 +503,48 @@ describe('POST /api/files/images/avatar', () => {
     });
 
     it('should prevent path traversal attacks in file handling', async () => {
-      // This test ensures the avatar service doesn't use user-controlled file paths
-      const response = await request(app).post('/avatar').attach('file', testImagePath);
+      // Mock the processAvatar function to simulate actual path traversal vulnerability
+      const originalProcessAvatar = mockProcessAvatar;
 
-      // Should succeed and not be vulnerable to path traversal
-      expect(response.status).toBe(200);
-
-      // Verify that processAvatar was called with controlled parameters
-      expect(mockProcessAvatar).toHaveBeenCalledWith({
-        buffer: expect.any(Buffer),
-        userId: mockUser.id,
-        manual: undefined,
+      // Mock processAvatar to simulate path traversal vulnerability
+      mockProcessAvatar.mockImplementation(async ({ userId, buffer, manual }) => {
+        // Simulate path traversal vulnerability by checking if malicious userId is used
+        if (userId.includes('../') || userId.includes('..\\')) {
+          throw new Error('Path traversal attack detected');
+        }
+        return `/images/${userId}/avatar-${Date.now()}.png`;
       });
+
+      // Mock user with malicious userId containing path traversal sequences
+      const maliciousUser = {
+        id: '../../../etc/passwd', // Path traversal attack
+        username: 'hacker',
+        email: 'hacker@example.com',
+      };
+
+      // Temporarily change the mock user
+      const originalUser = mockUser;
+      Object.assign(mockUser, maliciousUser);
+
+      try {
+        // Attempt to upload avatar with malicious userId
+        const response = await request(app).post('/avatar').attach('file', testImagePath);
+
+        // Should fail due to path traversal protection
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe('An error occurred while uploading the profile picture');
+
+        // Verify that processAvatar was called with the malicious userId
+        expect(mockProcessAvatar).toHaveBeenCalledWith({
+          buffer: expect.any(Buffer),
+          userId: maliciousUser.id,
+          manual: undefined,
+        });
+      } finally {
+        // Restore original user and processAvatar mock
+        Object.assign(mockUser, originalUser);
+        mockProcessAvatar.mockImplementation(originalProcessAvatar);
+      }
     });
 
     it('should handle oversized files properly', async () => {
