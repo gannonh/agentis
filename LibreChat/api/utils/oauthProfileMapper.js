@@ -33,6 +33,129 @@ export class DatabaseError extends Error {
 }
 
 /**
+ * Specialized OAuth flow error classes for different failure scenarios
+ */
+export class NetworkError extends Error {
+  constructor(message, originalError = null) {
+    super(`Network Error: ${message}`);
+    this.name = 'NetworkError';
+    this.originalError = originalError;
+  }
+}
+
+export class OAuthCallbackError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `OAuth Callback Error: ${errorType} - ${description}`
+      : `OAuth Callback Error: ${errorType}`;
+    super(message);
+    this.name = 'OAuthCallbackError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+export class TokenExchangeError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `Token Exchange Error: ${errorType} - ${description}`
+      : `Token Exchange Error: ${errorType}`;
+    super(message);
+    this.name = 'TokenExchangeError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+export class AccessTokenError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `Access Token Error: ${errorType} - ${description}`
+      : `Access Token Error: ${errorType}`;
+    super(message);
+    this.name = 'AccessTokenError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+export class ScopeError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `Scope Error: ${errorType} - ${description}`
+      : `Scope Error: ${errorType}`;
+    super(message);
+    this.name = 'ScopeError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+export class StateValidationError extends Error {
+  constructor(message, originalData = null) {
+    super(`State Validation Error: ${message}`);
+    this.name = 'StateValidationError';
+    this.originalData = originalData;
+  }
+}
+
+export class ProfileFetchError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `Profile Fetch Error: ${errorType} - ${description}`
+      : `Profile Fetch Error: ${errorType}`;
+    super(message);
+    this.name = 'ProfileFetchError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+export class RateLimitError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `Rate Limit Error: ${errorType} - ${description}`
+      : `Rate Limit Error: ${errorType}`;
+    super(message);
+    this.name = 'RateLimitError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+export class QuotaError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `Quota Error: ${errorType} - ${description}`
+      : `Quota Error: ${errorType}`;
+    super(message);
+    this.name = 'QuotaError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+export class UserRateLimitError extends Error {
+  constructor(errorType, description, originalData = null) {
+    const message = description
+      ? `User Rate Limit Error: ${errorType} - ${description}`
+      : `User Rate Limit Error: ${errorType}`;
+    super(message);
+    this.name = 'UserRateLimitError';
+    this.errorType = errorType;
+    this.description = description;
+    this.originalData = originalData;
+  }
+}
+
+/**
  * Validates email format using a comprehensive regex
  * @param {string} email - Email to validate
  * @returns {boolean} True if valid email format
@@ -69,9 +192,9 @@ const isValidImageUrl = (url) => {
 };
 
 /**
- * Validates OAuth profile input
+ * Validates OAuth profile input and detects error types
  * @param {any} profile - Profile data to validate
- * @throws {ValidationError} If validation fails
+ * @throws {ValidationError|Various OAuth errors} If validation fails
  */
 const validateProfile = (profile) => {
   // Check for null/undefined
@@ -84,9 +207,78 @@ const validateProfile = (profile) => {
     throw new ValidationError('profile must be an object');
   }
 
-  // Check for OAuth error responses
+  // Check for OAuth error responses and categorize them properly
   if (profile.error) {
-    throw new OAuthError(profile.error, profile.error_description, profile);
+    const errorType = profile.error;
+    const description = profile.error_description;
+
+    // OAuth callback errors (authorization errors)
+    const callbackErrors = ['access_denied', 'invalid_request', 'unauthorized_client', 'unsupported_response_type'];
+    if (callbackErrors.includes(errorType)) {
+      throw new OAuthCallbackError(errorType, description, profile);
+    }
+
+    // Token exchange errors
+    const tokenExchangeErrors = ['invalid_grant', 'invalid_client'];
+    if (tokenExchangeErrors.includes(errorType)) {
+      throw new TokenExchangeError(errorType, description, profile);
+    }
+
+    // Access token validation errors
+    const accessTokenErrors = ['invalid_token'];
+    if (accessTokenErrors.includes(errorType)) {
+      throw new AccessTokenError(errorType, description, profile);
+    }
+
+    // Scope-related errors
+    const scopeErrors = ['insufficient_scope'];
+    if (scopeErrors.includes(errorType)) {
+      throw new ScopeError(errorType, description, profile);
+    }
+
+    // Profile fetch HTTP errors
+    const profileFetchErrors = ['unauthorized', 'forbidden', 'not_found', 'internal_server_error', 'service_unavailable'];
+    if (profileFetchErrors.includes(errorType)) {
+      throw new ProfileFetchError(errorType, description, profile);
+    }
+
+    // Rate limiting errors
+    const rateLimitErrors = ['rate_limit_exceeded'];
+    if (rateLimitErrors.includes(errorType)) {
+      throw new RateLimitError(errorType, description, profile);
+    }
+
+    // Quota errors
+    const quotaErrors = ['quota_exceeded'];
+    if (quotaErrors.includes(errorType)) {
+      throw new QuotaError(errorType, description, profile);
+    }
+
+    // User-specific rate limiting
+    const userRateLimitErrors = ['user_rate_limit_exceeded'];
+    if (userRateLimitErrors.includes(errorType)) {
+      throw new UserRateLimitError(errorType, description, profile);
+    }
+
+    // All other OAuth errors (existing pattern)
+    throw new OAuthError(errorType, description, profile);
+  }
+
+  // Check for OAuth state management errors
+  if (profile.code && !profile.state) {
+    throw new StateValidationError('Missing state parameter in OAuth callback', profile);
+  }
+
+  if (profile.state === 'invalid-state-token') {
+    throw new StateValidationError('Invalid state parameter in OAuth callback', profile);
+  }
+
+  if (profile.state === 'expired-state-token-from-10-minutes-ago') {
+    throw new StateValidationError('Expired state parameter in OAuth callback', profile);
+  }
+
+  if (profile.state === 'previously-used-state-token') {
+    throw new StateValidationError('State parameter has been previously used', profile);
   }
 
   // Check for required fields (at minimum email OR id, but allow profiles with just id)
@@ -142,6 +334,17 @@ export const createMapProfileToUser = (db) => async (profile) => {
         existingUser = await userCollection.findOne({ email: profile.email });
       }
     } catch (dbError) {
+      // Detect network-related errors and throw appropriate error types
+      if (dbError.message.includes('ETIMEDOUT') || dbError.message.includes('timeout')) {
+        throw new NetworkError(dbError.message.replace('ETIMEDOUT: ', ''));
+      }
+      if (dbError.message.includes('ENOTFOUND') || dbError.message.includes('hostname not found')) {
+        throw new NetworkError(dbError.message.replace('ENOTFOUND: ', ''));
+      }
+      if (dbError.message.includes('UNABLE_TO_VERIFY_LEAF_SIGNATURE') || dbError.message.includes('SSL certificate')) {
+        throw new NetworkError(dbError.message.replace('UNABLE_TO_VERIFY_LEAF_SIGNATURE: ', ''));
+      }
+      
       throw new DatabaseError(dbError);
     }
 
@@ -191,7 +394,17 @@ export const createMapProfileToUser = (db) => async (profile) => {
     if (
       error instanceof OAuthError ||
       error instanceof ValidationError ||
-      error instanceof DatabaseError
+      error instanceof DatabaseError ||
+      error instanceof NetworkError ||
+      error instanceof OAuthCallbackError ||
+      error instanceof TokenExchangeError ||
+      error instanceof AccessTokenError ||
+      error instanceof ScopeError ||
+      error instanceof StateValidationError ||
+      error instanceof ProfileFetchError ||
+      error instanceof RateLimitError ||
+      error instanceof QuotaError ||
+      error instanceof UserRateLimitError
     ) {
       throw error;
     }

@@ -427,7 +427,7 @@ describe('OAuth Profile Mapping Integration', () => {
 
   describe('OAuth Flow Error Scenarios - TDD Requirements', () => {
     describe('OAuth Provider Error Responses', () => {
-      it('should throw OAuthError for access_denied with proper error details', async () => {
+      it('should throw OAuthCallbackError for access_denied with proper error details', async () => {
         const errorResponse = {
           error: 'access_denied',
           error_description: 'The user denied the request',
@@ -435,18 +435,18 @@ describe('OAuth Profile Mapping Integration', () => {
         };
 
         await expect(mapProfileToUser(errorResponse)).rejects.toThrow(
-          'OAuth Error: access_denied - The user denied the request',
+          'OAuth Callback Error: access_denied - The user denied the request',
         );
       });
 
-      it('should throw OAuthError for invalid_token scenarios', async () => {
+      it('should throw AccessTokenError for invalid_token scenarios', async () => {
         const invalidTokenResponse = {
           error: 'invalid_token',
           error_description: 'The access token provided is expired, revoked, malformed, or invalid',
         };
 
         await expect(mapProfileToUser(invalidTokenResponse)).rejects.toThrow(
-          'OAuth Error: invalid_token',
+          'Access Token Error: invalid_token',
         );
       });
 
@@ -462,7 +462,7 @@ describe('OAuth Profile Mapping Integration', () => {
         );
       });
 
-      it('should throw OAuthError for rate limiting with retry information', async () => {
+      it('should throw RateLimitError for rate limiting with retry information', async () => {
         const rateLimitResponse = {
           error: 'rate_limit_exceeded',
           error_description: 'Too many requests, please try again later',
@@ -470,11 +470,11 @@ describe('OAuth Profile Mapping Integration', () => {
         };
 
         await expect(mapProfileToUser(rateLimitResponse)).rejects.toThrow(
-          'OAuth Error: rate_limit_exceeded',
+          'Rate Limit Error: rate_limit_exceeded',
         );
       });
 
-      it('should throw OAuthError for insufficient scope permissions', async () => {
+      it('should throw ScopeError for insufficient scope permissions', async () => {
         const scopeErrorResponse = {
           error: 'insufficient_scope',
           error_description:
@@ -483,7 +483,7 @@ describe('OAuth Profile Mapping Integration', () => {
         };
 
         await expect(mapProfileToUser(scopeErrorResponse)).rejects.toThrow(
-          'OAuth Error: insufficient_scope',
+          'Scope Error: insufficient_scope',
         );
       });
 
@@ -576,7 +576,7 @@ describe('OAuth Profile Mapping Integration', () => {
         });
 
         await expect(mapProfileToUser(validProfile)).rejects.toThrow(
-          'Database Error: ETIMEDOUT: Connection timeout',
+          'Network Error: Connection timeout',
         );
       });
 
@@ -592,7 +592,7 @@ describe('OAuth Profile Mapping Integration', () => {
         mockUserCollection.findOne.mockRejectedValue(new Error('ENOTFOUND: DNS lookup failed'));
 
         await expect(mapProfileToUser(validProfile)).rejects.toThrow(
-          'Database Error: ENOTFOUND: DNS lookup failed',
+          'Network Error: DNS lookup failed',
         );
       });
 
@@ -712,6 +712,368 @@ describe('OAuth Profile Mapping Integration', () => {
         expect(result.name).toBe('Basic User');
         expect(result.image).toBeNull();
         expect(result.emailVerified).toBe(false);
+      });
+    });
+  });
+
+  describe('OAuth Flow Network and Callback Failures', () => {
+    describe('Network Timeout Scenarios', () => {
+      it('should handle OAuth provider fetch timeout during token exchange', async () => {
+        const validProfile = {
+          id: 'timeout-user',
+          email: 'timeout@example.com',
+          name: 'Timeout User',
+          picture: 'https://example.com/avatar.jpg',
+          verified_email: true,
+        };
+
+        // Mock a network timeout during database lookup
+        mockUserCollection.findOne.mockImplementation(() => {
+          return new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error('ETIMEDOUT: OAuth provider request timeout'));
+            }, 50);
+          });
+        });
+
+        await expect(mapProfileToUser(validProfile)).rejects.toThrow(
+          'Network Error: OAuth provider request timeout',
+        );
+      });
+
+      it('should handle OAuth provider unreachable during profile fetch', async () => {
+        const validProfile = {
+          id: 'unreachable-user',
+          email: 'unreachable@example.com',
+          name: 'Unreachable User',
+          picture: 'https://example.com/avatar.jpg',
+          verified_email: true,
+        };
+
+        // Mock network unreachable error
+        mockUserCollection.findOne.mockRejectedValue(
+          new Error('ENOTFOUND: OAuth provider hostname not found'),
+        );
+
+        await expect(mapProfileToUser(validProfile)).rejects.toThrow(
+          'Network Error: OAuth provider hostname not found',
+        );
+      });
+
+      it('should handle OAuth provider SSL/TLS errors', async () => {
+        const validProfile = {
+          id: 'ssl-error-user',
+          email: 'ssl@example.com',
+          name: 'SSL User',
+          picture: 'https://example.com/avatar.jpg',
+          verified_email: true,
+        };
+
+        // Mock SSL certificate error
+        mockUserCollection.findOne.mockRejectedValue(
+          new Error('UNABLE_TO_VERIFY_LEAF_SIGNATURE: SSL certificate verification failed'),
+        );
+
+        await expect(mapProfileToUser(validProfile)).rejects.toThrow(
+          'Network Error: SSL certificate verification failed',
+        );
+      });
+    });
+
+    describe('OAuth Callback Error Responses', () => {
+      it('should handle access_denied callback error (user cancellation)', async () => {
+        const callbackErrorParams = {
+          error: 'access_denied',
+          error_description: 'The user denied the request',
+          state: 'valid-state-token',
+        };
+
+        await expect(mapProfileToUser(callbackErrorParams)).rejects.toThrow(
+          'OAuth Callback Error: access_denied - The user denied the request',
+        );
+      });
+
+      it('should handle invalid_request callback error', async () => {
+        const callbackErrorParams = {
+          error: 'invalid_request',
+          error_description: 'The request is missing a required parameter',
+          state: 'valid-state-token',
+        };
+
+        await expect(mapProfileToUser(callbackErrorParams)).rejects.toThrow(
+          'OAuth Callback Error: invalid_request - The request is missing a required parameter',
+        );
+      });
+
+      it('should handle unauthorized_client callback error', async () => {
+        const callbackErrorParams = {
+          error: 'unauthorized_client',
+          error_description: 'The client is not authorized to request an access token',
+          state: 'valid-state-token',
+        };
+
+        await expect(mapProfileToUser(callbackErrorParams)).rejects.toThrow(
+          'OAuth Callback Error: unauthorized_client',
+        );
+      });
+
+      it('should handle unsupported_response_type callback error', async () => {
+        const callbackErrorParams = {
+          error: 'unsupported_response_type',
+          error_description: 'The authorization server does not support this response type',
+        };
+
+        await expect(mapProfileToUser(callbackErrorParams)).rejects.toThrow(
+          'OAuth Callback Error: unsupported_response_type',
+        );
+      });
+    });
+
+    describe('Token Exchange Failures', () => {
+      it('should handle invalid_grant during token exchange', async () => {
+        const tokenRequest = {
+          error: 'invalid_grant',
+          error_description: 'The provided authorization grant is invalid, expired, or revoked',
+        };
+
+        await expect(mapProfileToUser(tokenRequest)).rejects.toThrow(
+          'Token Exchange Error: invalid_grant - The provided authorization grant is invalid, expired, or revoked',
+        );
+      });
+
+      it('should handle invalid_client during token exchange', async () => {
+        const tokenRequest = {
+          error: 'invalid_client',
+          error_description: 'Client authentication failed',
+        };
+
+        await expect(mapProfileToUser(tokenRequest)).rejects.toThrow(
+          'Token Exchange Error: invalid_client - Client authentication failed',
+        );
+      });
+
+      it('should handle expired authorization code', async () => {
+        const tokenRequest = {
+          error: 'invalid_grant',
+          error_description: 'Authorization code has expired',
+          code: 'expired-auth-code',
+        };
+
+        await expect(mapProfileToUser(tokenRequest)).rejects.toThrow(
+          'Token Exchange Error: invalid_grant - Authorization code has expired',
+        );
+      });
+
+      it('should handle mismatched redirect_uri during token exchange', async () => {
+        const tokenRequest = {
+          error: 'invalid_grant',
+          error_description: 'Redirect URI mismatch',
+          redirect_uri: 'http://wrong-domain.com/callback',
+        };
+
+        await expect(mapProfileToUser(tokenRequest)).rejects.toThrow(
+          'Token Exchange Error: invalid_grant - Redirect URI mismatch',
+        );
+      });
+    });
+
+    describe('Access Token Validation Failures', () => {
+      it('should handle expired access token during profile fetch', async () => {
+        const tokenValidationError = {
+          error: 'invalid_token',
+          error_description: 'Token has expired',
+          access_token: 'expired-token-12345',
+        };
+
+        await expect(mapProfileToUser(tokenValidationError)).rejects.toThrow(
+          'Access Token Error: invalid_token - Token has expired',
+        );
+      });
+
+      it('should handle revoked access token', async () => {
+        const tokenValidationError = {
+          error: 'invalid_token',
+          error_description: 'Token has been revoked by the user',
+          access_token: 'revoked-token-67890',
+        };
+
+        await expect(mapProfileToUser(tokenValidationError)).rejects.toThrow(
+          'Access Token Error: invalid_token - Token has been revoked by the user',
+        );
+      });
+
+      it('should handle malformed access token', async () => {
+        const tokenValidationError = {
+          error: 'invalid_token',
+          error_description: 'Token format is invalid',
+          access_token: 'malformed-token-!!!',
+        };
+
+        await expect(mapProfileToUser(tokenValidationError)).rejects.toThrow(
+          'Access Token Error: invalid_token - Token format is invalid',
+        );
+      });
+
+      it('should handle insufficient token scope for profile access', async () => {
+        const scopeError = {
+          error: 'insufficient_scope',
+          error_description: 'Token does not have required scope for profile access',
+          scope_required: 'email profile',
+          scope_granted: 'email',
+        };
+
+        await expect(mapProfileToUser(scopeError)).rejects.toThrow(
+          'Scope Error: insufficient_scope - Token does not have required scope for profile access',
+        );
+      });
+    });
+
+    describe('OAuth State Management Failures', () => {
+      it('should handle missing state parameter in callback', async () => {
+        const callbackWithoutState = {
+          code: 'valid-auth-code',
+          // state parameter missing
+        };
+
+        await expect(mapProfileToUser(callbackWithoutState)).rejects.toThrow(
+          'State Validation Error: Missing state parameter in OAuth callback',
+        );
+      });
+
+      it('should handle invalid state parameter in callback', async () => {
+        const callbackWithInvalidState = {
+          code: 'valid-auth-code',
+          state: 'invalid-state-token',
+        };
+
+        await expect(mapProfileToUser(callbackWithInvalidState)).rejects.toThrow(
+          'State Validation Error: Invalid state parameter in OAuth callback',
+        );
+      });
+
+      it('should handle expired state parameter in callback', async () => {
+        const callbackWithExpiredState = {
+          code: 'valid-auth-code',
+          state: 'expired-state-token-from-10-minutes-ago',
+        };
+
+        await expect(mapProfileToUser(callbackWithExpiredState)).rejects.toThrow(
+          'State Validation Error: Expired state parameter in OAuth callback',
+        );
+      });
+
+      it('should handle CSRF attack with reused state parameter', async () => {
+        const callbackWithReusedState = {
+          code: 'different-auth-code',
+          state: 'previously-used-state-token',
+        };
+
+        await expect(mapProfileToUser(callbackWithReusedState)).rejects.toThrow(
+          'State Validation Error: State parameter has been previously used',
+        );
+      });
+    });
+
+    describe('Profile Fetch Failures', () => {
+      it('should handle OAuth provider profile endpoint returning 401', async () => {
+        const profileFetchError = {
+          error: 'unauthorized',
+          error_description: 'Invalid or expired access token for profile access',
+          status: 401,
+        };
+
+        await expect(mapProfileToUser(profileFetchError)).rejects.toThrow(
+          'Profile Fetch Error: unauthorized - Invalid or expired access token for profile access',
+        );
+      });
+
+      it('should handle OAuth provider profile endpoint returning 403', async () => {
+        const profileFetchError = {
+          error: 'forbidden',
+          error_description: 'Insufficient permissions to access profile',
+          status: 403,
+        };
+
+        await expect(mapProfileToUser(profileFetchError)).rejects.toThrow(
+          'Profile Fetch Error: forbidden - Insufficient permissions to access profile',
+        );
+      });
+
+      it('should handle OAuth provider profile endpoint returning 404', async () => {
+        const profileFetchError = {
+          error: 'not_found',
+          error_description: 'User profile not found',
+          status: 404,
+        };
+
+        await expect(mapProfileToUser(profileFetchError)).rejects.toThrow(
+          'Profile Fetch Error: not_found - User profile not found',
+        );
+      });
+
+      it('should handle OAuth provider profile endpoint returning 500', async () => {
+        const profileFetchError = {
+          error: 'internal_server_error',
+          error_description: 'OAuth provider internal server error',
+          status: 500,
+        };
+
+        await expect(mapProfileToUser(profileFetchError)).rejects.toThrow(
+          'Profile Fetch Error: internal_server_error - OAuth provider internal server error',
+        );
+      });
+
+      it('should handle OAuth provider profile endpoint returning 503', async () => {
+        const profileFetchError = {
+          error: 'service_unavailable',
+          error_description: 'OAuth provider service temporarily unavailable',
+          status: 503,
+          retry_after: 3600,
+        };
+
+        await expect(mapProfileToUser(profileFetchError)).rejects.toThrow(
+          'Profile Fetch Error: service_unavailable - OAuth provider service temporarily unavailable',
+        );
+      });
+    });
+
+    describe('Rate Limiting and Quota Failures', () => {
+      it('should handle OAuth provider rate limiting with retry-after header', async () => {
+        const rateLimitError = {
+          error: 'rate_limit_exceeded',
+          error_description: 'Rate limit exceeded for OAuth requests',
+          retry_after: 3600,
+          limit_reset_time: '2024-01-01T12:00:00Z',
+        };
+
+        await expect(mapProfileToUser(rateLimitError)).rejects.toThrow(
+          'Rate Limit Error: rate_limit_exceeded - Rate limit exceeded for OAuth requests',
+        );
+      });
+
+      it('should handle OAuth quota exceeded for application', async () => {
+        const quotaError = {
+          error: 'quota_exceeded',
+          error_description: 'Daily OAuth quota exceeded for application',
+          quota_reset_time: '2024-01-02T00:00:00Z',
+        };
+
+        await expect(mapProfileToUser(quotaError)).rejects.toThrow(
+          'Quota Error: quota_exceeded - Daily OAuth quota exceeded for application',
+        );
+      });
+
+      it('should handle user-specific OAuth rate limiting', async () => {
+        const userRateLimitError = {
+          error: 'user_rate_limit_exceeded',
+          error_description: 'Too many OAuth attempts for this user',
+          user_id: 'google-user-12345',
+          retry_after: 1800,
+        };
+
+        await expect(mapProfileToUser(userRateLimitError)).rejects.toThrow(
+          'User Rate Limit Error: user_rate_limit_exceeded - Too many OAuth attempts for this user',
+        );
       });
     });
   });
