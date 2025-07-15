@@ -205,8 +205,9 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
 
     try {
       // Step 1: Check if OAuth credentials are available
-      const { requireOAuthCredentials, startOAuthAuthentication, completeOrganizationStep } = await import('../../utils/authOnboardingUtils');
-      
+      const { requireOAuthCredentials, startOAuthAuthentication, completeOrganizationStep } =
+        await import('../../utils/authOnboardingUtils');
+
       try {
         requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth user with Google avatar');
       } catch (error) {
@@ -231,8 +232,10 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
       // Step 4: Now on profile setup - use abstracted OAuth profile verification
       const { verifyOAuthProfileIntegration } = await import('../../utils/authOnboardingUtils');
       const { hasAvatar, prefilledName } = await verifyOAuthProfileIntegration(page);
-      
-      logProgress(`✅ OAuth profile integration verified - hasAvatar: ${hasAvatar}, name: "${prefilledName}"`);
+
+      logProgress(
+        `✅ OAuth profile integration verified - hasAvatar: ${hasAvatar}, name: "${prefilledName}"`,
+      );
 
       // Test avatar upload override capability
       const fileInput = page.locator('input[type="file"]');
@@ -296,6 +299,127 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
     }
   });
 
+  test('OAuth user can replace Google avatar with custom image', async ({ browser }) => {
+    logProgress('🚀 Testing OAuth user can replace Google avatar with custom image...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Check if OAuth credentials are available
+      const { requireOAuthCredentials, startOAuthAuthentication, completeOrganizationStep } =
+        await import('../../utils/authOnboardingUtils');
+
+      try {
+        requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth user custom avatar replacement');
+      } catch (error) {
+        logProgress('⚠️ Skipping test due to missing OAuth credentials');
+        return;
+      }
+
+      // Step 2: Complete OAuth authentication flow
+      await startOAuthAuthentication(page, 'PUBLIC_DOMAIN');
+
+      // Step 3: Verify successful authentication and redirect
+      logProgress('📍 Verifying authentication redirect...');
+
+      // Must be redirected to onboarding
+      await expect(page).toHaveURL(/.*\/onboarding.*/, { timeout: 15000 });
+      logProgress('✅ OAuth redirected to onboarding');
+
+      // Complete organization step
+      await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible();
+      await completeOrganizationStep(page, 'OAuth Avatar Replacement Test Org');
+
+      // Step 4: Now on profile setup - verify OAuth profile integration
+      const { verifyOAuthProfileIntegration } = await import('../../utils/authOnboardingUtils');
+      const { hasAvatar, prefilledName } = await verifyOAuthProfileIntegration(page);
+
+      logProgress(
+        `✅ OAuth profile integration verified - hasAvatar: ${hasAvatar}, name: "${prefilledName}"`,
+      );
+
+      // Step 5: Upload custom avatar to replace Google avatar
+      const fileInput = page.locator('input[type="file"]');
+      await expect(fileInput).toBeAttached({ timeout: 5000 });
+
+      // Create test image file
+      const fs = await import('fs');
+      const path = await import('path');
+
+      const tempDir = path.join(process.cwd(), 'e2e', 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      // Create a distinguishable test image (red pixel)
+      const pngData = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+        'base64',
+      );
+      const testImagePath = path.join(tempDir, 'custom-avatar-replacement.png');
+      fs.writeFileSync(testImagePath, pngData);
+
+      await fileInput.setInputFiles(testImagePath);
+      await expect(page.locator('[data-testid="avatar-preview"]')).toBeVisible({ timeout: 5000 });
+      logProgress('✅ Custom avatar uploaded successfully to replace Google avatar');
+
+      // Fill in username
+      await page.fill('[data-testid="profile-username-input"]', 'customavataruser');
+      await expect(page.locator('[data-testid="username-available"]')).toBeVisible({
+        timeout: 5000,
+      });
+      logProgress('✅ Username availability working');
+
+      // Complete profile setup
+      const continueButton = page.getByTestId('profile-continue-button');
+      await expect(continueButton).toBeEnabled({ timeout: 5000 });
+      await continueButton.click();
+
+      // Skip team invitation step
+      await expect(page.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+        timeout: 10000,
+      });
+
+      const skipButton = page.getByRole('button', { name: /Skip/i });
+      await expect(skipButton).toBeVisible({ timeout: 5000 });
+      await skipButton.click();
+
+      await page.getByRole('button', { name: 'Start Your First Conversation' }).click();
+      logProgress('✅ Clicked "Start Your First Conversation"');
+
+      await page.getByRole('button', { name: 'I accept' }).click();
+      logProgress('✅ Accepted terms of service');
+      // Step 6: Verify we're on the chat page
+      await expect(page).toHaveURL(/.*\/c\/new/, { timeout: 15000 });
+      logProgress('✅ Successfully navigated to chat page');
+
+      // Step 7: Verify custom avatar displays correctly on chat page
+      // Look for the user avatar in the account settings or user menu
+      const userAvatarContainer = page.locator('[data-testid="nav-user"]');
+      await expect(userAvatarContainer).toBeVisible({ timeout: 5000 });
+
+      // Check if the avatar image is present (custom avatar should be displayed)
+      const avatarImage = userAvatarContainer.locator('img');
+      await expect(avatarImage).toBeVisible({ timeout: 5000 });
+
+      // Verify the avatar src contains the custom upload path (not Google's URL)
+      const avatarSrc = await avatarImage.getAttribute('src');
+      expect(avatarSrc).toBeTruthy();
+      expect(avatarSrc).not.toContain('googleusercontent.com');
+      expect(avatarSrc).toContain('/images/'); // Custom uploaded avatars have this path
+
+      logProgress(`✅ Custom avatar displayed correctly on chat page: ${avatarSrc}`);
+
+      // Clean up test file
+      fs.unlinkSync(testImagePath);
+
+      logProgress('🎉 OAuth user custom avatar replacement test PASSED!');
+    } finally {
+      await context.close();
+    }
+  });
+
   test('OAuth avatar error handling and graceful degradation', async ({ browser }) => {
     logProgress('🚀 Testing OAuth avatar error handling and graceful degradation...');
 
@@ -304,8 +428,9 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
 
     try {
       // Step 1: Check if OAuth credentials are available
-      const { requireOAuthCredentials, startOAuthAuthentication, completeOrganizationStep } = await import('../../utils/authOnboardingUtils');
-      
+      const { requireOAuthCredentials, startOAuthAuthentication, completeOrganizationStep } =
+        await import('../../utils/authOnboardingUtils');
+
       try {
         requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth avatar error handling');
       } catch (error) {
@@ -333,17 +458,19 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
       // Check if OAuth avatar is present
       const avatarPreview = page.locator('[data-testid="avatar-preview"]');
       const hasOAuthAvatar = await avatarPreview.isVisible();
-      
+
       if (hasOAuthAvatar) {
         logProgress('🖼️ OAuth avatar detected, testing error handling...');
-        
+
         // Simulate avatar load error by changing the src to an invalid URL and triggering the error
         await page.evaluate(() => {
-          const avatar = document.querySelector('[data-testid="avatar-preview"]') as HTMLImageElement;
+          const avatar = document.querySelector(
+            '[data-testid="avatar-preview"]',
+          ) as HTMLImageElement;
           if (avatar && avatar.onerror) {
             // Change src to invalid URL to trigger actual error
             avatar.src = 'https://invalid-url-that-will-fail.com/broken.jpg';
-            
+
             // If that doesn't trigger the error immediately, manually call the handler
             setTimeout(() => {
               if (avatar.onerror) {
@@ -362,7 +489,9 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
           logProgress('✅ OAuth avatar cleared on error');
 
           // Verify error message is displayed for OAuth avatar
-          const errorMessage = page.getByText('Avatar from your OAuth provider could not be loaded. Please upload a different image.');
+          const errorMessage = page.getByText(
+            'Avatar from your OAuth provider could not be loaded. Please upload a different image.',
+          );
           const hasErrorMessage = await errorMessage.isVisible();
           if (hasErrorMessage) {
             logProgress('✅ OAuth avatar error message displayed');
@@ -374,7 +503,12 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
           const nameInput = page.getByTestId('profile-name-input');
           const name = await nameInput.inputValue();
           if (name) {
-            const expectedInitials = name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2);
+            const expectedInitials = name
+              .split(' ')
+              .map((word) => word.charAt(0))
+              .join('')
+              .toUpperCase()
+              .slice(0, 2);
             if (expectedInitials) {
               const initialsVisible = await page.getByText(expectedInitials).isVisible();
               if (initialsVisible) {
