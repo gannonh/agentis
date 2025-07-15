@@ -681,4 +681,99 @@ describe('GET /api/user/check-username', () => {
       expect(response.headers['x-ratelimit-reset']).toBeDefined();
     });
   });
+
+  describe('Rate Limiting Integration Tests', () => {
+    it('should properly test rate limiting behavior with exactly 15 requests', async () => {
+      // Make exactly 15 sequential requests to test the rate limiting behavior
+      const responses = [];
+      
+      for (let i = 0; i < 15; i++) {
+        const response = await request(app)
+          .get('/api/user/check-username')
+          .query({ username: `testuser${i}` });
+        responses.push(response);
+      }
+
+      // Count successful and rate-limited responses
+      const successfulResponses = responses.filter((res) => res.status === 200);
+      const rateLimitedResponses = responses.filter((res) => res.status === 429);
+
+      // First 10 requests should succeed, 11th and beyond should be rate limited
+      expect(successfulResponses.length).toBe(10);
+      expect(rateLimitedResponses.length).toBe(5);
+
+      // Verify that specifically the 11th request (index 10) returns 429
+      expect(responses[10].status).toBe(429);
+      expect(responses[10].body).toHaveProperty('message');
+      expect(responses[10].body.message).toBe('Too many requests, please try again later.');
+
+      // Verify that 12th through 15th requests are also rate limited
+      for (let i = 11; i < 15; i++) {
+        expect(responses[i].status).toBe(429);
+        expect(responses[i].body).toHaveProperty('message');
+        expect(responses[i].body.message).toBe('Too many requests, please try again later.');
+      }
+
+      // Verify the first 10 responses were successful
+      for (let i = 0; i < 10; i++) {
+        expect(responses[i].status).toBe(200);
+        expect(responses[i].body).toHaveProperty('available');
+        expect(responses[i].body).toHaveProperty('username');
+      }
+    });
+
+    it('should correctly set rate limit headers', async () => {
+      // Reset request count for clean state
+      app.locals.requestCount = 0;
+
+      const response = await request(app)
+        .get('/api/user/check-username')
+        .query({ username: 'testuser' });
+
+      // Verify rate limit headers are set correctly by the mock
+      expect(response.headers['x-ratelimit-limit']).toBe('10');
+      expect(response.headers['x-ratelimit-remaining']).toBe('9'); // 10 - 1 (this request)
+      expect(response.headers['x-ratelimit-reset']).toBeDefined();
+      
+      // Verify the format of the reset timestamp
+      const resetTime = new Date(response.headers['x-ratelimit-reset']);
+      expect(resetTime).toBeInstanceOf(Date);
+      expect(resetTime.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('should test the exact scenario specified in the issue: 15 rapid requests with 11th returning 429', async () => {
+      // Reset request count for clean state
+      app.locals.requestCount = 0;
+
+      // Make 15 rapid requests as specified in the issue
+      const promises = Array.from({ length: 15 }, (_, i) =>
+        request(app)
+          .get('/api/user/check-username')
+          .query({ username: `rapidtest${i}` })
+      );
+
+      const responses = await Promise.all(promises);
+
+      // Verify exactly what the issue specified:
+      // "makes 15 rapid requests (exceeding the 10 request limit) and verifies that the 11th request returns 429"
+      expect(responses.length).toBe(15);
+      
+      // The 11th request (index 10) should return 429
+      expect(responses[10].status).toBe(429);
+      expect(responses[10].body.message).toBe('Too many requests, please try again later.');
+      
+      // Count how many succeed vs are rate limited
+      const successful = responses.filter(r => r.status === 200).length;
+      const rateLimited = responses.filter(r => r.status === 429).length;
+      
+      // Should have 10 successful and 5 rate limited
+      expect(successful).toBe(10);
+      expect(rateLimited).toBe(5);
+      
+      // All rate limited responses should have the appropriate message
+      responses.filter(r => r.status === 429).forEach(response => {
+        expect(response.body.message).toBe('Too many requests, please try again later.');
+      });
+    });
+  });
 });
