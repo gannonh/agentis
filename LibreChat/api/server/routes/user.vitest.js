@@ -61,10 +61,13 @@ describe('User Routes - Username Check', () => {
     // Connect to MongoDB
     await mongoose.connect(mongoUri);
     
+    // Import user routes after mocks are set up
+    userRoutes = await import('./user.js');
+    
     // Create test app
     app = express();
     app.use(express.json());
-    app.use('/api/user', userRoutes);
+    app.use('/api/user', userRoutes.default);
     
     // Create a test user in the database (with ObjectId _id)
     testUser = await User.create({
@@ -85,7 +88,7 @@ describe('User Routes - Username Check', () => {
   describe('GET /api/user/check-username', () => {
     it('should fail when string ID is not properly converted to ObjectId (demonstrating the bug)', async () => {
       // Create another user with the username we want to check
-      const existingUser = await User.create({
+      await User.create({
         email: 'existing@example.com',
         username: 'testusername',
         name: 'Existing User',
@@ -205,15 +208,7 @@ describe('User Routes - Username Check', () => {
     });
 
     it('should demonstrate the fix works by properly excluding current user', async () => {
-      // Create a user with the same username as the current user
-      // This should be excluded from the results
-      const duplicateUser = await User.create({
-        _id: new mongoose.Types.ObjectId('507f1f77bcf86cd799439011'), // Same as current user
-        email: 'test@example.com',
-        username: 'currentuser',
-        name: 'Test User',
-      });
-
+      // The current user already exists from beforeEach setup
       // The fix should properly convert req.user.id (string) to ObjectId for comparison
       const response = await request(app)
         .get('/api/user/check-username')
