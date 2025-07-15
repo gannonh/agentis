@@ -474,6 +474,71 @@ describe('ProfileSetup Avatar Upload Integration', () => {
     });
   });
 
+  describe('URL Sanitization and XSS Protection', () => {
+    it('should reject URLs containing event handlers', () => {
+      const maliciousUrls = [
+        'http://example.com?onclick=alert(1)',
+        'https://example.com/image.jpg?onerror=alert(1)',
+        'http://example.com?onload=alert(1)',
+        'https://example.com/image.png?onmouseover=alert(1)',
+        'http://example.com?onmouseout=alert(1)',
+        'https://example.com/image.jpg?onfocus=alert(1)',
+        'http://example.com?onblur=alert(1)',
+        'https://example.com/image.png?onchange=alert(1)',
+        'http://example.com?onsubmit=alert(1)',
+        'https://example.com/image.jpg?onreset=alert(1)',
+        'http://example.com?onselect=alert(1)',
+        'https://example.com/image.png?onkeydown=alert(1)',
+        'http://example.com?onkeyup=alert(1)',
+        'https://example.com/image.jpg?onkeypress=alert(1)',
+        'http://example.com?onscroll=alert(1)',
+        'https://example.com/image.png?onresize=alert(1)',
+      ];
+
+      maliciousUrls.forEach((maliciousUrl) => {
+        const oauthData = {
+          picture: maliciousUrl,
+        };
+
+        const { unmount } = render(<ProfileSetup {...defaultProps} oauthData={oauthData} />);
+
+        // Should not render an avatar image with malicious URL
+        expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
+        
+        // Should show initials instead since avatar URL was sanitized to empty string
+        expect(screen.getByText('T')).toBeInTheDocument(); // From test@example.com
+        
+        // Clean up for next iteration
+        unmount();
+      });
+    });
+
+    it('should allow legitimate URLs with safe query parameters', () => {
+      const legitimateUrls = [
+        'https://example.com/image.jpg?size=200',
+        'http://example.com/avatar.png?version=1.2.3',
+        'https://example.com/image.gif?quality=high',
+        'http://example.com/avatar.jpg?cache=false',
+      ];
+
+      legitimateUrls.forEach((legitimateUrl) => {
+        const oauthData = {
+          picture: legitimateUrl,
+        };
+
+        const { unmount } = render(<ProfileSetup {...defaultProps} oauthData={oauthData} />);
+
+        // Should render avatar image with legitimate URL
+        const avatarImage = screen.getByTestId('avatar-preview');
+        expect(avatarImage).toBeInTheDocument();
+        expect(avatarImage).toHaveAttribute('src', legitimateUrl);
+        
+        // Clean up for next iteration
+        unmount();
+      });
+    });
+  });
+
   describe('OAuth Avatar Handling', () => {
     it('should keep OAuth avatar URL even if image fails to load initially', () => {
       const oauthData = {

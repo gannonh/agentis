@@ -55,6 +55,12 @@ const sanitizeAvatarUrl = (url: string): string => {
     return '';
   }
 
+  // Block URLs containing event handler patterns (e.g., onclick=, onerror=, etc.)
+  const eventHandlerPattern = /on[a-z]+\s*=/i;
+  if (eventHandlerPattern.test(trimmedUrl)) {
+    return '';
+  }
+
   // Only allow http/https URLs or relative paths
   if (
     lowercaseUrl.startsWith('http://') ||
