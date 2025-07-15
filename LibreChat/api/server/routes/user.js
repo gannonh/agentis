@@ -206,8 +206,11 @@ router.get('/check-username', usernameCheckLimiter, requireBetterAuth, async (re
     }
 
     // Check if username exists in user schema (username field is in main schema)
+    // Use case-insensitive regex query to ensure robust username uniqueness checking
+    // Escape special regex characters to prevent injection
+    const escapedUsername = username.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const existingUser = await User.findOne({
-      username: username.toLowerCase(),
+      username: { $regex: new RegExp(`^${escapedUsername}$`, 'i') },
       _id: { $ne: new mongoose.Types.ObjectId(req.user.id) }, // Convert string ID to ObjectId
     });
 

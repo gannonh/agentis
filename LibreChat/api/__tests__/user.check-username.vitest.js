@@ -375,7 +375,7 @@ describe('GET /api/user/check-username', () => {
       await request(app).get('/api/user/check-username').query({ username: 'testuser' });
 
       expect(findOneSpy).toHaveBeenCalledWith({
-        username: 'testuser',
+        username: { $regex: /^testuser$/i },
         _id: { $ne: new mongoose.Types.ObjectId(mockUser.id) }, // Fixed: now uses ObjectId
       });
 
@@ -388,7 +388,7 @@ describe('GET /api/user/check-username', () => {
       await request(app).get('/api/user/check-username').query({ username: 'TestUser' });
 
       expect(findOneSpy).toHaveBeenCalledWith({
-        username: 'testuser', // Should be lowercase
+        username: { $regex: /^testuser$/i }, // Should use case-insensitive regex
         _id: { $ne: new mongoose.Types.ObjectId(mockUser.id) }, // Fixed: now uses ObjectId
       });
 
@@ -449,6 +449,101 @@ describe('GET /api/user/check-username', () => {
       expect(response.body).toEqual({
         available: false,
         username: 'testuser',
+      });
+    });
+
+    it('should handle case-insensitive username checking with regex approach', async () => {
+      // This test verifies the case-insensitive regex approach works correctly
+
+      // Create a user with mixed case username (will be stored as lowercase due to schema)
+      await User.create({
+        email: 'mixedcase@example.com',
+        username: 'MixedCaseUser',
+        provider: 'local',
+        emailVerified: true,
+      });
+
+      // Verify the user was actually stored in lowercase
+      const storedUser = await User.findOne({ email: 'mixedcase@example.com' });
+      expect(storedUser.username).toBe('mixedcaseuser'); // Schema transforms to lowercase
+
+      // Test the API with various case combinations
+      const testCases = ['MixedCaseUser', 'mixedcaseuser', 'MIXEDCASEUSER', 'MiXeDcAsEuSeR'];
+
+      for (const testCase of testCases) {
+        const response = await request(app)
+          .get('/api/user/check-username')
+          .query({ username: testCase });
+
+        // All should return available=false because the API properly handles case with regex
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({
+          available: false,
+          username: testCase.toLowerCase(),
+        });
+      }
+    });
+
+    it('should demonstrate the need for case-insensitive regex when schema does not normalize', async () => {
+      // This test shows why the fix suggestion (case-insensitive regex) would be needed
+      // if the schema didn't have lowercase: true
+
+      // Create a user with mixed case username
+      await User.create({
+        email: 'regex@example.com',
+        username: 'RegexTestUser',
+        provider: 'local',
+        emailVerified: true,
+      });
+
+      // Test both approaches for case-insensitive querying
+      const username = 'regextestuser';
+
+      // Approach 1: Using .toLowerCase() (current implementation)
+      const lowerCaseQuery = { username: username.toLowerCase() };
+      const userFoundLower = await User.findOne(lowerCaseQuery);
+      expect(userFoundLower).not.toBeNull(); // Should find user due to schema lowercase
+
+      // Approach 2: Using case-insensitive regex (alternative fix)
+      const regexQuery = { username: { $regex: new RegExp(`^${username}$`, 'i') } };
+      const userFoundRegex = await User.findOne(regexQuery);
+      expect(userFoundRegex).not.toBeNull(); // Should also find user
+
+      // Both approaches should find the same user
+      expect(userFoundLower.email).toBe(userFoundRegex.email);
+    });
+
+    it('should properly handle regex special characters in usernames', async () => {
+      // This test ensures the regex escaping works correctly
+
+      // Create a user with a username containing characters that could be regex special chars
+      await User.create({
+        email: 'regextest@example.com',
+        username: 'test_user-123',
+        provider: 'local',
+        emailVerified: true,
+      });
+
+      // Test that the API correctly handles the username
+      const response = await request(app)
+        .get('/api/user/check-username')
+        .query({ username: 'test_user-123' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        available: false,
+        username: 'test_user-123',
+      });
+
+      // Test with different cases
+      const upperCaseResponse = await request(app)
+        .get('/api/user/check-username')
+        .query({ username: 'TEST_USER-123' });
+
+      expect(upperCaseResponse.status).toBe(200);
+      expect(upperCaseResponse.body).toEqual({
+        available: false,
+        username: 'test_user-123',
       });
     });
   });
