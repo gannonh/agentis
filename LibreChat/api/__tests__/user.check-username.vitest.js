@@ -407,8 +407,8 @@ describe('GET /api/user/check-username', () => {
         available: true,
         username: 'available123',
       });
-      expect(typeof response.body.available).toBe('boolean');
-      expect(typeof response.body.username).toBe('string');
+      expect(response.body.available).toBe(true);
+      expect(response.body.username).toBe('available123');
     });
 
     it('should always return consistent response format for unavailable usernames', async () => {
@@ -428,8 +428,8 @@ describe('GET /api/user/check-username', () => {
         available: false,
         username: 'takenuser',
       });
-      expect(typeof response.body.available).toBe('boolean');
-      expect(typeof response.body.username).toBe('string');
+      expect(response.body.available).toBe(false);
+      expect(response.body.username).toBe('takenuser');
     });
 
     it('should include proper Content-Type header', async () => {
