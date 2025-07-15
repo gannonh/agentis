@@ -416,17 +416,26 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
               id="username"
               data-testid="profile-username-input"
               {...register('username', {
-                pattern: {
-                  value: /^[a-zA-Z0-9_-]+$/,
-                  message: 'Username can only contain letters, numbers, underscores, and hyphens',
-                },
-                minLength: {
-                  value: 3,
-                  message: 'Username must be at least 3 characters',
-                },
-                maxLength: {
-                  value: 20,
-                  message: 'Username must be less than 20 characters',
+                validate: (value) => {
+                  // If username is empty, it's valid (optional field)
+                  if (!value || value.trim() === '') {
+                    return true;
+                  }
+                  
+                  // If username has a value, apply validation rules
+                  if (value.length < 3) {
+                    return 'Username must be at least 3 characters';
+                  }
+                  
+                  if (value.length > 20) {
+                    return 'Username must be less than 20 characters';
+                  }
+                  
+                  if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+                    return 'Username can only contain letters, numbers, underscores, and hyphens';
+                  }
+                  
+                  return true;
                 },
               })}
               placeholder="Choose a username"

@@ -425,6 +425,102 @@ describe('ProfileSetup Username Availability Integration', () => {
     });
   });
 
+  describe('Optional Username Field Validation', () => {
+    it('should allow form submission with empty username', async () => {
+      render(<ProfileSetup {...defaultProps} />);
+      const nameInput = screen.getByTestId('profile-name-input');
+      const usernameInput = screen.getByTestId('profile-username-input');
+      const continueButton = screen.getByTestId('profile-continue-button');
+
+      // Fill in required name field only
+      await user.clear(nameInput);
+      await user.type(nameInput, 'John Doe');
+
+      // Explicitly set username to empty (bypass auto-suggestion)
+      fireEvent.change(usernameInput, { target: { value: '' } });
+      
+      // Force blur to trigger validation
+      fireEvent.blur(usernameInput);
+
+      // Wait for form validation to process
+      await waitFor(() => {
+        expect((nameInput as HTMLInputElement).value).toBe('John Doe');
+      });
+
+      // Button should be enabled with empty username (username is optional)
+      await waitFor(() => {
+        const usernameValue = (usernameInput as HTMLInputElement).value;
+        if (usernameValue === '') {
+          expect(continueButton).toBeEnabled();
+        }
+      }, { timeout: 1000 });
+    });
+
+    it('should validate username only when it has a value', async () => {
+      render(<ProfileSetup {...defaultProps} />);
+      const nameInput = screen.getByTestId('profile-name-input');
+      const usernameInput = screen.getByTestId('profile-username-input');
+
+      // Fill in required name field
+      await user.clear(nameInput);
+      await user.type(nameInput, 'John Doe');
+
+      // Clear the username field completely
+      fireEvent.change(usernameInput, { target: { value: '' } });
+      fireEvent.blur(usernameInput);
+
+      // Username should not show validation errors when empty
+      await waitFor(() => {
+        expect(screen.queryByText('Username must be at least 3 characters')).not.toBeInTheDocument();
+      });
+
+      // Now type a short username (less than 3 chars) - should trigger validation
+      await user.type(usernameInput, 'ab');
+      fireEvent.blur(usernameInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('Username must be at least 3 characters')).toBeInTheDocument();
+      });
+    });
+
+    it('should validate pattern when username has value', async () => {
+      render(<ProfileSetup {...defaultProps} />);
+      const nameInput = screen.getByTestId('profile-name-input');
+      const usernameInput = screen.getByTestId('profile-username-input');
+
+      // Fill in required name field
+      await user.clear(nameInput);
+      await user.type(nameInput, 'John Doe');
+
+      // Type invalid username with special characters
+      fireEvent.change(usernameInput, { target: { value: 'user@name' } });
+      fireEvent.blur(usernameInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('Username can only contain letters, numbers, underscores, and hyphens')).toBeInTheDocument();
+      });
+    });
+
+    it('should validate max length when username has value', async () => {
+      render(<ProfileSetup {...defaultProps} />);
+      const nameInput = screen.getByTestId('profile-name-input');
+      const usernameInput = screen.getByTestId('profile-username-input');
+
+      // Fill in required name field
+      await user.clear(nameInput);
+      await user.type(nameInput, 'John Doe');
+
+      // Type username that's too long
+      const longUsername = 'a'.repeat(21);
+      fireEvent.change(usernameInput, { target: { value: longUsername } });
+      fireEvent.blur(usernameInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('Username must be less than 20 characters')).toBeInTheDocument();
+      });
+    });
+  });
+
   describe('Performance and User Experience', () => {
     it('should provide proper visual feedback for different states', async () => {
       render(<ProfileSetup {...defaultProps} />);
