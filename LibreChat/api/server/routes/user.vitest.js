@@ -17,7 +17,7 @@ vi.mock('#server/middleware.js', () => ({
     req.user = {
       id: '507f1f77bcf86cd799439011', // Valid ObjectId string
       email: 'test@example.com',
-      username: 'currentuser'
+      username: 'currentuser',
     };
     next();
   }),
@@ -57,18 +57,18 @@ describe('User Routes - Username Check', () => {
     // Start MongoDB Memory Server
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
-    
+
     // Connect to MongoDB
     await mongoose.connect(mongoUri);
-    
+
     // Import user routes after mocks are set up
     userRoutes = await import('./user.js');
-    
+
     // Create test app
     app = express();
     app.use(express.json());
     app.use('/api/user', userRoutes.default);
-    
+
     // Create a test user in the database (with ObjectId _id)
     testUser = await User.create({
       _id: new mongoose.Types.ObjectId('507f1f77bcf86cd799439011'), // Same as the mocked user ID
@@ -96,23 +96,23 @@ describe('User Routes - Username Check', () => {
 
       // First, let's verify the bug exists by temporarily removing the ObjectId conversion
       // We'll simulate what happens when req.user.id (string) is compared directly to _id (ObjectId)
-      
+
       // Create a direct query that would fail with the bug
       const directQuery = {
         username: { $regex: new RegExp(`^testusername$`, 'i') },
         _id: { $ne: testUser._id.toString() }, // String comparison (bug)
       };
-      
+
       // This query should NOT exclude the current user because string !== ObjectId
       const resultWithBug = await User.findOne(directQuery);
       expect(resultWithBug).toBeTruthy(); // This would incorrectly find the user even if it's the same user
-      
+
       // Now test the proper query with ObjectId conversion
       const properQuery = {
         username: { $regex: new RegExp(`^testusername$`, 'i') },
         _id: { $ne: new mongoose.Types.ObjectId(testUser._id.toString()) }, // ObjectId conversion (fix)
       };
-      
+
       const resultWithFix = await User.findOne(properQuery);
       expect(resultWithFix).toBeTruthy(); // This correctly finds the existing user since it's different from current user
     });
@@ -196,12 +196,13 @@ describe('User Routes - Username Check', () => {
         .query({ username: 'user@name' });
 
       expect(response3.status).toBe(400);
-      expect(response3.body.error).toBe('Username can only contain letters, numbers, underscores, and hyphens');
+      expect(response3.body.error).toBe(
+        'Username can only contain letters, numbers, underscores, and hyphens',
+      );
     });
 
     it('should require username parameter', async () => {
-      const response = await request(app)
-        .get('/api/user/check-username');
+      const response = await request(app).get('/api/user/check-username');
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Username parameter is required');
