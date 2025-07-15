@@ -1088,6 +1088,10 @@ export enum ViolationTypes {
    * Tool Call Limit Violation.
    */
   TOOL_CALL_LIMIT = 'tool_call_limit',
+  /**
+   * Username Check Limit Violation.
+   */
+  USERNAME_CHECK_LIMIT = 'username_check_limit',
 }
 
 /**

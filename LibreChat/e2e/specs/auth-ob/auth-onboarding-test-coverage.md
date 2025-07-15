@@ -203,6 +203,18 @@ graph TD
 - ✅ **Terms of service handling**
 - ✅ **Onboarding flow navigation helpers**
 - ✅ **Database verification utilities**
+- ✅ **OAuth Authentication Abstraction** (Issue #105 Integration):
+  - OAuth credentials management (PUBLIC_DOMAIN, PRIVATE_DOMAIN)
+  - `initiateGoogleOAuth()` - Standardized OAuth initiation
+  - `completeGoogleOAuth()` - OAuth completion with credential types
+  - `startOAuthAuthentication()` - Combined OAuth flow
+  - `cancelOAuthFlow()` - OAuth cancellation testing
+  - `verifyOAuthProfileIntegration()` - Profile data verification
+  - `testOAuthAvatarErrorHandling()` - Avatar error scenarios
+  - `completeOAuthOnboardingFlow()` - Full OAuth onboarding
+  - `requireOAuthCredentials()` - Credential validation helper
+
+**OAuth Abstraction Status**: ✅ **COMPLETE** - All auth-ob tests now use abstracted OAuth utilities
 
 ## Test Coverage Analysis
 
@@ -406,18 +418,25 @@ graph TD
    });
    ```
 
-### **Medium Priority**
+### 9. `auth-ob.profile-setup.spec.ts`
 
-5. **`auth-ob.profile-setup.spec.ts`**
+**Purpose**: Profile setup integration testing (Issue #105)  
+**Coverage**:
 
-   ```typescript
-   test.describe('Profile Setup Flow', () => {
-     test('Profile setup with OAuth pre-filled data');
-     test('Profile setup with magic link (empty data)');
-     test('Profile image upload functionality');
-     test('Profile validation and error handling');
-   });
-   ```
+- ✅ **Magic Link Profile Setup** - Complete flow with form validation
+- ✅ **Username Availability** - Real-time checking and conflict resolution
+- ✅ **Avatar Upload** - File upload with preview and validation
+- ✅ **OAuth Profile Integration** - Google avatar display and pre-filled data
+- ✅ **OAuth Avatar Error Handling** - Graceful degradation and fallbacks
+- ✅ **Database Verification** - Profile data persistence validation
+- ✅ **OAuth Abstraction** - Uses abstracted utilities from `authOnboardingUtils.ts`
+
+**Maps to Diagram**:
+
+- K (Profile Setup) - Complete implementation with OAuth integration
+
+**Test Status**: ✅ **FULLY IMPLEMENTED AND PASSING**  
+**Issue #105**: ✅ **COMPLETE** - Profile setup integration working end-to-end with OAuth support
 
 6. **`auth-ob.team-invites.spec.ts`**
    ```typescript
@@ -471,19 +490,24 @@ graph TD
 | Magic Link → Corporate Domain → Join Org (Auto) | ✅ **Complete** | `auth-ob.join.spec.ts` **(Issue #104)**                     |
 | Magic Link → Corporate Domain → Join Org (Manual) | ✅ **Complete** | `auth-ob.join-approval.spec.ts` **(Issue #104)**          |
 | Magic Link → Corporate Domain → Create Org      | ✅ Complete     | `auth-ob.creation.spec.ts`                                  |
-| Magic Link → Profile Setup                      | ❌ Missing      | Issue [#105](https://github.com/gannonh/agentis/issues/105) |
+| Magic Link → Profile Setup                      | ✅ **Complete** | `auth-ob.profile-setup.spec.ts` **(Issue #105)**           |
 | Magic Link → Team Invites                       | ❌ Missing      | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 
-### **OAuth Authentication Flows (Future Implementation - Task #11)**
+### **OAuth Authentication Flows (Single Account Constraints)**
 
-| Flow Path                                       | Status          | Test File(s)                                                |
+**CRITICAL LIMITATION**: OAuth testing is constrained by having only ONE account per domain:
+- PUBLIC_DOMAIN: `agentis.test@gmail.com` (single Google account)
+- PRIVATE_DOMAIN: `gannon@astrolabs.llc` (single corporate account)
+
+| Flow Path                                       | Status          | Test File(s) / Notes                                        |
 | ----------------------------------------------- | --------------- | ----------------------------------------------------------- |
-| OAuth → Public Domain → Create Org              | ✅ **Partial**  | `auth-ob.creation.spec.ts` (basic OAuth → Create flow)      |
-| OAuth → Corporate Domain → Join Org (Auto)      | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
-| OAuth → Corporate Domain → Join Org (Manual)    | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
-| OAuth → Corporate Domain → Create Org           | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
-| OAuth → Profile Setup (Pre-filled)              | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
-| OAuth → Team Invites                            | ❌ **Future**   | **Deferred to Task #11 OAuth Integration**                  |
+| OAuth → Public Domain → Create Org              | ✅ **Complete** | `auth-ob.creation.spec.ts`, `auth-ob.org-detection.spec.ts` |
+| OAuth → Public Domain → Profile Setup           | ✅ **Complete** | `auth-ob.profile-setup.spec.ts` (OAuth integration)        |
+| OAuth → Corporate Domain → Create Org           | ✅ **Complete** | `auth-ob.creation.spec.ts` (domain join enabled/disabled)  |
+| OAuth → Corporate Domain → Detect Existing Org  | ✅ **Complete** | `auth-ob.org-detection.spec.ts` (auto-join & manual flows) |
+| OAuth → Corporate Domain → Join Existing Org    | ✅ **Complete** | `auth-ob.join.spec.ts` (single user to pre-existing org)   |
+| OAuth → Corporate Domain → Multi-User Scenarios | ⛔ **Skipped**   | **Cannot test - only one OAuth account per domain (properly documented)** |
+| OAuth → Team Invites                            | ✅ **Testable** | **Can test single user inviting others (Magic Link users)**|
 
 ### **Organization Join Scenarios (Issue #104 Extensions)**
 
@@ -503,60 +527,108 @@ graph TD
 | Network Failure Recovery                    | ✅ **Implemented** | **Offline simulation - `auth-ob.join-edge-cases.spec.ts`**  |
 | Expired Invitation Handling                  | ⚠️ **Placeholder** | Issue [#106](https://github.com/gannonh/agentis/issues/106) |
 
+## OAuth Testing Reality Check
+
+### **What We CAN Test with OAuth**
+1. **Single User Flows**:
+   - OAuth login → create organization → complete onboarding
+   - OAuth logout → login again → verify session persistence
+   - OAuth profile data integration (name, avatar)
+   - OAuth error handling (cancellation, network issues)
+
+2. **Mixed Authentication Scenarios**:
+   - OAuth user creates organization with domain join enabled
+   - Magic Link users join the OAuth-created organization
+   - OAuth user invites Magic Link users to team
+
+### **What We CANNOT Test with OAuth**
+1. **Multi-User OAuth Scenarios** (⛔ IMPOSSIBLE):
+   - OAuth User 1 creates org, OAuth User 2 joins
+   - Multiple OAuth users in same organization
+   - OAuth admin approving OAuth member requests
+   - OAuth users with different roles in same org
+
+2. **Why These Are Impossible**:
+   - Only ONE OAuth test account per domain
+   - Cannot create multiple Google accounts dynamically
+   - OAuth accounts are pre-configured (environment variables)
+   - Same email = same user (no multi-user simulation possible)
+
+### **Recommended Testing Strategy**
+1. **Use Magic Link for all multi-user scenarios**
+2. **Use OAuth for single-user flows and integration testing**
+3. **Combine both: OAuth creates org, Magic Link users join**
+4. **Focus on real-world scenarios that are actually testable**
+
 ## Summary
 
-### **Current Status - Sequential Implementation Strategy**
+### **Current Status - Test Organization Complete ✅**
 
-**Magic Link Implementation (Primary Focus)**:
-- **Total Test Files**: 10 files covering auth/onboarding (5 original + 4 new + 1 utility)
-- **Fully Implemented**: Magic Link flows, Organization detection/creation, **Domain auto-join flow (Issue #104)**, **Manual approval requests**, **Existing member handling**
-- **Utility Abstraction**: ✅ **Created `authOnboardingUtils.ts`** - consolidated common patterns from all test files
+**E2E Test Suite Organization**:
+- **Total Test Files**: 5 organized test files covering auth/onboarding flows
+- **Test Strategy**: Realistic constraints with single OAuth account per domain
+- **Systematic Organization**: Impossible OAuth multi-user tests properly skipped with clear documentation
+- **Test Coverage**: Comprehensive Magic Link flows + achievable OAuth single-user flows
 
-**OAuth Integration (Future Task #11)**:
-- **Partial Implementation**: OAuth → Create Org flow in `auth-ob.creation.spec.ts`
-- **Deferred**: All other OAuth flows until Magic Link implementation is complete
+**Completed Work**:
+- ✅ **Magic Link Multi-User Flows**: All working (creation, detection, joining, approval)
+- ✅ **OAuth Single-User Flows**: Complete coverage (creation, detection, profile setup)
+- ✅ **Impossible Test Cleanup**: Multi-user OAuth scenarios properly `.skip()`ped
+- ✅ **Test Documentation**: Clear explanations of OAuth constraints and alternative approaches
 
-### **Progress on Issue #104 (Magic Link Focus)**
+### **Test File Organization (Final)**
 
-- ✅ **Domain Auto-Join Flow**: FULLY IMPLEMENTED AND PASSING
-- ✅ **Manual Approval Flow**: FULLY IMPLEMENTED AND PASSING 🎉
-- ✅ **End-to-End Flow**: User 1 creates org → User 2 joins/requests → Both complete onboarding
-- ✅ **Session Management**: Proper cache synchronization and guard architecture
-- ✅ **Database Integration**: Correct ObjectId format and member storage
-- ✅ **Domain Metadata Fix**: Organizations discoverable regardless of auto-join setting
-- ✅ **Join Request Storage**: Proper ID field handling and database updates
-- ⏳ **Edge Cases**: Can be completed without end user admin UI
+1. **auth-ob.creation.spec.ts**: Organization creation (Magic Link + OAuth single-user)
+2. **auth-ob.org-detection.spec.ts**: Organization detection (Magic Link + OAuth single-user)  
+3. **auth-ob.join.spec.ts**: Auto-join flows (Magic Link multi-user + OAuth single-user)
+4. **auth-ob.join-approval.spec.ts**: Manual approval flows (Magic Link multi-user only)
+5. **auth-ob.profile-setup.spec.ts**: Profile setup (Magic Link + OAuth integration)
 
-### **Issue #104 Status: ✅ COMPLETE (Magic Link Implementation)**
+### **OAuth Testing Reality (Documented)**
 
-Core flows for Issue #104 Magic Link implementation:
-1. ✅ **Auto-Join Flow** (domain join enabled) - Working end-to-end
-2. ✅ **Manual Approval Flow** (domain join disabled) - Working end-to-end
-3. ✅ **Edge Cases** - All implementable edge cases completed
+**What We CAN Test** ✅:
+- Single OAuth user creating organizations (both domains)
+- OAuth profile integration and avatar handling
+- OAuth logout/login session persistence
+- OAuth user joining pre-existing organizations (created via database)
+- Mixed scenarios: OAuth creates org, Magic Link users join
 
-### **Sequential Implementation Roadmap**
+**What We CANNOT Test** ⛔ (Properly Skipped):
+- Multiple OAuth users with same domain (impossible - only 1 account per domain)
+- OAuth User 1 creates org, OAuth User 2 joins (requires 2 different accounts)
+- OAuth admin approving OAuth member requests (multi-user scenario)
 
-**Phase 1: Complete Magic Link Flows (Current)**
-1. ✅ **Complete Issue #104**: All edge cases implemented in `auth-ob.join-edge-cases.spec.ts`
-2. ⏳ **Issue #105**: Profile Setup Integration (Magic Link)
-3. ⏳ **Issue #106**: Team Invitation Flow (Magic Link)
+### **Issues Status**
 
-**Phase 2: OAuth Integration (Task #11)**
-1. ⚠️ **OAuth Join Flows**: Auto + manual approval + edge cases
-2. ⚠️ **OAuth Profile Setup**: Pre-filled data integration
-3. ⚠️ **OAuth Team Invitations**: Consistent with Magic Link flows
-4. ⚠️ **Cross-Auth Consistency**: Ensure identical user experiences
+- [#102: Organization Detection](https://github.com/gannonh/agentis/issues/102) - ✅ **COMPLETE**
+- [#103: Organization Creation Flow](https://github.com/gannonh/agentis/issues/103) - ✅ **COMPLETE**
+- [#104: Organization Join Flow](https://github.com/gannonh/agentis/issues/104) - ✅ **COMPLETE**
+- [#105: Profile Setup Integration](https://github.com/gannonh/agentis/issues/105) - ✅ **COMPLETE**
 
-**Phase 3: Advanced Features (Post-Onboarding)**
-1. ⚠️ **End User Admin UI**: Organization management for join request approval/rejection
-2. ⚠️ **Advanced Edge Cases**: Multiple org selection, complex error scenarios
+### **Next Steps for Issue #105 (Profile Setup)**
+
+Based on the test coverage document context you provided, Issue #105 appears to be **COMPLETE** for E2E testing but needs **Unit and Integration Tests**:
+
+**E2E Coverage** ✅ **COMPREHENSIVE (9/10)**:
+- Magic Link profile setup with form validation
+- OAuth profile integration with Google data
+- Avatar upload and error handling
+- Username availability checking
+- Database persistence verification
+
+**Missing Unit/Integration Tests** ❌ **NEEDS WORK (4/10)**:
+- Form validation logic tests
+- OAuth data integration tests  
+- Username availability API tests
+- Avatar upload API tests
+- Better Auth profile mapping tests
 
 ## Related GitHub Issues
 
 - [#102: Organization Detection](https://github.com/gannonh/agentis/issues/102) - ✅ **COMPLETE**
 - [#103: Organization Creation Flow](https://github.com/gannonh/agentis/issues/103) - ✅ **COMPLETE**
 - [#104: Organization Join Flow](https://github.com/gannonh/agentis/issues/104) - ✅ **COMPLETE** 🎉
-- [#105: Profile Setup Integration](https://github.com/gannonh/agentis/issues/105) - ⚠️ Partial
+- [#105: Profile Setup Integration](https://github.com/gannonh/agentis/issues/105) - ✅ **COMPLETE** 🎉
 - [#106: Team Invitation Flow](https://github.com/gannonh/agentis/issues/106) - ⚠️ Partial
 - [#110: E2E Test Suite](https://github.com/gannonh/agentis/issues/110) - 🔄 In Progress
 

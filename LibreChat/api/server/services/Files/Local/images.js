@@ -43,8 +43,11 @@ async function uploadLocalImage({ req, file, file_id, endpoint, resolution = 'hi
   } = await resizeImageBuffer(inputBuffer, resolution, endpoint);
   const extension = path.extname(inputFilePath);
 
+  // Sanitize userId to prevent path traversal attacks
+  const sanitizedUserId = sanitizeUserId(req.user.id);
+
   const { imageOutput } = req.app.locals.paths;
-  const userPath = path.join(imageOutput, req.user.id);
+  const userPath = path.join(imageOutput, sanitizedUserId);
 
   if (!fs.existsSync(userPath)) {
     fs.mkdirSync(userPath, { recursive: true });
@@ -57,7 +60,7 @@ async function uploadLocalImage({ req, file, file_id, endpoint, resolution = 'hi
   if (extension.toLowerCase() === targetExtension) {
     const bytes = Buffer.byteLength(resizedBuffer);
     await fs.promises.writeFile(newPath, resizedBuffer);
-    const filepath = path.posix.join('/', 'images', req.user.id, path.basename(newPath));
+    const filepath = path.posix.join('/', 'images', sanitizedUserId, path.basename(newPath));
     return { filepath, bytes, width, height };
   }
 
@@ -65,7 +68,7 @@ async function uploadLocalImage({ req, file, file_id, endpoint, resolution = 'hi
   const data = await sharp(resizedBuffer).toFormat(req.app.locals.imageOutputType).toBuffer();
   await fs.promises.writeFile(outputFilePath, data);
   const bytes = Buffer.byteLength(data);
-  const filepath = path.posix.join('/', 'images', req.user.id, path.basename(outputFilePath));
+  const filepath = path.posix.join('/', 'images', sanitizedUserId, path.basename(outputFilePath));
   await fs.promises.unlink(inputFilePath);
   return { filepath, bytes, width, height };
 }
@@ -96,7 +99,10 @@ function encodeImage(imagePath) {
  */
 async function prepareImagesLocal(req, file) {
   const { publicPath, imageOutput } = req.app.locals.paths;
-  const userPath = path.join(imageOutput, req.user.id);
+
+  // Sanitize userId to prevent path traversal attacks
+  const sanitizedUserId = sanitizeUserId(req.user.id);
+  const userPath = path.join(imageOutput, sanitizedUserId);
 
   if (!fs.existsSync(userPath)) {
     fs.mkdirSync(userPath, { recursive: true });
@@ -121,6 +127,9 @@ async function prepareImagesLocal(req, file) {
  * @throws {Error} - Throws an error if Firebase is not initialized or if there is an error in uploading.
  */
 async function processLocalAvatar({ buffer, userId, manual }) {
+  // Sanitize userId to prevent path traversal attacks
+  const sanitizedUserId = sanitizeUserId(userId);
+
   const userDir = path.resolve(
     __dirname,
     '..',
@@ -131,11 +140,11 @@ async function processLocalAvatar({ buffer, userId, manual }) {
     'client',
     'public',
     'images',
-    userId,
+    sanitizedUserId,
   );
 
   const fileName = `avatar-${new Date().getTime()}.png`;
-  const urlRoute = `/images/${userId}/${fileName}`;
+  const urlRoute = `/images/${sanitizedUserId}/${fileName}`;
   const avatarPath = path.join(userDir, fileName);
 
   await fs.promises.mkdir(userDir, { recursive: true });
@@ -149,6 +158,33 @@ async function processLocalAvatar({ buffer, userId, manual }) {
   }
 
   return url;
+}
+
+/**
+ * Sanitizes a user ID to prevent path traversal attacks
+ * @param {string} userId - The user ID to sanitize
+ * @returns {string} The sanitized user ID
+ * @throws {Error} If the user ID contains path traversal sequences
+ */
+function sanitizeUserId(userId) {
+  if (!userId || typeof userId !== 'string') {
+    throw new Error('Invalid user ID');
+  }
+
+  // Check for path traversal sequences
+  if (userId.includes('../') || userId.includes('..\\') || userId.includes('..')) {
+    throw new Error('Path traversal attack detected');
+  }
+
+  // Remove any path separators to prevent directory traversal
+  const sanitized = userId.replace(/[/\\]/g, '_');
+
+  // Ensure the sanitized ID is not empty
+  if (!sanitized || sanitized.trim() === '') {
+    throw new Error('Invalid user ID after sanitization');
+  }
+
+  return sanitized;
 }
 
 export { uploadLocalImage, encodeImage, prepareImagesLocal, processLocalAvatar };

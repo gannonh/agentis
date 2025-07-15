@@ -60,3 +60,6 @@ For each identified issue, provide:
 - [ ] All paths have test coverage
 - [ ] Issues include fix instructions
 - [ ] Locations are precisely identified
+
+## E2E Testing
+- e2e tests run against production frontend: 3080. so you need to build the front end before running e2e tests

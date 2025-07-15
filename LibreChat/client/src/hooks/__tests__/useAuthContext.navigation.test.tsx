@@ -1,5 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { RecoilRoot } from 'recoil';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { useAuthContext } from '../useAuthContext';
 import { authClient } from '../../config/betterAuth';
@@ -23,10 +25,32 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+// Mock the useGetUserQuery hook
+vi.mock('~/data-provider/Auth/queries', () => ({
+  useGetUserQuery: vi.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+}));
+
 // Router wrapper for testing
-const createWrapper =
-  () =>
-  ({ children }: { children: React.ReactNode }) => <MemoryRouter>{children}</MemoryRouter>;
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      <RecoilRoot>
+        <MemoryRouter>{children}</MemoryRouter>
+      </RecoilRoot>
+    </QueryClientProvider>
+  );
+};
 
 describe('useAuthContext Navigation', () => {
   beforeEach(() => {

@@ -1,9 +1,11 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import {
   requireBetterAuth,
   canDeleteAccount,
   verifyEmailLimiter,
   checkAdmin,
+  usernameCheckLimiter,
 } from '#server/middleware.js';
 import { User } from '#models/index.js';
 import logger from '#utils/logger.js';
@@ -37,52 +39,47 @@ router.post('/update-onboarding-step', requireBetterAuth, async (req, res) => {
       });
     }
 
-    // Update user in Better Auth's database directly to ensure session synchronization
-    // Better Auth uses the 'user' collection for user data
-    const mongoose = await import('mongoose');
-    const db = mongoose.default.connection.db;
-    const userCollection = db.collection('user');
-
-    const updateResult = await userCollection.updateOne(
-      { _id: new mongoose.default.Types.ObjectId(userId) },
+    // Update user using Mongoose model to ensure schema validations are applied
+    // Better Auth uses the 'user' collection which is already configured in the User model
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
       {
-        $set: {
-          onboardingStep,
-          updatedAt: new Date(),
-        },
+        onboardingStep,
+        updatedAt: new Date(),
+      },
+      {
+        new: true, // Return the updated document
+        runValidators: true, // Ensure schema validations are applied
       },
     );
 
-    if (updateResult.matchedCount === 0) {
+    if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (updateResult.modifiedCount === 0) {
+    // Check if the update actually modified the onboardingStep
+    const wasModified = updatedUser.onboardingStep === onboardingStep;
+    if (!wasModified) {
       logger.warn('User onboarding step was not modified - may already be set to this value', {
         userId,
         onboardingStep,
+        currentStep: updatedUser.onboardingStep,
       });
     }
 
-    // Get the updated user data
-    const updatedUser = await userCollection.findOne({
-      _id: new mongoose.default.Types.ObjectId(userId),
-    });
-
-    logger.info('Updated user onboarding step in Better Auth database', {
+    logger.info('Updated user onboarding step using Mongoose model', {
       userId,
       onboardingStep,
-      matchedCount: updateResult.matchedCount,
-      modifiedCount: updateResult.modifiedCount,
-      currentOnboardingStep: updatedUser?.onboardingStep,
+      wasModified,
+      currentOnboardingStep: updatedUser.onboardingStep,
     });
 
     res.json({
       success: true,
-      onboardingStep: updatedUser?.onboardingStep || onboardingStep,
+      onboardingStep: updatedUser.onboardingStep,
     });
   } catch (error) {
-    logger.error('Failed to update onboarding step in Better Auth database', error);
+    logger.error('Failed to update onboarding step using Mongoose model', error);
     res.status(500).json({ error: 'Failed to update onboarding step' });
   }
 });
@@ -181,6 +178,49 @@ router.get('/admin/check-email', requireBetterAuth, checkAdmin, async (req, res)
   } catch (error) {
     logger.error('Failed to check email availability', error);
     res.status(500).json({ error: 'Failed to check email availability' });
+  }
+});
+
+/**
+ * GET /api/user/check-username
+ * Check if username is available for current user
+ */
+router.get('/check-username', usernameCheckLimiter, requireBetterAuth, async (req, res) => {
+  try {
+    const { username } = req.query;
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username parameter is required' });
+    }
+
+    // Validate username format
+    if (typeof username !== 'string' || username.length < 3 || username.length > 20) {
+      return res.status(400).json({ error: 'Username must be 3-20 characters long' });
+    }
+
+    // Check if username contains only allowed characters
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return res.status(400).json({
+        error: 'Username can only contain letters, numbers, underscores, and hyphens',
+      });
+    }
+
+    // Check if username exists in user schema (username field is in main schema)
+    // Use case-insensitive regex query to ensure robust username uniqueness checking
+    // Escape special regex characters to prevent injection
+    const escapedUsername = username.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const existingUser = await User.findOne({
+      username: { $regex: new RegExp(`^${escapedUsername}$`, 'i') },
+      _id: { $ne: new mongoose.Types.ObjectId(req.user.id) }, // Convert string ID to ObjectId
+    });
+
+    res.json({
+      available: !existingUser,
+      username: username.toLowerCase(),
+    });
+  } catch (error) {
+    logger.error('Failed to check username availability', error);
+    res.status(500).json({ error: 'Failed to check username availability' });
   }
 });
 

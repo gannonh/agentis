@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import { logger } from '#config/index.js';
 import { betterAuthConfig } from '#config/betterAuth.js';
 import { handleOrganizationAssignment } from '#utils/organization.js';
+import { createMapProfileToUser } from '#utils/oauthProfileMapper.js';
 
 /**
  * Better Auth instance, initialized after MongoDB connection
@@ -133,6 +134,16 @@ mongoose.connection.once('open', () => {
             defaultValue: 'organization',
             input: true, // Allow setting during updates
           },
+          username: {
+            type: 'string',
+            required: false,
+            input: true, // Allow setting during updates
+          },
+          image: {
+            type: 'string',
+            required: false,
+            input: true, // Allow setting during updates
+          },
         },
       },
 
@@ -144,7 +155,7 @@ mongoose.connection.once('open', () => {
         },
       },
 
-      // Add database hooks to handle OAuth user linking and session creation
+      // Restore working database hooks from before OAuth regression
       databaseHooks: {
         user: {
           create: {
@@ -163,15 +174,8 @@ mongoose.connection.once('open', () => {
                   logger.info('Found existing user with email:', user.email);
                   logger.info('Existing user ID:', existingUser._id);
 
-                  // Better Auth's MongoDB adapter expects to handle the user lookup itself
-                  // when account linking is enabled. We should not interfere with that.
-                  // However, since it's not working properly, we need a workaround.
-
-                  // Instead of creating a new user, we'll update the incoming user data
-                  // to match the existing user's ID
-                  const existingUserId = existingUser._id.toString();
-
                   // Return the user data with the existing ID to prevent duplicate creation
+                  const existingUserId = existingUser._id.toString();
                   return {
                     ...user,
                     id: existingUserId,
@@ -417,34 +421,7 @@ mongoose.connection.once('open', () => {
                 // OAuth redirects must go to backend (where Google OAuth is configured)
                 redirectURI: `${betterAuthConfig.baseURL}${betterAuthConfig.basePath}/callback/google`,
                 // Map OAuth profile to user data - Better Auth will handle account linking
-                mapProfileToUser: async (profile) => {
-                  logger.info('🔍 OAuth profile mapping for:', profile.email);
-
-                  // Check if user already exists to ensure proper ID handling
-                  const userCollection = db.collection('user');
-                  const existingUser = await userCollection.findOne({ email: profile.email });
-
-                  if (existingUser) {
-                    logger.info('🔗 Found existing user during OAuth mapping:', profile.email);
-                    // Return user data with existing ID to ensure consistency
-                    return {
-                      id: existingUser._id.toString(),
-                      email: profile.email,
-                      name: existingUser.name || profile.name,
-                      image: existingUser.image || profile.picture,
-                      emailVerified: existingUser.emailVerified || true,
-                    };
-                  }
-
-                  // New user - just map the OAuth profile data
-                  logger.info('👤 New user from OAuth:', profile.email);
-                  return {
-                    email: profile.email,
-                    name: profile.name,
-                    image: profile.picture,
-                    emailVerified: true,
-                  };
-                },
+                mapProfileToUser: createMapProfileToUser(db),
               },
             }
           : undefined,
@@ -501,7 +478,7 @@ export const getAuth = () => {
   if (!authInstance) {
     // Return a temporary handler that responds with 503 when auth is not ready
     return {
-      handler: (req, res) => {
+      handler: (_req, res) => {
         res.status(503).json({
           error: 'Authentication service is starting up. Please try again in a moment.',
         });

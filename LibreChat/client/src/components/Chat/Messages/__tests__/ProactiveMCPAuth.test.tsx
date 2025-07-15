@@ -4,11 +4,11 @@ import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, test, vi, type Mock } from 'vitest';
 import { RecoilRoot } from 'recoil';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { TMessage } from 'librechat-data-provider';
 import type { TAgentOption } from '~/common/agents-types';
 import ProactiveMCPAuth from '../ProactiveMCPAuth';
 import * as mcpAuth from '~/utils/mcpAuth';
-import * as authHooks from '~/hooks/AuthContext';
 import * as agentQueries from '~/data-provider/Agents/queries';
 import { ChatContext } from '~/Providers/ChatContext';
 import { AgentsMapContext } from '~/Providers/AgentsMapContext';
@@ -33,9 +33,19 @@ const mockedMcpAuth = mcpAuth as vi.Mocked<typeof mcpAuth>;
 
 // Mock hooks
 // @ts-ignore
-vi.mock('~/hooks/AuthContext');
-// @ts-ignore
-const mockedAuthHooks = authHooks as vi.Mocked<typeof authHooks>;
+vi.mock('~/hooks/useAuthContext');
+
+// Mock the specific hook we need
+vi.mock('~/hooks', async () => {
+  const actual = await vi.importActual('~/hooks');
+  return {
+    ...actual,
+    useAuthContext: vi.fn(() => ({
+      isAuthenticated: true,
+      user: { id: '1', email: 'test@example.com' },
+    })),
+  };
+});
 
 // Mock store selectors
 // @ts-ignore
@@ -62,6 +72,11 @@ const mockedAgentQueries = agentQueries as vi.Mocked<typeof agentQueries>;
 import { useRecoilValue } from 'recoil';
 // @ts-ignore
 const mockUseRecoilValue = useRecoilValue as vi.MockedFunction<typeof useRecoilValue>;
+
+// Get reference to the mocked useAuthContext
+import { useAuthContext } from '~/hooks';
+// @ts-ignore
+const mockUseAuthContext = useAuthContext as vi.MockedFunction<typeof useAuthContext>;
 
 describe('ProactiveMCPAuth Component', () => {
   const mockMessages: TMessage[] = [
@@ -112,19 +127,6 @@ describe('ProactiveMCPAuth Component', () => {
     mockUseRecoilValue.mockReturnValue(null);
 
     // Default mock implementations
-    mockedAuthHooks.useAuthContext.mockReturnValue({
-      isAuthenticated: true,
-      user: { id: 'user-1' } as any,
-      token: 'mock-token',
-      // @ts-ignore
-      logout: vi.fn(),
-      // @ts-ignore
-      login: vi.fn(),
-      error: undefined,
-      // @ts-ignore
-      setError: vi.fn(),
-    });
-
     mockedAgentQueries.useAvailableAgentToolsQuery.mockReturnValue({
       data: mockAllTools,
       isLoading: false,
@@ -148,14 +150,23 @@ describe('ProactiveMCPAuth Component', () => {
       'agent-1': mockAgent,
     };
 
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
     return render(
-      <MemoryRouter>
-        <RecoilRoot>
-          <ChatContext.Provider value={mockChatContext as any}>
-            <AgentsMapContext.Provider value={mockAgentsMap}>{ui}</AgentsMapContext.Provider>
-          </ChatContext.Provider>
-        </RecoilRoot>
-      </MemoryRouter>,
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <RecoilRoot>
+            <ChatContext.Provider value={mockChatContext as any}>
+              <AgentsMapContext.Provider value={mockAgentsMap}>{ui}</AgentsMapContext.Provider>
+            </ChatContext.Provider>
+          </RecoilRoot>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
   };
 
@@ -515,7 +526,7 @@ describe('ProactiveMCPAuth Component', () => {
 
   describe('Non-authenticated User', () => {
     it('should render auth UI even for non-authenticated users', () => {
-      mockedAuthHooks.useAuthContext.mockReturnValue({
+      mockUseAuthContext.mockReturnValue({
         isAuthenticated: false,
         user: undefined,
         token: undefined,

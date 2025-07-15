@@ -105,50 +105,22 @@ test.describe('Basic Auth & Onboarding Tests', () => {
     const page = await context.newPage();
 
     try {
-      // Step 1: Navigate to login
-      await page.goto('http://localhost:3080/login');
-
-      // Step 2: Initiate Google OAuth
-      await page.getByTestId('google').click();
-      await page.waitForLoadState('networkidle');
-
-      // Step 3: Verify we reach Google OAuth page
-      expect(page.url()).toContain('accounts.google.com');
-      await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-      await expect(page.getByText('to continue to Agentis')).toBeVisible();
-      logProgress('✅ Successfully redirected to Google OAuth');
-
-      // Step 4: Complete OAuth with test credentials
-      const { GOOGLE_CREDS } = await import('../../utils/oAuth');
-
-      if (!GOOGLE_CREDS.email || !GOOGLE_CREDS.password) {
-        logProgress('⚠️ OAuth credentials not available - skipping authentication');
+      // Step 1: Check if OAuth credentials are available
+      const { requireOAuthCredentials, startOAuthAuthentication } = await import('../../utils/authOnboardingUtils');
+      
+      try {
+        requireOAuthCredentials('PUBLIC_DOMAIN', 'Google OAuth with public domain');
+      } catch (error) {
+        logProgress('⚠️ Skipping test due to missing OAuth credentials');
         return;
       }
 
-      logProgress('🔐 Completing Google OAuth authentication...');
+      // Step 2: Complete OAuth authentication flow
+      await startOAuthAuthentication(page, 'PUBLIC_DOMAIN');
 
-      // Fill email (with click first)
-      await page.getByRole('textbox', { name: 'Email or phone' }).click();
-      await page.getByRole('textbox', { name: 'Email or phone' }).fill(GOOGLE_CREDS.email);
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Fill password (with click first)
-      await page.getByRole('textbox', { name: 'Enter your password' }).click();
-      await page.getByRole('textbox', { name: 'Enter your password' }).fill(GOOGLE_CREDS.password);
-      await page.getByRole('button', { name: 'Next' }).click();
-
-      // Step 5: Handle final Continue button
-      logProgress('🔒 Handling OAuth consent...');
-      await page.getByRole('button', { name: 'Continue' }).click();
-      await page.waitForLoadState('networkidle');
-
-      // Step 6: Verify successful authentication and redirect
+      // Step 3: Verify successful authentication and redirect
       // Public domain emails MUST go to onboarding (no organization detection)
       logProgress('📍 Verifying authentication redirect...');
-
-      // Must NOT be on Google OAuth page anymore
-      await expect(page).not.toHaveURL(/.*accounts\.google\.com.*/, { timeout: 10000 });
 
       // Must be redirected to onboarding for public domain users
       await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
@@ -173,22 +145,11 @@ test.describe('Basic Auth & Onboarding Tests', () => {
     const page = await context.newPage();
 
     try {
-      // Step 1: Start OAuth flow
-      await page.goto('http://localhost:3080/login');
-      await page.getByTestId('google').click();
-      await page.waitForLoadState('networkidle');
-      expect(page.url()).toContain('accounts.google.com');
+      // Step 1: Test OAuth cancellation using abstracted utility
+      const { cancelOAuthFlow } = await import('../../utils/authOnboardingUtils');
+      await cancelOAuthFlow(page);
 
-      // Step 2: Cancel by going back
-      await page.goBack();
-      await page.waitForLoadState('networkidle');
-
-      // Step 3: Verify graceful return to login
-      await expect(page).toHaveURL(/.*localhost:3080\/login.*/, { timeout: 10000 });
-      await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
-      await expect(page.getByTestId('google')).toBeVisible();
-
-      // Step 4: Verify login still works after cancellation
+      // Step 2: Verify login still works after cancellation
       await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
       await page.getByTestId('login-button').click();
       await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();

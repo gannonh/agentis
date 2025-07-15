@@ -25,6 +25,10 @@ import {
   verifyOrganizationInDatabase,
   verifyOrganizationMembership,
   TEST_PATTERNS,
+  requireOAuthCredentials,
+  startOAuthAuthentication,
+  completeOAuthOnboardingFlow,
+  createTestOrganization,
 } from '../../utils/authOnboardingUtils';
 
 test.use({
@@ -32,6 +36,9 @@ test.use({
 });
 
 test.describe.configure({ mode: 'default' });
+
+// Set a reasonable timeout for these tests
+test.setTimeout(60000); // 1 minute per test
 
 test.describe('Organization Join Manual Approval Flow', () => {
   test.beforeEach(async () => {
@@ -190,7 +197,7 @@ test.describe('Organization Join Manual Approval Flow', () => {
     }
   });
 
-  test('Admin approves join request', async () => {
+  test.skip('Admin approves join request', async () => {
     logProgress('🚀 Testing admin approval of join request...');
 
     // This test would require:
@@ -203,7 +210,7 @@ test.describe('Organization Join Manual Approval Flow', () => {
     logProgress('⚠️ Admin approval flow - to be implemented when admin UI is available');
   });
 
-  test('Admin rejects join request', async () => {
+  test.skip('Admin rejects join request', async () => {
     logProgress('🚀 Testing admin rejection of join request...');
 
     // This test would require:
@@ -216,7 +223,7 @@ test.describe('Organization Join Manual Approval Flow', () => {
     logProgress('⚠️ Admin rejection flow - to be implemented when admin UI is available');
   });
 
-  test('Multiple pending requests management', async () => {
+  test.skip('Multiple pending requests management', async () => {
     logProgress('🚀 Testing multiple pending requests...');
 
     // This test would require:
@@ -227,5 +234,230 @@ test.describe('Organization Join Manual Approval Flow', () => {
 
     // For now, marking as placeholder for future implementation
     logProgress('⚠️ Multiple requests management - to be implemented when admin UI is available');
+  });
+
+  /**
+   * =================================================================================
+   * OAUTH CORPORATE DOMAIN MANUAL APPROVAL TESTS
+   * =================================================================================
+   * Tests OAuth authentication with corporate domain manual approval functionality.
+   * Extends join-approval scope to include OAuth flows with PRIVATE_DOMAIN.
+   */
+  // TODO: Implement OAuth corporate domain manual approval tests
+  // These tests will require a valid OAuth setup with PRIVATE_DOMAIN credentials.
+  // They will simulate OAuth users requesting to join organizations with manual approval.
+  test.skip('OAuth → Corporate Domain → Manual Approval Request Flow', async ({ browser }) => {
+    // SKIPPED: This test attempts to simulate two different users with the same OAuth account
+    // which is IMPOSSIBLE. We only have one OAuth account per domain (gannon@astrolabs.llc).
+    // When the same OAuth account logs in twice, it's recognized as the existing user
+    // and redirected to chat, not onboarding.
+    //
+    // To test manual approval flows, use Magic Link authentication with different email addresses.
+    logProgress('🚀 Testing OAuth corporate domain manual approval request flow...');
+
+    // Verify OAuth credentials are available (will fail test if missing)
+    requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth corporate manual approval request');
+
+    // Session 1: Create organization with OAuth User 1 (domain join DISABLED)
+    const context1 = await browser.newContext();
+    const page1 = await context1.newPage();
+
+    // Session 2: Request to join with OAuth User 2
+    const context2 = await browser.newContext();
+    const page2 = await context2.newPage();
+
+    try {
+      // =================================================================
+      // PHASE 1: OAuth User 1 creates organization with domain join DISABLED
+      // =================================================================
+      logProgress('👤 Phase 1: OAuth User 1 creating organization with domain join disabled...');
+
+      const orgName = 'Astrolabs Manual Approval Corp';
+
+      // Complete OAuth onboarding flow for User 1 with domain join DISABLED
+      await completeOAuthOnboardingFlow(page1, 'PRIVATE_DOMAIN', {
+        orgName: orgName,
+        enableDomainJoin: false, // CRITICAL: Disable auto-join for manual approval flow
+        skipTeam: true,
+      });
+
+      await expect(page1).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
+      logProgress('✅ OAuth User 1: Completed organization creation with domain join DISABLED');
+
+      // =================================================================
+      // PHASE 2: OAuth User 2 requests to join organization (manual approval)
+      // =================================================================
+      logProgress('👤 Phase 2: OAuth User 2 requesting to join organization...');
+
+      // Start OAuth authentication for User 2
+      await startOAuthAuthentication(page2, 'PRIVATE_DOMAIN');
+
+      // Verify we reach onboarding
+      await expect(page2).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
+      logProgress('✅ OAuth User 2: Redirected to onboarding');
+
+      // =================================================================
+      // CRITICAL: User 2 should see ORGANIZATION PREVIEW (not creation!)
+      // =================================================================
+      // Should see organization preview with the organization name in heading
+      await expect(page2.getByRole('heading', { name: orgName })).toBeVisible({ timeout: 10000 });
+      logProgress('✅ OAuth User 2: Can see existing organization name in preview');
+
+      // Should see "Request to Join" messaging (not auto-join)
+      await expect(page2.getByText(/Request to join/i)).toBeVisible();
+      logProgress('✅ OAuth User 2: Can see request to join option');
+
+      // Should NOT see auto-join indicator
+      await expect(page2.getByText(/Auto-join enabled/i)).not.toBeVisible();
+      logProgress('✅ OAuth User 2: Auto-join correctly disabled');
+
+      // =================================================================
+      // CRITICAL: Test the manual approval request functionality
+      // =================================================================
+      // Look for the request to join button
+      const requestButton = page2.getByRole('button', { name: /Request to join/i });
+      await expect(requestButton).toBeVisible();
+      logProgress('🖱️ OAuth User 2: Clicking request to join button...');
+
+      await requestButton.click();
+      await page2.waitForTimeout(3000);
+
+      // Should show confirmation that request was sent (toast message)
+      await expect(page2.getByText('Join request sent! An admin')).toBeVisible();
+      logProgress('✅ OAuth User 2: Request sent confirmation displayed');
+
+      // =================================================================
+      // VERIFICATION: Database validation
+      // =================================================================
+      logProgress('🔍 Verifying database state...');
+
+      const { getTestDatabase } = await import('../../utils/testAuth');
+      const { db } = await getTestDatabase();
+
+      // Verify organization exists with domain join disabled
+      const org = await db.collection('organization').findOne({ name: orgName });
+      expect(org).toBeTruthy();
+      expect(org?.slug).toBe('astrolabs-manual-approval-corp');
+      expect(org?.metadata?.domain).toBe('astrolabs.llc');
+      expect(org?.metadata?.allowDomainJoin).toBe(false);
+      logProgress('✅ Organization verified with domain join disabled');
+
+      // Verify join request was created in organization metadata
+      const joinRequests = org?.metadata?.joinRequests || [];
+      expect(joinRequests).toHaveLength(1);
+      expect(joinRequests[0]).toMatchObject({
+        status: 'pending',
+        requestedAt: expect.any(Date),
+      });
+      logProgress('✅ Database verification: Join request created in organization metadata');
+
+      // Verify only OAuth User 1 is a member (User 2 should not be added yet)
+      const members = await db.collection('member').find({ organizationId: org?._id }).toArray();
+      expect(members).toHaveLength(1);
+      expect(members[0].role).toBe('owner');
+      logProgress('✅ Database verification: Only organization owner is a member');
+
+      logProgress('🎉 OAuth corporate domain manual approval request flow test PASSED!');
+    } finally {
+      await context1.close();
+      await context2.close();
+    }
+  });
+  // TODO: Implement OAuth corporate domain manual approval tests
+  // These tests will require a valid OAuth setup with PRIVATE_DOMAIN credentials.
+  // They will simulate OAuth users requesting to join organizations with manual approval.
+  test.skip('OAuth → Corporate Domain → Join Existing Manual Approval Organization', async ({
+    browser,
+  }) => {
+    // SKIPPED: This test requires a pre-existing organization that an OAuth user can request to join.
+    // However, creating the organization and then having an OAuth user join would require
+    // two different users, which is impossible with our single OAuth account constraint.
+    //
+    // The same OAuth account (gannon@astrolabs.llc) cannot both create an org AND request to join it.
+    // Use Magic Link tests for multi-user organization join scenarios.
+    logProgress(
+      '🚀 Testing OAuth user requesting to join pre-existing manual approval organization...',
+    );
+
+    // Verify OAuth credentials are available (will fail test if missing)
+    requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth join existing manual approval organization');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // =================================================================
+      // SETUP: Create organization via database with manual approval
+      // =================================================================
+      const testOrg = await createTestOrganization(
+        'Pre-existing Manual Approval Corp',
+        'astrolabs.llc',
+        false,
+      );
+      logProgress(
+        `✅ Created pre-existing organization: ${testOrg.name} with manual approval required`,
+      );
+
+      // =================================================================
+      // TEST: OAuth user requests to join existing organization
+      // =================================================================
+      await startOAuthAuthentication(page, 'PRIVATE_DOMAIN');
+
+      // Verify we reach onboarding
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
+      logProgress('✅ OAuth redirected to onboarding');
+
+      // Should see organization join preview
+      await expect(page.getByRole('heading', { name: testOrg.name })).toBeVisible({
+        timeout: 10000,
+      });
+      logProgress('✅ Existing organization preview displayed');
+
+      // Should see "Request to Join" messaging (not auto-join)
+      await expect(page.getByText(/Request to join/i)).toBeVisible();
+      logProgress('✅ Request to join option available');
+
+      // Should NOT see auto-join indicator
+      await expect(page.getByText(/Auto-join enabled/i)).not.toBeVisible();
+      logProgress('✅ Auto-join correctly disabled');
+
+      // Request to join the organization
+      const requestButton = page.getByRole('button', { name: /Request to join/i });
+      await expect(requestButton).toBeVisible();
+      await requestButton.click();
+      await page.waitForTimeout(3000);
+      logProgress('✅ Requested to join existing organization');
+
+      // Should show confirmation
+      await expect(page.getByText('Join request sent! An admin')).toBeVisible();
+      logProgress('✅ Request confirmation displayed');
+
+      // =================================================================
+      // VERIFICATION: Database validation
+      // =================================================================
+      const { getTestDatabase } = await import('../../utils/testAuth');
+      const { db } = await getTestDatabase();
+
+      // Verify join request was added to existing organization
+      const updatedOrg = await db.collection('organization').findOne({ _id: testOrg._id });
+      const joinRequests = updatedOrg?.metadata?.joinRequests || [];
+      expect(joinRequests).toHaveLength(1);
+      expect(joinRequests[0]).toMatchObject({
+        status: 'pending',
+        requestedAt: expect.any(Date),
+      });
+      logProgress(
+        '✅ Database verification: OAuth user join request added to existing organization',
+      );
+
+      // No new members should be added yet (pending approval)
+      const members = await db.collection('member').find({ organizationId: testOrg._id }).toArray();
+      expect(members).toHaveLength(0); // Pre-existing org has no initial members
+      logProgress('✅ Database verification: No members added pending approval');
+
+      logProgress('🎉 OAuth join existing manual approval organization test PASSED!');
+    } finally {
+      await context.close();
+    }
   });
 });

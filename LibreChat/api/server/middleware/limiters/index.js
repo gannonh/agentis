@@ -9,6 +9,7 @@ import toolCallLimiter from './toolCallLimiter.js';
 import { messageIpLimiter, messageUserLimiter } from './messageLimiters.js';
 import verifyEmailLimiter from './verifyEmailLimiter.js';
 import resetPasswordLimiter from './resetPasswordLimiter.js';
+import usernameCheckLimiter from './usernameCheckLimiter.js';
 
 export {
   createFileLimiters,
@@ -22,4 +23,5 @@ export {
   createSTTLimiters,
   verifyEmailLimiter,
   resetPasswordLimiter,
+  usernameCheckLimiter,
 };

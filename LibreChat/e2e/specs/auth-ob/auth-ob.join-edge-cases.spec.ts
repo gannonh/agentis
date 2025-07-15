@@ -109,8 +109,12 @@ test.describe('Organization Join Edge Cases', () => {
       // Check if we have a magic link error (indicates potential issue)
       const hasError = await page2.getByText(/There was an error with the magic link/i).isVisible();
       if (hasError) {
-        logProgress('❌ Magic link error detected - this indicates a failure in the authentication system');
-        throw new Error('Magic link authentication failed for existing user - this should not happen');
+        logProgress(
+          '❌ Magic link error detected - this indicates a failure in the authentication system',
+        );
+        throw new Error(
+          'Magic link authentication failed for existing user - this should not happen',
+        );
       }
 
       // Check current URL and determine where we are
@@ -128,7 +132,9 @@ test.describe('Organization Join Edge Cases', () => {
         logProgress(
           '❌ User: Went to onboarding instead of main app - membership detection failed',
         );
-        throw new Error('Existing member was incorrectly sent to onboarding flow - membership detection is broken');
+        throw new Error(
+          'Existing member was incorrectly sent to onboarding flow - membership detection is broken',
+        );
       } else {
         logProgress(`❌ User: Unexpected URL: ${currentUrl}`);
         // Wait for either main app or onboarding with proper error handling
@@ -374,10 +380,9 @@ test.describe('Organization Join Edge Cases', () => {
       const { db } = await getTestDatabase();
 
       // Soft delete the organization (mark as deleted) to match real application behavior
-      const deleteResult = await db.collection('organization').updateOne(
-        { name: orgName },
-        { $set: { deletedAt: new Date() } }
-      );
+      const deleteResult = await db
+        .collection('organization')
+        .updateOne({ name: orgName }, { $set: { deletedAt: new Date() } });
 
       if (deleteResult.matchedCount === 0) {
         throw new Error('Failed to find organization in database for deletion');
@@ -390,27 +395,37 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // PHASE 3: User tries to join soft-deleted organization
       // =================================================================
-      
+
       // After soft-deletion, the eligibility check should detect the deleted org
       // and automatically switch from auto-join to manual request flow
-      await expect(page.getByRole('button', { name: /Request to join/i })).toBeVisible({ timeout: 5000 });
-      await expect(page.getByRole('button', { name: new RegExp(`Join ${orgName}`, 'i') })).not.toBeVisible();
-      logProgress('✅ User: Auto-join disabled for soft-deleted organization, showing request flow');
-      
+      await expect(page.getByRole('button', { name: /Request to join/i })).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(
+        page.getByRole('button', { name: new RegExp(`Join ${orgName}`, 'i') }),
+      ).not.toBeVisible();
+      logProgress(
+        '✅ User: Auto-join disabled for soft-deleted organization, showing request flow',
+      );
+
       // Click the request to join button
       const requestButton = page.getByRole('button', { name: /Request to join/i });
       await requestButton.click();
       await page.waitForTimeout(3000);
       logProgress('🔘 User: Clicked Request to Join button');
-      
+
       // Should show error message - users cannot request to join soft-deleted organizations
       await expect(page.getByText(/Failed to create join request/i)).toBeVisible({ timeout: 5000 });
-      logProgress('✅ User: Correct error message displayed - cannot request to join soft-deleted organization');
-      
+      logProgress(
+        '✅ User: Correct error message displayed - cannot request to join soft-deleted organization',
+      );
+
       // Should NOT show success message
       await expect(page.getByText(/request.*sent/i)).not.toBeVisible();
-      logProgress('✅ User: No success message shown (correctly blocked request for soft-deleted org)')
-      
+      logProgress(
+        '✅ User: No success message shown (correctly blocked request for soft-deleted org)',
+      );
+
       // =================================================================
       // VERIFICATION: Check database state
       // =================================================================
@@ -423,16 +438,22 @@ test.describe('Organization Join Edge Cases', () => {
       }
       expect(org.deletedAt).toBeTruthy();
       logProgress('✅ Database verification: Organization exists but is marked as deleted');
-      
+
       // Verify no user membership was created (since auto-join was disabled)
-      const membership = await db.collection('organizationMembership').findOne({ organizationId: org._id });
+      const membership = await db
+        .collection('organizationMembership')
+        .findOne({ organizationId: org._id });
       expect(membership).toBeFalsy();
       logProgress('✅ Database verification: No membership created for soft-deleted organization');
-      
+
       // Check if join request was created
-      const joinRequest = org.metadata?.joinRequests?.find((req: any) => req.userEmail.includes('doomed.com'));
+      const joinRequest = org.metadata?.joinRequests?.find((req: any) =>
+        req.userEmail.includes('doomed.com'),
+      );
       if (joinRequest) {
-        logProgress('✅ Database verification: Join request was created for soft-deleted organization');
+        logProgress(
+          '✅ Database verification: Join request was created for soft-deleted organization',
+        );
       } else {
         logProgress('ℹ️ Database verification: No join request found (may be expected behavior)');
       }
@@ -478,7 +499,7 @@ test.describe('Organization Join Edge Cases', () => {
       await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({
         timeout: 10000,
       });
-      await page1.getByRole('textbox', { name: 'Your Name' }).fill('Test User Resume');
+      await page1.getByTestId('profile-name-input').fill('Test User Resume');
       logProgress('✅ Phase 1: Profile step partially completed');
 
       // Simulate interruption - close browser without completing
@@ -530,7 +551,7 @@ test.describe('Organization Join Edge Cases', () => {
       logProgress('✅ Phase 2: Correctly resumed at profile step');
 
       // TODO: Profile form should remember the previously entered name (localStorage persistence not yet implemented)
-      const nameInput = await page2.getByRole('textbox', { name: 'Your Name' });
+      const nameInput = await page2.getByTestId('profile-name-input');
       const nameValue = await nameInput.inputValue();
 
       if (nameValue === 'Test User Resume') {
@@ -638,7 +659,7 @@ test.describe('Organization Join Edge Cases', () => {
       await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible({
         timeout: 10000,
       });
-      await page1.getByRole('textbox', { name: 'Your Name' }).fill('Test User DataLoss');
+      await page1.getByTestId('profile-name-input').fill('Test User DataLoss');
       logProgress('✅ Phase 1: Filled profile form but not submitted');
 
       // Close the browser completely (simulate data loss)
@@ -672,10 +693,12 @@ test.describe('Organization Join Edge Cases', () => {
       logProgress('✅ Phase 2: Correctly resumed at profile step');
 
       // Form data should be lost (no localStorage in new browser)
-      const nameInput = await page2.getByRole('textbox', { name: 'Your Name' });
+      // However, the name field is auto-populated with email prefix for better UX
+      const nameInput = page2.getByTestId('profile-name-input');
       const nameValue = await nameInput.inputValue();
-      expect(nameValue).toBe(''); // Should be empty
-      logProgress('✅ Phase 2: Form data correctly lost (no localStorage in new browser)');
+      const expectedAutoPopulatedName = userEmail.split('@')[0];
+      expect(nameValue).toBe(expectedAutoPopulatedName); // Should be auto-populated with email prefix
+      logProgress('✅ Phase 2: Form correctly auto-populated (no localStorage persisted data)');
 
       // Fill and complete the profile step
       await nameInput.fill('Test User DataLoss New');
