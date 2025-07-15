@@ -686,7 +686,7 @@ describe('GET /api/user/check-username', () => {
     it('should properly test rate limiting behavior with exactly 15 requests', async () => {
       // Make exactly 15 sequential requests to test the rate limiting behavior
       const responses = [];
-      
+
       for (let i = 0; i < 15; i++) {
         const response = await request(app)
           .get('/api/user/check-username')
@@ -734,7 +734,7 @@ describe('GET /api/user/check-username', () => {
       expect(response.headers['x-ratelimit-limit']).toBe('10');
       expect(response.headers['x-ratelimit-remaining']).toBe('9'); // 10 - 1 (this request)
       expect(response.headers['x-ratelimit-reset']).toBeDefined();
-      
+
       // Verify the format of the reset timestamp
       const resetTime = new Date(response.headers['x-ratelimit-reset']);
       expect(resetTime).toBeInstanceOf(Date);
@@ -749,7 +749,7 @@ describe('GET /api/user/check-username', () => {
       const promises = Array.from({ length: 15 }, (_, i) =>
         request(app)
           .get('/api/user/check-username')
-          .query({ username: `rapidtest${i}` })
+          .query({ username: `rapidtest${i}` }),
       );
 
       const responses = await Promise.all(promises);
@@ -757,23 +757,25 @@ describe('GET /api/user/check-username', () => {
       // Verify exactly what the issue specified:
       // "makes 15 rapid requests (exceeding the 10 request limit) and verifies that the 11th request returns 429"
       expect(responses.length).toBe(15);
-      
+
       // The 11th request (index 10) should return 429
       expect(responses[10].status).toBe(429);
       expect(responses[10].body.message).toBe('Too many requests, please try again later.');
-      
+
       // Count how many succeed vs are rate limited
-      const successful = responses.filter(r => r.status === 200).length;
-      const rateLimited = responses.filter(r => r.status === 429).length;
-      
+      const successful = responses.filter((r) => r.status === 200).length;
+      const rateLimited = responses.filter((r) => r.status === 429).length;
+
       // Should have 10 successful and 5 rate limited
       expect(successful).toBe(10);
       expect(rateLimited).toBe(5);
-      
+
       // All rate limited responses should have the appropriate message
-      responses.filter(r => r.status === 429).forEach(response => {
-        expect(response.body.message).toBe('Too many requests, please try again later.');
-      });
+      responses
+        .filter((r) => r.status === 429)
+        .forEach((response) => {
+          expect(response.body.message).toBe('Too many requests, please try again later.');
+        });
     });
   });
 });

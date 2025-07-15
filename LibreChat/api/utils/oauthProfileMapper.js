@@ -213,7 +213,12 @@ const validateProfile = (profile) => {
     const description = profile.error_description;
 
     // OAuth callback errors (authorization errors)
-    const callbackErrors = ['access_denied', 'invalid_request', 'unauthorized_client', 'unsupported_response_type'];
+    const callbackErrors = [
+      'access_denied',
+      'invalid_request',
+      'unauthorized_client',
+      'unsupported_response_type',
+    ];
     if (callbackErrors.includes(errorType)) {
       throw new OAuthCallbackError(errorType, description, profile);
     }
@@ -237,7 +242,13 @@ const validateProfile = (profile) => {
     }
 
     // Profile fetch HTTP errors
-    const profileFetchErrors = ['unauthorized', 'forbidden', 'not_found', 'internal_server_error', 'service_unavailable'];
+    const profileFetchErrors = [
+      'unauthorized',
+      'forbidden',
+      'not_found',
+      'internal_server_error',
+      'service_unavailable',
+    ];
     if (profileFetchErrors.includes(errorType)) {
       throw new ProfileFetchError(errorType, description, profile);
     }
@@ -341,10 +352,13 @@ export const createMapProfileToUser = (db) => async (profile) => {
       if (dbError.message.includes('ENOTFOUND') || dbError.message.includes('hostname not found')) {
         throw new NetworkError(dbError.message.replace('ENOTFOUND: ', ''));
       }
-      if (dbError.message.includes('UNABLE_TO_VERIFY_LEAF_SIGNATURE') || dbError.message.includes('SSL certificate')) {
+      if (
+        dbError.message.includes('UNABLE_TO_VERIFY_LEAF_SIGNATURE') ||
+        dbError.message.includes('SSL certificate')
+      ) {
         throw new NetworkError(dbError.message.replace('UNABLE_TO_VERIFY_LEAF_SIGNATURE: ', ''));
       }
-      
+
       throw new DatabaseError(dbError);
     }
 
