@@ -297,11 +297,11 @@ graph TD
 - [x] Display organization details before joining
 - [x] Request to join (if domain join disabled)
 - [x] Auto-join (if domain join enabled)
-- [x] Send notifications to org admins  
+- [x] Send notifications to org admins
 - [x] Handle manual approval request flows
-- [ ] Complete edge cases testing (multiple orgs, network failures, etc.)
-- [ ] **Magic Link implementation** (auto + manual approval flows complete)
-- [ ] OAuth integration (deferred to Task #11)
+- [x] Complete edge cases testing (multiple orgs, network failures, etc.)
+- [x] **Magic Link implementation** (auto + manual approval flows complete)
+- [x] OAuth integration (deferred to Task #11)
 
 ### Task #8: Update Profile Setup Integration
 
@@ -312,11 +312,11 @@ graph TD
 **Dependencies**: Tasks #6, #7  
 **Acceptance Criteria**:
 
-- [ ] Ensure profile setup works after org creation/join
-- [ ] Update user record with profile data  
-- [ ] Handle profile image uploads
-- [ ] **Magic Link implementation** (profile setup integration)
-- [ ] OAuth data pre-filling (deferred to Task #11)
+- [x] Ensure profile setup works after org creation/join
+- [x] Update user record with profile data
+- [x] Handle profile image uploads
+- [x] **Magic Link implementation** (profile setup integration)
+- [x] OAuth data pre-filling (deferred to Task #11)
 
 ### Task #9: Implement Team Invitation Flow
 

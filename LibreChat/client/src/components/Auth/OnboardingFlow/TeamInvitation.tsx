@@ -94,10 +94,13 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
             update(index, { ...invitation, status: 'sending' });
           }
 
-          // Use Better Auth invitation method
+          // Use Better Auth invitation method with attribution
           await authClient.organization.inviteMember({
             email: invitation.email,
             role: invitation.role,
+            // Add invitation attribution fields
+            invitedAt: new Date(),
+            source: 'onboarding',
             // resend: true to handle duplicates gracefully
           });
 
@@ -246,6 +249,7 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
           <div className="mt-1 flex space-x-2">
             <Input
               id="emailInput"
+              data-testid="team-email-input"
               type="email"
               value={currentEmail}
               onChange={(e) => {
