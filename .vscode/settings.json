@@ -31,5 +31,8 @@
   },
   "[ignore]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
-  }
+  },
+  "markdown.styles": [
+    ".vscode/markdown-preview.css"
+  ],
 }
