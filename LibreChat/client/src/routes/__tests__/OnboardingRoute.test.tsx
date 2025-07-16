@@ -461,7 +461,7 @@ describe('OnboardingRoute', () => {
     await waitFor(() => {
       expect(screen.getByText('Step 3 of 4')).toBeInTheDocument();
     });
-    await user.click(screen.getByRole('button', { name: 'Skip for Now' }));
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }));
 
     // Step 4: Welcome
     expect(screen.getByText('Step 4 of 4')).toBeInTheDocument();

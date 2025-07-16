@@ -106,8 +106,10 @@ test.describe('Basic Auth & Onboarding Tests', () => {
 
     try {
       // Step 1: Check if OAuth credentials are available
-      const { requireOAuthCredentials, startOAuthAuthentication } = await import('../../utils/authOnboardingUtils');
-      
+      const { requireOAuthCredentials, startOAuthAuthentication } = await import(
+        '../../utils/authOnboardingUtils'
+      );
+
       try {
         requireOAuthCredentials('PUBLIC_DOMAIN', 'Google OAuth with public domain');
       } catch (error) {

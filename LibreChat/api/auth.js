@@ -23,6 +23,49 @@ import { createMapProfileToUser } from '#utils/oauthProfileMapper.js';
  */
 let authInstance = null;
 
+/**
+ * Send invitation email function
+ * @param {Object} invitationData - Invitation data
+ * @param {Object} request - Request object
+ * @returns {Promise<Object>} Success/error result
+ */
+export const sendInvitationEmail = async (invitationData, request) => {
+  try {
+    logger.info('📧 Sending invitation email for:', invitationData.email);
+
+    // Import email utility
+    const sendEmail = (await import('#server/utils/sendEmail.js')).default;
+
+    // Prepare email data
+    const inviterName =
+      invitationData.inviterName ||
+      (invitationData.inviterEmail ? invitationData.inviterEmail.split('@')[0] : 'Someone');
+
+    const emailData = {
+      email: invitationData.email,
+      subject: `Join ${inviterName}'s team at ${invitationData.organizationName}`,
+      template: 'organizationInvite.handlebars',
+      payload: {
+        name: invitationData.email, // Use email as name if no name provided
+        inviterName: inviterName,
+        organizationName: invitationData.organizationName,
+        inviteLink: invitationData.inviteLink,
+        appName: process.env.APP_TITLE || 'Agentis',
+        year: new Date().getFullYear(),
+      },
+    };
+
+    // Send email
+    await sendEmail(emailData);
+
+    logger.info('✅ Invitation email sent successfully to:', invitationData.email);
+    return { success: true };
+  } catch (error) {
+    logger.error('❌ Failed to send invitation email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Add MongoDB connection error logging
 mongoose.connection.on('error', (error) => {
   logger.error('❌ MongoDB connection error:', error);
@@ -287,6 +330,9 @@ mongoose.connection.once('open', () => {
           //     // Don't throw the error to prevent breaking the organization creation
           //   }
           // },
+
+          // Send invitation email function
+          sendInvitationEmail: sendInvitationEmail,
         }),
         magicLink({
           expiresIn: 600, // 10 minutes

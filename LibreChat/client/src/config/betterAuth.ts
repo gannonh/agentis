@@ -123,11 +123,11 @@ export interface OrganizationInvitation {
   expiresAt: Date;
   createdAt?: Date;
   // New attribution fields
-  inviterName?: string;      // Display name for UX
-  inviterEmail?: string;     // For reference
-  invitedAt?: Date;          // Invitation timestamp
-  joinedAt?: Date;           // When they accepted (if they did)
-  source?: string;           // 'onboarding', 'dashboard', 'api', etc.
+  inviterName?: string; // Display name for UX
+  inviterEmail?: string; // For reference
+  invitedAt?: Date; // Invitation timestamp
+  joinedAt?: Date; // When they accepted (if they did)
+  source?: string; // 'onboarding', 'dashboard', 'api', etc.
   organization?: {
     id: string;
     name: string;

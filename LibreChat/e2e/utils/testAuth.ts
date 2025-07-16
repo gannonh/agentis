@@ -59,6 +59,133 @@ export async function getTestDatabase() {
  * Create a test user with organization for e2e testing
  * Uses Better Auth Kit's built-in test utilities
  */
+/**
+ * Create a test user positioned at the team invitation step of onboarding
+ * Unlike createTestUserWithOrganization, this creates a user who hasn't completed onboarding
+ * and is specifically at the team invitation step for testing invitation flows.
+ */
+export async function createTestUserAtTeamStep(testId: string): Promise<TestAuthResult> {
+  // Generate unique test data
+  const userEmail = `test-${testId}@example.com`;
+  const userName = `Test User ${testId}`;
+  const userPassword = `TestPass123!${testId}`;
+  const orgName = `Test Org ${testId}`;
+  const orgSlug = `test-org-${testId}`;
+
+  // Create user via Better Auth sign-up
+  const signUpResponse = await fetch('http://localhost:3080/api/auth/sign-up/email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: userEmail,
+      password: userPassword,
+      name: userName,
+    }),
+  });
+
+  if (!signUpResponse.ok) {
+    throw new Error(`Sign up failed: ${signUpResponse.status}`);
+  }
+
+  // Sign in to get session
+  const signInResponse = await fetch('http://localhost:3080/api/auth/sign-in/email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: userEmail,
+      password: userPassword,
+    }),
+  });
+
+  if (!signInResponse.ok) {
+    throw new Error(`Sign in failed: ${signInResponse.status}`);
+  }
+
+  // Extract session token
+  const setCookieHeader = signInResponse.headers.get('set-cookie');
+  if (!setCookieHeader) {
+    throw new Error('No session cookie returned');
+  }
+
+  const sessionTokenMatch = setCookieHeader.match(/better-auth\.session_token=([^;]+)/);
+  if (!sessionTokenMatch) {
+    throw new Error('Session token not found in cookies');
+  }
+
+  const sessionToken = sessionTokenMatch[1];
+
+  // Create organization
+  const createOrgResponse = await fetch('http://localhost:3080/api/auth/organization/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `better-auth.session_token=${sessionToken}`,
+    },
+    body: JSON.stringify({
+      name: orgName,
+      slug: orgSlug,
+      metadata: { testId, createdForE2E: true },
+    }),
+  });
+
+  if (!createOrgResponse.ok) {
+    throw new Error(`Organization creation failed: ${createOrgResponse.status}`);
+  }
+
+  const orgData = await createOrgResponse.json();
+  const orgId = orgData.id || orgData._id;
+
+  // Set onboarding step to 'team' (not complete)
+  const setOnboardingResponse = await fetch(
+    'http://localhost:3080/api/user/update-onboarding-step',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `better-auth.session_token=${sessionToken}`,
+      },
+      body: JSON.stringify({
+        onboardingStep: 'team',
+      }),
+    },
+  );
+
+  if (!setOnboardingResponse.ok) {
+    throw new Error(`Setting onboarding step failed: ${setOnboardingResponse.status}`);
+  }
+
+  // Accept terms to bypass modal
+  await fetch('http://localhost:3080/api/user/terms/accept', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `better-auth.session_token=${sessionToken}`,
+    },
+  });
+
+  return {
+    user: {
+      id: 'test-user-id',
+      email: userEmail,
+      name: userName,
+      role: 'user',
+      organizationId: orgId,
+    },
+    organization: {
+      id: orgId,
+      name: orgName,
+      slug: orgSlug,
+      ownerId: 'test-user-id',
+    },
+    session: {
+      sessionToken,
+      userId: 'test-user-id',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+    sessionCookie: `better-auth.session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax`,
+  };
+}
+
 export async function createTestUserWithOrganization(testId: string): Promise<TestAuthResult> {
   try {
     logger.info(`🧪 Creating test user using Better Auth API for testId: ${testId}`);

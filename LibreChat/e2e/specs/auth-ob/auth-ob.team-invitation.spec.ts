@@ -1,16 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { logProgress } from '../../utils/testLogger';
+import { TEST_VIEWPORT, cleanDatabase } from '../../utils/authOnboardingUtils';
 import {
-  TEST_VIEWPORT,
-  cleanDatabase,
-  generateTestEmail,
-} from '../../utils/authOnboardingUtils';
-import {
-  createTestUserWithOrganization,
   cleanupTestUser,
   generateTestId,
+  createTestUserAtTeamStep,
   type TestAuthResult,
 } from '../../utils/testAuth';
+import { createMailHog } from '../../utils/mailhog.js';
 
 test.use({
   viewport: TEST_VIEWPORT,
@@ -18,140 +15,29 @@ test.use({
 
 test.describe.configure({ mode: 'default' });
 
-/**
- * Create a test user for onboarding testing (does not complete onboarding)
- */
-async function createTestUserForOnboarding(testId: string): Promise<TestAuthResult> {
-  // Generate unique test data
-  const userEmail = `test-${testId}@example.com`;
-  const userName = `Test User ${testId}`;
-  const userPassword = `TestPass123!${testId}`;
-  const orgName = `Test Org ${testId}`;
-  const orgSlug = `test-org-${testId}`;
-
-  // Create user via Better Auth sign-up
-  const signUpResponse = await fetch('http://localhost:3080/api/auth/sign-up/email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: userEmail,
-      password: userPassword,
-      name: userName,
-    }),
-  });
-
-  if (!signUpResponse.ok) {
-    throw new Error(`Sign up failed: ${signUpResponse.status}`);
-  }
-
-  // Sign in to get session
-  const signInResponse = await fetch('http://localhost:3080/api/auth/sign-in/email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: userEmail,
-      password: userPassword,
-    }),
-  });
-
-  if (!signInResponse.ok) {
-    throw new Error(`Sign in failed: ${signInResponse.status}`);
-  }
-
-  // Extract session token
-  const setCookieHeader = signInResponse.headers.get('set-cookie');
-  if (!setCookieHeader) {
-    throw new Error('No session cookie returned');
-  }
-
-  const sessionTokenMatch = setCookieHeader.match(/better-auth\.session_token=([^;]+)/);
-  if (!sessionTokenMatch) {
-    throw new Error('Session token not found in cookies');
-  }
-
-  const sessionToken = sessionTokenMatch[1];
-
-  // Create organization
-  const createOrgResponse = await fetch('http://localhost:3080/api/auth/organization/create', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: `better-auth.session_token=${sessionToken}`,
-    },
-    body: JSON.stringify({
-      name: orgName,
-      slug: orgSlug,
-      metadata: { testId, createdForE2E: true },
-    }),
-  });
-
-  if (!createOrgResponse.ok) {
-    throw new Error(`Organization creation failed: ${createOrgResponse.status}`);
-  }
-
-  const orgData = await createOrgResponse.json();
-  const orgId = orgData.id || orgData._id;
-
-  // Set onboarding step to 'team' (not complete)
-  const setOnboardingResponse = await fetch('http://localhost:3080/api/user/update-onboarding-step', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: `better-auth.session_token=${sessionToken}`,
-    },
-    body: JSON.stringify({
-      onboardingStep: 'team',
-    }),
-  });
-
-  if (!setOnboardingResponse.ok) {
-    throw new Error(`Setting onboarding step failed: ${setOnboardingResponse.status}`);
-  }
-
-  // Accept terms to bypass modal
-  await fetch('http://localhost:3080/api/user/terms/accept', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: `better-auth.session_token=${sessionToken}`,
-    },
-  });
-
-  return {
-    user: {
-      id: 'test-user-id',
-      email: userEmail,
-      name: userName,
-      role: 'user',
-      organizationId: orgId,
-    },
-    organization: {
-      id: orgId,
-      name: orgName,
-      slug: orgSlug,
-      ownerId: 'test-user-id',
-    },
-    session: {
-      sessionToken,
-      userId: 'test-user-id',
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    },
-    sessionCookie: `better-auth.session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax`,
-  };
-}
-
 test.describe('Team Invitation Flow Tests', () => {
   let testAuth: TestAuthResult;
   let testId: string;
+  let mailhog: ReturnType<typeof createMailHog>;
 
   test.beforeEach(async () => {
     await cleanDatabase();
     testId = generateTestId();
-    
-    // Create a test user but don't complete onboarding
-    // We'll create a modified version for team invitation testing
-    testAuth = await createTestUserForOnboarding(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    mailhog = createMailHog();
+
+    // Clear any existing emails in MailHog
+    try {
+      await mailhog.clearMessages();
+      logProgress('🧹 Cleared MailHog messages');
+    } catch (error) {
+      logProgress(`⚠️ Failed to clear MailHog: ${error}`);
+    }
+
+    // Create a test user at the team invitation step
+    testAuth = await createTestUserAtTeamStep(testId);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterEach(async () => {
@@ -168,21 +54,23 @@ test.describe('Team Invitation Flow Tests', () => {
 
   /**
    * =================================================================================
-   * TEAM INVITATION ACCEPTANCE TEST
+   * TEAM INVITATION EMAIL SENDING TEST
    * =================================================================================
    */
 
-  test('User can send team invitations during onboarding', async ({ browser }) => {
-    logProgress('🚀 Testing team invitation flow during onboarding...');
+  test('User can send team invitations and emails are received in MailHog', async ({ browser }) => {
+    logProgress('🚀 Testing team invitation email sending with MailHog validation...');
 
     const context = await browser.newContext();
-    await context.addCookies([{
-      name: 'better-auth.session_token',
-      value: testAuth.session.sessionToken,
-      domain: 'localhost',
-      path: '/',
-      httpOnly: true,
-    }]);
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
 
     const page = await context.newPage();
 
@@ -191,72 +79,111 @@ test.describe('Team Invitation Flow Tests', () => {
       await page.goto('http://localhost:3080/onboarding');
       await page.waitForLoadState('networkidle');
 
-      // Step 2: Navigate through onboarding steps to team invitation
-      logProgress('📍 Navigating through onboarding steps...');
-      
-      // Skip organization step (already have org)
-      const skipOrgButton = page.getByRole('button', { name: 'Skip' });
-      if (await skipOrgButton.isVisible()) {
-        await skipOrgButton.click();
-        await page.waitForLoadState('networkidle');
-      }
-
-      // Skip profile step (for now, focus on invitation)
-      const skipProfileButton = page.getByRole('button', { name: 'Skip' });
-      if (await skipProfileButton.isVisible()) {
-        await skipProfileButton.click();
-        await page.waitForLoadState('networkidle');
-      }
-
-      // Step 3: Verify team invitation step is displayed
-      await expect(page.getByRole('heading', { name: 'Invite your team' })).toBeVisible({
+      // Step 2: Verify team invitation step is displayed
+      await expect(
+        page.getByRole('heading', { name: 'Invite your team', exact: true }),
+      ).toBeVisible({
         timeout: 10000,
       });
       await expect(page.getByText('Invite by email')).toBeVisible();
       logProgress('✅ Team invitation step displayed correctly');
 
-      // Step 4: Test email input functionality
-      const emailInput = page.getByTestId('team-email-input').first();
-      await emailInput.fill('colleague1@company.com');
-      await expect(emailInput).toHaveValue('colleague1@company.com');
-      logProgress('✅ Email input functionality working');
+      // Step 3: Add first team member invitation
+      const testEmail1 = `colleague1-${testId}@example.com`;
+      const emailInput = page.getByTestId('team-email-input');
+      await emailInput.fill(testEmail1, { timeout: 5000 });
+      await expect(emailInput).toHaveValue(testEmail1);
+      logProgress(`✅ Filled first email: ${testEmail1}`);
 
-      // Step 5: Test add email functionality with Plus button
-      await page.getByRole('button', { name: '+' }).click();
-      // Add second email
-      await page.getByTestId('team-email-input').fill('colleague2@company.com');
-      await page.getByRole('button', { name: '+' }).click();
-      logProgress('✅ Add email functionality working');
+      // Press Enter to add first email to the list (keyboard interaction)
+      await emailInput.press('Enter');
+      logProgress(`✅ Pressed Enter to add email`);
 
-      // Step 6: Test email validation
-      const thirdEmailInput = page.getByTestId('team-email-input').nth(2);
-      if (await thirdEmailInput.isVisible()) {
-        await thirdEmailInput.fill('invalid-email');
-        await page.getByRole('button', { name: 'Send Invitations' }).click();
-        
-        // Should show validation error
-        await expect(page.getByText(/Invalid email/i)).toBeVisible();
-        logProgress('✅ Email validation working');
+      // Wait a moment for the UI to update
+      await page.waitForTimeout(1000);
+
+      // Check if invitation list appeared
+      const invitationsList = page.getByText('Team invitations');
+      const hasInvitationsList = await invitationsList.isVisible();
+      logProgress(`🔍 Team invitations list visible: ${hasInvitationsList}`);
+
+      // Verify first email was added to invitation list and input was cleared
+      await expect(page.getByText(testEmail1)).toBeVisible({ timeout: 5000 });
+      await expect(emailInput).toHaveValue(''); // Input should be cleared
+      logProgress(`✅ Added first email to invitation list: ${testEmail1}`);
+
+      // Step 4: Add second team member invitation
+      const testEmail2 = `colleague2-${testId}@example.com`;
+      await emailInput.fill(testEmail2, { timeout: 5000 });
+      await expect(emailInput).toHaveValue(testEmail2);
+      logProgress(`✅ Filled second email: ${testEmail2}`);
+
+      // Press Enter to add second email to the list
+      await emailInput.press('Enter');
+      logProgress(`✅ Pressed Enter to add second email`);
+
+      // Wait a moment for the UI to update
+      await page.waitForTimeout(1000);
+
+      // Verify second email was added to invitation list and input was cleared
+      await expect(page.getByText(testEmail2)).toBeVisible({ timeout: 5000 });
+      await expect(emailInput).toHaveValue(''); // Input should be cleared again
+      logProgress(`✅ Added second email to invitation list: ${testEmail2}`);
+
+      // Step 5: Send invitations
+      await page.getByRole('button', { name: 'Send invitations' }).click({ timeout: 5000 });
+      logProgress('📤 Clicked Send invitations button');
+
+      // Step 6: Wait for invitations to be processed
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(3000); // Give time for emails to be sent
+
+      // Step 7: Verify exactly 2 emails were sent to MailHog
+      const finalEmailCount = await mailhog.getMessageCount();
+      logProgress(`📧 Final MailHog email count: ${finalEmailCount}`);
+
+      expect(finalEmailCount).toBe(2); // Exactly 2 emails should be sent
+      logProgress('✅ Confirmed exactly 2 emails were sent to MailHog');
+
+      // Step 8: Verify specific invitation emails
+      const email1Message = await mailhog.getLatestMessage(testEmail1, 10000);
+      expect(email1Message).toBeTruthy();
+      expect(email1Message?.To?.some((to) => `${to.Mailbox}@${to.Domain}` === testEmail1)).toBe(
+        true,
+      );
+      logProgress(`✅ Confirmed invitation email sent to ${testEmail1}`);
+
+      const email2Message = await mailhog.getLatestMessage(testEmail2, 10000);
+      expect(email2Message).toBeTruthy();
+      expect(email2Message?.To?.some((to) => `${to.Mailbox}@${to.Domain}` === testEmail2)).toBe(
+        true,
+      );
+      logProgress(`✅ Confirmed invitation email sent to ${testEmail2}`);
+
+      // Step 9: Verify email content contains invitation
+      if (email1Message?.Content?.Body) {
+        const emailBody = email1Message.Content.Body.toLowerCase();
+
+        // Check for basic invitation email content
+        const hasInvitationContent =
+          emailBody.includes('join') ||
+          emailBody.includes('team') ||
+          emailBody.includes('invite') ||
+          emailBody.includes('organization');
+
+        expect(hasInvitationContent).toBe(true);
+        logProgress('✅ Email content contains invitation keywords');
       }
 
-      // Step 7: Test successful invitation sending
-      // Clear invalid email and enter valid ones
-      await emailInput.fill('colleague1@company.com');
-      await secondEmailInput.fill('colleague2@company.com');
-      
-      // Send invitations
-      await page.getByRole('button', { name: 'Send Invitations' }).click();
-      await page.waitForLoadState('networkidle');
-
-      // Step 8: Verify progression to next step
-      // Should proceed to welcome step or main app
+      // Step 10: Verify progression to welcome step
+      await page
+        .getByRole('button', { name: 'Start Your First Conversation' })
+        .click({ timeout: 5000 });
+      logProgress('✅ Clicked Start Your First Conversation');
+      //await page.pause();
+      // Verify progression to next step
       await expect(page).toHaveURL(/.*\/(welcome|c\/new).*/);
-      logProgress('✅ Successfully sent invitations and progressed to next step');
-
-      // Step 9: Verify invitations were created (by checking for success feedback)
-      // This could be success message or progress to next step
-      logProgress('✅ Team invitation flow completed successfully');
-
+      logProgress('✅ Team invitation email flow completed successfully');
     } finally {
       await context.close();
     }
@@ -272,13 +199,15 @@ test.describe('Team Invitation Flow Tests', () => {
     logProgress('🚀 Testing skip functionality in team invitation flow...');
 
     const context = await browser.newContext();
-    await context.addCookies([{
-      name: 'better-auth.session_token',
-      value: testAuth.session.sessionToken,
-      domain: 'localhost',
-      path: '/',
-      httpOnly: true,
-    }]);
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
 
     const page = await context.newPage();
 
@@ -287,34 +216,30 @@ test.describe('Team Invitation Flow Tests', () => {
       await page.goto('http://localhost:3080/onboarding');
       await page.waitForLoadState('networkidle');
 
-      // Navigate through steps to team invitation
-      logProgress('📍 Navigating to team invitation step...');
-      
-      // Skip previous steps
-      const skipButtons = page.getByRole('button', { name: 'Skip' });
-      const skipCount = await skipButtons.count();
-      
-      for (let i = 0; i < skipCount; i++) {
-        const skipButton = skipButtons.nth(i);
-        if (await skipButton.isVisible()) {
-          await skipButton.click();
-          await page.waitForLoadState('networkidle');
-        }
-      }
-
       // Verify team invitation step
-      await expect(page.getByRole('heading', { name: 'Invite your team' })).toBeVisible({
+      await expect(
+        page.getByRole('heading', { name: 'Invite your team', exact: true }),
+      ).toBeVisible({
         timeout: 10000,
       });
 
       // Click skip button
       await page.getByRole('button', { name: 'Skip for now' }).click();
       await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2000); // Give time to ensure no emails are sent
 
+      // Verify no emails were sent when skipping
+      const finalEmailCount = await mailhog.getMessageCount();
+      expect(finalEmailCount).toBe(0); // Should remain 0 when skipping
+      logProgress('✅ Confirmed no emails sent when skipping');
+      await page
+        .getByRole('button', { name: 'Start Your First Conversation' })
+        .click({ timeout: 5000 });
+      logProgress('✅ Clicked Start Your First Conversation');
+      //await page.pause();
       // Verify progression to next step
       await expect(page).toHaveURL(/.*\/(welcome|c\/new).*/);
-      logProgress('✅ Successfully skipped team invitation step');
-
+      logProgress('✅ Successfully landed on chat');
     } finally {
       await context.close();
     }
@@ -322,21 +247,23 @@ test.describe('Team Invitation Flow Tests', () => {
 
   /**
    * =================================================================================
-   * BULK INVITATION TEST
+   * BULK INVITATION TEST WITH EMAIL VALIDATION
    * =================================================================================
    */
 
-  test('User can send bulk invitations', async ({ browser }) => {
-    logProgress('🚀 Testing bulk invitation functionality...');
+  test('User can send bulk invitations via email', async ({ browser }) => {
+    logProgress('🚀 Testing bulk invitation email sending functionality...');
 
     const context = await browser.newContext();
-    await context.addCookies([{
-      name: 'better-auth.session_token',
-      value: testAuth.session.sessionToken,
-      domain: 'localhost',
-      path: '/',
-      httpOnly: true,
-    }]);
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
 
     const page = await context.newPage();
 
@@ -345,50 +272,61 @@ test.describe('Team Invitation Flow Tests', () => {
       await page.goto('http://localhost:3080/onboarding');
       await page.waitForLoadState('networkidle');
 
-      // Navigate through steps to team invitation
-      const skipButtons = page.getByRole('button', { name: 'Skip' });
-      const skipCount = await skipButtons.count();
-      
-      for (let i = 0; i < skipCount && i < 2; i++) {
-        const skipButton = skipButtons.nth(i);
-        if (await skipButton.isVisible()) {
-          await skipButton.click();
-          await page.waitForLoadState('networkidle');
-        }
-      }
-
       // Verify team invitation step
-      await expect(page.getByRole('heading', { name: 'Invite your team' })).toBeVisible({
+      await expect(
+        page.getByRole('heading', { name: 'Invite your team', exact: true }),
+      ).toBeVisible({
         timeout: 10000,
       });
 
-      // Test bulk paste functionality (comma-separated emails)
-      const bulkEmails = 'user1@company.com,user2@company.com,user3@company.com';
-      const emailInput = page.getByTestId('team-email-input').first();
-      await emailInput.fill(bulkEmails);
+      // Test bulk add functionality
+      const testEmails = [
+        `bulk1-${testId}@example.com`,
+        `bulk2-${testId}@example.com`,
+        `bulk3-${testId}@example.com`,
+      ];
 
-      // Trigger bulk processing (could be on blur or paste event)
-      await emailInput.blur();
+      // Click bulk add button
+      await page.getByRole('button', { name: 'Bulk add' }).click();
+
+      // Fill bulk emails textarea
+      const bulkTextarea = page.locator('textarea');
+      await expect(bulkTextarea).toBeVisible();
+      await bulkTextarea.fill(testEmails.join(','));
+
+      // Click "Add emails" button
+      await page.getByRole('button', { name: 'Add emails' }).click();
       await page.waitForTimeout(1000);
 
-      // Should have multiple email fields populated
-      const emailInputs = page.getByTestId('team-email-input');
-      const inputCount = await emailInputs.count();
-      
-      expect(inputCount).toBeGreaterThan(1);
-      logProgress(`✅ Bulk invitation created ${inputCount} email fields`);
-
-      // Verify each email is properly separated
-      await expect(emailInputs.nth(0)).toHaveValue('user1@company.com');
-      if (inputCount > 1) {
-        await expect(emailInputs.nth(1)).toHaveValue('user2@company.com');
+      // Verify all emails were added to the list
+      for (let i = 0; i < testEmails.length; i++) {
+        await expect(page.getByText(testEmails[i])).toBeVisible();
       }
-      if (inputCount > 2) {
-        await expect(emailInputs.nth(2)).toHaveValue('user3@company.com');
+      logProgress(`✅ Added ${testEmails.length} bulk email addresses`);
+
+      // Send invitations
+      await page.getByRole('button', { name: 'Send invitations' }).click({ timeout: 5000 });
+      logProgress('📤 Clicked Send invitations button for bulk emails');
+
+      // Wait for invitations to be processed
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(4000); // Give extra time for bulk processing
+
+      // Verify exactly 3 emails were sent to MailHog
+      const finalEmailCount = await mailhog.getMessageCount();
+      logProgress(`📧 Final MailHog email count: ${finalEmailCount}`);
+
+      expect(finalEmailCount).toBe(testEmails.length); // Exactly 3 emails should be sent
+      logProgress('✅ Confirmed exactly 3 bulk emails were sent to MailHog');
+
+      // Verify each individual email was sent
+      for (const email of testEmails) {
+        const message = await mailhog.getLatestMessage(email, 5000);
+        expect(message).toBeTruthy();
+        logProgress(`✅ Confirmed bulk invitation sent to ${email}`);
       }
 
-      logProgress('✅ Bulk invitation functionality working correctly');
-
+      logProgress('✅ Bulk invitation email functionality working correctly');
     } finally {
       await context.close();
     }
@@ -396,21 +334,23 @@ test.describe('Team Invitation Flow Tests', () => {
 
   /**
    * =================================================================================
-   * ERROR HANDLING TEST
+   * ERROR HANDLING TEST WITH EMAIL VALIDATION
    * =================================================================================
    */
 
-  test('Team invitation handles errors gracefully', async ({ browser }) => {
+  test('Team invitation handles errors gracefully without sending emails', async ({ browser }) => {
     logProgress('🚀 Testing error handling in team invitation flow...');
 
     const context = await browser.newContext();
-    await context.addCookies([{
-      name: 'better-auth.session_token',
-      value: testAuth.session.sessionToken,
-      domain: 'localhost',
-      path: '/',
-      httpOnly: true,
-    }]);
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
 
     const page = await context.newPage();
 
@@ -419,64 +359,61 @@ test.describe('Team Invitation Flow Tests', () => {
       await page.goto('http://localhost:3080/onboarding');
       await page.waitForLoadState('networkidle');
 
-      // Navigate through steps to team invitation
-      const skipButtons = page.getByRole('button', { name: 'Skip' });
-      const skipCount = await skipButtons.count();
-      
-      for (let i = 0; i < skipCount && i < 2; i++) {
-        const skipButton = skipButtons.nth(i);
-        if (await skipButton.isVisible()) {
-          await skipButton.click();
-          await page.waitForLoadState('networkidle');
-        }
-      }
-
       // Verify team invitation step
-      await expect(page.getByRole('heading', { name: 'Invite your team' })).toBeVisible({
+      await expect(
+        page.getByRole('heading', { name: 'Invite your team', exact: true }),
+      ).toBeVisible({
         timeout: 10000,
       });
 
       // Test duplicate email detection
-      const emailInput1 = page.getByTestId('team-email-input').first();
-      await emailInput1.fill('duplicate@company.com');
-      
-      await page.getByRole('button', { name: '+' }).click();
-      const emailInput2 = page.getByTestId('team-email-input').nth(1);
-      await emailInput2.fill('duplicate@company.com');
+      const duplicateEmail = `duplicate-${testId}@example.com`;
+      const emailInput = page.getByTestId('team-email-input');
+      await emailInput.fill(duplicateEmail);
 
-      // Try to send invitations
-      await page.getByRole('button', { name: 'Send Invitations' }).click();
+      // Press Enter to add first email to the list
+      await emailInput.press('Enter');
+      await page.waitForTimeout(1000);
+
+      // Verify first email was added
+      await expect(page.getByText(duplicateEmail)).toBeVisible({ timeout: 5000 });
+      await expect(emailInput).toHaveValue(''); // Input should be cleared
+      logProgress('✅ Added first email to list');
+
+      // Try to add the same email again - should show duplicate error
+      await emailInput.fill(duplicateEmail, { timeout: 5000 });
+      await emailInput.press('Enter');
 
       // Should show duplicate error
-      await expect(page.getByText(/Duplicate email/i)).toBeVisible();
+      await expect(page.getByText(/This email has already been added/i)).toBeVisible({
+        timeout: 5000,
+      });
       logProgress('✅ Duplicate email detection working');
 
-      // Test empty email handling
-      await emailInput1.fill('');
-      await page.getByRole('button', { name: 'Send Invitations' }).click();
+      // Verify no emails sent due to validation error
+      await page.waitForTimeout(2000);
+      const emailCountAfterDuplicate = await mailhog.getMessageCount();
+      expect(emailCountAfterDuplicate).toBe(0); // Should remain 0 due to validation error
+      logProgress('✅ No emails sent when duplicate detected');
 
-      // Should show required field error
-      await expect(page.getByText(/required|empty/i)).toBeVisible();
+      // Test empty email handling
+      await emailInput.fill('', { timeout: 5000 });
+      await emailInput.press('Enter');
+      await expect(page.getByText(/Please enter an email address/i)).toBeVisible({ timeout: 5000 });
       logProgress('✅ Empty email validation working');
 
-      // Test maximum invitations limit
-      // Add many emails to test limit
-      for (let i = 0; i < 12; i++) {
-        if (i > 0) {
-          await page.getByRole('button', { name: '+' }).click();
-        }
-        const emailInput = page.getByTestId('team-email-input').nth(i);
-        await emailInput.fill(`user${i}@company.com`);
-      }
+      // Test invalid email format
+      await emailInput.fill('invalid-email-format', { timeout: 5000 });
+      await emailInput.press('Enter');
+      await expect(page.getByText(/Please enter a valid email address/i)).toBeVisible({
+        timeout: 5000,
+      });
+      logProgress('✅ Invalid email format validation working');
 
-      // Should show limit error or disable add button
-      const addButton = page.getByRole('button', { name: 'Add another' });
-      const isAddDisabled = await addButton.isDisabled();
-      const hasLimitError = await page.getByText(/maximum|limit/i).isVisible();
-
-      expect(isAddDisabled || hasLimitError).toBe(true);
-      logProgress('✅ Maximum invitations limit working');
-
+      // Verify still no emails sent due to validation errors
+      const finalEmailCount = await mailhog.getMessageCount();
+      expect(finalEmailCount).toBe(0); // Should remain 0 during validation errors
+      logProgress('✅ Confirmed no emails sent during error testing');
     } finally {
       await context.close();
     }

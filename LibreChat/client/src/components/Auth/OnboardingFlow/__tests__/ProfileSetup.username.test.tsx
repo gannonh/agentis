@@ -438,7 +438,7 @@ describe('ProfileSetup Username Availability Integration', () => {
 
       // Explicitly set username to empty (bypass auto-suggestion)
       fireEvent.change(usernameInput, { target: { value: '' } });
-      
+
       // Force blur to trigger validation
       fireEvent.blur(usernameInput);
 
@@ -448,12 +448,15 @@ describe('ProfileSetup Username Availability Integration', () => {
       });
 
       // Button should be enabled with empty username (username is optional)
-      await waitFor(() => {
-        const usernameValue = (usernameInput as HTMLInputElement).value;
-        if (usernameValue === '') {
-          expect(continueButton).toBeEnabled();
-        }
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          const usernameValue = (usernameInput as HTMLInputElement).value;
+          if (usernameValue === '') {
+            expect(continueButton).toBeEnabled();
+          }
+        },
+        { timeout: 1000 },
+      );
     });
 
     it('should validate username only when it has a value', async () => {
@@ -471,7 +474,9 @@ describe('ProfileSetup Username Availability Integration', () => {
 
       // Username should not show validation errors when empty
       await waitFor(() => {
-        expect(screen.queryByText('Username must be at least 3 characters')).not.toBeInTheDocument();
+        expect(
+          screen.queryByText('Username must be at least 3 characters'),
+        ).not.toBeInTheDocument();
       });
 
       // Now type a short username (less than 3 chars) - should trigger validation
@@ -497,7 +502,9 @@ describe('ProfileSetup Username Availability Integration', () => {
       fireEvent.blur(usernameInput);
 
       await waitFor(() => {
-        expect(screen.getByText('Username can only contain letters, numbers, underscores, and hyphens')).toBeInTheDocument();
+        expect(
+          screen.getByText('Username can only contain letters, numbers, underscores, and hyphens'),
+        ).toBeInTheDocument();
       });
     });
 

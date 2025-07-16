@@ -498,7 +498,10 @@ export default function OnboardingRoute() {
             console.log('Invitations sent:', results);
             showToast({
               message: `${results.sentCount} invitations sent successfully${results.failedCount > 0 ? `, ${results.failedCount} failed` : ''}`,
-              severity: results.failedCount > 0 ? NotificationSeverity.WARNING : NotificationSeverity.SUCCESS,
+              severity:
+                results.failedCount > 0
+                  ? NotificationSeverity.WARNING
+                  : NotificationSeverity.SUCCESS,
             });
             goToNextStep();
           }}
