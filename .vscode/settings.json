@@ -1,8 +1,8 @@
 {
   "playwright.testDir": "LibreChat/e2e/specs",
   "playwright.configFile": "LibreChat/e2e/playwright.config.ts",
-  "playwright.showTrace": false,
-  "playwright.reuseBrowser": true,
+  "playwright.showTrace": true,
+  "playwright.reuseBrowser": false,
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[javascript]": {
