@@ -9,6 +9,21 @@ import {
 } from '../../utils/testAuth';
 import { createMailHog } from '../../utils/mailhog.js';
 
+// MailHog message types
+interface MailHogAddress {
+  Mailbox: string;
+  Domain: string;
+}
+
+interface MailHogContent {
+  Body: string;
+}
+
+interface MailHogMessage {
+  To?: MailHogAddress[];
+  Content?: MailHogContent;
+}
+
 test.use({
   viewport: TEST_VIEWPORT,
 });
@@ -148,21 +163,21 @@ test.describe('Team Invitation Flow Tests', () => {
       // Step 8: Verify specific invitation emails
       const email1Message = await mailhog.getLatestMessage(testEmail1, 10000);
       expect(email1Message).toBeTruthy();
-      expect(email1Message?.To?.some((to) => `${to.Mailbox}@${to.Domain}` === testEmail1)).toBe(
+      expect((email1Message as MailHogMessage)?.To?.some((to: MailHogAddress) => `${to.Mailbox}@${to.Domain}` === testEmail1)).toBe(
         true,
       );
       logProgress(`✅ Confirmed invitation email sent to ${testEmail1}`);
 
       const email2Message = await mailhog.getLatestMessage(testEmail2, 10000);
       expect(email2Message).toBeTruthy();
-      expect(email2Message?.To?.some((to) => `${to.Mailbox}@${to.Domain}` === testEmail2)).toBe(
+      expect((email2Message as MailHogMessage)?.To?.some((to: MailHogAddress) => `${to.Mailbox}@${to.Domain}` === testEmail2)).toBe(
         true,
       );
       logProgress(`✅ Confirmed invitation email sent to ${testEmail2}`);
 
       // Step 9: Verify email content contains invitation
-      if (email1Message?.Content?.Body) {
-        const emailBody = email1Message.Content.Body.toLowerCase();
+      if ((email1Message as MailHogMessage)?.Content?.Body) {
+        const emailBody = (email1Message as MailHogMessage).Content!.Body.toLowerCase();
 
         // Check for basic invitation email content
         const hasInvitationContent =
