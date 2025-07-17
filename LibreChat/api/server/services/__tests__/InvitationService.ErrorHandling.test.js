@@ -27,7 +27,7 @@ describe('InvitationService Error Handling', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockApi = {
       createInvitation: vi.fn(),
       listInvitations: vi.fn(),
@@ -53,7 +53,7 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(authError);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow('Authentication failed');
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -64,7 +64,7 @@ describe('InvitationService Error Handling', () => {
           email: 'test@example.com',
           role: 'member',
           inviterId: 'user123',
-        })
+        }),
       );
     });
 
@@ -74,7 +74,7 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(timeoutError);
 
       await expect(
-        invitationService.createInvitation('org123', 'timeout@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'timeout@example.com', 'member', 'user123'),
       ).rejects.toThrow('Request timeout');
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -82,7 +82,7 @@ describe('InvitationService Error Handling', () => {
         expect.objectContaining({
           error: 'Request timeout',
           email: 'timeout@example.com',
-        })
+        }),
       );
     });
 
@@ -92,7 +92,7 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(validationError);
 
       await expect(
-        invitationService.createInvitation('org123', 'invalid-email', 'member', 'user123')
+        invitationService.createInvitation('org123', 'invalid-email', 'member', 'user123'),
       ).rejects.toThrow('Invalid email format');
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -100,7 +100,7 @@ describe('InvitationService Error Handling', () => {
         expect.objectContaining({
           error: 'Invalid email format',
           email: 'invalid-email',
-        })
+        }),
       );
     });
 
@@ -110,7 +110,7 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(permissionError);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'admin', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'admin', 'user123'),
       ).rejects.toThrow('Insufficient permissions');
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -118,7 +118,7 @@ describe('InvitationService Error Handling', () => {
         expect.objectContaining({
           error: 'Insufficient permissions',
           role: 'admin',
-        })
+        }),
       );
     });
 
@@ -128,14 +128,14 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(dbError);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow('Database connection failed');
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error creating organization invitation',
         expect.objectContaining({
           error: 'Database connection failed',
-        })
+        }),
       );
     });
 
@@ -145,14 +145,14 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(emailError);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow('Email service unavailable');
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error creating organization invitation',
         expect.objectContaining({
           error: 'Email service unavailable',
-        })
+        }),
       );
     });
 
@@ -162,14 +162,14 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(rateLimitError);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow('Rate limit exceeded');
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error creating organization invitation',
         expect.objectContaining({
           error: 'Rate limit exceeded',
-        })
+        }),
       );
     });
 
@@ -179,7 +179,7 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(notFoundError);
 
       await expect(
-        invitationService.createInvitation('invalid-org', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('invalid-org', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow('Organization not found');
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -187,7 +187,7 @@ describe('InvitationService Error Handling', () => {
         expect.objectContaining({
           error: 'Organization not found',
           organizationId: 'invalid-org',
-        })
+        }),
       );
     });
   });
@@ -204,7 +204,7 @@ describe('InvitationService Error Handling', () => {
         expect.objectContaining({
           organizationId: 'org123',
           count: 0,
-        })
+        }),
       );
     });
 
@@ -218,7 +218,7 @@ describe('InvitationService Error Handling', () => {
         'Retrieved organization invitations',
         expect.objectContaining({
           count: 0,
-        })
+        }),
       );
     });
 
@@ -227,9 +227,9 @@ describe('InvitationService Error Handling', () => {
       authError.code = 'AUTH_REQUIRED';
       mockApi.listInvitations.mockRejectedValue(authError);
 
-      await expect(
-        invitationService.listInvitations('org123', 'user123')
-      ).rejects.toThrow('Authentication required');
+      await expect(invitationService.listInvitations('org123', 'user123')).rejects.toThrow(
+        'Authentication required',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error listing organization invitations',
@@ -237,17 +237,19 @@ describe('InvitationService Error Handling', () => {
           error: 'Authentication required',
           organizationId: 'org123',
           requesterId: 'user123',
-        })
+        }),
       );
     });
 
     it('should handle large result sets', async () => {
-      const largeResults = Array(10000).fill(null).map((_, i) => ({
-        id: `inv-${i}`,
-        email: `user${i}@example.com`,
-        status: 'pending',
-      }));
-      
+      const largeResults = Array(10000)
+        .fill(null)
+        .map((_, i) => ({
+          id: `inv-${i}`,
+          email: `user${i}@example.com`,
+          status: 'pending',
+        }));
+
       mockApi.listInvitations.mockResolvedValue(largeResults);
 
       const result = await invitationService.listInvitations('org123', 'user123');
@@ -257,7 +259,7 @@ describe('InvitationService Error Handling', () => {
         'Retrieved organization invitations',
         expect.objectContaining({
           count: 10000,
-        })
+        }),
       );
     });
   });
@@ -268,9 +270,9 @@ describe('InvitationService Error Handling', () => {
       notFoundError.code = 'INVITATION_NOT_FOUND';
       mockApi.cancelInvitation.mockRejectedValue(notFoundError);
 
-      await expect(
-        invitationService.cancelInvitation('invalid-inv', 'user123')
-      ).rejects.toThrow('Invitation not found');
+      await expect(invitationService.cancelInvitation('invalid-inv', 'user123')).rejects.toThrow(
+        'Invitation not found',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error canceling organization invitation',
@@ -278,7 +280,7 @@ describe('InvitationService Error Handling', () => {
           error: 'Invitation not found',
           invitationId: 'invalid-inv',
           cancelerId: 'user123',
-        })
+        }),
       );
     });
 
@@ -287,16 +289,16 @@ describe('InvitationService Error Handling', () => {
       stateError.code = 'INVALID_INVITATION_STATE';
       mockApi.cancelInvitation.mockRejectedValue(stateError);
 
-      await expect(
-        invitationService.cancelInvitation('accepted-inv', 'user123')
-      ).rejects.toThrow('Cannot cancel accepted invitation');
+      await expect(invitationService.cancelInvitation('accepted-inv', 'user123')).rejects.toThrow(
+        'Cannot cancel accepted invitation',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error canceling organization invitation',
         expect.objectContaining({
           error: 'Cannot cancel accepted invitation',
           invitationId: 'accepted-inv',
-        })
+        }),
       );
     });
 
@@ -305,15 +307,15 @@ describe('InvitationService Error Handling', () => {
       concurrentError.code = 'CONCURRENT_MODIFICATION';
       mockApi.cancelInvitation.mockRejectedValue(concurrentError);
 
-      await expect(
-        invitationService.cancelInvitation('inv123', 'user123')
-      ).rejects.toThrow('Invitation was modified by another process');
+      await expect(invitationService.cancelInvitation('inv123', 'user123')).rejects.toThrow(
+        'Invitation was modified by another process',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error canceling organization invitation',
         expect.objectContaining({
           error: 'Invitation was modified by another process',
-        })
+        }),
       );
     });
   });
@@ -324,9 +326,9 @@ describe('InvitationService Error Handling', () => {
       expiredError.code = 'INVITATION_EXPIRED';
       mockApi.acceptInvitation.mockRejectedValue(expiredError);
 
-      await expect(
-        invitationService.acceptInvitation('expired-inv', 'user123')
-      ).rejects.toThrow('Invitation has expired');
+      await expect(invitationService.acceptInvitation('expired-inv', 'user123')).rejects.toThrow(
+        'Invitation has expired',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error accepting organization invitation',
@@ -334,7 +336,7 @@ describe('InvitationService Error Handling', () => {
           error: 'Invitation has expired',
           invitationId: 'expired-inv',
           userId: 'user123',
-        })
+        }),
       );
     });
 
@@ -343,15 +345,15 @@ describe('InvitationService Error Handling', () => {
       capacityError.code = 'ORGANIZATION_CAPACITY_EXCEEDED';
       mockApi.acceptInvitation.mockRejectedValue(capacityError);
 
-      await expect(
-        invitationService.acceptInvitation('inv123', 'user123')
-      ).rejects.toThrow('Organization member limit exceeded');
+      await expect(invitationService.acceptInvitation('inv123', 'user123')).rejects.toThrow(
+        'Organization member limit exceeded',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error accepting organization invitation',
         expect.objectContaining({
           error: 'Organization member limit exceeded',
-        })
+        }),
       );
     });
 
@@ -360,15 +362,15 @@ describe('InvitationService Error Handling', () => {
       memberError.code = 'USER_ALREADY_MEMBER';
       mockApi.acceptInvitation.mockRejectedValue(memberError);
 
-      await expect(
-        invitationService.acceptInvitation('inv123', 'user123')
-      ).rejects.toThrow('User is already a member');
+      await expect(invitationService.acceptInvitation('inv123', 'user123')).rejects.toThrow(
+        'User is already a member',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error accepting organization invitation',
         expect.objectContaining({
           error: 'User is already a member',
-        })
+        }),
       );
     });
   });
@@ -392,7 +394,7 @@ describe('InvitationService Error Handling', () => {
           error: 'Service unavailable',
           organizationId: 'org123',
           userId: 'user123',
-        })
+        }),
       );
     });
 
@@ -413,7 +415,7 @@ describe('InvitationService Error Handling', () => {
           userId: 'user123',
           role: undefined,
           hasPermission: false,
-        })
+        }),
       );
     });
 
@@ -437,7 +439,7 @@ describe('InvitationService Error Handling', () => {
         expect.objectContaining({
           role: 'member',
           hasPermission: false,
-        })
+        }),
       );
     });
 
@@ -461,7 +463,7 @@ describe('InvitationService Error Handling', () => {
         expect.objectContaining({
           role: 'admin',
           hasPermission: true,
-        })
+        }),
       );
     });
   });
@@ -472,9 +474,9 @@ describe('InvitationService Error Handling', () => {
       notFoundError.code = 'INVITATION_NOT_FOUND';
       mockApi.getInvitation.mockRejectedValue(notFoundError);
 
-      await expect(
-        invitationService.resendInvitation('invalid-inv', 'user123')
-      ).rejects.toThrow('Invitation not found');
+      await expect(invitationService.resendInvitation('invalid-inv', 'user123')).rejects.toThrow(
+        'Invitation not found',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error resending organization invitation',
@@ -482,7 +484,7 @@ describe('InvitationService Error Handling', () => {
           error: 'Invitation not found',
           invitationId: 'invalid-inv',
           resenderId: 'user123',
-        })
+        }),
       );
     });
 
@@ -493,15 +495,15 @@ describe('InvitationService Error Handling', () => {
         status: 'accepted',
       });
 
-      await expect(
-        invitationService.resendInvitation('inv123', 'user123')
-      ).rejects.toThrow('Cannot resend invitation with status: accepted');
+      await expect(invitationService.resendInvitation('inv123', 'user123')).rejects.toThrow(
+        'Cannot resend invitation with status: accepted',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error resending organization invitation',
         expect.objectContaining({
           error: 'Cannot resend invitation with status: accepted',
-        })
+        }),
       );
     });
 
@@ -516,15 +518,15 @@ describe('InvitationService Error Handling', () => {
       emailError.code = 'EMAIL_SERVICE_DOWN';
       mockApi.updateInvitation.mockRejectedValue(emailError);
 
-      await expect(
-        invitationService.resendInvitation('inv123', 'user123')
-      ).rejects.toThrow('Email service down');
+      await expect(invitationService.resendInvitation('inv123', 'user123')).rejects.toThrow(
+        'Email service down',
+      );
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error resending organization invitation',
         expect.objectContaining({
           error: 'Email service down',
-        })
+        }),
       );
     });
   });
@@ -536,7 +538,7 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(contextualError);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow('Context test error');
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -547,7 +549,7 @@ describe('InvitationService Error Handling', () => {
           email: 'test@example.com',
           role: 'member',
           inviterId: 'user123',
-        })
+        }),
       );
     });
 
@@ -558,7 +560,12 @@ describe('InvitationService Error Handling', () => {
         status: 'pending',
       });
 
-      const result = await invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123');
+      const result = await invitationService.createInvitation(
+        'org123',
+        'test@example.com',
+        'member',
+        'user123',
+      );
 
       expect(logger.info).toHaveBeenCalledWith(
         'Organization invitation created successfully',
@@ -567,7 +574,7 @@ describe('InvitationService Error Handling', () => {
           organizationId: 'org123',
           email: 'test@example.com',
           role: 'member',
-        })
+        }),
       );
 
       expect(result).toEqual({
@@ -583,14 +590,14 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(errorWithoutStack);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow('No stack error');
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error creating organization invitation',
         expect.objectContaining({
           error: 'No stack error',
-        })
+        }),
       );
     });
 
@@ -600,14 +607,14 @@ describe('InvitationService Error Handling', () => {
       mockApi.createInvitation.mockRejectedValue(nullError);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow();
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error creating organization invitation',
         expect.objectContaining({
           error: null,
-        })
+        }),
       );
     });
   });
@@ -617,7 +624,7 @@ describe('InvitationService Error Handling', () => {
       vi.mocked(getAuth).mockReturnValue(null);
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow();
     });
 
@@ -625,7 +632,7 @@ describe('InvitationService Error Handling', () => {
       vi.mocked(getAuth).mockReturnValue({});
 
       await expect(
-        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123')
+        invitationService.createInvitation('org123', 'test@example.com', 'member', 'user123'),
       ).rejects.toThrow();
     });
 

@@ -23,11 +23,20 @@ vi.mock('~/config/betterAuth', () => ({
 
 // Mock UI components
 vi.mock('~/components/ui/Button', () => ({
-  Button: ({ children, onClick, disabled, type = 'button', variant, size, className, ...props }: any) => (
-    <button 
-      type={type} 
-      onClick={onClick} 
-      disabled={disabled} 
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    type = 'button',
+    variant,
+    size,
+    className,
+    ...props
+  }: any) => (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
       data-variant={variant}
       data-size={size}
       className={className}
@@ -39,17 +48,19 @@ vi.mock('~/components/ui/Button', () => ({
 }));
 
 vi.mock('~/components/ui/Input', () => ({
-  Input: React.forwardRef(({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
-    <input 
-      ref={ref}
-      placeholder={placeholder} 
-      onChange={onChange}
-      onKeyPress={onKeyPress}
-      value={value}
-      disabled={disabled}
-      {...props} 
-    />
-  )),
+  Input: React.forwardRef(
+    ({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
+      <input
+        ref={ref}
+        placeholder={placeholder}
+        onChange={onChange}
+        onKeyPress={onKeyPress}
+        value={value}
+        disabled={disabled}
+        {...props}
+      />
+    ),
+  ),
 }));
 
 vi.mock('~/components/ui/Label', () => ({
@@ -90,7 +101,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
   describe('Retry Logic Implementation', () => {
     it('should allow manual retry after failure', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('First attempt failed'))
         .mockResolvedValueOnce({});
@@ -98,7 +109,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'retry@example.com');
       await user.click(addButton!);
@@ -124,7 +135,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should allow retrying individual failed invitations', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockResolvedValueOnce({}) // First email succeeds
         .mockRejectedValueOnce(new Error('Second email failed')) // Second email fails
@@ -133,7 +144,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add two emails
       await user.type(emailInput, 'success@example.com');
@@ -154,11 +165,14 @@ describe('TeamInvitation Error Recovery Tests', () => {
       });
 
       // User can remove the failed invitation and add it again to retry
-      const removeButton = screen.getAllByRole('button').find(btn => 
-        btn.getAttribute('data-variant') === 'ghost' && 
-        btn.getAttribute('data-size') === 'sm' &&
-        !btn.textContent?.trim()
-      );
+      const removeButton = screen
+        .getAllByRole('button')
+        .find(
+          (btn) =>
+            btn.getAttribute('data-variant') === 'ghost' &&
+            btn.getAttribute('data-size') === 'sm' &&
+            !btn.textContent?.trim(),
+        );
       await user.click(removeButton!);
 
       // Add the same email again
@@ -182,7 +196,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
     it('should handle exponential backoff for multiple retries', async () => {
       const user = userEvent.setup();
       let attemptCount = 0;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(() => {
         attemptCount++;
         if (attemptCount < 3) {
@@ -194,7 +208,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'backoff@example.com');
       await user.click(addButton!);
@@ -225,15 +239,15 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should limit retry attempts to prevent infinite loops', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Persistent error')
+        new Error('Persistent error'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'persistent@example.com');
       await user.click(addButton!);
@@ -256,15 +270,15 @@ describe('TeamInvitation Error Recovery Tests', () => {
   describe('User-Initiated Error Recovery', () => {
     it('should allow users to clear error states', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Clearable error')
+        new Error('Clearable error'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'clearable@example.com');
       await user.click(addButton!);
@@ -277,11 +291,14 @@ describe('TeamInvitation Error Recovery Tests', () => {
       });
 
       // Remove the failed invitation
-      const removeButton = screen.getAllByRole('button').find(btn => 
-        btn.getAttribute('data-variant') === 'ghost' && 
-        btn.getAttribute('data-size') === 'sm' &&
-        !btn.textContent?.trim()
-      );
+      const removeButton = screen
+        .getAllByRole('button')
+        .find(
+          (btn) =>
+            btn.getAttribute('data-variant') === 'ghost' &&
+            btn.getAttribute('data-size') === 'sm' &&
+            !btn.textContent?.trim(),
+        );
       await user.click(removeButton!);
 
       // Error should be cleared
@@ -292,7 +309,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should allow users to modify failed invitations', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('Role error'))
         .mockResolvedValueOnce({});
@@ -300,7 +317,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'role@example.com');
       await user.click(addButton!);
@@ -328,15 +345,15 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should provide contextual help for common errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Invalid email format')
+        new Error('Invalid email format'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'invalid@example.com');
       await user.click(addButton!);
@@ -349,14 +366,18 @@ describe('TeamInvitation Error Recovery Tests', () => {
       });
 
       // Help text should be available
-      expect(screen.getByText('You can always invite more team members later from the organization settings')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'You can always invite more team members later from the organization settings',
+        ),
+      ).toBeInTheDocument();
     });
   });
 
   describe('Graceful Degradation', () => {
     it('should continue with successful invitations despite partial failures', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockResolvedValueOnce({}) // Success
         .mockRejectedValueOnce(new Error('Middle failure')) // Failure
@@ -365,7 +386,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add three emails
       await user.type(emailInput, 'success1@example.com');
@@ -389,7 +410,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should maintain functionality when network is intermittent', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('Network timeout'))
         .mockResolvedValueOnce({});
@@ -397,13 +418,13 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'network@example.com');
       await user.click(addButton!);
 
       const submitButton = screen.getByRole('button', { name: /send invitations/i });
-      
+
       // First attempt fails due to network
       await user.click(submitButton);
       await waitFor(() => {
@@ -422,15 +443,15 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should handle service degradation gracefully', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Service temporarily unavailable')
+        new Error('Service temporarily unavailable'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'degraded@example.com');
       await user.click(addButton!);
@@ -445,22 +466,22 @@ describe('TeamInvitation Error Recovery Tests', () => {
       // User should still be able to skip and continue
       const skipButton = screen.getByRole('button', { name: /skip for now/i });
       expect(skipButton).toBeEnabled();
-      
+
       await user.click(skipButton);
       expect(mockOnSkip).toHaveBeenCalledTimes(1);
     });
 
     it('should provide offline functionality when possible', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Network unavailable')
+        new Error('Network unavailable'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Should still allow adding emails offline
       await user.type(emailInput, 'offline@example.com');
@@ -479,15 +500,15 @@ describe('TeamInvitation Error Recovery Tests', () => {
   describe('Error State Persistence', () => {
     it('should persist error states across component re-renders', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Persistent error')
+        new Error('Persistent error'),
       );
 
       const { rerender } = render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'persistent@example.com');
       await user.click(addButton!);
@@ -508,15 +529,13 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should clear error states when form is reset', async () => {
       const user = userEvent.setup();
-      
-      vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Reset error')
-      );
+
+      vi.mocked(authClient.organization.inviteMember).mockRejectedValue(new Error('Reset error'));
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'reset@example.com');
       await user.click(addButton!);
@@ -529,11 +548,14 @@ describe('TeamInvitation Error Recovery Tests', () => {
       });
 
       // Remove all invitations
-      const removeButton = screen.getAllByRole('button').find(btn => 
-        btn.getAttribute('data-variant') === 'ghost' && 
-        btn.getAttribute('data-size') === 'sm' &&
-        !btn.textContent?.trim()
-      );
+      const removeButton = screen
+        .getAllByRole('button')
+        .find(
+          (btn) =>
+            btn.getAttribute('data-variant') === 'ghost' &&
+            btn.getAttribute('data-size') === 'sm' &&
+            !btn.textContent?.trim(),
+        );
       await user.click(removeButton!);
 
       // Error should be cleared
@@ -546,7 +568,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
   describe('Recovery Success Indicators', () => {
     it('should show success indicators after error recovery', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('Recovery test error'))
         .mockResolvedValueOnce({});
@@ -554,13 +576,13 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'recovery@example.com');
       await user.click(addButton!);
 
       const submitButton = screen.getByRole('button', { name: /send invitations/i });
-      
+
       // First attempt fails
       await user.click(submitButton);
       await waitFor(() => {
@@ -579,7 +601,7 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should update UI to reflect successful recovery', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('UI update error'))
         .mockResolvedValueOnce({});
@@ -587,13 +609,13 @@ describe('TeamInvitation Error Recovery Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'ui@example.com');
       await user.click(addButton!);
 
       const submitButton = screen.getByRole('button', { name: /send invitations/i });
-      
+
       // First attempt shows error
       await user.click(submitButton);
       await waitFor(() => {
@@ -611,15 +633,15 @@ describe('TeamInvitation Error Recovery Tests', () => {
   describe('Accessibility During Error Recovery', () => {
     it('should maintain accessibility features during errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Accessibility test error')
+        new Error('Accessibility test error'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'a11y@example.com');
       await user.click(addButton!);
@@ -638,15 +660,15 @@ describe('TeamInvitation Error Recovery Tests', () => {
 
     it('should announce errors to screen readers', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Screen reader error')
+        new Error('Screen reader error'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'screenreader@example.com');
       await user.click(addButton!);

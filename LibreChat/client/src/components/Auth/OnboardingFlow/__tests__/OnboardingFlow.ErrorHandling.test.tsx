@@ -132,7 +132,7 @@ describe('OnboardingFlow Error Handling Tests', () => {
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       await user.click(nextButton);
-      
+
       // Verify the navigation handler was called
       expect(onNext).toHaveBeenCalled();
 
@@ -165,7 +165,7 @@ describe('OnboardingFlow Error Handling Tests', () => {
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       await user.click(backButton);
-      
+
       // Verify the back navigation handler was called
       expect(onBack).toHaveBeenCalled();
 
@@ -688,7 +688,7 @@ describe('OnboardingFlow Error Handling Tests', () => {
         });
 
         expect(screen.getByText('Onboarding step content')).toBeInTheDocument();
-        
+
         // Clean up this render before the next iteration
         unmount();
       }
@@ -703,8 +703,8 @@ describe('OnboardingFlow Error Handling Tests', () => {
         React.useEffect(() => {
           if (toggleCount < 10) {
             const timer = setTimeout(() => {
-              setShouldFail(prev => !prev);
-              setToggleCount(prev => prev + 1);
+              setShouldFail((prev) => !prev);
+              setToggleCount((prev) => prev + 1);
             }, 50);
             return () => clearTimeout(timer);
           }
@@ -740,13 +740,16 @@ describe('OnboardingFlow Error Handling Tests', () => {
       expect(screen.getByText('Onboarding step content')).toBeInTheDocument();
 
       // Wait for rapid changes to complete
-      await waitFor(() => {
-        // After rapid changes, verify the component is still functional
-        // It could be in either state, just verify it's one or the other
-        const errorElement = screen.queryByTestId('error-boundary-fallback');
-        const contentElement = screen.queryByText('Onboarding step content');
-        expect(errorElement || contentElement).toBeTruthy();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          // After rapid changes, verify the component is still functional
+          // It could be in either state, just verify it's one or the other
+          const errorElement = screen.queryByTestId('error-boundary-fallback');
+          const contentElement = screen.queryByText('Onboarding step content');
+          expect(errorElement || contentElement).toBeTruthy();
+        },
+        { timeout: 2000 },
+      );
     });
   });
 });

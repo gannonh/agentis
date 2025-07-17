@@ -23,11 +23,20 @@ vi.mock('~/config/betterAuth', () => ({
 
 // Mock UI components
 vi.mock('~/components/ui/Button', () => ({
-  Button: ({ children, onClick, disabled, type = 'button', variant, size, className, ...props }: any) => (
-    <button 
-      type={type} 
-      onClick={onClick} 
-      disabled={disabled} 
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    type = 'button',
+    variant,
+    size,
+    className,
+    ...props
+  }: any) => (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
       data-variant={variant}
       data-size={size}
       className={className}
@@ -39,17 +48,19 @@ vi.mock('~/components/ui/Button', () => ({
 }));
 
 vi.mock('~/components/ui/Input', () => ({
-  Input: React.forwardRef(({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
-    <input 
-      ref={ref}
-      placeholder={placeholder} 
-      onChange={onChange}
-      onKeyPress={onKeyPress}
-      value={value}
-      disabled={disabled}
-      {...props} 
-    />
-  )),
+  Input: React.forwardRef(
+    ({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
+      <input
+        ref={ref}
+        placeholder={placeholder}
+        onChange={onChange}
+        onKeyPress={onKeyPress}
+        value={value}
+        disabled={disabled}
+        {...props}
+      />
+    ),
+  ),
 }));
 
 vi.mock('~/components/ui/Label', () => ({
@@ -92,13 +103,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const error = new Error('Bad Request');
       (error as any).status = 400;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(error);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'badrequest@example.com');
       await user.click(addButton!);
@@ -119,13 +130,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const error = new Error('Unauthorized');
       (error as any).status = 401;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(error);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'unauthorized@example.com');
       await user.click(addButton!);
@@ -142,13 +153,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const error = new Error('Forbidden');
       (error as any).status = 403;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(error);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'forbidden@example.com');
       await user.click(addButton!);
@@ -165,13 +176,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const error = new Error('Not Found');
       (error as any).status = 404;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(error);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'notfound@example.com');
       await user.click(addButton!);
@@ -188,13 +199,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const error = new Error('Internal Server Error');
       (error as any).status = 500;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(error);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'servererror@example.com');
       await user.click(addButton!);
@@ -211,13 +222,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const error = new Error('Service Unavailable');
       (error as any).status = 503;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(error);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'unavailable@example.com');
       await user.click(addButton!);
@@ -236,13 +247,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const networkError = new Error('Network Error');
       (networkError as any).code = 'NETWORK_ERROR';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(networkError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'network@example.com');
       await user.click(addButton!);
@@ -259,13 +270,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const timeoutError = new Error('Request timeout');
       (timeoutError as any).code = 'TIMEOUT';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(timeoutError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'timeout@example.com');
       await user.click(addButton!);
@@ -282,13 +293,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const corsError = new Error('CORS error');
       (corsError as any).code = 'CORS_ERROR';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(corsError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'cors@example.com');
       await user.click(addButton!);
@@ -307,13 +318,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const emailError = new Error('Email service temporarily unavailable');
       (emailError as any).code = 'EMAIL_SERVICE_ERROR';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(emailError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'emailservice@example.com');
       await user.click(addButton!);
@@ -330,13 +341,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const domainError = new Error('Invalid email domain');
       (domainError as any).code = 'INVALID_DOMAIN';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(domainError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'invalid@invalid-domain.com');
       await user.click(addButton!);
@@ -353,13 +364,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const quotaError = new Error('Email quota exceeded');
       (quotaError as any).code = 'QUOTA_EXCEEDED';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(quotaError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'quota@example.com');
       await user.click(addButton!);
@@ -378,13 +389,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const rateLimitError = new Error('Too many requests');
       (rateLimitError as any).status = 429;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(rateLimitError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'ratelimit@example.com');
       await user.click(addButton!);
@@ -402,13 +413,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const rateLimitError = new Error('Rate limit exceeded. Try again in 60 seconds.');
       (rateLimitError as any).status = 429;
       (rateLimitError as any).retryAfter = 60;
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(rateLimitError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'retryafter@example.com');
       await user.click(addButton!);
@@ -417,7 +428,9 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('- Rate limit exceeded. Try again in 60 seconds.')).toBeInTheDocument();
+        expect(
+          screen.getByText('- Rate limit exceeded. Try again in 60 seconds.'),
+        ).toBeInTheDocument();
       });
     });
 
@@ -426,14 +439,14 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const bulkRateLimitError = new Error('Bulk invitation rate limit exceeded');
       (bulkRateLimitError as any).status = 429;
       (bulkRateLimitError as any).code = 'BULK_RATE_LIMIT';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(bulkRateLimitError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       // Show bulk input
       await user.click(screen.getByRole('button', { name: /bulk add/i }));
-      
+
       const bulkTextarea = screen.getByPlaceholderText(/multiple emails/i);
       const addEmailsButton = screen.getByRole('button', { name: /add emails/i });
 
@@ -454,13 +467,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const validationError = new Error('Invalid email format');
       (validationError as any).code = 'VALIDATION_ERROR';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(validationError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'invalid@example.com');
       await user.click(addButton!);
@@ -477,13 +490,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const blacklistError = new Error('Email domain is blacklisted');
       (blacklistError as any).code = 'DOMAIN_BLACKLISTED';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(blacklistError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'user@blacklisted.com');
       await user.click(addButton!);
@@ -500,13 +513,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const disposableError = new Error('Disposable email addresses are not allowed');
       (disposableError as any).code = 'DISPOSABLE_EMAIL';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(disposableError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'temp@10minutemail.com');
       await user.click(addButton!);
@@ -515,7 +528,9 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('- Disposable email addresses are not allowed')).toBeInTheDocument();
+        expect(
+          screen.getByText('- Disposable email addresses are not allowed'),
+        ).toBeInTheDocument();
       });
     });
   });
@@ -533,7 +548,7 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add multiple emails
       await user.type(emailInput, 'success1@example.com');
@@ -559,13 +574,14 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
 
       // Mock concurrent failures
-      vi.mocked(authClient.organization.inviteMember)
-        .mockRejectedValue(new Error('Concurrent request error'));
+      vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
+        new Error('Concurrent request error'),
+      );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add multiple emails
       await user.type(emailInput, 'concurrent1@example.com');
@@ -589,13 +605,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       const user = userEvent.setup();
       const memoryError = new Error('JavaScript heap out of memory');
       (memoryError as any).code = 'MEMORY_ERROR';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(memoryError);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'memory@example.com');
       await user.click(addButton!);
@@ -612,13 +628,13 @@ describe('TeamInvitation Enhanced Error Handling', () => {
   describe('User Experience During Errors', () => {
     it('should maintain form state during errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(new Error('Test error'));
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add multiple emails
       await user.type(emailInput, 'error1@example.com');
@@ -642,15 +658,15 @@ describe('TeamInvitation Enhanced Error Handling', () => {
 
     it('should provide clear error messages to users', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('The email address is already associated with another account')
+        new Error('The email address is already associated with another account'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'existing@example.com');
       await user.click(addButton!);
@@ -659,22 +675,24 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('- The email address is already associated with another account')).toBeInTheDocument();
+        expect(
+          screen.getByText('- The email address is already associated with another account'),
+        ).toBeInTheDocument();
       });
     });
 
     it('should disable appropriate UI elements during error states', async () => {
       const user = userEvent.setup();
-      
+
       // Mock slow failing request
-      vi.mocked(authClient.organization.inviteMember).mockImplementation(() => 
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Slow error')), 1000))
+      vi.mocked(authClient.organization.inviteMember).mockImplementation(
+        () => new Promise((_, reject) => setTimeout(() => reject(new Error('Slow error')), 1000)),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'slow@example.com');
       await user.click(addButton!);
@@ -687,22 +705,25 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       expect(screen.getByRole('button', { name: /skip for now/i })).toBeDisabled();
 
       // Wait for error
-      await waitFor(() => {
-        expect(screen.getByText('- Slow error')).toBeInTheDocument();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText('- Slow error')).toBeInTheDocument();
+        },
+        { timeout: 2000 },
+      );
     });
 
     it('should show appropriate loading states during error recovery', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('First error'))
-        .mockImplementation(() => new Promise(resolve => setTimeout(() => resolve({}), 500)));
+        .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({}), 500)));
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add email and submit (should fail)
       await user.type(emailInput, 'recovery@example.com');
@@ -725,31 +746,34 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       expect(screen.getByText('Sending...')).toBeInTheDocument();
 
       // Wait for completion
-      await waitFor(() => {
-        // Should be called twice: first for the failed submission, second for the successful one
-        expect(mockOnInvitationsComplete).toHaveBeenCalledTimes(2);
-        // The second call should have both invitations processed successfully
-        // (the failed one gets retried and succeeds)
-        expect(mockOnInvitationsComplete).toHaveBeenNthCalledWith(2, {
-          sentCount: 2,
-          failedCount: 0,
-        });
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          // Should be called twice: first for the failed submission, second for the successful one
+          expect(mockOnInvitationsComplete).toHaveBeenCalledTimes(2);
+          // The second call should have both invitations processed successfully
+          // (the failed one gets retried and succeeds)
+          expect(mockOnInvitationsComplete).toHaveBeenNthCalledWith(2, {
+            sentCount: 2,
+            failedCount: 0,
+          });
+        },
+        { timeout: 1000 },
+      );
     });
   });
 
   describe('Error Message Display and Dismissal', () => {
     it('should display error messages inline with invitations', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Inline error message')
+        new Error('Inline error message'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'inline@example.com');
       await user.click(addButton!);
@@ -766,7 +790,7 @@ describe('TeamInvitation Enhanced Error Handling', () => {
 
     it('should clear error messages when adding new invitations', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('Clear this error'))
         .mockResolvedValueOnce({});
@@ -774,7 +798,7 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add and submit first email (should fail)
       await user.type(emailInput, 'error@example.com');
@@ -799,7 +823,7 @@ describe('TeamInvitation Enhanced Error Handling', () => {
 
     it('should handle multiple error messages simultaneously', async () => {
       const user = userEvent.setup();
-      
+
       // Mock to return different errors for each call in sequence
       vi.mocked(authClient.organization.inviteMember)
         .mockRejectedValueOnce(new Error('Error 1'))
@@ -809,7 +833,7 @@ describe('TeamInvitation Enhanced Error Handling', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add multiple emails
       await user.type(emailInput, 'error1@example.com');

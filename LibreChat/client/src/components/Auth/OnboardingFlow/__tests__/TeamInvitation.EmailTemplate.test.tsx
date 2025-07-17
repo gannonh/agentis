@@ -23,11 +23,20 @@ vi.mock('~/config/betterAuth', () => ({
 
 // Mock UI components
 vi.mock('~/components/ui/Button', () => ({
-  Button: ({ children, onClick, disabled, type = 'button', variant, size, className, ...props }: any) => (
-    <button 
-      type={type} 
-      onClick={onClick} 
-      disabled={disabled} 
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    type = 'button',
+    variant,
+    size,
+    className,
+    ...props
+  }: any) => (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
       data-variant={variant}
       data-size={size}
       className={className}
@@ -39,17 +48,19 @@ vi.mock('~/components/ui/Button', () => ({
 }));
 
 vi.mock('~/components/ui/Input', () => ({
-  Input: React.forwardRef(({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
-    <input 
-      ref={ref}
-      placeholder={placeholder} 
-      onChange={onChange}
-      onKeyPress={onKeyPress}
-      value={value}
-      disabled={disabled}
-      {...props} 
-    />
-  )),
+  Input: React.forwardRef(
+    ({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
+      <input
+        ref={ref}
+        placeholder={placeholder}
+        onChange={onChange}
+        onKeyPress={onKeyPress}
+        value={value}
+        disabled={disabled}
+        {...props}
+      />
+    ),
+  ),
 }));
 
 vi.mock('~/components/ui/Label', () => ({
@@ -70,7 +81,7 @@ class MockMailHogClient {
 
   async getLatestMessage(email: string) {
     return this.messages
-      .filter(msg => msg.Raw.To?.includes(email))
+      .filter((msg) => msg.Raw.To?.includes(email))
       .sort((a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime())[0];
   }
 
@@ -90,13 +101,15 @@ class MockMailHogClient {
       To: [{ Relays: null, Mailbox: email.split('@')[0], Domain: email.split('@')[1] }],
       Created: new Date().toISOString(),
       MIME: {
-        Parts: [{
-          Headers: {
-            'Content-Type': ['text/html; charset=UTF-8'],
-            'Subject': [this.getSubjectFromTemplate(template, variables)],
+        Parts: [
+          {
+            Headers: {
+              'Content-Type': ['text/html; charset=UTF-8'],
+              Subject: [this.getSubjectFromTemplate(template, variables)],
+            },
+            Body: this.renderTemplate(template, variables),
           },
-          Body: this.renderTemplate(template, variables),
-        }],
+        ],
       },
       Raw: {
         From: 'noreply@agentis.com',
@@ -108,9 +121,9 @@ class MockMailHogClient {
 
   private getSubjectFromTemplate(template: string, variables: Record<string, any>): string {
     const subjects: Record<string, string> = {
-      'organizationInvite': `You've been invited to join ${variables.organizationName} on ${variables.appName}`,
-      'magicLink': `Your magic link for ${variables.appName}`,
-      'verifyEmail': `Verify your email for ${variables.appName}`,
+      organizationInvite: `You've been invited to join ${variables.organizationName} on ${variables.appName}`,
+      magicLink: `Your magic link for ${variables.appName}`,
+      verifyEmail: `Verify your email for ${variables.appName}`,
     };
     return subjects[template] || 'Email from Agentis';
   }
@@ -124,7 +137,7 @@ class MockMailHogClient {
     };
 
     const templates: Record<string, (vars: Record<string, any>) => string> = {
-      'organizationInvite': (vars) => `
+      organizationInvite: (vars) => `
         <html>
           <body>
             <h2>You've been invited to join ${escapeHtml(vars.organizationName || '')}</h2>
@@ -138,7 +151,7 @@ class MockMailHogClient {
           </body>
         </html>
       `,
-      'magicLink': (vars) => `
+      magicLink: (vars) => `
         <html>
           <body>
             <h2>Your magic link for ${escapeHtml(vars.appName || '')}</h2>
@@ -151,7 +164,7 @@ class MockMailHogClient {
           </body>
         </html>
       `,
-      'verifyEmail': (vars) => `
+      verifyEmail: (vars) => `
         <html>
           <body>
             <h2>Verify your email for ${escapeHtml(vars.appName || '')}</h2>
@@ -165,7 +178,10 @@ class MockMailHogClient {
         </html>
       `,
     };
-    return templates[template]?.(variables) || `<html><body>Template not found: ${template}</body></html>`;
+    return (
+      templates[template]?.(variables) ||
+      `<html><body>Template not found: ${template}</body></html>`
+    );
   }
 }
 
@@ -207,7 +223,7 @@ describe('TeamInvitation Email Template Integration', () => {
     vi.clearAllMocks();
     mockMailHogClient.clearMessages();
     queryClient.clear();
-    
+
     // Mock process.env
     Object.assign(process.env, mockEnv);
   });
@@ -215,7 +231,7 @@ describe('TeamInvitation Email Template Integration', () => {
   describe('Email Template Content Generation', () => {
     it('should generate organization invitation email with correct template variables', async () => {
       const user = userEvent.setup();
-      
+
       // Mock successful invitation that triggers email
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         // Simulate email sending
@@ -233,7 +249,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'newuser@example.com');
       await user.click(addButton!);
@@ -244,7 +260,7 @@ describe('TeamInvitation Email Template Integration', () => {
       await waitFor(async () => {
         const messages = await mockMailHogClient.getMessages();
         expect(messages).toHaveLength(1);
-        
+
         const message = messages[0];
         expect(message.Raw.To).toContain('newuser@example.com');
         expect(message.Raw.Data).toContain('Test Corp');
@@ -257,7 +273,7 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should handle email template with missing variables gracefully', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         // Simulate email with missing variables
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
@@ -273,7 +289,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'missing@example.com');
       await user.click(addButton!);
@@ -291,7 +307,7 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should generate different email templates for different scenarios', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         // Simulate different email types based on email domain
         if (email.includes('magic')) {
@@ -324,14 +340,10 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Test different email types
-      const testEmails = [
-        'magic@example.com',
-        'verify@example.com',
-        'invite@example.com',
-      ];
+      const testEmails = ['magic@example.com', 'verify@example.com', 'invite@example.com'];
 
       for (const email of testEmails) {
         await user.type(emailInput, email);
@@ -344,11 +356,11 @@ describe('TeamInvitation Email Template Integration', () => {
       await waitFor(async () => {
         const messages = await mockMailHogClient.getMessages();
         expect(messages).toHaveLength(3);
-        
-        const magicMessage = messages.find(m => m.Raw.To.includes('magic@example.com'));
-        const verifyMessage = messages.find(m => m.Raw.To.includes('verify@example.com'));
-        const inviteMessage = messages.find(m => m.Raw.To.includes('invite@example.com'));
-        
+
+        const magicMessage = messages.find((m) => m.Raw.To.includes('magic@example.com'));
+        const verifyMessage = messages.find((m) => m.Raw.To.includes('verify@example.com'));
+        const inviteMessage = messages.find((m) => m.Raw.To.includes('invite@example.com'));
+
         expect(magicMessage?.Raw.Data).toContain('Your magic link');
         expect(verifyMessage?.Raw.Data).toContain('Verify your email');
         expect(inviteMessage?.Raw.Data).toContain('invited to join');
@@ -359,7 +371,7 @@ describe('TeamInvitation Email Template Integration', () => {
   describe('MailHog Integration', () => {
     it('should send emails to MailHog in test environment', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
           name: 'Test User',
@@ -375,7 +387,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'mailhog@example.com');
       await user.click(addButton!);
@@ -386,7 +398,7 @@ describe('TeamInvitation Email Template Integration', () => {
       await waitFor(async () => {
         const messageCount = await mockMailHogClient.getMessageCount();
         expect(messageCount).toBe(1);
-        
+
         const message = await mockMailHogClient.getLatestMessage('mailhog@example.com');
         expect(message).toBeDefined();
         expect(message.From.Domain).toBe('agentis.com');
@@ -397,19 +409,21 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should handle MailHog connection errors gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Mock MailHog connection failure
       const originalGetMessages = mockMailHogClient.getMessages;
-      mockMailHogClient.getMessages = vi.fn().mockRejectedValue(new Error('MailHog connection failed'));
-      
+      mockMailHogClient.getMessages = vi
+        .fn()
+        .mockRejectedValue(new Error('MailHog connection failed'));
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Email service temporarily unavailable')
+        new Error('Email service temporarily unavailable'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'connection@example.com');
       await user.click(addButton!);
@@ -427,7 +441,7 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should clear MailHog messages between tests', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
           name: 'Test User',
@@ -443,7 +457,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'clear@example.com');
       await user.click(addButton!);
@@ -458,7 +472,7 @@ describe('TeamInvitation Email Template Integration', () => {
 
       // Clear messages
       await mockMailHogClient.clearMessages();
-      
+
       const clearedCount = await mockMailHogClient.getMessageCount();
       expect(clearedCount).toBe(0);
     });
@@ -467,12 +481,12 @@ describe('TeamInvitation Email Template Integration', () => {
   describe('Email Delivery Status Tracking', () => {
     it('should track email delivery status during sending', async () => {
       const user = userEvent.setup();
-      
+
       let emailSent = false;
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         // Simulate delay in email sending
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
           name: 'Test User',
           inviterName: 'John Doe',
@@ -488,7 +502,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'status@example.com');
       await user.click(addButton!);
@@ -510,15 +524,15 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should handle email delivery failures and show error status', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Email delivery failed')
+        new Error('Email delivery failed'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'failure@example.com');
       await user.click(addButton!);
@@ -537,7 +551,7 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should track mixed success and failure rates', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockResolvedValueOnce({}) // Success
         .mockRejectedValueOnce(new Error('Email failed')) // Failure
@@ -546,7 +560,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add multiple emails
       await user.type(emailInput, 'success1@example.com');
@@ -572,10 +586,10 @@ describe('TeamInvitation Email Template Integration', () => {
   describe('Email Template Customization', () => {
     it('should support custom application branding in emails', async () => {
       const user = userEvent.setup();
-      
+
       // Mock custom app title
       process.env.APP_TITLE = 'Custom Corp';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
           name: 'Test User',
@@ -591,7 +605,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'custom@example.com');
       await user.click(addButton!);
@@ -608,7 +622,7 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should handle email template variable injection attacks', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
           name: '<script>alert("xss")</script>',
@@ -624,7 +638,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'security@example.com');
       await user.click(addButton!);
@@ -641,7 +655,7 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should validate email template required variables', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         // Missing required variables should cause error
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
@@ -656,7 +670,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'incomplete@example.com');
       await user.click(addButton!);
@@ -676,15 +690,15 @@ describe('TeamInvitation Email Template Integration', () => {
   describe('Email Error Handling', () => {
     it('should handle SMTP connection errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('SMTP connection failed')
+        new Error('SMTP connection failed'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'smtp@example.com');
       await user.click(addButton!);
@@ -699,15 +713,15 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should handle email template rendering errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Template rendering failed')
+        new Error('Template rendering failed'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'template@example.com');
       await user.click(addButton!);
@@ -722,15 +736,15 @@ describe('TeamInvitation Email Template Integration', () => {
 
     it('should handle email quota exceeded errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Daily email quota exceeded')
+        new Error('Daily email quota exceeded'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'quota@example.com');
       await user.click(addButton!);
@@ -748,9 +762,9 @@ describe('TeamInvitation Email Template Integration', () => {
     it('should use MailHog in development environment', async () => {
       process.env.NODE_ENV = 'development';
       process.env.USE_MAILHOG = 'true';
-      
+
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
           name: 'Test User',
@@ -766,7 +780,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'dev@example.com');
       await user.click(addButton!);
@@ -785,9 +799,9 @@ describe('TeamInvitation Email Template Integration', () => {
       process.env.NODE_ENV = 'production';
       process.env.USE_MAILHOG = 'false';
       process.env.EMAIL_HOST = 'smtp.gmail.com';
-      
+
       const user = userEvent.setup();
-      
+
       vi.mocked(authClient.organization.inviteMember).mockImplementation(async ({ email }) => {
         // In production, would use real SMTP
         mockMailHogClient.simulateEmailSent(email, 'organizationInvite', {
@@ -804,7 +818,7 @@ describe('TeamInvitation Email Template Integration', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'prod@example.com');
       await user.click(addButton!);

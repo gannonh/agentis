@@ -71,7 +71,7 @@ describe('Invitation Routes Integration Tests', () => {
 
     // Reset mocks
     vi.clearAllMocks();
-    
+
     // Default auth middleware - authenticated user
     requireBetterAuth.mockImplementation((req, res, next) => {
       req.user = { id: testUserId };
@@ -131,7 +131,9 @@ describe('Invitation Routes Integration Tests', () => {
         .send({ email: testEmail })
         .expect(403);
 
-      expect(response.body.error).toBe('You do not have permission to invite members to this organization');
+      expect(response.body.error).toBe(
+        'You do not have permission to invite members to this organization',
+      );
     });
 
     it('should handle already member error', async () => {
@@ -140,7 +142,7 @@ describe('Invitation Routes Integration Tests', () => {
         hasPermission: true,
       });
       invitationService.createInvitation.mockRejectedValue(
-        new Error('User is already a member of this organization')
+        new Error('User is already a member of this organization'),
       );
 
       const response = await request(app)
@@ -157,7 +159,7 @@ describe('Invitation Routes Integration Tests', () => {
         hasPermission: true,
       });
       invitationService.createInvitation.mockRejectedValue(
-        new Error('User has already invited to this organization')
+        new Error('User has already invited to this organization'),
       );
 
       const response = await request(app)
@@ -190,9 +192,7 @@ describe('Invitation Routes Integration Tests', () => {
       });
       invitationService.listInvitations.mockResolvedValue([testInvitation]);
 
-      const response = await request(app)
-        .get(`/api/${testOrganizationId}/invitations`)
-        .expect(200);
+      const response = await request(app).get(`/api/${testOrganizationId}/invitations`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual([testInvitation]);
@@ -204,22 +204,22 @@ describe('Invitation Routes Integration Tests', () => {
         hasPermission: false,
       });
 
-      const response = await request(app)
-        .get(`/api/${testOrganizationId}/invitations`)
-        .expect(403);
+      const response = await request(app).get(`/api/${testOrganizationId}/invitations`).expect(403);
 
-      expect(response.body.error).toBe('You do not have permission to view invitations for this organization');
+      expect(response.body.error).toBe(
+        'You do not have permission to view invitations for this organization',
+      );
     });
   });
 
   describe('POST /api/invitations/:invitationId/accept', () => {
     it('should accept invitation successfully', async () => {
-      const acceptResult = { 
-        membership: { 
-          userId: testUserId, 
+      const acceptResult = {
+        membership: {
+          userId: testUserId,
           organizationId: testOrganizationId,
-          role: 'member' 
-        } 
+          role: 'member',
+        },
       };
       invitationService.acceptInvitation.mockResolvedValue(acceptResult);
 
@@ -234,7 +234,7 @@ describe('Invitation Routes Integration Tests', () => {
 
     it('should handle invitation not found', async () => {
       invitationService.acceptInvitation.mockRejectedValue(
-        new Error('Invitation not found or has expired')
+        new Error('Invitation not found or has expired'),
       );
 
       const response = await request(app)
@@ -246,7 +246,7 @@ describe('Invitation Routes Integration Tests', () => {
 
     it('should handle already accepted invitation', async () => {
       invitationService.acceptInvitation.mockRejectedValue(
-        new Error('Invitation has already accepted')
+        new Error('Invitation has already accepted'),
       );
 
       const response = await request(app)
@@ -271,7 +271,7 @@ describe('Invitation Routes Integration Tests', () => {
 
     it('should handle invitation not found', async () => {
       invitationService.rejectInvitation.mockRejectedValue(
-        new Error('Invitation not found or has expired')
+        new Error('Invitation not found or has expired'),
       );
 
       const response = await request(app)
@@ -286,22 +286,16 @@ describe('Invitation Routes Integration Tests', () => {
     it('should get invitation details successfully', async () => {
       invitationService.getInvitation.mockResolvedValue(testInvitation);
 
-      const response = await request(app)
-        .get(`/api/invitations/${testInvitationId}`)
-        .expect(200);
+      const response = await request(app).get(`/api/invitations/${testInvitationId}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual(testInvitation);
     });
 
     it('should handle invitation not found', async () => {
-      invitationService.getInvitation.mockRejectedValue(
-        new Error('Invitation not found')
-      );
+      invitationService.getInvitation.mockRejectedValue(new Error('Invitation not found'));
 
-      const response = await request(app)
-        .get(`/api/invitations/${testInvitationId}`)
-        .expect(404);
+      const response = await request(app).get(`/api/invitations/${testInvitationId}`).expect(404);
 
       expect(response.body.error).toBe('Invitation not found');
     });
@@ -363,7 +357,7 @@ describe('Invitation Routes Integration Tests', () => {
         hasPermission: true,
       });
       invitationService.resendInvitation.mockRejectedValue(
-        new Error('Cannot resend invitation that has already been accepted')
+        new Error('Cannot resend invitation that has already been accepted'),
       );
 
       const response = await request(app)
@@ -405,35 +399,27 @@ describe('Invitation Routes Integration Tests', () => {
         testOrganizationId,
         testEmail,
         'admin',
-        testUserId
+        testUserId,
       );
     });
 
     it('should pass correct parameters to acceptInvitation', async () => {
-      const acceptResult = { membership: { userId: testUserId, organizationId: testOrganizationId, role: 'member' } };
+      const acceptResult = {
+        membership: { userId: testUserId, organizationId: testOrganizationId, role: 'member' },
+      };
       invitationService.acceptInvitation.mockResolvedValue(acceptResult);
 
-      await request(app)
-        .post(`/api/invitations/${testInvitationId}/accept`)
-        .expect(200);
+      await request(app).post(`/api/invitations/${testInvitationId}/accept`).expect(200);
 
-      expect(invitationService.acceptInvitation).toHaveBeenCalledWith(
-        testInvitationId,
-        testUserId
-      );
+      expect(invitationService.acceptInvitation).toHaveBeenCalledWith(testInvitationId, testUserId);
     });
 
     it('should pass correct parameters to rejectInvitation', async () => {
       invitationService.rejectInvitation.mockResolvedValue();
 
-      await request(app)
-        .post(`/api/invitations/${testInvitationId}/reject`)
-        .expect(200);
+      await request(app).post(`/api/invitations/${testInvitationId}/reject`).expect(200);
 
-      expect(invitationService.rejectInvitation).toHaveBeenCalledWith(
-        testInvitationId,
-        testUserId
-      );
+      expect(invitationService.rejectInvitation).toHaveBeenCalledWith(testInvitationId, testUserId);
     });
   });
 });

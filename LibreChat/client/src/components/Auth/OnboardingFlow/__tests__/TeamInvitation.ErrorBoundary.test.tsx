@@ -24,11 +24,20 @@ vi.mock('~/config/betterAuth', () => ({
 
 // Mock UI components
 vi.mock('~/components/ui/Button', () => ({
-  Button: ({ children, onClick, disabled, type = 'button', variant, size, className, ...props }: any) => (
-    <button 
-      type={type} 
-      onClick={onClick} 
-      disabled={disabled} 
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    type = 'button',
+    variant,
+    size,
+    className,
+    ...props
+  }: any) => (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
       data-variant={variant}
       data-size={size}
       className={className}
@@ -40,17 +49,19 @@ vi.mock('~/components/ui/Button', () => ({
 }));
 
 vi.mock('~/components/ui/Input', () => ({
-  Input: React.forwardRef(({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
-    <input 
-      ref={ref}
-      placeholder={placeholder} 
-      onChange={onChange}
-      onKeyPress={onKeyPress}
-      value={value}
-      disabled={disabled}
-      {...props} 
-    />
-  )),
+  Input: React.forwardRef(
+    ({ placeholder, onChange, onKeyPress, value, disabled, ...props }: any, ref) => (
+      <input
+        ref={ref}
+        placeholder={placeholder}
+        onChange={onChange}
+        onKeyPress={onKeyPress}
+        value={value}
+        disabled={disabled}
+        {...props}
+      />
+    ),
+  ),
 }));
 
 vi.mock('~/components/ui/Label', () => ({
@@ -62,7 +73,13 @@ vi.mock('~/components/ui/Label', () => ({
 }));
 
 // Error boundary fallback component
-const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const ErrorFallback = ({
+  error,
+  resetErrorBoundary,
+}: {
+  error: Error;
+  resetErrorBoundary: () => void;
+}) => (
   <div role="alert" data-testid="error-boundary-fallback">
     <h2>Something went wrong:</h2>
     <pre>{error.message}</pre>
@@ -120,7 +137,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
           <TeamInvitation {...defaultProps} />
           <ThrowError shouldThrow={true} />
         </div>,
-        { wrapper }
+        { wrapper },
       );
 
       expect(screen.getByTestId('error-boundary-fallback')).toBeInTheDocument();
@@ -128,19 +145,19 @@ describe('TeamInvitation Error Boundary Tests', () => {
       expect(screen.getByText('Test error for error boundary')).toBeInTheDocument();
       expect(onError).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Test error for error boundary'
+          message: 'Test error for error boundary',
         }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     it('should provide error recovery mechanism', async () => {
       const user = userEvent.setup();
-      
+
       // Create a stateful test component that can recover
       const TestComponent = () => {
         const [shouldThrow, setShouldThrow] = React.useState(true);
-        
+
         return (
           <ErrorBoundary
             FallbackComponent={ErrorFallback}
@@ -163,7 +180,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
       render(
         <QueryClientProvider client={queryClient}>
           <TestComponent />
-        </QueryClientProvider>
+        </QueryClientProvider>,
       );
 
       // Error boundary should be displayed
@@ -189,16 +206,16 @@ describe('TeamInvitation Error Boundary Tests', () => {
           <TeamInvitation {...defaultProps} />
           <ThrowError shouldThrow={true} />
         </div>,
-        { wrapper }
+        { wrapper },
       );
 
       expect(onError).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Test error for error boundary'
+          message: 'Test error for error boundary',
         }),
         expect.objectContaining({
-          componentStack: expect.stringContaining('ThrowError')
-        })
+          componentStack: expect.stringContaining('ThrowError'),
+        }),
       );
     });
   });
@@ -217,7 +234,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
           <BrokenComponent />
           <TeamInvitation {...defaultProps} />
         </div>,
-        { wrapper }
+        { wrapper },
       );
 
       expect(screen.getByTestId('error-boundary-fallback')).toBeInTheDocument();
@@ -240,7 +257,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
           <EffectErrorComponent />
           <TeamInvitation {...defaultProps} />
         </div>,
-        { wrapper }
+        { wrapper },
       );
 
       await waitFor(() => {
@@ -258,7 +275,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      
+
       // Mock an error in the onChange handler
       const originalOnChange = emailInput.onchange;
       emailInput.onchange = () => {
@@ -270,7 +287,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
 
       // Component should still be functional
       expect(screen.getByText('Invite your team')).toBeInTheDocument();
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -289,7 +306,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add multiple emails
       await user.type(emailInput, 'user1@example.com');
@@ -323,7 +340,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add email
       await user.type(emailInput, 'retry@example.com');
@@ -360,7 +377,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
 
       const errorWithDetails = new Error('Detailed error');
       errorWithDetails.stack = 'Error stack trace';
-      
+
       // Mock the mutation to throw an error that will be caught by the outer catch block
       // This simulates a scenario where something goes wrong during the mutation process
       // We need to mock the actual mutation function to throw, not just the inviteMember call
@@ -369,7 +386,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'log@example.com');
       await user.click(addButton!);
@@ -397,13 +414,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       // Error without message
       const errorWithoutMessage = new Error();
       errorWithoutMessage.message = '';
-      
+
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(errorWithoutMessage);
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'nomessage@example.com');
       await user.click(addButton!);
@@ -424,13 +441,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
 
       // Mock network timeout
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Network timeout')
+        new Error('Network timeout'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'timeout@example.com');
       await user.click(addButton!);
@@ -448,13 +465,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const wrapper = createTestWrapper();
 
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Connection refused')
+        new Error('Connection refused'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'refused@example.com');
       await user.click(addButton!);
@@ -472,13 +489,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const wrapper = createTestWrapper();
 
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('DNS resolution failed')
+        new Error('DNS resolution failed'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'dns@example.com');
       await user.click(addButton!);
@@ -498,13 +515,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const wrapper = createTestWrapper();
 
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Unauthorized access')
+        new Error('Unauthorized access'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'unauthorized@example.com');
       await user.click(addButton!);
@@ -522,13 +539,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const wrapper = createTestWrapper();
 
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Forbidden: Insufficient permissions')
+        new Error('Forbidden: Insufficient permissions'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'forbidden@example.com');
       await user.click(addButton!);
@@ -545,14 +562,12 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const user = userEvent.setup();
       const wrapper = createTestWrapper();
 
-      vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Token expired')
-      );
+      vi.mocked(authClient.organization.inviteMember).mockRejectedValue(new Error('Token expired'));
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'expired@example.com');
       await user.click(addButton!);
@@ -572,13 +587,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const wrapper = createTestWrapper();
 
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Validation failed: Invalid email format')
+        new Error('Validation failed: Invalid email format'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'validation@example.com');
       await user.click(addButton!);
@@ -596,13 +611,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const wrapper = createTestWrapper();
 
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('User already invited')
+        new Error('User already invited'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'duplicate@example.com');
       await user.click(addButton!);
@@ -620,13 +635,13 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const wrapper = createTestWrapper();
 
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(
-        new Error('Organization member limit exceeded')
+        new Error('Organization member limit exceeded'),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'quota@example.com');
       await user.click(addButton!);
@@ -645,14 +660,14 @@ describe('TeamInvitation Error Boundary Tests', () => {
       const user = userEvent.setup();
       const wrapper = createTestWrapper();
 
-      vi.mocked(authClient.organization.inviteMember).mockImplementation(() => 
-        Promise.reject(new Error('Async operation failed'))
+      vi.mocked(authClient.organization.inviteMember).mockImplementation(() =>
+        Promise.reject(new Error('Async operation failed')),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       await user.type(emailInput, 'async@example.com');
       await user.click(addButton!);
@@ -687,7 +702,7 @@ describe('TeamInvitation Error Boundary Tests', () => {
       render(<TeamInvitation {...defaultProps} />, { wrapper });
 
       const emailInput = screen.getByTestId('team-email-input');
-      const addButton = screen.getAllByRole('button').find(btn => btn.querySelector('svg'));
+      const addButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg'));
 
       // Add two emails
       await user.type(emailInput, 'race1@example.com');
