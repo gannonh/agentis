@@ -237,7 +237,7 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
         <p className="text-gray-600 dark:text-gray-400">Add team members to {organizationName}</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" role="form">
         {/* Email input */}
         <div>
           <Label
