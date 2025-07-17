@@ -95,17 +95,17 @@ test.describe('Organization Join Flow - Issue #104', () => {
       await expect(page1.getByRole('heading', { name: /Complete Your Profile/i })).toBeVisible();
       await page1.getByTestId('profile-name-input').fill('User One');
       await page1.getByRole('button', { name: 'Continue' }).click();
-      await expect(page1.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(
+        page1.getByRole('heading', { name: 'Invite Your Team', exact: true }),
+      ).toBeVisible({
         timeout: 10000,
       });
 
-      await expect(page1.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible();
       await page1.getByRole('button', { name: 'Skip for Now' }).click();
       await expect(page1.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({
         timeout: 10000,
       });
 
-      await expect(page1.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible();
       await page1.getByRole('button', { name: /Start Your First Conversation/i }).click();
 
       await handleTermsOfService(page1);
@@ -174,17 +174,15 @@ test.describe('Organization Join Flow - Issue #104', () => {
       // Complete User 2's remaining onboarding
       await page2.getByTestId('profile-name-input').fill('User Two');
       await page2.getByRole('button', { name: 'Continue' }).click();
-      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page2.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
 
-      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible();
       await page2.getByRole('button', { name: 'Skip for Now' }).click();
       await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible({
         timeout: 10000,
       });
 
-      await expect(page2.getByRole('heading', { name: /Welcome to Agentis/i })).toBeVisible();
       await page2.getByRole('button', { name: /Start Your First Conversation/i }).click();
 
       await handleTermsOfService(page2);

@@ -158,7 +158,7 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
       logProgress('🔄 Submitted profile data');
 
       // Step 6: Verify navigation to next step (team invitation)
-      await expect(page.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
       logProgress('✅ Advanced to team invitation step');
@@ -289,7 +289,7 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
       await expect(continueButton).toBeEnabled({ timeout: 5000 });
       await continueButton.click();
 
-      await expect(page.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
 
@@ -377,7 +377,7 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
       await continueButton.click();
 
       // Skip team invitation step
-      await expect(page.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
 
@@ -541,7 +541,7 @@ test.describe('Onboarding Profile Setup - Issue #105', () => {
 
       // Complete profile setup successfully
       await continueButton.click();
-      await expect(page.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
 

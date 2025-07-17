@@ -572,7 +572,7 @@ test.describe('Organization Join Edge Cases', () => {
       await page2.waitForTimeout(2000); // Allow time for navigation
 
       // Should proceed to team step
-      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page2.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
       logProgress('✅ Phase 2: Advanced to team step');
@@ -706,7 +706,7 @@ test.describe('Organization Join Edge Cases', () => {
       logProgress('✅ Phase 2: Profile step completed');
 
       // Complete team step
-      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page2.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
       await completeTeamStep(page2, true);

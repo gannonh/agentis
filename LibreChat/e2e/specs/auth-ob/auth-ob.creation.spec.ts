@@ -8,18 +8,18 @@
  * - "Allow domain join" checkbox functionality
  * - Profile setup integration (must not skip)
  * - Complete flow through all onboarding steps
- * 
+ *
  * IMPORTANT TEST LIMITATIONS:
  * =========================
  * 1. OAuth Testing Constraints:
  *    - Only ONE OAuth account available per domain (PUBLIC_DOMAIN and PRIVATE_DOMAIN)
  *    - Cannot test multi-user OAuth scenarios (same email address)
  *    - All OAuth tests must use the same account sequentially
- * 
+ *
  * 2. Magic Link Testing:
  *    - Can generate unique email addresses for multi-user scenarios
  *    - Preferred method for testing organization join flows
- * 
+ *
  * 3. Test Coverage Focus:
  *    - Single OAuth user flows (creation, profile setup, logout/login)
  *    - Magic link multi-user scenarios (org creation, joining, permissions)
@@ -151,7 +151,7 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       logProgress('⏳ Waiting for profile submission to complete...');
 
       // Step 10: Should advance to Team invitation step
-      const teamHeading = page.getByRole('heading', { name: /Invite Your Team/i });
+      const teamHeading = page.getByRole('heading', { name: 'Invite Your Team', level: 1 });
       await expect(teamHeading).toBeVisible({
         timeout: 10000,
       });
@@ -541,7 +541,9 @@ test.describe('Organization Creation Flow - Issue #103', () => {
     }
   });
 
-  test('OAuth → Corporate Domain → Organization Creation (Domain Join Disabled)', async ({ browser }) => {
+  test('OAuth → Corporate Domain → Organization Creation (Domain Join Disabled)', async ({
+    browser,
+  }) => {
     logProgress('🚀 Testing OAuth corporate domain organization creation WITHOUT domain join...');
 
     const context = await browser.newContext();
@@ -554,7 +556,10 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       );
 
       // Verify OAuth credentials are available
-      requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth corporate organization creation (no domain join)');
+      requireOAuthCredentials(
+        'PRIVATE_DOMAIN',
+        'OAuth corporate organization creation (no domain join)',
+      );
 
       // Complete OAuth onboarding flow with domain join DISABLED
       const orgName = 'Astrolabs Private Corp';
@@ -567,7 +572,9 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       // Verify we reach the chat interface
       await expect(page).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
       await expect(page.getByTestId('text-input')).toBeVisible();
-      logProgress('✅ OAuth corporate organization creation (no domain join) completed successfully');
+      logProgress(
+        '✅ OAuth corporate organization creation (no domain join) completed successfully',
+      );
 
       // Verify organization created with domain join DISABLED
       const { getTestDatabase } = await import('../../utils/testAuth');
@@ -586,21 +593,21 @@ test.describe('Organization Creation Flow - Issue #103', () => {
   /**
    * SKIPPED IMPOSSIBLE TESTS - Multi-User OAuth Scenarios
    * ====================================================
-   * 
+   *
    * The following test scenarios are IMPOSSIBLE with current OAuth constraints:
-   * 
+   *
    * 1. "OAuth User 1 creates org, OAuth User 2 joins"
    *    - Would require 2 different OAuth accounts with same domain
    *    - We only have 1 OAuth account per domain
-   * 
+   *
    * 2. "Multiple OAuth users in same organization"
    *    - Each OAuth provider (Google) uses a single test account
    *    - Cannot simulate different users with same email
-   * 
+   *
    * 3. "OAuth admin approves OAuth member join request"
    *    - Would require 2 OAuth sessions with different accounts
    *    - OAuth accounts are domain-locked (gmail.com, astrolabs.llc)
-   * 
+   *
    * ALTERNATIVE: Use magic link tests for multi-user scenarios
    * See: auth-ob.join-auto.spec.ts for magic link multi-user tests
    */

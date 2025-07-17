@@ -48,40 +48,40 @@ export const TEST_EMAILS = {
 export const CLEANUP_PATTERNS = {
   // Email patterns for user cleanup
   EMAIL: {
-    TEST_PREFIX: /test.*@/,           // Emails starting with "test"
-    FIRST_PREFIX: /first-.*@/,        // Emails starting with "first-"
-    SECOND_PREFIX: /second-.*@/,      // Emails starting with "second-"
-    USER_PREFIX: /user[12]?-.*@/,     // Emails starting with "user", "user1-", "user2-"
-    NEW_USER_PREFIX: /new-user-.*@/,  // Emails starting with "new-user-"
+    TEST_PREFIX: /test.*@/, // Emails starting with "test"
+    FIRST_PREFIX: /first-.*@/, // Emails starting with "first-"
+    SECOND_PREFIX: /second-.*@/, // Emails starting with "second-"
+    USER_PREFIX: /user[12]?-.*@/, // Emails starting with "user", "user1-", "user2-"
+    NEW_USER_PREFIX: /new-user-.*@/, // Emails starting with "new-user-"
   },
-  
+
   // User ID patterns for session/membership cleanup
   USER_ID: {
-    TEST_PREFIX: /test.*/,            // User IDs starting with "test"
+    TEST_PREFIX: /test.*/, // User IDs starting with "test"
   },
-  
+
   // Organization name patterns
   ORG_NAME: {
-    TEST: /Test.*/,                   // Organizations starting with "Test"
-    TECHCORP: /TechCorp.*/,          // TechCorp organizations
-    ACME: /Acme Corp.*/,             // Acme Corp organizations
-    ASTROLABS: /Astrolabs.*/,        // Astrolabs organizations
-    OAUTH: /OAuth.*/,                // OAuth test organizations
+    TEST: /Test.*/, // Organizations starting with "Test"
+    TECHCORP: /TechCorp.*/, // TechCorp organizations
+    ACME: /Acme Corp.*/, // Acme Corp organizations
+    ASTROLABS: /Astrolabs.*/, // Astrolabs organizations
+    OAUTH: /OAuth.*/, // OAuth test organizations
   },
-  
+
   // Organization slug patterns
   ORG_SLUG: {
-    TEST: /test.*/,                   // Slugs starting with "test"
-    TECHCORP: /techcorp.*/,          // TechCorp slugs
-    ACME: /acme-corp.*/,             // Acme Corp slugs
-    ASTROLABS: /astrolabs.*/,        // Astrolabs slugs
+    TEST: /test.*/, // Slugs starting with "test"
+    TECHCORP: /techcorp.*/, // TechCorp slugs
+    ACME: /acme-corp.*/, // Acme Corp slugs
+    ASTROLABS: /astrolabs.*/, // Astrolabs slugs
   },
-  
+
   // Domain patterns for organization metadata
   DOMAIN: {
-    TESTCORP: /testcorp.*/,          // TestCorp domains
-    TECHCORP: /techcorp.*/,          // TechCorp domains
-    ASTROLABS: 'astrolabs.llc',      // OAuth corporate domain (exact match)
+    TESTCORP: /testcorp.*/, // TestCorp domains
+    TECHCORP: /techcorp.*/, // TechCorp domains
+    ASTROLABS: 'astrolabs.llc', // OAuth corporate domain (exact match)
   },
 } as const;
 
@@ -161,8 +161,8 @@ export async function cleanDatabase(): Promise<void> {
   // 2. Delete member records
   await db.collection('member').deleteMany({
     $or: [
-      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } }, 
-      { organizationId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } }
+      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
+      { organizationId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
     ],
   });
 
@@ -325,8 +325,8 @@ export async function completeProfileStep(page: Page, userName: string): Promise
  * @param skipTeam - Whether to skip team invitations (default: true)
  */
 export async function completeTeamStep(page: Page, skipTeam: boolean = true): Promise<void> {
-  // Wait for team step
-  await page.getByRole('heading', { name: /Invite Your Team/i }).waitFor();
+  // Wait for team step - use the main h1 heading to avoid multiple matches
+  await page.getByRole('heading', { name: 'Invite Your Team', level: 1 }).waitFor();
 
   if (skipTeam) {
     await page.getByRole('button', { name: 'Skip for Now' }).click();
