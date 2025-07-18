@@ -14,7 +14,6 @@ import {
   captureMagicLink,
   cleanDatabase,
   cleanOAuthUsers,
-  cleanTestData,
   createTestContext,
   handleTermsOfService,
   completeOrganizationStep,
@@ -37,23 +36,10 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('OAuth PUBLIC_DOMAIN Tests', () => {
-  // Store test IDs for cleanup
-  const testIds: string[] = [];
-
   test.beforeEach(async () => {
     await cleanDatabase();
     await cleanOAuthUsers();
     logProgress('🧹 Database and OAuth users cleaned for PUBLIC_DOMAIN test');
-  });
-
-  test.afterEach(async () => {
-    // Clean up test-specific data
-    for (const testId of testIds) {
-      await cleanTestData(testId).catch(err => 
-        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`)
-      );
-    }
-    testIds.length = 0; // Clear the array
   });
 
   test('Google OAuth with public domain (@gmail.com)', async ({ browser }) => {

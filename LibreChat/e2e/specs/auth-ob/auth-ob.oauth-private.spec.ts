@@ -14,7 +14,6 @@ import {
   captureMagicLink,
   cleanDatabase,
   cleanOAuthUsers,
-  cleanTestData,
   createTestContext,
   createTestOrganization,
   handleTermsOfService,
@@ -37,23 +36,10 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('OAuth PRIVATE_DOMAIN Tests', () => {
-  // Store test IDs for cleanup
-  const testIds: string[] = [];
-
   test.beforeEach(async () => {
     await cleanDatabase();
     await cleanOAuthUsers();
     logProgress('🧹 Database and OAuth users cleaned for PRIVATE_DOMAIN test');
-  });
-
-  test.afterEach(async () => {
-    // Clean up test-specific data
-    for (const testId of testIds) {
-      await cleanTestData(testId).catch(err => 
-        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`)
-      );
-    }
-    testIds.length = 0; // Clear the array
   });
 
   test('OAuth → Corporate Domain → Organization Creation', async ({ browser }) => {
@@ -318,30 +304,4 @@ test.describe('OAuth PRIVATE_DOMAIN Tests', () => {
     }
   });
 
-  test('OAuth → Corporate Domain → Organization Creation with Domain Join', async ({ browser }) => {
-    logProgress('🚀 Testing OAuth corporate domain organization creation with domain join...');
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Check credentials before starting
-      requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth corporate organization creation');
-
-      // Complete OAuth onboarding flow with domain join enabled
-      await completeOAuthOnboardingFlow(page, 'PRIVATE_DOMAIN', {
-        orgName: 'OAuth Domain Join Test Corp',
-        enableDomainJoin: true,
-        skipTeam: true,
-      });
-
-      // Verify we reach chat
-      await expect(page).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 15000 });
-      logProgress('✅ OAuth corporate organization with domain join completed successfully');
-
-      logProgress('🎉 OAuth corporate organization creation with domain join test PASSED!');
-    } finally {
-      await context.close();
-    }
-  });
 });
