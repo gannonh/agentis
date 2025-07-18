@@ -26,16 +26,15 @@
  *    - Form validation and error handling
  */
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { logProgress } from '../../utils/testLogger';
 import {
   TEST_VIEWPORT,
   captureMagicLink,
   cleanDatabase,
-  generateTestEmail,
+  cleanTestData,
+  createTestContext,
   handleTermsOfService,
-  completeFullOnboarding,
-  TEST_PATTERNS,
 } from '../../utils/authOnboardingUtils';
 
 test.use({
@@ -50,6 +49,9 @@ test.describe('Organization Creation Flow - Issue #103', () => {
   // Terms of Service helper imported from authOnboardingUtils
 
   // Database cleanup helper imported from authOnboardingUtils
+  
+  // Store test IDs for cleanup
+  const testIds: string[] = [];
 
   test.beforeEach(async () => {
     await cleanDatabase();
@@ -57,7 +59,13 @@ test.describe('Organization Creation Flow - Issue #103', () => {
   });
 
   test.afterEach(async () => {
-    await cleanDatabase();
+    // Clean up test-specific data
+    for (const testId of testIds) {
+      await cleanTestData(testId).catch(err => 
+        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`)
+      );
+    }
+    testIds.length = 0; // Clear the array
   });
 
   /**
@@ -74,7 +82,14 @@ test.describe('Organization Creation Flow - Issue #103', () => {
 
     try {
       // Step 1: Start with corporate domain email
-      const corporateEmail = `test-${Date.now()}@testcorp.com`;
+      const testContext = createTestContext({ 
+        emailPrefix: 'test',
+        corporateDomain: 'testcorp.com',
+        orgBase: 'TestCorp Engineering'
+      });
+      testIds.push(testContext.testId);
+      const corporateEmail = testContext.emails.corporate!;
+      
       await page.goto('http://localhost:3080/login');
       await page.getByRole('textbox', { name: 'Email address' }).fill(corporateEmail);
       await page.getByTestId('login-button').click();
@@ -97,16 +112,17 @@ test.describe('Organization Creation Flow - Issue #103', () => {
       await expect(page.getByRole('textbox').first()).toBeVisible(); // org name input
 
       // Fill organization details
-      const orgName = 'TestCorp Engineering';
+      const orgName = testContext.organization.name;
       logProgress('📝 Filling in organization name...');
       const orgNameInput = page.getByRole('textbox').first();
       await orgNameInput.fill(orgName);
       await expect(orgNameInput).toHaveValue(orgName);
 
       // Step 5: Verify domain join checkbox for corporate domain
-      const domainJoinLabel = page.getByText(/let anyone with an @testcorp.com email join/i);
+      const expectedDomain = testContext.emails.corporate!.split('@')[1]; // Extract domain from email
+      const domainJoinLabel = page.getByText(new RegExp(`let anyone with an @${expectedDomain.replace('.', '\\.')} email join`, 'i'));
       await expect(domainJoinLabel).toBeVisible();
-      logProgress('✅ Domain join option available for corporate domain');
+      logProgress(`✅ Domain join option available for corporate domain: ${expectedDomain}`);
       await expect(page.getByRole('checkbox')).toBeVisible();
 
       // Enable domain join
@@ -198,8 +214,8 @@ test.describe('Organization Creation Flow - Issue #103', () => {
 
       const org = await db.collection('organization').findOne({ name: orgName });
       expect(org).toBeTruthy();
-      expect(org?.slug).toBe('testcorp-engineering');
-      expect(org?.metadata?.domain).toBe('testcorp.com');
+      expect(org?.slug).toBe(testContext.organization.slug);
+      expect(org?.metadata?.domain).toBe(expectedDomain); // Use the same domain we extracted earlier
       expect(org?.metadata?.allowDomainJoin).toBe(true);
       logProgress('✅ Organization created correctly in database');
     } finally {
@@ -220,7 +236,12 @@ test.describe('Organization Creation Flow - Issue #103', () => {
 
     try {
       // Use Gmail (public domain)
-      const publicEmail = `test-${Date.now()}@gmail.com`;
+      const testContext = createTestContext({ 
+        emailPrefix: 'test'
+      });
+      testIds.push(testContext.testId);
+      const publicEmail = `test-${testContext.testId}@gmail.com`;
+      
       await page.goto('http://localhost:3080/login');
       await page.getByRole('textbox', { name: 'Email address' }).fill(publicEmail);
       await page.getByTestId('login-button').click();
@@ -276,7 +297,12 @@ test.describe('Organization Creation Flow - Issue #103', () => {
     const page = await context.newPage();
 
     try {
-      const email = `test-${Date.now()}@example.com`;
+      const testContext = createTestContext({ 
+        emailPrefix: 'test'
+      });
+      testIds.push(testContext.testId);
+      const email = testContext.emails.primary;
+      
       await page.goto('http://localhost:3080/login');
       await page.getByRole('textbox', { name: 'Email address' }).fill(email);
       await page.getByTestId('login-button').click();
@@ -343,7 +369,13 @@ test.describe('Organization Creation Flow - Issue #103', () => {
     const page = await context.newPage();
 
     try {
-      const email = `test-${Date.now()}@testcorp.com`;
+      const testContext = createTestContext({ 
+        emailPrefix: 'test',
+        corporateDomain: 'testcorp.com'
+      });
+      testIds.push(testContext.testId);
+      const email = testContext.emails.corporate!;
+      
       await page.goto('http://localhost:3080/login');
       await page.getByRole('textbox', { name: 'Email address' }).fill(email);
       await page.getByTestId('login-button').click();
@@ -448,171 +480,4 @@ test.describe('Organization Creation Flow - Issue #103', () => {
   /**
    * Test OAuth flow completes all onboarding steps
    */
-  test('OAuth signup should complete full onboarding flow', async ({ browser }) => {
-    logProgress('🚀 Testing OAuth → organization → profile flow...');
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Use abstracted OAuth utilities
-      const { requireOAuthCredentials, completeOAuthOnboardingFlow } = await import(
-        '../../utils/authOnboardingUtils'
-      );
-
-      // Verify OAuth credentials are available (will fail test if missing)
-      requireOAuthCredentials('PUBLIC_DOMAIN', 'OAuth onboarding flow');
-
-      // Complete full OAuth onboarding flow
-      await completeOAuthOnboardingFlow(page, 'PUBLIC_DOMAIN', {
-        orgName: 'OAuth Test Organization',
-        skipTeam: true,
-      });
-
-      // Verify we reach the chat interface
-      await expect(page.getByTestId('text-input')).toBeVisible();
-      logProgress('✅ OAuth flow correctly advances through all steps');
-    } finally {
-      await context.close();
-    }
-  });
-
-  /**
-   * =================================================================================
-   * OAUTH CORPORATE DOMAIN ORGANIZATION CREATION TESTS
-   * =================================================================================
-   * Tests OAuth authentication with corporate domain organization creation.
-   * Extends Issue #103 scope to include OAuth flows with PRIVATE_DOMAIN.
-   */
-
-  test('OAuth → Corporate Domain → Organization Creation with Domain Join', async ({ browser }) => {
-    logProgress('🚀 Testing OAuth corporate domain organization creation with domain join...');
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Use abstracted OAuth utilities
-      const { requireOAuthCredentials, completeOAuthOnboardingFlow } = await import(
-        '../../utils/authOnboardingUtils'
-      );
-
-      // Verify OAuth credentials are available (will fail test if missing)
-      requireOAuthCredentials('PRIVATE_DOMAIN', 'OAuth corporate organization creation');
-
-      // Complete OAuth onboarding flow with corporate domain and domain join enabled
-      const orgName = 'Astrolabs OAuth Corp';
-      await completeOAuthOnboardingFlow(page, 'PRIVATE_DOMAIN', {
-        orgName: orgName,
-        enableDomainJoin: true, // Enable domain join for corporate domain
-        skipTeam: true,
-      });
-
-      // Verify we reach the chat interface
-      await expect(page).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
-      await expect(page.getByTestId('text-input')).toBeVisible();
-      logProgress('✅ OAuth corporate organization creation completed successfully');
-
-      // =================================================================
-      // VERIFICATION: Database validation
-      // =================================================================
-      logProgress('🔍 Verifying database state...');
-
-      const { getTestDatabase } = await import('../../utils/testAuth');
-      const { db } = await getTestDatabase();
-
-      // Verify organization exists with correct settings
-      const org = await db.collection('organization').findOne({ name: orgName });
-      expect(org).toBeTruthy();
-      expect(org?.slug).toBe('astrolabs-oauth-corp');
-      expect(org?.metadata?.domain).toBe('astrolabs.llc');
-      expect(org?.metadata?.allowDomainJoin).toBe(true);
-      logProgress('✅ Organization created with domain join enabled');
-
-      // Verify OAuth user is organization owner
-      const members = await db.collection('member').find({ organizationId: org?._id }).toArray();
-      expect(members).toHaveLength(1);
-      expect(members[0].role).toBe('owner');
-      logProgress('✅ Database verification: OAuth user is organization owner');
-
-      logProgress('🎉 OAuth corporate domain organization creation test PASSED!');
-    } finally {
-      await context.close();
-    }
-  });
-
-  test('OAuth → Corporate Domain → Organization Creation (Domain Join Disabled)', async ({
-    browser,
-  }) => {
-    logProgress('🚀 Testing OAuth corporate domain organization creation WITHOUT domain join...');
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Use abstracted OAuth utilities
-      const { requireOAuthCredentials, completeOAuthOnboardingFlow } = await import(
-        '../../utils/authOnboardingUtils'
-      );
-
-      // Verify OAuth credentials are available
-      requireOAuthCredentials(
-        'PRIVATE_DOMAIN',
-        'OAuth corporate organization creation (no domain join)',
-      );
-
-      // Complete OAuth onboarding flow with domain join DISABLED
-      const orgName = 'Astrolabs Private Corp';
-      await completeOAuthOnboardingFlow(page, 'PRIVATE_DOMAIN', {
-        orgName: orgName,
-        enableDomainJoin: false, // Key difference - domain join disabled
-        skipTeam: true,
-      });
-
-      // Verify we reach the chat interface
-      await expect(page).toHaveURL(TEST_PATTERNS.CHAT_URL, { timeout: 10000 });
-      await expect(page.getByTestId('text-input')).toBeVisible();
-      logProgress(
-        '✅ OAuth corporate organization creation (no domain join) completed successfully',
-      );
-
-      // Verify organization created with domain join DISABLED
-      const { getTestDatabase } = await import('../../utils/testAuth');
-      const { db } = await getTestDatabase();
-
-      const org = await db.collection('organization').findOne({ name: orgName });
-      expect(org).toBeTruthy();
-      expect(org?.metadata?.domain).toBe('astrolabs.llc');
-      expect(org?.metadata?.allowDomainJoin).toBe(false); // Should be disabled
-      logProgress('✅ Organization created with domain join disabled');
-    } finally {
-      await context.close();
-    }
-  });
-
-  /**
-   * SKIPPED IMPOSSIBLE TESTS - Multi-User OAuth Scenarios
-   * ====================================================
-   *
-   * The following test scenarios are IMPOSSIBLE with current OAuth constraints:
-   *
-   * 1. "OAuth User 1 creates org, OAuth User 2 joins"
-   *    - Would require 2 different OAuth accounts with same domain
-   *    - We only have 1 OAuth account per domain
-   *
-   * 2. "Multiple OAuth users in same organization"
-   *    - Each OAuth provider (Google) uses a single test account
-   *    - Cannot simulate different users with same email
-   *
-   * 3. "OAuth admin approves OAuth member join request"
-   *    - Would require 2 OAuth sessions with different accounts
-   *    - OAuth accounts are domain-locked (gmail.com, astrolabs.llc)
-   *
-   * ALTERNATIVE: Use magic link tests for multi-user scenarios
-   * See: auth-ob.join-auto.spec.ts for magic link multi-user tests
-   */
-  test.skip('Multi-user OAuth scenarios', async () => {
-    // This test is skipped because it's impossible to implement
-    // with only one OAuth account per domain
-  });
 });

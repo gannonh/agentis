@@ -30,6 +30,7 @@ export async function getOrganizationsByDomain(domain) {
       .collection('organization')
       .find({
         'metadata.domain': domain,
+        deletedAt: { $exists: false }, // Exclude soft-deleted organizations
       })
       .toArray();
 

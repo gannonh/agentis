@@ -13,6 +13,27 @@
 
 import { Page } from '@playwright/test';
 import { logProgress } from './testLogger';
+export { 
+  generateTestId, 
+  generateTestEmail as generateUniqueTestEmail,
+  generateCorporateEmail,
+  generateOrgName,
+  generateOrgSlug,
+  createTestContext,
+  createCleanupPatterns,
+  type TestContext,
+  type CleanupConfig
+} from './testIdentifiers';
+
+/**
+ * Add a small random delay to reduce concurrent test conflicts
+ * Call this at the beginning of each test
+ */
+export async function addTestStartDelay(): Promise<void> {
+  // Random delay between 0-2 seconds to stagger test starts
+  const delay = Math.random() * 2000;
+  await new Promise(resolve => setTimeout(resolve, delay));
+}
 
 /**
  * OAuth credentials for testing
@@ -142,69 +163,201 @@ export async function handleTermsOfService(page: Page): Promise<boolean> {
 }
 
 /**
+ * Helper to clean OAuth user data specifically
+ * This must be called before OAuth tests to ensure they start fresh
+ */
+export async function cleanOAuthUsers(): Promise<void> {
+  const { getTestDatabase } = await import('./testAuth');
+  const { db } = await getTestDatabase();
+
+  // Clean OAuth users immediately (no age filter)
+  const oauthEmails = [
+    OAUTH_CREDENTIALS.PUBLIC_DOMAIN.email,
+    OAUTH_CREDENTIALS.PRIVATE_DOMAIN.email,
+  ];
+
+  // First, find the OAuth users to get their IDs
+  const oauthUsers = await db.collection('user').find({
+    email: { $in: oauthEmails }
+  }).toArray();
+  
+  const oauthUserIds = oauthUsers.map(user => user._id);
+  
+  if (oauthUserIds.length > 0) {
+    // 1. Delete sessions for OAuth users
+    await db.collection('session').deleteMany({
+      userId: { $in: oauthUserIds }
+    });
+
+    // 2. Delete member records for OAuth users
+    await db.collection('member').deleteMany({
+      userId: { $in: oauthUserIds }
+    });
+
+    // 3. Delete account records (OAuth linkages)
+    await db.collection('account').deleteMany({
+      userId: { $in: oauthUserIds }
+    });
+  }
+
+  // 4. Delete organizations created by OAuth users
+  await db.collection('organization').deleteMany({
+    $or: [
+      { 'metadata.createdBy': { $in: oauthEmails } },
+      { name: { $regex: /OAuth.*/ } },
+      { name: { $regex: /Astrolabs.*/ } },
+    ]
+  });
+
+  // 5. Delete OAuth users
+  await db.collection('user').deleteMany({
+    email: { $in: oauthEmails }
+  });
+
+  logProgress('🧹 Cleaned OAuth user data');
+}
+
+/**
  * Helper to clean database between tests
- * Cleans up test data in proper order (foreign keys matter)
+ * CONCURRENT-SAFE: Only cleans data older than 2 minutes to avoid interfering with running tests
  */
 export async function cleanDatabase(): Promise<void> {
   const { getTestDatabase } = await import('./testAuth');
   const { db } = await getTestDatabase();
 
+  // Only clean data older than 2 minutes to avoid interfering with concurrent tests
+  const cutoffTime = new Date(Date.now() - 2 * 60 * 1000);
+  const ageFilter = {
+    $or: [
+      { createdAt: { $lt: cutoffTime } },
+      { createdAt: { $exists: false } }, // Handle legacy data without timestamps
+      { updatedAt: { $lt: cutoffTime } },
+    ]
+  };
+
+  // Clean up test data in proper order (foreign keys matter)
+  // 1. Delete sessions first (but only old ones)
+  await db.collection('session').deleteMany({
+    $and: [
+      ageFilter,
+      {
+        $or: [
+          { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
+          { userId: { $regex: /.*-\d{13}-[a-f0-9]{8}.*/ } }, // Our testId pattern
+        ]
+      }
+    ]
+  });
+
+  // 2. Delete member records (but only old ones)
+  await db.collection('member').deleteMany({
+    $and: [
+      ageFilter,
+      {
+        $or: [
+          { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
+          { organizationId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
+          { userId: { $regex: /.*-\d{13}-[a-f0-9]{8}.*/ } }, // Our testId pattern
+        ]
+      }
+    ]
+  });
+
+  // 3. Delete account records (OAuth linkages) - only old test users
+  await db.collection('account').deleteMany({
+    $and: [
+      ageFilter,
+      {
+        $or: [
+          { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
+          { userId: { $regex: /.*-\d{13}-[a-f0-9]{8}.*/ } }, // Our testId pattern
+        ]
+      }
+    ]
+  });
+
+  // 4. Delete organizations (but only old ones)
+  await db.collection('organization').deleteMany({
+    $and: [
+      ageFilter,
+      {
+        $or: [
+          { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.TEST } },
+          { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.TECHCORP } },
+          { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.ACME } },
+          { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.ASTROLABS } },
+          { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.OAUTH } },
+          { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.TEST } },
+          { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.TECHCORP } },
+          { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.ACME } },
+          { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.ASTROLABS } },
+          { 'metadata.domain': { $regex: CLEANUP_PATTERNS.DOMAIN.TESTCORP } },
+          { 'metadata.domain': { $regex: CLEANUP_PATTERNS.DOMAIN.TECHCORP } },
+          { 'metadata.domain': CLEANUP_PATTERNS.DOMAIN.ASTROLABS },
+          { name: { $regex: /.*\d{13}-[a-f0-9]{8}.*/ } }, // Our testId pattern
+        ]
+      }
+    ]
+  });
+
+  // 5. Delete users last - only old test users
+  await db.collection('user').deleteMany({
+    $and: [
+      ageFilter,
+      {
+        $or: [
+          { email: { $regex: CLEANUP_PATTERNS.EMAIL.TEST_PREFIX } },
+          { email: { $regex: CLEANUP_PATTERNS.EMAIL.FIRST_PREFIX } },
+          { email: { $regex: CLEANUP_PATTERNS.EMAIL.SECOND_PREFIX } },
+          { email: { $regex: CLEANUP_PATTERNS.EMAIL.USER_PREFIX } },
+          { email: { $regex: CLEANUP_PATTERNS.EMAIL.NEW_USER_PREFIX } },
+          { email: { $regex: /.*-\d{13}-[a-f0-9]{8}@.*/ } }, // Our testId pattern
+        ]
+      }
+    ]
+  });
+}
+
+/**
+ * Helper to clean database for a specific test run
+ * @param testId - Unique test identifier used for this test run
+ * @param additionalPatterns - Additional cleanup patterns if needed
+ */
+export async function cleanTestData(testId: string, additionalPatterns?: {
+  emails?: string[];
+  orgNames?: string[];
+  orgSlugs?: string[];
+}): Promise<void> {
+  const { getTestDatabase } = await import('./testAuth');
+  const { db } = await getTestDatabase();
+  const { createCleanupPatterns } = await import('./testIdentifiers');
+  
+  const patterns = createCleanupPatterns({
+    testId,
+    additionalEmails: additionalPatterns?.emails,
+    additionalOrgNames: additionalPatterns?.orgNames,
+    additionalOrgSlugs: additionalPatterns?.orgSlugs,
+  });
+
   // Clean up test data in proper order (foreign keys matter)
   // 1. Delete sessions first
-  await db.collection('session').deleteMany({
-    $or: [
-      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
-      {}, // Clean all sessions for now since we're testing
-    ],
-  });
-
+  await db.collection('session').deleteMany(patterns.sessions);
+  
   // 2. Delete member records
-  await db.collection('member').deleteMany({
-    $or: [
-      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
-      { organizationId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } },
-    ],
-  });
-
-  // 3. Delete account records (OAuth linkages)
+  await db.collection('member').deleteMany(patterns.members);
+  
+  // 3. Delete account records (OAuth linkages) for test users
   await db.collection('account').deleteMany({
-    $or: [
-      { userId: { $regex: CLEANUP_PATTERNS.USER_ID.TEST_PREFIX } }, // Test users
-      { userId: { $regex: /.*gannon@astrolabs\.llc.*/ } }, // OAuth PRIVATE_DOMAIN user
-      { userId: { $regex: /.*agentis\.test@gmail\.com.*/ } }, // OAuth PUBLIC_DOMAIN user
-    ],
+    userId: { $regex: new RegExp(`.*-${testId}.*`) }
   });
-
+  
   // 4. Delete organizations
-  await db.collection('organization').deleteMany({
-    $or: [
-      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.TEST } },
-      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.TECHCORP } },
-      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.ACME } },
-      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.ASTROLABS } },
-      { name: { $regex: CLEANUP_PATTERNS.ORG_NAME.OAUTH } },
-      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.TEST } },
-      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.TECHCORP } },
-      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.ACME } },
-      { slug: { $regex: CLEANUP_PATTERNS.ORG_SLUG.ASTROLABS } },
-      { 'metadata.domain': { $regex: CLEANUP_PATTERNS.DOMAIN.TESTCORP } },
-      { 'metadata.domain': { $regex: CLEANUP_PATTERNS.DOMAIN.TECHCORP } },
-      { 'metadata.domain': CLEANUP_PATTERNS.DOMAIN.ASTROLABS },
-    ],
-  });
-
-  // 5. Delete users last - now includes all test email patterns
-  await db.collection('user').deleteMany({
-    $or: [
-      { email: { $regex: CLEANUP_PATTERNS.EMAIL.TEST_PREFIX } },
-      { email: { $regex: CLEANUP_PATTERNS.EMAIL.FIRST_PREFIX } },
-      { email: { $regex: CLEANUP_PATTERNS.EMAIL.SECOND_PREFIX } },
-      { email: { $regex: CLEANUP_PATTERNS.EMAIL.USER_PREFIX } },
-      { email: { $regex: CLEANUP_PATTERNS.EMAIL.NEW_USER_PREFIX } },
-      { email: OAUTH_CREDENTIALS.PRIVATE_DOMAIN.email },
-      { email: OAUTH_CREDENTIALS.PUBLIC_DOMAIN.email },
-    ],
-  });
+  await db.collection('organization').deleteMany(patterns.organizations);
+  
+  // 5. Delete users last
+  await db.collection('user').deleteMany(patterns.users);
+  
+  logProgress(`🧹 Cleaned up test data for testId: ${testId}`);
 }
 
 /**
@@ -250,6 +403,7 @@ export function generateTestEmail(domain: string = 'example.com'): string {
   return `test-${Date.now()}@${domain}`;
 }
 
+
 /**
  * Helper to start magic link authentication flow
  * @param page - Playwright page instance
@@ -285,6 +439,28 @@ export async function completeOrganizationStep(
   orgName: string,
   enableDomainJoin: boolean = false,
 ): Promise<void> {
+  // Debug: Log what UI state we're actually in
+  const currentUrl = await page.url();
+  logProgress(`🔍 Current URL: ${currentUrl}`);
+  
+  // Check if we're on organization creation or join preview
+  const isCreateForm = await page.getByRole('heading', { name: /What's the name of your/ }).isVisible();
+  const isJoinPreview = await page.getByText(/Auto-join enabled/i).isVisible();
+  
+  logProgress(`🔍 UI State - Create form: ${isCreateForm}, Join preview: ${isJoinPreview}`);
+  
+  if (isJoinPreview) {
+    logProgress('⚠️ WARNING: User is seeing organization join preview, not creation form');
+    logProgress('⚠️ This means an organization already exists for this domain');
+    // Don't try to fill organization name or checkbox - this is a join flow
+    return;
+  }
+  
+  if (!isCreateForm) {
+    logProgress('⚠️ WARNING: Neither create form nor join preview detected');
+    logProgress('⚠️ Current page content may be unexpected');
+  }
+
   // Fill organization name
   await page.getByRole('textbox').first().fill(orgName);
 
@@ -293,7 +469,19 @@ export async function completeOrganizationStep(
     const domainJoinCheckbox = page.getByRole('checkbox');
     if (await domainJoinCheckbox.isVisible()) {
       await domainJoinCheckbox.check();
-      logProgress('☑️ Enabled domain join');
+      // Wait a moment for the checkbox state to be processed
+      await page.waitForTimeout(500);
+      // Verify it's actually checked
+      const isChecked = await domainJoinCheckbox.isChecked();
+      if (isChecked) {
+        logProgress('☑️ Enabled domain join');
+      } else {
+        logProgress('⚠️ WARNING: Domain join checkbox not checked despite calling check()');
+        logProgress('⚠️ This will cause database verification to fail');
+      }
+    } else {
+      logProgress('⚠️ WARNING: Domain join checkbox not visible');
+      logProgress('⚠️ This may indicate wrong UI state or domain type');
     }
   }
 
@@ -564,15 +752,21 @@ export async function completeGoogleOAuth(
 
   // Handle OAuth consent
   logProgress('🔒 Handling OAuth consent...');
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.waitForLoadState('networkidle');
-
-  // Verify we're no longer on Google OAuth page
-  await page.waitForFunction(
-    () => !window.location.href.includes('accounts.google.com'),
-    {},
-    { timeout: 15000 },
-  );
+  
+  // Wait for the consent screen to load and Continue button to be visible
+  await page.waitForLoadState('domcontentloaded');
+  const continueButton = page.getByRole('button', { name: 'Continue' });
+  await continueButton.waitFor({ state: 'visible', timeout: 10000 });
+  
+  // Click the Continue button
+  await continueButton.click();
+  logProgress('✅ Clicked Continue button');
+  
+  // Wait for redirect away from Google OAuth (more reliable than networkidle)
+  await page.waitForURL(url => !url.href.includes('accounts.google.com'), { timeout: 30000 });
+  
+  // Give it a moment to settle
+  await page.waitForTimeout(2000);
 
   logProgress('✅ OAuth authentication completed');
 }
