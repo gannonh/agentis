@@ -504,10 +504,10 @@ describe('ProfileSetup Avatar Upload Integration', () => {
 
         // Should not render an avatar image with malicious URL
         expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
-        
+
         // Should show initials instead since avatar URL was sanitized to empty string
         expect(screen.getByText('T')).toBeInTheDocument(); // From test@example.com
-        
+
         // Clean up for next iteration
         unmount();
       });
@@ -532,7 +532,7 @@ describe('ProfileSetup Avatar Upload Integration', () => {
         const avatarImage = screen.getByTestId('avatar-preview');
         expect(avatarImage).toBeInTheDocument();
         expect(avatarImage).toHaveAttribute('src', legitimateUrl);
-        
+
         // Clean up for next iteration
         unmount();
       });

@@ -62,16 +62,23 @@ describe('InvitationService', () => {
       );
 
       expect(result).toEqual(mockInvitation);
-      expect(mockAuth.api.createInvitation).toHaveBeenCalledWith({
-        body: {
-          organizationId: 'org123',
-          email: 'user@company.com',
-          role: 'member',
-        },
-        headers: {
-          'user-id': 'user123',
-        },
-      });
+      
+      // Verify the call was made with server-generated timestamps
+      const callArgs = mockAuth.api.createInvitation.mock.calls[0][0];
+      expect(callArgs.headers).toEqual({ 'user-id': 'user123' });
+      expect(callArgs.body.organizationId).toBe('org123');
+      expect(callArgs.body.email).toBe('user@company.com');
+      expect(callArgs.body.role).toBe('member');
+      
+      // Verify that server-side timestamps are included
+      expect(callArgs.body.invitedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(callArgs.body.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      
+      // Verify expiration is 7 days after invitation
+      const invitedTime = new Date(callArgs.body.invitedAt);
+      const expirationTime = new Date(callArgs.body.expiresAt);
+      const diffDays = (expirationTime - invitedTime) / (1000 * 60 * 60 * 24);
+      expect(diffDays).toBe(7);
     });
 
     it('should handle creation errors', async () => {

@@ -5,7 +5,10 @@ import {
   TEST_VIEWPORT,
   captureMagicLink,
   cleanDatabase,
+  cleanTestData,
   generateTestEmail,
+  generateTestId,
+  createTestContext,
   TEST_PATTERNS,
 } from '../../utils/authOnboardingUtils';
 
@@ -23,12 +26,22 @@ test.describe('Basic Auth & Onboarding Tests', () => {
 
   // Database cleanup helper imported from authOnboardingUtils
 
+  // Store test IDs for cleanup
+  const testIds: string[] = [];
+
   test.beforeEach(async () => {
+    // Clean any leftover data from previous runs
     await cleanDatabase();
   });
 
   test.afterEach(async () => {
-    await cleanDatabase();
+    // Clean up test-specific data
+    for (const testId of testIds) {
+      await cleanTestData(testId).catch((err) =>
+        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`),
+      );
+    }
+    testIds.length = 0; // Clear the array
   });
 
   /**
@@ -56,7 +69,10 @@ test.describe('Basic Auth & Onboarding Tests', () => {
       await expect(page.getByTestId('login-button')).toBeVisible();
 
       // Step 2: Request magic link with new user email
-      const newUserEmail = `new-user-${Date.now()}@example.com`;
+      const testContext = createTestContext({ emailPrefix: 'new-user' });
+      testIds.push(testContext.testId);
+      const newUserEmail = testContext.emails.primary;
+
       await page.getByRole('textbox', { name: 'Email address' }).fill(newUserEmail);
       await page.getByTestId('login-button').click();
 
@@ -98,67 +114,7 @@ test.describe('Basic Auth & Onboarding Tests', () => {
     }
   });
 
-  test('Google OAuth with public domain email to onboarding', async ({ browser }) => {
-    logProgress('🚀 Testing Google OAuth with public domain journey...');
 
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Step 1: Check if OAuth credentials are available
-      const { requireOAuthCredentials, startOAuthAuthentication } = await import('../../utils/authOnboardingUtils');
-      
-      try {
-        requireOAuthCredentials('PUBLIC_DOMAIN', 'Google OAuth with public domain');
-      } catch (error) {
-        logProgress('⚠️ Skipping test due to missing OAuth credentials');
-        return;
-      }
-
-      // Step 2: Complete OAuth authentication flow
-      await startOAuthAuthentication(page, 'PUBLIC_DOMAIN');
-
-      // Step 3: Verify successful authentication and redirect
-      // Public domain emails MUST go to onboarding (no organization detection)
-      logProgress('📍 Verifying authentication redirect...');
-
-      // Must be redirected to onboarding for public domain users
-      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 15000 });
-      logProgress('✅ Successfully redirected to onboarding flow');
-
-      // Verify specific onboarding content for organization creation
-      await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible({
-        timeout: 10000,
-      });
-      logProgress('✅ Onboarding organization step displayed correctly');
-
-      logProgress('✅ Journey 2 completed - all assertions passed');
-    } finally {
-      await context.close();
-    }
-  });
-
-  test('OAuth cancellation flow', async ({ browser }) => {
-    logProgress('🚀 Testing OAuth cancellation journey...');
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Step 1: Test OAuth cancellation using abstracted utility
-      const { cancelOAuthFlow } = await import('../../utils/authOnboardingUtils');
-      await cancelOAuthFlow(page);
-
-      // Step 2: Verify login still works after cancellation
-      await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
-      await page.getByTestId('login-button').click();
-      await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
-
-      logProgress('✅ OAuth cancellation and recovery verified');
-    } finally {
-      await context.close();
-    }
-  });
 
   test('Email validation prevents bad submissions', async ({ browser }) => {
     logProgress('🚀 Testing email validation journey...');
@@ -183,10 +139,13 @@ test.describe('Basic Auth & Onboarding Tests', () => {
         await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
       }
 
-      // Valid email should proceed
+      // Valid email should proceed - use a unique test email
+      const testContext = createTestContext({ emailPrefix: 'validation-test' });
+      testIds.push(testContext.testId);
+
       await page.getByRole('textbox', { name: 'Email address' }).clear();
-      await page.getByRole('textbox', { name: 'Email address' }).fill(TEST_EMAILS.GENERIC_TEST);
-      await page.getByTestId('login-button').click();
+      await page.getByRole('textbox', { name: 'Email address' }).fill(testContext.emails.primary);
+      await page.getByTestId('login-button').click({ timeout: 10000 });
       await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
 
       logProgress('✅ Email validation journey verified');

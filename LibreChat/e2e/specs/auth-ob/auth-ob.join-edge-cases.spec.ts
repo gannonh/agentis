@@ -19,7 +19,9 @@ import {
   TEST_VIEWPORT,
   captureMagicLink,
   cleanDatabase,
-  generateTestEmail,
+  cleanTestData,
+  generateTestId,
+  createTestContext,
   handleTermsOfService,
   completeOrganizationStep,
   completeProfileStep,
@@ -38,13 +40,22 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Organization Join Edge Cases', () => {
+  // Store test IDs for cleanup
+  const testIds: string[] = [];
+
   test.beforeEach(async () => {
     await cleanDatabase();
     logProgress('🧹 Database cleaned for edge case test');
   });
 
   test.afterEach(async () => {
-    await cleanDatabase();
+    // Clean up test-specific data
+    for (const testId of testIds) {
+      await cleanTestData(testId).catch((err) =>
+        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`),
+      );
+    }
+    testIds.length = 0; // Clear the array
   });
 
   test('User already member attempts to join again', async ({ browser }) => {
@@ -62,7 +73,13 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // PHASE 1: User creates organization and becomes member
       // =================================================================
-      const userEmail = generateTestEmail('testcorp.com');
+      const testContext = createTestContext({
+        emailPrefix: 'user',
+        corporateDomain: 'testcorp.com',
+        orgBase: 'TestCorp',
+      });
+      testIds.push(testContext.testId);
+      const userEmail = testContext.emails.corporate!;
       await page1.goto('http://localhost:3080/login');
       await page1.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
       await page1.getByTestId('login-button').click();
@@ -78,7 +95,7 @@ test.describe('Organization Join Edge Cases', () => {
       // Complete organization creation
       await expect(page1).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 });
 
-      const orgName = 'TestCorp Engineering';
+      const orgName = testContext.organization.name;
       await completeOrganizationStep(page1, orgName, true); // Enable domain join
       await completeProfileStep(page1, 'Test User');
       await completeTeamStep(page1, true);
@@ -151,7 +168,8 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
 
       // Verify organization still exists
-      await verifyOrganizationInDatabase(orgName, 'testcorp.com', true);
+      const expectedDomain = testContext.emails.corporate!.split('@')[1]; // Extract unique domain from email
+      await verifyOrganizationInDatabase(orgName, expectedDomain, true);
 
       // Verify user is still a member (no duplicate memberships)
       const members = await verifyOrganizationMembership(orgName, 1);
@@ -175,14 +193,22 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // SETUP: Create single organization with domain (business rule: 1 org per domain)
       // =================================================================
-      const domain = 'acme.com';
+      const testContext = createTestContext({
+        emailPrefix: 'test',
+        corporateDomain: 'acme.com',
+        orgBase: 'Acme',
+      });
+      testIds.push(testContext.testId);
+
+      // Extract the actual domain that will be used for the user
+      const domain = testContext.emails.corporate!.split('@')[1];
       await createTestOrganization('Acme Corp', domain, true); // allowDomainJoin = true
       logProgress('✅ Created organization with domain auto-join enabled');
 
       // =================================================================
       // TEST: User with matching domain should be directed to join existing organization
       // =================================================================
-      const userEmail = generateTestEmail(domain);
+      const userEmail = testContext.emails.corporate!;
       await page.goto('http://localhost:3080/login');
       await page.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
       await page.getByTestId('login-button').click();
@@ -241,7 +267,13 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // PHASE 1: Create organization with domain join ENABLED
       // =================================================================
-      const user1Email = generateTestEmail('techcorp.com');
+      const testContext1 = createTestContext({
+        emailPrefix: 'user1',
+        corporateDomain: 'techcorp.com',
+        orgBase: 'TechCorp',
+      });
+      testIds.push(testContext1.testId);
+      const user1Email = testContext1.emails.corporate!;
       await page1.goto('http://localhost:3080/login');
       await page1.getByRole('textbox', { name: 'Email address' }).fill(user1Email);
       await page1.getByTestId('login-button').click();
@@ -254,7 +286,7 @@ test.describe('Organization Join Edge Cases', () => {
       await page1.goto(magicLinkUrl1);
       await page1.waitForLoadState('networkidle');
 
-      const orgName = 'TechCorp Engineering';
+      const orgName = testContext1.organization.name;
       await completeOrganizationStep(page1, orgName, true); // Enable domain join
       await completeProfileStep(page1, 'User One');
       await completeTeamStep(page1, true);
@@ -283,7 +315,13 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // PHASE 3: User 2 should now see manual approval flow
       // =================================================================
-      const user2Email = generateTestEmail('techcorp.com');
+      // Extract the shared domain from user1's email for user2 to use
+      const sharedDomain = testContext1.emails.corporate!.split('@')[1];
+
+      // Create user2 with the same domain as user1 for organization join testing
+      const user2TestId = generateTestId();
+      testIds.push(user2TestId);
+      const user2Email = `test-${user2TestId}@${sharedDomain}`;
       await page2.goto('http://localhost:3080/login');
       await page2.getByRole('textbox', { name: 'Email address' }).fill(user2Email);
       await page2.getByTestId('login-button').click();
@@ -337,6 +375,112 @@ test.describe('Organization Join Edge Cases', () => {
     }
   });
 
+  test('API-level: Soft-deleted organizations excluded from domain detection', async ({
+    browser,
+  }) => {
+    logProgress('🚀 Testing API-level soft-deletion exclusion...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // =================================================================
+      // SETUP: Create organization
+      // =================================================================
+      const testContext = createTestContext({
+        emailPrefix: 'test',
+        corporateDomain: 'apitest.com',
+        orgBase: 'APITest',
+      });
+      testIds.push(testContext.testId);
+
+      const domain = testContext.emails.corporate!.split('@')[1];
+      const orgName = 'API Test Corp';
+      await createTestOrganization(orgName, domain, true);
+      logProgress('✅ Created test organization for API testing');
+
+      // =================================================================
+      // PHASE 1: Verify organization is detected before soft-deletion
+      // =================================================================
+      const userEmail = testContext.emails.corporate!;
+      await page.goto('http://localhost:3080/login');
+      await page.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
+      await page.getByTestId('login-button').click();
+
+      const magicLinkUrl = await captureMagicLink(userEmail);
+      if (!magicLinkUrl) {
+        throw new Error('Failed to capture magic link for user');
+      }
+
+      await page.goto(magicLinkUrl);
+      await page.waitForLoadState('networkidle');
+
+      // Call the detect-domain API endpoint directly
+      const beforeDeletionResponse = await page.evaluate(async (email) => {
+        const response = await fetch('/api/organization/detect-domain', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
+        return response.json();
+      }, userEmail);
+
+      logProgress(`✅ Before deletion API response: ${JSON.stringify(beforeDeletionResponse)}`);
+      expect(beforeDeletionResponse.hasOrganization).toBe(true);
+      expect(beforeDeletionResponse.organizations).toHaveLength(1);
+      expect(beforeDeletionResponse.organizations[0].name).toBe(orgName);
+
+      // =================================================================
+      // PHASE 2: Soft-delete the organization
+      // =================================================================
+      const { getTestDatabase } = await import('../../utils/testAuth');
+      const { db } = await getTestDatabase();
+
+      // Use domain to identify the correct organization (since multiple orgs can have same name)
+      const deleteResult = await db.collection('organization').updateOne(
+        {
+          name: orgName,
+          'metadata.domain': domain,
+        },
+        { $set: { deletedAt: new Date() } },
+      );
+
+      expect(deleteResult.matchedCount).toBe(1);
+      logProgress('✅ Organization marked as deleted in database');
+
+      // =================================================================
+      // PHASE 3: Verify organization is NOT detected after soft-deletion
+      // =================================================================
+
+      // Call the detect-domain API endpoint again
+      const afterDeletionResponse = await page.evaluate(async (email) => {
+        const response = await fetch('/api/organization/detect-domain', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
+        return response.json();
+      }, userEmail);
+
+      logProgress(`✅ After deletion API response: ${JSON.stringify(afterDeletionResponse)}`);
+
+      // Also verify directly in database that our organization is soft-deleted
+      const orgInDb = await db.collection('organization').findOne({ name: orgName });
+      logProgress(`✅ Database state: org exists=${!!orgInDb}, deletedAt=${orgInDb?.deletedAt}`);
+
+      expect(afterDeletionResponse.hasOrganization).toBe(false);
+      expect(afterDeletionResponse.organizations).toHaveLength(0);
+
+      logProgress('🎉 API-level soft-deletion test PASSED!');
+    } finally {
+      await context.close();
+    }
+  });
+
   test('Organization soft-deleted during join process', async ({ browser }) => {
     logProgress('🚀 Testing organization soft-deletion during join...');
 
@@ -347,15 +491,23 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
       // SETUP: Create organization that will be soft-deleted
       // =================================================================
+      const testContext = createTestContext({
+        emailPrefix: 'test',
+        corporateDomain: 'doomed.com',
+        orgBase: 'Doomed',
+      });
+      testIds.push(testContext.testId);
+
+      // Extract the actual domain that will be used for the user
+      const domain = testContext.emails.corporate!.split('@')[1];
       const orgName = 'Doomed Corp';
-      const domain = 'doomed.com';
       await createTestOrganization(orgName, domain, true); // Enable domain join
       logProgress('✅ Created organization that will be soft-deleted');
 
       // =================================================================
       // PHASE 1: User starts join process
       // =================================================================
-      const userEmail = generateTestEmail(domain);
+      const userEmail = testContext.emails.corporate!;
       await page.goto('http://localhost:3080/login');
       await page.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
       await page.getByTestId('login-button').click();
@@ -380,9 +532,14 @@ test.describe('Organization Join Edge Cases', () => {
       const { db } = await getTestDatabase();
 
       // Soft delete the organization (mark as deleted) to match real application behavior
-      const deleteResult = await db
-        .collection('organization')
-        .updateOne({ name: orgName }, { $set: { deletedAt: new Date() } });
+      // Use domain to identify the correct organization (since multiple orgs can have same name)
+      const deleteResult = await db.collection('organization').updateOne(
+        {
+          name: orgName,
+          'metadata.domain': domain,
+        },
+        { $set: { deletedAt: new Date() } },
+      );
 
       if (deleteResult.matchedCount === 0) {
         throw new Error('Failed to find organization in database for deletion');
@@ -393,38 +550,39 @@ test.describe('Organization Join Edge Cases', () => {
       logProgress('✅ Organization marked as deleted in database');
 
       // =================================================================
-      // PHASE 3: User tries to join soft-deleted organization
+      // PHASE 3: User tries to access soft-deleted organization
       // =================================================================
 
-      // After soft-deletion, the eligibility check should detect the deleted org
-      // and automatically switch from auto-join to manual request flow
-      await expect(page.getByRole('button', { name: /Request to join/i })).toBeVisible({
-        timeout: 5000,
+      // After soft-deletion, the organization should no longer be detected by domain
+      // Force a complete page reload to clear any cached organization data
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+      await page.goto('http://localhost:3080/onboarding');
+      await page.waitForLoadState('networkidle');
+      logProgress(
+        '🔄 User: Reloaded page and navigated to onboarding to trigger fresh organization detection',
+      );
+
+      // Should be on onboarding but now show organization creation (not join)
+      // because the soft-deleted organization is no longer detected
+      await expect(page).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 });
+
+      // Should show organization creation form (not join preview)
+      await expect(page.getByRole('heading', { name: /What's the name of your/ })).toBeVisible({
+        timeout: 10000,
       });
-      await expect(
-        page.getByRole('button', { name: new RegExp(`Join ${orgName}`, 'i') }),
-      ).not.toBeVisible();
-      logProgress(
-        '✅ User: Auto-join disabled for soft-deleted organization, showing request flow',
-      );
+      logProgress('✅ User: Organization creation form shown (soft-deleted org not detected)');
 
-      // Click the request to join button
-      const requestButton = page.getByRole('button', { name: /Request to join/i });
-      await requestButton.click();
-      await page.waitForTimeout(3000);
-      logProgress('🔘 User: Clicked Request to Join button');
+      // Should NOT show the deleted organization in join preview
+      await expect(page.getByRole('heading', { name: orgName })).not.toBeVisible({
+        timeout: 10000,
+      });
+      logProgress('✅ User: Soft-deleted organization not shown in join options');
 
-      // Should show error message - users cannot request to join soft-deleted organizations
-      await expect(page.getByText(/Failed to create join request/i)).toBeVisible({ timeout: 5000 });
-      logProgress(
-        '✅ User: Correct error message displayed - cannot request to join soft-deleted organization',
-      );
-
-      // Should NOT show success message
-      await expect(page.getByText(/request.*sent/i)).not.toBeVisible();
-      logProgress(
-        '✅ User: No success message shown (correctly blocked request for soft-deleted org)',
-      );
+      // Should NOT show auto-join indicators
+      await expect(page.getByText(/Auto-join enabled/i)).not.toBeVisible();
+      await expect(page.getByText(/Request to join/i)).not.toBeVisible();
+      logProgress('✅ User: No join options shown for soft-deleted organization');
 
       // =================================================================
       // VERIFICATION: Check database state
@@ -439,24 +597,20 @@ test.describe('Organization Join Edge Cases', () => {
       expect(org.deletedAt).toBeTruthy();
       logProgress('✅ Database verification: Organization exists but is marked as deleted');
 
-      // Verify no user membership was created (since auto-join was disabled)
+      // Verify no user membership was created (since organization was not detected)
       const membership = await db
         .collection('organizationMembership')
         .findOne({ organizationId: org._id });
       expect(membership).toBeFalsy();
       logProgress('✅ Database verification: No membership created for soft-deleted organization');
 
-      // Check if join request was created
-      const joinRequest = org.metadata?.joinRequests?.find((req: any) =>
-        req.userEmail.includes('doomed.com'),
+      // Verify no join request was created (since organization was not detected)
+      const joinRequests = org.metadata?.joinRequests || [];
+      const relevantRequest = joinRequests.find((req: any) => req.userEmail.includes(domain));
+      expect(relevantRequest).toBeFalsy();
+      logProgress(
+        '✅ Database verification: No join request created for soft-deleted organization',
       );
-      if (joinRequest) {
-        logProgress(
-          '✅ Database verification: Join request was created for soft-deleted organization',
-        );
-      } else {
-        logProgress('ℹ️ Database verification: No join request found (may be expected behavior)');
-      }
 
       logProgress('🎉 Organization soft-deletion handling test COMPLETED!');
     } finally {
@@ -474,7 +628,15 @@ test.describe('Organization Join Edge Cases', () => {
       const context1 = await browser.newContext();
       const page1 = await context1.newPage();
 
-      const userEmail = generateTestEmail('resumetest.com');
+      const testContext = createTestContext({
+        emailPrefix: 'test',
+        corporateDomain: 'resumetest.com',
+        orgBase: 'Resume Test',
+      });
+      testIds.push(testContext.testId);
+      const userEmail = testContext.emails.corporate!;
+      const testDomain = testContext.emails.corporate!.split('@')[1];
+
       await page1.goto('http://localhost:3080/login');
       await page1.getByRole('textbox', { name: 'Email address' }).fill(userEmail);
       await page1.getByTestId('login-button').click();
@@ -491,7 +653,7 @@ test.describe('Organization Join Edge Cases', () => {
       await expect(page1).toHaveURL(TEST_PATTERNS.ONBOARDING_URL, { timeout: 10000 });
 
       // Complete organization step
-      const orgName = 'Resume Test Corp';
+      const orgName = testContext.organization.name;
       await completeOrganizationStep(page1, orgName, true);
       logProgress('✅ Phase 1: Organization step completed');
 
@@ -538,9 +700,6 @@ test.describe('Organization Join Edge Cases', () => {
       const isAtProfileStep = await page2
         .getByRole('heading', { name: /Complete Your Profile/i })
         .isVisible();
-      const isAtOrganizationStep = await page2
-        .getByRole('heading', { name: /What's the name of your/i })
-        .isVisible();
 
       // =================================================================
       // CRITICAL ASSERTIONS: These should fail until feature is implemented
@@ -572,7 +731,7 @@ test.describe('Organization Join Edge Cases', () => {
       await page2.waitForTimeout(2000); // Allow time for navigation
 
       // Should proceed to team step
-      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page2.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
       logProgress('✅ Phase 2: Advanced to team step');
@@ -607,7 +766,7 @@ test.describe('Organization Join Edge Cases', () => {
       // =================================================================
 
       // Verify organization was created
-      await verifyOrganizationInDatabase(orgName, 'resumetest.com', true);
+      await verifyOrganizationInDatabase(orgName, testDomain, true);
 
       // Verify user membership
       const members = await verifyOrganizationMembership(orgName, 1);
@@ -626,9 +785,15 @@ test.describe('Organization Join Edge Cases', () => {
   test('User can resume onboarding after browser data loss', async ({ browser }) => {
     logProgress('🚀 Testing onboarding resumption after complete browser data loss...');
 
-    const testDomain = 'datalosstest.com';
-    const userEmail = generateTestEmail(testDomain);
-    const orgName = 'DataLoss Test Corp';
+    const testContext = createTestContext({
+      emailPrefix: 'test',
+      corporateDomain: 'datalosstest.com',
+      orgBase: 'DataLoss Test',
+    });
+    testIds.push(testContext.testId);
+    const userEmail = testContext.emails.corporate!;
+    const testDomain = testContext.emails.corporate!.split('@')[1];
+    const orgName = testContext.organization.name;
 
     try {
       // =================================================================
@@ -706,7 +871,7 @@ test.describe('Organization Join Edge Cases', () => {
       logProgress('✅ Phase 2: Profile step completed');
 
       // Complete team step
-      await expect(page2.getByRole('heading', { name: /Invite Your Team/i })).toBeVisible({
+      await expect(page2.getByRole('heading', { name: 'Invite Your Team', level: 1 })).toBeVisible({
         timeout: 10000,
       });
       await completeTeamStep(page2, true);

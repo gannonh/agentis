@@ -10,6 +10,7 @@ import { useOnboardingState, OnboardingStep } from '~/hooks/useOnboardingState';
 import OnboardingLayout from '~/components/Auth/OnboardingLayout';
 import OrganizationDetectionStep from '~/components/Auth/OrganizationDetectionStep';
 import { ProfileSetup } from '~/components/Auth/OnboardingFlow/ProfileSetup';
+import { TeamInvitation } from '~/components/Auth/OnboardingFlow/TeamInvitation';
 import { Button } from '~/components/ui';
 import { useToastContext } from '~/Providers/ToastContext';
 import { NotificationSeverity } from '~/common/types';
@@ -491,33 +492,22 @@ export default function OnboardingRoute() {
 
       {/* Team Invitation Step */}
       {state.currentStep === OnboardingStep.TEAM && (
-        <div className="space-y-6 text-center">
-          <div className="text-gray-600 dark:text-gray-300">
-            <p className="mb-4">
-              You can invite team members now or skip this step and do it later from your workspace
-              settings.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <Button onClick={goToNextStep} className="w-full" size="lg">
-              Skip for Now
-            </Button>
-
-            <Button
-              onClick={() => {
-                // TODO: Implement team invitation flow
-                console.log('Team invitation flow');
-                goToNextStep();
-              }}
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              Invite Team Members
-            </Button>
-          </div>
-        </div>
+        <TeamInvitation
+          organizationName={organizationName || 'your workspace'}
+          onInvitationsComplete={(results) => {
+            console.log('Invitations sent:', results);
+            showToast({
+              message: `${results.sentCount} invitations sent successfully${results.failedCount > 0 ? `, ${results.failedCount} failed` : ''}`,
+              severity:
+                results.failedCount > 0
+                  ? NotificationSeverity.WARNING
+                  : NotificationSeverity.SUCCESS,
+            });
+            goToNextStep();
+          }}
+          onSkip={goToNextStep}
+          isLoading={isSubmitting}
+        />
       )}
 
       {/* Welcome Step */}

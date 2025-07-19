@@ -18,7 +18,10 @@ import {
   TEST_VIEWPORT,
   captureMagicLink,
   cleanDatabase,
+  cleanTestData,
   generateTestEmail,
+  generateTestId,
+  createTestContext,
   handleTermsOfService,
   completeOrganizationStep,
   completeProfileStep,
@@ -36,13 +39,22 @@ test.use({
 test.describe.configure({ mode: 'default' });
 
 test.describe('Organization Invitation Flow', () => {
+  // Store test IDs for cleanup
+  const testIds: string[] = [];
+
   test.beforeEach(async () => {
     await cleanDatabase();
     logProgress('🧹 Database cleaned for invitation test');
   });
 
   test.afterEach(async () => {
-    await cleanDatabase();
+    // Clean up test-specific data
+    for (const testId of testIds) {
+      await cleanTestData(testId).catch((err) =>
+        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`),
+      );
+    }
+    testIds.length = 0; // Clear the array
   });
 
   test('Admin invites user to organization', async ({ browser }) => {
@@ -96,8 +108,12 @@ test.describe('Organization Invitation Flow', () => {
       const org = await db.collection('organization').findOne({ name: orgName });
       expect(org).toBeTruthy();
 
-      const inviteEmail = generateTestEmail('external.com');
-      const invitationToken = `invite-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const testContext = createTestContext({
+        emailPrefix: 'invite',
+      });
+      testIds.push(testContext.testId);
+      const inviteEmail = `invite-${testContext.testId}@external.com`;
+      const invitationToken = `invite-${testContext.testId}-${Math.random().toString(36).substring(2, 8)}`;
 
       // Mock invitation in database
       await db.collection('organization').updateOne(
@@ -109,7 +125,7 @@ test.describe('Organization Invitation Flow', () => {
               token: invitationToken,
               invitedBy: adminEmail,
               invitedAt: new Date(),
-              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+              expiresAt: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days
               status: 'pending',
             } as any,
           },
@@ -135,7 +151,7 @@ test.describe('Organization Invitation Flow', () => {
     }
   });
 
-  test('User accepts organization invitation', async ({ browser }) => {
+  test.skip('User accepts organization invitation', async ({ browser }) => {
     logProgress('🚀 Testing user acceptance of organization invitation...');
     // TODO: Implement user acceptance flow for organization invitation
     // This test would require:
@@ -151,7 +167,7 @@ test.describe('Organization Invitation Flow', () => {
     );
   });
 
-  test('User declines organization invitation', async ({ browser }) => {
+  test.skip('User declines organization invitation', async ({ browser }) => {
     logProgress('🚀 Testing user declining of organization invitation...');
     // TODO: Implement user declining flow for organization invitation
     // This test would require:
@@ -164,7 +180,7 @@ test.describe('Organization Invitation Flow', () => {
     logProgress('⚠️ Invitation decline flow - to be implemented when invitation system is ready');
   });
 
-  test('Expired invitation handling', async ({ browser }) => {
+  test.skip('Expired invitation handling', async ({ browser }) => {
     logProgress('🚀 Testing expired invitation handling...');
     // TODO: Implement expired invitation handling
     // This test would require:

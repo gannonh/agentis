@@ -98,7 +98,9 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
           await authClient.organization.inviteMember({
             email: invitation.email,
             role: invitation.role,
-            // resend: true to handle duplicates gracefully
+            resend: true,
+            // Note: invitedAt timestamp is now generated server-side for consistency
+            // Note: Backend handles invitation tracking and expiration automatically
           });
 
           results.push({ email: invitation.email, success: true });
@@ -234,7 +236,8 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
         <p className="text-gray-600 dark:text-gray-400">Add team members to {organizationName}</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* eslint-disable-next-line jsx-a11y/no-redundant-roles */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" role="form">
         {/* Email input */}
         <div>
           <Label
@@ -246,6 +249,7 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
           <div className="mt-1 flex space-x-2">
             <Input
               id="emailInput"
+              data-testid="team-email-input"
               type="email"
               value={currentEmail}
               onChange={(e) => {

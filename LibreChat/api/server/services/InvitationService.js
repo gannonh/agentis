@@ -33,11 +33,18 @@ class InvitationService {
     try {
       this.initialize();
 
+      // Generate server-side timestamps for consistency and security
+      const now = new Date();
+      const invitedAt = now.toISOString();
+      const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+
       logger.info('Creating organization invitation', {
         organizationId,
         email,
         role,
         inviterId: userId,
+        invitedAt,
+        expiresAt,
       });
 
       const invitation = await this.auth.api.createInvitation({
@@ -45,6 +52,9 @@ class InvitationService {
           organizationId,
           email,
           role,
+          // Include server-side timestamps to prevent client manipulation
+          invitedAt,
+          expiresAt,
         },
         headers: {
           'user-id': userId,
@@ -56,6 +66,8 @@ class InvitationService {
         organizationId,
         email,
         role,
+        invitedAt,
+        expiresAt,
       });
 
       return invitation;
