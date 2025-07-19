@@ -98,9 +98,8 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
           await authClient.organization.inviteMember({
             email: invitation.email,
             role: invitation.role,
-            // TODO: Add resend: true when backend supports it to handle duplicates gracefully
-            // TODO: Backend should track invitedAt timestamp server-side for consistency
-            // TODO: Add source attribution when backend supports tracking invitation origin
+            // Note: invitedAt timestamp is now generated server-side for consistency
+            // Note: Backend handles invitation tracking and expiration automatically
           });
 
           results.push({ email: invitation.email, success: true });

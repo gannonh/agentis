@@ -35,6 +35,13 @@ router.post('/:organizationId/invitations', requireBetterAuth, async (req, res) 
       });
     }
 
+    // Reject any client-provided timestamps for security
+    if (req.body.invitedAt || req.body.expiresAt || req.body.createdAt) {
+      return res.status(400).json({
+        error: 'Timestamp fields are generated server-side and cannot be provided by client',
+      });
+    }
+
     // Check if user has permission to invite members
     const permissionResult = await invitationService.hasInvitationPermission(
       organizationId,
