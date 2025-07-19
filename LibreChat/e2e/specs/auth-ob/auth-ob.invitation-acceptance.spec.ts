@@ -4,7 +4,7 @@ import { TEST_VIEWPORT, cleanDatabase } from '../../utils/authOnboardingUtils';
 import {
   cleanupTestUser,
   generateTestId,
-  createTestUserWithOrganization,
+  createTestUserAtTeamStep,
   type TestAuthResult,
 } from '../../utils/testAuth';
 import { createMailHog } from '../../utils/mailhog.js';
@@ -33,8 +33,8 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       logProgress(`⚠️ Failed to clear MailHog: ${error}`);
     }
 
-    // Create a test user with organization (inviter)
-    testAuth = await createTestUserWithOrganization(testId);
+    // Create a test user positioned at team step (inviter)
+    testAuth = await createTestUserAtTeamStep(testId);
     logProgress(
       `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
     );
@@ -81,17 +81,140 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
    * =================================================================================
    */
 
-  test.skip('Existing user can accept invitation and join organization', async ({ browser }) => {
+  test('Existing user can accept invitation and join organization', async ({ browser }) => {
     logProgress('🚀 Testing existing user invitation acceptance...');
-    // TODO Issue #122: Test existing user acceptance flow
-    // - Create existing user (not in organization)
-    // - Send invitation to their email
-    // - Extract invitation link from MailHog
-    // - Navigate to acceptance page
-    // - Sign in with existing credentials
-    // - Accept invitation
-    // - Verify user added to organization with correct role
-    // - Verify user redirected to main app
+    
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Create a second user (invitee) not in organization
+      const inviteeTestId = generateTestId();
+      const inviteeEmail = `test-invitee-${inviteeTestId}@example.com`;
+      const inviteePassword = `TestPass123!${inviteeTestId}`;
+      
+      logProgress(`📝 Creating invitee user: ${inviteeEmail}`);
+      const signUpResponse = await fetch('http://localhost:3080/api/auth/sign-up/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteeEmail,
+          password: inviteePassword,
+          name: `Test Invitee ${inviteeTestId}`,
+        }),
+      });
+      
+      if (!signUpResponse.ok) {
+        throw new Error(`Failed to create invitee user: ${await signUpResponse.text()}`);
+      }
+      
+      logProgress(`✅ Created invitee user: ${inviteeEmail}`);
+
+      // Step 2: Login as inviter (testAuth user) and send invitation
+      await context.addCookies([{
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      }]);
+
+      // Navigate to onboarding (user is positioned at team step)
+      await page.goto('http://localhost:3080/onboarding');
+      logProgress('📱 Logged in as inviter');
+      
+      // Verify we're at team invitation step
+      await expect(page.getByRole('heading', { name: 'Invite your team', exact: true })).toBeVisible();
+      logProgress('✅ Positioned at team invitation step');
+      
+      // Add invitee email using the main email input
+      const emailInput = page.getByTestId('team-email-input');
+      await emailInput.fill(inviteeEmail);
+      await emailInput.press('Enter');
+      
+      // Send invitations
+      await page.getByRole('button', { name: 'Send invitations' }).click();
+      
+      // Wait for success and navigation to next step
+      await expect(page.getByRole('heading', { name: 'Welcome to Agentis!' })).toBeVisible();
+      logProgress(`📧 Sent invitation to ${inviteeEmail}`);
+
+      // Step 3: Extract invitation link from MailHog
+      await page.waitForTimeout(2000); // Wait for email to be processed
+      
+      const messages = await mailhog.getMessages();
+      const latestMessage = messages.find(msg => 
+        msg.To && msg.To[0] && msg.To[0].Mailbox === inviteeEmail.split('@')[0]
+      );
+      
+      if (!latestMessage) {
+        throw new Error(`No invitation email found for ${inviteeEmail}`);
+      }
+
+      const inviteLink = mailhog.extractInviteLink(latestMessage);
+      if (!inviteLink) {
+        throw new Error('No invitation link found in email');
+      }
+      
+      logProgress(`🔗 Extracted invitation link: ${inviteLink}`);
+
+      // Step 4: Navigate to invitation acceptance page 
+      await page.goto(inviteLink);
+      
+      // Should show invitation acceptance page
+      await expect(page.getByRole('heading', { name: 'You\'ve been invited!' })).toBeVisible();
+      await expect(page.getByText(`Join ${testAuth.organization.name}`)).toBeVisible();
+      await expect(page.getByTestId('accept-invitation-button')).toBeVisible();
+      await expect(page.getByTestId('decline-invitation-button')).toBeVisible();
+      
+      logProgress('✅ Invitation acceptance page loaded correctly');
+
+      // Step 5: Sign in as invitee
+      await page.getByTestId('sign-in-button').click();
+      
+      await page.getByTestId('email-input').fill(inviteeEmail);
+      await page.getByTestId('password-input').fill(inviteePassword);
+      await page.getByTestId('login-button').click();
+      
+      logProgress(`🔐 Signed in as invitee: ${inviteeEmail}`);
+
+      // Step 6: Accept invitation
+      await expect(page.getByTestId('accept-invitation-button')).toBeVisible();
+      await page.getByTestId('accept-invitation-button').click();
+      
+      // Wait for acceptance confirmation
+      await expect(page.getByText('Successfully joined the organization!')).toBeVisible();
+      logProgress('✅ Invitation accepted successfully');
+
+      // Step 7: Verify user redirected to main app
+      await expect(page).toHaveURL(/.*\/c\/new/);
+      
+      // Verify user is in organization context
+      await expect(page.getByTestId('organization-selector')).toContainText(testAuth.organization.name);
+      
+      logProgress('✅ User redirected to main app and joined organization');
+
+      // Step 8: Verify backend state - user should be member of organization
+      const orgMembersResponse = await fetch(
+        `http://localhost:3080/api/auth/organization/${testAuth.organization.id}/members`,
+        {
+          headers: { Cookie: `better-auth.session_token=${testAuth.session.sessionToken}` }
+        }
+      );
+      
+      if (orgMembersResponse.ok) {
+        const members = await orgMembersResponse.json();
+        const inviteeMember = members.find(m => m.email === inviteeEmail);
+        expect(inviteeMember).toBeTruthy();
+        expect(inviteeMember.role).toBe('member');
+        logProgress('✅ Backend verification: User is member of organization');
+      }
+
+      logProgress('🎉 Existing user invitation acceptance test completed successfully!');
+      
+    } finally {
+      await context.close();
+    }
   });
 
   test.skip('Existing user can decline invitation', async ({ browser }) => {

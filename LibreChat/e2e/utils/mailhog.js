@@ -95,6 +95,49 @@ export class MailHog {
   }
 
   /**
+   * Extract invitation link from email message
+   * @param {Object} message - MailHog message object
+   * @returns {string|null} Invitation link URL or null if not found
+   */
+  extractInviteLink(message) {
+    if (!message || !message.Content || !message.Content.Body) {
+      console.log('📧 No message content found');
+      return null;
+    }
+
+    let body = message.Content.Body;
+    console.log('📧 Raw invitation email body length:', body.length);
+    
+    // Decode HTML entities and clean up the email body
+    body = body
+      .replace(/=\r\n/g, '') // Remove quoted-printable line breaks
+      .replace(/&#x3D;/g, '=') // Decode &#x3D; to =
+      .replace(/&amp;/g, '&') // Decode &amp; to &
+      .replace(/&quot;/g, '"') // Decode &quot; to "
+      .replace(/=3D/g, '=') // Decode quoted-printable =3D to =
+      .replace(/\r\n/g, ' '); // Replace line breaks with spaces
+    
+    console.log('📧 Cleaned invitation email body length:', body.length);
+    
+    // Look for invitation acceptance link - accept-invitation pattern
+    const urlPattern = /(https?:\/\/[^\s<>"']*accept-invitation\/[^\s<>"']*)/gi;
+    const urlMatches = body.match(urlPattern);
+    
+    if (urlMatches && urlMatches.length > 0) {
+      console.log('📧 Found invitation URL matches:', urlMatches.length);
+      let url = urlMatches[0];
+      // Clean up any trailing characters and decode
+      url = url.replace(/['">\)]*$/, ''); // Remove trailing quotes, brackets
+      url = url.replace(/%3A/g, ':').replace(/%2F/g, '/').replace(/%3D/g, '=').replace(/%26/g, '&');
+      console.log('📧 Extracted invitation URL:', url);
+      return url;
+    }
+    
+    console.log('📧 No invitation link found in email body');
+    return null;
+  }
+
+  /**
    * Wait for and extract magic link from email sent to specific address
    * @param {string} email - Email address to monitor
    * @param {number} timeout - Timeout in milliseconds (default: 10000)
