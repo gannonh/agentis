@@ -25,35 +25,48 @@ let authInstance = null;
 
 /**
  * Send invitation email function
- * @param {Object} invitationData - Invitation data
+ * @param {Object} invitationData - Invitation data from Better Auth
  * @param {Object} request - Request object
  * @returns {Promise<Object>} Success/error result
  */
 export const sendInvitationEmail = async (invitationData, request) => {
   try {
     logger.info('📧 Sending invitation email for:', invitationData.email);
+    logger.debug('📧 Invitation data received:', invitationData);
 
     // Import email utility
     const sendEmail = (await import('#server/utils/sendEmail.js')).default;
 
-    // Prepare email data
-    const inviterName =
-      invitationData.inviterName ||
-      (invitationData.inviterEmail ? invitationData.inviterEmail.split('@')[0] : 'Someone');
+    // Better Auth provides inviter and organization data directly
+    const inviterName = invitationData.inviter?.user?.name || 
+                       invitationData.inviter?.user?.email?.split('@')[0] || 
+                       'Someone';
+                       
+    const organizationName = invitationData.organization?.name || 'the team';
+
+    // Build invitation link using the invitation ID
+    const inviteLink = `${process.env.CLIENT_URL || 'http://localhost:3090'}/auth/accept-invitation/${invitationData.id}`;
 
     const emailData = {
       email: invitationData.email,
-      subject: `Join ${inviterName}'s team at ${invitationData.organizationName}`,
+      subject: `Join ${inviterName}'s team at ${organizationName}`,
       template: 'organizationInvite.handlebars',
       payload: {
         name: invitationData.email.split('@')[0], // Extract username portion
         inviterName: inviterName,
-        organizationName: invitationData.organizationName,
-        inviteLink: invitationData.inviteLink,
+        organizationName: organizationName,
+        inviteLink: inviteLink,
         appName: process.env.APP_TITLE || 'Agentis',
         year: new Date().getFullYear(),
       },
     };
+
+    logger.debug('📧 Email data prepared:', { 
+      subject: emailData.subject,
+      inviterName: emailData.payload.inviterName,
+      organizationName: emailData.payload.organizationName,
+      inviteLink: emailData.payload.inviteLink
+    });
 
     // Send email
     await sendEmail(emailData);
