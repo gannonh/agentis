@@ -433,4 +433,95 @@ test.describe('Team Invitation Flow Tests', () => {
       await context.close();
     }
   });
+
+  /**
+   * =================================================================================
+   * LARGE BATCH INVITATION TEST (EDGE CASE)
+   * =================================================================================
+   */
+
+  test('Team invitation handles large batch of invitations (50+)', async ({ browser }) => {
+    logProgress('🚀 Testing large batch invitation functionality...');
+
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: 'better-auth.session_token',
+        value: testAuth.session.sessionToken,
+        domain: 'localhost',
+        path: '/',
+        httpOnly: true,
+      },
+    ]);
+
+    const page = await context.newPage();
+
+    try {
+      // Navigate to team invitation step
+      await page.goto('http://localhost:3080/onboarding');
+      await page.waitForLoadState('networkidle');
+
+      // Verify team invitation step
+      await expect(
+        page.getByRole('heading', { name: 'Invite your team', exact: true }),
+      ).toBeVisible({
+        timeout: 10000,
+      });
+
+      // Create 50 test emails for large batch test
+      const largeTestEmails = Array.from({ length: 50 }, (_, i) => 
+        `bulk${i + 1}-${testId}@example.com`
+      );
+
+      // Click bulk add button
+      await page.getByRole('button', { name: 'Bulk add' }).click();
+
+      // Fill bulk emails textarea with 50 emails
+      const bulkTextarea = page.locator('textarea');
+      await expect(bulkTextarea).toBeVisible();
+      await bulkTextarea.fill(largeTestEmails.join(','));
+
+      // Click "Add emails" button
+      await page.getByRole('button', { name: 'Add emails' }).click();
+      await page.waitForTimeout(2000); // Give UI time to render all items
+
+      // Verify UI displays all 50 emails
+      logProgress('🔍 Verifying UI can display 50 email entries...');
+      
+      // Check first and last email are visible
+      await expect(page.getByText(largeTestEmails[0])).toBeVisible();
+      await expect(page.getByText(largeTestEmails[49])).toBeVisible();
+      
+      // Verify invitation summary shows correct count
+      await expect(page.getByText('Ready to send 50 invitations')).toBeVisible();
+      logProgress('✅ UI successfully handles 50 email entries');
+
+      // Send invitations
+      await page.getByRole('button', { name: 'Send invitations' }).click({ timeout: 5000 });
+      logProgress('📤 Clicked Send invitations button for 50 emails');
+
+      // Wait for invitations to be processed (longer timeout for large batch)
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(10000); // Give extra time for bulk processing
+
+      // Verify all 50 emails were sent to MailHog
+      const finalEmailCount = await mailhog.getMessageCount();
+      logProgress(`📧 Final MailHog email count: ${finalEmailCount}`);
+
+      expect(finalEmailCount).toBe(50); // All 50 emails should be sent
+      logProgress('✅ Confirmed all 50 emails were sent successfully');
+
+      // Spot check a few random emails were sent
+      const spotCheckIndices = [0, 24, 49]; // First, middle, last
+      for (const index of spotCheckIndices) {
+        const message = await mailhog.getLatestMessage(largeTestEmails[index], 5000);
+        expect(message).toBeTruthy();
+        logProgress(`✅ Spot check: Confirmed email sent to ${largeTestEmails[index]}`);
+      }
+
+      logProgress('✅ Large batch invitation functionality working correctly for 50+ invitations');
+    } finally {
+      await context.close();
+    }
+  });
 });

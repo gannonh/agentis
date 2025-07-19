@@ -30,16 +30,21 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
   it('should call sendEmail with correct parameters', async () => {
     // GREEN PHASE: This test should now pass with the implementation
 
-    // Mock invitation data that would be passed to sendInvitationEmail
+    // Mock invitation data that Better Auth actually provides
     const invitationData = {
       id: 'invitation-123',
       email: 'colleague@company.com',
       organizationId: 'org-456',
       inviterId: 'user-789',
-      inviterName: 'John Doe',
-      inviterEmail: 'john@company.com',
-      organizationName: 'Test Organization',
-      inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
+      inviter: {
+        user: {
+          name: 'John Doe',
+          email: 'john@company.com',
+        },
+      },
+      organization: {
+        name: 'Test Organization',
+      },
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     };
 
@@ -63,7 +68,7 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
         name: 'colleague', // Extract username portion from email
         inviterName: 'John Doe',
         organizationName: 'Test Organization',
-        inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
+        inviteLink: 'http://localhost:3090/auth/accept-invitation/invitation-123',
         appName: process.env.APP_TITLE || 'Agentis',
         year: new Date().getFullYear(),
       },
@@ -78,10 +83,15 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
       email: 'colleague@company.com',
       organizationId: 'org-456',
       inviterId: 'user-789',
-      // Missing inviterName - should fallback to email
-      inviterEmail: 'john@company.com',
-      organizationName: 'Test Organization',
-      inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
+      inviter: {
+        user: {
+          // Missing name - should fallback to email prefix
+          email: 'john@company.com',
+        },
+      },
+      organization: {
+        name: 'Test Organization',
+      },
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
 
@@ -98,7 +108,7 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
         name: 'colleague', // Extract username portion from email
         inviterName: 'john', // Should fallback to email prefix
         organizationName: 'Test Organization',
-        inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
+        inviteLink: 'http://localhost:3090/auth/accept-invitation/invitation-123',
         appName: process.env.APP_TITLE || 'Agentis',
         year: new Date().getFullYear(),
       },
@@ -113,10 +123,15 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
       email: 'colleague@company.com',
       organizationId: 'org-456',
       inviterId: 'user-789',
-      inviterName: 'John Doe',
-      inviterEmail: 'john@company.com',
-      organizationName: 'Test Organization',
-      inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
+      inviter: {
+        user: {
+          name: 'John Doe',
+          email: 'john@company.com',
+        },
+      },
+      organization: {
+        name: 'Test Organization',
+      },
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
 
@@ -146,10 +161,15 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
       email: 'colleague@company.com',
       organizationId: 'org-456',
       inviterId: 'user-789',
-      inviterName: 'John Doe',
-      inviterEmail: 'john@company.com',
-      organizationName: 'Test Organization',
-      inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
+      inviter: {
+        user: {
+          name: 'John Doe',
+          email: 'john@company.com',
+        },
+      },
+      organization: {
+        name: 'Test Organization',
+      },
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
 
