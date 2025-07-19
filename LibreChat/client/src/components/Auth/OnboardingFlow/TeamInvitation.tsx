@@ -98,6 +98,7 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
           await authClient.organization.inviteMember({
             email: invitation.email,
             role: invitation.role,
+            resend: true,
             // Note: invitedAt timestamp is now generated server-side for consistency
             // Note: Backend handles invitation tracking and expiration automatically
           });

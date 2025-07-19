@@ -499,6 +499,7 @@ describe('TeamInvitation', () => {
         expect(authClient.organization.inviteMember).toHaveBeenCalledWith({
           email: 'auth@example.com',
           role: 'member',
+          resend: true,
         });
       });
     });
