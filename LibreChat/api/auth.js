@@ -46,7 +46,7 @@ export const sendInvitationEmail = async (invitationData, request) => {
       subject: `Join ${inviterName}'s team at ${invitationData.organizationName}`,
       template: 'organizationInvite.handlebars',
       payload: {
-        name: invitationData.email, // Use email as name if no name provided
+        name: invitationData.email.split('@')[0], // Extract username portion
         inviterName: inviterName,
         organizationName: invitationData.organizationName,
         inviteLink: invitationData.inviteLink,

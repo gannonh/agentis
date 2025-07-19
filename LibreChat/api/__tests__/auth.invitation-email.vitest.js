@@ -60,7 +60,7 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
       subject: "Join John Doe's team at Test Organization",
       template: 'organizationInvite.handlebars',
       payload: {
-        name: 'colleague@company.com', // Use email as name if no name provided
+        name: 'colleague', // Extract username portion from email
         inviterName: 'John Doe',
         organizationName: 'Test Organization',
         inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
@@ -95,7 +95,7 @@ describe('Better Auth Organization Plugin - sendInvitationEmail', () => {
       subject: "Join john's team at Test Organization",
       template: 'organizationInvite.handlebars',
       payload: {
-        name: 'colleague@company.com',
+        name: 'colleague', // Extract username portion from email
         inviterName: 'john', // Should fallback to email prefix
         organizationName: 'Test Organization',
         inviteLink: 'http://localhost:3080/invite/accept?token=abc123',
