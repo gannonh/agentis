@@ -64,19 +64,9 @@ test.describe('Team Invitation API Tests', () => {
       const inviteData = await inviteResponse.json();
       logProgress(`✅ Invitation sent successfully: ${JSON.stringify(inviteData, null, 2)}`);
 
-      // Check if invitation was created in database
-      // Connect to MongoDB to check invitation record
-      const mongoose = (await import('mongoose')).default;
-      
-      if (mongoose.connection.readyState !== 1) {
-        const mongoUri = process.env.MONGO_URI || 'mongodb://admin:password@localhost:27017/Agentis?authSource=admin';
-        await mongoose.connect(mongoUri);
-      }
-
-      const db = mongoose.connection.db;
-      if (!db) {
-        throw new Error('Database connection not available');
-      }
+      // Check if invitation was created in database using proper cleanup
+      const { getTestDatabase } = await import('../../utils/testAuth');
+      const { db, mongoose } = await getTestDatabase();
 
       // Query invitation collection to see what Better Auth stored
       const invitation = await db.collection('invitation').findOne({ 
@@ -132,6 +122,17 @@ test.describe('Team Invitation API Tests', () => {
     } catch (error) {
       logProgress(`❌ Test failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
+    } finally {
+      // Clean up Mongoose connection to prevent memory leaks
+      try {
+        const mongoose = (await import('mongoose')).default;
+        if (mongoose.connection.readyState === 1) {
+          await mongoose.connection.close();
+          logProgress('✅ Mongoose connection closed');
+        }
+      } catch (closeError) {
+        logProgress(`⚠️ Failed to close Mongoose connection: ${closeError}`);
+      }
     }
   });
 
