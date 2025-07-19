@@ -81,6 +81,7 @@ describe('OrganizationDetectionService', () => {
 
       expect(mockOrganizationCollection.find).toHaveBeenCalledWith({
         'metadata.domain': 'acme.com',
+        deletedAt: { $exists: false },
       });
       expect(result).toEqual([
         {
@@ -176,6 +177,7 @@ describe('OrganizationDetectionService', () => {
       expect(isPublicDomain).toHaveBeenCalledWith('acme.com');
       expect(mockOrganizationCollection.find).toHaveBeenCalledWith({
         'metadata.domain': 'acme.com',
+        deletedAt: { $exists: false },
       });
       expect(result).toEqual({
         isPublicDomain: false,
@@ -212,6 +214,7 @@ describe('OrganizationDetectionService', () => {
       expect(isPublicDomain).toHaveBeenCalledWith('testcorp.com');
       expect(mockOrganizationCollection.find).toHaveBeenCalledWith({
         'metadata.domain': 'testcorp.com',
+        deletedAt: { $exists: false },
       });
       expect(result).toEqual({
         isPublicDomain: false,
@@ -327,6 +330,7 @@ describe('OrganizationDetectionService', () => {
       expect(validateInvitationToken).toHaveBeenCalledWith('expired-token-456');
       expect(mockOrganizationCollection.find).toHaveBeenCalledWith({
         'metadata.domain': 'company.com',
+        deletedAt: { $exists: false },
       });
       expect(result).toEqual({
         isPublicDomain: false,

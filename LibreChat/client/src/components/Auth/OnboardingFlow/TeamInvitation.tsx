@@ -94,14 +94,13 @@ export const TeamInvitation: React.FC<TeamInvitationProps> = ({
             update(index, { ...invitation, status: 'sending' });
           }
 
-          // Use Better Auth invitation method with attribution
+          // Use Better Auth invitation method
           await authClient.organization.inviteMember({
             email: invitation.email,
             role: invitation.role,
-            // Add invitation attribution fields
-            invitedAt: new Date(),
-            source: 'onboarding',
-            // resend: true to handle duplicates gracefully
+            // TODO: Add resend: true when backend supports it to handle duplicates gracefully
+            // TODO: Backend should track invitedAt timestamp server-side for consistency
+            // TODO: Add source attribution when backend supports tracking invitation origin
           });
 
           results.push({ email: invitation.email, success: true });

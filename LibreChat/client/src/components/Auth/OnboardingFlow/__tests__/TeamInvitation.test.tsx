@@ -499,8 +499,6 @@ describe('TeamInvitation', () => {
         expect(authClient.organization.inviteMember).toHaveBeenCalledWith({
           email: 'auth@example.com',
           role: 'member',
-          invitedAt: expect.any(Date),
-          source: 'onboarding',
         });
       });
     });

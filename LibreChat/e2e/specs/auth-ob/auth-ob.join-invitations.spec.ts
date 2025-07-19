@@ -41,7 +41,7 @@ test.describe.configure({ mode: 'default' });
 test.describe('Organization Invitation Flow', () => {
   // Store test IDs for cleanup
   const testIds: string[] = [];
-  
+
   test.beforeEach(async () => {
     await cleanDatabase();
     logProgress('🧹 Database cleaned for invitation test');
@@ -50,8 +50,8 @@ test.describe('Organization Invitation Flow', () => {
   test.afterEach(async () => {
     // Clean up test-specific data
     for (const testId of testIds) {
-      await cleanTestData(testId).catch(err => 
-        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`)
+      await cleanTestData(testId).catch((err) =>
+        logProgress(`⚠️ Cleanup failed for testId ${testId}: ${err.message}`),
       );
     }
     testIds.length = 0; // Clear the array
@@ -108,8 +108,8 @@ test.describe('Organization Invitation Flow', () => {
       const org = await db.collection('organization').findOne({ name: orgName });
       expect(org).toBeTruthy();
 
-      const testContext = createTestContext({ 
-        emailPrefix: 'invite'
+      const testContext = createTestContext({
+        emailPrefix: 'invite',
       });
       testIds.push(testContext.testId);
       const inviteEmail = `invite-${testContext.testId}@external.com`;
@@ -151,7 +151,7 @@ test.describe('Organization Invitation Flow', () => {
     }
   });
 
-  test('User accepts organization invitation', async ({ browser }) => {
+  test.skip('User accepts organization invitation', async ({ browser }) => {
     logProgress('🚀 Testing user acceptance of organization invitation...');
     // TODO: Implement user acceptance flow for organization invitation
     // This test would require:
@@ -167,7 +167,7 @@ test.describe('Organization Invitation Flow', () => {
     );
   });
 
-  test('User declines organization invitation', async ({ browser }) => {
+  test.skip('User declines organization invitation', async ({ browser }) => {
     logProgress('🚀 Testing user declining of organization invitation...');
     // TODO: Implement user declining flow for organization invitation
     // This test would require:
@@ -180,7 +180,7 @@ test.describe('Organization Invitation Flow', () => {
     logProgress('⚠️ Invitation decline flow - to be implemented when invitation system is ready');
   });
 
-  test('Expired invitation handling', async ({ browser }) => {
+  test.skip('Expired invitation handling', async ({ browser }) => {
     logProgress('🚀 Testing expired invitation handling...');
     // TODO: Implement expired invitation handling
     // This test would require:
