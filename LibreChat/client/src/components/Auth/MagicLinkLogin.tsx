@@ -68,6 +68,7 @@ export const MagicLinkLogin: React.FC = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     const error = searchParams.get('error');
+    const returnUrl = searchParams.get('returnUrl');
 
     if (error) {
       setError(localize('com_auth_error_magic_link'));
@@ -124,6 +125,13 @@ export const MagicLinkLogin: React.FC = () => {
                   usingFreshData: true,
                 });
 
+                // Check if there's a returnUrl to redirect to
+                if (returnUrl) {
+                  console.log('🔗 Redirecting to returnUrl:', returnUrl);
+                  navigate(decodeURIComponent(returnUrl));
+                  return;
+                }
+                
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
                   console.log(
@@ -151,6 +159,13 @@ export const MagicLinkLogin: React.FC = () => {
                   onboardingStepValue: user.onboardingStep,
                 });
 
+                // Check if there's a returnUrl to redirect to  
+                if (returnUrl) {
+                  console.log('🔗 Redirecting to returnUrl (fallback):', returnUrl);
+                  navigate(decodeURIComponent(returnUrl));
+                  return;
+                }
+                
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
                   console.log(
@@ -409,9 +424,15 @@ export const MagicLinkLogin: React.FC = () => {
       console.log('🔗 Sending magic link request for:', data.email);
       setEmail(data.email);
 
+      // Include returnUrl in callback if it exists
+      const returnUrl = searchParams.get('returnUrl');
+      const callbackURL = returnUrl 
+        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(returnUrl)}`
+        : `${window.location.origin}/login`;
+      
       const result = await authClient.signIn.magicLink({
         email: data.email,
-        callbackURL: `${window.location.origin}/login`,
+        callbackURL,
       });
 
       console.log('🔗 Magic link response received:', result);
@@ -446,9 +467,15 @@ export const MagicLinkLogin: React.FC = () => {
     }
 
     try {
+      // Include returnUrl in callback if it exists
+      const returnUrl = searchParams.get('returnUrl');
+      const callbackURL = returnUrl 
+        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(returnUrl)}`
+        : `${window.location.origin}/login`;
+        
       const result = await authClient.signIn.magicLink({
         email: email,
-        callbackURL: `${window.location.origin}/login`,
+        callbackURL,
       });
 
       if (result.error) {

@@ -182,73 +182,36 @@ router.delete('/invitations/:invitationId', requireBetterAuth, async (req, res) 
   }
 });
 
+// NOTE: Invitation acceptance and rejection are handled client-side by Better Auth
+// using authClient.organization.acceptInvitation() and authClient.organization.rejectInvitation()
+// These server-side endpoints have been removed to follow Better Auth best practices
+
 /**
- * @route POST /api/invitations/:invitationId/accept
- * @desc Accept an invitation to join an organization
- * @access Private (Invited user only)
+ * @route GET /api/invitations/public/:invitationId
+ * @desc Get public details of a specific invitation (for acceptance page)
+ * @access Public
  */
-router.post('/invitations/:invitationId/accept', requireBetterAuth, async (req, res) => {
+router.get('/invitations/public/:invitationId', async (req, res) => {
   try {
     const { invitationId } = req.params;
-    const userId = req.user.id;
 
-    const result = await invitationService.acceptInvitation(invitationId, userId);
+    const invitation = await invitationService.getPublicInvitation(invitationId);
 
     res.json({
       success: true,
-      data: result,
-      message: 'Invitation accepted successfully',
+      data: invitation,
     });
   } catch (error) {
-    logger.error('Error accepting invitation', error);
+    logger.error('Error getting public invitation details', error);
 
-    // Handle specific error cases
     if (error.message?.includes('not found')) {
       return res.status(404).json({
-        error: 'Invitation not found or has expired',
-      });
-    }
-
-    if (error.message?.includes('already accepted')) {
-      return res.status(409).json({
-        error: 'Invitation has already been accepted',
+        error: 'Invitation not found',
       });
     }
 
     res.status(500).json({
-      error: 'Failed to accept invitation',
-      message: error.message,
-    });
-  }
-});
-
-/**
- * @route POST /api/invitations/:invitationId/reject
- * @desc Reject an invitation to join an organization
- * @access Private (Invited user only)
- */
-router.post('/invitations/:invitationId/reject', requireBetterAuth, async (req, res) => {
-  try {
-    const { invitationId } = req.params;
-    const userId = req.user.id;
-
-    await invitationService.rejectInvitation(invitationId, userId);
-
-    res.json({
-      success: true,
-      message: 'Invitation rejected successfully',
-    });
-  } catch (error) {
-    logger.error('Error rejecting invitation', error);
-
-    if (error.message?.includes('not found')) {
-      return res.status(404).json({
-        error: 'Invitation not found or has expired',
-      });
-    }
-
-    res.status(500).json({
-      error: 'Failed to reject invitation',
+      error: 'Failed to retrieve invitation details',
       message: error.message,
     });
   }
