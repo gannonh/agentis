@@ -61,7 +61,7 @@
     "e2e:headed": "../scripts/dev.sh --stop && npx playwright test --config=e2e/playwright.config.ts --headed",
     "e2e:ci": "CI=true npx playwright test --config=e2e/playwright.config.ts",
     "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
-    "e2e:debug": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test  --config=e2e/playwright.config.ts e2e/specs/auth-ob/auth-ob.team-invitation-complete.spec.ts --headed",
+    "e2e:debug": "../scripts/dev.sh --stop && PWDEBUG=0 npx playwright test  --config=e2e/playwright.config.ts e2e/specs/auth-ob/auth-ob.invitation-acceptance.spec.ts --headed --grep 'New user can accept invitation and join organization'",
     "lint": "eslint --fix \"./client/src/**/*.{js,jsx,ts,tsx}\" \"./api/**/*.{js,jsx,ts,tsx}\" \"./packages/**/*.{js,jsx,ts,tsx}\"",
     "lint:client": "eslint --fix \"./client/src/**/*.{js,jsx,ts,tsx}\"",
     "lint:api": "eslint --fix \"./api/**/*.{js,jsx,ts,tsx}\"",

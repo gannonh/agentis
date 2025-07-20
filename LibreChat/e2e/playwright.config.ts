@@ -105,6 +105,7 @@ export default defineConfig({
       // Better Auth configuration for tests
       DOMAIN_SERVER: 'http://localhost:3080',
       DOMAIN_CLIENT: 'http://localhost:3080',
+      CLIENT_URL: 'http://localhost:3080', // For invitation email links
       BETTER_AUTH_SECRET: 'test-secret-key-for-e2e-testing-only',
       // Explicitly set critical variables to ensure they're passed to the server
       MONGO_URI: 'mongodb://admin:password@localhost:27017/Agentis?authSource=admin',
