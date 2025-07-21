@@ -285,6 +285,12 @@ class InvitationService {
 
       // Convert string ID to ObjectId for MongoDB query
       const { ObjectId } = mongoose.default.Types;
+      
+      // Validate ObjectId format before attempting conversion
+      if (!ObjectId.isValid(invitationId)) {
+        throw new Error('Invitation not found');
+      }
+      
       const invitation = await invitationCollection.findOne({ 
         _id: new ObjectId(invitationId) 
       });

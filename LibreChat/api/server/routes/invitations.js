@@ -197,6 +197,25 @@ router.get('/invitations/public/:invitationId', async (req, res) => {
 
     const invitation = await invitationService.getPublicInvitation(invitationId);
 
+    // Check if invitation has already been accepted
+    if (invitation.status === 'accepted') {
+      return res.status(409).json({
+        error: 'Invitation has already been accepted',
+      });
+    }
+
+    // Check if invitation has expired
+    if (invitation.expiresAt && new Date() > new Date(invitation.expiresAt)) {
+      logger.debug('Invitation has expired', {
+        invitationId,
+        expiresAt: invitation.expiresAt,
+        currentTime: new Date().toISOString(),
+      });
+      return res.status(410).json({
+        error: 'Invitation has expired',
+      });
+    }
+
     res.json({
       success: true,
       data: invitation,

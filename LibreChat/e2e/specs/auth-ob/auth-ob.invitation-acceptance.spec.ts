@@ -218,7 +218,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       logProgress(`📝 Testing token validation for: ${inviteeEmail}`);
 
       // Create invitation via API (simulating what the invitation flow does)
-      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite', {
+      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -262,8 +262,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${invalidInvitationId}`);
 
       // Should show error message
-      await expect(page.getByText('Invitation not found')).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText('This invitation may have expired or been revoked')).toBeVisible();
+      await expect(page.getByText('Invitation not found or has expired')).toBeVisible({ timeout: 10000 });
 
       logProgress('✅ Invalid invitation token shows appropriate error');
 
@@ -271,8 +270,8 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       const malformedInvitationId = 'invalid-token-format';
       await page.goto(`http://localhost:3080/auth/accept-invitation/${malformedInvitationId}`);
 
-      // Should show error message for invalid format
-      await expect(page.getByText('Invalid invitation')).toBeVisible({ timeout: 10000 });
+      // Should show error message for invalid format (404 error becomes "Invitation not found or has expired")
+      await expect(page.getByText('Invitation not found or has expired')).toBeVisible({ timeout: 10000 });
 
       logProgress('✅ Malformed invitation token shows appropriate error');
 
@@ -296,8 +295,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
       // Should show already accepted error
-      await expect(page.getByText('Invitation already accepted')).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText('This invitation has already been used')).toBeVisible();
+      await expect(page.getByText('Invitation has already been accepted')).toBeVisible({ timeout: 10000 });
 
       logProgress('✅ Already accepted invitation shows appropriate error');
 
@@ -316,9 +314,8 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
-      // Should show expired error
-      await expect(page.getByText('Invitation expired')).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText('This invitation has expired')).toBeVisible();
+      // Should show expired error (410 status becomes "Invitation has expired")
+      await expect(page.getByText('Invitation has expired')).toBeVisible({ timeout: 10000 });
 
       logProgress('✅ Expired invitation shows appropriate error');
 

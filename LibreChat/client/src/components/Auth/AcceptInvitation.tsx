@@ -65,6 +65,9 @@ function AcceptInvitation() {
           if (response.status === 409) {
             throw new Error('Invitation has already been accepted');
           }
+          if (response.status === 410) {
+            throw new Error('Invitation has expired');
+          }
           throw new Error('Failed to load invitation');
         }
 
