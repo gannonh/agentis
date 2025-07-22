@@ -1,10 +1,10 @@
 /**
  * @fileoverview Integration tests for invitation acceptance race condition fix
  * @module auth.invitation-race-condition.integration.test
- * 
+ *
  * Tests the actual Better Auth implementation to validate that:
  * 1. Invitation status updates happen only after successful user creation
- * 2. No orphaned accepted invitations exist when user creation fails  
+ * 2. No orphaned accepted invitations exist when user creation fails
  * 3. The complete invitation acceptance flow maintains data integrity
  */
 
@@ -48,15 +48,15 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     // Start in-memory MongoDB for integration tests
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
-    
+
     // Connect both native driver and mongoose
     mongoClient = new MongoClient(mongoUri);
     await mongoClient.connect();
     db = mongoClient.db();
-    
+
     // Connect mongoose (used by Better Auth)
     await mongoose.connect(mongoUri);
-    
+
     // Clear all mocks
     vi.clearAllMocks();
   });
@@ -80,11 +80,11 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     const invitationCollection = db.collection('invitation');
     const userCollection = db.collection('user');
     const memberCollection = db.collection('member');
-    
+
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
     const testEmail = 'integration-test@example.com';
-    
+
     // Create a pending invitation
     await invitationCollection.insertOne({
       _id: invitationId,
@@ -99,9 +99,12 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
 
     // Simulate the corrected Better Auth user creation with hooks
     const testUserId = new ObjectId().toString();
-    
+
     // 1. BEFORE HOOK SIMULATION (should not accept invitation yet)
-    const beforeHookResult = await invitationCollection.findOne({ email: testEmail, status: 'pending' });
+    const beforeHookResult = await invitationCollection.findOne({
+      email: testEmail,
+      status: 'pending',
+    });
     expect(beforeHookResult).toBeTruthy();
     expect(beforeHookResult.status).toBe('pending');
 
@@ -115,7 +118,7 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     });
 
     // 3. AFTER HOOK SIMULATION (should now accept invitation and create membership)
-    
+
     // Create membership first
     const membershipData = {
       _id: new ObjectId(),
@@ -166,11 +169,11 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
 
     const invitationCollection = db.collection('invitation');
     const userCollection = db.collection('user');
-    
+
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
     const testEmail = 'failure-test@example.com';
-    
+
     // Create a pending invitation
     await invitationCollection.insertOne({
       _id: invitationId,
@@ -187,7 +190,7 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
 
     // Simulate: User creation fails (after hook never runs)
     const userCreationError = new Error('Database constraint violation');
-    
+
     // Verify: No user was created
     const userCount = await userCollection.countDocuments({ email: testEmail });
     expect(userCount).toBe(0);
@@ -213,12 +216,12 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     const invitationCollection = db.collection('invitation');
     const userCollection = db.collection('user');
     const memberCollection = db.collection('member');
-    
+
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
     const testEmail = 'concurrent-test@example.com';
     const testUserId = new ObjectId().toString();
-    
+
     // Create a pending invitation
     await invitationCollection.insertOne({
       _id: invitationId,
@@ -267,13 +270,13 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     });
 
     const results = await Promise.allSettled(acceptancePromises);
-    
+
     // Validate only one invitation update succeeded
     const successfulUpdates = results
-      .filter(result => result.status === 'fulfilled')
-      .map(result => result.value)
-      .filter(value => value.success && value.modified === 1);
-    
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value)
+      .filter((value) => value.success && value.modified === 1);
+
     expect(successfulUpdates.length).toBeLessThanOrEqual(1);
 
     // Final invitation should be accepted exactly once
@@ -296,13 +299,13 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     const userCollection = db.collection('user');
     const memberCollection = db.collection('member');
     const organizationCollection = db.collection('organization');
-    
+
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
     const inviterId = new ObjectId();
     const testEmail = 'integrity-test@example.com';
     const testUserId = new ObjectId().toString();
-    
+
     // Setup: Create supporting data
     await organizationCollection.insertOne({
       _id: organizationId,
@@ -330,7 +333,7 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     });
 
     // Execute: Complete invitation acceptance flow
-    
+
     // 1. Create user
     await userCollection.insertOne({
       _id: testUserId,
@@ -396,7 +399,7 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
 
     const invitationCollection = db.collection('invitation');
     const testEmail = 'expired-test@example.com';
-    
+
     // Create an expired but pending invitation
     const expiredInvitationId = new ObjectId();
     await invitationCollection.insertOne({
@@ -422,22 +425,26 @@ describe('Invitation Acceptance Race Condition Fix - Integration Tests', () => {
     });
 
     // The before hook should only process non-expired invitations
-    const validInvitations = await invitationCollection.find({
-      email: testEmail,
-      status: 'pending',
-      expiresAt: { $gt: new Date() }, // Not expired
-    }).toArray();
+    const validInvitations = await invitationCollection
+      .find({
+        email: testEmail,
+        status: 'pending',
+        expiresAt: { $gt: new Date() }, // Not expired
+      })
+      .toArray();
 
-    const expiredInvitations = await invitationCollection.find({
-      email: testEmail,
-      status: 'pending',
-      expiresAt: { $lte: new Date() }, // Expired
-    }).toArray();
+    const expiredInvitations = await invitationCollection
+      .find({
+        email: testEmail,
+        status: 'pending',
+        expiresAt: { $lte: new Date() }, // Expired
+      })
+      .toArray();
 
     // Assertions
     expect(validInvitations).toHaveLength(1);
     expect(validInvitations[0]._id).toEqual(validInvitationId);
-    
+
     expect(expiredInvitations).toHaveLength(1);
     expect(expiredInvitations[0]._id).toEqual(expiredInvitationId);
 

@@ -1,9 +1,9 @@
 /**
  * @fileoverview Tests for invitation acceptance race condition fix
  * @module auth.invitation-race-condition.test
- * 
- * Tests validate that invitation status is only updated to 'accepted' 
- * after successful user creation and membership creation, preventing 
+ *
+ * Tests validate that invitation status is only updated to 'accepted'
+ * after successful user creation and membership creation, preventing
  * inconsistent state if user creation fails.
  */
 
@@ -71,7 +71,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
 
         if (pendingInvitation) {
           user.onboardingStep = 'profile';
-          
+
           // Store pending invitation data - NO LONGER ACCEPTING HERE
           pendingInvitations.set(user.email, {
             invitationId: pendingInvitation._id,
@@ -146,7 +146,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     const invitationCollection = db.collection('invitation');
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
-    
+
     await invitationCollection.insertOne({
       _id: invitationId,
       email: 'test@example.com',
@@ -190,7 +190,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     const memberCollection = db.collection('member');
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
-    
+
     await invitationCollection.insertOne({
       _id: invitationId,
       email: 'test@example.com',
@@ -223,7 +223,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     expect(invitation.acceptedAt).toBeInstanceOf(Date);
 
     // Assert: Membership should be created
-    const membership = await memberCollection.findOne({ 
+    const membership = await memberCollection.findOne({
       userId: mockNormalizeId(user.id),
       organizationId: mockNormalizeId(organizationId),
     });
@@ -242,7 +242,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     const invitationCollection = db.collection('invitation');
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
-    
+
     await invitationCollection.insertOne({
       _id: invitationId,
       email: 'test@example.com',
@@ -271,7 +271,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
 
     // Assert: No membership should exist
     const memberCollection = db.collection('member');
-    const membership = await memberCollection.findOne({ 
+    const membership = await memberCollection.findOne({
       userId: mockNormalizeId(user.id),
     });
     expect(membership).toBeNull();
@@ -302,7 +302,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     const invitationCollection = db.collection('invitation');
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
-    
+
     await invitationCollection.insertOne({
       _id: invitationId,
       email: 'test@example.com',
@@ -335,7 +335,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
 
     // Assert: No membership should exist
     const memberCollection = db.collection('member');
-    const membership = await memberCollection.findOne({ 
+    const membership = await memberCollection.findOne({
       userId: mockNormalizeId(user.id),
     });
     expect(membership).toBeNull();
@@ -343,7 +343,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     // Assert: Error should be logged
     expect(mockLogger.error).toHaveBeenCalledWith(
       'Error in user create after hook:',
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
@@ -357,7 +357,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     const invitation2Id = new ObjectId();
     const organization1Id = new ObjectId();
     const organization2Id = new ObjectId();
-    
+
     await invitationCollection.insertMany([
       {
         _id: invitation1Id,
@@ -396,17 +396,19 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     // Assert: Only the first invitation should be accepted
     const invitation1 = await invitationCollection.findOne({ _id: invitation1Id });
     const invitation2 = await invitationCollection.findOne({ _id: invitation2Id });
-    
+
     expect(invitation1.status).toBe('accepted');
     expect(invitation1.acceptedAt).toBeDefined();
     expect(invitation2.status).toBe('pending'); // Still pending
     expect(invitation2.acceptedAt).toBeUndefined();
 
     // Assert: Only one membership created for the accepted invitation
-    const memberships = await memberCollection.find({ 
-      userId: mockNormalizeId(user.id),
-    }).toArray();
-    
+    const memberships = await memberCollection
+      .find({
+        userId: mockNormalizeId(user.id),
+      })
+      .toArray();
+
     expect(memberships).toHaveLength(1);
     expect(memberships[0].organizationId).toEqual(mockNormalizeId(organization1Id));
     expect(memberships[0].role).toBe('member');
@@ -429,10 +431,10 @@ describe('Invitation Acceptance Race Condition Fix', () => {
 
     // Assert: Should complete without errors
     expect(result).toEqual(user);
-    
+
     // Check that the specific log was called for no pending data
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'ℹ️ No pending invitation data found for test@example.com'
+      'ℹ️ No pending invitation data found for test@example.com',
     );
   });
 
@@ -445,7 +447,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
     const invitationId = new ObjectId();
     const organizationId = new ObjectId();
     const originalCreatedAt = new Date('2024-01-01T00:00:00.000Z');
-    
+
     await invitationCollection.insertOne({
       _id: invitationId,
       email: 'test@example.com',
@@ -469,7 +471,7 @@ describe('Invitation Acceptance Race Condition Fix', () => {
 
     // Assert: All data should be preserved and updated correctly
     const finalInvitation = await invitationCollection.findOne({ _id: invitationId });
-    const membership = await memberCollection.findOne({ 
+    const membership = await memberCollection.findOne({
       userId: mockNormalizeId(user.id),
     });
 
