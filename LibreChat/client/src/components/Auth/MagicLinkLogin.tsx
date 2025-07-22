@@ -448,10 +448,11 @@ export const MagicLinkLogin: React.FC = () => {
       console.log('🔗 Sending magic link request for:', data.email);
       setEmail(data.email);
 
-      // Include returnUrl in callback if it exists
+      // Include returnUrl in callback if it exists and is valid
       const returnUrl = searchParams.get('returnUrl');
-      const callbackURL = returnUrl
-        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(returnUrl)}`
+      const validatedReturnUrl = returnUrl && isValidRedirectUrl(returnUrl) ? returnUrl : null;
+      const callbackURL = validatedReturnUrl
+        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(validatedReturnUrl)}`
         : `${window.location.origin}/login`;
 
       const result = await authClient.signIn.magicLink({
@@ -491,10 +492,11 @@ export const MagicLinkLogin: React.FC = () => {
     }
 
     try {
-      // Include returnUrl in callback if it exists
+      // Include returnUrl in callback if it exists and is valid
       const returnUrl = searchParams.get('returnUrl');
-      const callbackURL = returnUrl
-        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(returnUrl)}`
+      const validatedReturnUrl = returnUrl && isValidRedirectUrl(returnUrl) ? returnUrl : null;
+      const callbackURL = validatedReturnUrl
+        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(validatedReturnUrl)}`
         : `${window.location.origin}/login`;
 
       const result = await authClient.signIn.magicLink({

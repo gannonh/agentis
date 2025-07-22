@@ -114,6 +114,33 @@ describe('MagicLinkLogin', () => {
     });
   });
 
+  it('validates returnUrl in callback URL during magic link send', async () => {
+    // Mock URL with malicious returnUrl
+    mockSearchParams = new URLSearchParams('?returnUrl=https%3A%2F%2Fevil.com');
+    mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+    const user = userEvent.setup();
+    renderComponent();
+
+    const emailInput = screen.getByLabelText('Email address');
+    const submitButton = screen.getByTestId('login-button');
+
+    await user.type(emailInput, 'test@example.com');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(authClient.signIn.magicLink).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        // Should not include the malicious returnUrl
+        callbackURL: expect.stringMatching(/^http:\/\/localhost:\d+\/login$/),
+      });
+      expect(authClient.signIn.magicLink).not.toHaveBeenCalledWith({
+        email: 'test@example.com',
+        callbackURL: expect.stringContaining('evil.com'),
+      });
+    });
+  });
+
   it('shows confirmation message after sending magic link', async () => {
     const user = userEvent.setup();
     renderComponent();
@@ -171,6 +198,45 @@ describe('MagicLinkLogin', () => {
 
     await waitFor(() => {
       expect(authClient.signIn.magicLink).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('validates returnUrl in callback URL during resend', async () => {
+    // Mock URL with malicious returnUrl
+    mockSearchParams = new URLSearchParams('?returnUrl=javascript%3Aalert(1)');
+    mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+    const user = userEvent.setup();
+    renderComponent();
+
+    // First send the magic link
+    const emailInput = screen.getByLabelText('Email address');
+    const submitButton = screen.getByTestId('login-button');
+
+    await user.type(emailInput, 'test@example.com');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Resend link')).toBeInTheDocument();
+    });
+
+    // Clear previous calls
+    vi.mocked(authClient.signIn.magicLink).mockClear();
+
+    // Resend
+    const resendButton = screen.getByText('Resend link');
+    await user.click(resendButton);
+
+    await waitFor(() => {
+      expect(authClient.signIn.magicLink).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        // Should not include the malicious returnUrl
+        callbackURL: expect.stringMatching(/^http:\/\/localhost:\d+\/login$/),
+      });
+      expect(authClient.signIn.magicLink).not.toHaveBeenCalledWith({
+        email: 'test@example.com',
+        callbackURL: expect.stringContaining('javascript'),
+      });
     });
   });
 
