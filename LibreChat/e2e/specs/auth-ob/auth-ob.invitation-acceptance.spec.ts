@@ -488,6 +488,118 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
     }
   });
 
+  test('Invitation from deactivated user should show "Someone" as inviter', async ({ browser }) => {
+    logProgress('🚀 Testing invitation from deactivated user...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Create a valid invitation first
+      const inviteeTestId = generateTestId();
+      const inviteeEmail = `test-deactivated-inviter-${inviteeTestId}@example.com`;
+
+      logProgress(`📝 Testing deactivated inviter scenario for: ${inviteeEmail}`);
+
+      // Create invitation via API (while inviter still exists)
+      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+        },
+        body: JSON.stringify({
+          email: inviteeEmail,
+          role: 'member',
+          organizationId: testAuth.organization.id
+        })
+      });
+
+      expect(invitationResponse.ok).toBe(true);
+      const invitationData = await invitationResponse.json();
+      const validInvitationId = invitationData.id;
+
+      logProgress(`✅ Created test invitation with ID: ${validInvitationId}`);
+
+      // Step 2: Delete the inviter user from database (simulating account deletion)
+      const { getTestDatabase } = await import('../../utils/testAuth');
+      const { db } = await getTestDatabase();
+      
+      // Find and delete the user account
+      const userDeleteResult = await db.collection('user').deleteOne({
+        email: testAuth.user.email
+      });
+      
+      if (userDeleteResult.deletedCount > 0) {
+        logProgress('🚫 Deleted inviter user account (simulated deactivation)');
+      } else {
+        logProgress('⚠️ User account not found in database (may already be cleaned up)');
+      }
+
+      // Step 3: Navigate to invitation link
+      await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
+
+      // Step 4: Should still show invitation page with graceful degradation
+      await expect(
+        page.getByRole('heading', { name: "You've been invited!" })
+      ).toBeVisible({ timeout: 10000 });
+
+      await expect(
+        page.getByText(`You've been invited to join ${testAuth.organization.name}`)
+      ).toBeVisible({ timeout: 5000 });
+
+      // Step 5: Verify graceful handling of missing inviter
+      // Should show "Someone has invited you" when inviter is deleted
+      await expect(
+        page.getByText('Someone has invited you to join their organization as a member')
+      ).toBeVisible({ timeout: 5000 });
+
+      logProgress('✅ Invitation shows "Someone" for deleted inviter (graceful degradation)');
+
+      // Step 6: Verify the user can still sign in to accept
+      await expect(page.getByTestId('sign-in-button')).toBeVisible();
+
+      // Step 7: Verify database state - invitation should still be valid
+      const invitation = await db.collection('invitation').findOne({
+        _id: new (await import('mongodb')).ObjectId(validInvitationId)
+      });
+      
+      expect(invitation).toBeTruthy();
+      expect(invitation?.status).toBe('pending');
+      expect(invitation?.organizationId?.toString()).toBe(testAuth.organization.id);
+      
+      logProgress('✅ Database validation: Invitation remains valid despite deleted inviter');
+
+      // Step 8: Test that invitation can still be accepted
+      const inviteeContext = await browser.newContext();
+      const inviteePage = await inviteeContext.newPage();
+
+      try {
+        // Navigate to invitation page as new user
+        await inviteePage.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
+        
+        // Verify same graceful degradation for new user session
+        await expect(
+          inviteePage.getByText('Someone has invited you to join their organization as a member')
+        ).toBeVisible({ timeout: 5000 });
+        
+        // Click sign in to verify acceptance flow works
+        await inviteePage.getByTestId('sign-in-button').click();
+        
+        // Should redirect to login (invitation flow continues to work)
+        await expect(inviteePage).toHaveURL(/.*\/login/);
+        
+        logProgress('✅ Invitation acceptance flow still works despite deleted inviter');
+      } finally {
+        await inviteeContext.close();
+      }
+
+      logProgress('🎉 Deactivated inviter test completed successfully!');
+    } finally {
+      await context.close();
+    }
+  });
+
   /**
    * =================================================================================
    * EXISTING USER ACCEPTANCE TESTS
