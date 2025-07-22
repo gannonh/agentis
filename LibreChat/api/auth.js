@@ -265,17 +265,6 @@ mongoose.connection.once('open', () => {
                   // Start at 'profile' step - they skip organization creation and go to profile setup
                   user.onboardingStep = 'profile';
 
-                  // Accept the invitation
-                  await invitationCollection.updateOne(
-                    { _id: pendingInvitation._id },
-                    {
-                      $set: {
-                        status: 'accepted',
-                        acceptedAt: new Date(),
-                      },
-                    },
-                  );
-
                   // Store pending invitation data using email as key
                   // This avoids relying on user object mutations
                   pendingInvitations.set(user.email, {
@@ -285,7 +274,7 @@ mongoose.connection.once('open', () => {
                   });
 
                   logger.info(
-                    `📝 Will create membership after user creation completes for ${user.email}`,
+                    `📝 Will create membership and accept invitation after user creation completes for ${user.email}`,
                   );
                   logger.info(
                     `📝 Stored pending data for ${user.email}: invitationId=${pendingInvitation._id}, orgId=${pendingInvitation.organizationId}, role=${pendingInvitation.role}`,
@@ -334,8 +323,20 @@ mongoose.connection.once('open', () => {
 
                   await memberCollection.insertOne(membershipData);
 
+                  // Now that user and membership are created, accept the invitation
+                  const invitationCollection = db.collection('invitation');
+                  await invitationCollection.updateOne(
+                    { _id: pendingData.invitationId },
+                    {
+                      $set: {
+                        status: 'accepted',
+                        acceptedAt: new Date(),
+                      },
+                    },
+                  );
+
                   logger.info(
-                    `✅ Auto-accepted invitation and created membership for ${user.email} with userId: ${user.id}`,
+                    `✅ Successfully created user, membership, and accepted invitation for ${user.email} with userId: ${user.id}`,
                   );
 
                   // Clean up the pending data
