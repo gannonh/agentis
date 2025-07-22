@@ -12,6 +12,23 @@ interface MagicLinkLoginFormData {
   email: string;
 }
 
+/**
+ * Validates if a URL is safe for redirects to prevent open redirect attacks
+ * @param url - The URL to validate
+ * @returns boolean - true if the URL is safe for redirects
+ */
+const isValidRedirectUrl = (url: string | null): boolean => {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+
+  const trimmedUrl = url.trim();
+
+  // Allow only relative URLs that start with '/' but not '//'
+  // This prevents redirecting to external domains
+  return trimmedUrl.startsWith('/') && !trimmedUrl.startsWith('//');
+};
+
 export const MagicLinkLogin: React.FC = () => {
   const navigate = useNavigate();
   const localize = useLocalize();
@@ -68,6 +85,7 @@ export const MagicLinkLogin: React.FC = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     const error = searchParams.get('error');
+    const returnUrl = searchParams.get('returnUrl');
 
     if (error) {
       setError(localize('com_auth_error_magic_link'));
@@ -124,6 +142,15 @@ export const MagicLinkLogin: React.FC = () => {
                   usingFreshData: true,
                 });
 
+                // Check if there's a returnUrl to redirect to
+                if (returnUrl && isValidRedirectUrl(decodeURIComponent(returnUrl))) {
+                  console.log('🔗 Redirecting to returnUrl:', returnUrl);
+                  navigate(decodeURIComponent(returnUrl));
+                  return;
+                } else if (returnUrl) {
+                  console.warn('🔗 Invalid returnUrl detected, ignoring redirect:', returnUrl);
+                }
+
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
                   console.log(
@@ -150,6 +177,18 @@ export const MagicLinkLogin: React.FC = () => {
                   hasOnboardingStep: 'onboardingStep' in user,
                   onboardingStepValue: user.onboardingStep,
                 });
+
+                // Check if there's a returnUrl to redirect to
+                if (returnUrl && isValidRedirectUrl(decodeURIComponent(returnUrl))) {
+                  console.log('🔗 Redirecting to returnUrl (fallback):', returnUrl);
+                  navigate(decodeURIComponent(returnUrl));
+                  return;
+                } else if (returnUrl) {
+                  console.warn(
+                    '🔗 Invalid returnUrl detected, ignoring redirect (fallback):',
+                    returnUrl,
+                  );
+                }
 
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
@@ -409,9 +448,16 @@ export const MagicLinkLogin: React.FC = () => {
       console.log('🔗 Sending magic link request for:', data.email);
       setEmail(data.email);
 
+      // Include returnUrl in callback if it exists and is valid
+      const returnUrl = searchParams.get('returnUrl');
+      const validatedReturnUrl = returnUrl && isValidRedirectUrl(returnUrl) ? returnUrl : null;
+      const callbackURL = validatedReturnUrl
+        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(validatedReturnUrl)}`
+        : `${window.location.origin}/login`;
+
       const result = await authClient.signIn.magicLink({
         email: data.email,
-        callbackURL: `${window.location.origin}/login`,
+        callbackURL,
       });
 
       console.log('🔗 Magic link response received:', result);
@@ -446,9 +492,16 @@ export const MagicLinkLogin: React.FC = () => {
     }
 
     try {
+      // Include returnUrl in callback if it exists and is valid
+      const returnUrl = searchParams.get('returnUrl');
+      const validatedReturnUrl = returnUrl && isValidRedirectUrl(returnUrl) ? returnUrl : null;
+      const callbackURL = validatedReturnUrl
+        ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(validatedReturnUrl)}`
+        : `${window.location.origin}/login`;
+
       const result = await authClient.signIn.magicLink({
         email: email,
-        callbackURL: `${window.location.origin}/login`,
+        callbackURL,
       });
 
       if (result.error) {

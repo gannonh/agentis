@@ -5,6 +5,7 @@ import {
   VerifyEmail,
   ApiErrorWatcher,
   TwoFactorScreen,
+  AcceptInvitation,
 } from '~/components/Auth';
 import { ProgressiveRegistration } from '~/components/Auth/ProgressiveRegistration';
 import { OAuthOnboardingRedirect } from '~/components/Auth/OAuthOnboardingRedirect';
@@ -74,6 +75,10 @@ export const router = createBrowserRouter([
     element: <AuthLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
+      {
+        path: 'auth/accept-invitation/:invitationId',
+        element: <AcceptInvitation />,
+      },
       {
         path: '/',
         element: <LoginLayout />,

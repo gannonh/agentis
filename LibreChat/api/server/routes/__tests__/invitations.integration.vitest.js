@@ -14,8 +14,6 @@ vi.mock('#server/services/InvitationService.js', () => ({
     listInvitations: vi.fn(),
     getInvitation: vi.fn(),
     cancelInvitation: vi.fn(),
-    acceptInvitation: vi.fn(),
-    rejectInvitation: vi.fn(),
     resendInvitation: vi.fn(),
     hasInvitationPermission: vi.fn(),
   },
@@ -123,26 +121,30 @@ describe('Invitation Routes Integration Tests', () => {
     it('should reject client-provided timestamp fields', async () => {
       const response = await request(app)
         .post(`/api/${testOrganizationId}/invitations`)
-        .send({ 
-          email: testEmail, 
+        .send({
+          email: testEmail,
           invitedAt: '2025-01-01T00:00:00.000Z',
-          expiresAt: '2025-01-08T00:00:00.000Z'
+          expiresAt: '2025-01-08T00:00:00.000Z',
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Timestamp fields are generated server-side and cannot be provided by client');
+      expect(response.body.error).toBe(
+        'Timestamp fields are generated server-side and cannot be provided by client',
+      );
     });
 
     it('should reject client-provided createdAt field', async () => {
       const response = await request(app)
         .post(`/api/${testOrganizationId}/invitations`)
-        .send({ 
-          email: testEmail, 
-          createdAt: '2025-01-01T00:00:00.000Z'
+        .send({
+          email: testEmail,
+          createdAt: '2025-01-01T00:00:00.000Z',
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Timestamp fields are generated server-side and cannot be provided by client');
+      expect(response.body.error).toBe(
+        'Timestamp fields are generated server-side and cannot be provided by client',
+      );
     });
 
     it('should deny access without permission', async () => {
@@ -234,76 +236,6 @@ describe('Invitation Routes Integration Tests', () => {
       expect(response.body.error).toBe(
         'You do not have permission to view invitations for this organization',
       );
-    });
-  });
-
-  describe('POST /api/invitations/:invitationId/accept', () => {
-    it('should accept invitation successfully', async () => {
-      const acceptResult = {
-        membership: {
-          userId: testUserId,
-          organizationId: testOrganizationId,
-          role: 'member',
-        },
-      };
-      invitationService.acceptInvitation.mockResolvedValue(acceptResult);
-
-      const response = await request(app)
-        .post(`/api/invitations/${testInvitationId}/accept`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toEqual(acceptResult);
-      expect(response.body.message).toBe('Invitation accepted successfully');
-    });
-
-    it('should handle invitation not found', async () => {
-      invitationService.acceptInvitation.mockRejectedValue(
-        new Error('Invitation not found or has expired'),
-      );
-
-      const response = await request(app)
-        .post(`/api/invitations/${testInvitationId}/accept`)
-        .expect(404);
-
-      expect(response.body.error).toBe('Invitation not found or has expired');
-    });
-
-    it('should handle already accepted invitation', async () => {
-      invitationService.acceptInvitation.mockRejectedValue(
-        new Error('Invitation has already accepted'),
-      );
-
-      const response = await request(app)
-        .post(`/api/invitations/${testInvitationId}/accept`)
-        .expect(409);
-
-      expect(response.body.error).toBe('Invitation has already been accepted');
-    });
-  });
-
-  describe('POST /api/invitations/:invitationId/reject', () => {
-    it('should reject invitation successfully', async () => {
-      invitationService.rejectInvitation.mockResolvedValue();
-
-      const response = await request(app)
-        .post(`/api/invitations/${testInvitationId}/reject`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Invitation rejected successfully');
-    });
-
-    it('should handle invitation not found', async () => {
-      invitationService.rejectInvitation.mockRejectedValue(
-        new Error('Invitation not found or has expired'),
-      );
-
-      const response = await request(app)
-        .post(`/api/invitations/${testInvitationId}/reject`)
-        .expect(404);
-
-      expect(response.body.error).toBe('Invitation not found or has expired');
     });
   });
 
@@ -426,25 +358,6 @@ describe('Invitation Routes Integration Tests', () => {
         'admin',
         testUserId,
       );
-    });
-
-    it('should pass correct parameters to acceptInvitation', async () => {
-      const acceptResult = {
-        membership: { userId: testUserId, organizationId: testOrganizationId, role: 'member' },
-      };
-      invitationService.acceptInvitation.mockResolvedValue(acceptResult);
-
-      await request(app).post(`/api/invitations/${testInvitationId}/accept`).expect(200);
-
-      expect(invitationService.acceptInvitation).toHaveBeenCalledWith(testInvitationId, testUserId);
-    });
-
-    it('should pass correct parameters to rejectInvitation', async () => {
-      invitationService.rejectInvitation.mockResolvedValue();
-
-      await request(app).post(`/api/invitations/${testInvitationId}/reject`).expect(200);
-
-      expect(invitationService.rejectInvitation).toHaveBeenCalledWith(testInvitationId, testUserId);
     });
   });
 });

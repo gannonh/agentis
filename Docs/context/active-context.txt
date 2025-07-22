@@ -1,0 +1,20 @@
+  The flow should be:
+
+  1. User B gets invitation email ✅
+  2. User B clicks "Sign In to Accept" ✅
+  3. User B goes to login screen and authenticates via magic link ✅
+  4. User B should be automatically added to the organization and go through the NORMAL onboarding flow (invite others →
+  profile setup → etc.) ✅
+
+  The user should go through the standard onboarding steps because they're a new user, but they should be onboarding within 
+  the organization they were invited to, not creating their own organization.
+
+  The issue is that the magic link authentication isn't properly connecting the invitation context, so instead of onboarding
+   within the invited organization, the system is treating them as needing to create a new organization or request to join
+  one.
+
+  The backend needs to:
+  1. Detect the pending invitation during magic link auth
+  2. Auto-accept the invitation
+  3. Set the user's organization context to the invited organization
+  4. Start normal onboarding flow within that organization

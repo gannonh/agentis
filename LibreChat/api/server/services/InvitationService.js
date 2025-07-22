@@ -47,7 +47,7 @@ class InvitationService {
         expiresAt,
       });
 
-      const invitation = await this.auth.api.createInvitation({
+      const invitation = await this.auth.api.organization.inviteMember({
         body: {
           organizationId,
           email,
@@ -98,8 +98,8 @@ class InvitationService {
         requesterId: userId,
       });
 
-      const invitations = await this.auth.api.listInvitations({
-        body: {
+      const invitations = await this.auth.api.organization.listInvitations({
+        query: {
           organizationId,
         },
         headers: {
@@ -138,7 +138,7 @@ class InvitationService {
         cancelerId: userId,
       });
 
-      const result = await this.auth.api.cancelInvitation({
+      const result = await this.auth.api.organization.cancelInvitation({
         body: {
           invitationId,
         },
@@ -163,87 +163,11 @@ class InvitationService {
     }
   }
 
-  /**
-   * Accept an invitation to join an organization
-   * @param {string} invitationId - The ID of the invitation to accept
-   * @param {string} userId - ID of the user accepting the invitation
-   * @returns {Promise<Object>} The accepted invitation result
-   */
-  async acceptInvitation(invitationId, userId) {
-    try {
-      this.initialize();
-
-      logger.info('Accepting organization invitation', {
-        invitationId,
-        userId,
-      });
-
-      const result = await this.auth.api.acceptInvitation({
-        body: {
-          invitationId,
-        },
-        headers: {
-          'user-id': userId,
-        },
-      });
-
-      logger.info('Organization invitation accepted successfully', {
-        invitationId,
-        userId,
-        organizationId: result.organizationId,
-        role: result.role,
-      });
-
-      return result;
-    } catch (error) {
-      logger.error('Error accepting organization invitation', {
-        error: error.message,
-        invitationId,
-        userId,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Reject an invitation to join an organization
-   * @param {string} invitationId - The ID of the invitation to reject
-   * @param {string} userId - ID of the user rejecting the invitation
-   * @returns {Promise<Object>} The rejected invitation result
-   */
-  async rejectInvitation(invitationId, userId) {
-    try {
-      this.initialize();
-
-      logger.info('Rejecting organization invitation', {
-        invitationId,
-        userId,
-      });
-
-      const result = await this.auth.api.rejectInvitation({
-        body: {
-          invitationId,
-        },
-        headers: {
-          'user-id': userId,
-        },
-      });
-
-      logger.info('Organization invitation rejected successfully', {
-        invitationId,
-        userId,
-      });
-
-      return result;
-    } catch (error) {
-      logger.error('Error rejecting organization invitation', {
-        error: error.message,
-        invitationId,
-        userId,
-      });
-      throw error;
-    }
-  }
+  // NOTE: acceptInvitation and rejectInvitation methods removed
+  // These operations are handled client-side by Better Auth using:
+  // - authClient.organization.acceptInvitation({ invitationId })
+  // - authClient.organization.rejectInvitation({ invitationId })
+  // This follows Better Auth best practices for invitation handling
 
   /**
    * Get details of a specific invitation
@@ -260,9 +184,9 @@ class InvitationService {
         requesterId: userId,
       });
 
-      const invitation = await this.auth.api.getInvitation({
-        body: {
-          invitationId,
+      const invitation = await this.auth.api.organization.getInvitation({
+        query: {
+          id: invitationId,
         },
         headers: {
           'user-id': userId,
@@ -309,7 +233,7 @@ class InvitationService {
       }
 
       // Better Auth automatically resends email when updating invitation
-      const result = await this.auth.api.updateInvitation({
+      const result = await this.auth.api.organization.updateInvitation({
         body: {
           invitationId,
           // Trigger email resend by updating the invitation
@@ -334,6 +258,58 @@ class InvitationService {
         resenderId: userId,
       });
       throw error;
+    }
+  }
+
+  /**
+   * Get public invitation details without authentication (for invitation acceptance page)
+   * @param {string} invitationId - The ID of the invitation
+   * @returns {Promise<Object>} Public invitation details (organization name, inviter, role, status)
+   * @throws {Error} With statusCode property for HTTP response codes
+   */
+  async getPublicInvitation(invitationId) {
+    try {
+      this.initialize();
+
+      // Validate invitation ID format
+      if (!invitationId || typeof invitationId !== 'string' || invitationId.trim() === '') {
+        const error = new Error('Invalid invitation ID format');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Use repository for database operations
+      const InvitationRepository = (await import('#server/repositories/InvitationRepository.js'))
+        .default;
+      const invitationRepo = new InvitationRepository();
+
+      logger.debug('Getting public invitation details via repository', {
+        invitationId,
+      });
+
+      const publicDetails = await invitationRepo.getPublicInvitationDetails(invitationId);
+      return publicDetails;
+    } catch (error) {
+      // Re-throw repository errors with proper status codes
+      if (error.statusCode) {
+        logger.error('Error getting public invitation details', {
+          error: error.message,
+          statusCode: error.statusCode,
+          invitationId,
+        });
+        throw error;
+      }
+
+      // Handle unexpected errors
+      logger.error('Unexpected error getting public invitation details', {
+        error: error.message,
+        stack: error.stack,
+        invitationId,
+      });
+
+      const wrappedError = new Error('Internal server error');
+      wrappedError.statusCode = 500;
+      throw wrappedError;
     }
   }
 

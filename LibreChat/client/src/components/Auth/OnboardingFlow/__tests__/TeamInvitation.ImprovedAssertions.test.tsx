@@ -113,10 +113,10 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       // Verify the email was NOT added to the list (behavior validation)
       expect(screen.queryByText('Team invitations')).not.toBeInTheDocument();
       expect(screen.queryByText('invalid-email-format')).not.toBeInTheDocument();
-      
+
       // The input should still contain the invalid email (not cleared)
       expect(emailInput).toHaveValue('invalid-email-format');
-      
+
       // Error message should be shown
       expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument();
     });
@@ -135,10 +135,10 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       // Verify the email WAS actually added to the list (behavior validation)
       expect(screen.getByText('Team invitations (1)')).toBeInTheDocument();
       expect(screen.getByText('valid@example.com')).toBeInTheDocument();
-      
+
       // The input should be cleared after successful addition
       expect(emailInput).toHaveValue('');
-      
+
       // No error message should be shown
       expect(screen.queryByText('Please enter a valid email address')).not.toBeInTheDocument();
     });
@@ -153,7 +153,7 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       // Add first email
       await user.type(emailInput, 'test@example.com');
       await user.click(addButton!);
-      
+
       // Verify first email was added
       expect(screen.getByText('Team invitations (1)')).toBeInTheDocument();
 
@@ -164,11 +164,11 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       // Verify the count didn't increase (behavior validation)
       expect(screen.getByText('Team invitations (1)')).toBeInTheDocument();
       expect(screen.queryByText('Team invitations (2)')).not.toBeInTheDocument();
-      
+
       // Only one instance should exist in the DOM
       const emailElements = screen.getAllByText('test@example.com');
       expect(emailElements).toHaveLength(1);
-      
+
       // Duplicate error should be shown
       expect(screen.getByText('This email has already been added')).toBeInTheDocument();
     });
@@ -197,10 +197,10 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
 
     it('should actually disable form elements during invitation sending', async () => {
       const user = userEvent.setup();
-      
+
       // Mock slow invitation sending
       vi.mocked(authClient.organization.inviteMember).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({}), 500))
+        () => new Promise((resolve) => setTimeout(() => resolve({}), 500)),
       );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
@@ -223,14 +223,17 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       // Elements should actually be disabled during sending (behavior validation)
       expect(emailInput).toBeDisabled();
       expect(screen.getByRole('button', { name: /skip for now/i })).toBeDisabled();
-      
+
       // Should show sending state
       expect(screen.getByText('Sending...')).toBeInTheDocument();
 
       // Wait for completion
-      await waitFor(() => {
-        expect(mockOnInvitationsComplete).toHaveBeenCalled();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockOnInvitationsComplete).toHaveBeenCalled();
+        },
+        { timeout: 1000 },
+      );
     });
 
     it('should actually remove emails when remove button is clicked', async () => {
@@ -252,13 +255,15 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       expect(screen.getByText('remove2@example.com')).toBeInTheDocument();
 
       // Find and click the first remove button
-      const removeButtons = screen.getAllByRole('button').filter(
-        (btn) =>
-          btn.getAttribute('data-variant') === 'ghost' &&
-          btn.getAttribute('data-size') === 'sm' &&
-          !btn.textContent?.trim()
-      );
-      
+      const removeButtons = screen
+        .getAllByRole('button')
+        .filter(
+          (btn) =>
+            btn.getAttribute('data-variant') === 'ghost' &&
+            btn.getAttribute('data-size') === 'sm' &&
+            !btn.textContent?.trim(),
+        );
+
       expect(removeButtons.length).toBe(2);
       await user.click(removeButtons[0]);
 
@@ -267,7 +272,7 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
         expect(screen.getByText('Team invitations (1)')).toBeInTheDocument();
         expect(screen.queryByText('Team invitations (2)')).not.toBeInTheDocument();
       });
-      
+
       // One email should still remain
       expect(screen.getByText('remove2@example.com')).toBeInTheDocument();
     });
@@ -314,7 +319,7 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
 
     it('should actually handle and display specific error types from Better Auth', async () => {
       const user = userEvent.setup();
-      
+
       const authError = new Error('Organization not found');
       authError.code = 'ORGANIZATION_NOT_FOUND';
       vi.mocked(authClient.organization.inviteMember).mockRejectedValue(authError);
@@ -388,7 +393,7 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       expect(screen.getByText('Team invitations (2)')).toBeInTheDocument();
       expect(screen.getByText('valid@example.com')).toBeInTheDocument();
       expect(screen.getByText('another@example.com')).toBeInTheDocument();
-      
+
       // Invalid emails should not be in the list
       expect(screen.queryByText('invalid-email')).not.toBeInTheDocument();
       expect(screen.queryByText('also-invalid')).not.toBeInTheDocument();
@@ -398,7 +403,7 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
   describe('Invitation Status Tracking Behavior', () => {
     it('should actually track and display different invitation statuses', async () => {
       const user = userEvent.setup();
-      
+
       // Mock mixed success/failure responses
       vi.mocked(authClient.organization.inviteMember)
         .mockResolvedValueOnce({ id: 'inv-1', status: 'sent' })
@@ -436,16 +441,22 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
 
     it('should actually show real-time sending progress', async () => {
       const user = userEvent.setup();
-      
+
       let resolveFirstInvitation: (value: any) => void;
       let resolveSecondInvitation: (value: any) => void;
-      
+
       vi.mocked(authClient.organization.inviteMember)
         .mockImplementationOnce(
-          () => new Promise((resolve) => { resolveFirstInvitation = resolve; })
+          () =>
+            new Promise((resolve) => {
+              resolveFirstInvitation = resolve;
+            }),
         )
         .mockImplementationOnce(
-          () => new Promise((resolve) => { resolveSecondInvitation = resolve; })
+          () =>
+            new Promise((resolve) => {
+              resolveSecondInvitation = resolve;
+            }),
         );
 
       render(<TeamInvitation {...defaultProps} />, { wrapper });
@@ -468,7 +479,7 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
 
       // Complete first invitation
       resolveFirstInvitation!({ id: 'inv-1' });
-      
+
       // Should still show sending status (behavior validation)
       await waitFor(() => {
         expect(screen.getByText('Sending...')).toBeInTheDocument();
@@ -497,13 +508,13 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       // Generate an error by submitting empty email
       await user.click(emailInput);
       await user.keyboard('{Enter}');
-      
+
       // Error should be displayed
       expect(screen.getByText('Please enter an email address')).toBeInTheDocument();
 
       // Start typing - error should be cleared (behavior validation)
       await user.type(emailInput, 'a');
-      
+
       // Error should be gone immediately after typing
       expect(screen.queryByText('Please enter an email address')).not.toBeInTheDocument();
     });
@@ -521,7 +532,7 @@ describe('TeamInvitation - Improved Behavior Assertions', () => {
       // Email should actually be added via keyboard (behavior validation)
       expect(screen.getByText('Team invitations (1)')).toBeInTheDocument();
       expect(screen.getByText('keyboard@example.com')).toBeInTheDocument();
-      
+
       // Input should be cleared
       expect(emailInput).toHaveValue('');
     });

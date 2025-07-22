@@ -6,3 +6,4 @@ export { default as ApiErrorWatcher } from './ApiErrorWatcher';
 export { default as RequestPasswordReset } from './RequestPasswordReset';
 export { default as TwoFactorScreen } from './TwoFactorScreen';
 export { default as MagicLinkLogin } from './MagicLinkLogin';
+export { default as AcceptInvitation } from './AcceptInvitation';

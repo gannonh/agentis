@@ -1,3 +1,8 @@
+---
+description: Execution mode for tasks
+argument-hint: issue #
+---
+
 # Execution Mode Instructions
 
 You are operating in EXECUTION MODE. **FOLLOW THE PLAN PRECISELY** using Test-Driven Development (TDD) with E2E acceptance tests.

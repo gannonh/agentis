@@ -114,6 +114,33 @@ describe('MagicLinkLogin', () => {
     });
   });
 
+  it('validates returnUrl in callback URL during magic link send', async () => {
+    // Mock URL with malicious returnUrl
+    mockSearchParams = new URLSearchParams('?returnUrl=https%3A%2F%2Fevil.com');
+    mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+    const user = userEvent.setup();
+    renderComponent();
+
+    const emailInput = screen.getByLabelText('Email address');
+    const submitButton = screen.getByTestId('login-button');
+
+    await user.type(emailInput, 'test@example.com');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(authClient.signIn.magicLink).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        // Should not include the malicious returnUrl
+        callbackURL: expect.stringMatching(/^http:\/\/localhost:\d+\/login$/),
+      });
+      expect(authClient.signIn.magicLink).not.toHaveBeenCalledWith({
+        email: 'test@example.com',
+        callbackURL: expect.stringContaining('evil.com'),
+      });
+    });
+  });
+
   it('shows confirmation message after sending magic link', async () => {
     const user = userEvent.setup();
     renderComponent();
@@ -174,6 +201,45 @@ describe('MagicLinkLogin', () => {
     });
   });
 
+  it('validates returnUrl in callback URL during resend', async () => {
+    // Mock URL with malicious returnUrl
+    mockSearchParams = new URLSearchParams('?returnUrl=javascript%3Aalert(1)');
+    mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+    const user = userEvent.setup();
+    renderComponent();
+
+    // First send the magic link
+    const emailInput = screen.getByLabelText('Email address');
+    const submitButton = screen.getByTestId('login-button');
+
+    await user.type(emailInput, 'test@example.com');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Resend link')).toBeInTheDocument();
+    });
+
+    // Clear previous calls
+    vi.mocked(authClient.signIn.magicLink).mockClear();
+
+    // Resend
+    const resendButton = screen.getByText('Resend link');
+    await user.click(resendButton);
+
+    await waitFor(() => {
+      expect(authClient.signIn.magicLink).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        // Should not include the malicious returnUrl
+        callbackURL: expect.stringMatching(/^http:\/\/localhost:\d+\/login$/),
+      });
+      expect(authClient.signIn.magicLink).not.toHaveBeenCalledWith({
+        email: 'test@example.com',
+        callbackURL: expect.stringContaining('javascript'),
+      });
+    });
+  });
+
   it('redirects to main app if user is already authenticated', async () => {
     // Mock fetch for fresh user data
     global.fetch = vi.fn().mockResolvedValue({
@@ -202,6 +268,126 @@ describe('MagicLinkLogin', () => {
   });
 
   // TDD: Test for memory leaks and race conditions
+  describe('Open Redirect Protection Tests', () => {
+    beforeEach(() => {
+      // Mock fetch for fresh user data
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            id: '123',
+            email: 'user@example.com',
+            onboardingStep: 'complete',
+          }),
+      });
+    });
+
+    it('should redirect to valid returnUrl after authentication', async () => {
+      // Mock URL with valid returnUrl
+      mockSearchParams = new URLSearchParams('?returnUrl=%2Fc%2Fnew');
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: { user: { id: '123', email: 'user@example.com' } },
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+      });
+    });
+
+    it('should not redirect to external URLs (open redirect protection)', async () => {
+      // Mock URL with malicious external returnUrl
+      mockSearchParams = new URLSearchParams('?returnUrl=https%3A%2F%2Fevil.com');
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: { user: { id: '123', email: 'user@example.com' } },
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderComponent();
+
+      await waitFor(() => {
+        // Should redirect to default location, not external URL
+        expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+        expect(mockNavigate).not.toHaveBeenCalledWith('https://evil.com');
+      });
+    });
+
+    it('should not redirect to protocol-relative URLs', async () => {
+      // Mock URL with protocol-relative URL
+      mockSearchParams = new URLSearchParams('?returnUrl=%2F%2Fevil.com');
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: { user: { id: '123', email: 'user@example.com' } },
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderComponent();
+
+      await waitFor(() => {
+        // Should redirect to default location, not protocol-relative URL
+        expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+        expect(mockNavigate).not.toHaveBeenCalledWith('//evil.com');
+      });
+    });
+
+    it('should handle returnUrl validation in fallback scenario', async () => {
+      // Mock URL with malicious returnUrl
+      mockSearchParams = new URLSearchParams('?returnUrl=javascript%3Aalert(1)');
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      // Mock fetch failure to trigger fallback
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: { user: { id: '123', email: 'user@example.com', onboardingStep: 'complete' } },
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderComponent();
+
+      await waitFor(() => {
+        // Should redirect to default location in fallback, not execute javascript
+        expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+        expect(mockNavigate).not.toHaveBeenCalledWith('javascript:alert(1)');
+      });
+    });
+
+    it('should handle empty and null returnUrl gracefully', async () => {
+      // Test with empty returnUrl
+      mockSearchParams = new URLSearchParams('?returnUrl=');
+      mockUseSearchParams.mockReturnValue([mockSearchParams]);
+
+      vi.mocked(authClient.useSession).mockReturnValue({
+        data: { user: { id: '123', email: 'user@example.com' } },
+        isPending: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+
+      renderComponent();
+
+      await waitFor(() => {
+        // Should redirect to default location when returnUrl is empty
+        expect(mockNavigate).toHaveBeenCalledWith('/c/new');
+      });
+    });
+  });
+
   describe('Memory Leak and Race Condition Tests', () => {
     beforeEach(() => {
       vi.useFakeTimers();
