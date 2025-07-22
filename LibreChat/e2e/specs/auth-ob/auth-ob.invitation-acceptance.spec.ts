@@ -60,20 +60,51 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       const { db } = await getTestDatabase();
 
       // Clean up invited users (they have emails matching our test pattern)
-      const testEmailPattern = /test-invitee-\d+-[a-z0-9]+@example\.com/;
+      // Extended pattern to match all test invitee emails used in this test file
+      const testEmailPattern =
+        /test-(invitee|link-extract|token-validation|network-error|deleted-org|deactivated-inviter|rapid-accept|magic-fail|api-user)-\d+-[a-z0-9]+@example\.com/;
+
+      // Get user IDs for test users to clean up their sessions and memberships
+      const testUsers = await db
+        .collection('user')
+        .find({
+          email: { $regex: testEmailPattern },
+        })
+        .toArray();
+      const testUserIds = testUsers.map((u) => u._id);
+
+      // Clean up test users
       await db.collection('user').deleteMany({
         email: { $regex: testEmailPattern },
       });
       await db.collection('account').deleteMany({
         email: { $regex: testEmailPattern },
       });
-      await db.collection('session').deleteMany({}); // Clean all test sessions
+
+      // Clean up sessions only for test users
+      if (testUserIds.length > 0) {
+        await db.collection('session').deleteMany({
+          userId: { $in: testUserIds },
+        });
+      }
+
+      // Clean up invitations for test emails
       await db.collection('invitation').deleteMany({
         email: { $regex: testEmailPattern },
       });
-      await db.collection('member').deleteMany({
-        // Clean memberships that might be orphaned
-      });
+
+      // Get test organization IDs from the inviter
+      const testOrgIds = testAuth?.organization?.id ? [testAuth.organization.id] : [];
+
+      // Clean up members only for test users and test organizations
+      if (testUserIds.length > 0 || testOrgIds.length > 0) {
+        await db.collection('member').deleteMany({
+          $or: [
+            ...(testUserIds.length > 0 ? [{ userId: { $in: testUserIds } }] : []),
+            ...(testOrgIds.length > 0 ? [{ organizationId: { $in: testOrgIds } }] : []),
+          ],
+        });
+      }
 
       logProgress('✅ Cleaned up invited test users');
     } catch (error) {
@@ -158,32 +189,32 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       // Step 5: Validate link format and components
       const url = new URL(inviteLink);
-      
+
       // Validate URL structure
       expect(url.protocol).toBe('http:');
       expect(url.hostname).toBe('localhost');
       expect(url.port).toBe('3080');
       expect(url.pathname).toMatch(/^\/auth\/accept-invitation\/[a-f0-9]{24}$/);
-      
+
       // Extract invitation ID from URL path
       const invitationId = url.pathname.split('/').pop();
       expect(invitationId).toMatch(/^[a-f0-9]{24}$/); // MongoDB ObjectId format
-      
+
       logProgress(`✅ Link format validation passed. Invitation ID: ${invitationId}`);
 
       // Step 6: Verify invitation exists in database
       const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
-      
+
       const invitation = await db.collection('invitation').findOne({
-        _id: new (await import('mongodb')).ObjectId(invitationId)
+        _id: new (await import('mongodb')).ObjectId(invitationId),
       });
-      
+
       expect(invitation).toBeTruthy();
       expect(invitation?.email).toBe(inviteeEmail);
       expect(invitation?.status).toBe('pending');
       expect(invitation?.organizationId?.toString()).toBe(testAuth.organization.id);
-      
+
       logProgress('✅ Database validation: Invitation record found and valid');
 
       // Step 7: Verify email content contains expected information
@@ -193,7 +224,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       // so we know it exists in the email. The raw body is encoded, so we don't need to re-verify the link.
       expect(emailBody).toContain(testAuth.organization.name);
       expect(emailBody).toContain('invited you to join');
-      
+
       logProgress('✅ Email content validation passed');
 
       logProgress('🎉 Invitation link extraction test completed successfully!');
@@ -202,9 +233,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
     }
   });
 
-  test('Should validate invitation token before showing acceptance page', async ({
-    browser,
-  }) => {
+  test('Should validate invitation token before showing acceptance page', async ({ browser }) => {
     logProgress('🚀 Testing invitation token validation...');
 
     const context = await browser.newContext();
@@ -218,18 +247,21 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       logProgress(`📝 Testing token validation for: ${inviteeEmail}`);
 
       // Create invitation via API (simulating what the invitation flow does)
-      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+      const invitationResponse = await fetch(
+        'http://localhost:3080/api/auth/organization/invite-member',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`,
+          },
+          body: JSON.stringify({
+            email: inviteeEmail,
+            role: 'member',
+            organizationId: testAuth.organization.id,
+          }),
         },
-        body: JSON.stringify({
-          email: inviteeEmail,
-          role: 'member',
-          organizationId: testAuth.organization.id
-        })
-      });
+      );
 
       expect(invitationResponse.ok).toBe(true);
       const invitationData = await invitationResponse.json();
@@ -241,9 +273,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
       // Should show invitation acceptance page
-      await expect(
-        page.getByRole('heading', { name: "You've been invited!" }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading', { name: "You've been invited!" })).toBeVisible();
 
       await expect(
         page.getByText(`You've been invited to join ${testAuth.organization.name}`),
@@ -262,7 +292,9 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${invalidInvitationId}`);
 
       // Should show error message
-      await expect(page.getByText('Invitation not found or has expired')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText('Invitation not found or has expired')).toBeVisible({
+        timeout: 10000,
+      });
 
       logProgress('✅ Invalid invitation token shows appropriate error');
 
@@ -271,7 +303,9 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${malformedInvitationId}`);
 
       // Should show error message for invalid format (404 error becomes "Invitation not found or has expired")
-      await expect(page.getByText('Invitation not found or has expired')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText('Invitation not found or has expired')).toBeVisible({
+        timeout: 10000,
+      });
 
       logProgress('✅ Malformed invitation token shows appropriate error');
 
@@ -279,23 +313,25 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       // First, we need to accept the valid invitation to test this case
       const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
-      
+
       // Mark invitation as accepted in database
       await db.collection('invitation').updateOne(
         { _id: new (await import('mongodb')).ObjectId(validInvitationId) },
-        { 
-          $set: { 
+        {
+          $set: {
             status: 'accepted',
-            acceptedAt: new Date()
-          } 
-        }
+            acceptedAt: new Date(),
+          },
+        },
       );
 
       // Now visit the same invitation link
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
       // Should show already accepted error
-      await expect(page.getByText('Invitation has already been accepted')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText('Invitation has already been accepted')).toBeVisible({
+        timeout: 10000,
+      });
 
       logProgress('✅ Already accepted invitation shows appropriate error');
 
@@ -303,13 +339,13 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       // Reset invitation to pending first
       await db.collection('invitation').updateOne(
         { _id: new (await import('mongodb')).ObjectId(validInvitationId) },
-        { 
-          $set: { 
+        {
+          $set: {
             status: 'pending',
-            expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
+            expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           },
-          $unset: { acceptedAt: 1 }
-        }
+          $unset: { acceptedAt: 1 },
+        },
       );
 
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
@@ -331,7 +367,9 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
    * =================================================================================
    */
 
-  test('Network error during invitation validation should show graceful error', async ({ browser }) => {
+  test('Network error during invitation validation should show graceful error', async ({
+    browser,
+  }) => {
     logProgress('🚀 Testing network error handling during invitation validation...');
 
     const context = await browser.newContext();
@@ -344,19 +382,22 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       logProgress(`📝 Testing network error scenario for: ${inviteeEmail}`);
 
-      // Create invitation via API 
-      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+      // Create invitation via API
+      const invitationResponse = await fetch(
+        'http://localhost:3080/api/auth/organization/invite-member',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`,
+          },
+          body: JSON.stringify({
+            email: inviteeEmail,
+            role: 'member',
+            organizationId: testAuth.organization.id,
+          }),
         },
-        body: JSON.stringify({
-          email: inviteeEmail,
-          role: 'member',
-          organizationId: testAuth.organization.id
-        })
-      });
+      );
 
       expect(invitationResponse.ok).toBe(true);
       const invitationData = await invitationResponse.json();
@@ -376,22 +417,20 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       // Step 4: Should show network error handling
       // The component should gracefully handle the failed fetch and show an appropriate error
-      await expect(
-        page.getByText('Load failed')
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText('Load failed')).toBeVisible({ timeout: 10000 });
 
       logProgress('✅ Network error correctly handled with graceful error message');
 
       // Step 5: Verify retry functionality by removing the route mock
       await page.unroute('**/api/invitations/public/**');
-      
+
       // Reload the page to retry
       await page.reload();
 
       // Should now successfully load the invitation
-      await expect(
-        page.getByRole('heading', { name: "You've been invited!" }),
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByRole('heading', { name: "You've been invited!" })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect(
         page.getByText(`You've been invited to join ${testAuth.organization.name}`),
@@ -421,18 +460,21 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       logProgress(`📝 Testing deleted organization scenario for: ${inviteeEmail}`);
 
       // Create invitation via API
-      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+      const invitationResponse = await fetch(
+        'http://localhost:3080/api/auth/organization/invite-member',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`,
+          },
+          body: JSON.stringify({
+            email: inviteeEmail,
+            role: 'member',
+            organizationId: testAuth.organization.id,
+          }),
         },
-        body: JSON.stringify({
-          email: inviteeEmail,
-          role: 'member',
-          organizationId: testAuth.organization.id
-        })
-      });
+      );
 
       expect(invitationResponse.ok).toBe(true);
       const invitationData = await invitationResponse.json();
@@ -443,12 +485,12 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       // Step 2: Delete the organization from database
       const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
-      
+
       // Delete the organization but keep the invitation
       const deleteResult = await db.collection('organization').deleteOne({
-        _id: new (await import('mongodb')).ObjectId(testAuth.organization.id)
+        _id: new (await import('mongodb')).ObjectId(testAuth.organization.id),
       });
-      
+
       expect(deleteResult.deletedCount).toBe(1);
       logProgress('🗑️ Deleted organization from database');
 
@@ -456,30 +498,28 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
       // Step 4: Should show invitation page but with "Unknown Organization"
-      await expect(
-        page.getByRole('heading', { name: "You've been invited!" })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByRole('heading', { name: "You've been invited!" })).toBeVisible({
+        timeout: 10000,
+      });
 
-      await expect(
-        page.getByText('Unknown Organization')
-      ).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText('Unknown Organization')).toBeVisible({ timeout: 5000 });
 
       logProgress('✅ Orphaned invitation shows "Unknown Organization"');
 
       // Step 5: Verify invitation is still in database but organization is gone
       const invitation = await db.collection('invitation').findOne({
-        _id: new (await import('mongodb')).ObjectId(validInvitationId)
+        _id: new (await import('mongodb')).ObjectId(validInvitationId),
       });
-      
+
       expect(invitation).toBeTruthy();
       expect(invitation?.status).toBe('pending');
-      
+
       const organization = await db.collection('organization').findOne({
-        _id: new (await import('mongodb')).ObjectId(testAuth.organization.id)
+        _id: new (await import('mongodb')).ObjectId(testAuth.organization.id),
       });
-      
+
       expect(organization).toBeNull();
-      
+
       logProgress('✅ Database validation: Invitation exists but organization is deleted');
 
       logProgress('🎉 Deleted organization test completed successfully!');
@@ -502,18 +542,21 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       logProgress(`📝 Testing deactivated inviter scenario for: ${inviteeEmail}`);
 
       // Create invitation via API (while inviter still exists)
-      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+      const invitationResponse = await fetch(
+        'http://localhost:3080/api/auth/organization/invite-member',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`,
+          },
+          body: JSON.stringify({
+            email: inviteeEmail,
+            role: 'member',
+            organizationId: testAuth.organization.id,
+          }),
         },
-        body: JSON.stringify({
-          email: inviteeEmail,
-          role: 'member',
-          organizationId: testAuth.organization.id
-        })
-      });
+      );
 
       expect(invitationResponse.ok).toBe(true);
       const invitationData = await invitationResponse.json();
@@ -524,12 +567,12 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       // Step 2: Delete the inviter user from database (simulating account deletion)
       const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
-      
+
       // Find and delete the user account
       const userDeleteResult = await db.collection('user').deleteOne({
-        email: testAuth.user.email
+        email: testAuth.user.email,
       });
-      
+
       if (userDeleteResult.deletedCount > 0) {
         logProgress('🚫 Deleted inviter user account (simulated deactivation)');
       } else {
@@ -540,18 +583,18 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
       // Step 4: Should still show invitation page with graceful degradation
-      await expect(
-        page.getByRole('heading', { name: "You've been invited!" })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByRole('heading', { name: "You've been invited!" })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect(
-        page.getByText(`You've been invited to join ${testAuth.organization.name}`)
+        page.getByText(`You've been invited to join ${testAuth.organization.name}`),
       ).toBeVisible({ timeout: 5000 });
 
       // Step 5: Verify graceful handling of missing inviter
       // Should show "Someone has invited you" when inviter is deleted
       await expect(
-        page.getByText('Someone has invited you to join their organization as a member')
+        page.getByText('Someone has invited you to join their organization as a member'),
       ).toBeVisible({ timeout: 5000 });
 
       logProgress('✅ Invitation shows "Someone" for deleted inviter (graceful degradation)');
@@ -561,13 +604,13 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       // Step 7: Verify database state - invitation should still be valid
       const invitation = await db.collection('invitation').findOne({
-        _id: new (await import('mongodb')).ObjectId(validInvitationId)
+        _id: new (await import('mongodb')).ObjectId(validInvitationId),
       });
-      
+
       expect(invitation).toBeTruthy();
       expect(invitation?.status).toBe('pending');
       expect(invitation?.organizationId?.toString()).toBe(testAuth.organization.id);
-      
+
       logProgress('✅ Database validation: Invitation remains valid despite deleted inviter');
 
       // Step 8: Test that invitation can still be accepted
@@ -577,18 +620,18 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       try {
         // Navigate to invitation page as new user
         await inviteePage.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
-        
+
         // Verify same graceful degradation for new user session
         await expect(
-          inviteePage.getByText('Someone has invited you to join their organization as a member')
+          inviteePage.getByText('Someone has invited you to join their organization as a member'),
         ).toBeVisible({ timeout: 5000 });
-        
+
         // Click sign in to verify acceptance flow works
         await inviteePage.getByTestId('sign-in-button').click();
-        
+
         // Should redirect to login (invitation flow continues to work)
         await expect(inviteePage).toHaveURL(/.*\/login/);
-        
+
         logProgress('✅ Invitation acceptance flow still works despite deleted inviter');
       } finally {
         await inviteeContext.close();
@@ -600,7 +643,9 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
     }
   });
 
-  test('Multiple rapid invitation acceptance attempts should handle race conditions', async ({ browser }) => {
+  test('Unauthorized user cannot accept invitation meant for different email', async ({
+    browser,
+  }) => {
     logProgress('🚀 Testing multiple rapid invitation acceptance attempts...');
 
     try {
@@ -611,18 +656,21 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       logProgress(`📝 Testing rapid acceptance scenario for: ${inviteeEmail}`);
 
       // Create invitation via API
-      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+      const invitationResponse = await fetch(
+        'http://localhost:3080/api/auth/organization/invite-member',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`,
+          },
+          body: JSON.stringify({
+            email: inviteeEmail,
+            role: 'member',
+            organizationId: testAuth.organization.id,
+          }),
         },
-        body: JSON.stringify({
-          email: inviteeEmail,
-          role: 'member',
-          organizationId: testAuth.organization.id
-        })
-      });
+      );
 
       expect(invitationResponse.ok).toBe(true);
       const invitationData = await invitationResponse.json();
@@ -675,23 +723,26 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       // Launch multiple acceptance attempts simultaneously
       for (let i = 0; i < numberOfAttempts; i++) {
-        const acceptPromise = fetch('http://localhost:3080/api/auth/organization/accept-invitation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Cookie: `better-auth.session_token=${testUserSessionToken}`
+        const acceptPromise = fetch(
+          'http://localhost:3080/api/auth/organization/accept-invitation',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Cookie: `better-auth.session_token=${testUserSessionToken}`,
+            },
+            body: JSON.stringify({
+              invitationId: validInvitationId,
+            }),
           },
-          body: JSON.stringify({
-            invitationId: validInvitationId,
-          })
-        });
-        
+        );
+
         acceptancePromises.push(acceptPromise);
       }
 
       // Wait for all attempts to complete
       const acceptanceResults = await Promise.allSettled(acceptancePromises);
-      
+
       logProgress(`✅ Completed ${numberOfAttempts} rapid acceptance attempts`);
 
       // Step 5: Analyze results - all should fail since wrong user is trying to accept
@@ -701,20 +752,31 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       for (const [index, result] of acceptanceResults.entries()) {
         if (result.status === 'fulfilled') {
           const response = result.value;
-          
+
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: 'unknown' }));
-            
-            if (response.status === 403 || response.status === 400 || errorData.message?.includes('not authorized') || errorData.message?.includes('not found')) {
+
+            if (
+              response.status === 403 ||
+              response.status === 400 ||
+              errorData.message?.includes('not authorized') ||
+              errorData.message?.includes('not found')
+            ) {
               unauthorizedCount++;
-              logProgress(`⚠️ Attempt ${index + 1}: Properly rejected unauthorized access (status: ${response.status})`);
+              logProgress(
+                `⚠️ Attempt ${index + 1}: Properly rejected unauthorized access (status: ${response.status})`,
+              );
             } else {
               otherErrorCount++;
-              logProgress(`❌ Attempt ${index + 1}: Unexpected error (status: ${response.status}, error: ${errorData.message})`);
+              logProgress(
+                `❌ Attempt ${index + 1}: Unexpected error (status: ${response.status}, error: ${errorData.message})`,
+              );
             }
           } else {
             otherErrorCount++;
-            logProgress(`❌ Attempt ${index + 1}: Unexpectedly succeeded when it should have failed`);
+            logProgress(
+              `❌ Attempt ${index + 1}: Unexpectedly succeeded when it should have failed`,
+            );
           }
         } else {
           otherErrorCount++;
@@ -726,14 +788,16 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       expect(unauthorizedCount).toBe(numberOfAttempts); // All attempts should be properly rejected
       expect(otherErrorCount).toBe(0); // No unexpected errors
 
-      logProgress(`✅ Security test results: ${unauthorizedCount} properly rejected, ${otherErrorCount} unexpected errors`);
+      logProgress(
+        `✅ Security test results: ${unauthorizedCount} properly rejected, ${otherErrorCount} unexpected errors`,
+      );
 
       // Step 7: Verify database state - invitation should still be pending
       const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
 
       const finalInvitation = await db.collection('invitation').findOne({
-        _id: new (await import('mongodb')).ObjectId(validInvitationId)
+        _id: new (await import('mongodb')).ObjectId(validInvitationId),
       });
 
       expect(finalInvitation).toBeTruthy();
@@ -755,12 +819,12 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
         await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
         // Should show invitation page correctly (invitation is still valid)
-        await expect(
-          page.getByRole('heading', { name: "You've been invited!" })
-        ).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('heading', { name: "You've been invited!" })).toBeVisible({
+          timeout: 10000,
+        });
 
         await expect(
-          page.getByText(`You've been invited to join ${testAuth.organization.name}`)
+          page.getByText(`You've been invited to join ${testAuth.organization.name}`),
         ).toBeVisible({ timeout: 5000 });
 
         logProgress('✅ Invitation page still accessible for legitimate acceptance');
@@ -789,18 +853,21 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       logProgress(`📝 Testing magic link failure scenario for: ${inviteeEmail}`);
 
       // Create invitation via API
-      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+      const invitationResponse = await fetch(
+        'http://localhost:3080/api/auth/organization/invite-member',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`,
+          },
+          body: JSON.stringify({
+            email: inviteeEmail,
+            role: 'member',
+            organizationId: testAuth.organization.id,
+          }),
         },
-        body: JSON.stringify({
-          email: inviteeEmail,
-          role: 'member',
-          organizationId: testAuth.organization.id
-        })
-      });
+      );
 
       expect(invitationResponse.ok).toBe(true);
       const invitationData = await invitationResponse.json();
@@ -812,12 +879,12 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
 
       // Should show invitation acceptance page with sign-in prompt
-      await expect(
-        page.getByRole('heading', { name: "You've been invited!" })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.getByRole('heading', { name: "You've been invited!" })).toBeVisible({
+        timeout: 10000,
+      });
 
       await expect(
-        page.getByText(`You've been invited to join ${testAuth.organization.name}`)
+        page.getByText(`You've been invited to join ${testAuth.organization.name}`),
       ).toBeVisible({ timeout: 5000 });
 
       await expect(page.getByTestId('sign-in-button')).toBeVisible();
@@ -852,16 +919,16 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       // Step 5: Test scenario 1 - Corrupted magic link (invalid token)
       logProgress('🧪 Testing corrupted magic link...');
-      
+
       const corruptedLink = magicLinkUrl.replace(/token=([^&]+)/, 'token=invalid-token-12345');
       await page.goto(corruptedLink);
 
       // Should show error or redirect back to login
       try {
         // Might show error page or redirect to login with error
-        await expect(
-          page.getByText(/invalid|expired|error|failed/i)
-        ).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText(/invalid|expired|error|failed/i)).toBeVisible({
+          timeout: 5000,
+        });
         logProgress('✅ Corrupted magic link properly rejected with error message');
       } catch {
         // Alternative: might redirect to login page
@@ -873,23 +940,23 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       // Note: In a real test, we'd modify the database to set an expired timestamp
       // For this test, we'll simulate by using an old/invalid verification token
       logProgress('🧪 Testing expired magic link behavior...');
-      
+
       const { getTestDatabase } = await import('../../utils/testAuth');
       const { db } = await getTestDatabase();
-      
+
       // Find the verification record and expire it
       const verificationRecord = await db.collection('verification').findOne({
-        identifier: inviteeEmail
+        identifier: inviteeEmail,
       });
-      
+
       if (verificationRecord) {
         await db.collection('verification').updateOne(
           { _id: verificationRecord._id },
-          { 
-            $set: { 
-              expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // Expire 1 day ago
-            } 
-          }
+          {
+            $set: {
+              expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Expire 1 day ago
+            },
+          },
         );
         logProgress('✅ Manually expired verification token in database');
       }
@@ -899,9 +966,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       try {
         // Should show expired error or redirect to login
-        await expect(
-          page.getByText(/expired|invalid|error/i)
-        ).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText(/expired|invalid|error/i)).toBeVisible({ timeout: 5000 });
         logProgress('✅ Expired magic link properly rejected with error message');
       } catch {
         // Alternative: might redirect to login
@@ -911,11 +976,11 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
       // Step 7: Check if invitation was auto-accepted during the magic link auth process
       const invitation = await db.collection('invitation').findOne({
-        _id: new (await import('mongodb')).ObjectId(validInvitationId)
+        _id: new (await import('mongodb')).ObjectId(validInvitationId),
       });
 
       expect(invitation).toBeTruthy();
-      
+
       if (invitation?.status === 'accepted') {
         logProgress('✅ Magic link worked and auto-accepted invitation (system working correctly)');
       } else {
@@ -927,17 +992,19 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       // Step 8: Test appropriate behavior based on invitation status
       if (invitation?.status === 'accepted') {
         logProgress('🔄 Invitation already accepted, testing that user can access the app...');
-        
+
         // If invitation was auto-accepted, test that user is properly authenticated
         // and can access the main application
         await page.goto('http://localhost:3080/');
-        
+
         try {
           // Should be authenticated and redirected to the main app
           await expect(page).toHaveURL(/.*\/(c\/new|onboarding)/, { timeout: 10000 });
           logProgress('✅ User successfully authenticated and can access application');
         } catch {
-          logProgress('⚠️ User authentication state unclear, but core failure scenarios were tested');
+          logProgress(
+            '⚠️ User authentication state unclear, but core failure scenarios were tested',
+          );
         }
       } else {
         logProgress('🔄 Testing recovery with new magic link...');
@@ -956,9 +1023,9 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
         const { createMailHog } = await import('../../utils/mailhog.js');
         const mailhog = createMailHog();
         await mailhog.clearMessages();
-        
+
         logProgress('📧 Capturing new magic link from MailHog...');
-        
+
         // Wait a bit and try to get the new magic link
         await page.waitForTimeout(2000);
         const newMagicLinkUrl = await captureMagicLink(inviteeEmail);
@@ -966,7 +1033,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
         if (newMagicLinkUrl) {
           await page.goto(newMagicLinkUrl);
           await page.waitForLoadState('networkidle');
-          
+
           // Should now successfully authenticate and be redirected to onboarding
           await expect(page).toHaveURL(/.*\/(onboarding|c\/new)/, { timeout: 10000 });
           logProgress('✅ New magic link worked correctly for recovery');
@@ -1263,6 +1330,4 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
       await context.close();
     }
   });
-
-
 });
