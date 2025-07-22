@@ -12,6 +12,23 @@ interface MagicLinkLoginFormData {
   email: string;
 }
 
+/**
+ * Validates if a URL is safe for redirects to prevent open redirect attacks
+ * @param url - The URL to validate
+ * @returns boolean - true if the URL is safe for redirects
+ */
+const isValidRedirectUrl = (url: string | null): boolean => {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+
+  const trimmedUrl = url.trim();
+
+  // Allow only relative URLs that start with '/' but not '//'
+  // This prevents redirecting to external domains
+  return trimmedUrl.startsWith('/') && !trimmedUrl.startsWith('//');
+};
+
 export const MagicLinkLogin: React.FC = () => {
   const navigate = useNavigate();
   const localize = useLocalize();
@@ -126,10 +143,12 @@ export const MagicLinkLogin: React.FC = () => {
                 });
 
                 // Check if there's a returnUrl to redirect to
-                if (returnUrl) {
+                if (returnUrl && isValidRedirectUrl(decodeURIComponent(returnUrl))) {
                   console.log('🔗 Redirecting to returnUrl:', returnUrl);
                   navigate(decodeURIComponent(returnUrl));
                   return;
+                } else if (returnUrl) {
+                  console.warn('🔗 Invalid returnUrl detected, ignoring redirect:', returnUrl);
                 }
 
                 // If user hasn't completed onboarding, redirect to onboarding
@@ -160,10 +179,15 @@ export const MagicLinkLogin: React.FC = () => {
                 });
 
                 // Check if there's a returnUrl to redirect to
-                if (returnUrl) {
+                if (returnUrl && isValidRedirectUrl(decodeURIComponent(returnUrl))) {
                   console.log('🔗 Redirecting to returnUrl (fallback):', returnUrl);
                   navigate(decodeURIComponent(returnUrl));
                   return;
+                } else if (returnUrl) {
+                  console.warn(
+                    '🔗 Invalid returnUrl detected, ignoring redirect (fallback):',
+                    returnUrl,
+                  );
                 }
 
                 // If user hasn't completed onboarding, redirect to onboarding
