@@ -56,20 +56,20 @@ const mockUser = {
 describe('AcceptInvitation', () => {
   let useParams: Mock;
   let useAuthContext: Mock;
-  
+
   beforeEach(async () => {
     vi.clearAllMocks();
     mockFetch.mockClear();
     mockNavigate.mockClear();
     mockAcceptInvitation.mockClear();
     mockRejectInvitation.mockClear();
-    
+
     // Get mocked functions
     const routerModule = await import('react-router-dom');
     const hooksModule = await import('~/hooks');
     useParams = vi.mocked(routerModule.useParams);
     useAuthContext = vi.mocked(hooksModule.useAuthContext);
-    
+
     // Default mocks
     useParams.mockReturnValue({ invitationId: '507f1f77bcf86cd799439011' });
     useAuthContext.mockReturnValue({ user: null, token: null });
@@ -80,20 +80,22 @@ describe('AcceptInvitation', () => {
   });
 
   // Helper function to render component with router
-  const renderWithRouter = (initialEntries = ['/auth/accept-invitation/507f1f77bcf86cd799439011']) => {
+  const renderWithRouter = (
+    initialEntries = ['/auth/accept-invitation/507f1f77bcf86cd799439011'],
+  ) => {
     return render(
       <MemoryRouter initialEntries={initialEntries}>
         <AcceptInvitation />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   };
 
   describe('Loading State', () => {
     it('shows loading spinner initially', () => {
       mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
-      
+
       renderWithRouter();
-      
+
       expect(screen.getByText('Loading invitation...')).toBeInTheDocument();
     });
 
@@ -116,9 +118,9 @@ describe('AcceptInvitation', () => {
   describe('Invalid Invitation ID Handling', () => {
     it('shows error when no invitation ID provided', () => {
       useParams.mockReturnValue({ invitationId: undefined });
-      
+
       renderWithRouter();
-      
+
       expect(screen.getByText('Invitation Error')).toBeInTheDocument();
       expect(screen.getByText('Invalid invitation link')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Back to Login' })).toBeInTheDocument();
@@ -126,12 +128,12 @@ describe('AcceptInvitation', () => {
 
     it('navigates to login when Back to Login is clicked', async () => {
       useParams.mockReturnValue({ invitationId: undefined });
-      
+
       renderWithRouter();
-      
+
       const backButton = screen.getByRole('button', { name: 'Back to Login' });
       await userEvent.click(backButton);
-      
+
       expect(mockNavigate).toHaveBeenCalledWith('/login');
     });
   });
@@ -230,7 +232,7 @@ describe('AcceptInvitation', () => {
       await waitFor(() => {
         expect(screen.getByTestId('sign-in-button')).toBeInTheDocument();
       });
-      
+
       // Expiration date should not be visible for unauthenticated users
       expect(screen.queryByText(/This invitation expires on/)).not.toBeInTheDocument();
     });
@@ -281,7 +283,6 @@ describe('AcceptInvitation', () => {
     });
   });
 
-
   describe('Edge Cases', () => {
     it('handles missing invitation data in response', async () => {
       mockFetch.mockResolvedValueOnce({
@@ -330,12 +331,11 @@ describe('AcceptInvitation', () => {
       });
     });
 
-
     it('shows proper loading states with accessible text', () => {
       mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
-      
+
       renderWithRouter();
-      
+
       expect(screen.getByText('Loading invitation...')).toBeInTheDocument();
     });
   });

@@ -131,7 +131,7 @@ export const MagicLinkLogin: React.FC = () => {
                   navigate(decodeURIComponent(returnUrl));
                   return;
                 }
-                
+
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
                   console.log(
@@ -159,13 +159,13 @@ export const MagicLinkLogin: React.FC = () => {
                   onboardingStepValue: user.onboardingStep,
                 });
 
-                // Check if there's a returnUrl to redirect to  
+                // Check if there's a returnUrl to redirect to
                 if (returnUrl) {
                   console.log('🔗 Redirecting to returnUrl (fallback):', returnUrl);
                   navigate(decodeURIComponent(returnUrl));
                   return;
                 }
-                
+
                 // If user hasn't completed onboarding, redirect to onboarding
                 if (onboardingStep !== 'complete' && onboardingStep !== 'welcome') {
                   console.log(
@@ -426,10 +426,10 @@ export const MagicLinkLogin: React.FC = () => {
 
       // Include returnUrl in callback if it exists
       const returnUrl = searchParams.get('returnUrl');
-      const callbackURL = returnUrl 
+      const callbackURL = returnUrl
         ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(returnUrl)}`
         : `${window.location.origin}/login`;
-      
+
       const result = await authClient.signIn.magicLink({
         email: data.email,
         callbackURL,
@@ -469,10 +469,10 @@ export const MagicLinkLogin: React.FC = () => {
     try {
       // Include returnUrl in callback if it exists
       const returnUrl = searchParams.get('returnUrl');
-      const callbackURL = returnUrl 
+      const callbackURL = returnUrl
         ? `${window.location.origin}/login?returnUrl=${encodeURIComponent(returnUrl)}`
         : `${window.location.origin}/login`;
-        
+
       const result = await authClient.signIn.magicLink({
         email: email,
         callbackURL,

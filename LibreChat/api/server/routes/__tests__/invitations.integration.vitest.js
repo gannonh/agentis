@@ -121,26 +121,30 @@ describe('Invitation Routes Integration Tests', () => {
     it('should reject client-provided timestamp fields', async () => {
       const response = await request(app)
         .post(`/api/${testOrganizationId}/invitations`)
-        .send({ 
-          email: testEmail, 
+        .send({
+          email: testEmail,
           invitedAt: '2025-01-01T00:00:00.000Z',
-          expiresAt: '2025-01-08T00:00:00.000Z'
+          expiresAt: '2025-01-08T00:00:00.000Z',
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Timestamp fields are generated server-side and cannot be provided by client');
+      expect(response.body.error).toBe(
+        'Timestamp fields are generated server-side and cannot be provided by client',
+      );
     });
 
     it('should reject client-provided createdAt field', async () => {
       const response = await request(app)
         .post(`/api/${testOrganizationId}/invitations`)
-        .send({ 
-          email: testEmail, 
-          createdAt: '2025-01-01T00:00:00.000Z'
+        .send({
+          email: testEmail,
+          createdAt: '2025-01-01T00:00:00.000Z',
         })
         .expect(400);
 
-      expect(response.body.error).toBe('Timestamp fields are generated server-side and cannot be provided by client');
+      expect(response.body.error).toBe(
+        'Timestamp fields are generated server-side and cannot be provided by client',
+      );
     });
 
     it('should deny access without permission', async () => {
@@ -234,7 +238,6 @@ describe('Invitation Routes Integration Tests', () => {
       );
     });
   });
-
 
   describe('GET /api/invitations/:invitationId', () => {
     it('should get invitation details successfully', async () => {
@@ -356,6 +359,5 @@ describe('Invitation Routes Integration Tests', () => {
         testUserId,
       );
     });
-
   });
 });

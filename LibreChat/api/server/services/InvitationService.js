@@ -277,7 +277,7 @@ class InvitationService {
       // Get MongoDB connection via mongoose
       const mongoose = await import('mongoose');
       const db = mongoose.default.connection.db;
-      
+
       // Query the invitation collection directly
       const invitationCollection = db.collection('invitation');
       const userCollection = db.collection('user');
@@ -285,14 +285,14 @@ class InvitationService {
 
       // Convert string ID to ObjectId for MongoDB query
       const { ObjectId } = mongoose.default.Types;
-      
+
       // Validate ObjectId format before attempting conversion
       if (!ObjectId.isValid(invitationId)) {
         throw new Error('Invitation not found');
       }
-      
-      const invitation = await invitationCollection.findOne({ 
-        _id: new ObjectId(invitationId) 
+
+      const invitation = await invitationCollection.findOne({
+        _id: new ObjectId(invitationId),
       });
 
       if (!invitation) {
@@ -302,8 +302,8 @@ class InvitationService {
       // Get organization details
       let organizationName = 'Unknown Organization';
       if (invitation.organizationId) {
-        const organization = await organizationCollection.findOne({ 
-          _id: new ObjectId(invitation.organizationId) 
+        const organization = await organizationCollection.findOne({
+          _id: new ObjectId(invitation.organizationId),
         });
         organizationName = organization?.name || organizationName;
       }
@@ -311,8 +311,8 @@ class InvitationService {
       // Get inviter details
       let inviterName = 'Someone';
       if (invitation.inviterId) {
-        const inviter = await userCollection.findOne({ 
-          _id: new ObjectId(invitation.inviterId) 
+        const inviter = await userCollection.findOne({
+          _id: new ObjectId(invitation.inviterId),
         });
         inviterName = inviter?.name || inviter?.email?.split('@')[0] || inviterName;
       }

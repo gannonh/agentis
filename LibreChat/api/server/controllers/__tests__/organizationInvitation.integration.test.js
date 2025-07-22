@@ -15,11 +15,11 @@ import User from '../../../models/User.js';
 const mockEmailService = {
   sendInvitationEmail: vi.fn(),
   sendMagicLink: vi.fn(),
-  verifyTemplate: vi.fn()
+  verifyTemplate: vi.fn(),
 };
 
 vi.mock('#server/services/EmailService.js', () => ({
-  default: mockEmailService
+  default: mockEmailService,
 }));
 
 describe('Organization Invitation Integration Tests', () => {
@@ -43,26 +43,26 @@ describe('Organization Invitation Integration Tests', () => {
       name: 'John Doe',
       email: 'john.doe@example.com',
       emailVerified: true,
-      role: 'user'
+      role: 'user',
     });
 
     // Create test organization via Better Auth
     testOrganization = await auth.api.organization.create({
       name: 'Test Corporation',
       slug: 'test-corp',
-      createdBy: testUser._id.toString()
+      createdBy: testUser._id.toString(),
     });
 
     // Set the user as organization owner
     await auth.api.organization.addMember({
       organizationId: testOrganization.id,
       userId: testUser._id.toString(),
-      role: 'owner'
+      role: 'owner',
     });
 
     // Generate JWT token for user
     userToken = 'mock-jwt-token';
-    
+
     // Clear email service mocks
     vi.clearAllMocks();
   });
@@ -78,7 +78,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'newmember@example.com',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       // Mock successful Better Auth invitation
@@ -89,7 +89,7 @@ describe('Organization Invitation Integration Tests', () => {
         organizationId: testOrganization.id,
         invitedBy: testUser._id.toString(),
         status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       };
 
       vi.spyOn(auth.api.organization, 'inviteMember').mockResolvedValue(mockInvitation);
@@ -104,7 +104,7 @@ describe('Organization Invitation Integration Tests', () => {
       expect(response.body).toEqual({
         success: true,
         invitation: mockInvitation,
-        emailSent: true
+        emailSent: true,
       });
 
       // Verify Better Auth was called correctly
@@ -112,7 +112,7 @@ describe('Organization Invitation Integration Tests', () => {
         email: 'newmember@example.com',
         role: 'member',
         organizationId: testOrganization.id,
-        invitedBy: testUser._id.toString()
+        invitedBy: testUser._id.toString(),
       });
 
       // Verify email was sent with correct parameters
@@ -121,7 +121,7 @@ describe('Organization Invitation Integration Tests', () => {
         inviterName: 'John Doe',
         organizationName: 'Test Corporation',
         inviteLink: expect.stringContaining('invitation-123'),
-        role: 'member'
+        role: 'member',
       });
     });
 
@@ -129,7 +129,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'restricted@example.com',
         role: 'admin',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       // Mock Better Auth permission error
@@ -146,7 +146,7 @@ describe('Organization Invitation Integration Tests', () => {
       expect(response.body).toEqual({
         success: false,
         error: 'Insufficient permissions to invite admin',
-        code: 'INSUFFICIENT_PERMISSIONS'
+        code: 'INSUFFICIENT_PERMISSIONS',
       });
 
       // Email should not be sent
@@ -157,7 +157,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'email-fail@example.com',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       const mockInvitation = {
@@ -167,7 +167,7 @@ describe('Organization Invitation Integration Tests', () => {
         organizationId: testOrganization.id,
         invitedBy: testUser._id.toString(),
         status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       };
 
       vi.spyOn(auth.api.organization, 'inviteMember').mockResolvedValue(mockInvitation);
@@ -183,7 +183,7 @@ describe('Organization Invitation Integration Tests', () => {
         success: true,
         invitation: mockInvitation,
         emailSent: false,
-        emailError: 'SMTP server unavailable'
+        emailError: 'SMTP server unavailable',
       });
 
       // Better Auth invitation should still be created
@@ -194,7 +194,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'invalid-email-format',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       const response = await request(app)
@@ -206,7 +206,7 @@ describe('Organization Invitation Integration Tests', () => {
       expect(response.body).toEqual({
         success: false,
         error: 'Invalid email format',
-        field: 'email'
+        field: 'email',
       });
 
       expect(auth.api.organization.inviteMember).not.toHaveBeenCalled();
@@ -217,7 +217,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'duplicate@example.com',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       // Mock Better Auth duplicate error
@@ -234,7 +234,7 @@ describe('Organization Invitation Integration Tests', () => {
       expect(response.body).toEqual({
         success: false,
         error: 'User already invited',
-        code: 'DUPLICATE_INVITATION'
+        code: 'DUPLICATE_INVITATION',
       });
 
       expect(mockEmailService.sendInvitationEmail).not.toHaveBeenCalled();
@@ -244,7 +244,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'inviter-info@example.com',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       const mockInvitation = {
@@ -254,7 +254,7 @@ describe('Organization Invitation Integration Tests', () => {
         organizationId: testOrganization.id,
         invitedBy: testUser._id.toString(),
         status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       };
 
       vi.spyOn(auth.api.organization, 'inviteMember').mockResolvedValue(mockInvitation);
@@ -273,7 +273,7 @@ describe('Organization Invitation Integration Tests', () => {
         inviterEmail: 'john.doe@example.com',
         organizationName: 'Test Corporation',
         inviteLink: expect.stringContaining('invitation-789'),
-        role: 'member'
+        role: 'member',
       });
     });
 
@@ -281,7 +281,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'nonexistent@example.com',
         role: 'member',
-        organizationId: 'nonexistent-org-id'
+        organizationId: 'nonexistent-org-id',
       };
 
       const notFoundError = new Error('Organization not found');
@@ -297,14 +297,14 @@ describe('Organization Invitation Integration Tests', () => {
       expect(response.body).toEqual({
         success: false,
         error: 'Organization not found',
-        code: 'ORGANIZATION_NOT_FOUND'
+        code: 'ORGANIZATION_NOT_FOUND',
       });
     });
 
     it('should validate required fields', async () => {
       const incompleteData = {
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
         // Missing email
       };
 
@@ -317,7 +317,7 @@ describe('Organization Invitation Integration Tests', () => {
       expect(response.body).toEqual({
         success: false,
         error: 'Email is required',
-        field: 'email'
+        field: 'email',
       });
     });
 
@@ -325,7 +325,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'unauthorized@example.com',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       const response = await request(app)
@@ -336,7 +336,7 @@ describe('Organization Invitation Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: false,
-        error: 'Authentication required'
+        error: 'Authentication required',
       });
     });
   });
@@ -351,7 +351,7 @@ describe('Organization Invitation Integration Tests', () => {
           status: 'pending',
           invitedBy: testUser._id.toString(),
           createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
         {
           id: 'inv-2',
@@ -360,8 +360,8 @@ describe('Organization Invitation Integration Tests', () => {
           status: 'pending',
           invitedBy: testUser._id.toString(),
           createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        }
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
       ];
 
       vi.spyOn(auth.api.organization, 'listInvitations').mockResolvedValue(mockInvitations);
@@ -373,11 +373,11 @@ describe('Organization Invitation Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: true,
-        invitations: mockInvitations
+        invitations: mockInvitations,
       });
 
       expect(auth.api.organization.listInvitations).toHaveBeenCalledWith({
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       });
     });
 
@@ -387,13 +387,13 @@ describe('Organization Invitation Integration Tests', () => {
         name: 'Jane Smith',
         email: 'jane.smith@example.com',
         emailVerified: true,
-        role: 'user'
+        role: 'user',
       });
 
       await auth.api.organization.addMember({
         organizationId: testOrganization.id,
         userId: memberUser._id.toString(),
-        role: 'member'
+        role: 'member',
       });
 
       const memberToken = 'member-jwt-token';
@@ -405,7 +405,7 @@ describe('Organization Invitation Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: false,
-        error: 'Insufficient permissions to view invitations'
+        error: 'Insufficient permissions to view invitations',
       });
     });
   });
@@ -420,7 +420,7 @@ describe('Organization Invitation Integration Tests', () => {
         organizationId: testOrganization.id,
         invitedBy: testUser._id.toString(),
         status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       };
 
       vi.spyOn(auth.api.organization, 'getInvitation').mockResolvedValue(mockInvitation);
@@ -433,7 +433,7 @@ describe('Organization Invitation Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: true,
-        message: 'Invitation email resent successfully'
+        message: 'Invitation email resent successfully',
       });
 
       expect(mockEmailService.sendInvitationEmail).toHaveBeenCalledWith({
@@ -442,7 +442,7 @@ describe('Organization Invitation Integration Tests', () => {
         inviterEmail: 'john.doe@example.com',
         organizationName: 'Test Corporation',
         inviteLink: expect.stringContaining(invitationId),
-        role: 'member'
+        role: 'member',
       });
     });
 
@@ -455,7 +455,7 @@ describe('Organization Invitation Integration Tests', () => {
         organizationId: testOrganization.id,
         invitedBy: testUser._id.toString(),
         status: 'accepted',
-        acceptedAt: new Date()
+        acceptedAt: new Date(),
       };
 
       vi.spyOn(auth.api.organization, 'getInvitation').mockResolvedValue(mockInvitation);
@@ -467,7 +467,7 @@ describe('Organization Invitation Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: false,
-        error: 'Cannot resend email for accepted invitation'
+        error: 'Cannot resend email for accepted invitation',
       });
 
       expect(mockEmailService.sendInvitationEmail).not.toHaveBeenCalled();
@@ -479,7 +479,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'consistency@example.com',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       const mockInvitation = {
@@ -490,7 +490,7 @@ describe('Organization Invitation Integration Tests', () => {
         invitedBy: testUser._id.toString(),
         status: 'pending',
         createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       };
 
       vi.spyOn(auth.api.organization, 'inviteMember').mockResolvedValue(mockInvitation);
@@ -518,7 +518,7 @@ describe('Organization Invitation Integration Tests', () => {
       const invitationData = {
         email: 'db-error@example.com',
         role: 'member',
-        organizationId: testOrganization.id
+        organizationId: testOrganization.id,
       };
 
       const response = await request(app)
@@ -529,7 +529,7 @@ describe('Organization Invitation Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: false,
-        error: 'Database connection error'
+        error: 'Database connection error',
       });
 
       // Reconnect for cleanup

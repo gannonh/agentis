@@ -38,10 +38,11 @@ export const sendInvitationEmail = async (invitationData, request) => {
     const sendEmail = (await import('#server/utils/sendEmail.js')).default;
 
     // Better Auth provides inviter and organization data directly
-    const inviterName = invitationData.inviter?.user?.name || 
-                       invitationData.inviter?.user?.email?.split('@')[0] || 
-                       'Someone';
-                       
+    const inviterName =
+      invitationData.inviter?.user?.name ||
+      invitationData.inviter?.user?.email?.split('@')[0] ||
+      'Someone';
+
     const organizationName = invitationData.organization?.name || 'the team';
 
     // Build invitation link using the invitation ID
@@ -61,11 +62,11 @@ export const sendInvitationEmail = async (invitationData, request) => {
       },
     };
 
-    logger.debug('📧 Email data prepared:', { 
+    logger.debug('📧 Email data prepared:', {
       subject: emailData.subject,
       inviterName: emailData.payload.inviterName,
       organizationName: emailData.payload.organizationName,
-      inviteLink: emailData.payload.inviteLink
+      inviteLink: emailData.payload.inviteLink,
     });
 
     // Send email
@@ -221,7 +222,10 @@ mongoose.connection.once('open', () => {
           create: {
             before: async (user) => {
               try {
-                logger.info('🔧 BEFORE HOOK EXECUTING - User create hook triggered for:', user.email);
+                logger.info(
+                  '🔧 BEFORE HOOK EXECUTING - User create hook triggered for:',
+                  user.email,
+                );
                 logger.info(
                   'User create hook - checking for existing user with email:',
                   user.email,
@@ -245,41 +249,47 @@ mongoose.connection.once('open', () => {
                 }
 
                 logger.info('No existing user found, allowing creation for:', user.email);
-                
+
                 // Check for pending invitations for this email
                 const invitationCollection = db.collection('invitation');
                 const pendingInvitation = await invitationCollection.findOne({
                   email: user.email.toLowerCase(),
-                  status: 'pending'
+                  status: 'pending',
                 });
-                
+
                 if (pendingInvitation) {
-                  logger.info(`🎫 Found pending invitation for ${user.email} to organization ${pendingInvitation.organizationId}`);
-                  
+                  logger.info(
+                    `🎫 Found pending invitation for ${user.email} to organization ${pendingInvitation.organizationId}`,
+                  );
+
                   // Start at 'profile' step - they skip organization creation and go to profile setup
                   user.onboardingStep = 'profile';
-                  
+
                   // Accept the invitation
                   await invitationCollection.updateOne(
                     { _id: pendingInvitation._id },
-                    { 
-                      $set: { 
+                    {
+                      $set: {
                         status: 'accepted',
-                        acceptedAt: new Date()
-                      } 
-                    }
+                        acceptedAt: new Date(),
+                      },
+                    },
                   );
-                  
+
                   // Store pending invitation data using email as key
                   // This avoids relying on user object mutations
                   pendingInvitations.set(user.email, {
                     invitationId: pendingInvitation._id,
                     organizationId: pendingInvitation.organizationId,
-                    role: pendingInvitation.role || 'member'
+                    role: pendingInvitation.role || 'member',
                   });
-                  
-                  logger.info(`📝 Will create membership after user creation completes for ${user.email}`);
-                  logger.info(`📝 Stored pending data for ${user.email}: invitationId=${pendingInvitation._id}, orgId=${pendingInvitation.organizationId}, role=${pendingInvitation.role}`);
+
+                  logger.info(
+                    `📝 Will create membership after user creation completes for ${user.email}`,
+                  );
+                  logger.info(
+                    `📝 Stored pending data for ${user.email}: invitationId=${pendingInvitation._id}, orgId=${pendingInvitation.organizationId}, role=${pendingInvitation.role}`,
+                  );
                 }
 
                 return user;
@@ -290,43 +300,50 @@ mongoose.connection.once('open', () => {
             },
             after: async (user) => {
               try {
-                logger.info('🔧 AFTER HOOK EXECUTING - User create after hook triggered for:', user.email);
-                logger.info('🔧 After hook user data:', { 
-                  id: user.id, 
-                  email: user.email, 
-                  onboardingStep: user.onboardingStep
+                logger.info(
+                  '🔧 AFTER HOOK EXECUTING - User create after hook triggered for:',
+                  user.email,
+                );
+                logger.info('🔧 After hook user data:', {
+                  id: user.id,
+                  email: user.email,
+                  onboardingStep: user.onboardingStep,
                 });
-                
+
                 // Check if we have pending invitation data for this email
                 const pendingData = pendingInvitations.get(user.email);
                 if (pendingData) {
-                  logger.info(`🎫 Found pending invitation data for ${user.email}, creating membership...`);
+                  logger.info(
+                    `🎫 Found pending invitation data for ${user.email}, creating membership...`,
+                  );
                   logger.info(`🎫 Pending data:`, pendingData);
-                  
+
                   const memberCollection = db.collection('member');
                   const { normalizeId } = await import('#server/utils/flexibleId.js');
                   const { ObjectId } = await import('mongodb');
-                  
+
                   const membershipData = {
                     _id: new ObjectId(), // Use MongoDB ObjectId for consistency
                     userId: normalizeId(user.id), // Use the utility we created for this!
                     organizationId: normalizeId(pendingData.organizationId), // Use the utility we created for this!
                     role: pendingData.role,
-                    createdAt: new Date()
+                    createdAt: new Date(),
                   };
-                  
+
                   logger.info(`🎫 Creating membership with data:`, membershipData);
-                  
+
                   await memberCollection.insertOne(membershipData);
-                  
-                  logger.info(`✅ Auto-accepted invitation and created membership for ${user.email} with userId: ${user.id}`);
-                  
+
+                  logger.info(
+                    `✅ Auto-accepted invitation and created membership for ${user.email} with userId: ${user.id}`,
+                  );
+
                   // Clean up the pending data
                   pendingInvitations.delete(user.email);
                 } else {
                   logger.info(`ℹ️ No pending invitation data found for ${user.email}`);
                 }
-                
+
                 return user;
               } catch (error) {
                 logger.error('Error in user create after hook:', error);

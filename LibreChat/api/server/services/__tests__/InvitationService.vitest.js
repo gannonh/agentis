@@ -62,18 +62,18 @@ describe('InvitationService', () => {
       );
 
       expect(result).toEqual(mockInvitation);
-      
+
       // Verify the call was made with server-generated timestamps
       const callArgs = mockAuth.api.organization.inviteMember.mock.calls[0][0];
       expect(callArgs.headers).toEqual({ 'user-id': 'user123' });
       expect(callArgs.body.organizationId).toBe('org123');
       expect(callArgs.body.email).toBe('user@company.com');
       expect(callArgs.body.role).toBe('member');
-      
+
       // Verify that server-side timestamps are included
       expect(callArgs.body.invitedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
       expect(callArgs.body.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-      
+
       // Verify expiration is 7 days after invitation
       const invitedTime = new Date(callArgs.body.invitedAt);
       const expirationTime = new Date(callArgs.body.expiresAt);
@@ -158,14 +158,15 @@ describe('InvitationService', () => {
     });
 
     it('should handle cancellation errors', async () => {
-      mockAuth.api.organization.cancelInvitation.mockRejectedValue(new Error('Invitation not found'));
+      mockAuth.api.organization.cancelInvitation.mockRejectedValue(
+        new Error('Invitation not found'),
+      );
 
       await expect(invitationService.cancelInvitation('inv123', 'user123')).rejects.toThrow(
         'Invitation not found',
       );
     });
   });
-
 
   describe('getInvitation', () => {
     it('should get invitation details successfully', async () => {
