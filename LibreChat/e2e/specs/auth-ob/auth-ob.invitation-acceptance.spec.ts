@@ -600,6 +600,181 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
     }
   });
 
+  test('Multiple rapid invitation acceptance attempts should handle race conditions', async ({ browser }) => {
+    logProgress('🚀 Testing multiple rapid invitation acceptance attempts...');
+
+    try {
+      // Step 1: Create a valid invitation
+      const inviteeTestId = generateTestId();
+      const inviteeEmail = `test-rapid-accept-${inviteeTestId}@example.com`;
+
+      logProgress(`📝 Testing rapid acceptance scenario for: ${inviteeEmail}`);
+
+      // Create invitation via API
+      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+        },
+        body: JSON.stringify({
+          email: inviteeEmail,
+          role: 'member',
+          organizationId: testAuth.organization.id
+        })
+      });
+
+      expect(invitationResponse.ok).toBe(true);
+      const invitationData = await invitationResponse.json();
+      const validInvitationId = invitationData.id;
+
+      logProgress(`✅ Created test invitation with ID: ${validInvitationId}`);
+
+      // Step 2: Create another user account (separate from the invitee) to test API calls
+      const testUserTestId = generateTestId();
+      const testUserEmail = `test-api-user-${testUserTestId}@example.com`;
+      const testUserPassword = `TestPass123!${testUserTestId}`;
+
+      const testUserSignUpResponse = await fetch('http://localhost:3080/api/auth/sign-up/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: testUserEmail,
+          password: testUserPassword,
+          name: `Test API User ${testUserTestId}`,
+        }),
+      });
+
+      expect(testUserSignUpResponse.ok).toBe(true);
+      logProgress('✅ Created test API user account');
+
+      // Step 3: Sign in to get session token for API calls
+      const testUserSignInResponse = await fetch('http://localhost:3080/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: testUserEmail,
+          password: testUserPassword,
+        }),
+      });
+
+      expect(testUserSignInResponse.ok).toBe(true);
+      const setCookieHeader = testUserSignInResponse.headers.get('set-cookie');
+      const sessionMatch = setCookieHeader?.match(/better-auth\.session_token=([^;]+)/);
+      const testUserSessionToken = sessionMatch?.[1];
+
+      expect(testUserSessionToken).toBeTruthy();
+      logProgress('✅ Obtained test API user session token');
+
+      // Step 4: Attempt to accept the same invitation multiple times rapidly using different user
+      // (This simulates someone trying to accept an invitation they shouldn't have access to)
+      logProgress('⚡ Starting rapid invitation acceptance attempts...');
+
+      const acceptancePromises = [];
+      const numberOfAttempts = 5;
+
+      // Launch multiple acceptance attempts simultaneously
+      for (let i = 0; i < numberOfAttempts; i++) {
+        const acceptPromise = fetch('http://localhost:3080/api/auth/organization/accept-invitation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: `better-auth.session_token=${testUserSessionToken}`
+          },
+          body: JSON.stringify({
+            invitationId: validInvitationId,
+          })
+        });
+        
+        acceptancePromises.push(acceptPromise);
+      }
+
+      // Wait for all attempts to complete
+      const acceptanceResults = await Promise.allSettled(acceptancePromises);
+      
+      logProgress(`✅ Completed ${numberOfAttempts} rapid acceptance attempts`);
+
+      // Step 5: Analyze results - all should fail since wrong user is trying to accept
+      let unauthorizedCount = 0;
+      let otherErrorCount = 0;
+
+      for (const [index, result] of acceptanceResults.entries()) {
+        if (result.status === 'fulfilled') {
+          const response = result.value;
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'unknown' }));
+            
+            if (response.status === 403 || response.status === 400 || errorData.message?.includes('not authorized') || errorData.message?.includes('not found')) {
+              unauthorizedCount++;
+              logProgress(`⚠️ Attempt ${index + 1}: Properly rejected unauthorized access (status: ${response.status})`);
+            } else {
+              otherErrorCount++;
+              logProgress(`❌ Attempt ${index + 1}: Unexpected error (status: ${response.status}, error: ${errorData.message})`);
+            }
+          } else {
+            otherErrorCount++;
+            logProgress(`❌ Attempt ${index + 1}: Unexpectedly succeeded when it should have failed`);
+          }
+        } else {
+          otherErrorCount++;
+          logProgress(`❌ Attempt ${index + 1}: Request failed (${result.reason})`);
+        }
+      }
+
+      // Step 6: Verify security - unauthorized user should not be able to accept invitation
+      expect(unauthorizedCount).toBe(numberOfAttempts); // All attempts should be properly rejected
+      expect(otherErrorCount).toBe(0); // No unexpected errors
+
+      logProgress(`✅ Security test results: ${unauthorizedCount} properly rejected, ${otherErrorCount} unexpected errors`);
+
+      // Step 7: Verify database state - invitation should still be pending
+      const { getTestDatabase } = await import('../../utils/testAuth');
+      const { db } = await getTestDatabase();
+
+      const finalInvitation = await db.collection('invitation').findOne({
+        _id: new (await import('mongodb')).ObjectId(validInvitationId)
+      });
+
+      expect(finalInvitation).toBeTruthy();
+      expect(finalInvitation?.status).toBe('pending'); // Should still be pending since unauthorized attempts failed
+      expect(finalInvitation?.acceptedAt).toBeFalsy();
+
+      logProgress('✅ Database validation: Invitation remains pending after unauthorized attempts');
+
+      // Step 8: Now test that the correct user can still accept the invitation
+      // This would happen through the magic link flow in the real system
+      logProgress('📧 Testing that legitimate invitation acceptance still works...');
+
+      // Simulate the correct invitation acceptance process (which happens during user creation with auto-accept)
+      // We'll verify the invitation can still be accessed properly
+      const context = await browser.newContext();
+      const page = await context.newPage();
+
+      try {
+        await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
+
+        // Should show invitation page correctly (invitation is still valid)
+        await expect(
+          page.getByRole('heading', { name: "You've been invited!" })
+        ).toBeVisible({ timeout: 10000 });
+
+        await expect(
+          page.getByText(`You've been invited to join ${testAuth.organization.name}`)
+        ).toBeVisible({ timeout: 5000 });
+
+        logProgress('✅ Invitation page still accessible for legitimate acceptance');
+      } finally {
+        await context.close();
+      }
+
+      logProgress('🎉 Race condition and security test completed successfully!');
+    } catch (error) {
+      logProgress(`❌ Rapid acceptance test failed: ${error}`);
+      throw error;
+    }
+  });
+
   /**
    * =================================================================================
    * EXISTING USER ACCEPTANCE TESTS
