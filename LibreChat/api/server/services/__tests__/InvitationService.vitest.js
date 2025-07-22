@@ -26,13 +26,13 @@ describe('InvitationService', () => {
   beforeEach(async () => {
     mockAuth = {
       api: {
-        createInvitation: vi.fn(),
-        listInvitations: vi.fn(),
-        cancelInvitation: vi.fn(),
-        acceptInvitation: vi.fn(),
-        rejectInvitation: vi.fn(),
-        getInvitation: vi.fn(),
-        updateInvitation: vi.fn(),
+        organization: {
+          inviteMember: vi.fn(),
+          listInvitations: vi.fn(),
+          cancelInvitation: vi.fn(),
+          getInvitation: vi.fn(),
+          updateInvitation: vi.fn(),
+        },
         getMember: vi.fn(),
       },
     };
@@ -52,7 +52,7 @@ describe('InvitationService', () => {
         status: 'pending',
       };
 
-      mockAuth.api.createInvitation.mockResolvedValue(mockInvitation);
+      mockAuth.api.organization.inviteMember.mockResolvedValue(mockInvitation);
 
       const result = await invitationService.createInvitation(
         'org123',
@@ -64,7 +64,7 @@ describe('InvitationService', () => {
       expect(result).toEqual(mockInvitation);
       
       // Verify the call was made with server-generated timestamps
-      const callArgs = mockAuth.api.createInvitation.mock.calls[0][0];
+      const callArgs = mockAuth.api.organization.inviteMember.mock.calls[0][0];
       expect(callArgs.headers).toEqual({ 'user-id': 'user123' });
       expect(callArgs.body.organizationId).toBe('org123');
       expect(callArgs.body.email).toBe('user@company.com');
@@ -82,7 +82,7 @@ describe('InvitationService', () => {
     });
 
     it('should handle creation errors', async () => {
-      mockAuth.api.createInvitation.mockRejectedValue(new Error('User already invited'));
+      mockAuth.api.organization.inviteMember.mockRejectedValue(new Error('User already invited'));
 
       await expect(
         invitationService.createInvitation('org123', 'user@company.com', 'member', 'user123'),
@@ -107,13 +107,13 @@ describe('InvitationService', () => {
         },
       ];
 
-      mockAuth.api.listInvitations.mockResolvedValue(mockInvitations);
+      mockAuth.api.organization.listInvitations.mockResolvedValue(mockInvitations);
 
       const result = await invitationService.listInvitations('org123', 'user123');
 
       expect(result).toEqual(mockInvitations);
-      expect(mockAuth.api.listInvitations).toHaveBeenCalledWith({
-        body: {
+      expect(mockAuth.api.organization.listInvitations).toHaveBeenCalledWith({
+        query: {
           organizationId: 'org123',
         },
         headers: {
@@ -123,7 +123,7 @@ describe('InvitationService', () => {
     });
 
     it('should return empty array when no invitations', async () => {
-      mockAuth.api.listInvitations.mockResolvedValue(null);
+      mockAuth.api.organization.listInvitations.mockResolvedValue(null);
 
       const result = await invitationService.listInvitations('org123', 'user123');
 
@@ -131,7 +131,7 @@ describe('InvitationService', () => {
     });
 
     it('should handle listing errors', async () => {
-      mockAuth.api.listInvitations.mockRejectedValue(new Error('Access denied'));
+      mockAuth.api.organization.listInvitations.mockRejectedValue(new Error('Access denied'));
 
       await expect(invitationService.listInvitations('org123', 'user123')).rejects.toThrow(
         'Access denied',
@@ -142,12 +142,12 @@ describe('InvitationService', () => {
   describe('cancelInvitation', () => {
     it('should cancel invitation successfully', async () => {
       const mockResult = { success: true };
-      mockAuth.api.cancelInvitation.mockResolvedValue(mockResult);
+      mockAuth.api.organization.cancelInvitation.mockResolvedValue(mockResult);
 
       const result = await invitationService.cancelInvitation('inv123', 'user123');
 
       expect(result).toEqual(mockResult);
-      expect(mockAuth.api.cancelInvitation).toHaveBeenCalledWith({
+      expect(mockAuth.api.organization.cancelInvitation).toHaveBeenCalledWith({
         body: {
           invitationId: 'inv123',
         },
@@ -158,7 +158,7 @@ describe('InvitationService', () => {
     });
 
     it('should handle cancellation errors', async () => {
-      mockAuth.api.cancelInvitation.mockRejectedValue(new Error('Invitation not found'));
+      mockAuth.api.organization.cancelInvitation.mockRejectedValue(new Error('Invitation not found'));
 
       await expect(invitationService.cancelInvitation('inv123', 'user123')).rejects.toThrow(
         'Invitation not found',
@@ -166,64 +166,6 @@ describe('InvitationService', () => {
     });
   });
 
-  describe('acceptInvitation', () => {
-    it('should accept invitation successfully', async () => {
-      const mockResult = {
-        organizationId: 'org123',
-        role: 'member',
-        success: true,
-      };
-
-      mockAuth.api.acceptInvitation.mockResolvedValue(mockResult);
-
-      const result = await invitationService.acceptInvitation('inv123', 'user123');
-
-      expect(result).toEqual(mockResult);
-      expect(mockAuth.api.acceptInvitation).toHaveBeenCalledWith({
-        body: {
-          invitationId: 'inv123',
-        },
-        headers: {
-          'user-id': 'user123',
-        },
-      });
-    });
-
-    it('should handle acceptance errors', async () => {
-      mockAuth.api.acceptInvitation.mockRejectedValue(new Error('Invitation expired'));
-
-      await expect(invitationService.acceptInvitation('inv123', 'user123')).rejects.toThrow(
-        'Invitation expired',
-      );
-    });
-  });
-
-  describe('rejectInvitation', () => {
-    it('should reject invitation successfully', async () => {
-      const mockResult = { success: true };
-      mockAuth.api.rejectInvitation.mockResolvedValue(mockResult);
-
-      const result = await invitationService.rejectInvitation('inv123', 'user123');
-
-      expect(result).toEqual(mockResult);
-      expect(mockAuth.api.rejectInvitation).toHaveBeenCalledWith({
-        body: {
-          invitationId: 'inv123',
-        },
-        headers: {
-          'user-id': 'user123',
-        },
-      });
-    });
-
-    it('should handle rejection errors', async () => {
-      mockAuth.api.rejectInvitation.mockRejectedValue(new Error('Invitation not found'));
-
-      await expect(invitationService.rejectInvitation('inv123', 'user123')).rejects.toThrow(
-        'Invitation not found',
-      );
-    });
-  });
 
   describe('getInvitation', () => {
     it('should get invitation details successfully', async () => {
@@ -235,14 +177,14 @@ describe('InvitationService', () => {
         status: 'pending',
       };
 
-      mockAuth.api.getInvitation.mockResolvedValue(mockInvitation);
+      mockAuth.api.organization.getInvitation.mockResolvedValue(mockInvitation);
 
       const result = await invitationService.getInvitation('inv123', 'user123');
 
       expect(result).toEqual(mockInvitation);
-      expect(mockAuth.api.getInvitation).toHaveBeenCalledWith({
-        body: {
-          invitationId: 'inv123',
+      expect(mockAuth.api.organization.getInvitation).toHaveBeenCalledWith({
+        query: {
+          id: 'inv123',
         },
         headers: {
           'user-id': 'user123',
@@ -251,7 +193,7 @@ describe('InvitationService', () => {
     });
 
     it('should handle get invitation errors', async () => {
-      mockAuth.api.getInvitation.mockRejectedValue(new Error('Invitation not found'));
+      mockAuth.api.organization.getInvitation.mockRejectedValue(new Error('Invitation not found'));
 
       await expect(invitationService.getInvitation('inv123', 'user123')).rejects.toThrow(
         'Invitation not found',
@@ -268,14 +210,14 @@ describe('InvitationService', () => {
       };
       const mockResult = { success: true };
 
-      mockAuth.api.getInvitation.mockResolvedValue(mockInvitation);
-      mockAuth.api.updateInvitation.mockResolvedValue(mockResult);
+      mockAuth.api.organization.getInvitation.mockResolvedValue(mockInvitation);
+      mockAuth.api.organization.updateInvitation.mockResolvedValue(mockResult);
 
       const result = await invitationService.resendInvitation('inv123', 'user123');
 
       expect(result).toEqual(mockResult);
-      expect(mockAuth.api.getInvitation).toHaveBeenCalled();
-      expect(mockAuth.api.updateInvitation).toHaveBeenCalledWith({
+      expect(mockAuth.api.organization.getInvitation).toHaveBeenCalled();
+      expect(mockAuth.api.organization.updateInvitation).toHaveBeenCalledWith({
         body: {
           invitationId: 'inv123',
           status: 'pending',
@@ -293,7 +235,7 @@ describe('InvitationService', () => {
         status: 'accepted',
       };
 
-      mockAuth.api.getInvitation.mockResolvedValue(mockInvitation);
+      mockAuth.api.organization.getInvitation.mockResolvedValue(mockInvitation);
 
       await expect(invitationService.resendInvitation('inv123', 'user123')).rejects.toThrow(
         'Cannot resend invitation with status: accepted',
@@ -301,7 +243,7 @@ describe('InvitationService', () => {
     });
 
     it('should handle resend errors', async () => {
-      mockAuth.api.getInvitation.mockRejectedValue(new Error('Invitation not found'));
+      mockAuth.api.organization.getInvitation.mockRejectedValue(new Error('Invitation not found'));
 
       await expect(invitationService.resendInvitation('inv123', 'user123')).rejects.toThrow(
         'Invitation not found',

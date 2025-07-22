@@ -327,6 +327,88 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
 
   /**
    * =================================================================================
+   * EDGE CASE TESTS - Error Scenarios and Failure Conditions
+   * =================================================================================
+   */
+
+  test('Network error during invitation validation should show graceful error', async ({ browser }) => {
+    logProgress('🚀 Testing network error handling during invitation validation...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Create a valid invitation first
+      const inviteeTestId = generateTestId();
+      const inviteeEmail = `test-network-error-${inviteeTestId}@example.com`;
+
+      logProgress(`📝 Testing network error scenario for: ${inviteeEmail}`);
+
+      // Create invitation via API 
+      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+        },
+        body: JSON.stringify({
+          email: inviteeEmail,
+          role: 'member',
+          organizationId: testAuth.organization.id
+        })
+      });
+
+      expect(invitationResponse.ok).toBe(true);
+      const invitationData = await invitationResponse.json();
+      const validInvitationId = invitationData.id;
+
+      logProgress(`✅ Created test invitation with ID: ${validInvitationId}`);
+
+      // Step 2: Mock network failure by intercepting the API call
+      await page.route('**/api/invitations/public/**', async (route) => {
+        logProgress(`🔌 Intercepting API call: ${route.request().url()}`);
+        // Simulate network error by failing the request
+        await route.abort('failed');
+      });
+
+      // Step 3: Navigate to invitation link (this should trigger network error)
+      await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
+
+      // Step 4: Should show network error handling
+      // The component should gracefully handle the failed fetch and show an appropriate error
+      await expect(
+        page.getByText('Load failed')
+      ).toBeVisible({ timeout: 10000 });
+
+      logProgress('✅ Network error correctly handled with graceful error message');
+
+      // Step 5: Verify retry functionality by removing the route mock
+      await page.unroute('**/api/invitations/public/**');
+      
+      // Reload the page to retry
+      await page.reload();
+
+      // Should now successfully load the invitation
+      await expect(
+        page.getByRole('heading', { name: "You've been invited!" }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await expect(
+        page.getByText(`You've been invited to join ${testAuth.organization.name}`),
+      ).toBeVisible();
+
+      logProgress('✅ Retry after network recovery works correctly');
+
+      logProgress('🎉 Network error handling test completed successfully!');
+    } finally {
+      // Clean up any route mocks
+      await page.unroute('**/api/invitations/public/**');
+      await context.close();
+    }
+  });
+
+  /**
+   * =================================================================================
    * EXISTING USER ACCEPTANCE TESTS
    * =================================================================================
    */
