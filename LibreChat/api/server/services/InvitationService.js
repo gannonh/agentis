@@ -265,84 +265,51 @@ class InvitationService {
    * Get public invitation details without authentication (for invitation acceptance page)
    * @param {string} invitationId - The ID of the invitation
    * @returns {Promise<Object>} Public invitation details (organization name, inviter, role, status)
+   * @throws {Error} With statusCode property for HTTP response codes
    */
   async getPublicInvitation(invitationId) {
     try {
       this.initialize();
 
-      logger.debug('Getting public invitation details via direct MongoDB query', {
+      // Validate invitation ID format
+      if (!invitationId || typeof invitationId !== 'string' || invitationId.trim() === '') {
+        const error = new Error('Invalid invitation ID format');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Use repository for database operations
+      const InvitationRepository = (await import('#server/repositories/InvitationRepository.js'))
+        .default;
+      const invitationRepo = new InvitationRepository();
+
+      logger.debug('Getting public invitation details via repository', {
         invitationId,
       });
 
-      // Get MongoDB connection via mongoose
-      const mongoose = await import('mongoose');
-      const db = mongoose.default.connection.db;
-
-      // Query the invitation collection directly
-      const invitationCollection = db.collection('invitation');
-      const userCollection = db.collection('user');
-      const organizationCollection = db.collection('organization');
-
-      // Convert string ID to ObjectId for MongoDB query
-      const { ObjectId } = mongoose.default.Types;
-
-      // Validate ObjectId format before attempting conversion
-      if (!ObjectId.isValid(invitationId)) {
-        throw new Error('Invitation not found');
-      }
-
-      const invitation = await invitationCollection.findOne({
-        _id: new ObjectId(invitationId),
-      });
-
-      if (!invitation) {
-        throw new Error('Invitation not found');
-      }
-
-      // Get organization details
-      let organizationName = 'Unknown Organization';
-      if (invitation.organizationId) {
-        const organization = await organizationCollection.findOne({
-          _id: new ObjectId(invitation.organizationId),
-        });
-        organizationName = organization?.name || organizationName;
-      }
-
-      // Get inviter details
-      let inviterName = 'Someone';
-      if (invitation.inviterId) {
-        const inviter = await userCollection.findOne({
-          _id: new ObjectId(invitation.inviterId),
-        });
-        inviterName = inviter?.name || inviter?.email?.split('@')[0] || inviterName;
-      }
-
-      // Return only safe public information
-      const publicDetails = {
-        id: invitation._id,
-        email: invitation.email,
-        role: invitation.role,
-        status: invitation.status,
-        organizationName,
-        inviterName,
-        expiresAt: invitation.expiresAt,
-        createdAt: invitation.createdAt,
-      };
-
-      logger.debug('Retrieved public invitation details', {
-        invitationId,
-        email: invitation.email,
-        status: invitation.status,
-        organizationName: publicDetails.organizationName,
-      });
-
+      const publicDetails = await invitationRepo.getPublicInvitationDetails(invitationId);
       return publicDetails;
     } catch (error) {
-      logger.error('Error getting public invitation details', {
+      // Re-throw repository errors with proper status codes
+      if (error.statusCode) {
+        logger.error('Error getting public invitation details', {
+          error: error.message,
+          statusCode: error.statusCode,
+          invitationId,
+        });
+        throw error;
+      }
+
+      // Handle unexpected errors
+      logger.error('Unexpected error getting public invitation details', {
         error: error.message,
+        stack: error.stack,
         invitationId,
       });
-      throw error;
+
+      const wrappedError = new Error('Internal server error');
+      wrappedError.statusCode = 500;
+      throw wrappedError;
     }
   }
 

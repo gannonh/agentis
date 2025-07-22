@@ -223,6 +223,14 @@ router.get('/invitations/public/:invitationId', async (req, res) => {
   } catch (error) {
     logger.error('Error getting public invitation details', error);
 
+    // Use status code from service layer if available
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        error: error.message,
+      });
+    }
+
+    // Fallback for legacy error handling
     if (error.message?.includes('not found')) {
       return res.status(404).json({
         error: 'Invitation not found',
