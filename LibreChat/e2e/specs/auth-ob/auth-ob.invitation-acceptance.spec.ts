@@ -407,6 +407,87 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
     }
   });
 
+  test('Organization no longer exists for valid invitation', async ({ browser }) => {
+    logProgress('🚀 Testing invitation for deleted organization...');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Step 1: Create a valid invitation
+      const inviteeTestId = generateTestId();
+      const inviteeEmail = `test-deleted-org-${inviteeTestId}@example.com`;
+
+      logProgress(`📝 Testing deleted organization scenario for: ${inviteeEmail}`);
+
+      // Create invitation via API
+      const invitationResponse = await fetch('http://localhost:3080/api/auth/organization/invite-member', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `better-auth.session_token=${testAuth.session.sessionToken}`
+        },
+        body: JSON.stringify({
+          email: inviteeEmail,
+          role: 'member',
+          organizationId: testAuth.organization.id
+        })
+      });
+
+      expect(invitationResponse.ok).toBe(true);
+      const invitationData = await invitationResponse.json();
+      const validInvitationId = invitationData.id;
+
+      logProgress(`✅ Created test invitation with ID: ${validInvitationId}`);
+
+      // Step 2: Delete the organization from database
+      const { getTestDatabase } = await import('../../utils/testAuth');
+      const { db } = await getTestDatabase();
+      
+      // Delete the organization but keep the invitation
+      const deleteResult = await db.collection('organization').deleteOne({
+        _id: new (await import('mongodb')).ObjectId(testAuth.organization.id)
+      });
+      
+      expect(deleteResult.deletedCount).toBe(1);
+      logProgress('🗑️ Deleted organization from database');
+
+      // Step 3: Navigate to invitation link
+      await page.goto(`http://localhost:3080/auth/accept-invitation/${validInvitationId}`);
+
+      // Step 4: Should show invitation page but with "Unknown Organization"
+      await expect(
+        page.getByRole('heading', { name: "You've been invited!" })
+      ).toBeVisible({ timeout: 10000 });
+
+      await expect(
+        page.getByText('Unknown Organization')
+      ).toBeVisible({ timeout: 5000 });
+
+      logProgress('✅ Orphaned invitation shows "Unknown Organization"');
+
+      // Step 5: Verify invitation is still in database but organization is gone
+      const invitation = await db.collection('invitation').findOne({
+        _id: new (await import('mongodb')).ObjectId(validInvitationId)
+      });
+      
+      expect(invitation).toBeTruthy();
+      expect(invitation?.status).toBe('pending');
+      
+      const organization = await db.collection('organization').findOne({
+        _id: new (await import('mongodb')).ObjectId(testAuth.organization.id)
+      });
+      
+      expect(organization).toBeNull();
+      
+      logProgress('✅ Database validation: Invitation exists but organization is deleted');
+
+      logProgress('🎉 Deleted organization test completed successfully!');
+    } finally {
+      await context.close();
+    }
+  });
+
   /**
    * =================================================================================
    * EXISTING USER ACCEPTANCE TESTS
