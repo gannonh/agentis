@@ -63,3 +63,15 @@ For each identified issue, provide:
 
 ## E2E Testing
 - e2e tests run against production frontend: 3080. so you need to build the front end before running e2e tests
+
+## MongoDB Interactions
+- When working with MongoDB, use `ObjectId` for ID handling in update operations
+- Example of updating a user's role using ObjectId:
+  ```javascript
+  await database.db
+    .collection('user')
+    .updateOne(
+      { _id: new database.mongoose.Types.ObjectId(testAuth.user.id) },
+      { $set: { role: 'admin' } },
+    );
+  ```
