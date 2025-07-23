@@ -1,405 +1,344 @@
 # LibreChat Client
 
-A modern React TypeScript frontend for Agentis (LibreChat) featuring multi-model AI conversations, intelligent agents, code execution, and real-time streaming.
+[![React](https://img.shields.io/badge/React-18.2-blue?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript)](https://typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.3-646CFF?logo=vite)](https://vitejs.dev/)
+[![Test Coverage](https://img.shields.io/badge/Coverage-80%2B-green?logo=vitest)](https://vitest.dev/)
 
-## 📋 Table of Contents
+A sophisticated React TypeScript frontend for LibreChat/Agentis featuring multi-model AI conversations, intelligent agents with MCP integration, code execution, and real-time streaming.
 
-- [Quick Start](#-quick-start)
-- [Features Overview](#-features-overview)
-- [Architecture](#-architecture)
-- [Project Structure](#-project-structure)
-- [Development Guide](#-development-guide)
-- [Testing](#-testing)
-- [Production Build](#-production-build)
-- [Configuration](#-configuration)
-- [Advanced Features](#-advanced-features)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- **Node.js**: 18+ (LTS recommended)
-- **npm**: 8+ or **Bun**: 1.0+ (alternative runtime)
-- **Backend**: LibreChat API server running on port 3080
-
-### Installation & Setup
+> **Prerequisites**: Node.js 18+, npm 8+, LibreChat API server on port 3080
 
 ```bash
-# Navigate to client directory
-cd LibreChat/client
+# 1. Install & build dependencies
+cd LibreChat/client && npm install
+cd .. && npm run build:data-schemas && npm run build:data-provider && npm run build:mcp
 
-# Install dependencies
-npm install
-
-# Build shared packages (required for monorepo)
-cd .. && npm run build:data-schemas
-npm run build:data-provider
-npm run build:mcp
-
-# Return to client and start development server
+# 2. Start development
 cd client && npm run dev
+# → http://localhost:3090
 ```
 
-**🌐 Open [http://localhost:3090](http://localhost:3090)** - Your development server is ready!
+**🎯 Common First-Time Issues:**
+- **Port 3090 in use?** Run `npx kill-port 3090`
+- **API errors?** Ensure backend is running on port 3080
+- **Build errors?** Rebuild packages in order: `data-schemas` → `data-provider` → `mcp`
 
-### Quick Development Tips
-- **Hot Reload**: Changes reflect instantly without losing state
-- **Type Checking**: Real-time TypeScript validation in your IDE
-- **API Integration**: Backend calls automatically proxy to port 3080
-- **Package Changes**: Run rebuild commands when modifying shared packages
+---
 
-## 🎯 Features Overview
+## 🎯 What This Client Does
 
-### 🤖 **Multi-Model AI Chat**
-Chat with 15+ AI providers (OpenAI, Anthropic, Google, Azure) with seamless model switching mid-conversation.
+| Feature | Description | Key Tech |
+|---------|-------------|----------|
+| **🤖 Multi-Model AI** | Chat with 15+ providers, switch models mid-conversation | React Context + SSE |
+| **🛠️ Intelligent Agents** | MCP-powered agents with visual tool tracking | Model Context Protocol |
+| **🔐 Inline OAuth** | Authenticate services directly in chat | Composio Integration |
+| **💻 Code Execution** | Live code preview in 30+ languages | Sandpack Integration |
+| **🌍 Global Ready** | 30+ languages, RTL support, PWA | i18next + Service Worker |
 
-### 🛠️ **Intelligent Agents**
-Deploy MCP-powered agents with visual tool execution tracking and inline OAuth authentication for services like Google Workspace.
+---
 
-### 💻 **Code Artifacts**
-Execute code in 30+ programming languages with live preview for React, Vue, and Angular projects.
+## 🏗️ Architecture Overview
 
-### 📁 **Smart File Management**
-Drag-and-drop file uploads with RAG integration, image editing, and vector store processing.
+### Tech Stack
+```typescript
+// Core Stack
+React 18.2 + TypeScript     // UI Framework
+├── Vite 6.3.4              // Build System (HMR, ESBuild)
+├── Tailwind + Radix UI     // Styling + Accessible Components
+└── Better Auth 1.2.9       // Authentication (2FA, OAuth)
 
-### 💬 **Enhanced Chat**
-Fork conversations, regenerate responses, edit messages, and search across all conversations.
+// State Management (3-Layer)
+Recoil Atoms                // Global state (user, settings)
+├── React Context          // Feature state (chat, agents)
+└── TanStack Query         // Server state (API, caching)
 
-### 🌍 **Global Ready**
-25+ languages with RTL support, accessibility compliance (WCAG 2.1 AA), and PWA installation.
+// Real-time & Performance
+Server-Sent Events         // Live AI streaming
+├── PWA + Service Worker   // Offline support
+└── Code Splitting         // Optimized bundles
+```
 
-## 🏗️ Architecture
-
-### Technology Stack
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **UI Framework** | React 18.2 + TypeScript | Component-based development with type safety |
-| **Build System** | Vite 6.3.4 | Fast development with optimized production builds |
-| **State Management** | Recoil + React Context + TanStack Query | Multi-layer state architecture |
-| **Styling** | Tailwind CSS 3.4.1 + Radix UI | Utility-first CSS with accessible primitives |
-| **Real-time** | Server-Sent Events (SSE) | Live AI response streaming |
-| **Authentication** | Better Auth 1.2.9 | Modern auth with 2FA and OAuth |
-| **Testing** | Vitest + React Testing Library | Modern testing with fast execution |
-
-### State Management Architecture
-
+### State Flow
 ```mermaid
-graph TD
-    A[UI Components] --> B[Recoil Global State]
-    A --> C[React Context Features]  
-    A --> D[TanStack Query Server]
-    
-    B --> E[User, Settings, Endpoints]
-    C --> F[Chat, Agents, Files, Tools]
-    D --> G[API Data, Caching, Background Sync]
+graph LR
+    A[User Action] --> B[Component]
+    B --> C{State Type?}
+    C -->|Global| D[Recoil Atom]
+    C -->|Feature| E[React Context] 
+    C -->|Server| F[TanStack Query]
+    D --> G[All Components]
+    E --> H[Feature Components]
+    F --> I[Background Sync]
 ```
 
-**🌐 Global State (Recoil)**: User auth, app settings, UI state  
-**⚡ Feature State (Context)**: Chat sessions, agents, file processing  
-**🔄 Server State (TanStack Query)**: API data with intelligent caching  
+---
 
 ## 📂 Project Structure
 
 ```
-client/
-├── src/
-│   ├── components/           # React component library (500+ files)
-│   │   ├── ui/              # 50+ reusable primitives (Button, Dialog, Form)
-│   │   ├── Auth/            # Login, 2FA, OAuth flows
-│   │   ├── Chat/            # Main chat interface
-│   │   ├── Artifacts/       # Code execution system
-│   │   ├── Tools/           # MCP tool integration
-│   │   └── ...              # Feature-organized components
-│   ├── Providers/           # 24 React Context providers
-│   ├── hooks/               # 80+ custom hooks by feature
-│   ├── store/               # Recoil state atoms
-│   ├── data-provider/       # API communication layer
-│   ├── utils/               # Helper functions
-│   ├── locales/             # 25+ language translations
-│   └── main.jsx             # App entry point
-├── public/                  # Static assets & configuration
-├── test/                    # Testing utilities
-└── dist/                    # Production build output
+client/src/
+├── 🎨 components/          # React components (500+ files)
+│   ├── ui/                # Reusable primitives (Button, Dialog)
+│   ├── Auth/              # Login, 2FA, onboarding flows
+│   ├── Chat/              # Core chat interface + messaging
+│   ├── Artifacts/         # Code execution with Sandpack
+│   ├── Tools/             # MCP integration + tool management
+│   └── Composio/          # Inline OAuth authentication
+├── 🧮 store/              # Recoil atoms (user, settings, endpoints)
+├── 🔗 hooks/              # 80+ custom hooks (by feature)
+├── 🌐 data-provider/      # API communication layer
+├── 🚏 routes/             # Router config + auth guards
+├── 🛠️ utils/              # Helper functions
+├── 🗣️ locales/            # 30+ language translations
+└── ⚙️ services/           # Core services (config, logging)
 ```
 
-### Key Directories Explained
+**Key Patterns:**
+- **Co-located Tests**: `MyComponent.tsx` + `__tests__/MyComponent.test.tsx`
+- **Feature Organization**: Components grouped by domain (Auth, Chat, etc.)
+- **Barrel Exports**: Each directory has `index.ts` for clean imports
 
-**`components/`** - Feature-organized React components:
-- `ui/` - Reusable primitives built on Radix UI
-- `Auth/` - Complete authentication flows  
-- `Chat/` - Core chat interface with message handling
-- `Artifacts/` - AI-generated code execution system
-- `Tools/` - MCP server integration and management
-
-**`hooks/`** - Domain-specific custom hooks:
-- `Auth/` - Authentication state and flows
-- `Chat/` - Chat functionality and message processing
-- `SSE/` - Server-sent events for real-time streaming
-- `Files/` - File upload and drag-and-drop handling
-
-**`store/`** - Recoil state management:
-- `user.ts` - User profile and authentication state
-- `settings.ts` - Application preferences
-- `endpoints.ts` - AI provider configurations
+---
 
 ## 🛠️ Development Guide
 
 ### Essential Commands
 
 ```bash
-# Development workflow
+# 🔄 Development
 npm run dev              # Start dev server (port 3090)
 npm run build            # Production build
 npm run preview-prod     # Preview production build
 
-# Testing & quality
-npm run test             # Watch mode testing
-npm run test:ci          # Single run with coverage
+# 🧪 Testing
+npm run test             # Watch mode
+npm run test:ci          # Single run + coverage
+npm run test:ui          # Interactive test UI
+
+# 🔍 Quality
 npm run typecheck        # TypeScript validation
-npm run lint             # Code style checking
+npm run lint             # ESLint checking
 
-# Package management
-npm run data-provider    # Rebuild data-provider package
-npm run prebuild         # Copy configuration files
-
-# Bun alternative (faster)
-npm run b:dev           # Bun development server
-npm run b:build         # Bun production build
+# 📦 Package Management
+npm run data-provider    # Rebuild data-provider (common)
 ```
+
+### Development Workflow
+
+**1. 🔧 When Packages Change**
+```bash
+# Required rebuild order
+npm run build:data-schemas     # 1. Types & models
+npm run build:data-provider    # 2. API layer
+npm run build:mcp             # 3. MCP services
+# 4. Restart dev server
+```
+
+**2. 🧪 Testing Strategy**
+```bash
+# TDD Workflow
+npm run test MyComponent    # Watch specific component
+npm run test:coverage      # Full coverage report
+npm run test:ci           # CI-style run
+```
+
+**3. 🎯 TypeScript Configs**
+- `tsconfig.json` → Development (all files)
+- `tsconfig.typecheck.json` → Production (source only)
+- **Why?** Faster CI, focused errors, better DX
 
 ### Development Server Features
 
-- **⚡ Hot Module Replacement**: Instant updates preserving component state
-- **🔍 TypeScript Checking**: Real-time validation with error overlay
-- **🔗 API Proxy**: Automatic backend routing (port 3080)
-- **🗺️ Source Maps**: Debug-friendly error traces
-- **🌍 Environment Variables**: Auto-loaded from parent directory
+| Feature | Benefit |
+|---------|---------|
+| **⚡ Hot Module Replacement** | Instant updates, preserve state |
+| **🔗 API Proxy** | Auto-routes `/api/*` to port 3080 |
+| **🗺️ Source Maps** | Debug-friendly error traces |
+| **🔍 TypeScript Integration** | Real-time type validation |
 
-### Package Dependencies & Rebuild Workflow
+---
 
-The client integrates with shared monorepo packages:
+## 🧪 Testing Strategy
 
+### Quick Test Commands
 ```bash
-# Required rebuild sequence when packages change:
-1. npm run build:data-schemas     # Mongoose models
-2. npm run build:data-provider    # API layer  
-3. npm run build:mcp             # MCP services
-4. Restart client dev server      # Pick up changes
+npm run test                    # Watch mode (development)
+npm run test:ci                # Single run + coverage
+npm run test:ui                # Interactive Vitest UI
+npm run test:ci -- AuthButton  # Test specific component
 ```
 
-**💡 Quick rebuild**: Use `npm run data-provider` for frequent data-provider changes.
-
-### IDE Setup Recommendations
-
-**VS Code Extensions:**
-- ES7+ React/Redux/React-Native snippets
-- Tailwind CSS IntelliSense
-- TypeScript Importer
-- Auto Rename Tag
-- Bracket Pair Colorizer
-
-**Settings:**
-```json
-{
-  "typescript.preferences.useAliasesForRenames": false,
-  "typescript.preferences.importModuleSpecifier": "relative"
-}
+### Test Organization
 ```
-
-## 🧪 Testing
-
-### Test Organization & Patterns
-
+src/components/Auth/AuthButton.tsx
+src/components/Auth/__tests__/AuthButton.test.tsx
 ```
-src/
-├── components/MyComponent.tsx
-├── components/__tests__/MyComponent.test.tsx
-├── utils/myUtility.ts
-└── utils/__tests__/myUtility.test.ts
-```
-
-### Testing Commands
-
-```bash
-# Development testing
-npm run test             # Watch mode
-npm run test:ui          # Interactive Vitest UI
-
-# CI testing
-npm run test:ci          # Single run with coverage
-npm run test:coverage    # Detailed coverage report
-
-# Specific tests
-npm run test:ci -- Chat  # Test specific component
-npm run test -- --grep "auth" # Test by pattern
-```
-
-### Testing Tools
-
-- **Vitest**: Fast ESM-native test runner
-- **React Testing Library**: Accessibility-focused component testing
-- **jsdom**: Browser environment simulation
-- **Coverage**: v8 provider with 80%+ target across all metrics
 
 ### Example Test Pattern
-
 ```typescript
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { RecoilRoot } from 'recoil';
-
-describe('ChatMessage', () => {
-  const renderWithProviders = (props = {}) => 
+// Clean, focused component tests
+describe('AuthButton', () => {
+  const renderButton = (props = {}) => 
     render(
       <RecoilRoot>
-        <ChatContext.Provider value={mockContext}>
-          <ChatMessage {...props} />
-        </ChatContext.Provider>
+        <AuthContext.Provider value={mockAuthContext}>
+          <AuthButton {...props} />
+        </AuthContext.Provider>
       </RecoilRoot>
     );
 
-  it('handles user interactions', async () => {
+  it('shows loading state during authentication', async () => {
     const user = userEvent.setup();
-    renderWithProviders({ content: 'Hello' });
+    renderButton({ loading: true });
     
-    await user.click(screen.getByRole('button', { name: /regenerate/i }));
-    expect(mockRegenerate).toHaveBeenCalled();
+    expect(screen.getByRole('button')).toBeDisabled();
+    expect(screen.getByText('Signing in...')).toBeInTheDocument();
   });
 });
 ```
 
-## 🏭 Production Build
+**Current Coverage**: 80%+ target, with several components achieving 100% (ProactiveMCPAuth: 29 test cases, 100% coverage)
 
-### Build Optimization Strategy
-
-**Code Splitting Configuration:**
-```typescript
-// Intelligent chunk strategy for optimal loading
-{
-  'radix-ui': ['@radix-ui/*'],        // UI library (~200KB)
-  'framer-motion': ['framer-motion'], // Animations (~150KB)
-  'tanstack': ['@tanstack/*'],        // Data fetching (~100KB)
-  'markdown': ['react-markdown'],     // Content rendering (~300KB)
-  'locales': ['src/locales/*'],       // Translations (~50KB each)
-  'vendor': [/* other dependencies */] // Remaining packages
-}
-```
-
-**Performance Features:**
-- 🌲 **Tree Shaking**: Eliminates unused code
-- 📦 **Terser Minification**: Advanced compression
-- 🗜️ **Gzip Compression**: Auto-compression for assets > 10KB
-- 🖼️ **Asset Optimization**: Font subsetting, image compression
-
-### Progressive Web App (PWA)
-
-**Installation Features:**
-- 📱 Native app-like installation on all devices
-- 🔄 Background updates with user notifications
-- 📴 Offline functionality for core features
-- 💾 4MB intelligent asset caching
-
-### Environment Configuration
-
-```bash
-# Development (.env.local)
-VITE_API_HOST=http://localhost:3080
-VITE_APP_TITLE=LibreChat
-VITE_SHOW_GOOGLE_LOGIN_OPTION=true
-VITE_DISABLE_REGISTRATION=false
-
-# Production
-VITE_API_HOST=https://your-api-domain.com
-VITE_APP_TITLE=Your Custom Title
-```
-
-## ⚙️ Configuration
-
-### TypeScript Configuration
-
-**Multiple Config Strategy:**
-- `tsconfig.json` - Development with full IntelliSense
-- `tsconfig.typecheck.json` - Production CI/CD validation
-- `tsconfig.test.json` - Test-specific type checking
-
-**Benefits:**
-- 🎯 **Focused Errors**: Production builds show only runtime-critical issues
-- ⚡ **Faster CI**: ~40% reduction in type checking time
-- 🔧 **Better DX**: Less overwhelming error output
-
-```bash
-npm run typecheck        # Production code only (recommended)
-npm run typecheck:all    # All files including tests
-```
-
-### LibreChat YAML Integration
-
-The client dynamically loads configuration from `librechat.yaml`:
-
-**Development**: Symlinked from project root for hot reload  
-**Production**: Copied during build and served compressed
-
-```typescript
-// Configuration service usage
-const config = await LibreChatConfigService.loadConfig();
-const displayName = config.getToolDisplayName('TOOL_NAME', 'server');
-```
-
-**Debug Configuration:**
-```javascript
-// Enable debug mode in browser console
-localStorage.setItem('debug-tool-display-names', 'true');
-```
+---
 
 ## 🔧 Advanced Features
 
 ### Model Context Protocol (MCP) Integration
 
-**Core Capabilities:**
-- 🔧 **Tool Execution**: Visual tracking with real-time status
-- 🔐 **Authentication**: Inline OAuth flows for service connections
-- ⚙️ **Server Management**: Dynamic configuration through UI
-- 🏷️ **Custom Naming**: Tool display names via configuration
+**What it does:** Enables AI agents to use external tools with visual tracking and authentication.
+
+```typescript
+// Example: Custom tool display names
+const config = await LibreChatConfigService.loadConfig();
+const displayName = config.getToolDisplayName('COMPOSIO_CHECK_ACTIVE_CONNECTION', 'googlesheets');
+// Returns: "Check Connection" instead of technical function name
+```
+
+**Key Components:**
+- **Tool Execution Tracking**: Visual status indicators
+- **Inline Authentication**: OAuth flows in chat
+- **Server Management**: Configure MCP servers via UI
+- **Custom Display Names**: User-friendly tool names via YAML config
 
 ### Composio Authentication System
 
-**Inline OAuth Features:**
-- **Seamless Integration**: OAuth flows directly in chat conversations
-- **Service Support**: Google Workspace (Sheets, Docs, Drive, Gmail, Calendar)
-- **Status Persistence**: Authentication state across sessions
-- **Error Handling**: Graceful fallbacks for failed flows
+**Inline OAuth Flow:**
+1. Agent attempts tool requiring auth → Shows auth message
+2. `AuthCodeParser` detects auth needed → Renders auth button
+3. User clicks → OAuth popup → Service connection
+4. Button updates to "✓ Connected" → User can retry tool
 
-**Adding New OAuth Providers:**
+**Supported Services**: Google Sheets, Docs, Drive, Gmail, Calendar
 
-To extend the system with new providers (Notion, GitHub, Slack), update these 6 locations:
+**Adding New Services**: Update 6 specific files:
+1. Backend service mapping (`ComposioService.js`)
+2. Frontend auth button (`ComposioAuthButton.tsx`)
+3. Auth code parser (`AuthCodeParser.tsx`)
+4. MCP auth utilities (`mcpAuth.ts`)
+5. Database schema (`composioConnectedAccount.ts`)
+6. MCP server config (`librechat.yaml`)
 
-1. **Backend Service Mapping** (`/api/server/services/ComposioService.js`)
-2. **Frontend Auth Button** (`/client/src/components/Composio/ComposioAuthButton.tsx`)
-3. **Auth Code Parser** (`/client/src/components/Messages/Content/AuthCodeParser.tsx`)
-4. **MCP Auth Utilities** (`/client/src/utils/mcpAuth.ts`)
-5. **Database Schema** (`/packages/data-schemas/src/schema/composioConnectedAccount.ts`)
-6. **MCP Server Config** (`/librechat.yaml`)
+### Code Execution (Sandpack)
+- **Live Preview**: React, Vue, Angular projects
+- **30+ Languages**: Syntax highlighting
+- **Real-time**: Instant execution + error handling
+- **Export**: Download or share code
 
-### Code Execution System
+---
 
-**Sandpack Integration:**
-- **Framework Support**: React, Vue, Angular, Vanilla JS/TS
-- **Language Support**: JavaScript, TypeScript, Python, HTML, CSS
-- **Live Preview**: Real-time execution with error handling
-- **Export Options**: Download files or create shareable links
+## ⚙️ Configuration
 
-### Internationalization (i18n)
+### Environment Variables
+```bash
+# .env.local (development)
+VITE_API_HOST=http://localhost:3080
+VITE_APP_TITLE=LibreChat
+VITE_SHOW_GOOGLE_LOGIN_OPTION=true
+VITE_DISABLE_REGISTRATION=false
+```
 
-**25+ Supported Languages:**
-Arabic (RTL), Chinese (Simplified/Traditional), English, French, German, Japanese, Korean, Spanish, and more.
+### LibreChat YAML Integration
+```yaml
+# librechat.yaml - Custom tool display names
+mcpServers:
+  googlesheets:
+    displayName: "Google Sheets"
+    toolDisplayNames:
+      COMPOSIO_CHECK_ACTIVE_CONNECTION: "Check Connection"
+      GOOGLESHEETS_CREATE_GOOGLE_SHEET1: "Create Spreadsheet"
+```
 
-**Implementation:**
+**Debug Tools:**
+```javascript
+// Browser console debugging
+localStorage.setItem('debug-tool-display-names', 'true');
+localStorage.setItem('debug', 'librechat:*');
+```
+
+---
+
+## 🏭 Production Build
+
+### Build Optimization
 ```typescript
+// Intelligent code splitting (vite.config.ts)
+{
+  'radix-ui': ['@radix-ui/*'],        // ~200KB
+  'framer-motion': ['framer-motion'], // ~150KB  
+  'tanstack': ['@tanstack/*'],        // ~100KB
+  'markdown': ['react-markdown'],     // ~300KB
+  'locales': ['src/locales/*'],       // ~50KB each
+}
+```
+
+### PWA Features
+- 📱 **Native Installation**: App-like experience
+- 🔄 **Auto Updates**: Background updates with user prompt
+- 📴 **Offline Support**: Core functionality without network
+- 💾 **Smart Caching**: 4MB intelligent asset caching
+
+---
+
+## 🐛 Troubleshooting
+
+### Quick Fixes
+
+| Issue | Quick Fix |
+|-------|-----------|
+| **Build fails** | `cd .. && npm run build:data-provider && cd client` |
+| **Port 3090 in use** | `npx kill-port 3090` |
+| **API errors** | Check backend: `curl http://localhost:3080/api/health` |
+| **Package errors** | Rebuild in order: schemas → provider → mcp |
+| **HMR not working** | Restart dev server |
+
+### Debug Tools
+```javascript
+// React DevTools + browser console
+localStorage.setItem('debug', 'librechat:*');
+localStorage.setItem('debug-tool-display-names', 'true');
+
+// TanStack Query debugging
+import { useQueryClient } from '@tanstack/react-query';
+const client = useQueryClient();
+console.log(client.getQueryCache());
+```
+
+---
+
+## 🌍 Internationalization
+
+**30+ Languages**: Arabic (RTL), Chinese, English, French, German, Japanese, Korean, Spanish, etc.
+
+```typescript
+// Usage in components
 import { useLocalize } from '~/hooks';
 
-function Component() {
+function WelcomeMessage() {
   const localize = useLocalize();
   return <h1>{localize('com_ui_welcome')}</h1>;
 }
@@ -407,128 +346,76 @@ function Component() {
 
 **Adding Languages:**
 1. Create `src/locales/[lang]/translation.json`
-2. Copy English translations as template
+2. Copy English keys as template
 3. Update `i18n.ts` configuration
-4. Add language selector option
 
-## 🐛 Troubleshooting
-
-### Common Issues & Solutions
-
-| Problem | Symptoms | Solution |
-|---------|----------|----------|
-| **Build Failures** | `npm run build` errors | Rebuild packages: `data-schemas` → `data-provider` → `mcp` |
-| **HMR Issues** | Changes not reflecting | Check port 3090, restart dev server |
-| **API Failures** | Network/404 errors | Verify backend on port 3080, check proxy config |
-| **Type Errors** | TS compilation failures | Run `npm run typecheck`, fix reported issues |
-| **Package Import Errors** | Module not found | Rebuild package dependencies in correct order |
-
-### Development Debugging
-
-**Browser Console Tools:**
-```javascript
-// Enable detailed logging
-localStorage.setItem('debug', 'librechat:*');
-
-// Debug TanStack Query
-import { useQueryClient } from '@tanstack/react-query';
-const client = useQueryClient();
-console.log(client.getQueryCache());
-
-// Debug MCP tool display names
-localStorage.setItem('debug-tool-display-names', 'true');
-```
-
-**Browser Extensions:**
-- **React DevTools**: Component inspection
-- **Recoil DevTools**: State atom visualization
-- **Network Tab**: API request debugging
-
-### Error Messages & Fixes
-
-**"Module not found: librechat-data-provider"**
-```bash
-cd .. && npm run build:data-provider && cd client && npm run dev
-```
-
-**"Port 3090 already in use"**
-```bash
-# Kill existing process
-npx kill-port 3090
-# Or use different port
-npm run dev -- --port 3091
-```
-
-**"Cannot connect to API"**
-- Verify backend running: `curl http://localhost:3080/api/health`
-- Check proxy configuration in `vite.config.ts`
-- Ensure environment variables are set correctly
-
-## 📚 Resources & Documentation
-
-### Essential Links
-- **[React Documentation](https://react.dev/learn)** - Modern React patterns
-- **[TypeScript Handbook](https://typescriptlang.org/docs)** - Type system reference
-- **[Vite Guide](https://vitejs.dev/guide)** - Build tool documentation
-- **[Tailwind CSS](https://tailwindcss.com/docs)** - Utility-first styling
-- **[Radix UI](https://radix-ui.com/primitives)** - Accessible component primitives
-
-### Project-Specific Resources
-- **[Model Context Protocol](https://modelcontextprotocol.io/)** - MCP specification
-- **[Better Auth](https://better-auth.com/docs)** - Authentication framework
-- **[Sandpack](https://sandpack.codesandbox.io/)** - Code execution environment
-- **[LibreChat API](../api/README.md)** - Backend API documentation
-
-### Community & Support
-- **GitHub Issues**: Bug reports and feature requests
-- **Discord Community**: Real-time discussions and support
-- **Documentation**: Comprehensive guides and tutorials
+---
 
 ## 🤝 Contributing
 
-### Development Workflow
-
-1. **🍴 Fork & Clone**: Create your development branch
-2. **📦 Setup**: Install dependencies and build packages
-3. **🔧 Develop**: Make changes with proper testing
-4. **🧪 Test**: Ensure all tests pass and coverage is maintained
-5. **📝 Document**: Update docs for any API changes
-6. **🔍 Review**: Submit PR with clear description
-
-### Code Quality Standards
-
+### Quick Contribution Checklist
 ```bash
 # Pre-commit verification
-npm run lint          # ESLint style checking
-npm run typecheck     # TypeScript validation
-npm run test:ci       # Complete test suite
-npm run build         # Production build verification
+npm run lint          # ✅ ESLint passes
+npm run typecheck     # ✅ TypeScript validates  
+npm run test:ci       # ✅ Tests pass + coverage
+npm run build         # ✅ Production builds
 ```
 
-### Guidelines
-
+### Code Standards
 - **🎯 Type Safety**: Use TypeScript strictly, avoid `any`
-- **♿ Accessibility**: Ensure WCAG 2.1 AA compliance
-- **🌍 Internationalization**: Add translations for new UI text
-- **🧪 Testing**: Write tests for new features and bug fixes
-- **📖 Documentation**: Update relevant documentation
+- **♿ Accessibility**: WCAG 2.1 AA compliance
+- **🧪 Testing**: Write tests for new features
+- **🌍 i18n**: Add translations for UI text
+- **📖 Documentation**: Update docs for API changes
 
 ### Git Conventions
+```bash
+# Branch naming
+feat/issue-123-mcp-integration
+fix/issue-456-auth-bug
 
-**Branch Naming:**
-- `feat/issue-123-feature-name`
-- `fix/issue-456-bug-description`
-- `refactor/component-cleanup`
-
-**Commit Messages:**
-```
+# Commit messages
 feat(auth): add 2FA support for enhanced security
-fix(chat): resolve message regeneration timeout issue
-test(components): increase Button component coverage to 100%
-docs(readme): update deployment configuration guide
+fix(chat): resolve message regeneration timeout
+test(mcp): increase tool execution coverage to 100%
 ```
 
 ---
 
-**🚀 Ready to build the future of AI conversations?**  
-**Built with ❤️ for the LibreChat/Agentis community**
+## 📚 Essential Resources
+
+### Core Documentation
+- **[React 18 Docs](https://react.dev/learn)** - Modern React patterns
+- **[TypeScript Handbook](https://typescriptlang.org/docs)** - Type system guide
+- **[Vite Guide](https://vitejs.dev/guide)** - Build tool docs
+- **[Tailwind CSS](https://tailwindcss.com/docs)** - Utility-first styling
+
+### Project-Specific
+- **[Model Context Protocol](https://modelcontextprotocol.io/)** - MCP specification
+- **[Better Auth](https://better-auth.com/docs)** - Authentication framework
+- **[Sandpack](https://sandpack.codesandbox.io/)** - Code execution docs
+
+---
+
+## 🎯 Next Steps
+
+**New Developer Path:**
+1. ✅ Follow Quick Start → Get dev server running
+2. 🔍 Explore `src/components/ui/` → Understand component patterns
+3. 🧪 Run `npm run test:ui` → See testing approach
+4. 🔧 Make small change → Experience HMR workflow
+5. 📖 Read Advanced Features → Understand MCP/Composio systems
+
+**Ready to Contribute:**
+1. 🎯 Pick issue from GitHub → Focus on specific feature
+2. 🔧 Create feature branch → Follow naming conventions
+3. 🧪 Write tests first → Follow TDD approach
+4. ✅ Run quality checks → Ensure standards met
+5. 📝 Submit PR → Clear description + documentation
+
+---
+
+**🚀 Built with ❤️ for the LibreChat/Agentis community**
+
+*Questions? Check our [troubleshooting section](#-troubleshooting) or open a GitHub issue.*

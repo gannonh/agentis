@@ -1,349 +1,542 @@
 # Agentis
 
-## Project Overview
+> **Enterprise-grade AI conversation platform** - Integrate multiple AI models with advanced features like MCP tool integration, multi-tenant organizations, and self-hosted infrastructure.
 
-Agentis is an all-in-one AI conversations platform that integrates multiple AI models into a single chat interface. It's a branded fork of LibreChat with custom capabilities, allowing users to integrate various AI models including:
-- Anthropic (Claude)
-- OpenAI
-- Azure OpenAI
-- Google Vertex AI
-- And more through custom endpoints
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue.svg)](https://www.typescriptlang.org/)
 
-## Project Structure
+## Table of Contents
 
-```bash
-agentis/                    # Project root
-├── docs                    # Project documentation
-├── LibreChat              # Main application directory
-│   ├── api                # Backend server (Node.js/Express)
-│   │                      # API endpoints, controllers, middleware, models, services
-│   │                      # Authentication, conversations, message processing, AI provider integrations
-│   ├── client             # Frontend application (React, TypeScript)
-│   │                      # UI components for chat functionality
-│   │                      # Uses Tailwind CSS for styling
-│   ├── config             # Utility scripts for user management, balance management, and configuration
-│   ├── e2e                # Playwright e2e tests
-│   ├── packages           # Shared packages used by both client and server
-│   │   ├── arcade-client  # Client SDK for Arcade integration
-│   │   ├── data-provider  # Data services for client-server communication
-│   │   ├── data-schemas   # Mongoose schemas and model definitions
-│   │   └── mcp           # Model Context Protocol integration services
-│   └── utils              # DevOps utilities
-├── logs                   # Development logs
-│   ├── backend.log
-│   └── frontend.log
-├── scripts                # Project-level utility scripts
-├── codesandbox-client     # Self-hosted code execution environment
-├── rag_api               # Self-hosted document processing and retrieval
-└── secrets               # Local secrets management
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Docker Services](#docker-services)
+- [MCP Integration](#mcp-integration)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+
+## Overview
+
+Agentis is a production-ready AI conversation platform built as an enhanced fork of LibreChat. It provides seamless integration with multiple AI providers while offering enterprise features like organization management, advanced tool integration, and comprehensive self-hosted infrastructure.
+
+**Built for teams and organizations** that need:
+- Secure, self-hosted AI conversations
+- Integration with productivity tools (Google Workspace, Notion, etc.)
+- Multi-tenant organization management
+- Advanced document processing and code execution capabilities
+
+## Key Features
+
+### 🤖 **Multi-AI Provider Support**
+- Anthropic Claude, OpenAI, Google AI, Azure OpenAI, Mistral, OpenRouter
+- Unified interface across all providers
+- Custom endpoint configuration
+
+### 🏢 **Enterprise Organization Management**
+- Multi-tenant architecture with domain-based auto-assignment
+- Slack-style organization joining and management  
+- Role-based access control (Admin, Member, custom roles)
+- Invitation system with email-based onboarding
+
+### 🔧 **Model Context Protocol (MCP) Integration**
+- Pre-configured integrations: Gmail, Google Drive, Sheets, Docs, Calendar, Notion
+- Custom MCP server support
+- Tool authentication with OAuth2 flows
+- User-friendly tool display names and descriptions
+
+### 🛡️ **Self-Hosted Infrastructure**
+- Custom Docker images for all dependencies
+- Complete control over data and processing
+- Security-focused architecture
+
+### 💻 **Advanced Capabilities**
+- Document processing with RAG (Retrieval-Augmented Generation)
+- Code execution environment (Sandpack integration)
+- Full-text conversation search (MeiliSearch)
+- Real-time message streaming
+- File upload and management
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js 18+** and npm
+- **Docker Desktop** (for supporting services)
+- **Git** for cloning the repository
+
+### 5-Minute Setup
+
+1. **Clone and navigate to the project**
+   ```bash
+   git clone https://github.com/gannonh/agentis.git
+   cd agentis/LibreChat
+   ```
+
+2. **Install dependencies and build packages**
+   ```bash
+   npm ci
+   npm run build:all
+   ```
+
+3. **Start supporting services**
+   ```bash
+   # From project root directory
+   cd .. && ./scripts/docker-cli.sh start
+   cd LibreChat
+   ```
+
+4. **Create basic environment configuration**
+   ```bash
+   # Minimum required for development
+   echo "MONGO_URI=mongodb://admin:password@localhost:27017/Agentis?authSource=admin
+   JWT_SECRET=your-secret-key-change-in-production
+   ANTHROPIC_API_KEY=your-anthropic-key
+   OPENAI_API_KEY=your-openai-key" > .env
+   ```
+
+5. **Start the application**
+   ```bash
+   # Terminal 1: Backend
+   npm run backend:dev
+   
+   # Terminal 2: Frontend  
+   npm run frontend:dev
+   ```
+
+6. **Access Agentis**
+   - Open http://localhost:3080
+   - Create an account and start chatting!
+
+### What You Can Do
+
+Once running, you can:
+- Chat with multiple AI models (Claude, GPT-4, etc.)
+- Upload documents and images for analysis
+- Execute code snippets in a sandboxed environment
+- Connect Google Workspace tools (Gmail, Drive, Sheets, Docs)
+- Manage conversations with full-text search
+- Create organizations and invite team members
+
+## Architecture
+
+Agentis follows a modern microservices architecture optimized for AI workloads:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Agentis Platform                         │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   React Client  │   Express API   │      Data Layer         │
+│   (Port 3080)   │   (Port 3001)   │                         │
+│                 │                 │  • MongoDB (Primary)    │
+│ • Chat UI       │ • Auth Routes   │  • PostgreSQL+pgVector  │
+│ • File Upload   │ • AI Clients    │  • MeiliSearch          │
+│ • Admin Panel   │ • MCP Manager   │                         │
+│ • Organization  │ • Middleware    │                         │
+├─────────────────┼─────────────────┼─────────────────────────┤
+│            Supporting Services (Docker)                     │
+│                                                             │
+│ • RAG API (8000)     • Sandpack (8080)                    │
+│ • MailHog (8025)     • Vector DB (5432)                   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Working Directory Context
+### Technology Stack
 
-**Important**: Most development commands should be run from the `LibreChat` directory, not the project root:
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Frontend** | React 18 + TypeScript + Vite | Modern UI with real-time updates |
+| **Backend** | Node.js + Express | RESTful API and WebSocket streaming |
+| **Database** | MongoDB + Mongoose | User data, conversations, organizations |
+| **Vector DB** | PostgreSQL + pgVector | Document embeddings for RAG |
+| **Search** | MeiliSearch | Full-text conversation search |
+| **Auth** | Better Auth | Multi-tenant authentication |
+| **State** | Recoil + TanStack Query | Client-side state management |
+| **Styling** | Tailwind CSS + Radix UI | Responsive, accessible design |
+| **Testing** | Vitest + Playwright | Unit, integration, and E2E tests |
 
-```bash
-# Navigate to the main application directory
-cd LibreChat
+## Development
 
-# Then run your commands
-npm run backend:dev
+### Project Structure
+
+```
+agentis/
+├── LibreChat/              # Main application (work here)
+│   ├── api/               # Backend Express server
+│   ├── client/            # React frontend  
+│   ├── packages/          # Shared monorepo packages
+│   │   ├── data-provider/ # API communication layer
+│   │   ├── data-schemas/  # Database schemas
+│   │   ├── mcp/          # MCP integration services
+│   │   └── arcade-client/ # Arcade AI SDK
+│   └── e2e/              # End-to-end tests
+├── docs/                  # Documentation
+├── scripts/               # Development utilities
+├── codesandbox-client/    # Self-hosted code execution
+└── rag_api/              # Self-hosted document processing
 ```
 
-## Development Commands
+### Environment Configuration
 
-### Installation
+**Required Environment Variables**
 
-```bash
-# From the LibreChat directory
-cd LibreChat
+Create `.env` in the `LibreChat/` directory:
 
-# Install dependencies
-npm ci
+```env
+# Database (Required)
+MONGO_URI=mongodb://admin:password@localhost:27017/Agentis?authSource=admin
 
-# Build shared packages
-npm run build:data-provider
-npm run build:mcp
-npm run build:data-schemas
+# Security (Required)
+JWT_SECRET=your-secure-jwt-secret-change-in-production
+SESSION_SECRET=your-secure-session-secret
+
+# AI Providers (At least one required)
+OPENAI_API_KEY=sk-your-openai-key
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+GOOGLE_API_KEY=your-google-ai-key
+
+# Search (Optional - uses defaults if not set)
+MEILI_MASTER_KEY=your-meili-master-key
+SEARCH_URL=http://localhost:7700
+
+# RAG/Document Processing (Optional)
+RAG_API_URL=http://localhost:8000
+
+# MCP/Tool Integration (Optional)
+COMPOSIO_API_KEY=your-composio-key
 ```
 
-### Running the Application
+For Docker services, create `.env.docker`:
 
-```bash
-# Development CLI helper (from project root)
-./scripts/dev.sh --help
-
-# From LibreChat directory:
-# Start backend server in development mode
-# Backend is always running and restarts on file change so you almost never need to run this
-npm run backend:dev
-
-# Start frontend development server
-# Frontend is always running and restarts on file change so you almost never need to run this
-npm run frontend:dev
-
-# Production mode
-npm run backend      # Start backend server in production mode
-npm run frontend     # Build frontend for production
+```env
+# Required for RAG functionality
+OPENAI_API_KEY=sk-your-openai-key
 ```
 
 ### Package Development Workflow
 
-When making changes to shared packages, you need to rebuild them for changes to be reflected:
-
-1. **Package Purposes**:
-   - **data-schemas**: Mongoose schema definitions and models
-   - **data-provider**: API communication layer and data services
-   - **mcp**: Model Context Protocol integration services
-   - **arcade-client**: Client SDK for Arcade integration
-
-2. **When to rebuild packages**:
-   - Changes to `data-schemas` → rebuild with `npm run build:data-schemas`
-   - Changes to `data-provider` → rebuild with `npm run build:data-provider`
-   - Changes to `mcp` → rebuild with `npm run build:mcp`
-   - Changes to `arcade-client` → rebuild with `npm run build:arcade-client`
-  
-3. **Dependency Order**: 
-   - Changes to a package require rebuilding that package and any that depend on it
-   - Dependency chain: `data-schemas` → `data-provider` → `mcp` → client/API
-
-4. **Development Helper Script**:
-   - Use the provided script for easier development: `./scripts/dev.sh`
-   - Example: `./scripts/dev.sh --all` to rebuild all packages and restart servers
-   - Run `./scripts/dev.sh --help` for all available options
-
-5. **Auto-watch During Development**:
-   - For continuous development, use watch mode in the package directory:
-   - Example: `cd packages/data-provider && npm run build:watch`
-
-### Testing
+When working with shared packages (common during development):
 
 ```bash
-# From LibreChat directory:
+# When you change data-schemas
+npm run build:data-schemas
 
-# Run backend unit tests
-npm run test:api
+# When you change data-provider  
+npm run build:data-provider
 
-# Run frontend unit tests  
-npm run test:client
+# When you change MCP services
+npm run build:mcp
 
-# End-to-end tests
-npm run e2e          # Run E2E tests
-npm run e2e:headed   # Run E2E tests with browser visible
+# Rebuild everything
+npm run build:all
 
-# Run all tests
-npm run test:all     # Runs all unit tests across the project
+# For continuous development
+cd packages/data-provider
+npm run build:watch
 ```
 
-### Code Quality
+**Development Helper Scripts**
 
 ```bash
-# From LibreChat directory:
-
-# Linting
-npm run lint         # Check for linting issues
-npm run lint:fix     # Fix linting issues automatically
-npm run format       # Format code with prettier
-
-# TypeScript
-npm run typecheck:client    # Check client production code types
-npm run typecheck:packages  # Check packages production code types
-npm run typecheck:all       # Check all production code types
-
-# Run all checks before PR
-npm run check:client
-npm run check:api
-npm run check:packages
+# From project root - comprehensive development management
+./scripts/dev.sh --help       # Show all options
+./scripts/dev.sh --all        # Rebuild packages + restart servers
+./scripts/dev.sh --clean      # Clean build + full restart
+./scripts/dev.sh --frontend   # Restart frontend only
+./scripts/dev.sh --backend    # Restart backend only
 ```
 
-### TypeScript Configuration
-
-The project uses separate TypeScript configurations to improve developer experience:
-
-- **Production Type Checking**: `npm run typecheck:*` commands exclude test files, focusing on runtime-affecting errors
-- **Development**: IDEs use full configurations including test files for complete IntelliSense
-- **Benefits**: Reduced noise in CI/CD (63 vs 101 errors), faster type checking, better error focus
-
-Each component has multiple `tsconfig.json` files:
-- `tsconfig.json` - Full development configuration
-- `tsconfig.typecheck.json` - Production code only (used by CI/CD)
-- `tsconfig.test.json` - Test files only (optional)
-
-## Docker Configuration
-
-### Self-Hosted Dependencies
-
-Agentis uses self-hosted Docker images for all external dependencies to ensure security, reliability, and control:
-
-- **RAG API**: `ghcr.io/gannonh/rag-api-lite:latest` - Document processing and retrieval
-- **Sandpack**: `ghcr.io/gannonh/codesandbox-client/bundler:latest` - Code execution environment
-
-These are maintained in separate repositories:
-- [rag_api](https://github.com/gannonh/rag_api) - Forked from danny-avila/rag_api
-- [codesandbox-client](https://github.com/gannonh/codesandbox-client) - Forked from LibreChat-AI/codesandbox-client
-
-### Development Setup
-
-For local development, use the dev configuration that runs only supporting services while keeping the API and client running on the host:
+### Available Commands
 
 ```bash
-# From project root:
-# Start supporting services for development
-docker-compose -f LibreChat/docker-compose.dev.yml up -d
+# Development
+npm run backend:dev          # Start backend with auto-reload
+npm run frontend:dev         # Start frontend with hot reload
 
-# Or use the CLI helper (from project root)
+# Building
+npm run build:all           # Build all shared packages
+npm run build:client        # Build frontend for production
+npm run frontend            # Build frontend (production)
+
+# Testing
+npm run test:all            # Run all test suites
+npm run test:api            # Backend tests only
+npm run test:client         # Frontend tests only
+npm run e2e                 # End-to-end tests
+
+# Code Quality
+npm run lint                # Lint all code
+npm run format              # Format with Prettier
+npm run typecheck:all       # TypeScript type checking
+npm run check:all           # Full quality check (pre-PR)
+npm run preflight           # Complete CI/CD simulation
+```
+
+## Docker Services
+
+Agentis uses Docker for supporting services while keeping the main app on the host for faster development.
+
+### Service Management
+
+```bash
+# Start all services
 ./scripts/docker-cli.sh start
 
-# View available services
+# Check service status  
 ./scripts/docker-cli.sh status
+
+# View logs
+./scripts/docker-cli.sh logs [service_name]
+
+# Stop all services
+./scripts/docker-cli.sh stop
+
+# Access MongoDB shell
+./scripts/docker-cli.sh mongo-shell
 ```
 
-**Required Environment Files** (in LibreChat directory):
-- `.env` - Main application configuration
-- `.env.docker` - Docker services configuration (e.g., OpenAI key for RAG API)
+### Available Services
 
-### Full Deployment
+| Service | Port | Purpose | Docker Image |
+|---------|------|---------|--------------|
+| **MongoDB** | 27017 | Primary database | `mongodb/mongodb-community-server:latest` |
+| **MeiliSearch** | 7700 | Full-text search | `getmeili/meilisearch:v1.12.3` |
+| **PostgreSQL** | 5432 | Vector database | `ankane/pgvector:latest` |
+| **RAG API** | 8000 | Document processing | `ghcr.io/gannonh/rag-api-lite:latest` |
+| **Sandpack** | 8080 | Code execution | `ghcr.io/gannonh/codesandbox-client/bundler:latest` |
+| **MailHog** | 8025 | Email testing | `mailhog/mailhog:latest` |
 
-For full application deployment with Docker:
+### Connection Details
+
+**MongoDB**
+```
+Host: localhost:27017
+Username: admin  
+Password: password
+Database: Agentis
+Connection String: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
+```
+
+**PostgreSQL (Vector DB)**
+```
+Host: localhost:5432
+Database: mydatabase
+Username: myuser
+Password: mypassword
+```
+
+## MCP Integration
+
+Model Context Protocol enables powerful tool integrations with external services.
+
+### Pre-configured Integrations
+
+| Service | Tools Available | Authentication |
+|---------|-----------------|----------------|
+| **Gmail** | Send/receive emails, manage labels, search | OAuth2 |
+| **Google Drive** | File management, sharing, search | OAuth2 |
+| **Google Sheets** | Create, edit, format spreadsheets | OAuth2 |
+| **Google Docs** | Document creation and editing | OAuth2 |
+| **Google Calendar** | Event management, scheduling | OAuth2 |
+| **Notion** | Database and page management | OAuth2 |
+
+### Configuration
+
+MCP servers are configured in `librechat.yaml`. Example configuration:
+
+```yaml
+mcpServers:
+  gmail:
+    type: streamable-http
+    url: https://mcp.composio.dev/composio/server/[UUID]/mcp?user_id={{LIBRECHAT_USER_ID}}
+    displayName: "Gmail"
+    iconPath: "/assets/tools/gmail.svg"
+    description: "Email management and communication"
+    headers:
+      X-API-Key: "${COMPOSIO_API_KEY}"
+    toolDisplayNames:
+      GMAIL_SEND_EMAIL: "Send Email"
+      GMAIL_FETCH_EMAILS: "Get Emails"
+```
+
+### Using MCP Tools
+
+1. **Start a conversation** with any AI model
+2. **Select tools** from the tools panel (if tools are configured)
+3. **Authenticate** when prompted (OAuth flow will open)
+4. **Use natural language** to interact with your tools:
+   - "Check my recent emails"
+   - "Create a Google Doc summarizing this conversation"
+   - "Add an event to my calendar for tomorrow at 2 PM"
+
+## Testing
+
+### Test Structure
 
 ```bash
-# From LibreChat directory:
-# Start application with production config
-docker-compose -f docker-compose.prod.yml up -d
-
-# Stop services
-docker-compose -f docker-compose.prod.yml down
+LibreChat/
+├── api/__tests__/           # Backend unit/integration tests
+├── client/src/**/*.test.*   # Frontend component tests  
+├── packages/*/src/**/*.test.* # Package-specific tests
+└── e2e/specs/              # End-to-end test scenarios
 ```
 
-### Docker Best Practices
+### Running Tests
 
-1. **MongoDB Connection**:
-   - Always use `authSource=admin` in MongoDB connection strings when using Docker containers
-   - Specify the database name explicitly (e.g., `/Agentis`) to avoid using the default "test" database
-   - Example: `mongodb://admin:password@localhost:27017/Agentis?authSource=admin`
+```bash
+# Unit Tests
+npm run test:api            # Backend tests (Vitest)
+npm run test:client         # Frontend tests (Vitest + RTL)
+npm run test:packages       # Shared package tests
 
-2. **Environment Handling**:
-   - Use `.env.docker` for Docker-specific environment variables
-   - Add `.env.docker` to `.gitignore` to prevent committing API keys
-   - Use environment variables in docker-compose.yml with defaults for non-sensitive information
+# Integration Tests  
+npm run test:api:integration # Backend integration tests
 
-3. **Volume Management**:
-   - When configuration changes cause issues, use `docker-compose down -v` to reset volumes
-   - Volumes are stored in Docker's managed area at `/var/lib/docker/volumes/[volume_name]/_data`
+# End-to-End Tests
+npm run e2e                 # Headless browser tests
+npm run e2e:headed          # Tests with visible browser
+npm run e2e:ui              # Interactive test runner
 
-4. **Debugging Docker Services**:
-   - Check logs with `docker logs [container_name]` 
-   - Use `docker exec -it [container_name] [command]` to run commands inside containers
-   - Container names include the project name for clarity (`agentis-mongodb` instead of just `mongodb`)
+# Coverage Reports
+npm run test:coverage       # Generate coverage reports
+```
 
-## Key Architecture Components
+### Test Categories
 
-### Backend Architecture
+- **Unit Tests**: Individual function/component testing
+- **Integration Tests**: Database, API, and service integration
+- **E2E Tests**: Full user workflow testing with Playwright
+- **Visual Tests**: Component rendering and styling validation
 
-1. **Express.js Server**
-   - RESTful API endpoints for auth, conversations, and messages
-   - Integration with multiple AI providers through adapter pattern
-   - MongoDB for data storage
-   - WebSockets/SSE for streaming responses
-   - Integration with Sandpack code execution environment
+## Deployment
 
-2. **Client Adapters**
-   - Each AI provider has its own client adapter (`api/app/clients/`)
-   - `BaseClient.js` provides common functionality
-   - Provider-specific clients (OpenAIClient, AnthropicClient, etc.) extend BaseClient
+### Production Deployment
 
-3. **Middleware**
-   - Authentication middleware
-   - Rate limiting and request validation
-   - Role-based access control
+1. **Prepare environment**
+   ```bash
+   # Set production environment variables
+   export NODE_ENV=production
+   export MONGO_URI=your-production-mongo-uri
+   export JWT_SECRET=your-production-jwt-secret
+   # ... other production variables
+   ```
 
-### Frontend Architecture
+2. **Build the application**
+   ```bash
+   npm run build:all
+   npm run frontend
+   ```
 
-1. **Component Structure**
-   - React components with Tailwind CSS
-   - Recoil and React Context for state management
-   - React Router for navigation
+3. **Deploy with Docker**
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
 
-2. **Context Providers**
-   - Multiple context providers for various features
-   - Chat, conversation, message management
-   - Authentication and user session handling
+### Health Monitoring
 
-3. **API Integration**
-   - Data providers for backend communication
-   - Real-time message streaming
+The application provides health check endpoints:
 
-## Additional Resources
+- `GET /api/health` - Overall application health
+- `GET /api/health/database` - Database connectivity  
+- `GET /api/health/mcp` - MCP server status
+- `GET /api/health/services` - External service status
 
-### Model Context Protocol (MCP)
-The project includes MCP integration for enhanced AI capabilities. Configuration is managed through `.mcp.json` in the project root.
+### Security Considerations
 
-### Development Scripts
-The `scripts/` directory contains various helper scripts:
-- `dev.sh` - Main development helper with build and server management
-- `docker-cli.sh` - Docker services management
-- `mongodb-cli.sh` - Direct MongoDB access
-- See `scripts/README.scripts.md` for full documentation
+- Change all default passwords and secrets
+- Use environment variables for sensitive configuration
+- Enable HTTPS in production
+- Configure proper CORS settings
+- Set up rate limiting and monitoring
+- Regular security updates and dependency scanning
 
-### Logs
-Development logs are written to the `logs/` directory in the project root:
-- `backend.log` - Backend server logs
-- `frontend.log` - Frontend development server logs
+## Contributing
 
-## Coding Conventions
+### Getting Started
 
-### Node.js API Server
+1. **Fork the repository** and clone your fork
+2. **Create a feature branch**: `git checkout -b feat/your-feature-name`
+3. **Set up development environment** (see Development section)
+4. **Make your changes** following the coding standards
+5. **Add tests** for new functionality
+6. **Run quality checks**: `npm run check:all`
+7. **Submit a pull request** with a clear description
 
-#### General Guidelines
-- Follow the [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)
-- Use "clean code" principles with small functions and modules
-- Prioritize readability and maintainability over brevity
-- Use CommonJS modules (require/exports) for Node.js modules
-- Apply proper modularization with separate files for different concerns
+### Development Standards
 
-#### API Design
-- Follow RESTful principles with appropriate HTTP methods
-- Use proper status codes (2xx success, 4xx client error, 5xx server error)
-- Implement consistent error handling with try-catch blocks
-- Use the logging system in `utils` directory for important events and errors
-- Use JWT-based, stateless authentication with `requireJWTAuth` middleware
+- **Code Style**: ESLint + Prettier configuration
+- **TypeScript**: Strict mode enabled, avoid `any` types
+- **Testing**: Unit tests required for new features
+- **Documentation**: Update relevant docs with changes
+- **Commits**: Use conventional commit format
 
-#### File Structure
-- **Routes**: Separate files for each resource using Express Router, prefixed with /api
-- **Controllers**: PascalCase files with "Controller" suffix (e.g., UserController.js)
-- **Services**: PascalCase files with "Service" suffix for business logic
-- **Models**: Singular PascalCase names for Mongoose models (e.g., User.js)
+### Branch Naming
 
-#### Best Practices
-- Keep controllers thin by delegating complex operations to services
-- Encapsulate database queries within model methods or service functions
-- Add JSDoc-style comments to functions, classes, and modules
-- Write unit tests for endpoints, controllers, and services
+- `feat/issue-123-description` - New features
+- `fix/issue-456-description` - Bug fixes  
+- `docs/update-readme` - Documentation updates
+- `refactor/component-cleanup` - Code refactoring
 
-### React Client
+## Troubleshooting
 
-#### TypeScript Practices
-- Always use proper types for component props and state
-- Avoid using `any` type unless absolutely necessary
-- Define interfaces or types for data structures
-- Use TypeScript's utility types (Partial, Pick, Omit) when appropriate
+### Common Issues
 
-#### Component Structure
-- Use functional components with hooks instead of class components
-- Follow a component-based architecture
-- Keep components focused on a single responsibility
-- Minimize rendering logic by extracting complex logic into functions/hooks
-- Use lazy loading for code splitting to improve performance
+**MongoDB Connection Failed**
+```bash
+# Check if MongoDB is running
+./scripts/docker-cli.sh status mongodb
 
-#### File Organization
-- Organize components by feature or domain
-- Group related files together in a single directory
-- Use PascalCase for component names and camelCase for functions/variables
-- Use index.ts files to export components to simplify imports
+# Check connection string format
+echo $MONGO_URI
+# Should be: mongodb://admin:password@localhost:27017/Agentis?authSource=admin
+```
 
-#### State Management
-- Use React Context API and Recoil for state management
-- Keep state as close to where it's needed as possible
-- Use local component state for UI-specific state
-- Avoid prop drilling by using Context or Recoil for shared state
-- Use the useReducer hook for complex state logic
+**Frontend Won't Start**
+```bash
+# Rebuild packages first
+npm run build:all
+
+# Clear package cache
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**MCP Tools Not Working**
+- Verify `COMPOSIO_API_KEY` is set in environment
+- Check MCP server configuration in `librechat.yaml`
+- Review browser console for authentication errors
+
+**Docker Services Won't Start**
+```bash
+# Reset Docker environment
+./scripts/docker-cli.sh stop
+docker system prune -f
+./scripts/docker-cli.sh start
+```
+
+### Getting Help
+
+- **Documentation**: Check the `docs/` directory for detailed guides
+- **Issues**: Search existing GitHub issues or create a new one
+- **Logs**: Check `logs/backend.log` and `logs/frontend.log` for errors
+
+## License
+
+This project is licensed under the ISC License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+Built on the foundation of [LibreChat](https://github.com/danny-avila/LibreChat) with enhancements for enterprise use. Special thanks to:
+
+- **LibreChat contributors** for the foundational platform
+- **Better Auth team** for modern authentication solutions  
+- **Composio** for MCP integration services
+- **Radix UI** for accessible component primitives
+
+---
+
+**Ready to get started?** Follow the [Quick Start](#quick-start) guide and you'll be chatting with AI in minutes!
