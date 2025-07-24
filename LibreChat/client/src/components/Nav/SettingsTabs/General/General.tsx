@@ -1,5 +1,3 @@
-import { useRecoilState } from 'recoil';
-import Cookies from 'js-cookie';
 import React, { useContext, useCallback } from 'react';
 import UserMsgMarkdownSwitch from './UserMsgMarkdownSwitch';
 import HideSidePanelSwitch from './HideSidePanelSwitch';
@@ -125,8 +123,6 @@ export const LangSelector = ({
 function General() {
   const { theme, setTheme } = useContext(ThemeContext);
 
-  const [langcode, setLangcode] = useRecoilState(store.lang);
-
   const changeTheme = useCallback(
     (value: string) => {
       setTheme(value);
@@ -134,29 +130,11 @@ function General() {
     [setTheme],
   );
 
-  const changeLang = useCallback(
-    (value: string) => {
-      let userLang = value;
-      if (value === 'auto') {
-        userLang = navigator.language || navigator.languages[0];
-      }
-
-      requestAnimationFrame(() => {
-        document.documentElement.lang = userLang;
-      });
-      setLangcode(userLang);
-      Cookies.set('lang', userLang, { expires: 365 });
-    },
-    [setLangcode],
-  );
 
   return (
     <div className="flex flex-col gap-3 p-1 text-sm text-text-primary">
       <div className="pb-3">
         <ThemeSelector theme={theme} onChange={changeTheme} />
-      </div>
-      <div className="pb-3">
-        <LangSelector langcode={langcode} onChange={changeLang} />
       </div>
       {toggleSwitchConfigs.map((config) => (
         <div key={config.key} className="pb-3">
