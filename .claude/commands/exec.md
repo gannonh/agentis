@@ -62,7 +62,7 @@ E2E Acceptance Test (Red) → Unit/Integration Tests (TDD) → Implementation �
 - Evaluate scope and criteria
 - Determine if E2E tests are applicable
 - Understand dependencies and constraints
-- If needed, update the issue with detailed implementation details and/or corrections
+- If labelled "draft", the issue MUST be updated with implementation details and/or corrections and labelled as "ready" before proceeding
 - Breakdown complex Issues into Sub-issues (use your own discretion)
 
 ### 2. E2E Acceptance Test Phase (When Applicable)
