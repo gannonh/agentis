@@ -147,12 +147,60 @@ const prepareBetterAuthRequest = async (req, res, next) => {
   }
 };
 
+// Avatar deletion middleware - intercept update-user requests to handle avatar: null
+const handleAvatarDeletion = async (req, res, next) => {
+  if (req.method === 'POST' && req.originalUrl.includes('update-user') && req.body?.avatar === null) {
+    try {
+      logger.info('🗑️ Avatar deletion detected in update-user request for user');
+      
+      // Get user ID from session or request
+      const auth = getAuth();
+      const sessionResult = await auth.api.getSession({ headers: req.headers });
+      
+      if (sessionResult?.data?.user?.id) {
+        const userId = sessionResult.data.user.id;
+        logger.info('🗑️ Removing avatar and image fields for user:', userId);
+        
+        // Get MongoDB connection
+        const mongoose = await import('mongoose');
+        const db = mongoose.connection.db;
+        const userCollection = db.collection('user');
+        const { ObjectId } = await import('mongodb');
+        
+        // Convert userId to ObjectId if it's a string
+        const userObjectId = typeof userId === 'string' ? new ObjectId(userId) : userId;
+        
+        // Use MongoDB $unset to completely remove both fields
+        await userCollection.updateOne(
+          { _id: userObjectId },
+          { 
+            $unset: { 
+              avatar: '',
+              image: '' 
+            } 
+          }
+        );
+        
+        logger.info('✅ Avatar and image fields removed from database for user:', userId);
+        
+        // Remove avatar from request body so Better Auth doesn't try to set it
+        delete req.body.avatar;
+      }
+    } catch (error) {
+      logger.error('Error in avatar deletion middleware:', error);
+      // Continue with normal processing even if avatar deletion fails
+    }
+  }
+  next();
+};
+
 // Better Auth integration - handle all other Better Auth endpoints
 router.all('/sign-in/*', prepareBetterAuthRequest);
 router.all('/sign-up/*', prepareBetterAuthRequest);
 router.all('/sign-out', prepareBetterAuthRequest);
 router.all('/session', prepareBetterAuthRequest);
 router.all('/admin/*', prepareBetterAuthRequest); // Admin plugin endpoints
+router.all('/update-user', handleAvatarDeletion, prepareBetterAuthRequest); // Handle avatar deletion
 
 // Organization detection endpoint moved to /api/organization/detect-domain to avoid Better Auth routing conflicts
 

@@ -205,6 +205,11 @@ mongoose.connection.once('open', () => {
             required: false,
             input: true, // Allow setting during updates
           },
+          avatar: {
+            type: 'string',
+            required: false,
+            input: true, // Allow setting during updates
+          },
         },
       },
 
