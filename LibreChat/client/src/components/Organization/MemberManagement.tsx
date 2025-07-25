@@ -20,6 +20,7 @@ import type { OrganizationMember, UserRole } from '~/config/betterAuth';
 interface MemberManagementProps {
   onInviteMember?: () => void;
   className?: string;
+  showHeader?: boolean;
 }
 
 /**
@@ -29,6 +30,7 @@ interface MemberManagementProps {
 export const MemberManagement: React.FC<MemberManagementProps> = ({
   onInviteMember,
   className = '',
+  showHeader = true,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
@@ -99,23 +101,25 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
   return (
     <div className={`rounded-lg bg-white shadow dark:bg-gray-800 ${className}`}>
       {/* Header */}
-      <div className="border-b border-gray-200 p-6 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Team Members</h3>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Manage your organization&apos;s team members and their roles
-            </p>
-          </div>
+      {showHeader && (
+        <div className="border-b border-gray-200 p-6 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Team Members</h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Manage your organization&apos;s team members and their roles
+              </p>
+            </div>
 
-          {canManageOrganization && (
-            <Button onClick={onInviteMember} className="bg-blue-600 text-white hover:bg-blue-700">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Invite Member
-            </Button>
-          )}
+            {canManageOrganization && (
+              <Button onClick={onInviteMember} className="bg-blue-600 text-white hover:bg-blue-700">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Invite Member
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="border-b border-gray-200 p-6 dark:border-gray-700">

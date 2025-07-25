@@ -6,12 +6,18 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RecoilRoot } from 'recoil';
 import { OrganizationSettings } from '../OrganizationSettings';
 import { useOrganization } from '~/Providers/OrganizationProvider';
 
 // Mock the organization provider
 vi.mock('~/Providers/OrganizationProvider');
 const mockUseOrganization = useOrganization as any;
+
+// Mock useLocalize hook
+vi.mock('~/hooks', () => ({
+  useLocalize: () => (key: string) => key,
+}));
 
 // Mock UI components
 vi.mock('~/components/ui/Button', () => ({
@@ -118,6 +124,15 @@ vi.mock('react-hook-form', () => ({
   }),
 }));
 
+// Helper function to render component with RecoilRoot
+const renderOrganizationSettings = (props = {}) => {
+  return render(
+    <RecoilRoot>
+      <OrganizationSettings {...props} />
+    </RecoilRoot>
+  );
+};
+
 describe('OrganizationSettings', () => {
   const mockOrganization = {
     id: 'org-123',
@@ -191,7 +206,7 @@ describe('OrganizationSettings', () => {
         organization: null,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Access Denied')).toBeInTheDocument();
       expect(
@@ -205,7 +220,7 @@ describe('OrganizationSettings', () => {
         canUpdateSettings: false,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Access Denied')).toBeInTheDocument();
       expect(
@@ -214,7 +229,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should render settings form when user can manage organization', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Organization Settings')).toBeInTheDocument();
       expect(
@@ -225,7 +240,7 @@ describe('OrganizationSettings', () => {
 
   describe('Form Rendering', () => {
     it('should render all form sections', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Organization Logo')).toBeInTheDocument();
       expect(screen.getByText('Basic Information')).toBeInTheDocument();
@@ -233,7 +248,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should render organization logo section with current logo', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const logoImg = screen.getByAltText('Test Organization logo');
       expect(logoImg).toBeInTheDocument();
@@ -246,7 +261,7 @@ describe('OrganizationSettings', () => {
         organization: { ...mockOrganization, logo: undefined },
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.queryByAltText('Test Organization logo')).not.toBeInTheDocument();
       // Should render Building2 icon in gradient background
@@ -257,7 +272,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should render all form fields with current values', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
       expect(screen.getByText('Organization Slug')).toBeInTheDocument();
@@ -266,14 +281,14 @@ describe('OrganizationSettings', () => {
     });
 
     it('should display organization slug as read-only', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('test-org')).toBeInTheDocument();
       expect(screen.getByText('The organization slug cannot be changed')).toBeInTheDocument();
     });
 
     it('should display organization details', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('org-123')).toBeInTheDocument();
       expect(screen.getByText('owner')).toBeInTheDocument();
@@ -286,13 +301,13 @@ describe('OrganizationSettings', () => {
 
   describe('Logo Upload Functionality', () => {
     it('should render upload logo button', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Upload Logo')).toBeInTheDocument();
     });
 
     it('should render remove logo button when logo exists', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Remove')).toBeInTheDocument();
     });
@@ -303,13 +318,13 @@ describe('OrganizationSettings', () => {
         organization: { ...mockOrganization, logo: undefined },
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.queryByText('Remove')).not.toBeInTheDocument();
     });
 
     it('should handle logo upload button click', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const uploadButton = screen.getByText('Upload Logo');
       fireEvent.click(uploadButton);
@@ -320,7 +335,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should handle file upload', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = new File(['logo'], 'logo.png', { type: 'image/png' });
@@ -337,7 +352,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should handle remove logo', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const removeButton = screen.getByText('Remove');
       fireEvent.click(removeButton);
@@ -349,7 +364,7 @@ describe('OrganizationSettings', () => {
 
   describe('Form Submission', () => {
     it('should render save button', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
@@ -361,7 +376,7 @@ describe('OrganizationSettings', () => {
         updateOrganization,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const saveButton = screen.getByText('Save Changes');
       fireEvent.click(saveButton);
@@ -385,7 +400,7 @@ describe('OrganizationSettings', () => {
         updateOrganization,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const saveButton = screen.getByText('Save Changes');
       fireEvent.click(saveButton);
@@ -403,7 +418,7 @@ describe('OrganizationSettings', () => {
 
   describe('Delete Organization', () => {
     it('should render delete button for owners', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       // Get all delete organization buttons and target the trigger (first one with outline variant)
       const deleteButtons = screen.getAllByRole('button', { name: /delete organization/i });
@@ -419,13 +434,13 @@ describe('OrganizationSettings', () => {
         userRole: 'member',
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.queryByText('Delete Organization')).not.toBeInTheDocument();
     });
 
     it('should render delete confirmation dialog', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByTestId('alert-dialog')).toBeInTheDocument();
       expect(screen.getByTestId('alert-dialog-trigger')).toBeInTheDocument();
@@ -438,7 +453,7 @@ describe('OrganizationSettings', () => {
         deleteOrganization,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const deleteAction = screen.getByTestId('alert-dialog-action');
       fireEvent.click(deleteAction);
@@ -457,7 +472,7 @@ describe('OrganizationSettings', () => {
         deleteOrganization,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const deleteAction = screen.getByTestId('alert-dialog-action');
       fireEvent.click(deleteAction);
@@ -475,8 +490,10 @@ describe('OrganizationSettings', () => {
 
   describe('Custom Props', () => {
     it('should apply custom className', () => {
-      const { container } = render(<OrganizationSettings className="custom-class" />);
-      expect(container.firstChild).toHaveClass('custom-class');
+      const { container } = renderOrganizationSettings({ className: "custom-class" });
+      // The custom className is applied to the root div inside RecoilRoot
+      const rootDiv = container.querySelector('.mx-auto.max-w-2xl');
+      expect(rootDiv).toHaveClass('custom-class');
     });
   });
 
@@ -484,14 +501,14 @@ describe('OrganizationSettings', () => {
     it('should show loading state during form submission', () => {
       // This test would require properly mocking react-hook-form
       // For now, we'll just verify the save button exists
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
       expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
 
     it('should disable save button when form is not dirty', () => {
       // This test would require properly mocking react-hook-form
       // For now, we'll just verify the save button exists
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
       expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
   });
@@ -500,7 +517,7 @@ describe('OrganizationSettings', () => {
     it('should show validation errors', () => {
       // This test would require properly mocking react-hook-form
       // For now, we'll just verify the form fields exist
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
       expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
       expect(screen.getByLabelText('Website')).toBeInTheDocument();
     });

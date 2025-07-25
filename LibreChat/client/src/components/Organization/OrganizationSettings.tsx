@@ -14,6 +14,8 @@ import {
   Upload,
   ExternalLink,
   Globe,
+  Users,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
@@ -30,7 +32,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '~/components/ui/AlertDialog';
+import { OGDialog, OGDialogTrigger } from '~/components';
+import OGDialogTemplate from '~/components/ui/OGDialogTemplate';
+import { MemberManagement } from './MemberManagement';
 import { useOrganization } from '~/Providers/OrganizationProvider';
+import { useLocalize } from '~/hooks';
 import type { OrganizationData } from '~/config/betterAuth';
 
 interface OrganizationFormData {
@@ -52,14 +58,18 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [logoError, setLogoError] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
 
+  const localize = useLocalize();
   const {
     organization,
     userRole,
     canUpdateSettings,
+    canManageOrganization,
     updateOrganization,
     deleteOrganization,
     isLoading,
+    members,
   } = useOrganization();
 
   console.log('OrganizationSettings - organization data:', organization);
@@ -394,6 +404,48 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
             </div>
           </div>
         </div>
+
+        {/* Member Management */}
+        {canManageOrganization && (
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Team Members
+                </h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Manage your organization members and their roles
+                </p>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {members.length} member{members.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-end">
+              <OGDialog open={isUserManagementOpen} onOpenChange={setIsUserManagementOpen}>
+                <OGDialogTrigger asChild>
+                  <Button variant="outline" data-testid="manage-users-button">
+                    <Users className="mr-2 h-4 w-4" />
+                    Manage
+                  </Button>
+                </OGDialogTrigger>
+                <OGDialogTemplate
+                  title="Team Members"
+                  className="max-w-[1000px]"
+                  showCancelButton={false}
+                  buttons={
+                    <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Invite Member
+                    </Button>
+                  }
+                  main={<MemberManagement onInviteMember={() => {/* TODO: Implement invite flow */}} showHeader={false} />}
+                />
+              </OGDialog>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-between">
