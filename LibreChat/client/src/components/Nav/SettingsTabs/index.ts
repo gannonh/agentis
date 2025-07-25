@@ -7,3 +7,4 @@ export { RevokeKeysButton } from './Data/RevokeKeysButton';
 export { default as Account } from './Account/Account';
 export { default as Organization } from './Organization/Organization';
 export { default as Speech } from './Speech/Speech';
+export { default as Sharing } from './Sharing/Sharing';

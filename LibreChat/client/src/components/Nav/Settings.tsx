@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { MessageSquare, Command, Building2 } from 'lucide-react';
+import { MessageSquare, Command, Building2, Share } from 'lucide-react';
 import { SettingsTabValues } from 'librechat-data-provider';
 import type { TDialogProps } from '~/common/types';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
-import { General, Chat, Speech, Beta, Commands, Data, Account, Organization } from './SettingsTabs';
+import { General, Chat, Speech, Beta, Commands, Data, Account, Organization, Sharing } from './SettingsTabs';
 import { useMediaQuery, useLocalize, TranslationKeys } from '~/hooks';
 import { useOrganization } from '~/Providers';
 import { cn } from '~/utils';
@@ -37,6 +37,7 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
       SettingsTabValues.SPEECH,
       SettingsTabValues.DATA,
       SettingsTabValues.ACCOUNT,
+      SettingsTabValues.SHARING,
       ...(canManageOrganization ? [SettingsTabValues.ORGANIZATION] : []),
     ];
     const currentIndex = tabs.indexOf(activeTab);
@@ -100,6 +101,11 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
       value: SettingsTabValues.ACCOUNT,
       icon: <UserIcon />,
       label: 'com_nav_setting_account',
+    },
+    {
+      value: SettingsTabValues.SHARING,
+      icon: <Share className="icon-sm" />,
+      label: 'Sharing' as TranslationKeys,
     },
     {
       value: SettingsTabValues.ORGANIZATION,
@@ -234,6 +240,9 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
                     </Tabs.Content>
                     <Tabs.Content value={SettingsTabValues.ACCOUNT}>
                       <Account />
+                    </Tabs.Content>
+                    <Tabs.Content value={SettingsTabValues.SHARING}>
+                      <Sharing />
                     </Tabs.Content>
                     {canManageOrganization && (
                       <Tabs.Content value={SettingsTabValues.ORGANIZATION}>

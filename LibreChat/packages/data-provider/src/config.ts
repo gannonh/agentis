@@ -1221,6 +1221,10 @@ export enum SettingsTabValues {
    * Chat input commands
    */
   COMMANDS = 'commands',
+  /**
+   * Tab for Sharing Settings
+   */
+  SHARING = 'sharing',
 }
 
 export enum STTProviders {
