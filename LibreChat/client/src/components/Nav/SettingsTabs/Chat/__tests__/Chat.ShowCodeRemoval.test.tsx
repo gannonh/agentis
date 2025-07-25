@@ -14,7 +14,7 @@ const renderChat = () => {
   return render(
     <RecoilRoot>
       <Chat />
-    </RecoilRoot>
+    </RecoilRoot>,
   );
 };
 
@@ -25,16 +25,18 @@ describe('Chat Settings - Show Code Removal', () => {
 
   it('should not display show code option', () => {
     renderChat();
-    
+
     // Show code option should not be present
     expect(screen.queryByText('com_nav_show_code')).not.toBeInTheDocument();
-    expect(screen.queryByText('Always show code when using code interpreter')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Always show code when using code interpreter'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId('showCode')).not.toBeInTheDocument();
   });
 
   it('should display expected settings without show code', () => {
     renderChat();
-    
+
     // Verify other settings are still present
     expect(screen.getByText('com_nav_font_size')).toBeInTheDocument();
     expect(screen.getByText('com_nav_enter_to_send')).toBeInTheDocument();
@@ -44,13 +46,13 @@ describe('Chat Settings - Show Code Removal', () => {
 
   it('should not have show code toggle switch', () => {
     renderChat();
-    
+
     // Ensure no showCode switch exists
     expect(screen.queryByTestId('showCode')).not.toBeInTheDocument();
-    
+
     // Check that showCode is not in any switch IDs
     const switches = screen.getAllByRole('switch');
-    switches.forEach(switchElement => {
+    switches.forEach((switchElement) => {
       expect(switchElement).not.toHaveAttribute('data-testid', 'showCode');
       expect(switchElement).not.toHaveAttribute('id', 'showCode');
     });

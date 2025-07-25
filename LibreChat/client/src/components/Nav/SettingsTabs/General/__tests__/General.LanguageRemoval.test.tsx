@@ -24,7 +24,7 @@ const renderGeneral = () => {
       <ThemeContext.Provider value={mockThemeContext}>
         <General />
       </ThemeContext.Provider>
-    </RecoilRoot>
+    </RecoilRoot>,
   );
 };
 
@@ -35,36 +35,36 @@ describe('General Settings - Language Removal', () => {
 
   it('should not display language selector', () => {
     renderGeneral();
-    
+
     // Language selector should not be present
     expect(screen.queryByText('com_nav_language')).not.toBeInTheDocument();
     expect(screen.queryByText('Language')).not.toBeInTheDocument();
-    
+
     // Theme selector should still be present
     expect(screen.getByText('com_nav_theme')).toBeInTheDocument();
   });
 
   it('should display expected settings without language', () => {
     renderGeneral();
-    
+
     // Verify theme selector is present
     expect(screen.getByText('com_nav_theme')).toBeInTheDocument();
-    
+
     // Verify toggle switches are present
     expect(screen.getByText('com_nav_user_msg_markdown')).toBeInTheDocument();
     expect(screen.getByText('com_nav_auto_scroll')).toBeInTheDocument();
     expect(screen.getByText('com_nav_hide_panel')).toBeInTheDocument();
-    
+
     // Verify archived chats section is present
     expect(screen.getByText('com_ui_manage')).toBeInTheDocument();
   });
 
   it('should not have any language-related functionality', () => {
     renderGeneral();
-    
+
     // Ensure no language dropdowns or selectors exist
     const dropdowns = screen.getAllByRole('button');
-    dropdowns.forEach(dropdown => {
+    dropdowns.forEach((dropdown) => {
       expect(dropdown.textContent).not.toMatch(/english|auto|language/i);
     });
   });

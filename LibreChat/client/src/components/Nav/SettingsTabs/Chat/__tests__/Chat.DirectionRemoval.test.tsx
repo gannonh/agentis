@@ -14,7 +14,7 @@ const renderChat = () => {
   return render(
     <RecoilRoot>
       <Chat />
-    </RecoilRoot>
+    </RecoilRoot>,
   );
 };
 
@@ -25,7 +25,7 @@ describe('Chat Settings - Direction Removal', () => {
 
   it('should not display chat direction selector', () => {
     renderChat();
-    
+
     // Chat direction should not be present
     expect(screen.queryByText('com_nav_chat_direction')).not.toBeInTheDocument();
     expect(screen.queryByText('Chat direction')).not.toBeInTheDocument();
@@ -34,10 +34,10 @@ describe('Chat Settings - Direction Removal', () => {
 
   it('should display expected settings without chat direction', () => {
     renderChat();
-    
+
     // Verify font size selector is present
     expect(screen.getByText('com_nav_font_size')).toBeInTheDocument();
-    
+
     // Verify toggle switches are present
     expect(screen.getByText('com_nav_enter_to_send')).toBeInTheDocument();
     expect(screen.getByText('com_nav_save_badges_state')).toBeInTheDocument();
@@ -46,10 +46,10 @@ describe('Chat Settings - Direction Removal', () => {
 
   it('should not have any chat direction related functionality', () => {
     renderChat();
-    
+
     // Ensure no direction-related elements exist
     expect(screen.queryByTestId('chatDirection')).not.toBeInTheDocument();
-    
+
     // Ensure no chat direction labels or buttons exist
     expect(screen.queryByLabelText(/direction/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ltr|rtl/i)).not.toBeInTheDocument();
