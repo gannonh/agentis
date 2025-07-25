@@ -34,13 +34,6 @@ const toggleSwitchConfigs = [
     key: 'showThinking',
   },
   {
-    stateAtom: store.showCode,
-    localizationKey: 'com_nav_show_code',
-    switchId: 'showCode',
-    hoverCardText: undefined,
-    key: 'showCode',
-  },
-  {
     stateAtom: store.LaTeXParsing,
     localizationKey: 'com_nav_latex_parsing',
     switchId: 'latexParsing',
