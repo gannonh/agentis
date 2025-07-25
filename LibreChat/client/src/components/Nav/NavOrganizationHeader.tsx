@@ -16,7 +16,7 @@ import { cn } from '~/utils';
  */
 export const NavOrganizationHeader: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
-  const { organization, userRole, members, isLoading } = useOrganization();
+  const { organization, userRole, members, isLoading, canManageOrganization } = useOrganization();
 
   if (isLoading || !organization) {
     return null;
@@ -26,25 +26,32 @@ export const NavOrganizationHeader: React.FC = () => {
   const RoleIcon = roleIcon;
 
   const handleClick = () => {
-    // Open settings modal with organization tab
-    setShowSettings(true);
+    // Only open settings if user can manage organization
+    if (canManageOrganization) {
+      // Open settings modal with organization tab
+      setShowSettings(true);
+    }
+    // If user is not an owner, this button should not be clickable
+    // (handled by the UI state below)
   };
 
   return (
     <>
       <div
+        data-testid="nav-organization-header"
         className={cn(
-          'mx-2 mb-3 cursor-pointer rounded-lg bg-surface-secondary p-3',
-          'transition-colors duration-200 hover:bg-surface-tertiary',
+          'mx-2 mb-3 rounded-lg bg-surface-secondary p-3',
+          canManageOrganization && 'cursor-pointer transition-colors duration-200 hover:bg-surface-tertiary',
+          !canManageOrganization && 'cursor-default opacity-75',
         )}
-        onClick={handleClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
+        onClick={canManageOrganization ? handleClick : undefined}
+        role={canManageOrganization ? "button" : undefined}
+        tabIndex={canManageOrganization ? 0 : -1}
+        onKeyDown={canManageOrganization ? (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             handleClick();
           }
-        }}
+        } : undefined}
       >
         <div className="flex items-center space-x-3">
           {/* Organization icon */}

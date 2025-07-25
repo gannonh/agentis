@@ -7,6 +7,7 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@
 import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
 import { General, Chat, Speech, Beta, Commands, Data, Account, Organization } from './SettingsTabs';
 import { useMediaQuery, useLocalize, TranslationKeys } from '~/hooks';
+import { useOrganization } from '~/Providers';
 import { cn } from '~/utils';
 
 interface SettingsProps extends TDialogProps {
@@ -16,6 +17,7 @@ interface SettingsProps extends TDialogProps {
 export default function Settings({ open, onOpenChange, initialTab }: SettingsProps) {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const localize = useLocalize();
+  const { canManageOrganization } = useOrganization();
   const [activeTab, setActiveTab] = useState(initialTab || SettingsTabValues.GENERAL);
   const tabRefs = useRef({});
 
@@ -35,7 +37,7 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
       SettingsTabValues.SPEECH,
       SettingsTabValues.DATA,
       SettingsTabValues.ACCOUNT,
-      SettingsTabValues.ORGANIZATION,
+      ...(canManageOrganization ? [SettingsTabValues.ORGANIZATION] : []),
     ];
     const currentIndex = tabs.indexOf(activeTab);
 
@@ -59,7 +61,7 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
     }
   };
 
-  const settingsTabs: {
+  const allSettingsTabs: {
     value: SettingsTabValues;
     icon: React.JSX.Element;
     label: TranslationKeys;
@@ -105,6 +107,14 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
       label: 'com_nav_setting_organization',
     },
   ];
+
+  // Filter tabs based on permissions
+  const settingsTabs = allSettingsTabs.filter((tab) => {
+    if (tab.value === SettingsTabValues.ORGANIZATION) {
+      return canManageOrganization;
+    }
+    return true;
+  });
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as SettingsTabValues);
@@ -225,9 +235,11 @@ export default function Settings({ open, onOpenChange, initialTab }: SettingsPro
                     <Tabs.Content value={SettingsTabValues.ACCOUNT}>
                       <Account />
                     </Tabs.Content>
-                    <Tabs.Content value={SettingsTabValues.ORGANIZATION}>
-                      <Organization />
-                    </Tabs.Content>
+                    {canManageOrganization && (
+                      <Tabs.Content value={SettingsTabValues.ORGANIZATION}>
+                        <Organization />
+                      </Tabs.Content>
+                    )}
                   </div>
                 </Tabs.Root>
               </div>

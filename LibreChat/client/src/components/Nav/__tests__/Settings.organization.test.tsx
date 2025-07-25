@@ -29,6 +29,15 @@ vi.mock('~/hooks', () => ({
   },
 }));
 
+// Mock OrganizationProvider
+vi.mock('~/Providers', () => ({
+  useOrganization: () => ({
+    organization: { id: 'org-123', name: 'Test Org' },
+    userRole: 'owner',
+    canManageOrganization: true,
+  }),
+}));
+
 // Mock all settings tab components
 vi.mock('../SettingsTabs', () => ({
   General: () => <div data-testid="general-tab">General Settings</div>,
