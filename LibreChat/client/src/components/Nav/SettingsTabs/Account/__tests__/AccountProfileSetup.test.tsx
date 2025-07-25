@@ -9,7 +9,7 @@ import { vi } from 'vitest';
 import { RecoilRoot } from 'recoil';
 import { AccountProfileSetup } from '../AccountProfileSetup';
 import { authClient } from '~/config/betterAuth';
-import { useUploadAvatarMutation, useGetFileConfig } from '~/data-provider';
+import { useUploadAvatarMutation, useGetFileConfig, useGetUserQuery } from '~/data-provider';
 import { useToastContext } from '~/Providers/ToastContext';
 import useDebounce from '~/hooks/Input/useDebounce';
 
@@ -25,6 +25,7 @@ vi.mock('~/config/betterAuth', () => ({
 vi.mock('~/data-provider', () => ({
   useUploadAvatarMutation: vi.fn(),
   useGetFileConfig: vi.fn(),
+  useGetUserQuery: vi.fn(),
 }));
 
 // Mock toast context
@@ -71,6 +72,10 @@ describe('AccountProfileSetup', () => {
     
     (useUploadAvatarMutation as any).mockReturnValue(mockUploadAvatarMutation);
     (useGetFileConfig as any).mockReturnValue({ data: mockFileConfig });
+    (useGetUserQuery as any).mockReturnValue({ 
+      data: mockUser, 
+      refetch: vi.fn().mockResolvedValue({ data: mockUser }) 
+    });
     (useToastContext as any).mockReturnValue({ showToast: mockShowToast });
     (authClient.updateUser as any).mockResolvedValue({});
 
@@ -264,7 +269,6 @@ describe('AccountProfileSetup', () => {
       expect(authClient.updateUser).toHaveBeenCalledWith({
         name: 'Jane Doe',
         username: 'janedoe',
-        avatar: null,
       });
     });
 
@@ -328,12 +332,17 @@ describe('AccountProfileSetup', () => {
   it('removes avatar when remove button is clicked', async () => {
     const user = userEvent.setup();
     
-    // Start with a user that has an avatar
+    // Set up user with avatar in both session and userData
+    const userWithAvatar = { ...mockUser, avatar: '/uploads/avatar.jpg' };
     (authClient.useSession as any).mockReturnValue({
       data: {
-        user: { ...mockUser, avatar: '/uploads/avatar.jpg' },
+        user: userWithAvatar,
       },
       refetch: vi.fn(),
+    });
+    (useGetUserQuery as any).mockReturnValue({ 
+      data: userWithAvatar, 
+      refetch: vi.fn().mockResolvedValue({ data: userWithAvatar }) 
     });
 
     renderComponent();
