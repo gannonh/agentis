@@ -41,3 +41,4 @@ temp/Agentis.*.json
 e2e/temp/remove-avatar-test.png
 LibreChat/e2e/fixtures/im-1mb.JPG
 LibreChat/data/logs.json
+LibreChat/playwright-report/index.html
