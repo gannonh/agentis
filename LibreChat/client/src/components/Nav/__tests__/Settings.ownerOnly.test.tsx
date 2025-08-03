@@ -99,9 +99,9 @@ describe('Settings - Organization Tab Owner Visibility', () => {
 
     renderSettings(mockProps);
 
-    // Check that Account tab is still the last tab
+    // Check that Sharing tab is now the last tab when Organization is hidden
     const tabs = screen.getAllByRole('tab');
     const lastTab = tabs[tabs.length - 1];
-    expect(lastTab).toHaveTextContent('com_nav_setting_account');
+    expect(lastTab).toHaveTextContent('Sharing');
   });
 });

@@ -47,6 +47,7 @@ vi.mock('../SettingsTabs', () => ({
   Commands: () => <div data-testid="commands-tab">Commands Settings</div>,
   Data: () => <div data-testid="data-tab">Data Settings</div>,
   Account: () => <div data-testid="account-tab">Account Settings</div>,
+  Sharing: () => <div data-testid="sharing-tab">Sharing Settings</div>,
   Organization: () => <div data-testid="organization-tab">Organization Settings</div>,
 }));
 
@@ -94,6 +95,7 @@ vi.mock('lucide-react', () => ({
   ),
   Command: ({ className }: any) => <div data-testid="command-icon" className={className} />,
   Building2: ({ className }: any) => <div data-testid="building-icon" className={className} />,
+  Share: ({ className }: any) => <div data-testid="share-icon" className={className} />,
 }));
 
 // Mock SVG icons
@@ -158,22 +160,22 @@ describe('Settings - Organization Tab Integration', () => {
   });
 
   describe('Tab Order and Structure', () => {
-    it('should render Organization tab after Account tab', () => {
+    it('should render Organization tab after Sharing tab', () => {
       render(<Settings {...mockProps} />);
 
-      const accountTab = screen.getByTestId('tab-trigger-account');
+      const sharingTab = screen.getByTestId('tab-trigger-sharing');
       const organizationTab = screen.getByTestId('tab-trigger-organization');
 
       // Verify both tabs exist
-      expect(accountTab).toBeInTheDocument();
+      expect(sharingTab).toBeInTheDocument();
       expect(organizationTab).toBeInTheDocument();
 
-      // Organization should come after Account in the DOM
+      // Organization should come after Sharing in the DOM
       const tabTriggers = screen.getAllByRole('button');
-      const accountIndex = tabTriggers.indexOf(accountTab);
+      const sharingIndex = tabTriggers.indexOf(sharingTab);
       const organizationIndex = tabTriggers.indexOf(organizationTab);
 
-      expect(organizationIndex).toBeGreaterThan(accountIndex);
+      expect(organizationIndex).toBeGreaterThan(sharingIndex);
     });
 
     it('should maintain proper tab order for keyboard navigation', () => {
@@ -188,6 +190,7 @@ describe('Settings - Organization Tab Integration', () => {
         'speech',
         'data',
         'account',
+        'sharing',
         'organization',
       ];
 

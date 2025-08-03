@@ -96,26 +96,53 @@ vi.mock('~/components/ui/AlertDialog', () => ({
   ),
 }));
 
-// Mock react-hook-form
+// Mock react-hook-form with realistic form behavior
+const mockFormValues = {
+  name: 'Test Organization',
+  description: 'Test organization description',
+  website: 'https://test.com',
+  logo: 'https://example.com/logo.png',
+};
+
+const mockRegister = vi.fn((name, options) => ({
+  name,
+  onChange: vi.fn((e) => {
+    // Update mock form values when inputs change
+    if (e.target) {
+      mockFormValues[name as keyof typeof mockFormValues] = e.target.value;
+    }
+  }),
+  onBlur: vi.fn(),
+  ref: vi.fn(),
+}));
+
+const mockSetValue = vi.fn((name, value) => {
+  // Update mock form values when setValue is called
+  mockFormValues[name as keyof typeof mockFormValues] = value;
+});
+
+const mockWatch = vi.fn((name?: string) => {
+  if (name) {
+    return mockFormValues[name as keyof typeof mockFormValues];
+  }
+  return mockFormValues;
+});
+
 vi.mock('react-hook-form', () => ({
   useForm: () => ({
-    register: vi.fn((name) => ({
-      name,
-      onChange: vi.fn(),
-      onBlur: vi.fn(),
-      ref: vi.fn(),
-    })),
+    register: mockRegister,
     handleSubmit: vi.fn((fn) => (e: any) => {
       e.preventDefault();
-      fn({
-        name: 'Test Organization Updated',
-        description: 'Updated description',
-        website: 'https://updated.com',
-        logo: 'updated-logo-url',
-      });
+      // Return actual form values instead of hardcoded data
+      fn({ ...mockFormValues });
     }),
-    watch: vi.fn(),
-    setValue: vi.fn(),
+    watch: mockWatch,
+    setValue: mockSetValue,
+    reset: vi.fn((values) => {
+      if (values) {
+        Object.assign(mockFormValues, values);
+      }
+    }),
     formState: {
       errors: {},
       isSubmitting: false,
@@ -139,14 +166,14 @@ describe('OrganizationSettings', () => {
     name: 'Test Organization',
     slug: 'test-org',
     logo: 'https://example.com/logo.png',
-    description: 'Test organization description',
-    website: 'https://test.com',
     createdAt: '2023-01-01T00:00:00Z',
     updatedAt: '2023-01-01T00:00:00Z',
     metadata: {
       domain: 'test.com',
       autoCreated: false,
       createdFromEmail: 'admin@test.com',
+      description: 'Test organization description',
+      website: 'https://test.com',
     },
   };
 
@@ -190,6 +217,15 @@ describe('OrganizationSettings', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Reset mock form values to default organization data
+    Object.assign(mockFormValues, {
+      name: 'Test Organization',
+      description: 'Test organization description',
+      website: 'https://test.com',
+      logo: 'https://example.com/logo.png',
+    });
+    
     mockUseOrganization.mockReturnValue(defaultMockData);
     global.URL.createObjectURL = vi.fn(() => 'mocked-blob-url');
     global.FileReader = vi.fn(() => ({
@@ -358,7 +394,7 @@ describe('OrganizationSettings', () => {
       fireEvent.click(removeButton);
 
       // Should call setValue to clear logo
-      // This would be tested with a proper form integration
+      expect(mockSetValue).toHaveBeenCalledWith('logo', '');
     });
   });
 
@@ -369,7 +405,7 @@ describe('OrganizationSettings', () => {
       expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
 
-    it('should handle form submission', async () => {
+    it('should handle form submission with form values', async () => {
       const updateOrganization = vi.fn().mockResolvedValue(undefined);
       mockUseOrganization.mockReturnValue({
         ...defaultMockData,
@@ -383,10 +419,43 @@ describe('OrganizationSettings', () => {
 
       await waitFor(() => {
         expect(updateOrganization).toHaveBeenCalledWith({
-          name: 'Test Organization Updated',
-          description: 'Updated description',
-          website: 'https://updated.com',
-          logo: 'updated-logo-url',
+          name: 'Test Organization',
+          description: 'Test organization description',
+          website: 'https://test.com',
+          logo: 'https://example.com/logo.png',
+        });
+      });
+    });
+
+    it('should capture form input changes and submit updated values', async () => {
+      const updateOrganization = vi.fn().mockResolvedValue(undefined);
+      mockUseOrganization.mockReturnValue({
+        ...defaultMockData,
+        updateOrganization,
+      });
+
+      renderOrganizationSettings();
+
+      // Simulate user input changes
+      const nameInput = screen.getByLabelText('Organization Name');
+      const websiteInput = screen.getByLabelText('Website');
+      const descriptionInput = screen.getByLabelText('Description');
+
+      // Change form values
+      fireEvent.change(nameInput, { target: { value: 'Updated Organization Name' } });
+      fireEvent.change(websiteInput, { target: { value: 'https://updated-website.com' } });
+      fireEvent.change(descriptionInput, { target: { value: 'Updated organization description' } });
+
+      // Submit form
+      const saveButton = screen.getByText('Save Changes');
+      fireEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(updateOrganization).toHaveBeenCalledWith({
+          name: 'Updated Organization Name',
+          description: 'Updated organization description',
+          website: 'https://updated-website.com',
+          logo: 'https://example.com/logo.png',
         });
       });
     });
