@@ -1,0 +1,18 @@
+# CodeRabbit Configuration
+reviews:
+  auto_review:
+    enabled: false
+  request_changes_workflow: false
+  high_level_summary: false
+  poem: false
+  review_status: false
+  collapse_walkthrough: false
+  path_instructions: []
+  path_filters: []
+  auto_review_new_contributors: false
+  auto_review_draft_prs: false
+  auto_review_base_branches:
+    - main
+    - master
+chat:
+  auto_reply: false
