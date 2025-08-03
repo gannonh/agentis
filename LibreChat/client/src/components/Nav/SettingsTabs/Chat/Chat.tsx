@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import FontSizeSelector from './FontSizeSelector';
 import { ForkSettings } from './ForkSettings';
-import ChatDirection from './ChatDirection';
 import ToggleSwitch from '../ToggleSwitch';
 import store from '~/store';
 
@@ -33,13 +32,6 @@ const toggleSwitchConfigs = [
     switchId: 'showThinking',
     hoverCardText: undefined,
     key: 'showThinking',
-  },
-  {
-    stateAtom: store.showCode,
-    localizationKey: 'com_nav_show_code',
-    switchId: 'showCode',
-    hoverCardText: undefined,
-    key: 'showCode',
   },
   {
     stateAtom: store.LaTeXParsing,
@@ -83,9 +75,6 @@ function Chat() {
     <div className="flex flex-col gap-3 p-1 text-sm text-text-primary">
       <div className="pb-3">
         <FontSizeSelector />
-      </div>
-      <div className="pb-3">
-        <ChatDirection />
       </div>
       {toggleSwitchConfigs.map((config) => (
         <div key={config.key} className="pb-3">

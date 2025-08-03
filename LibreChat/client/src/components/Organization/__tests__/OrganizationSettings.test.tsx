@@ -6,12 +6,18 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RecoilRoot } from 'recoil';
 import { OrganizationSettings } from '../OrganizationSettings';
 import { useOrganization } from '~/Providers/OrganizationProvider';
 
 // Mock the organization provider
 vi.mock('~/Providers/OrganizationProvider');
 const mockUseOrganization = useOrganization as any;
+
+// Mock useLocalize hook
+vi.mock('~/hooks', () => ({
+  useLocalize: () => (key: string) => key,
+}));
 
 // Mock UI components
 vi.mock('~/components/ui/Button', () => ({
@@ -90,26 +96,53 @@ vi.mock('~/components/ui/AlertDialog', () => ({
   ),
 }));
 
-// Mock react-hook-form
+// Mock react-hook-form with realistic form behavior
+const mockFormValues = {
+  name: 'Test Organization',
+  description: 'Test organization description',
+  website: 'https://test.com',
+  logo: 'https://example.com/logo.png',
+};
+
+const mockRegister = vi.fn((name, options) => ({
+  name,
+  onChange: vi.fn((e) => {
+    // Update mock form values when inputs change
+    if (e.target) {
+      mockFormValues[name as keyof typeof mockFormValues] = e.target.value;
+    }
+  }),
+  onBlur: vi.fn(),
+  ref: vi.fn(),
+}));
+
+const mockSetValue = vi.fn((name, value) => {
+  // Update mock form values when setValue is called
+  mockFormValues[name as keyof typeof mockFormValues] = value;
+});
+
+const mockWatch = vi.fn((name?: string) => {
+  if (name) {
+    return mockFormValues[name as keyof typeof mockFormValues];
+  }
+  return mockFormValues;
+});
+
 vi.mock('react-hook-form', () => ({
   useForm: () => ({
-    register: vi.fn((name) => ({
-      name,
-      onChange: vi.fn(),
-      onBlur: vi.fn(),
-      ref: vi.fn(),
-    })),
+    register: mockRegister,
     handleSubmit: vi.fn((fn) => (e: any) => {
       e.preventDefault();
-      fn({
-        name: 'Test Organization Updated',
-        description: 'Updated description',
-        website: 'https://updated.com',
-        logo: 'updated-logo-url',
-      });
+      // Return actual form values instead of hardcoded data
+      fn({ ...mockFormValues });
     }),
-    watch: vi.fn(),
-    setValue: vi.fn(),
+    watch: mockWatch,
+    setValue: mockSetValue,
+    reset: vi.fn((values) => {
+      if (values) {
+        Object.assign(mockFormValues, values);
+      }
+    }),
     formState: {
       errors: {},
       isSubmitting: false,
@@ -118,20 +151,29 @@ vi.mock('react-hook-form', () => ({
   }),
 }));
 
+// Helper function to render component with RecoilRoot
+const renderOrganizationSettings = (props = {}) => {
+  return render(
+    <RecoilRoot>
+      <OrganizationSettings {...props} />
+    </RecoilRoot>
+  );
+};
+
 describe('OrganizationSettings', () => {
   const mockOrganization = {
     id: 'org-123',
     name: 'Test Organization',
     slug: 'test-org',
     logo: 'https://example.com/logo.png',
-    description: 'Test organization description',
-    website: 'https://test.com',
     createdAt: '2023-01-01T00:00:00Z',
     updatedAt: '2023-01-01T00:00:00Z',
     metadata: {
       domain: 'test.com',
       autoCreated: false,
       createdFromEmail: 'admin@test.com',
+      description: 'Test organization description',
+      website: 'https://test.com',
     },
   };
 
@@ -175,6 +217,15 @@ describe('OrganizationSettings', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Reset mock form values to default organization data
+    Object.assign(mockFormValues, {
+      name: 'Test Organization',
+      description: 'Test organization description',
+      website: 'https://test.com',
+      logo: 'https://example.com/logo.png',
+    });
+    
     mockUseOrganization.mockReturnValue(defaultMockData);
     global.URL.createObjectURL = vi.fn(() => 'mocked-blob-url');
     global.FileReader = vi.fn(() => ({
@@ -191,7 +242,7 @@ describe('OrganizationSettings', () => {
         organization: null,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Access Denied')).toBeInTheDocument();
       expect(
@@ -205,7 +256,7 @@ describe('OrganizationSettings', () => {
         canUpdateSettings: false,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Access Denied')).toBeInTheDocument();
       expect(
@@ -214,18 +265,165 @@ describe('OrganizationSettings', () => {
     });
 
     it('should render settings form when user can manage organization', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Organization Settings')).toBeInTheDocument();
       expect(
         screen.getByText("Manage your organization's profile and settings"),
       ).toBeInTheDocument();
     });
+
+    describe('Edge Cases', () => {
+      it('should render access denied when userRole is null and canUpdateSettings is false', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          userRole: null,
+          canUpdateSettings: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied when userRole is undefined and canUpdateSettings is false', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          userRole: undefined,
+          canUpdateSettings: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied when organization data is undefined', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: undefined,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied with invalid permission combination (has role but no permissions)', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          userRole: 'owner',
+          canUpdateSettings: false,
+          canManageOrganization: false,
+          canDeleteOrganization: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied when organization has malformed data structure', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: {
+            // Missing required fields
+            id: null,
+            name: '',
+            slug: undefined,
+          } as any,
+          canUpdateSettings: false, // This would be false if organization is malformed
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should handle empty organization metadata gracefully', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: {
+            ...mockOrganization,
+            metadata: null,
+          },
+        });
+
+        renderOrganizationSettings();
+
+        // Should still render the form since permissions are valid
+        expect(screen.getByText('Organization Settings')).toBeInTheDocument();
+        // Should handle missing metadata gracefully in form fields
+        expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
+      });
+
+      it('should handle organization with missing critical fields', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: {
+            ...mockOrganization,
+            name: null,
+            slug: null,
+          } as any,
+        });
+
+        renderOrganizationSettings();
+
+        // Should still render the form since permissions are valid
+        expect(screen.getByText('Organization Settings')).toBeInTheDocument();
+      });
+
+      it('should render access denied when organization is null specifically', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: null,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should fail safely when both organization and permissions are invalid', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: null,
+          userRole: null,
+          canUpdateSettings: false,
+          canManageOrganization: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+    });
   });
 
   describe('Form Rendering', () => {
     it('should render all form sections', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Organization Logo')).toBeInTheDocument();
       expect(screen.getByText('Basic Information')).toBeInTheDocument();
@@ -233,7 +431,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should render organization logo section with current logo', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const logoImg = screen.getByAltText('Test Organization logo');
       expect(logoImg).toBeInTheDocument();
@@ -246,7 +444,7 @@ describe('OrganizationSettings', () => {
         organization: { ...mockOrganization, logo: undefined },
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.queryByAltText('Test Organization logo')).not.toBeInTheDocument();
       // Should render Building2 icon in gradient background
@@ -257,7 +455,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should render all form fields with current values', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
       expect(screen.getByText('Organization Slug')).toBeInTheDocument();
@@ -266,14 +464,14 @@ describe('OrganizationSettings', () => {
     });
 
     it('should display organization slug as read-only', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('test-org')).toBeInTheDocument();
       expect(screen.getByText('The organization slug cannot be changed')).toBeInTheDocument();
     });
 
     it('should display organization details', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('org-123')).toBeInTheDocument();
       expect(screen.getByText('owner')).toBeInTheDocument();
@@ -286,13 +484,13 @@ describe('OrganizationSettings', () => {
 
   describe('Logo Upload Functionality', () => {
     it('should render upload logo button', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Upload Logo')).toBeInTheDocument();
     });
 
     it('should render remove logo button when logo exists', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Remove')).toBeInTheDocument();
     });
@@ -303,13 +501,13 @@ describe('OrganizationSettings', () => {
         organization: { ...mockOrganization, logo: undefined },
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.queryByText('Remove')).not.toBeInTheDocument();
     });
 
     it('should handle logo upload button click', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const uploadButton = screen.getByText('Upload Logo');
       fireEvent.click(uploadButton);
@@ -320,7 +518,7 @@ describe('OrganizationSettings', () => {
     });
 
     it('should handle file upload', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = new File(['logo'], 'logo.png', { type: 'image/png' });
@@ -337,41 +535,74 @@ describe('OrganizationSettings', () => {
     });
 
     it('should handle remove logo', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const removeButton = screen.getByText('Remove');
       fireEvent.click(removeButton);
 
       // Should call setValue to clear logo
-      // This would be tested with a proper form integration
+      expect(mockSetValue).toHaveBeenCalledWith('logo', '');
     });
   });
 
   describe('Form Submission', () => {
     it('should render save button', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
 
-    it('should handle form submission', async () => {
+    it('should handle form submission with form values', async () => {
       const updateOrganization = vi.fn().mockResolvedValue(undefined);
       mockUseOrganization.mockReturnValue({
         ...defaultMockData,
         updateOrganization,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const saveButton = screen.getByText('Save Changes');
       fireEvent.click(saveButton);
 
       await waitFor(() => {
         expect(updateOrganization).toHaveBeenCalledWith({
-          name: 'Test Organization Updated',
-          description: 'Updated description',
-          website: 'https://updated.com',
-          logo: 'updated-logo-url',
+          name: 'Test Organization',
+          description: 'Test organization description',
+          website: 'https://test.com',
+          logo: 'https://example.com/logo.png',
+        });
+      });
+    });
+
+    it('should capture form input changes and submit updated values', async () => {
+      const updateOrganization = vi.fn().mockResolvedValue(undefined);
+      mockUseOrganization.mockReturnValue({
+        ...defaultMockData,
+        updateOrganization,
+      });
+
+      renderOrganizationSettings();
+
+      // Simulate user input changes
+      const nameInput = screen.getByLabelText('Organization Name');
+      const websiteInput = screen.getByLabelText('Website');
+      const descriptionInput = screen.getByLabelText('Description');
+
+      // Change form values
+      fireEvent.change(nameInput, { target: { value: 'Updated Organization Name' } });
+      fireEvent.change(websiteInput, { target: { value: 'https://updated-website.com' } });
+      fireEvent.change(descriptionInput, { target: { value: 'Updated organization description' } });
+
+      // Submit form
+      const saveButton = screen.getByText('Save Changes');
+      fireEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(updateOrganization).toHaveBeenCalledWith({
+          name: 'Updated Organization Name',
+          description: 'Updated organization description',
+          website: 'https://updated-website.com',
+          logo: 'https://example.com/logo.png',
         });
       });
     });
@@ -380,30 +611,32 @@ describe('OrganizationSettings', () => {
       const updateOrganization = vi.fn().mockRejectedValue(new Error('Update failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockUseOrganization.mockReturnValue({
-        ...defaultMockData,
-        updateOrganization,
-      });
+      try {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          updateOrganization,
+        });
 
-      render(<OrganizationSettings />);
+        renderOrganizationSettings();
 
-      const saveButton = screen.getByText('Save Changes');
-      fireEvent.click(saveButton);
+        const saveButton = screen.getByText('Save Changes');
+        fireEvent.click(saveButton);
 
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to update organization:',
-          expect.any(Error),
-        );
-      });
-
-      consoleSpy.mockRestore();
+        await waitFor(() => {
+          expect(consoleSpy).toHaveBeenCalledWith(
+            'Failed to update organization:',
+            expect.any(Error),
+          );
+        });
+      } finally {
+        consoleSpy.mockRestore();
+      }
     });
   });
 
   describe('Delete Organization', () => {
     it('should render delete button for owners', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       // Get all delete organization buttons and target the trigger (first one with outline variant)
       const deleteButtons = screen.getAllByRole('button', { name: /delete organization/i });
@@ -419,13 +652,13 @@ describe('OrganizationSettings', () => {
         userRole: 'member',
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.queryByText('Delete Organization')).not.toBeInTheDocument();
     });
 
     it('should render delete confirmation dialog', () => {
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       expect(screen.getByTestId('alert-dialog')).toBeInTheDocument();
       expect(screen.getByTestId('alert-dialog-trigger')).toBeInTheDocument();
@@ -438,7 +671,7 @@ describe('OrganizationSettings', () => {
         deleteOrganization,
       });
 
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
 
       const deleteAction = screen.getByTestId('alert-dialog-action');
       fireEvent.click(deleteAction);
@@ -452,31 +685,35 @@ describe('OrganizationSettings', () => {
       const deleteOrganization = vi.fn().mockRejectedValue(new Error('Delete failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockUseOrganization.mockReturnValue({
-        ...defaultMockData,
-        deleteOrganization,
-      });
+      try {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          deleteOrganization,
+        });
 
-      render(<OrganizationSettings />);
+        renderOrganizationSettings();
 
-      const deleteAction = screen.getByTestId('alert-dialog-action');
-      fireEvent.click(deleteAction);
+        const deleteAction = screen.getByTestId('alert-dialog-action');
+        fireEvent.click(deleteAction);
 
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to delete organization:',
-          expect.any(Error),
-        );
-      });
-
-      consoleSpy.mockRestore();
+        await waitFor(() => {
+          expect(consoleSpy).toHaveBeenCalledWith(
+            'Failed to delete organization:',
+            expect.any(Error),
+          );
+        });
+      } finally {
+        consoleSpy.mockRestore();
+      }
     });
   });
 
   describe('Custom Props', () => {
     it('should apply custom className', () => {
-      const { container } = render(<OrganizationSettings className="custom-class" />);
-      expect(container.firstChild).toHaveClass('custom-class');
+      const { container } = renderOrganizationSettings({ className: "custom-class" });
+      // The custom className is applied to the root div inside RecoilRoot
+      const rootDiv = container.querySelector('.mx-auto.max-w-2xl');
+      expect(rootDiv).toHaveClass('custom-class');
     });
   });
 
@@ -484,14 +721,14 @@ describe('OrganizationSettings', () => {
     it('should show loading state during form submission', () => {
       // This test would require properly mocking react-hook-form
       // For now, we'll just verify the save button exists
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
       expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
 
     it('should disable save button when form is not dirty', () => {
       // This test would require properly mocking react-hook-form
       // For now, we'll just verify the save button exists
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
       expect(screen.getByText('Save Changes')).toBeInTheDocument();
     });
   });
@@ -500,7 +737,7 @@ describe('OrganizationSettings', () => {
     it('should show validation errors', () => {
       // This test would require properly mocking react-hook-form
       // For now, we'll just verify the form fields exist
-      render(<OrganizationSettings />);
+      renderOrganizationSettings();
       expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
       expect(screen.getByLabelText('Website')).toBeInTheDocument();
     });

@@ -1,35 +1,43 @@
 import React from 'react';
-import DisplayUsernameMessages from './DisplayUsernameMessages';
+import { AccountProfileSetup } from './AccountProfileSetup';
 import DeleteAccount from './DeleteAccount';
-import Avatar from './Avatar';
-import EnableTwoFactorItem from './TwoFactorAuthentication';
-import BackupCodesItem from './BackupCodesItem';
-import { useAuthContext } from '~/hooks';
+import { authClient } from '~/config/betterAuth';
 
 function Account() {
-  const user = useAuthContext();
+  const { data: session } = authClient.useSession();
+
+  if (!session?.user) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <div className="py-12 text-center">
+          <p className="text-gray-600 dark:text-gray-400">Loading account information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-3 p-1 text-sm text-text-primary">
-      <div className="pb-3">
-        <DisplayUsernameMessages />
+    <div className="mx-auto max-w-2xl space-y-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account Settings</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
+          Manage your profile information and account preferences
+        </p>
       </div>
-      <div className="pb-3">
-        <Avatar />
-      </div>
-      {user?.user?.provider === 'local' && (
-        <>
-          <div className="pb-3">
-            <EnableTwoFactorItem />
-          </div>
-          {user?.user?.twoFactorEnabled && (
-            <div className="pb-3">
-              <BackupCodesItem />
-            </div>
-          )}
-        </>
-      )}
-      <div className="pb-3">
+
+      {/* Profile Settings */}
+      <AccountProfileSetup />
+
+      {/* Account Deletion */}
+      <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Danger Zone</h3>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Permanently delete your account and all associated data
+          </p>
+        </div>
+        
         <DeleteAccount />
       </div>
     </div>

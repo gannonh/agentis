@@ -72,3 +72,5 @@ For each identified issue, provide:
       { $set: { role: "admin" } }
     );
   ```
+
+- Always run a test after making changes to it

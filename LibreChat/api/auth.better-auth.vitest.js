@@ -1015,6 +1015,11 @@ describe('Better Auth Comprehensive Tests', () => {
                 required: false,
                 input: true,
               },
+              avatar: {
+                type: 'string',
+                required: false,
+                input: true,
+              },
             },
           },
           account: {

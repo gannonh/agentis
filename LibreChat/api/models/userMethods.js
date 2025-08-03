@@ -41,10 +41,32 @@ const findUser = async function (searchCriteria, fieldsToSelect = null) {
  * @returns {Promise<MongoUser>} The updated user document as a plain object, or `null` if no user is found.
  */
 const updateUser = async function (userId, updateData) {
-  const updateOperation = {
-    $set: updateData,
-    $unset: { expiresAt: '' }, // Remove the expiresAt field to prevent TTL
-  };
+  const setData = {};
+  const unsetData = { expiresAt: '' }; // Remove the expiresAt field to prevent TTL
+  
+  // Process each field in updateData
+  for (const [key, value] of Object.entries(updateData)) {
+    if (value === null) {
+      // If avatar is being deleted, also delete image field
+      if (key === 'avatar') {
+        unsetData.avatar = '';
+        unsetData.image = '';
+      } else {
+        unsetData[key] = '';
+      }
+    } else {
+      setData[key] = value;
+    }
+  }
+  
+  const updateOperation = {};
+  if (Object.keys(setData).length > 0) {
+    updateOperation.$set = setData;
+  }
+  if (Object.keys(unsetData).length > 0) {
+    updateOperation.$unset = unsetData;
+  }
+  
   return await User.findByIdAndUpdate(userId, updateOperation, {
     new: true,
     runValidators: true,

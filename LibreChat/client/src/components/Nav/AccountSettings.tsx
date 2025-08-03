@@ -49,7 +49,7 @@ function AccountSettings() {
               </div>
             ) : (
               <img
-                className="rounded-full"
+                className="h-8 w-8 rounded-full object-cover"
                 src={(user?.avatar ?? '') || avatarSrc}
                 alt={`${user?.name || user?.username || user?.email || ''}'s avatar`}
               />

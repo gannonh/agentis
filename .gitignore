@@ -1,43 +1,61 @@
+# System files
 .DS_Store
+
+# Python virtual environments
 .venv-arcade/
+
+# Log files
 backend.log
 frontend.log
+logs/
+LibreChat/data/logs.json
+
+# NPM check outputs
+npm_check_output.txt
+LibreChat/npm_check_output.txt
+LibreChat/npm_check_output_fixed.txt
+
+# Test results and reports
+LibreChat/test-results/
+LibreChat/test-results/*.json
+LibreChat/playwright-report/index.html
+
+# E2E testing
+e2e/storageState.json
+e2e/temp/remove-avatar-test.png
 LibreChat/e2e/playwright-report*
 LibreChat/e2e/storageStateGoogle.json
 LibreChat/e2e/specs/.google-test-results/
-LibreChat/npm_check_output.txt
-npm_check_output.txt
-LibreChat/npm_check_output_fixed.txt
 LibreChat/e2e/google/playwright-report/
 LibreChat/e2e/google/specs/.test-results/
-e2e/storageState.json
 LibreChat/e2e/google/test-results/
-LibreChat/test-results/
-LibreChat/test-results/*.json
-scratchpad.md
-LibreChat/packages/data-provider/rollup.config-1748544387798.cjs
-sym-links/
-logs/
-rag_api/
-LibreChat/data/violations.json
+LibreChat/e2e/data/admin2-auth.json
+LibreChat/e2e/data/*.json
 LibreChat/e2e/data/violations.json
 LibreChat/e2e/data/logs.json
+LibreChat/e2e/fixtures/*.png
+LibreChat/e2e/fixtures/im-1mb.JPG
+
+# Temporary files and artifacts
+scratchpad.md
+temp/magic-links.json
+temp/Agentis.*.json
+LibreChat/temp/
+LibreChat/cookies.txt
+LibreChat/data/violations.json
+LibreChat/packages/data-provider/rollup.config-1748544387798.cjs
+
+# Symbolic links
+sym-links/
+
+# Secrets and sensitive data
 secrets/
-# Other repos
+
+# External repositories and services
 codesandbox-client/
 rag_api/
-# site-starlight/
+
+# Site generation
 site-starlight/.astro/
 site-starlight/.vscode/
 site-starlight/node_modules/
-LibreChat/cookies.txt
-LibreChat/e2e/fixtures/*.png
-LibreChat/e2e/data/admin2-auth.json
-LibreChat/e2e/data/*.json
-LibreChat/temp/
-temp/magic-links.json
-# Ignore transient Agentis JSON artefacts
-temp/Agentis.*.json
-e2e/temp/remove-avatar-test.png
-LibreChat/e2e/fixtures/im-1mb.JPG
-LibreChat/data/logs.json
