@@ -272,6 +272,153 @@ describe('OrganizationSettings', () => {
         screen.getByText("Manage your organization's profile and settings"),
       ).toBeInTheDocument();
     });
+
+    describe('Edge Cases', () => {
+      it('should render access denied when userRole is null and canUpdateSettings is false', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          userRole: null,
+          canUpdateSettings: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied when userRole is undefined and canUpdateSettings is false', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          userRole: undefined,
+          canUpdateSettings: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied when organization data is undefined', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: undefined,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied with invalid permission combination (has role but no permissions)', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          userRole: 'owner',
+          canUpdateSettings: false,
+          canManageOrganization: false,
+          canDeleteOrganization: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should render access denied when organization has malformed data structure', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: {
+            // Missing required fields
+            id: null,
+            name: '',
+            slug: undefined,
+          } as any,
+          canUpdateSettings: false, // This would be false if organization is malformed
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should handle empty organization metadata gracefully', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: {
+            ...mockOrganization,
+            metadata: null,
+          },
+        });
+
+        renderOrganizationSettings();
+
+        // Should still render the form since permissions are valid
+        expect(screen.getByText('Organization Settings')).toBeInTheDocument();
+        // Should handle missing metadata gracefully in form fields
+        expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
+      });
+
+      it('should handle organization with missing critical fields', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: {
+            ...mockOrganization,
+            name: null,
+            slug: null,
+          } as any,
+        });
+
+        renderOrganizationSettings();
+
+        // Should still render the form since permissions are valid
+        expect(screen.getByText('Organization Settings')).toBeInTheDocument();
+      });
+
+      it('should render access denied when organization is null specifically', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: null,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+
+      it('should fail safely when both organization and permissions are invalid', () => {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          organization: null,
+          userRole: null,
+          canUpdateSettings: false,
+          canManageOrganization: false,
+        });
+
+        renderOrganizationSettings();
+
+        expect(screen.getByText('Access Denied')).toBeInTheDocument();
+        expect(
+          screen.getByText("You don't have permission to manage organization settings."),
+        ).toBeInTheDocument();
+      });
+    });
   });
 
   describe('Form Rendering', () => {
@@ -464,24 +611,26 @@ describe('OrganizationSettings', () => {
       const updateOrganization = vi.fn().mockRejectedValue(new Error('Update failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockUseOrganization.mockReturnValue({
-        ...defaultMockData,
-        updateOrganization,
-      });
+      try {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          updateOrganization,
+        });
 
-      renderOrganizationSettings();
+        renderOrganizationSettings();
 
-      const saveButton = screen.getByText('Save Changes');
-      fireEvent.click(saveButton);
+        const saveButton = screen.getByText('Save Changes');
+        fireEvent.click(saveButton);
 
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to update organization:',
-          expect.any(Error),
-        );
-      });
-
-      consoleSpy.mockRestore();
+        await waitFor(() => {
+          expect(consoleSpy).toHaveBeenCalledWith(
+            'Failed to update organization:',
+            expect.any(Error),
+          );
+        });
+      } finally {
+        consoleSpy.mockRestore();
+      }
     });
   });
 
@@ -536,24 +685,26 @@ describe('OrganizationSettings', () => {
       const deleteOrganization = vi.fn().mockRejectedValue(new Error('Delete failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockUseOrganization.mockReturnValue({
-        ...defaultMockData,
-        deleteOrganization,
-      });
+      try {
+        mockUseOrganization.mockReturnValue({
+          ...defaultMockData,
+          deleteOrganization,
+        });
 
-      renderOrganizationSettings();
+        renderOrganizationSettings();
 
-      const deleteAction = screen.getByTestId('alert-dialog-action');
-      fireEvent.click(deleteAction);
+        const deleteAction = screen.getByTestId('alert-dialog-action');
+        fireEvent.click(deleteAction);
 
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to delete organization:',
-          expect.any(Error),
-        );
-      });
-
-      consoleSpy.mockRestore();
+        await waitFor(() => {
+          expect(consoleSpy).toHaveBeenCalledWith(
+            'Failed to delete organization:',
+            expect.any(Error),
+          );
+        });
+      } finally {
+        consoleSpy.mockRestore();
+      }
     });
   });
 
