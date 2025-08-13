@@ -102,7 +102,8 @@ mongoose.connection.once('open', () => {
   try {
     logger.info('🔧 MongoDB connection established, initializing Better Auth...');
 
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
 
     // Debug Google OAuth credentials
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -313,13 +314,10 @@ mongoose.connection.once('open', () => {
                   logger.info(`🎫 Pending data:`, pendingData);
 
                   const memberCollection = db.collection('member');
-                  const { normalizeId } = await import('#server/utils/flexibleId.js');
-                  const { ObjectId } = await import('mongodb');
 
                   const membershipData = {
-                    _id: new ObjectId(), // Use MongoDB ObjectId for consistency
-                    userId: normalizeId(user.id), // Use the utility we created for this!
-                    organizationId: normalizeId(pendingData.organizationId), // Use the utility we created for this!
+                    userId: user.id,
+                    organizationId: pendingData.organizationId,
                     role: pendingData.role,
                     createdAt: new Date(),
                   };

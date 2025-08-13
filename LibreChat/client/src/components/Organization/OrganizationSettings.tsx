@@ -67,6 +67,7 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
     userRole,
     canUpdateSettings,
     canManageOrganization,
+    canManageMembers,
     updateOrganization,
     deleteOrganization,
     isLoading,

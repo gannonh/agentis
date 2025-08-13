@@ -66,7 +66,10 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
   };
 
   const defaultTrigger = (
-    <Button className="bg-blue-600 text-white hover:bg-blue-700">
+    <Button 
+      className="bg-blue-600 text-white hover:bg-blue-700"
+      data-testid="invite-member-button"
+    >
       <UserPlus className="mr-2 h-4 w-4" />
       Invite Member
     </Button>
@@ -81,16 +84,17 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
         title="Invite Member"
         description="Send an invitation to join your organization"
         showCancelButton={true}
-        cancelButtonText="Cancel"
-        confirmButtonText={isLoading ? 'Sending...' : 'Send Invitation'}
-        onConfirm={handleSubmit}
-        onCancel={handleClose}
-        confirmButtonProps={{
-          disabled: !email.trim() || isLoading,
-          'data-testid': 'send-invitation-button',
-        }}
-        cancelButtonProps={{
-          'data-testid': 'cancel-invitation-dialog-button',
+        onClose={handleClose}
+        selection={{
+          selectHandler: (e) => {
+            e?.preventDefault();
+            handleSubmit(e);
+          },
+          selectText: isLoading ? 'Sending...' : 'Send Invitation',
+          isLoading: isLoading,
+          selectClasses: `bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 ${
+            !email.trim() || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          }`,
         }}
         main={
           <div data-testid="invite-member-dialog">
