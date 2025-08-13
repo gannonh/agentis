@@ -11,6 +11,22 @@ import {
   generateTestId,
   type TestAuthResult,
 } from '../utils/testAuth';
+import { createMailHog } from '../utils/mailhog.js';
+
+// MailHog message types
+interface MailHogAddress {
+  Mailbox: string;
+  Domain: string;
+}
+
+interface MailHogContent {
+  Body: string;
+}
+
+interface MailHogMessage {
+  To?: MailHogAddress[];
+  Content?: MailHogContent;
+}
 
 test.use({
   viewport: {
@@ -26,10 +42,20 @@ test.describe('Organization Admin User Management', () => {
   let orgAdminAuth: TestAuthResult;
   let regularMemberAuth: TestAuthResult;
   let testId: string;
+  let mailhog: ReturnType<typeof createMailHog>;
 
   test.beforeAll(async () => {
     // Generate unique test ID and create users in the same organization
     testId = generateTestId();
+    mailhog = createMailHog();
+
+    // Clear any existing emails in MailHog
+    try {
+      await mailhog.clearMessages();
+      logProgress('🧹 Cleared MailHog messages');
+    } catch (error) {
+      logProgress(`⚠️ Failed to clear MailHog: ${error}`);
+    }
 
     // Create both users in the same organization for proper testing
     const testUsers = await createTestUsersInSameOrganization(testId);
@@ -242,6 +268,34 @@ test.describe('Organization Admin User Management', () => {
           timeout: 10000,
         });
         logProgress(`✅ Successfully sent invitation to ${inviteEmail}`);
+
+        // Wait for invitation to be processed and email to be sent
+        await page.waitForTimeout(3000);
+
+        // Verify email was sent to MailHog
+        const emailCount = await mailhog.getMessageCount();
+        logProgress(`📧 MailHog email count after invitation: ${emailCount}`);
+        expect(emailCount).toBeGreaterThan(0);
+
+        // Get the latest invitation email
+        const invitationMessage = await mailhog.getLatestMessage(inviteEmail, 5000);
+        expect(invitationMessage).toBeTruthy();
+        logProgress(`✅ Confirmed invitation email sent to ${inviteEmail} via MailHog`);
+
+        // Verify email contains invitation content
+        if ((invitationMessage as MailHogMessage)?.Content?.Body) {
+          const emailBody = (invitationMessage as MailHogMessage).Content!.Body.toLowerCase();
+          
+          // Check for basic invitation email content
+          const hasInvitationContent =
+            emailBody.includes('invite') ||
+            emailBody.includes('join') ||
+            emailBody.includes('organization') ||
+            emailBody.includes('team');
+
+          expect(hasInvitationContent).toBe(true);
+          logProgress('✅ Invitation email contains expected invitation keywords');
+        }
 
         // Verify invitation appears in pending list
         const pendingInvite = page.locator(`[data-testid="pending-invitation-${inviteEmail}"]`);
