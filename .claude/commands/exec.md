@@ -69,6 +69,8 @@ E2E Acceptance Test (Red) → Unit/Integration Tests (TDD) → Implementation �
 
 #### Write E2E Acceptance Test First
 
+IMPORTANT: First analyze existing e2e tests to understand patterns.
+
 ```javascript
 // Example: Start with failing E2E test that defines "done"
 test("User can authenticate with email and password", async ({ page }) => {
@@ -95,6 +97,7 @@ test("User can authenticate with email and password", async ({ page }) => {
 - One primary assertion per test
 - Keep tests independent and idempotent
 - Mock external services when appropriate
+- Follow established patterns
 
 #### Run E2E Test
 
@@ -108,6 +111,8 @@ npm run e2e:headed -- --grep "User can authenticate"
 - Commit the failing E2E test
 
 ### 3. Break Down Into Units (Red Phase)
+
+IMPORTANT: First analyze existing unit tests to understand patterns.
 
 Based on the E2E test, identify required components:
 
@@ -252,9 +257,10 @@ git checkout -b feat/issue-XX-description
 
 ### Step 2: E2E Acceptance Test (if applicable)
 
-1. Write E2E acceptance test
-2. Run E2E test (confirm failure)
-3. Commit failing E2E test
+1. First analyze existing E2E tests to understand patterns.
+2. Write E2E acceptance test
+3. Run E2E test (confirm failure)
+4. Commit failing E2E test
 
 ```bash
 # Write test in: LibreChat/e2e/specs/[feature].spec.ts
@@ -266,9 +272,10 @@ npm run e2e:headed -- --grep "test description"
 ### Step 3: Unit/Integration Test Development
 
 1. Break down E2E scenario into units
-2. Write unit test file
-3. Run test (confirm failure)
-4. Commit failing test
+2. First analyze existing unit tests to understand patterns
+3. Write unit test file
+4. Run test (confirm failure)
+5. Commit failing test
 
 ### Step 4: Implementation
 
@@ -348,12 +355,7 @@ export class LoginPage {
 ```
 LibreChat/e2e/
 ├── specs/
-│   ├── auth.spec.ts         # Authentication flows
-│   ├── chat.spec.ts         # Chat functionality
-│   ├── settings.spec.ts     # User settings
-│   └── admin.spec.ts        # Admin features
-├── pages/                   # Page objects (if used)
-├── helpers/                 # Test utilities
+├── utils/                 # Test utilities
 └── fixtures/               # Test data
 ```
 
