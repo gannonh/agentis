@@ -137,6 +137,16 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
       .slice(0, 2);
   };
 
+  const formatInvitationDate = (dateValue?: Date | string | null) => {
+    try {
+      if (!dateValue) return 'Recent';
+      const date = new Date(dateValue);
+      return !isNaN(date.getTime()) ? date.toLocaleDateString() : 'Recent';
+    } catch {
+      return 'Recent';
+    }
+  };
+
   return (
     <div className={`rounded-lg bg-white shadow dark:bg-gray-800 ${className}`}>
       {/* Header */}
@@ -332,7 +342,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                         {invitation.email}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Invited as {invitation.role} • {new Date(invitation.createdAt).toLocaleDateString()}
+                        Invited as {invitation.role} • {formatInvitationDate(invitation.createdAt)}
                       </p>
                     </div>
                   </div>
