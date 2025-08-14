@@ -279,6 +279,99 @@ test.describe('Organization Admin User Management', () => {
 
     test('Organization admin can change member roles', async ({ browser }) => {
       logProgress('🚀 Testing organization admin role change functionality...');
+
+      const context = await browser.newContext();
+      await context.addCookies([
+        {
+          name: 'better-auth.session_token',
+          value: orgAdminAuth.session.sessionToken,
+          domain: 'localhost',
+          path: '/',
+          httpOnly: true,
+        },
+      ]);
+
+      const page = await context.newPage();
+
+      try {
+        await page.goto('http://localhost:3080/');
+        await expect(page).toHaveURL(/.*\/c\/new/);
+        logProgress('📱 Navigated to application and verified authentication');
+
+        // Open settings modal
+        await page.click('[data-testid="nav-user"]');
+        await page.click('text=Settings');
+        logProgress('⚙️ Opened settings modal');
+
+        // Navigate to Organization tab
+        await page.getByRole('tab', { name: 'Organization' }).click();
+        await expect(page.getByText('Organization Settings')).toBeVisible();
+        logProgress('🏢 Navigated to Organization settings');
+
+        // Open user management
+        await page.click('[data-testid="manage-users-button"]');
+        await expect(page.getByRole('heading', { name: 'Team Members' })).toBeVisible();
+        logProgress('👥 Opened user management modal');
+
+        // Wait for members to load and verify we have the expected users
+        const memberItems = page.getByTestId('member-item');
+        await expect(memberItems).toHaveCount(2);
+        logProgress('✅ Confirmed 2 members are loaded');
+
+        // Find the target member by email (stable identifier that doesn't change)
+        const targetMember = memberItems.filter({ 
+          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email })
+        });
+        await expect(targetMember).toHaveCount(1);
+        logProgress('✅ Found target member by email');
+
+        // Verify initial state - member should have "Member" role badge
+        await expect(targetMember.getByTestId('member-role')).toContainText('Member');
+        await expect(targetMember.getByTestId('member-email')).toContainText(regularMemberAuth.user.email);
+        logProgress('✅ Verified initial member role state');
+
+        // Open the member actions dropdown
+        await targetMember.getByTestId('member-actions-button').click();
+        await expect(page.getByTestId('member-actions-menu')).toBeVisible();
+        logProgress('👥 Opened member actions menu');
+
+        // Change role from Member to Admin
+        await page.getByTestId('make-admin-action').click();
+        logProgress('🔄 Clicked Make Admin action');
+
+        // Wait for the role change to be reflected in the UI
+        await expect(targetMember.getByTestId('member-role')).toContainText('Admin');
+        logProgress('✅ Member role updated to Admin');
+
+        // Verify role counts have updated in footer
+        await expect(page.getByTestId('owner-count')).toContainText('1 owner');
+        await expect(page.getByTestId('admin-count')).toContainText('1 admin');
+        await expect(page.getByTestId('member-count')).toContainText('0 members');
+        logProgress('✅ Verified role counts updated in footer');
+
+        // Now change the role back from Admin to Member
+        await targetMember.getByTestId('member-actions-button').click();
+        await expect(page.getByTestId('member-actions-menu')).toBeVisible();
+        logProgress('👥 Reopened member actions menu');
+
+        // Change role from Admin back to Member
+        await page.getByTestId('make-member-action').click();
+        logProgress('🔄 Clicked Make Member action');
+
+        // Wait for the role change to be reflected back to Member
+        await expect(targetMember.getByTestId('member-role')).toContainText('Member');
+        logProgress('✅ Member role changed back to Member');
+
+        // Verify role counts have reverted
+        await expect(page.getByTestId('owner-count')).toContainText('1 owner');
+        await expect(page.getByTestId('admin-count')).toContainText('0 admins');
+        await expect(page.getByTestId('member-count')).toContainText('1 member');
+        logProgress('✅ Verified role counts reverted correctly');
+
+        logProgress('✅ Organization admin can successfully change member roles!');
+      } finally {
+        await context.close();
+      }
     });
 
     test('Organization admin can remove members', async ({ browser }) => {
