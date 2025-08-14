@@ -132,49 +132,7 @@ test.describe('Organization Admin User Management', () => {
         await expect(page.getByRole('heading', { name: 'Team Members' })).toBeVisible();
         logProgress('👥 Opened user management modal');
 
-        // Debug: Check what's actually on the page
-        logProgress('🔍 Taking page screenshot for debugging');
-        await page.screenshot({ path: 'debug-member-management.png' });
 
-        // Check page HTML content
-        const pageContent = await page.content();
-        const hasTestId = pageContent.includes('data-testid="member-list"');
-        logProgress(`🔍 Page contains member-list testid: ${hasTestId}`);
-
-        // Check if user management modal is actually open
-        const teamMembersHeading = page.getByRole('heading', { name: 'Team Members' });
-        const isTeamMembersVisible = await teamMembersHeading.isVisible();
-        logProgress(`🔍 Team Members heading visible: ${isTeamMembersVisible}`);
-
-        // If member list doesn't exist, let's see what's actually rendered
-        if (!hasTestId) {
-          const bodyText = await page.locator('body').textContent();
-          logProgress(`🔍 Body text contains: ${bodyText?.substring(0, 500)}...`);
-
-          // Test Better Auth's getFullOrganization API directly
-          logProgress('🔍 Testing Better Auth organization API directly...');
-          try {
-            const apiResponse = await page.evaluate(
-              async (authData) => {
-                const response = await fetch(`/api/auth/organization/get-full-organization`, {
-                  headers: {
-                    Cookie: `better-auth.session_token=${authData.sessionToken}`,
-                  },
-                });
-                const data = await response.json();
-                return { status: response.status, data };
-              },
-              {
-                sessionToken: orgAdminAuth.session.sessionToken,
-                organizationId: orgAdminAuth.organization.id,
-              },
-            );
-
-            logProgress(`🔍 Better Auth API Response: ${JSON.stringify(apiResponse)}`);
-          } catch (error) {
-            logProgress(`🔍 Better Auth API Error: ${error}`);
-          }
-        }
 
         // Wait for the modal to be open by looking for the specific heading in the modal
         await expect(page.getByRole('heading', { name: 'Team Members' })).toBeVisible({
@@ -187,29 +145,38 @@ test.describe('Organization Admin User Management', () => {
         await expect(modal).toBeVisible({ timeout: 10000 });
         logProgress('✅ Modal dialog is visible');
 
-        // Assert exactly 2 members are shown - check the specific count text within modal
-        await expect(modal.getByText('Showing 2 of 2 members')).toBeVisible({ timeout: 15000 });
-        logProgress('✅ Confirmed showing exactly 2 of 2 members in modal');
+        // Assert exactly 2 members are shown - use data-testid instead of text
+        await expect(page.getByTestId('member-count-display')).toContainText('Showing 2 of 2 members');
+        logProgress('✅ Confirmed showing exactly 2 of 2 members via data-testid');
+
+        // Verify we have exactly 2 member items
+        const memberItems = page.getByTestId('member-item');
+        await expect(memberItems).toHaveCount(2);
+        logProgress('✅ Confirmed exactly 2 member items present');
 
         // Verify OWNER user is present
-        await expect(page.getByRole('heading', { name: /Test User .*-admin/ })).toBeVisible({
-          timeout: 10000,
+        const ownerMember = memberItems.filter({ 
+          has: page.getByTestId('member-role').filter({ hasText: 'Owner' })
         });
-        await expect(
-          page.getByLabel('Team Members').getByText('Owner', { exact: true }),
-        ).toBeVisible({ timeout: 5000 });
-        await expect(
-          page.getByLabel('Team Members').getByText(/test-.*-admin@example\.com/),
-        ).toBeVisible({ timeout: 5000 });
-        logProgress('✅ Found admin user with Owner role');
+        await expect(ownerMember).toHaveCount(1);
+        await expect(ownerMember.getByTestId('member-role')).toContainText('Owner');
+        await expect(ownerMember.getByTestId('member-email')).toContainText(orgAdminAuth.user.email);
+        logProgress('✅ Found admin user with Owner role via data-testids');
 
-        // Verify MEMBER user is present
-        await expect(page.getByRole('heading', { name: /Test User .*Member/ })).toBeVisible({
-          timeout: 10000,
+        // Verify MEMBER user is present  
+        const memberMember = memberItems.filter({ 
+          has: page.getByTestId('member-role').filter({ hasText: 'Member' })
         });
-        await expect(page.getByText('Member', { exact: true })).toBeVisible({ timeout: 5000 });
-        await expect(page.getByText(/test-.*-member@example\.com/)).toBeVisible({ timeout: 5000 });
-        logProgress('✅ Found member user with Member role');
+        await expect(memberMember).toHaveCount(1);
+        await expect(memberMember.getByTestId('member-role')).toContainText('Member');
+        await expect(memberMember.getByTestId('member-email')).toContainText(regularMemberAuth.user.email);
+        logProgress('✅ Found member user with Member role via data-testids');
+
+        // Verify role counts in footer using data-testids
+        await expect(page.getByTestId('owner-count')).toContainText('1 owner');
+        await expect(page.getByTestId('admin-count')).toContainText('0 admins');
+        await expect(page.getByTestId('member-count')).toContainText('1 member');
+        logProgress('✅ Verified role counts in footer via data-testids');
 
         logProgress('✅ Organization admin can view exactly 2 organization members as expected!');
       } finally {

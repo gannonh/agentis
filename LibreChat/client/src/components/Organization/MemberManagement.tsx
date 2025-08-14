@@ -216,7 +216,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
           </div>
         ) : (
           filteredMembers.map((member) => (
-            <div key={member.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50" data-testid="member-item">
+            <div key={member.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50" data-testid="member-item" data-member-role={member.role} data-member-email={member.user.email}>
               <div className="flex items-center justify-between">
                 {/* Member info */}
                 <div className="flex items-center space-x-4">
@@ -368,25 +368,25 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
       {/* Stats footer */}
       <div className="border-t border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-700/50">
         <div className="flex items-center justify-between text-sm">
-          <div className="text-gray-600 dark:text-gray-400">
+          <div className="text-gray-600 dark:text-gray-400" data-testid="member-count-display">
             Showing {filteredMembers.length} of {members.length} members
           </div>
           <div className="flex items-center space-x-4 text-gray-600 dark:text-gray-400">
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1" data-testid="owner-count">
               <Crown className="h-4 w-4" />
               <span>
                 {members.filter((m) => m.role === 'owner').length} owner
                 {members.filter((m) => m.role === 'owner').length !== 1 ? 's' : ''}
               </span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1" data-testid="admin-count">
               <Shield className="h-4 w-4" />
               <span>
                 {members.filter((m) => m.role === 'admin').length} admin
                 {members.filter((m) => m.role === 'admin').length !== 1 ? 's' : ''}
               </span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1" data-testid="member-count">
               <Users className="h-4 w-4" />
               <span>
                 {members.filter((m) => m.role === 'member').length} member
