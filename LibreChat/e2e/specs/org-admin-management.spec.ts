@@ -376,6 +376,108 @@ test.describe('Organization Admin User Management', () => {
 
     test('Organization admin can remove members', async ({ browser }) => {
       logProgress('🚀 Testing organization admin member removal functionality...');
+
+      const context = await browser.newContext();
+      await context.addCookies([
+        {
+          name: 'better-auth.session_token',
+          value: orgAdminAuth.session.sessionToken,
+          domain: 'localhost',
+          path: '/',
+          httpOnly: true,
+        },
+      ]);
+
+      const page = await context.newPage();
+
+      try {
+        await page.goto('http://localhost:3080/');
+        await expect(page).toHaveURL(/.*\/c\/new/);
+        logProgress('📱 Navigated to application and verified authentication');
+
+        // Open settings modal
+        await page.click('[data-testid="nav-user"]');
+        await page.click('text=Settings');
+        logProgress('⚙️ Opened settings modal');
+
+        // Navigate to Organization tab
+        await page.getByRole('tab', { name: 'Organization' }).click();
+        await expect(page.getByText('Organization Settings')).toBeVisible();
+        logProgress('🏢 Navigated to Organization settings');
+
+        // Open user management
+        await page.click('[data-testid="manage-users-button"]');
+        await expect(page.getByRole('heading', { name: 'Team Members' })).toBeVisible();
+        logProgress('👥 Opened user management modal');
+
+        // Wait for members to load and verify we start with 2 members
+        const memberItems = page.getByTestId('member-item');
+        await expect(memberItems).toHaveCount(2);
+        logProgress('✅ Confirmed 2 members are loaded initially');
+
+        // Verify initial member count display
+        await expect(page.getByTestId('member-count-display')).toContainText('Showing 2 of 2 members');
+        logProgress('✅ Verified initial member count display');
+
+        // Find the target member (regular member) by email
+        const targetMember = memberItems.filter({ 
+          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email })
+        });
+        await expect(targetMember).toHaveCount(1);
+        logProgress('✅ Found target member to remove');
+
+        // Verify the target member has "Member" role (should not be Owner)
+        await expect(targetMember.getByTestId('member-role')).toContainText('Member');
+        logProgress('✅ Confirmed target member has Member role');
+
+        // Open the member actions dropdown
+        await targetMember.getByTestId('member-actions-button').click();
+        await expect(page.getByTestId('member-actions-menu')).toBeVisible();
+        logProgress('👥 Opened member actions menu');
+
+        // Set up dialog handler for confirmation
+        page.on('dialog', async dialog => {
+          logProgress(`🗨️ Confirmation dialog appeared: ${dialog.message()}`);
+          await dialog.accept();
+        });
+
+        // Click remove member action
+        await page.getByTestId('remove-member-action').click();
+        logProgress('🗑️ Clicked Remove Member action');
+
+        // Wait for the member to be removed from the UI
+        await expect(memberItems).toHaveCount(1);
+        logProgress('✅ Member count reduced to 1 after removal');
+
+        // Verify the member count display has updated
+        await expect(page.getByTestId('member-count-display')).toContainText('Showing 1 of 1 members');
+        logProgress('✅ Verified member count display updated');
+
+        // Verify only the Owner remains
+        const remainingMember = memberItems.filter({
+          has: page.getByTestId('member-role').filter({ hasText: 'Owner' })
+        });
+        await expect(remainingMember).toHaveCount(1);
+        await expect(remainingMember.getByTestId('member-email')).toContainText(orgAdminAuth.user.email);
+        logProgress('✅ Confirmed only Owner member remains');
+
+        // Verify role counts have updated in footer
+        await expect(page.getByTestId('owner-count')).toContainText('1 owner');
+        await expect(page.getByTestId('admin-count')).toContainText('0 admins');
+        await expect(page.getByTestId('member-count')).toContainText('0 members');
+        logProgress('✅ Verified role counts updated correctly in footer');
+
+        // Verify the removed member no longer appears in the list
+        const removedMemberSearch = memberItems.filter({
+          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email })
+        });
+        await expect(removedMemberSearch).toHaveCount(0);
+        logProgress('✅ Confirmed removed member no longer appears in member list');
+
+        logProgress('✅ Organization admin can successfully remove members!');
+      } finally {
+        await context.close();
+      }
     });
 
     test('Organization admin cannot remove or change owner role', async ({ browser }) => {
