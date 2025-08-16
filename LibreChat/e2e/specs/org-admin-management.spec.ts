@@ -482,6 +482,91 @@ test.describe('Organization Admin User Management', () => {
 
     test('Organization admin cannot remove or change owner role', async ({ browser }) => {
       logProgress('🚀 Testing organization admin owner protection...');
+
+      const context = await browser.newContext();
+      await context.addCookies([
+        {
+          name: 'better-auth.session_token',
+          value: orgAdminAuth.session.sessionToken,
+          domain: 'localhost',
+          path: '/',
+          httpOnly: true,
+        },
+      ]);
+
+      const page = await context.newPage();
+
+      try {
+        await page.goto('http://localhost:3080/');
+        await expect(page).toHaveURL(/.*\/c\/new/);
+        logProgress('📱 Navigated to application and verified authentication');
+
+        // Open settings modal
+        await page.click('[data-testid="nav-user"]');
+        await page.click('text=Settings');
+        logProgress('⚙️ Opened settings modal');
+
+        // Navigate to Organization tab
+        await page.getByRole('tab', { name: 'Organization' }).click();
+        await expect(page.getByText('Organization Settings')).toBeVisible();
+        logProgress('🏢 Navigated to Organization settings');
+
+        // Open user management
+        await page.click('[data-testid="manage-users-button"]');
+        await expect(page.getByRole('heading', { name: 'Team Members' })).toBeVisible();
+        logProgress('👥 Opened user management modal');
+
+        // Wait for members to load - we should have 2 members (owner + regular member)
+        const memberItems = page.getByTestId('member-item');
+        await expect(memberItems).toHaveCount(2);
+        logProgress('✅ Confirmed 2 members are loaded');
+
+        // Find the owner member by role badge
+        const ownerMember = memberItems.filter({
+          has: page.getByTestId('member-role').filter({ hasText: 'Owner' })
+        });
+        await expect(ownerMember).toHaveCount(1);
+        await expect(ownerMember.getByTestId('member-email')).toContainText(orgAdminAuth.user.email);
+        logProgress('✅ Found owner member');
+
+        // Find the non-owner member by role badge
+        const nonOwnerMember = memberItems.filter({
+          has: page.getByTestId('member-role').filter({ hasText: 'Member' })
+        });
+        await expect(nonOwnerMember).toHaveCount(1);
+        await expect(nonOwnerMember.getByTestId('member-email')).toContainText(regularMemberAuth.user.email);
+        logProgress('✅ Found non-owner member');
+
+        // Verify that the owner member does NOT have an actions button
+        // The condition `member.role !== 'owner'` in MemberManagement.tsx should prevent this
+        const ownerActionsButton = ownerMember.getByTestId('member-actions-button');
+        await expect(ownerActionsButton).toHaveCount(0);
+        logProgress('✅ Confirmed owner member does not have actions button');
+
+        // Verify that the non-owner member DOES have an actions button for comparison
+        const nonOwnerActionsButton = nonOwnerMember.getByTestId('member-actions-button');
+        await expect(nonOwnerActionsButton).toHaveCount(1);
+        logProgress('✅ Confirmed non-owner member has actions button (for comparison)');
+
+        // Verify there's exactly 1 actions button total (only for non-owner)
+        const allActionsButtons = page.getByTestId('member-actions-button');
+        await expect(allActionsButtons).toHaveCount(1);
+        logProgress('✅ Confirmed exactly 1 action button exists (only for non-owner)');
+
+        // Verify the owner role badge is displayed correctly
+        await expect(ownerMember.getByTestId('member-role')).toContainText('Owner');
+        logProgress('✅ Confirmed owner role badge is displayed');
+
+        // Verify the footer counts show 1 owner, 0 admins, 1 member
+        await expect(page.getByTestId('owner-count')).toContainText('1 owner');
+        await expect(page.getByTestId('admin-count')).toContainText('0 admins');
+        await expect(page.getByTestId('member-count')).toContainText('1 member');
+        logProgress('✅ Verified role counts show 1 owner and 1 member');
+
+        logProgress('✅ Organization admin cannot remove or change owner role - protection verified!');
+      } finally {
+        await context.close();
+      }
     });
   });
 
