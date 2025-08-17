@@ -38,7 +38,8 @@ async function makeUserAdmin(email) {
     logger.success('Connected to MongoDB');
 
     // Get the users collection
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
     const usersCollection = db.collection('users');
 
     // Find user by email

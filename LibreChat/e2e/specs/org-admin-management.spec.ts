@@ -319,15 +319,17 @@ test.describe('Organization Admin User Management', () => {
         logProgress('✅ Confirmed 2 members are loaded');
 
         // Find the target member by email (stable identifier that doesn't change)
-        const targetMember = memberItems.filter({ 
-          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email })
+        const targetMember = memberItems.filter({
+          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email }),
         });
         await expect(targetMember).toHaveCount(1);
         logProgress('✅ Found target member by email');
 
         // Verify initial state - member should have "Member" role badge
         await expect(targetMember.getByTestId('member-role')).toContainText('Member');
-        await expect(targetMember.getByTestId('member-email')).toContainText(regularMemberAuth.user.email);
+        await expect(targetMember.getByTestId('member-email')).toContainText(
+          regularMemberAuth.user.email,
+        );
         logProgress('✅ Verified initial member role state');
 
         // Open the member actions dropdown
@@ -416,12 +418,14 @@ test.describe('Organization Admin User Management', () => {
         logProgress('✅ Confirmed 2 members are loaded initially');
 
         // Verify initial member count display
-        await expect(page.getByTestId('member-count-display')).toContainText('Showing 2 of 2 members');
+        await expect(page.getByTestId('member-count-display')).toContainText(
+          'Showing 2 of 2 members',
+        );
         logProgress('✅ Verified initial member count display');
 
         // Find the target member (regular member) by email
-        const targetMember = memberItems.filter({ 
-          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email })
+        const targetMember = memberItems.filter({
+          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email }),
         });
         await expect(targetMember).toHaveCount(1);
         logProgress('✅ Found target member to remove');
@@ -436,7 +440,7 @@ test.describe('Organization Admin User Management', () => {
         logProgress('👥 Opened member actions menu');
 
         // Set up dialog handler for confirmation
-        page.on('dialog', async dialog => {
+        page.on('dialog', async (dialog) => {
           logProgress(`🗨️ Confirmation dialog appeared: ${dialog.message()}`);
           await dialog.accept();
         });
@@ -450,15 +454,19 @@ test.describe('Organization Admin User Management', () => {
         logProgress('✅ Member count reduced to 1 after removal');
 
         // Verify the member count display has updated
-        await expect(page.getByTestId('member-count-display')).toContainText('Showing 1 of 1 members');
+        await expect(page.getByTestId('member-count-display')).toContainText(
+          'Showing 1 of 1 members',
+        );
         logProgress('✅ Verified member count display updated');
 
         // Verify only the Owner remains
         const remainingMember = memberItems.filter({
-          has: page.getByTestId('member-role').filter({ hasText: 'Owner' })
+          has: page.getByTestId('member-role').filter({ hasText: 'Owner' }),
         });
         await expect(remainingMember).toHaveCount(1);
-        await expect(remainingMember.getByTestId('member-email')).toContainText(orgAdminAuth.user.email);
+        await expect(remainingMember.getByTestId('member-email')).toContainText(
+          orgAdminAuth.user.email,
+        );
         logProgress('✅ Confirmed only Owner member remains');
 
         // Verify role counts have updated in footer
@@ -469,7 +477,7 @@ test.describe('Organization Admin User Management', () => {
 
         // Verify the removed member no longer appears in the list
         const removedMemberSearch = memberItems.filter({
-          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email })
+          has: page.getByTestId('member-email').filter({ hasText: regularMemberAuth.user.email }),
         });
         await expect(removedMemberSearch).toHaveCount(0);
         logProgress('✅ Confirmed removed member no longer appears in member list');
@@ -523,18 +531,22 @@ test.describe('Organization Admin User Management', () => {
 
         // Find the owner member by role badge
         const ownerMember = memberItems.filter({
-          has: page.getByTestId('member-role').filter({ hasText: 'Owner' })
+          has: page.getByTestId('member-role').filter({ hasText: 'Owner' }),
         });
         await expect(ownerMember).toHaveCount(1);
-        await expect(ownerMember.getByTestId('member-email')).toContainText(orgAdminAuth.user.email);
+        await expect(ownerMember.getByTestId('member-email')).toContainText(
+          orgAdminAuth.user.email,
+        );
         logProgress('✅ Found owner member');
 
         // Find the non-owner member by role badge
         const nonOwnerMember = memberItems.filter({
-          has: page.getByTestId('member-role').filter({ hasText: 'Member' })
+          has: page.getByTestId('member-role').filter({ hasText: 'Member' }),
         });
         await expect(nonOwnerMember).toHaveCount(1);
-        await expect(nonOwnerMember.getByTestId('member-email')).toContainText(regularMemberAuth.user.email);
+        await expect(nonOwnerMember.getByTestId('member-email')).toContainText(
+          regularMemberAuth.user.email,
+        );
         logProgress('✅ Found non-owner member');
 
         // Verify that the owner member does NOT have an actions button
@@ -563,7 +575,9 @@ test.describe('Organization Admin User Management', () => {
         await expect(page.getByTestId('member-count')).toContainText('1 member');
         logProgress('✅ Verified role counts show 1 owner and 1 member');
 
-        logProgress('✅ Organization admin cannot remove or change owner role - protection verified!');
+        logProgress(
+          '✅ Organization admin cannot remove or change owner role - protection verified!',
+        );
       } finally {
         await context.close();
       }

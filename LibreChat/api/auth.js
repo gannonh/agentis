@@ -102,8 +102,15 @@ mongoose.connection.once('open', () => {
   try {
     logger.info('🔧 MongoDB connection established, initializing Better Auth...');
 
-    const client = mongoose.connection.getClient();
-    const db = client.db();
+    // Handle both production and test environments
+    let db;
+    if (mongoose.connection.getClient) {
+      const client = mongoose.connection.getClient();
+      db = client.db();
+    } else {
+      // Fallback for test environments (MongoDB Memory Server)
+      db = mongoose.connection.db;
+    }
 
     // Debug Google OAuth credentials
     const googleClientId = process.env.GOOGLE_CLIENT_ID;

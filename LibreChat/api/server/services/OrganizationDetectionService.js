@@ -19,7 +19,16 @@ export async function getOrganizationsByDomain(domain) {
   }
 
   // Use Better Auth's organization collection directly
-  const db = mongoose.connection.db;
+  // Handle both production and test environments
+    let db;
+    if (mongoose.connection.getClient) {
+      const client = mongoose.connection.getClient();
+      db = client.db();
+    } else {
+      // Fallback for test environments (MongoDB Memory Server)
+      db = mongoose.connection.db;
+    }
+  
   if (!db) {
     logger.warn('MongoDB connection not available for organization lookup');
     return [];

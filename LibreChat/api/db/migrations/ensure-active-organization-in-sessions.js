@@ -75,7 +75,8 @@ export default async function runMigration() {
       }
     });
 
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
     await ensureActiveOrganizationInSessions(db);
   } catch (error) {
     logger.error('Failed to run migration:', error);

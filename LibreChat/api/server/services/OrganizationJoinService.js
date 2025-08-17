@@ -65,7 +65,15 @@ class OrganizationJoinService {
       }
 
       // 4. Atomically create membership using upsert to prevent race condition
-      const db = mongoose.connection.db;
+      // Handle both production and test environments
+      let db;
+      if (mongoose.connection.getClient) {
+        const client = mongoose.connection.getClient();
+        db = client.db();
+      } else {
+        // Fallback for test environments (MongoDB Memory Server)
+        db = mongoose.connection.db;
+      }
       const memberCollection = db.collection('member');
 
       // Use upsert with the unique compound index to prevent duplicates
@@ -231,7 +239,15 @@ class OrganizationJoinService {
     });
 
     try {
-      const db = mongoose.connection.db;
+      // Handle both production and test environments
+      let db;
+      if (mongoose.connection.getClient) {
+        const client = mongoose.connection.getClient();
+        db = client.db();
+      } else {
+        // Fallback for test environments (MongoDB Memory Server)
+        db = mongoose.connection.db;
+      }
       const organization = await this._getOrganization(organizationId);
 
       if (!organization) {
@@ -309,7 +325,15 @@ class OrganizationJoinService {
     });
 
     try {
-      const db = mongoose.connection.db;
+      // Handle both production and test environments
+      let db;
+      if (mongoose.connection.getClient) {
+        const client = mongoose.connection.getClient();
+        db = client.db();
+      } else {
+        // Fallback for test environments (MongoDB Memory Server)
+        db = mongoose.connection.db;
+      }
       const organization = await this._getOrganization(organizationId);
 
       if (!organization) {
@@ -425,7 +449,8 @@ class OrganizationJoinService {
     });
 
     try {
-      const db = mongoose.connection.db;
+      const client = mongoose.connection.getClient();
+      const db = client.db();
       const organization = await this._getOrganization(organizationId);
 
       if (!organization) {
@@ -534,7 +559,8 @@ class OrganizationJoinService {
    */
   static async _getOrganization(organizationId) {
     try {
-      const db = mongoose.connection.db;
+      const client = mongoose.connection.getClient();
+      const db = client.db();
       const organizationCollection = db.collection('organization');
 
       // Use flexible find utility to handle both ID formats
@@ -566,7 +592,8 @@ class OrganizationJoinService {
     });
 
     try {
-      const db = mongoose.connection.db;
+      const client = mongoose.connection.getClient();
+      const db = client.db();
       const memberCollection = db.collection('member');
 
       // Check if user is a member of the organization using flexible query
