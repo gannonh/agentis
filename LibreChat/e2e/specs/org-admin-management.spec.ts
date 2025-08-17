@@ -491,11 +491,24 @@ test.describe('Organization Admin User Management', () => {
     test('Organization admin cannot remove or change owner role', async ({ browser }) => {
       logProgress('🚀 Testing organization admin owner protection...');
 
+      // Create fresh test data for this specific test to avoid interference from previous tests
+      const freshTestId = generateTestId();
+      const freshTestUsers = await createTestUsersInSameOrganization(freshTestId);
+      const freshOrgAdminAuth = freshTestUsers.adminAuth;
+      const freshRegularMemberAuth = freshTestUsers.memberAuth;
+
+      logProgress(
+        `✅ Created fresh org admin user: ${freshOrgAdminAuth.user.email} with org: ${freshOrgAdminAuth.organization.name}`,
+      );
+      logProgress(
+        `✅ Created fresh regular member user: ${freshRegularMemberAuth.user.email} in same org`,
+      );
+
       const context = await browser.newContext();
       await context.addCookies([
         {
           name: 'better-auth.session_token',
-          value: orgAdminAuth.session.sessionToken,
+          value: freshOrgAdminAuth.session.sessionToken,
           domain: 'localhost',
           path: '/',
           httpOnly: true,
@@ -535,7 +548,7 @@ test.describe('Organization Admin User Management', () => {
         });
         await expect(ownerMember).toHaveCount(1);
         await expect(ownerMember.getByTestId('member-email')).toContainText(
-          orgAdminAuth.user.email,
+          freshOrgAdminAuth.user.email,
         );
         logProgress('✅ Found owner member');
 
@@ -545,7 +558,7 @@ test.describe('Organization Admin User Management', () => {
         });
         await expect(nonOwnerMember).toHaveCount(1);
         await expect(nonOwnerMember.getByTestId('member-email')).toContainText(
-          regularMemberAuth.user.email,
+          freshRegularMemberAuth.user.email,
         );
         logProgress('✅ Found non-owner member');
 
@@ -580,6 +593,21 @@ test.describe('Organization Admin User Management', () => {
         );
       } finally {
         await context.close();
+        
+        // Clean up fresh test data
+        try {
+          await cleanupTestUser(freshOrgAdminAuth.user.id, freshOrgAdminAuth.organization.id);
+          logProgress(`✅ Cleaned up fresh org admin user: ${freshOrgAdminAuth.user.email}`);
+        } catch (error) {
+          logProgress(`⚠️ Failed to cleanup fresh org admin user: ${error}`);
+        }
+        
+        try {
+          await cleanupTestUser(freshRegularMemberAuth.user.id, null);
+          logProgress(`✅ Cleaned up fresh regular member user: ${freshRegularMemberAuth.user.email}`);
+        } catch (error) {
+          logProgress(`⚠️ Failed to cleanup fresh regular member user: ${error}`);
+        }
       }
     });
   });

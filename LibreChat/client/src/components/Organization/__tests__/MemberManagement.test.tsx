@@ -6,6 +6,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RecoilRoot } from 'recoil';
 import { MemberManagement } from '../MemberManagement';
 import { useOrganization } from '~/Providers/OrganizationProvider';
 
@@ -45,6 +46,15 @@ vi.mock('~/components/ui/DropdownMenu', () => ({
   DropdownMenuSeparator: () => <div data-testid="dropdown-separator" />,
   DropdownMenuTrigger: ({ children }: any) => <div data-testid="dropdown-trigger">{children}</div>,
 }));
+
+// Test helper to wrap components with RecoilRoot
+const renderWithRecoil = (component: React.ReactElement) => {
+  return render(
+    <RecoilRoot>
+      {component}
+    </RecoilRoot>
+  );
+};
 
 describe('MemberManagement', () => {
   const mockOrganization = {
@@ -133,12 +143,18 @@ describe('MemberManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseOrganization.mockReturnValue(defaultMockData);
+    
+    // Mock window.confirm to always return true
+    Object.defineProperty(window, 'confirm', {
+      writable: true,
+      value: vi.fn(() => true),
+    });
   });
 
   describe('Rendering', () => {
     it('should render component header and invite button', () => {
       const onInviteMember = vi.fn();
-      render(<MemberManagement onInviteMember={onInviteMember} />);
+      renderWithRecoil(<MemberManagement onInviteMember={onInviteMember} />);
 
       expect(screen.getByText('Team Members')).toBeInTheDocument();
       expect(
@@ -148,14 +164,14 @@ describe('MemberManagement', () => {
     });
 
     it('should render search and filter controls', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       expect(screen.getByPlaceholderText('Search members by name or email...')).toBeInTheDocument();
       expect(screen.getByDisplayValue('All Roles')).toBeInTheDocument();
     });
 
     it('should render all members correctly', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       expect(screen.getByText('John Doe')).toBeInTheDocument();
       expect(screen.getByText('john@test.com')).toBeInTheDocument();
@@ -166,7 +182,7 @@ describe('MemberManagement', () => {
     });
 
     it('should render member avatars correctly', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       // John has an image
       const johnAvatar = screen.getByAltText('John Doe avatar');
@@ -179,14 +195,14 @@ describe('MemberManagement', () => {
     });
 
     it('should render role badges correctly', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       expect(screen.getByText('Owner')).toBeInTheDocument();
       expect(screen.getAllByText('Member')).toHaveLength(2);
     });
 
     it('should render member count in stats footer', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       expect(screen.getByText('Showing 3 of 3 members')).toBeInTheDocument();
       expect(screen.getByText('1 owner')).toBeInTheDocument();
@@ -201,7 +217,7 @@ describe('MemberManagement', () => {
         organization: null,
       });
 
-      const { container } = render(<MemberManagement />);
+      const { container } = renderWithRecoil(<MemberManagement />);
       expect(container.firstChild).toBeNull();
     });
   });
@@ -209,7 +225,7 @@ describe('MemberManagement', () => {
   describe('Invite Member Button', () => {
     it('should render invite button when user can manage organization', () => {
       const onInviteMember = vi.fn();
-      render(<MemberManagement onInviteMember={onInviteMember} />);
+      renderWithRecoil(<MemberManagement onInviteMember={onInviteMember} />);
 
       const inviteButton = screen.getByText('Invite Member');
       expect(inviteButton).toBeInTheDocument();
@@ -223,13 +239,13 @@ describe('MemberManagement', () => {
         canManageMembers: false,
       });
 
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
       expect(screen.queryByText('Invite Member')).not.toBeInTheDocument();
     });
 
     it('should call onInviteMember when invite button is clicked', () => {
       const onInviteMember = vi.fn();
-      render(<MemberManagement onInviteMember={onInviteMember} />);
+      renderWithRecoil(<MemberManagement onInviteMember={onInviteMember} />);
 
       const inviteButton = screen.getByText('Invite Member');
       fireEvent.click(inviteButton);
@@ -240,7 +256,7 @@ describe('MemberManagement', () => {
 
   describe('Search Functionality', () => {
     it('should filter members by name', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const searchInput = screen.getByPlaceholderText('Search members by name or email...');
       fireEvent.change(searchInput, { target: { value: 'jane' } });
@@ -251,7 +267,7 @@ describe('MemberManagement', () => {
     });
 
     it('should filter members by email', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const searchInput = screen.getByPlaceholderText('Search members by name or email...');
       fireEvent.change(searchInput, { target: { value: 'bob@test.com' } });
@@ -262,7 +278,7 @@ describe('MemberManagement', () => {
     });
 
     it('should be case insensitive', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const searchInput = screen.getByPlaceholderText('Search members by name or email...');
       fireEvent.change(searchInput, { target: { value: 'JOHN' } });
@@ -272,7 +288,7 @@ describe('MemberManagement', () => {
     });
 
     it('should show no results message when no matches found', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const searchInput = screen.getByPlaceholderText('Search members by name or email...');
       fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
@@ -284,7 +300,7 @@ describe('MemberManagement', () => {
 
   describe('Role Filter', () => {
     it('should filter by owner role', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const roleSelect = screen.getByDisplayValue('All Roles');
       fireEvent.change(roleSelect, { target: { value: 'owner' } });
@@ -295,7 +311,7 @@ describe('MemberManagement', () => {
     });
 
     it('should filter by member role', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const roleSelect = screen.getByDisplayValue('All Roles');
       fireEvent.change(roleSelect, { target: { value: 'member' } });
@@ -308,7 +324,7 @@ describe('MemberManagement', () => {
 
   describe('Member Actions', () => {
     it('should render action dropdown for members when user can manage', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       // Should have dropdown triggers for non-owner members (Jane and Bob)
       const dropdownTriggers = screen.getAllByTestId('dropdown-trigger');
@@ -316,7 +332,7 @@ describe('MemberManagement', () => {
     });
 
     it('should not render action dropdown for owner members', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       // John is owner, so no dropdown for him
       // We can verify this by checking that there are only 2 dropdowns for 3 members
@@ -332,7 +348,7 @@ describe('MemberManagement', () => {
         canManageMembers: false,
       });
 
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const dropdownTriggers = screen.queryAllByTestId('dropdown-trigger');
       expect(dropdownTriggers).toHaveLength(0);
@@ -345,7 +361,7 @@ describe('MemberManagement', () => {
         updateMemberRole,
       });
 
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       // Find Make Owner option for Jane (member-2)
       const makeOwnerOptions = screen.getAllByText('Make Owner');
@@ -363,7 +379,7 @@ describe('MemberManagement', () => {
         removeMember,
       });
 
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       // Find Remove Member option for Jane
       const removeOptions = screen.getAllByText('Remove Member');
@@ -382,7 +398,7 @@ describe('MemberManagement', () => {
         members: [],
       });
 
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       expect(screen.getByText('No members found')).toBeInTheDocument();
       expect(
@@ -393,7 +409,7 @@ describe('MemberManagement', () => {
     });
 
     it('should show correct message when filtered results are empty', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       const searchInput = screen.getByPlaceholderText('Search members by name or email...');
       fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
@@ -405,7 +421,7 @@ describe('MemberManagement', () => {
 
   describe('Member Information Display', () => {
     it('should show join dates correctly', () => {
-      render(<MemberManagement />);
+      renderWithRecoil(<MemberManagement />);
 
       // Check that join dates are present (may be at least 2 due to date format variations)
       const joinedTexts = screen.getAllByText(/Joined/);
@@ -418,7 +434,7 @@ describe('MemberManagement', () => {
     });
 
     it('should show email verification status', () => {
-      const { container } = render(<MemberManagement />);
+      const { container } = renderWithRecoil(<MemberManagement />);
 
       // John and Jane have verified emails, Bob doesn't
       const verifiedDots = container.querySelectorAll('.bg-green-500');
@@ -428,12 +444,12 @@ describe('MemberManagement', () => {
 
   describe('Custom Props', () => {
     it('should apply custom className', () => {
-      const { container } = render(<MemberManagement className="custom-class" />);
+      const { container } = renderWithRecoil(<MemberManagement className="custom-class" />);
       expect(container.firstChild).toHaveClass('custom-class');
     });
 
     it('should work without onInviteMember prop', () => {
-      expect(() => render(<MemberManagement />)).not.toThrow();
+      expect(() => renderWithRecoil(<MemberManagement />)).not.toThrow();
     });
   });
 });

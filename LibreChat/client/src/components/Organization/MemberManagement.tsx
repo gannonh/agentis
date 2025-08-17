@@ -161,7 +161,20 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
             </div>
 
             {canManageMembers && (
-              <InvitationDialog />
+              onInviteMember ? (
+                <Button
+                  onClick={onInviteMember}
+                  variant="default"
+                  size="sm"
+                  className="flex items-center"
+                  data-testid="invite-member-button"
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Invite Member
+                </Button>
+              ) : (
+                <InvitationDialog />
+              )
             )}
           </div>
         </div>
