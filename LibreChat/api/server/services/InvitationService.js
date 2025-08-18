@@ -279,8 +279,7 @@ class InvitationService {
       }
 
       // Use repository for database operations
-      const InvitationRepository = (await import('#server/repositories/InvitationRepository.js'))
-        .default;
+      const { InvitationRepository } = await import('#server/repositories/InvitationRepository.js');
       const invitationRepo = new InvitationRepository();
 
       logger.debug('Getting public invitation details via repository', {
