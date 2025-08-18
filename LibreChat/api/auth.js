@@ -323,8 +323,8 @@ mongoose.connection.once('open', () => {
                   const memberCollection = db.collection('member');
 
                   const membershipData = {
-                    userId: user.id,
-                    organizationId: pendingData.organizationId,
+                    userId: new mongoose.Types.ObjectId(user.id),
+                    organizationId: new mongoose.Types.ObjectId(pendingData.organizationId),
                     role: pendingData.role,
                     createdAt: new Date(),
                   };
