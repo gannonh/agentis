@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import { logProgress } from '../../utils/testLogger';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../../utils/testAuth';
 
 /**
  * Test 1: Basic CTA Display Test
@@ -24,10 +29,12 @@ test.describe('Agent CTA Display Tests', () => {
   test.beforeAll(async () => {
     // Generate unique test ID for this test suite
     testId = generateTestId();
-    
+
     // Create test user with organization using Better Auth
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
@@ -54,7 +61,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -90,7 +97,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -141,10 +148,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       logProgress('✅ Basic agent created');
 
@@ -206,10 +210,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -248,10 +249,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -290,10 +288,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -332,10 +327,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -395,7 +387,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -490,7 +482,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {

@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
-import { handleInitialAuth } from '../utils/oAuth';
+import { logProgress } from '../../utils/testLogger';
+import { handleInitialAuth } from '../../utils/oAuth';
 import {
   createTestUserWithOrganization,
   cleanupTestUser,
   generateTestId,
   type TestAuthResult,
-} from '../utils/testAuth';
+} from '../../utils/testAuth';
 
 test.use({
   viewport: {
@@ -18,7 +18,7 @@ test.use({
 // Tests in this file run in order. Retries, if any, run independently.
 test.describe.configure({ mode: 'default' });
 
-test.describe('Google Sheets MCP Tests', () => {
+test.describe('Google Gmail MCP Tests', () => {
   let testAuth: TestAuthResult;
   let testId: string;
 
@@ -44,8 +44,8 @@ test.describe('Google Sheets MCP Tests', () => {
     }
   });
 
-  test('Create Google Sheets MCP', async ({ browser }) => {
-    logProgress('Starting Create Google Sheets MCP test');
+  test('Create Gmail MCP', async ({ browser }) => {
+    logProgress('Starting Create Gmail MCP test');
 
     // Create a new context with authentication cookies
     const context = await browser.newContext();
@@ -69,7 +69,7 @@ test.describe('Google Sheets MCP Tests', () => {
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('Verified on main chat page');
 
-      // Create Google Sheets Agent
+      // Create Gmail
       await page.getByRole('button', { name: 'Controls' }).click();
       await page.getByRole('button', { name: 'Agent Builder' }).click();
       logProgress('Opened Agent Builder');
@@ -84,11 +84,11 @@ test.describe('Google Sheets MCP Tests', () => {
       await page.getByRole('textbox', { name: 'Agent name' }).click();
       await page.getByRole('textbox', { name: 'Agent name' }).press('ControlOrMeta+c');
       await page.getByRole('textbox', { name: 'Agent name' }).dblclick();
-      await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Sheets Agent');
+      await page.getByRole('textbox', { name: 'Agent name' }).fill('Gmail Agent');
       await page.getByRole('textbox', { name: 'Agent description' }).dblclick();
       await page
         .getByRole('textbox', { name: 'Agent description' })
-        .fill('Claude 3.7 Agent with access to Google Sheets.');
+        .fill('Claude 3.7 Agent with access to Gmail.');
       await page.getByRole('textbox', { name: 'Agent instructions' }).dblclick();
       await page.getByRole('textbox', { name: 'Agent instructions' }).press('ControlOrMeta+a');
       await page.getByRole('textbox', { name: 'Agent instructions' }).click();
@@ -98,9 +98,7 @@ test.describe('Google Sheets MCP Tests', () => {
       await page.getByRole('textbox', { name: 'Agent instructions' }).click();
       await page
         .getByRole('textbox', { name: 'Agent instructions' })
-        .fill(
-          'You possess expert-level Google Sheets skills. Whenever you create a new spreadsheet or make spreadsheet edits for the user, please provide a link so they can access it conveniently.',
-        );
+        .fill('You possess expert-level Gmail skills.');
       await page
         .getByLabel('Agent Builder')
         .getByRole('button', { name: 'Select a model' })
@@ -108,13 +106,11 @@ test.describe('Google Sheets MCP Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
 
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
       await page.getByRole('button', { name: 'Create' }).click();
       logProgress('Created agent with basic settings');
+
       // add mcp tools
       await page
         .getByLabel('Agent Builder')
@@ -123,7 +119,7 @@ test.describe('Google Sheets MCP Tests', () => {
         .first()
         .click();
       await page.getByRole('button', { name: 'Add Tools' }).click();
-      await page.getByRole('button', { name: 'Add Google Sheets' }).click();
+      await page.getByRole('button', { name: 'Add Gmail' }).click();
       await page.getByRole('checkbox', { name: 'Select all tools' }).check();
       await page.getByRole('button', { name: 'Add Selected' }).click();
       await page.getByRole('button', { name: 'Close dialog' }).click();
@@ -141,26 +137,25 @@ test.describe('Google Sheets MCP Tests', () => {
 
       // Assert MCP is created
       await expect(
-        page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }),
+        page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }),
       ).toBeVisible();
-      logProgress('✅ Google Sheets MCP created successfully');
-      await page.getByLabel('Agent Builder').getByText('Google Sheets', { exact: true }).click();
+      logProgress('✅ Gmail MCP created successfully');
+      await page.getByLabel('Agent Builder').getByText('Gmail', { exact: true }).click();
 
       // assert mcp/tool
-      await expect(page.getByText('Create New Spreadsheet')).toBeVisible();
+      await expect(page.getByText('Add Label To Email')).toBeVisible();
     } finally {
-      // Close the context
       await context.close();
     }
   });
 
-  test('Use Google Sheets Agent', async ({ browser }) => {
+  test('Use Gmail Agent', async ({ browser }) => {
     if (process.env.CI) {
-      logProgress('⚠️ CI mode - Skipping Use Google Sheets Agent test');
+      logProgress('⚠️ CI mode - Skipping Use Gmail Agent test');
       return;
     }
 
-    logProgress('✅ Starting Use Google Sheets Agent test');
+    logProgress('✅ Starting Use Gmail Agent test');
 
     // Create a new context with authentication cookies
     const context = await browser.newContext();
@@ -184,63 +179,42 @@ test.describe('Google Sheets MCP Tests', () => {
       await expect(page).toHaveURL(/.*\/c\/new/);
       logProgress('✅ Verified on main chat page');
 
-      // Select the Google Sheets Agent explicitly to avoid conflicts with other parallel tests
+      // Select the Gmail Agent explicitly to avoid conflicts with other parallel tests
       await page.getByRole('button', { name: 'Select a model' }).click();
-      await page.getByText('Agents', { exact: true }).first().click();
+      await page.getByRole('dialog').getByRole('option', { name: 'Agents' }).click();
+      await page.getByLabel('Agents').getByText('Gmail Agent').click();
+      logProgress('✅ Selected Gmail Agent');
 
-      // Debug: Check if any agents are available
-      const agentsContainer = page.getByLabel('Agents');
-      await expect(agentsContainer).toBeVisible();
-
-      // Wait longer and add debug logging
-      try {
-        await expect(agentsContainer.getByText('Google Sheets Agent').first()).toBeVisible({
-          timeout: 15000,
-        });
-      } catch (error) {
-        // Debug: Log all available agents
-        const allAgents = await agentsContainer.locator('text=').allTextContents();
-        console.log('Available agents:', allAgents);
-
-        // Try alternative selectors
-        const agentExists = await page.locator('text=Google Sheets Agent').count();
-        console.log('Agent count:', agentExists);
-
-        throw new Error(`Google Sheets Agent not found. Available agents: ${allAgents.join(', ')}`);
-      }
-
-      await agentsContainer.getByText('Google Sheets Agent').first().click();
-      logProgress('✅ Selected Google Sheets Agent');
-
-      // Send first message to trigger proactive MCP auth
       await page
         .getByTestId('text-input')
         .fill(
-          'Create a spreadsheet of every David Bowie studio album. Create columns for producer, guitarists, drummers, keyboard/piano, and other musicians.',
+          'Create a 250 word Gmail draft about musician Carlos Alomar. Include a discography.\n\nRecipient: agentis.test@gmail.com\nSubject: Carlos Alomar blurb.',
         );
       await page.getByTestId('send-button').click();
-      logProgress('✅ Sent message to create spreadsheet');
+      logProgress('✅ Sent message to create Gmail draft');
 
-      // run ------------------
-      try {
-        await expect(
-          page.getByRole('button', { name: 'Running Create New Spreadsheet' }),
-        ).toBeVisible({
-          timeout: 5000,
-        });
-        logProgress('✅ Found "Running Create" tool execution');
-      } catch (error) {
-        logProgress('⚠️ "Running Create" tool execution not found within timeout');
-      }
+      if (!process.env.CI) {
+        try {
+          await expect(
+            page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
+          ).toBeVisible({
+            timeout: 20000,
+          });
+          logProgress('✅ Running Create Email Draft');
+        } catch {
+          logProgress('⚠️ Running Create Email Draft not found');
+        }
 
-      // ran ------------------
-      try {
-        await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toBeVisible({
-          timeout: 5000,
-        });
-        logProgress('✅ Found "Ran Create" tool execution');
-      } catch (error) {
-        logProgress('⚠️ "Ran Create" tool execution not found within timeout');
+        try {
+          await expect(
+            page.getByRole('button', { name: 'Ran Create Email Draft' }).first(),
+          ).toBeVisible({
+            timeout: 20000,
+          });
+          logProgress('✅ Ran Create Email Draft');
+        } catch {
+          logProgress('⚠️ Ran Create Email Draft not found');
+        }
       }
 
       // auth ---------------------------
@@ -254,33 +228,19 @@ test.describe('Google Sheets MCP Tests', () => {
       ).toBeVisible();
       logProgress('✅ Found descriptive text about authentication');
 
-      // Look for the Connect Google Sheets button in the proactive auth UI
-      await expect(page.getByRole('button', { name: 'Connect Google Sheets' })).toBeVisible();
-      logProgress('✅ Found Connect Google Sheets button in proactive auth UI');
+      // Look for the Connect Gmail button in the proactive auth UI
+      await expect(page.getByRole('button', { name: 'Connect Gmail' })).toBeVisible();
+      logProgress('✅ Found Connect Gmail button in proactive auth UI');
 
       // Handle the authentication
-      logProgress('✅ Starting Google Sheets authentication');
-      const popup = await handleInitialAuth(page, 'Google Sheets');
+      logProgress('✅ Starting Gmail authentication');
+      const popup = await handleInitialAuth(page, 'Gmail');
 
       // Handle the consent screens
-      try {
-        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-        logProgress('✅ Clicked Continue on first consent screen');
-      } catch (error) {
-        logProgress('⚠️ Consent screen 1 handling completed or not needed');
-      }
-      try {
-        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-        logProgress('✅ Clicked Continue on second consent screen');
-      } catch (error) {
-        logProgress('⚠️ Consent screen 2 handling completed or not needed');
-      }
-      try {
-        await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
-        logProgress('✅ Clicked Continue on third consent screen');
-      } catch (error) {
-        logProgress('⚠️ Consent screen 3 handling completed or not needed');
-      }
+      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+      logProgress('✅ Clicked Continue on first consent screen');
+      await popup.getByRole('button', { name: 'Continue' }).click({ timeout: 10000 });
+      logProgress('✅ Clicked Continue on second consent screen');
 
       // Wait for authentication to complete
       logProgress('⏳ Waiting 2 sec for authentication to complete...');
@@ -293,52 +253,37 @@ test.describe('Google Sheets MCP Tests', () => {
 
       // Check that the button shows "✓ Connected" after successful authentication
       await expect(page.getByText('✓ Connected')).toBeVisible();
-      logProgress('✅ Found "✓ Connected" status indicating successful Google Docs authentication');
+      logProgress('✅ Found "✓ Connected" status indicating successful Gmail authentication');
 
-      // try again -------------------
-      await page.getByTestId('text-input').click();
       await page
         .getByTestId('text-input')
-        .fill('ok, try now. please also provide a link to the sheet when created.');
+        .fill('ok, try now. please also provide a link to the draft when created.');
       await page.getByTestId('send-button').click();
-      logProgress('✅ Sent message to create sheet after authentication');
+      logProgress('✅ Sent follow-up message after authentication');
 
-      // run ------------------ (after authentication)
       try {
         await expect(
-          page.getByRole('button', { name: 'Running Create New Spreadsheet' }),
+          page.getByRole('button', { name: 'Running Create Email Draft' }).first(),
         ).toBeVisible({
-          timeout: 30000,
+          timeout: 20000,
         });
-        logProgress('✅ Found "Running Create" tool execution after authentication');
-      } catch (error) {
-        logProgress('⚠️ "Running Create" tool execution not found after authentication');
+        logProgress('✅ Running Create Email Draft');
+      } catch {
+        logProgress('⚠️ Running Create Email Draft not found');
       }
-
-      // ran ------------------ (after authentication)
-      // Wait for the second "Ran" button to appear (indicating completion)
 
       try {
-        await expect(page.getByRole('button', { name: 'Ran Create New Spreadsheet' })).toHaveCount(
-          2,
-          {
-            timeout: 30000,
-          },
-        );
-        logProgress('✅ Found second "Ran Create" tool execution after authentication');
+        await expect(
+          page.getByRole('button', { name: 'Ran Create Email Draft' }).first(),
+        ).toBeVisible({
+          timeout: 20000,
+        });
+        logProgress('✅ Ran Create Email Draft');
       } catch {
-        logProgress('⚠️ Second "Ran Create" tool execution not found after authentication');
+        logProgress('⚠️ Ran Create Email Draft not found');
       }
-
-      // Long wait because agent may want to do some formatting or other processing
-      logProgress('⏳ Waiting for Google Sheets link to appear...');
-      await expect(page.locator('a[href*="docs.google.com"]')).toBeVisible({
-        timeout: 90000,
-      });
-      logProgress('✅ Found Google Sheets link');
     } finally {
-      // Close the context
       await context.close();
     }
   });
-}); // End of test.describe('Google Sheets MCP Tests')
+}); // End of test.describe('Google Gmail MCP Tests')
