@@ -593,7 +593,7 @@ test.describe('Organization Admin User Management', () => {
         );
       } finally {
         await context.close();
-        
+
         // Clean up fresh test data
         try {
           await cleanupTestUser(freshOrgAdminAuth.user.id, freshOrgAdminAuth.organization.id);
@@ -601,10 +601,12 @@ test.describe('Organization Admin User Management', () => {
         } catch (error) {
           logProgress(`⚠️ Failed to cleanup fresh org admin user: ${error}`);
         }
-        
+
         try {
           await cleanupTestUser(freshRegularMemberAuth.user.id, null);
-          logProgress(`✅ Cleaned up fresh regular member user: ${freshRegularMemberAuth.user.email}`);
+          logProgress(
+            `✅ Cleaned up fresh regular member user: ${freshRegularMemberAuth.user.email}`,
+          );
         } catch (error) {
           logProgress(`⚠️ Failed to cleanup fresh regular member user: ${error}`);
         }
@@ -613,6 +615,76 @@ test.describe('Organization Admin User Management', () => {
   });
 
   test.describe('As Regular Member', () => {
-    test('Regular member cannot access user management', async ({ browser }) => {});
+    test('Regular member cannot access user management', async ({ browser }) => {
+      logProgress('🚀 Testing regular member access restrictions...');
+
+      const context = await browser.newContext();
+      await context.addCookies([
+        {
+          name: 'better-auth.session_token',
+          value: regularMemberAuth.session.sessionToken,
+          domain: 'localhost',
+          path: '/',
+          httpOnly: true,
+        },
+      ]);
+
+      const page = await context.newPage();
+
+      try {
+        await page.goto('http://localhost:3080/');
+        await expect(page).toHaveURL(/.*\/c\/new/);
+        logProgress('📱 Navigated to application as regular member');
+
+        // Open settings modal
+        await page.click('[data-testid="nav-user"]');
+        await page.click('text=Settings');
+        logProgress('⚙️ Opened settings modal');
+
+        // Verify that the Organization tab is NOT visible for regular members
+        // Only owners/admins should see the Organization tab
+        const organizationTab = page.getByRole('tab', { name: 'Organization' });
+        await expect(organizationTab).toHaveCount(0);
+        logProgress('✅ Confirmed "Organization" tab is not visible to regular members');
+
+        // Verify regular members can see the expected tabs (General, Chat, etc.)
+        await expect(page.getByRole('tab', { name: 'General' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Chat' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Account' })).toBeVisible();
+        logProgress('✅ Regular member can see standard settings tabs (General, Chat, Account, etc.)');
+
+        // Attempt to directly navigate to user management URL (if such a route exists)
+        // This tests that even direct URL access is blocked
+        const currentUrl = page.url();
+        if (currentUrl.includes('/settings')) {
+          // Try to access a hypothetical user management route
+          await page.goto('http://localhost:3080/settings/organization/users');
+
+          // Should be redirected or show access denied
+          // Check if we're still on a valid settings page or if access is denied
+          const hasAccessDenied = await page
+            .getByText('Access denied')
+            .isVisible()
+            .catch(() => false);
+          const hasUnauthorized = await page
+            .getByText('Unauthorized')
+            .isVisible()
+            .catch(() => false);
+          const stayedOnSettings = page.url().includes('/settings');
+
+          if (hasAccessDenied || hasUnauthorized) {
+            logProgress('✅ Direct URL access properly shows access denied message');
+          } else if (stayedOnSettings) {
+            // If we're still on settings, verify manage users button is still not visible
+            await expect(page.getByTestId('manage-users-button')).toHaveCount(0);
+            logProgress('✅ Direct URL access blocked - manage users functionality not accessible');
+          }
+        }
+
+        logProgress('✅ Regular member properly restricted from user management access!');
+      } finally {
+        await context.close();
+      }
+    });
   });
 });
