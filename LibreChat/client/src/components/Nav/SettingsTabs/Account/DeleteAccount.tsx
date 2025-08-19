@@ -17,7 +17,7 @@ import { cn } from '~/utils';
 const DeleteAccount = ({ disabled = false }: { title?: string; disabled?: boolean }) => {
   const { data: session } = authClient.useSession();
   const user = session?.user;
-  
+
   const { mutate: deleteUser, isLoading: isDeleting } = useDeleteUserMutation({
     onMutate: async () => {
       // Sign out with Better Auth
@@ -53,9 +53,7 @@ const DeleteAccount = ({ disabled = false }: { title?: string; disabled?: boolea
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-sm font-medium text-gray-900 dark:text-white">Delete Account</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              This action cannot be undone
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">This action cannot be undone</p>
           </div>
           <OGDialogTrigger asChild>
             <Button
@@ -124,8 +122,8 @@ const renderDeleteButton = (
   <button
     className={cn(
       'mt-4 flex w-full items-center justify-center rounded-lg px-4 py-2 transition-all duration-200',
-      isLocked 
-        ? 'cursor-not-allowed opacity-50 bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500' 
+      isLocked
+        ? 'cursor-not-allowed bg-gray-100 text-gray-400 opacity-50 dark:bg-gray-700 dark:text-gray-500'
         : 'bg-red-600 text-white hover:bg-red-700',
     )}
     onClick={handleDeleteUser}

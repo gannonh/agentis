@@ -62,20 +62,20 @@ const mockSession = {
 describe('AccountProfileSetup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset debounce mock to default behavior
     (useDebounce as any).mockImplementation((value) => value);
-    
+
     (authClient.useSession as any).mockReturnValue({
       data: mockSession,
       refetch: vi.fn(),
     });
-    
+
     (useUploadAvatarMutation as any).mockReturnValue(mockUploadAvatarMutation);
     (useGetFileConfig as any).mockReturnValue({ data: mockFileConfig });
-    (useGetUserQuery as any).mockReturnValue({ 
-      data: mockUser, 
-      refetch: vi.fn().mockResolvedValue({ data: mockUser }) 
+    (useGetUserQuery as any).mockReturnValue({
+      data: mockUser,
+      refetch: vi.fn().mockResolvedValue({ data: mockUser }),
     });
     (useToastContext as any).mockReturnValue({ showToast: mockShowToast });
     (authClient.updateUser as any).mockResolvedValue({});
@@ -90,7 +90,7 @@ describe('AccountProfileSetup', () => {
     return render(
       <RecoilRoot>
         <AccountProfileSetup />
-      </RecoilRoot>
+      </RecoilRoot>,
     );
   };
 
@@ -131,10 +131,10 @@ describe('AccountProfileSetup', () => {
 
     const nameInput = screen.getByTestId('profile-name-input');
     await user.clear(nameInput);
-    
+
     // Trigger validation by blurring the field
     await user.tab();
-    
+
     // Empty name should show error
     expect(await screen.findByText('Name is required')).toBeInTheDocument();
 
@@ -150,7 +150,7 @@ describe('AccountProfileSetup', () => {
 
     const usernameInput = screen.getByTestId('profile-username-input');
     await user.clear(usernameInput);
-    
+
     // Short username should show error
     await user.type(usernameInput, 'ab');
     expect(await screen.findByText('Username must be at least 3 characters')).toBeInTheDocument();
@@ -158,7 +158,11 @@ describe('AccountProfileSetup', () => {
     // Invalid characters should show error
     await user.clear(usernameInput);
     await user.type(usernameInput, 'user@name');
-    expect(await screen.findByText('Username can only contain letters, numbers, underscores, and hyphens')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Username can only contain letters, numbers, underscores, and hyphens',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('checks username availability', async () => {
@@ -170,9 +174,7 @@ describe('AccountProfileSetup', () => {
     await user.type(usernameInput, 'newusername');
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/user/check-username?username=newusername'
-      );
+      expect(global.fetch).toHaveBeenCalledWith('/api/user/check-username?username=newusername');
     });
 
     expect(screen.getByTestId('username-available')).toBeInTheDocument();
@@ -180,20 +182,20 @@ describe('AccountProfileSetup', () => {
 
   it('does not check username availability for current username', async () => {
     const user = userEvent.setup();
-    
+
     // Mock debounce to return current username immediately to prevent intermediate calls
     (useDebounce as any).mockImplementation((value) => {
       if (value === 'johndoe') return 'johndoe';
-      return '';  // Return empty for any intermediate values
+      return ''; // Return empty for any intermediate values
     });
-    
+
     renderComponent();
 
     const usernameInput = screen.getByTestId('profile-username-input');
-    
+
     // Clear previous calls before testing
     vi.clearAllMocks();
-    
+
     // Clear and retype the current username
     await user.clear(usernameInput);
     await user.type(usernameInput, 'johndoe');
@@ -233,7 +235,9 @@ describe('AccountProfileSetup', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     // Use findByText to wait for the error message to appear
-    expect(await screen.findByText('Please select a valid image file (JPEG, PNG, GIF, or WebP)')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Please select a valid image file (JPEG, PNG, GIF, or WebP)'),
+    ).toBeInTheDocument();
   });
 
   it('validates avatar file size', async () => {
@@ -283,7 +287,7 @@ describe('AccountProfileSetup', () => {
   it('handles form submission error', async () => {
     const user = userEvent.setup();
     (authClient.updateUser as any).mockRejectedValue(new Error('Update failed'));
-    
+
     renderComponent();
 
     // Update name to make form dirty
@@ -307,9 +311,12 @@ describe('AccountProfileSetup', () => {
     const user = userEvent.setup();
     let resolveUpdate: () => void;
     (authClient.updateUser as any).mockImplementation(
-      () => new Promise((resolve) => { resolveUpdate = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolveUpdate = resolve;
+        }),
     );
-    
+
     renderComponent();
 
     // Update name to make form dirty
@@ -332,7 +339,7 @@ describe('AccountProfileSetup', () => {
 
   it('removes avatar when remove button is clicked', async () => {
     const user = userEvent.setup();
-    
+
     // Set up user with avatar in both session and userData
     const userWithAvatar = { ...mockUser, avatar: '/uploads/avatar.jpg' };
     (authClient.useSession as any).mockReturnValue({
@@ -341,9 +348,9 @@ describe('AccountProfileSetup', () => {
       },
       refetch: vi.fn(),
     });
-    (useGetUserQuery as any).mockReturnValue({ 
-      data: userWithAvatar, 
-      refetch: vi.fn().mockResolvedValue({ data: userWithAvatar }) 
+    (useGetUserQuery as any).mockReturnValue({
+      data: userWithAvatar,
+      refetch: vi.fn().mockResolvedValue({ data: userWithAvatar }),
     });
 
     renderComponent();
@@ -381,7 +388,7 @@ describe('AccountProfileSetup', () => {
       });
 
       expect(() => renderComponent()).not.toThrow();
-      
+
       // Component should render with fallback state
       expect(screen.getByText('Profile Information')).toBeInTheDocument();
     });
@@ -401,10 +408,10 @@ describe('AccountProfileSetup', () => {
       });
 
       expect(() => renderComponent()).not.toThrow();
-      
+
       // Should handle null/undefined values gracefully
       expect(screen.getByText('Profile Information')).toBeInTheDocument();
-      
+
       // Form inputs should handle null values
       const nameInput = screen.getByTestId('profile-name-input');
       expect(nameInput).toHaveValue('');
@@ -412,41 +419,41 @@ describe('AccountProfileSetup', () => {
 
     it('handles invalid user data from query gracefully', () => {
       // Mock invalid user data structure
-      (useGetUserQuery as any).mockReturnValue({ 
+      (useGetUserQuery as any).mockReturnValue({
         data: {
           // Missing required fields
           id: undefined,
           name: '',
           avatar: 'javascript:alert("xss")', // Malicious URL
         },
-        refetch: vi.fn().mockRejectedValue(new Error('Failed to refetch user data'))
+        refetch: vi.fn().mockRejectedValue(new Error('Failed to refetch user data')),
       });
 
       expect(() => renderComponent()).not.toThrow();
-      
+
       // Should sanitize malicious URLs
       expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
     });
 
     it('handles file config fetch failure gracefully', () => {
       // Mock file config failure - the component should use defaultFileConfig as fallback
-      (useGetFileConfig as any).mockReturnValue({ 
+      (useGetFileConfig as any).mockReturnValue({
         data: defaultFileConfig, // This will ensure the select function returns defaultFileConfig
         error: new Error('Failed to fetch file config'),
       });
 
       expect(() => renderComponent()).not.toThrow();
-      
+
       // Should use default file config (check the actual default size in the output)
       expect(screen.getByText(/Max size of \d+MB/)).toBeInTheDocument();
     });
 
     it('handles avatar upload mutation error gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Mock upload mutation to throw unexpected error
       mockUploadAvatarMutation.mutateAsync.mockRejectedValue(
-        new TypeError('Cannot read property of undefined')
+        new TypeError('Cannot read property of undefined'),
       );
 
       renderComponent();
@@ -466,7 +473,7 @@ describe('AccountProfileSetup', () => {
 
     it('handles username check API failure gracefully', async () => {
       const user = userEvent.setup();
-      
+
       // Mock fetch to throw network error
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
@@ -480,14 +487,14 @@ describe('AccountProfileSetup', () => {
 
       // Should handle error gracefully without crashing
       expect(screen.getByText('Profile Information')).toBeInTheDocument();
-      
+
       // Username availability should be null (not checked)
       expect(screen.queryByTestId('username-available')).not.toBeInTheDocument();
     });
 
     it('handles form submission with corrupted auth client', async () => {
       const user = userEvent.setup();
-      
+
       // Mock auth client to be undefined/corrupted
       (authClient.updateUser as any).mockImplementation(() => {
         throw new TypeError('authClient.updateUser is not a function');
@@ -521,22 +528,22 @@ describe('AccountProfileSetup', () => {
         ...mockUser,
         avatar: '<img src=x onerror=alert(1)>',
       };
-      
+
       (authClient.useSession as any).mockReturnValue({
         data: { user: userWithBadAvatar },
         refetch: vi.fn(),
       });
-      
-      (useGetUserQuery as any).mockReturnValue({ 
+
+      (useGetUserQuery as any).mockReturnValue({
         data: userWithBadAvatar,
-        refetch: vi.fn().mockResolvedValue({ data: userWithBadAvatar })
+        refetch: vi.fn().mockResolvedValue({ data: userWithBadAvatar }),
       });
 
       expect(() => renderComponent()).not.toThrow();
-      
+
       // Should not render malicious avatar
       expect(screen.queryByTestId('avatar-preview')).not.toBeInTheDocument();
-      
+
       // Should show initials instead
       expect(screen.getByText('JD')).toBeInTheDocument();
     });
@@ -549,7 +556,7 @@ describe('AccountProfileSetup', () => {
       });
 
       expect(() => renderComponent()).not.toThrow();
-      
+
       // Should still render form
       expect(screen.getByTestId('profile-username-input')).toBeInTheDocument();
     });
@@ -561,7 +568,7 @@ describe('AccountProfileSetup', () => {
       });
 
       expect(() => renderComponent()).not.toThrow();
-      
+
       // Component should render without toast functionality
       expect(screen.getByText('Profile Information')).toBeInTheDocument();
     });
@@ -571,15 +578,15 @@ describe('AccountProfileSetup', () => {
         ...mockUser,
         avatar: '/uploads/broken-image.jpg',
       };
-      
+
       (authClient.useSession as any).mockReturnValue({
         data: { user: userWithAvatar },
         refetch: vi.fn(),
       });
-      
-      (useGetUserQuery as any).mockReturnValue({ 
+
+      (useGetUserQuery as any).mockReturnValue({
         data: userWithAvatar,
-        refetch: vi.fn().mockResolvedValue({ data: userWithAvatar })
+        refetch: vi.fn().mockResolvedValue({ data: userWithAvatar }),
       });
 
       renderComponent();
@@ -600,7 +607,7 @@ describe('AccountProfileSetup', () => {
 
     it('handles form state corruption during submission', async () => {
       const user = userEvent.setup();
-      
+
       renderComponent();
 
       // Make form dirty
@@ -610,21 +617,21 @@ describe('AccountProfileSetup', () => {
 
       // Simulate form submission error by mocking handleSubmit to throw
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       // Mock the form submission to fail unexpectedly
       const originalSubmit = HTMLFormElement.prototype.submit;
       HTMLFormElement.prototype.submit = vi.fn().mockImplementation(() => {
         throw new Error('Form state corrupted');
       });
-      
+
       const saveButton = screen.getByTestId('profile-save-button');
-      
+
       // Click should not crash the component
       await user.click(saveButton);
-      
+
       // Component should remain functional
       expect(screen.getByText('Profile Information')).toBeInTheDocument();
-      
+
       // Restore original submit method
       HTMLFormElement.prototype.submit = originalSubmit;
       consoleErrorSpy.mockRestore();
@@ -632,7 +639,7 @@ describe('AccountProfileSetup', () => {
 
     it('handles concurrent state updates gracefully', async () => {
       const user = userEvent.setup();
-      
+
       renderComponent();
 
       // Simulate sequential updates that could cause race conditions
@@ -655,7 +662,7 @@ describe('AccountProfileSetup', () => {
 
     it('handles memory leaks from unmounted component interactions', async () => {
       const user = userEvent.setup();
-      
+
       const { unmount } = renderComponent();
 
       // Start an async operation

@@ -908,7 +908,7 @@ describe('OrganizationProvider', () => {
       });
 
       expect(actualQueryClient.invalidateQueries).toHaveBeenCalledWith({
-        queryKey: ['organization-invitations'],
+        queryKey: ['full-organization'],
       });
     });
 

@@ -9,6 +9,21 @@ import { requireBetterAuth, checkAdmin } from '#server/middleware/index.js';
 import { logger } from '#config/index.js';
 
 /**
+ * Helper function to get database connection with fallback for test environments
+ * @returns {Object} Database connection
+ */
+function getDatabase() {
+  // Handle both production and test environments
+  if (mongoose.connection.getClient) {
+    const client = mongoose.connection.getClient();
+    return client.db();
+  } else {
+    // Fallback for test environments (MongoDB Memory Server)
+    return mongoose.connection.db;
+  }
+}
+
+/**
  * Escapes special regex characters to prevent ReDoS attacks
  * @param {string} string - The string to escape
  * @returns {string} - The escaped string safe for regex use
@@ -50,7 +65,7 @@ router.get('/', requireBetterAuth, checkAdmin, async (req, res) => {
 
     const skip = (pageNum - 1) * limitNum;
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
 
@@ -138,7 +153,7 @@ router.get('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
     const userCollection = db.collection('user');
@@ -235,7 +250,7 @@ router.post('/', requireBetterAuth, checkAdmin, async (req, res) => {
         .json({ error: 'Slug must contain only lowercase letters, numbers, and hyphens' });
     }
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const organizationCollection = db.collection('organization');
 
     // Check if slug already exists (excluding soft-deleted organizations)
@@ -292,7 +307,7 @@ router.patch('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
     const { id } = req.params;
     const { name, slug, domain } = req.body;
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const organizationCollection = db.collection('organization');
 
     // Validate and convert organization ID
@@ -371,7 +386,7 @@ router.delete('/:id', requireBetterAuth, checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
 
@@ -448,7 +463,7 @@ router.post('/:id/members', requireBetterAuth, checkAdmin, async (req, res) => {
       });
     }
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const organizationCollection = db.collection('organization');
     const memberCollection = db.collection('member');
     const userCollection = db.collection('user');
@@ -541,7 +556,7 @@ router.patch('/:id/members/:userId', requireBetterAuth, checkAdmin, async (req, 
       });
     }
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const memberCollection = db.collection('member');
 
     // Update member role
@@ -576,7 +591,7 @@ router.delete('/:id/members/:userId', requireBetterAuth, checkAdmin, async (req,
   try {
     const { id, userId } = req.params;
 
-    const db = mongoose.connection.db;
+    const db = getDatabase();
     const memberCollection = db.collection('member');
 
     // Remove member

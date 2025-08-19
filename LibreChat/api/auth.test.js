@@ -152,8 +152,8 @@ describe('Better Auth Integration', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         '🔧 MongoDB connection established, initializing Better Auth...',
       );
-      // No longer expecting getClient to be called since we use connection.db directly
-      expect(mockConnection.getClient).not.toHaveBeenCalled();
+      // Expecting getClient to be called in production environment
+      expect(mockConnection.getClient).toHaveBeenCalled();
       expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
       expect(mockBetterAuth).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -248,8 +248,8 @@ describe('Better Auth Integration', () => {
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
-      // Should use connection.db directly, not call getClient
-      expect(mockConnection.getClient).not.toHaveBeenCalled();
+      // Should call getClient in production environment
+      expect(mockConnection.getClient).toHaveBeenCalled();
       expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
     });
   });
@@ -296,7 +296,8 @@ describe('Better Auth Integration', () => {
         return 'mock-adapter';
       });
 
-      // Mock connection.db to be undefined to simulate connection failure
+      // Mock both getClient and connection.db to be unavailable to simulate total connection failure
+      mockConnection.getClient = undefined;
       mockConnection.db = undefined;
 
       await import('./auth.js');
@@ -308,6 +309,7 @@ describe('Better Auth Integration', () => {
 
       // Restore mocks for other tests
       mockConnection.db = mockDb;
+      mockConnection.getClient = vi.fn().mockReturnValue({ db: () => mockDb });
       mockMongodbAdapter.mockReturnValue('mock-adapter');
     });
   });
@@ -392,8 +394,8 @@ describe('Better Auth Integration', () => {
       const connectionCallback = mockConnection.once.mock.calls[0][1];
       connectionCallback();
 
-      // Should use connection.db directly
-      expect(mockConnection.getClient).not.toHaveBeenCalled();
+      // Should call getClient in production environment
+      expect(mockConnection.getClient).toHaveBeenCalled();
       expect(mockMongodbAdapter).toHaveBeenCalledWith(mockDb);
     });
 

@@ -6,7 +6,7 @@ argument-hint: scope of review (pr, branch, issue, etc.)
 # Code Review
 
 - Conduct a comprehensive code review of the following: $ARGUMENTS
-- Write the results of your review to a file here: `docs/ACTIVE/[PR#]-review.md`
+- Write the results of your review to a file here: `docs/reports/review-{PR#].md`
 - Ultrathink
 
 ## Code Review Quality Standards

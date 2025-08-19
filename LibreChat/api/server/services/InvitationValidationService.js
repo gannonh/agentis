@@ -20,7 +20,15 @@ export async function validateInvitationToken(invitationId) {
     }
 
     // Get direct database connection
-    const db = mongoose.connection.db;
+    // Handle both production and test environments
+    let db;
+    if (mongoose.connection.getClient) {
+      const client = mongoose.connection.getClient();
+      db = client.db();
+    } else {
+      // Fallback for test environments (MongoDB Memory Server)
+      db = mongoose.connection.db;
+    }
     if (!db) {
       throw new Error('Database connection not available');
     }

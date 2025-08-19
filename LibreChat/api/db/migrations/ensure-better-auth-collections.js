@@ -57,7 +57,8 @@ export async function ensureBetterAuthCollections() {
 
   try {
     await connectDb();
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
 
     // Get existing collections
     const existingCollections = await db.listCollections().toArray();

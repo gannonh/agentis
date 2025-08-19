@@ -156,7 +156,7 @@ const renderOrganizationSettings = (props = {}) => {
   return render(
     <RecoilRoot>
       <OrganizationSettings {...props} />
-    </RecoilRoot>
+    </RecoilRoot>,
   );
 };
 
@@ -217,7 +217,7 @@ describe('OrganizationSettings', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset mock form values to default organization data
     Object.assign(mockFormValues, {
       name: 'Test Organization',
@@ -225,7 +225,7 @@ describe('OrganizationSettings', () => {
       website: 'https://test.com',
       logo: 'https://example.com/logo.png',
     });
-    
+
     mockUseOrganization.mockReturnValue(defaultMockData);
     global.URL.createObjectURL = vi.fn(() => 'mocked-blob-url');
     global.FileReader = vi.fn(() => ({
@@ -710,7 +710,7 @@ describe('OrganizationSettings', () => {
 
   describe('Custom Props', () => {
     it('should apply custom className', () => {
-      const { container } = renderOrganizationSettings({ className: "custom-class" });
+      const { container } = renderOrganizationSettings({ className: 'custom-class' });
       // The custom className is applied to the root div inside RecoilRoot
       const rootDiv = container.querySelector('.mx-auto.max-w-2xl');
       expect(rootDiv).toHaveClass('custom-class');

@@ -1258,7 +1258,7 @@ test.describe('Team Invitation Acceptance Flow Tests', () => {
         // Verify sidebar shows correct user name and organization name using proper locators
         await expect(inviteePage.getByTestId('nav-user')).toBeVisible(); // User dropdown
         await expect(
-          inviteePage.getByRole('button', { name: testAuth.organization.name }),
+          inviteePage.getByRole('heading', { name: testAuth.organization.name }),
         ).toBeVisible(); // Organization button
         logProgress('✅ Sidebar shows correct user and organization names');
       } finally {

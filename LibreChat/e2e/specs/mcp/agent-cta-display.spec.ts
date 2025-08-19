@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
-import { createTestUserWithOrganization, cleanupTestUser, generateTestId, type TestAuthResult } from '../utils/testAuth';
+import { logProgress } from '../../utils/testLogger';
+import {
+  createTestUserWithOrganization,
+  cleanupTestUser,
+  generateTestId,
+  type TestAuthResult,
+} from '../../utils/testAuth';
 
 /**
  * Test 1: Basic CTA Display Test
@@ -24,10 +29,12 @@ test.describe('Agent CTA Display Tests', () => {
   test.beforeAll(async () => {
     // Generate unique test ID for this test suite
     testId = generateTestId();
-    
+
     // Create test user with organization using Better Auth
     testAuth = await createTestUserWithOrganization(testId);
-    logProgress(`✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`);
+    logProgress(
+      `✅ Created test user: ${testAuth.user.email} with org: ${testAuth.organization.name}`,
+    );
   });
 
   test.afterAll(async () => {
@@ -54,7 +61,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -90,7 +97,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -110,12 +117,6 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Controls' }).click();
       await page.getByRole('button', { name: 'Agent Builder' }).click();
       logProgress('Opened Agent Builder');
-
-      try {
-        await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-      } catch (e) {
-        console.log('Create New Agent button not found, continuing...');
-      }
 
       // Fill agent details first
       await page.getByRole('textbox', { name: 'Agent name' }).click();
@@ -141,10 +142,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       logProgress('✅ Basic agent created');
 
@@ -158,16 +156,8 @@ test.describe('Agent CTA Display Tests', () => {
       } catch (e) {
         console.log('back button not found, continuing...');
       }
-      try {
-        await page
-          .getByLabel('Agent Builder')
-          .getByRole('button')
-          .filter({ hasText: /^$/ })
-          .click();
-      } catch (e) {
-        console.log('back button still not found, continuing...');
-      }
-      logProgress('✅ Skipping Featured toggle (no longer needed)');
+
+      logProgress('✅ Basic agent setup complete, proceeding with tools');
 
       // Add Google Sheets tools to make it functional
       await page.getByRole('button', { name: 'Add Tools' }).click();
@@ -206,11 +196,9 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
+
       await page
         .getByLabel('Agent Builder')
         .getByRole('button')
@@ -223,6 +211,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Add Selected' }).click();
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByRole('button', { name: 'Save' }).click();
+      logProgress('✅ Google Drive agent created');
 
       // Google Docs Agent
 
@@ -248,10 +237,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -266,7 +252,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByTestId('featured-toggle').click();
       await page.getByRole('button', { name: 'Save' }).click();
-
+      logProgress('✅ Google Docs agent created');
       // Gmail Agent
       await page.getByRole('button', { name: 'Create New Agent' }).click();
       await page.getByRole('textbox', { name: 'Agent name' }).click();
@@ -290,10 +276,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -308,6 +291,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByTestId('featured-toggle').click();
       await page.getByRole('button', { name: 'Save' }).click();
+      logProgress('✅ Gmail agent created');
 
       // Google Calendar
       await page.getByRole('button', { name: 'Create New Agent' }).click();
@@ -332,10 +316,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Provider' }).click();
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       await page
         .getByLabel('Agent Builder')
@@ -350,6 +331,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByTestId('featured-toggle').click();
       await page.getByRole('button', { name: 'Save' }).click();
+      logProgress('✅ Google Calendar agent created');
 
       // Navigate away and back to verify CTAs appear
       await page.getByRole('button', { name: 'New chat' }).click();
@@ -395,7 +377,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {
@@ -476,7 +458,7 @@ test.describe('Agent CTA Display Tests', () => {
       }
     }
   });
-  test('chat should dissapear CTAs', async ({ browser }) => {
+  test('chat should hide CTAs after starting conversation', async ({ browser }) => {
     logProgress('Starting CTA navigation test');
 
     // Create a new context with authentication cookies
@@ -490,7 +472,7 @@ test.describe('Agent CTA Display Tests', () => {
         httpOnly: true,
       },
     ]);
-    
+
     const page = await context.newPage();
 
     try {

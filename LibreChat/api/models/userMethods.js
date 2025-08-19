@@ -43,7 +43,7 @@ const findUser = async function (searchCriteria, fieldsToSelect = null) {
 const updateUser = async function (userId, updateData) {
   const setData = {};
   const unsetData = { expiresAt: '' }; // Remove the expiresAt field to prevent TTL
-  
+
   // Process each field in updateData
   for (const [key, value] of Object.entries(updateData)) {
     if (value === null) {
@@ -58,7 +58,7 @@ const updateUser = async function (userId, updateData) {
       setData[key] = value;
     }
   }
-  
+
   const updateOperation = {};
   if (Object.keys(setData).length > 0) {
     updateOperation.$set = setData;
@@ -66,7 +66,7 @@ const updateUser = async function (userId, updateData) {
   if (Object.keys(unsetData).length > 0) {
     updateOperation.$unset = unsetData;
   }
-  
+
   return await User.findByIdAndUpdate(userId, updateOperation, {
     new: true,
     runValidators: true,

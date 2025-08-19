@@ -27,7 +27,16 @@ export class InvitationRepository {
    */
   initialize() {
     if (!this.db) {
-      this.db = mongoose.connection.db;
+      // Handle both production and test environments
+      let db;
+      if (mongoose.connection.getClient) {
+        const client = mongoose.connection.getClient();
+        db = client.db();
+      } else {
+        // Fallback for test environments (MongoDB Memory Server)
+        db = mongoose.connection.db;
+      }
+      this.db = db;
       if (!this.db) {
         throw new Error('Database connection not available');
       }
@@ -203,5 +212,3 @@ export class InvitationRepository {
     return ObjectId.isValid(invitationId);
   }
 }
-
-export default InvitationRepository;

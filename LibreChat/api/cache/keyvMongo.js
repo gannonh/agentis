@@ -58,7 +58,8 @@ class KeyvMongoCustom extends EventEmitter {
     }
 
     try {
-      const db = mongoose.connection.db;
+      const mongoClient = mongoose.connection.getClient();
+      const db = mongoClient.db();
       let client;
 
       if (this.opts.useGridFS) {

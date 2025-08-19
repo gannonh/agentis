@@ -450,7 +450,7 @@ export async function createTestUserWithOrganization(testId: string): Promise<Te
 /**
  * Clean up test user and associated data
  */
-export async function cleanupTestUser(userId: string, organizationId: string): Promise<void> {
+export async function cleanupTestUser(userId: string, organizationId: string | null): Promise<void> {
   try {
     logger.info(`🧹 Cleaning up test user: ${userId}`);
 
@@ -463,25 +463,30 @@ export async function cleanupTestUser(userId: string, organizationId: string): P
       logger.info(`✅ Deleted ${sessionResult.deletedCount} sessions`);
 
       // Delete member records
-      const memberResult = await db.collection('member').deleteMany({
-        $or: [{ userId: userId }, { organizationId: organizationId }],
-      });
+      const memberQuery = organizationId 
+        ? { $or: [{ userId: userId }, { organizationId: organizationId }] }
+        : { userId: userId };
+      const memberResult = await db.collection('member').deleteMany(memberQuery);
       logger.info(`✅ Deleted ${memberResult.deletedCount} memberships`);
 
-      // Delete organization
-      let orgResult;
-      try {
-        // Try ObjectId first
-        orgResult = await db.collection('organization').deleteOne({
-          _id: new mongoose.Types.ObjectId(organizationId),
-        });
-      } catch (e) {
-        // If ObjectId fails, try string ID
-        orgResult = await db.collection('organization').deleteOne({
-          id: organizationId,
-        });
+      // Delete organization (only if organizationId is provided)
+      if (organizationId) {
+        let orgResult;
+        try {
+          // Try ObjectId first
+          orgResult = await db.collection('organization').deleteOne({
+            _id: new mongoose.Types.ObjectId(organizationId),
+          });
+        } catch (e) {
+          // If ObjectId fails, try string ID
+          orgResult = await db.collection('organization').deleteOne({
+            id: organizationId,
+          });
+        }
+        logger.info(`✅ Deleted ${orgResult.deletedCount} organizations`);
+      } else {
+        logger.info(`⚠️ Skipping organization deletion (organizationId is null)`);
       }
-      logger.info(`✅ Deleted ${orgResult.deletedCount} organizations`);
 
       // Delete user
       let userResult;
@@ -538,5 +543,174 @@ export async function validateTestAuth(): Promise<boolean> {
   } catch (error) {
     logger.error('❌ Test validation failed:', error);
     return false;
+  }
+}
+
+/**
+ * Create two test users in the same organization for member management testing
+ * @param testId Unique test identifier
+ * @returns Admin user and member user auth objects
+ */
+export async function createTestUsersInSameOrganization(testId: string): Promise<{
+  adminAuth: TestAuthResult;
+  memberAuth: TestAuthResult;
+}> {
+  try {
+    // 1. Create admin user with organization
+    logger.info(`🏢 Creating admin user with organization for testId: ${testId}`);
+    const adminAuth = await createTestUserWithOrganization(`${testId}-admin`);
+    
+    // 2. Create member user (without organization)
+    logger.info(`👤 Creating member user for testId: ${testId}`);
+    const memberUserEmail = `test-${testId}-member@example.com`;
+    const memberUserName = `Test User ${testId} Member`;  
+    const memberUserPassword = `TestPass123!${testId}`;
+    
+    // Create member user via Better Auth sign-up
+    const signUpResponse = await fetch('http://localhost:3080/api/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: memberUserEmail,
+        password: memberUserPassword,
+        name: memberUserName,
+      }),
+    });
+
+    if (!signUpResponse.ok) {
+      throw new Error(`Member sign up failed: ${signUpResponse.status}`);
+    }
+
+    // Sign in member to get session
+    const signInResponse = await fetch('http://localhost:3080/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: memberUserEmail,
+        password: memberUserPassword,
+      }),
+    });
+
+    if (!signInResponse.ok) {
+      throw new Error(`Member sign in failed: ${signInResponse.status}`);
+    }
+
+    // Extract member session token
+    const setCookieHeader = signInResponse.headers.get('set-cookie');
+    if (!setCookieHeader) {
+      throw new Error('No member session cookie returned');
+    }
+
+    const sessionTokenMatch = setCookieHeader.match(/better-auth\.session_token=([^;]+)/);
+    if (!sessionTokenMatch) {
+      throw new Error('Member session token not found in cookies');
+    }
+
+    const memberSessionToken = sessionTokenMatch[1];
+
+    // Get member user ID from sign-in response
+    const signInData = await signInResponse.json();
+    const memberUserId = signInData.user?.id;
+    
+    if (!memberUserId) {
+      throw new Error('Member user ID not found in sign-in response');
+    }
+
+    // 3. Add member user to organization using database operations
+    // Note: Better Auth automatically creates owner membership when organization is created
+    logger.info(`🤝 Adding member user to organization: ${adminAuth.organization.id}`);
+    const { db, mongoose } = await getTestDatabase();
+    const memberCollection = db.collection('member');
+    
+    // Create member membership record (admin membership was auto-created by Better Auth)
+    // Ensure IDs are in ObjectId format to match Better Auth expectations
+    const membershipResult = await memberCollection.insertOne({
+      userId: new mongoose.Types.ObjectId(memberUserId),
+      organizationId: new mongoose.Types.ObjectId(adminAuth.organization.id),
+      role: 'member',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    if (!membershipResult.insertedId) {
+      throw new Error('Failed to create member membership record');
+    }
+    
+    logger.info(`✅ Created member record: ${membershipResult.insertedId}`);
+    
+    // Verify both memberships exist in database
+    const allMembers = await memberCollection.find({ 
+      organizationId: new mongoose.Types.ObjectId(adminAuth.organization.id) 
+    }).toArray();
+    logger.info(`🔍 Verified ${allMembers.length} total members in organization:`, allMembers.map(m => ({
+      userId: m.userId,
+      role: m.role,
+      id: m._id
+    })));
+
+    // 4. Accept terms for member user
+    await fetch('http://localhost:3080/api/user/terms/accept', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `better-auth.session_token=${memberSessionToken}`,
+      },
+    });
+
+    // 5. Complete onboarding for member
+    const completeOnboardingResponse = await fetch('http://localhost:3080/api/user/update-onboarding-step', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `better-auth.session_token=${memberSessionToken}`,
+      },
+      body: JSON.stringify({
+        onboardingStep: 'complete',
+      }),
+    });
+
+    if (!completeOnboardingResponse.ok) {
+      logger.warn(`⚠️ Member onboarding completion failed: ${completeOnboardingResponse.status}`);
+    }
+
+    // Build member auth result
+    const memberAuth: TestAuthResult = {
+      user: {
+        id: memberUserId,
+        email: memberUserEmail,
+        name: memberUserName,
+        role: 'user',
+        organizationId: adminAuth.organization.id, // Same organization as admin
+      },
+      organization: adminAuth.organization, // Share the same organization
+      session: {
+        sessionToken: memberSessionToken,
+        userId: memberUserId,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        activeOrganizationId: adminAuth.organization.id,
+      },
+      sessionCookie: `better-auth.session_token=${memberSessionToken}; Path=/; HttpOnly; SameSite=Lax`,
+    };
+
+    // Verify both users are in the database
+    const orgMembers = await memberCollection.find({
+      organizationId: adminAuth.organization.id
+    }).toArray();
+    
+    logger.info(`✅ Created test users in same organization: ${adminAuth.organization.id}`);
+    logger.info(`🔍 Found ${orgMembers.length} members in organization:`);
+    orgMembers.forEach((member, index) => {
+      logger.info(`  ${index + 1}. User: ${member.userId}, Role: ${member.role}, ID: ${member.id}`);
+    });
+    
+    return {
+      adminAuth,
+      memberAuth,
+    };
+  } catch (error) {
+    logger.error(`❌ Failed to create test users in same organization:`, error);
+    throw new Error(
+      `Test user creation failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }

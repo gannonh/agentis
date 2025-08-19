@@ -1,7 +1,7 @@
 /**
  * @fileoverview Account profile setup component for settings
  * @module components/Nav/SettingsTabs/Account/AccountProfileSetup
- * 
+ *
  * Adapted from ProfileSetup component for use in Account settings
  * Provides profile management with Better Auth integration
  */
@@ -77,13 +77,13 @@ const sanitizeAvatarUrl = (url: string): string => {
 export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ className = '' }) => {
   const { showToast } = useToastContext();
   const { data: session, refetch: refetchSession } = authClient.useSession();
-  
+
   // Get complete user data including avatar - following onboarding pattern
   const { data: userData, refetch: refetchUserData } = useGetUserQuery();
-  
+
   const user = session?.user;
   const email = user?.email || '';
-  
+
   // Initialize avatar preview exactly like onboarding ProfileSetup does
   const [avatarPreview, setAvatarPreview] = useState<string>(
     sanitizeAvatarUrl(userData?.avatar || userData?.image || ''),
@@ -136,32 +136,35 @@ export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ classN
   const debouncedUsername = useDebounce(watchedUsername || '', 500);
 
   // Username availability checking
-  const checkUsernameAvailability = useCallback(async (username: string) => {
-    if (!username || username.length < 3) {
-      setUsernameAvailable(null);
-      return;
-    }
+  const checkUsernameAvailability = useCallback(
+    async (username: string) => {
+      if (!username || username.length < 3) {
+        setUsernameAvailable(null);
+        return;
+      }
 
-    // Don't check if it's the current username
-    if (username === user?.username) {
-      setUsernameAvailable(true);
-      return;
-    }
+      // Don't check if it's the current username
+      if (username === user?.username) {
+        setUsernameAvailable(true);
+        return;
+      }
 
-    setCheckingUsername(true);
-    try {
-      const response = await fetch(
-        `/api/user/check-username?username=${encodeURIComponent(username)}`,
-      );
-      const result = await response.json();
-      setUsernameAvailable(result.available);
-    } catch (error) {
-      console.error('Username check failed:', error);
-      setUsernameAvailable(null);
-    } finally {
-      setCheckingUsername(false);
-    }
-  }, [user?.username]);
+      setCheckingUsername(true);
+      try {
+        const response = await fetch(
+          `/api/user/check-username?username=${encodeURIComponent(username)}`,
+        );
+        const result = await response.json();
+        setUsernameAvailable(result.available);
+      } catch (error) {
+        console.error('Username check failed:', error);
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    },
+    [user?.username],
+  );
 
   // Check username availability when debounced value changes
   useEffect(() => {
@@ -233,7 +236,7 @@ export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ classN
 
   const onSubmit = async (data: ProfileData) => {
     setIsSubmitting(true);
-    
+
     try {
       // Build update data
       const updateData: any = {
@@ -245,7 +248,7 @@ export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ classN
         updateData.username = data.username;
       }
 
-      // Add avatar if changed 
+      // Add avatar if changed
       if (data.avatar !== (userData?.avatar || '')) {
         // Explicitly handle avatar deletion
         if (data.avatar === '') {
@@ -255,18 +258,17 @@ export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ classN
         }
       }
 
-
       console.log('💾 ACCOUNT: About to call authClient.updateUser with:', updateData);
-      
+
       // Update user profile with Better Auth
       await authClient.updateUser(updateData);
-      
+
       console.log('💾 ACCOUNT: authClient.updateUser completed, now refetching data');
 
       // Refresh both session and user data to get updated avatar
       await refetchSession();
       const updatedUserData = await refetchUserData();
-      
+
       console.log('💾 ACCOUNT: Data refetched, updatedUserData:', updatedUserData?.data);
 
       showToast({
@@ -282,9 +284,9 @@ export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ classN
         username: data.username || '',
         avatar: sanitizeAvatarUrl(latestAvatar),
       };
-      
+
       reset(resetData);
-      
+
       // Update avatar preview with the latest user avatar
       setAvatarPreview(sanitizeAvatarUrl(latestAvatar));
     } catch (error) {
@@ -361,7 +363,8 @@ export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ classN
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Profile Photo</p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              JPG, GIF, WebP or PNG. Max size of {Math.round((fileConfig.avatarSizeLimit ?? 5 * 1024 * 1024) / (1024 * 1024))}MB.
+              JPG, GIF, WebP or PNG. Max size of{' '}
+              {Math.round((fileConfig.avatarSizeLimit ?? 5 * 1024 * 1024) / (1024 * 1024))}MB.
             </p>
             {avatarPreview && (
               <button
@@ -449,20 +452,24 @@ export const AccountProfileSetup: React.FC<AccountProfileSetupProps> = ({ classN
                 disabled={isSubmitting}
               />
               {/* Username availability indicator */}
-              {watchedUsername && watchedUsername.length >= 3 && watchedUsername !== user?.username && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {checkingUsername ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
-                  ) : usernameAvailable === true ? (
-                    <Check className="h-4 w-4 text-green-500" data-testid="username-available" />
-                  ) : usernameAvailable === false ? (
-                    <X className="h-4 w-4 text-red-500" />
-                  ) : null}
-                </div>
-              )}
+              {watchedUsername &&
+                watchedUsername.length >= 3 &&
+                watchedUsername !== user?.username && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {checkingUsername ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+                    ) : usernameAvailable === true ? (
+                      <Check className="h-4 w-4 text-green-500" data-testid="username-available" />
+                    ) : usernameAvailable === false ? (
+                      <X className="h-4 w-4 text-red-500" />
+                    ) : null}
+                  </div>
+                )}
             </div>
             {errors.username && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.username.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.username.message}
+              </p>
             )}
             {usernameAvailable === false && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">
