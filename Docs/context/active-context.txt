@@ -1,20 +1,106 @@
-  The flow should be:
-
-  1. User B gets invitation email ✅
-  2. User B clicks "Sign In to Accept" ✅
-  3. User B goes to login screen and authenticates via magic link ✅
-  4. User B should be automatically added to the organization and go through the NORMAL onboarding flow (invite others →
-  profile setup → etc.) ✅
-
-  The user should go through the standard onboarding steps because they're a new user, but they should be onboarding within 
-  the organization they were invited to, not creating their own organization.
-
-  The issue is that the magic link authentication isn't properly connecting the invitation context, so instead of onboarding
-   within the invited organization, the system is treating them as needing to create a new organization or request to join
-  one.
-
-  The backend needs to:
-  1. Detect the pending invitation during magic link auth
-  2. Auto-accept the invitation
-  3. Set the user's organization context to the invited organization
-  4. Start normal onboarding flow within that organization
+│ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+│ │ Plan: Add Join Request Management to Organization-Level User Management UI                                            │ │
+│ │                                                                                                                       │ │
+│ │ Overview                                                                                                              │ │
+│ │                                                                                                                       │ │
+│ │ I'll implement the join request management feature in the organization-level user management UI, allowing             │ │
+│ │ organization owners/admins to view and manage pending join requests when domain auto-join is disabled.                │ │
+│ │                                                                                                                       │ │
+│ │ Implementation Steps                                                                                                  │ │
+│ │                                                                                                                       │ │
+│ │ 1. Add API Functions to data-provider package                                                                         │ │
+│ │                                                                                                                       │ │
+│ │ - Create new functions in LibreChat/packages/data-provider/src/data-service.ts:                                       │ │
+│ │   - getOrganizationJoinRequests() - Fetch pending join requests                                                       │ │
+│ │   - approveJoinRequest() - Approve a join request                                                                     │ │
+│ │   - rejectJoinRequest() - Reject a join request                                                                       │ │
+│ │                                                                                                                       │ │
+│ │ 2. Update OrganizationProvider Context                                                                                │ │
+│ │                                                                                                                       │ │
+│ │ - Add to LibreChat/client/src/Providers/OrganizationProvider.tsx:                                                     │ │
+│ │   - State for joinRequests array                                                                                      │ │
+│ │   - Loading state isLoadingJoinRequests                                                                               │ │
+│ │   - Methods: getJoinRequests(), approveRequest(), rejectRequest()                                                     │ │
+│ │   - Fetch join requests when organization context loads                                                               │ │
+│ │                                                                                                                       │ │
+│ │ 3. Enhance MemberManagement Component                                                                                 │ │
+│ │                                                                                                                       │ │
+│ │ - Modify LibreChat/client/src/components/Organization/MemberManagement.tsx:                                           │ │
+│ │   - Add "Pending Join Requests" section below "Pending Invitations"                                                   │ │
+│ │   - Display count in header: "Pending Join Requests (X)"                                                              │ │
+│ │   - Show list with: user email, request date, Approve/Reject buttons                                                  │ │
+│ │   - Add confirmation dialogs for approve/reject actions                                                               │ │
+│ │   - Update member count when requests are approved                                                                    │ │
+│ │   - Show empty state when no pending requests                                                                         │ │
+│ │                                                                                                                       │ │
+│ │ 4. Add E2E Tests                                                                                                      │ │
+│ │                                                                                                                       │ │
+│ │ - Create new tests in LibreChat/e2e/specs/org-admin-management.spec.ts:                                               │ │
+│ │   - "Organization owner can view pending join requests"                                                               │ │
+│ │   - "Organization owner can approve join requests"                                                                    │ │
+│ │   - "Organization owner can reject join requests"                                                                     │ │
+│ │   - "Approved users appear in members list"                                                                           │ │
+│ │   - "Member count updates after approval"                                                                             │ │
+│ │                                                                                                                       │ │
+│ │ 5. Update Existing Tests                                                                                              │ │
+│ │                                                                                                                       │ │
+│ │ - Keep placeholder tests in auth-ob.join-approval.spec.ts for user flow perspective                                   │ │
+│ │ - Ensure no test regressions                                                                                          │ │
+│ │                                                                                                                       │ │
+│ │ Technical Details                                                                                                     │ │
+│ │                                                                                                                       │ │
+│ │ API Integration                                                                                                       │ │
+│ │                                                                                                                       │ │
+│ │ - Endpoints already exist:                                                                                            │ │
+│ │   - GET /api/organization/:id/join-requests                                                                           │ │
+│ │   - POST /api/organization/:id/join-requests/:requestId/approve                                                       │ │
+│ │   - POST /api/organization/:id/join-requests/:requestId/reject                                                        │ │
+│ │                                                                                                                       │ │
+│ │ Data Structure                                                                                                        │ │
+│ │                                                                                                                       │ │
+│ │ Join requests are stored in organization.metadata.joinRequests[] with:                                                │ │
+│ │ {                                                                                                                     │ │
+│ │   id: string,                                                                                                         │ │
+│ │   userId: string,                                                                                                     │ │
+│ │   userEmail: string,                                                                                                  │ │
+│ │   userName: string,                                                                                                   │ │
+│ │   status: 'pending' | 'approved' | 'rejected',                                                                        │ │
+│ │   requestedAt: Date,                                                                                                  │ │
+│ │   reviewedBy?: string,                                                                                                │ │
+│ │   reviewedAt?: Date,                                                                                                  │ │
+│ │   rejectionReason?: string                                                                                            │ │
+│ │ }                                                                                                                     │ │
+│ │                                                                                                                       │ │
+│ │ UI/UX Considerations                                                                                                  │ │
+│ │                                                                                                                       │ │
+│ │ - Show requests only to organization owners/admins                                                                    │ │
+│ │ - Display human-readable dates (e.g., "2 days ago")                                                                   │ │
+│ │ - Confirmation dialogs prevent accidental actions                                                                     │ │
+│ │ - Toast notifications for success/error states                                                                        │ │
+│ │ - Real-time updates after approve/reject actions                                                                      │ │
+│ │                                                                                                                       │ │
+│ │ Testing Strategy                                                                                                      │ │
+│ │                                                                                                                       │ │
+│ │ 1. Start with E2E test creation (TDD approach)                                                                        │ │
+│ │ 2. Write failing tests for the new functionality                                                                      │ │
+│ │ 3. Implement the feature to make tests pass                                                                           │ │
+│ │ 4. Verify all existing tests still pass                                                                               │ │
+│ │ 5. Run full test suite including integration tests                                                                    │ │
+│ │                                                                                                                       │ │
+│ │ Files to Modify/Create                                                                                                │ │
+│ │                                                                                                                       │ │
+│ │ 1. LibreChat/packages/data-provider/src/data-service.ts - Add API functions                                           │ │
+│ │ 2. LibreChat/client/src/Providers/OrganizationProvider.tsx - Add join request state/methods                           │ │
+│ │ 3. LibreChat/client/src/components/Organization/MemberManagement.tsx - Add UI section                                 │ │
+│ │ 4. LibreChat/e2e/specs/org-admin-management.spec.ts - Add new E2E tests                                               │ │
+│ │ 5. Build packages after changes: npm run build:data-provider                                                          │ │
+│ │                                                                                                                       │ │
+│ │ Success Criteria                                                                                                      │ │
+│ │                                                                                                                       │ │
+│ │ - ✅ Join requests section visible in Team Members modal                                                               │ │
+│ │ - ✅ Organization admins can view all pending requests                                                                 │ │
+│ │ - ✅ Approve/reject buttons work with confirmation                                                                     │ │
+│ │ - ✅ Member count updates after approval                                                                               │ │
+│ │ - ✅ Proper error handling for edge cases                                                                              │ │
+│ │ - ✅ All E2E tests pass                                                                                                │ │
+│ │ - ✅ No regression in existing functionality                                                                           │ │

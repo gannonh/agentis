@@ -58,7 +58,7 @@ E2E Acceptance Test (Red) → Unit/Integration Tests (TDD) → Implementation �
 ### 1. Task Preparation
 
 - Read the GitHub Issue
-- Understand the issue in the context of the larger context if applicable (e.g., PRD/plan)
+- Understand the issue in the context of a larger context if applicable (e.g., dependencies)
 - Evaluate scope and criteria
 - Determine if E2E tests are applicable
 - Understand dependencies and constraints
