@@ -21,15 +21,13 @@ interface InvitationDialogProps {
 /**
  * Dialog component for inviting members to organization
  */
-export const InvitationDialog: React.FC<InvitationDialogProps> = ({
-  trigger,
-  onInviteSent,
-}) => {
+export const InvitationDialog: React.FC<InvitationDialogProps> = ({ trigger, onInviteSent }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('member');
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const { inviteMember } = useOrganization();
 
@@ -38,11 +36,12 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
     if (!email.trim()) return;
 
     setIsLoading(true);
+    setErrorMessage(''); // Clear any previous errors
     try {
       await inviteMember(email.trim(), role);
       setSuccessMessage(`Invitation sent to ${email}`);
       onInviteSent?.(email);
-      
+
       // Clear form after successful invite
       setTimeout(() => {
         setEmail('');
@@ -52,7 +51,7 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
       }, 2000);
     } catch (error) {
       console.error('Failed to send invitation:', error);
-      // In a real implementation, we'd show an error message
+      setErrorMessage(`Failed to send invitation to ${email}. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -63,13 +62,11 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
     setEmail('');
     setRole('member');
     setSuccessMessage('');
+    setErrorMessage('');
   };
 
   const defaultTrigger = (
-    <Button 
-      className="bg-blue-600 text-white hover:bg-blue-700"
-      data-testid="invite-member-button"
-    >
+    <Button className="bg-blue-600 text-white hover:bg-blue-700" data-testid="invite-member-button">
       <UserPlus className="mr-2 h-4 w-4" />
       Invite Member
     </Button>
@@ -77,18 +74,15 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
 
   return (
     <OGDialog open={isOpen} onOpenChange={setIsOpen}>
-      <OGDialogTrigger asChild>
-        {trigger || defaultTrigger}
-      </OGDialogTrigger>
+      <OGDialogTrigger asChild>{trigger || defaultTrigger}</OGDialogTrigger>
       <OGDialogTemplate
         title="Invite Member"
         description="Send an invitation to join your organization"
         showCancelButton={true}
         onClose={handleClose}
         selection={{
-          selectHandler: (e) => {
-            e?.preventDefault();
-            handleSubmit(e);
+          selectHandler: () => {
+            handleSubmit(new Event('submit') as any);
           },
           selectText: isLoading ? 'Sending...' : 'Send Invitation',
           isLoading: isLoading,
@@ -99,14 +93,23 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
         main={
           <div data-testid="invite-member-dialog">
             {successMessage && (
-              <div 
+              <div
                 className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-300"
                 data-testid="invitation-success"
               >
                 {successMessage}
               </div>
             )}
-            
+
+            {errorMessage && (
+              <div
+                className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-300"
+                data-testid="invitation-error"
+              >
+                {errorMessage}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="invite-email" className="text-sm font-medium">
