@@ -234,10 +234,11 @@ test.describe('Organization Admin User Management', () => {
         // Send invitation (button is now rendered via selection prop)
         await page.getByRole('button', { name: 'Send Invitation' }).click();
 
-        // Verify success message
-        await expect(page.getByText(`Invitation sent to ${inviteEmail}`)).toBeVisible({
-          timeout: 10000,
+        // Verify success message appears immediately (before 2-second timeout clears it)
+        await expect(page.getByTestId('invitation-success')).toBeVisible({
+          timeout: 5000,
         });
+        await expect(page.getByTestId('invitation-success')).toContainText(`Invitation sent to ${inviteEmail}`);
         logProgress(`✅ Successfully sent invitation to ${inviteEmail}`);
 
         // Wait for invitation to be processed and email to be sent
