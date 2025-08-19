@@ -118,12 +118,6 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Agent Builder' }).click();
       logProgress('Opened Agent Builder');
 
-      try {
-        await page.getByRole('button', { name: 'Create New Agent' }).click({ timeout: 5000 });
-      } catch (e) {
-        console.log('Create New Agent button not found, continuing...');
-      }
-
       // Fill agent details first
       await page.getByRole('textbox', { name: 'Agent name' }).click();
       await page.getByRole('textbox', { name: 'Agent name' }).fill('Google Sheets Agent');
@@ -162,16 +156,8 @@ test.describe('Agent CTA Display Tests', () => {
       } catch (e) {
         console.log('back button not found, continuing...');
       }
-      try {
-        await page
-          .getByLabel('Agent Builder')
-          .getByRole('button')
-          .filter({ hasText: /^$/ })
-          .click();
-      } catch (e) {
-        console.log('back button still not found, continuing...');
-      }
-      logProgress('✅ Skipping Featured toggle (no longer needed)');
+
+      logProgress('✅ Basic agent setup complete, proceeding with tools');
 
       // Add Google Sheets tools to make it functional
       await page.getByRole('button', { name: 'Add Tools' }).click();
@@ -212,6 +198,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('combobox', { name: 'Model' }).click();
       await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
+
       await page
         .getByLabel('Agent Builder')
         .getByRole('button')
@@ -224,6 +211,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Add Selected' }).click();
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByRole('button', { name: 'Save' }).click();
+      logProgress('✅ Google Drive agent created');
 
       // Google Docs Agent
 
@@ -264,7 +252,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByTestId('featured-toggle').click();
       await page.getByRole('button', { name: 'Save' }).click();
-
+      logProgress('✅ Google Docs agent created');
       // Gmail Agent
       await page.getByRole('button', { name: 'Create New Agent' }).click();
       await page.getByRole('textbox', { name: 'Agent name' }).click();
@@ -303,6 +291,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByTestId('featured-toggle').click();
       await page.getByRole('button', { name: 'Save' }).click();
+      logProgress('✅ Gmail agent created');
 
       // Google Calendar
       await page.getByRole('button', { name: 'Create New Agent' }).click();
@@ -342,6 +331,7 @@ test.describe('Agent CTA Display Tests', () => {
       await page.getByRole('button', { name: 'Close dialog' }).click();
       await page.getByTestId('featured-toggle').click();
       await page.getByRole('button', { name: 'Save' }).click();
+      logProgress('✅ Google Calendar agent created');
 
       // Navigate away and back to verify CTAs appear
       await page.getByRole('button', { name: 'New chat' }).click();
@@ -468,7 +458,7 @@ test.describe('Agent CTA Display Tests', () => {
       }
     }
   });
-  test('chat should dissapear CTAs', async ({ browser }) => {
+  test('chat should hide CTAs after starting conversation', async ({ browser }) => {
     logProgress('Starting CTA navigation test');
 
     // Create a new context with authentication cookies
