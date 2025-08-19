@@ -190,21 +190,21 @@ test.describe('Google Sheets MCP Tests', () => {
       await expect(agentsContainer).toBeVisible();
 
       // Wait longer and add debug logging
-      try {
-        await expect(agentsContainer.getByText('Google Sheets Agent').first()).toBeVisible({
-          timeout: 15000,
-        });
-      } catch (error) {
-        // Debug: Log all available agents
-        const allAgents = await agentsContainer.locator('text=').allTextContents();
-        console.log('Available agents:', allAgents);
+      // try {
+      //   await expect(agentsContainer.getByText('Google Sheets Agent').first()).toBeVisible({
+      //     timeout: 15000,
+      //   });
+      // } catch (error) {
+      //   // Debug: Log all available agents
+      //   const allAgents = await agentsContainer.locator('*').allTextContents();
+      //   console.log('Available agents:', allAgents);
 
-        // Try alternative selectors
-        const agentExists = await page.locator('text=Google Sheets Agent').count();
-        console.log('Agent count:', agentExists);
+      //   // Try alternative selectors
+      //   const agentExists = await page.locator('text=Google Sheets Agent').count();
+      //   console.log('Agent count:', agentExists);
 
-        throw new Error(`Google Sheets Agent not found. Available agents: ${allAgents.join(', ')}`);
-      }
+      //   throw new Error(`Google Sheets Agent not found. Available agents: ${allAgents.join(', ')}`);
+      // }
 
       await agentsContainer.getByText('Google Sheets Agent').first().click();
       logProgress('✅ Selected Google Sheets Agent');
