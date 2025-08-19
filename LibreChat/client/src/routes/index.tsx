@@ -7,7 +7,6 @@ import {
   TwoFactorScreen,
   AcceptInvitation,
 } from '~/components/Auth';
-import { ProgressiveRegistration } from '~/components/Auth/ProgressiveRegistration';
 import { OAuthOnboardingRedirect } from '~/components/Auth/OAuthOnboardingRedirect';
 import { ComposioTestPage } from '~/components/Composio';
 import { AdminDashboard } from '~/components/Admin/AdminDashboard';

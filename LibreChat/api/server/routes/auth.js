@@ -168,7 +168,7 @@ const handleAvatarDeletion = async (req, res, next) => {
         // Get MongoDB connection
         const mongoose = await import('mongoose');
         let db;
-        
+
         // Handle both production and test environments
         if (mongoose.connection.getClient) {
           const client = mongoose.connection.getClient();

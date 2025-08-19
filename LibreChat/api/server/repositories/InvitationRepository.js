@@ -212,4 +212,3 @@ export class InvitationRepository {
     return ObjectId.isValid(invitationId);
   }
 }
-
