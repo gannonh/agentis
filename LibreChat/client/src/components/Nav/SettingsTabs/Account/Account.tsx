@@ -37,7 +37,7 @@ function Account() {
             Permanently delete your account and all associated data
           </p>
         </div>
-        
+
         <DeleteAccount />
       </div>
     </div>

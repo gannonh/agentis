@@ -250,7 +250,8 @@ export async function createOrganizationIndexes() {
 
   try {
     await connectDb();
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
     const results = {
       created: [],
       skipped: [],
@@ -322,7 +323,8 @@ export async function dropOrganizationIndexes() {
 
   try {
     await connectDb();
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
     const results = {
       dropped: [],
       errors: [],
@@ -374,7 +376,8 @@ export async function analyzeIndexUsage() {
 
   try {
     await connectDb();
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
     const analysis = {};
 
     for (const collectionName of Object.keys(INDEX_STRATEGY)) {

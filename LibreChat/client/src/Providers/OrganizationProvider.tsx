@@ -86,7 +86,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   // Get current user session for role checking
   const { data: session } = authClient.useSession();
 
-  // Get full organization with members and invitations
+  // Get full organization with members and invitations from Better Auth
   const {
     data: fullOrganization,
     isLoading: orgLoading,
@@ -156,8 +156,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       await authClient.organization.inviteMember({ email, role });
     },
     onSuccess: () => {
-      // Invalidate and refetch invitations
-      queryClient.invalidateQueries({ queryKey: ['organization-invitations'] });
+      // Invalidate and refetch full organization (includes invitations)
+      queryClient.invalidateQueries({ queryKey: ['full-organization'] });
     },
   });
 
@@ -224,7 +224,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       await authClient.organization.cancelInvitation({ invitationId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization-invitations'] });
+      // Invalidate and refetch full organization (includes invitations)
+      queryClient.invalidateQueries({ queryKey: ['full-organization'] });
     },
   });
 

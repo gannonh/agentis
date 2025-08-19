@@ -35,6 +35,7 @@ import {
 import { OGDialog, OGDialogTrigger } from '~/components';
 import OGDialogTemplate from '~/components/ui/OGDialogTemplate';
 import { MemberManagement } from './MemberManagement';
+import { InvitationDialog } from './InvitationDialog';
 import { useOrganization } from '~/Providers/OrganizationProvider';
 import { useLocalize } from '~/hooks';
 import type { OrganizationData } from '~/config/betterAuth';
@@ -66,6 +67,7 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
     userRole,
     canUpdateSettings,
     canManageOrganization,
+    canManageMembers,
     updateOrganization,
     deleteOrganization,
     isLoading,
@@ -406,7 +408,7 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
         </div>
 
         {/* Member Management */}
-        {canManageOrganization && (
+        {canManageMembers && (
           <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
@@ -434,15 +436,34 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
                   title="Team Members"
                   className="max-w-[1000px]"
                   showCancelButton={false}
-                  buttons={
-                    <Button className="bg-blue-600 text-white hover:bg-blue-700">
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Invite Member
-                    </Button>
+                  buttons={<InvitationDialog />}
+                  main={
+                    <div data-testid="member-management-modal">
+                      <MemberManagement
+                        onInviteMember={() => {
+                          /* TODO: Implement invite flow */
+                        }}
+                        showHeader={false}
+                      />
+                    </div>
                   }
-                  main={<MemberManagement onInviteMember={() => {/* TODO: Implement invite flow */}} showHeader={false} />}
                 />
               </OGDialog>
+            </div>
+          </div>
+        )}
+
+        {/* Limited Access Message for Regular Members */}
+        {!canManageMembers && (
+          <div className="rounded-lg bg-gray-50 p-6 dark:bg-gray-800/50">
+            <div className="text-center">
+              <Users className="mx-auto mb-3 h-8 w-8 text-gray-400" />
+              <p
+                className="text-sm text-gray-600 dark:text-gray-400"
+                data-testid="org-settings-limited-access"
+              >
+                You can view organization settings but cannot make changes or manage members.
+              </p>
             </div>
           </div>
         )}

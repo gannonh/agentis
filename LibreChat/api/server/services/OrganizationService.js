@@ -26,8 +26,15 @@ class OrganizationService {
    */
   initialize() {
     this.auth = getAuth();
-    // Use the MongoDB client directly since Better Auth adapter access is not working
-    this.db = mongoose.connection.db;
+    // Use the Better Auth compatible MongoDB client
+    // Handle both production and test environments
+    if (mongoose.connection.getClient) {
+      const client = mongoose.connection.getClient();
+      this.db = client.db();
+    } else {
+      // Fallback for test environments (MongoDB Memory Server)
+      this.db = mongoose.connection.db;
+    }
   }
 
   /**

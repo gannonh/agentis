@@ -5,7 +5,17 @@ import { SettingsTabValues } from 'librechat-data-provider';
 import type { TDialogProps } from '~/common/types';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
-import { General, Chat, Speech, Beta, Commands, Data, Account, Organization, Sharing } from './SettingsTabs';
+import {
+  General,
+  Chat,
+  Speech,
+  Beta,
+  Commands,
+  Data,
+  Account,
+  Organization,
+  Sharing,
+} from './SettingsTabs';
 import { useMediaQuery, useLocalize, TranslationKeys } from '~/hooks';
 import { useOrganization } from '~/Providers';
 import { cn } from '~/utils';

@@ -229,7 +229,8 @@ export class MongoPerformanceProfiler {
    */
   async enableProfiling(slowMs = 100) {
     try {
-      const db = mongoose.connection.db;
+      const client = mongoose.connection.getClient();
+      const db = client.db();
 
       // Set profiling level to 1 (slow operations only)
       await db.command({
@@ -260,7 +261,8 @@ export class MongoPerformanceProfiler {
    */
   async disableProfiling() {
     try {
-      const db = mongoose.connection.db;
+      const client = mongoose.connection.getClient();
+      const db = client.db();
 
       // Set profiling level to 0 (off)
       await db.command({ profile: 0 });
@@ -280,7 +282,8 @@ export class MongoPerformanceProfiler {
    */
   async getSlowQueries(limit = 100) {
     try {
-      const db = mongoose.connection.db;
+      const client = mongoose.connection.getClient();
+      const db = client.db();
 
       const slowQueries = await db
         .collection('system.profile')
@@ -360,7 +363,8 @@ export class MongoPerformanceProfiler {
    */
   async clearProfile() {
     try {
-      const db = mongoose.connection.db;
+      const client = mongoose.connection.getClient();
+      const db = client.db();
       await db.collection('system.profile').deleteMany({});
       logger.info('🧹 Cleared MongoDB profiling data');
     } catch (error) {

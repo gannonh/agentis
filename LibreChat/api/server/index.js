@@ -73,7 +73,8 @@ const startServer = async () => {
 
   // Ensure existing sessions have activeOrganizationId set
   try {
-    const db = mongoose.connection.db;
+    const client = mongoose.connection.getClient();
+    const db = client.db();
     await ensureActiveOrganizationInSessions(db);
   } catch (error) {
     logger.error('Failed to update sessions with active organization:', error);

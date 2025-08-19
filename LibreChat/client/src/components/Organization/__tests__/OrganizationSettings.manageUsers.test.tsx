@@ -89,8 +89,18 @@ describe('OrganizationSettings - Manage Users Button', () => {
   };
 
   const mockMembers = [
-    { id: '1', userId: 'user-1', role: 'owner', user: { id: 'user-1', name: 'Owner User', email: 'owner@test.com' } },
-    { id: '2', userId: 'user-2', role: 'member', user: { id: 'user-2', name: 'Member User', email: 'member@test.com' } },
+    {
+      id: '1',
+      userId: 'user-1',
+      role: 'owner',
+      user: { id: 'user-1', name: 'Owner User', email: 'owner@test.com' },
+    },
+    {
+      id: '2',
+      userId: 'user-2',
+      role: 'member',
+      user: { id: 'user-2', name: 'Member User', email: 'member@test.com' },
+    },
   ];
 
   beforeEach(() => {
@@ -126,7 +136,9 @@ describe('OrganizationSettings - Manage Users Button', () => {
 
     // Use more specific selector to avoid multiple "Team Members" elements
     expect(screen.getByRole('heading', { name: 'Team Members', level: 3 })).toBeInTheDocument();
-    expect(screen.getByText('Manage your organization members and their roles')).toBeInTheDocument();
+    expect(
+      screen.getByText('Manage your organization members and their roles'),
+    ).toBeInTheDocument();
     expect(screen.getByText('2 members')).toBeInTheDocument();
     expect(screen.getByTestId('manage-users-button')).toBeInTheDocument();
     expect(screen.getByText('Manage')).toBeInTheDocument();
@@ -169,7 +181,7 @@ describe('OrganizationSettings - Manage Users Button', () => {
     // Check that the dialog components are present in the DOM (even if not visible)
     const manageButton = screen.getByTestId('manage-users-button');
     expect(manageButton).toBeInTheDocument();
-    
+
     // Verify the dialog components exist in the DOM structure
     expect(screen.getByTestId('dialog-template')).toBeInTheDocument();
     expect(screen.getByTestId('member-management')).toBeInTheDocument();

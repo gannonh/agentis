@@ -4,14 +4,10 @@ function Sharing() {
   return (
     <div className="flex flex-col gap-6 p-1 text-sm text-text-primary">
       <div className="border-b border-border-light pb-3">
-        <h3 className="text-lg font-semibold text-text-primary">
-          Sharing
-        </h3>
-        <p className="mt-1 text-text-secondary">
-          Manage shared agents, prompts and chats.
-        </p>
+        <h3 className="text-lg font-semibold text-text-primary">Sharing</h3>
+        <p className="mt-1 text-text-secondary">Manage shared agents, prompts and chats.</p>
       </div>
-      
+
       <div className="flex flex-col gap-4">
         <div className="rounded-lg border border-border-light p-4">
           <div className="flex items-center justify-center py-12">
@@ -32,11 +28,10 @@ function Sharing() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-text-primary mb-2">
-                Coming Soon
-              </h3>
-              <p className="text-text-secondary max-w-sm">
-                Conversation sharing and collaboration features will be available in a future update.
+              <h3 className="mb-2 text-lg font-medium text-text-primary">Coming Soon</h3>
+              <p className="max-w-sm text-text-secondary">
+                Conversation sharing and collaboration features will be available in a future
+                update.
               </p>
             </div>
           </div>

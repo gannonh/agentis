@@ -41,17 +41,22 @@ export const NavOrganizationHeader: React.FC = () => {
         data-testid="nav-organization-header"
         className={cn(
           'mx-2 mb-3 rounded-lg bg-surface-secondary p-3',
-          canManageOrganization && 'cursor-pointer transition-colors duration-200 hover:bg-surface-tertiary',
+          canManageOrganization &&
+            'cursor-pointer transition-colors duration-200 hover:bg-surface-tertiary',
           !canManageOrganization && 'cursor-default opacity-75',
         )}
         onClick={canManageOrganization ? handleClick : undefined}
-        role={canManageOrganization ? "button" : undefined}
+        role={canManageOrganization ? 'button' : undefined}
         tabIndex={canManageOrganization ? 0 : -1}
-        onKeyDown={canManageOrganization ? (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            handleClick();
-          }
-        } : undefined}
+        onKeyDown={
+          canManageOrganization
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleClick();
+                }
+              }
+            : undefined
+        }
       >
         <div className="flex items-center space-x-3">
           {/* Organization icon */}

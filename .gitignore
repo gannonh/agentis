@@ -60,5 +60,5 @@ site-starlight/.astro/
 site-starlight/.vscode/
 site-starlight/node_modules/
 
-# org later
+# Serena
 .serena/cache/

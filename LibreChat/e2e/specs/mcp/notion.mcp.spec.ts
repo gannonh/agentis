@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { logProgress } from '../utils/testLogger';
-import { handleInitialNotionAuth } from '../utils/oAuth';
+import { logProgress } from '../../utils/testLogger';
+import { handleInitialNotionAuth } from '../../utils/oAuth';
 import {
   createTestUserWithOrganization,
   cleanupTestUser,
   generateTestId,
   type TestAuthResult,
-} from '../utils/testAuth';
+} from '../../utils/testAuth';
 
 test.use({
   viewport: {
@@ -110,10 +110,7 @@ test.describe('Notion MCP Tests', () => {
       await page.getByText('Anthropic').click();
       await page.getByRole('combobox', { name: 'Model' }).click();
 
-      await page
-        .getByRole('option', { name: 'claude-3-7-sonnet-20250219' })
-        .locator('span')
-        .click();
+      await page.getByRole('option', { name: 'claude-3-7-sonnet-latest' }).locator('span').click();
       await page.getByRole('button', { name: 'Create' }).click();
       logProgress('Created agent with basic settings');
 

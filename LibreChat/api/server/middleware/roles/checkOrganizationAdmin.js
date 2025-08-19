@@ -70,7 +70,15 @@ async function checkOrganizationAdmin(req, res, next) {
     });
 
     // Get database connection
-    const db = mongoose.connection.db;
+    // Handle both production and test environments
+    let db;
+    if (mongoose.connection.getClient) {
+      const client = mongoose.connection.getClient();
+      db = client.db();
+    } else {
+      // Fallback for test environments (MongoDB Memory Server)
+      db = mongoose.connection.db;
+    }
 
     // Use flexible membership lookup utility
     const membership = await findMembershipFlexible(db, userId, organizationId, {
