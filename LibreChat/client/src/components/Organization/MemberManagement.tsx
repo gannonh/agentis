@@ -4,7 +4,17 @@
  */
 
 import React, { useState } from 'react';
-import { Users, Crown, Mail, MoreVertical, UserPlus, Shield, Trash2, Search, X } from 'lucide-react';
+import {
+  Users,
+  Crown,
+  Mail,
+  MoreVertical,
+  UserPlus,
+  Shield,
+  Trash2,
+  Search,
+  X,
+} from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Input } from '~/components/ui/Input';
 import {
@@ -36,16 +46,16 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
 
-  const { 
-    organization, 
-    members, 
-    userRole, 
-    canManageMembers, 
-    canManageOrganization, 
-    removeMember, 
+  const {
+    organization,
+    members,
+    userRole,
+    canManageMembers,
+    canManageOrganization,
+    removeMember,
     updateMemberRole,
     invitations,
-    cancelInvitation
+    cancelInvitation,
   } = useOrganization();
 
   if (!organization) {
@@ -66,7 +76,9 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
 
     // In a real implementation, we'd use a proper confirmation dialog
     // For E2E tests, we'll use browser confirm with specific message
-    const confirmed = window.confirm(`Are you sure you want to remove ${memberEmail} from the organization?`);
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${memberEmail} from the organization?`,
+    );
     if (!confirmed) return;
 
     try {
@@ -91,7 +103,9 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
 
     // In a real implementation, we'd show a confirmation dialog
     // For E2E tests, we'll just proceed
-    const confirmed = window.confirm(`Are you sure you want to cancel the invitation for ${email}?`);
+    const confirmed = window.confirm(
+      `Are you sure you want to cancel the invitation for ${email}?`,
+    );
     if (!confirmed) return;
 
     try {
@@ -160,8 +174,8 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
               </p>
             </div>
 
-            {canManageMembers && (
-              onInviteMember ? (
+            {canManageMembers &&
+              (onInviteMember ? (
                 <Button
                   onClick={onInviteMember}
                   variant="default"
@@ -174,8 +188,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                 </Button>
               ) : (
                 <InvitationDialog />
-              )
-            )}
+              ))}
           </div>
         </div>
       )}
@@ -229,7 +242,13 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
           </div>
         ) : (
           filteredMembers.map((member) => (
-            <div key={member.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50" data-testid="member-item" data-member-role={member.role} data-member-email={member.user.email}>
+            <div
+              key={member.id}
+              className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              data-testid="member-item"
+              data-member-role={member.role}
+              data-member-email={member.user.email}
+            >
               <div className="flex items-center justify-between">
                 {/* Member info */}
                 <div className="flex items-center space-x-4">
@@ -249,15 +268,19 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                   {/* Details */}
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white" data-testid="member-name">
+                      <h4
+                        className="text-sm font-medium text-gray-900 dark:text-white"
+                        data-testid="member-name"
+                      >
                         {member.user.name}
                       </h4>
-                      <div data-testid="member-role">
-                        {getRoleBadge(member.role)}
-                      </div>
+                      <div data-testid="member-role">{getRoleBadge(member.role)}</div>
                     </div>
                     <div className="mt-1 flex items-center space-x-2">
-                      <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="member-email">
+                      <p
+                        className="text-sm text-gray-600 dark:text-gray-400"
+                        data-testid="member-email"
+                      >
                         {member.user.email}
                       </p>
                       {member.user.emailVerified && (
@@ -274,14 +297,23 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                 {canManageMembers && member.role !== 'owner' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="p-2" data-testid="member-actions-button">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2"
+                        data-testid="member-actions-button"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48" data-testid="member-actions-menu">
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-48"
+                      data-testid="member-actions-menu"
+                    >
                       {/* Role change options */}
                       {member.role !== 'admin' && (
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleUpdateRole(member.id, 'admin')}
                           data-testid="make-admin-action"
                         >
@@ -289,9 +321,9 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                           Make Admin
                         </DropdownMenuItem>
                       )}
-                      
+
                       {member.role !== 'member' && (
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleUpdateRole(member.id, 'member')}
                           data-testid="make-member-action"
                         >
@@ -299,7 +331,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                           Make Member
                         </DropdownMenuItem>
                       )}
-                      
+
                       {/* Only owners can make other owners */}
                       {userRole === 'owner' && (
                         <DropdownMenuItem onClick={() => handleUpdateRole(member.id, 'owner')}>
@@ -316,7 +348,9 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                       <DropdownMenuSeparator />
 
                       <DropdownMenuItem
-                        onClick={() => handleRemoveMember(member.id, member.user.name, member.user.email)}
+                        onClick={() =>
+                          handleRemoveMember(member.id, member.user.name, member.user.email)
+                        }
                         className="text-red-600 dark:text-red-400"
                         data-testid="remove-member-action"
                       >
@@ -359,7 +393,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                       </p>
                     </div>
                   </div>
-                  
+
                   {canManageMembers && (
                     <Button
                       variant="ghost"

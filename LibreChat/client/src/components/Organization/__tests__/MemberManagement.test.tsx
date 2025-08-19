@@ -49,11 +49,7 @@ vi.mock('~/components/ui/DropdownMenu', () => ({
 
 // Test helper to wrap components with RecoilRoot
 const renderWithRecoil = (component: React.ReactElement) => {
-  return render(
-    <RecoilRoot>
-      {component}
-    </RecoilRoot>
-  );
+  return render(<RecoilRoot>{component}</RecoilRoot>);
 };
 
 describe('MemberManagement', () => {
@@ -143,7 +139,7 @@ describe('MemberManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseOrganization.mockReturnValue(defaultMockData);
-    
+
     // Mock window.confirm to always return true
     Object.defineProperty(window, 'confirm', {
       writable: true,

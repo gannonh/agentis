@@ -63,7 +63,7 @@ describe('Account', () => {
     return render(
       <RecoilRoot>
         <Account />
-      </RecoilRoot>
+      </RecoilRoot>,
     );
   };
 
@@ -85,7 +85,9 @@ describe('Account', () => {
     renderComponent();
 
     expect(screen.getByText('Account Settings')).toBeInTheDocument();
-    expect(screen.getByText('Manage your profile information and account preferences')).toBeInTheDocument();
+    expect(
+      screen.getByText('Manage your profile information and account preferences'),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('account-profile-setup')).toBeInTheDocument();
     expect(screen.getByTestId('delete-account')).toBeInTheDocument();
   });
@@ -98,7 +100,9 @@ describe('Account', () => {
     renderComponent();
 
     expect(screen.getByText('Danger Zone')).toBeInTheDocument();
-    expect(screen.getByText('Permanently delete your account and all associated data')).toBeInTheDocument();
+    expect(
+      screen.getByText('Permanently delete your account and all associated data'),
+    ).toBeInTheDocument();
   });
 
   it('uses modern layout with proper spacing', () => {

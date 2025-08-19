@@ -436,12 +436,15 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
                   title="Team Members"
                   className="max-w-[1000px]"
                   showCancelButton={false}
-                  buttons={
-                    <InvitationDialog />
-                  }
+                  buttons={<InvitationDialog />}
                   main={
                     <div data-testid="member-management-modal">
-                      <MemberManagement onInviteMember={() => {/* TODO: Implement invite flow */}} showHeader={false} />
+                      <MemberManagement
+                        onInviteMember={() => {
+                          /* TODO: Implement invite flow */
+                        }}
+                        showHeader={false}
+                      />
                     </div>
                   }
                 />
@@ -455,7 +458,10 @@ export const OrganizationSettings: React.FC<OrganizationSettingsProps> = ({ clas
           <div className="rounded-lg bg-gray-50 p-6 dark:bg-gray-800/50">
             <div className="text-center">
               <Users className="mx-auto mb-3 h-8 w-8 text-gray-400" />
-              <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="org-settings-limited-access">
+              <p
+                className="text-sm text-gray-600 dark:text-gray-400"
+                data-testid="org-settings-limited-access"
+              >
                 You can view organization settings but cannot make changes or manage members.
               </p>
             </div>
