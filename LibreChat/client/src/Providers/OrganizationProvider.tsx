@@ -6,6 +6,7 @@
 import React, { createContext, useContext, ReactNode, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authClient } from '~/config/betterAuth';
+import { dataService, type JoinRequest } from 'librechat-data-provider';
 import type {
   OrganizationData,
   OrganizationMember,
@@ -22,11 +23,13 @@ interface OrganizationContextType {
   userRole: UserRole | null;
   members: OrganizationMember[];
   invitations: OrganizationInvitation[];
+  joinRequests: JoinRequest[];
 
   // Loading states
   isLoading: boolean;
   isLoadingMembers: boolean;
   isLoadingInvitations: boolean;
+  isLoadingJoinRequests: boolean;
 
   // Error states
   error: Error | null;
@@ -46,6 +49,11 @@ interface OrganizationContextType {
 
   // Invitation management
   cancelInvitation: (invitationId: string) => Promise<void>;
+
+  // Join request management
+  getJoinRequests: () => Promise<void>;
+  approveRequest: (requestId: string) => Promise<void>;
+  rejectRequest: (requestId: string, rejectionReason?: string) => Promise<void>;
 
   // Organization creation (for onboarding)
   createOrganization: (name: string, slug?: string) => Promise<OrganizationData>;
@@ -105,6 +113,24 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const invitations = useMemo(
     () => fullOrganization?.data?.invitations || [],
     [fullOrganization?.data?.invitations],
+  );
+
+  // Get join requests for the organization
+  const {
+    data: joinRequestsData,
+    isLoading: isLoadingJoinRequests,
+    error: joinRequestsError,
+    refetch: refetchJoinRequests,
+  } = useQuery({
+    queryKey: ['join-requests', activeOrganization?.id],
+    queryFn: () => dataService.getOrganizationJoinRequests(activeOrganization!.id, 'pending'),
+    enabled: !!activeOrganization?.id,
+    staleTime: 30000, // 30 seconds
+  });
+
+  const joinRequests = useMemo(
+    () => joinRequestsData?.requests || [],
+    [joinRequestsData?.requests],
   );
 
   // Determine user role in current organization
@@ -229,6 +255,35 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Approve join request mutation
+  const approveJoinRequestMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      if (!activeOrganization?.id) {
+        throw new Error('No active organization');
+      }
+      return await dataService.approveJoinRequest(activeOrganization.id, requestId);
+    },
+    onSuccess: () => {
+      // Invalidate join requests and full organization to refresh member list
+      queryClient.invalidateQueries({ queryKey: ['join-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['full-organization'] });
+    },
+  });
+
+  // Reject join request mutation
+  const rejectJoinRequestMutation = useMutation({
+    mutationFn: async ({ requestId, rejectionReason }: { requestId: string; rejectionReason?: string }) => {
+      if (!activeOrganization?.id) {
+        throw new Error('No active organization');
+      }
+      return await dataService.rejectJoinRequest(activeOrganization.id, requestId, rejectionReason);
+    },
+    onSuccess: () => {
+      // Invalidate join requests to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['join-requests'] });
+    },
+  });
+
   // Create organization mutation (for onboarding)
   const createOrganizationMutation = useMutation({
     mutationFn: async ({ name, slug }: { name: string; slug?: string }) => {
@@ -326,6 +381,25 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     await deleteOrganizationMutation.mutateAsync();
   }, [deleteOrganizationMutation]);
 
+  // Join request management functions
+  const getJoinRequests = useCallback(async () => {
+    await refetchJoinRequests();
+  }, [refetchJoinRequests]);
+
+  const approveRequest = useCallback(
+    async (requestId: string) => {
+      await approveJoinRequestMutation.mutateAsync(requestId);
+    },
+    [approveJoinRequestMutation],
+  );
+
+  const rejectRequest = useCallback(
+    async (requestId: string, rejectionReason?: string) => {
+      await rejectJoinRequestMutation.mutateAsync({ requestId, rejectionReason });
+    },
+    [rejectJoinRequestMutation],
+  );
+
   // Use organization data directly - no transformation needed
   const processedOrganization = useMemo(() => {
     // Use full organization data if available, otherwise fall back to active organization
@@ -341,11 +415,13 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       userRole,
       members,
       invitations,
+      joinRequests,
 
       // Loading states
       isLoading: orgLoading,
       isLoadingMembers: orgLoading,
       isLoadingInvitations: orgLoading,
+      isLoadingJoinRequests,
 
       // Error states
       error: (orgError || fullOrgError) as Error | null,
@@ -358,6 +434,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       cancelInvitation,
       createOrganization,
       deleteOrganization,
+      getJoinRequests,
+      approveRequest,
+      rejectRequest,
 
       // Permissions
       ...permissions,
@@ -371,9 +450,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       userRole,
       members,
       invitations,
+      joinRequests,
       orgLoading,
+      isLoadingJoinRequests,
       orgError,
       fullOrgError,
+      joinRequestsError,
       inviteMember,
       updateMemberRole,
       removeMember,
@@ -381,6 +463,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       cancelInvitation,
       createOrganization,
       deleteOrganization,
+      getJoinRequests,
+      approveRequest,
+      rejectRequest,
       permissions,
       checkPermissions,
       hasPermission,

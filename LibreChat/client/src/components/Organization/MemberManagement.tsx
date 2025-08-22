@@ -56,6 +56,10 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
     updateMemberRole,
     invitations,
     cancelInvitation,
+    joinRequests,
+    isLoadingJoinRequests,
+    approveRequest,
+    rejectRequest,
   } = useOrganization();
 
   if (!organization) {
@@ -95,6 +99,36 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
       await updateMemberRole(memberId, newRole);
     } catch (error) {
       console.error('Failed to update member role:', error);
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string, userEmail: string) => {
+    if (!canManageMembers) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to approve ${userEmail}'s request to join the organization?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await approveRequest(requestId);
+    } catch (error) {
+      console.error('Failed to approve join request:', error);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string, userEmail: string) => {
+    if (!canManageMembers) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to reject ${userEmail}'s request to join the organization?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await rejectRequest(requestId);
+    } catch (error) {
+      console.error('Failed to reject join request:', error);
     }
   };
 
@@ -156,6 +190,25 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
       if (!dateValue) return 'Recent';
       const date = new Date(dateValue);
       return !isNaN(date.getTime()) ? date.toLocaleDateString() : 'Recent';
+    } catch {
+      return 'Recent';
+    }
+  };
+
+  const formatRequestDate = (dateValue?: string | null) => {
+    try {
+      if (!dateValue) return 'Recent';
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return 'Recent';
+      
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      return date.toLocaleDateString();
     } catch {
       return 'Recent';
     }
@@ -408,6 +461,83 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Join Requests */}
+      {canManageMembers && (
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="p-6" data-testid="pending-join-requests-section">
+            <h4 className="mb-4 text-sm font-medium text-gray-900 dark:text-white" data-testid="pending-join-requests-header">
+              Pending Join Requests ({joinRequests.length})
+            </h4>
+            {joinRequests.length > 0 ? (
+              <div className="space-y-3">
+                {joinRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between rounded-md bg-blue-50 p-3 dark:bg-blue-900/20"
+                    data-testid={`join-request-${request.userEmail}`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
+                        <UserPlus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {request.userName || request.userEmail}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {request.userName && request.userName !== request.userEmail ? (
+                            <>
+                              {request.userEmail} • Requested to join • {formatRequestDate(request.requestedAt)}
+                            </>
+                          ) : (
+                            <>
+                              Requested to join • {formatRequestDate(request.requestedAt)}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleApproveRequest(request.id, request.userEmail)}
+                        className="bg-green-600 text-white hover:bg-green-700"
+                        data-testid="approve-request-button"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRejectRequest(request.id, request.userEmail)}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400"
+                        data-testid="reject-request-button"
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4" data-testid="no-join-requests-message">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 mx-auto mb-2">
+                  <UserPlus className="h-4 w-4 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No pending join requests
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  Join requests will appear here when users request to join your organization
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

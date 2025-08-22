@@ -280,3 +280,13 @@ export const confirmTwoFactor = () => '/api/auth/2fa/confirm';
 export const disableTwoFactor = () => '/api/auth/2fa/disable';
 export const regenerateBackupCodes = () => '/api/auth/2fa/backup/regenerate';
 export const verifyTwoFactorTemp = () => '/api/auth/2fa/verify-temp';
+
+// Organization Join Request Endpoints
+export const getJoinRequests = (organizationId: string, status?: string) =>
+  `/api/organization/${organizationId}/join-requests${status ? `?status=${status}` : ''}`;
+
+export const approveJoinRequest = (organizationId: string, requestId: string) =>
+  `/api/organization/${organizationId}/join-requests/${requestId}/approve`;
+
+export const rejectJoinRequest = (organizationId: string, requestId: string) =>
+  `/api/organization/${organizationId}/join-requests/${requestId}/reject`;

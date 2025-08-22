@@ -106,11 +106,13 @@ describe('MemberManagement', () => {
     userRole: 'owner' as const,
     members: mockMembers,
     invitations: [],
+    joinRequests: [],
 
     // Loading states
     isLoading: false,
     isLoadingMembers: false,
     isLoadingInvitations: false,
+    isLoadingJoinRequests: false,
 
     // Error states
     error: null,
@@ -124,6 +126,11 @@ describe('MemberManagement', () => {
     // Invitation management
     cancelInvitation: vi.fn(),
 
+    // Join request management
+    getJoinRequests: vi.fn(),
+    approveRequest: vi.fn(),
+    rejectRequest: vi.fn(),
+
     // Organization creation (for onboarding)
     createOrganization: vi.fn(),
 
@@ -134,6 +141,13 @@ describe('MemberManagement', () => {
     canManageMembers: true,
     canManageOrganization: true,
     canInviteMembers: true,
+    canDeleteOrganization: true,
+    canUpdateSettings: true,
+    canViewMembers: true,
+
+    // Better Auth permission checks
+    checkPermissions: vi.fn(),
+    hasPermission: vi.fn(),
   };
 
   beforeEach(() => {

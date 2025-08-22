@@ -786,3 +786,60 @@ export function verifyTwoFactorTemp(
 ): Promise<t.TVerify2FATempResponse> {
   return request.post(endpoints.verifyTwoFactorTemp(), payload);
 }
+
+// Organization Join Request Functions
+export interface JoinRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+}
+
+export interface GetJoinRequestsResponse {
+  success: boolean;
+  requests: JoinRequest[];
+  total: number;
+}
+
+export interface ApproveJoinRequestResponse {
+  success: boolean;
+  message: string;
+  membership: {
+    id: string;
+    userId: string;
+    organizationId: string;
+  };
+}
+
+export interface RejectJoinRequestResponse {
+  success: boolean;
+  message: string;
+}
+
+export function getOrganizationJoinRequests(
+  organizationId: string,
+  status?: string,
+): Promise<GetJoinRequestsResponse> {
+  return request.get(endpoints.getJoinRequests(organizationId, status));
+}
+
+export function approveJoinRequest(
+  organizationId: string,
+  requestId: string,
+): Promise<ApproveJoinRequestResponse> {
+  return request.post(endpoints.approveJoinRequest(organizationId, requestId));
+}
+
+export function rejectJoinRequest(
+  organizationId: string,
+  requestId: string,
+  rejectionReason?: string,
+): Promise<RejectJoinRequestResponse> {
+  const payload = rejectionReason ? { rejectionReason } : {};
+  return request.post(endpoints.rejectJoinRequest(organizationId, requestId), payload);
+}

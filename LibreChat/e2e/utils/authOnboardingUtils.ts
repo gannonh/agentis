@@ -683,6 +683,191 @@ export const TEST_PATTERNS = {
 
 /**
  * =================================================================================
+ * JOIN REQUEST MANAGEMENT UTILITIES
+ * =================================================================================
+ */
+
+/**
+ * Interface for join request data
+ */
+export interface TestJoinRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  rejectionReason?: string;
+}
+
+/**
+ * Create a test join request in the database
+ * @param organizationId - Organization ID to add the join request to
+ * @param testId - Unique test identifier
+ * @param userEmail - Email of the requesting user (default: generated from testId)
+ * @param userName - Name of the requesting user (default: generated from testId)
+ * @returns Promise<TestJoinRequest> - The created join request
+ */
+export async function createTestJoinRequest(
+  organizationId: string,
+  testId: string,
+  userEmail?: string,
+  userName?: string,
+): Promise<TestJoinRequest> {
+  const { getTestDatabase } = await import('./testAuth');
+  const { db, mongoose } = await getTestDatabase();
+  
+  const joinRequest: TestJoinRequest = {
+    id: `test-join-request-${testId}-${Date.now()}`,
+    userId: `test-user-${testId}-${Date.now()}`,
+    userEmail: userEmail || `requester-${testId}@example.com`,
+    userName: userName || `Test Requester ${testId}`,
+    status: 'pending',
+    requestedAt: new Date().toISOString(),
+  };
+
+  try {
+    const organizationsCollection = db.collection('organization');
+    
+    // First, get the organization to check the metadata structure
+    const organization = await organizationsCollection.findOne({
+      _id: new mongoose.Types.ObjectId(organizationId)
+    });
+    
+    if (!organization) {
+      throw new Error(`Organization with ID ${organizationId} not found`);
+    }
+    
+    // Handle case where metadata is a JSON string vs object
+    let currentMetadata = organization.metadata;
+    if (typeof currentMetadata === 'string') {
+      try {
+        currentMetadata = JSON.parse(currentMetadata);
+      } catch (e) {
+        // If it's not valid JSON, treat it as empty object
+        currentMetadata = {};
+      }
+    } else if (!currentMetadata) {
+      currentMetadata = {};
+    }
+    
+    // Add the join request to the metadata
+    if (!currentMetadata.joinRequests) {
+      currentMetadata.joinRequests = [];
+    }
+    currentMetadata.joinRequests.push(joinRequest);
+    
+    // Update the organization with the new metadata
+    const updateResult = await organizationsCollection.updateOne(
+      { _id: new mongoose.Types.ObjectId(organizationId) },
+      { 
+        $set: { 
+          metadata: currentMetadata
+        }
+      }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      throw new Error(`Organization with ID ${organizationId} not found`);
+    }
+
+    if (updateResult.modifiedCount === 0) {
+      throw new Error(`Failed to add join request to organization ${organizationId}`);
+    }
+
+    logProgress(`✅ Created test join request: ${joinRequest.userEmail} for org ${organizationId}`);
+    return joinRequest;
+  } catch (error) {
+    logProgress(`❌ Failed to create test join request: ${error}`);
+    throw error;
+  }
+}
+
+/**
+ * Remove all join requests from an organization
+ * @param organizationId - Organization ID to clean join requests from
+ * @returns Promise<void>
+ */
+export async function cleanupJoinRequests(organizationId: string): Promise<void> {
+  const { getTestDatabase } = await import('./testAuth');
+  const { db, mongoose } = await getTestDatabase();
+  
+  try {
+    const organizationsCollection = db.collection('organization');
+    
+    const updateResult = await organizationsCollection.updateOne(
+      { _id: new mongoose.Types.ObjectId(organizationId) },
+      { 
+        $unset: { 'metadata.joinRequests': '' }
+      }
+    );
+
+    if (updateResult.matchedCount > 0) {
+      logProgress(`🧹 Cleaned up join requests for organization ${organizationId}`);
+    } else {
+      logProgress(`⚠️ Organization ${organizationId} not found during join request cleanup`);
+    }
+  } catch (error) {
+    logProgress(`❌ Failed to cleanup join requests for org ${organizationId}: ${error}`);
+    // Don't throw - cleanup failures shouldn't break tests
+  }
+}
+
+/**
+ * Get join requests from an organization in the database
+ * @param organizationId - Organization ID to get join requests from
+ * @returns Promise<TestJoinRequest[]> - Array of join requests
+ */
+export async function getJoinRequestsFromDatabase(organizationId: string): Promise<TestJoinRequest[]> {
+  const { getTestDatabase } = await import('./testAuth');
+  const { db, mongoose } = await getTestDatabase();
+  
+  try {
+    const organizationsCollection = db.collection('organization');
+    
+    const organization = await organizationsCollection.findOne({
+      _id: new mongoose.Types.ObjectId(organizationId)
+    });
+
+    if (!organization) {
+      throw new Error(`Organization with ID ${organizationId} not found`);
+    }
+
+    const joinRequests = organization.metadata?.joinRequests || [];
+    logProgress(`📋 Found ${joinRequests.length} join requests in organization ${organizationId}`);
+    
+    return joinRequests;
+  } catch (error) {
+    logProgress(`❌ Failed to get join requests from org ${organizationId}: ${error}`);
+    throw error;
+  }
+}
+
+/**
+ * Verify that a join request exists in the database
+ * @param organizationId - Organization ID to check
+ * @param userEmail - Email of the user who made the request
+ * @returns Promise<TestJoinRequest | null> - The join request if found, null otherwise
+ */
+export async function verifyJoinRequestExists(
+  organizationId: string,
+  userEmail: string,
+): Promise<TestJoinRequest | null> {
+  const joinRequests = await getJoinRequestsFromDatabase(organizationId);
+  
+  const joinRequest = joinRequests.find(req => req.userEmail === userEmail);
+  
+  if (joinRequest) {
+    logProgress(`✅ Verified join request exists for ${userEmail} in org ${organizationId}`);
+  } else {
+    logProgress(`❌ Join request not found for ${userEmail} in org ${organizationId}`);
+  }
+  
+  return joinRequest || null;
+}
+
+/**
+ * =================================================================================
  * OAUTH AUTHENTICATION UTILITIES
  * =================================================================================
  */
