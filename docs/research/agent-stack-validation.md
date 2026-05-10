@@ -297,3 +297,43 @@ app.post("/api/agentis/chat", async (c) => {
 - [Flue Node deployment, routes and session store](https://github.com/withastro/flue/blob/main/docs/deploy-node.md)
 - [Flue Cloudflare deployment, session persistence](https://github.com/withastro/flue/blob/main/docs/deploy-cloudflare.md#session-persistence)
 - [Flue Render deployment, health and agent request examples](https://github.com/withastro/flue/blob/main/docs/deploy-render.md)
+
+## T009: Sandbox And Deployment Options
+
+### Finding
+
+Use a staged Flue deployment path: virtual sandbox plus R2 for support-agent knowledge access, Cloudflare container sandbox for hosted coding-agent sessions that need Linux tools, and Daytona or another remote sandbox connector as the portability fallback. Node/Render is useful for early demos, but it needs an external store and an isolation boundary before commercial hosted agents use it.
+
+### Comparison
+
+| Option                             | Isolation                                                                                                | Startup Complexity                                                                                        | Secret Handling                                    | File Access                                                    | Cost Signals                                                                                      | Commercial Hosting Fit                                                   |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Flue virtual sandbox on Cloudflare | Filesystem abstraction, no full Linux container                                                          | Low for prompt, support, and retrieval agents                                                             | Worker secrets and bindings                        | R2-backed filesystem and built-in file tools                   | Workers, Durable Objects, and R2 usage                                                            | Best first path for support agents and web chat                          |
+| Flue `sandbox: "local"`            | Host-level access                                                                                        | Low locally, high risk in hosted use                                                                      | Host process environment                           | Full project filesystem                                        | Host/runtime cost only                                                                            | Good for trusted CI, local prototypes, or inside a separate container/VM |
+| Cloudflare container sandbox       | Per-session isolated container with persistent filesystem and Linux userspace                            | Medium: install `@cloudflare/sandbox`, configure Durable Object binding, migration, image, and Dockerfile | Worker secrets plus container environment controls | Full Linux workspace, git, node, curl, and writable filesystem | Containers bill active vCPU/memory/disk time and egress, with Workers/Durable Objects also billed | Best Flue-native path for hosted coding agents                           |
+| Daytona remote sandbox             | External sandbox with isolated filesystem, network stack, allocated CPU/RAM/disk, snapshots, SDK/API/CLI | Medium: provider account, API key, connector integration, lifecycle cleanup                               | Daytona API key in Agentis server config           | Sandbox filesystem, process execution, git, terminal, previews | Provider pricing and quota model                                                                  | Strong portability fallback for full agent computers                     |
+| Pi in a container or microVM       | Depends on selected container/VM/microVM provider                                                        | High: Agentis owns image, session runner, logs, persistence, and cleanup                                  | Agentis-owned secrets and provider credentials     | Full repo/workspace file access                                | Provider compute, storage, and egress                                                             | Defer for advanced coding-agent workers after Flue path is validated     |
+
+### Recommendation For Architecture Decision
+
+- Start commercial support-agent validation on Flue Cloudflare Workers with R2-backed knowledge and Durable Object-backed sessions.
+- Use Cloudflare container sandbox for coding-agent capabilities when the agent needs package installs, git, browser tools, or full Linux execution.
+- Keep Daytona as the first remote sandbox fallback because it provides SDK/API/CLI access, snapshots, filesystem operations, process execution, and isolation as a dedicated sandbox product.
+- Use Node/Render only for demos or trusted internal deployments until Agentis adds persistent session storage and external sandbox isolation.
+- Defer pi-in-container until Agentis specifically needs pi's coding-agent runtime or TUI/harness ecosystem behind a product wrapper.
+
+### Unresolved Risks
+
+- Confirm Cloudflare container cold start behavior and cost under realistic Agentis coding-agent session lengths.
+- Decide tenant-level sandbox identity, retention, cleanup, and quota policy.
+- Decide whether knowledge files live in R2, app database exports, repository sync, or per-agent object storage.
+- Define secret injection boundaries for model keys, Slack bot tokens, customer integrations, and sandbox-scoped credentials.
+- Run one live remote sandbox task before committing to Cloudflare containers or Daytona.
+
+### Evidence
+
+- [Flue Cloudflare remote sandbox docs](https://github.com/withastro/flue/blob/main/docs/deploy-cloudflare.md#connecting-a-remote-sandbox)
+- [Flue Node local sandbox docs](https://github.com/withastro/flue/blob/main/docs/deploy-node.md#using-the-local-sandbox)
+- [Flue Render deployment notes](https://github.com/withastro/flue/blob/main/docs/deploy-render.md)
+- [Cloudflare Containers pricing](https://developers.cloudflare.com/containers/pricing/)
+- [Daytona docs](https://www.daytona.io/docs/)
