@@ -189,3 +189,111 @@ Question: ${payload.message}`
 - [Flue Node sandbox context](https://github.com/withastro/flue/blob/main/docs/deploy-node.md#sandbox-context)
 - [Flue Node local sandbox](https://github.com/withastro/flue/blob/main/docs/deploy-node.md#using-the-local-sandbox)
 - `npm view @flue/sdk`: latest `0.4.1`, Apache-2.0
+
+## T008: Flue Web Chat HTTP And Session Contract
+
+### Finding
+
+Flue gives Agentis a workable custom web chat contract through generated HTTP agent routes and stable agent IDs. The Vite/shadcn app should call an Agentis backend route, and that route should proxy to Flue so browser clients never receive model keys, Slack tokens, or deployment secrets.
+
+### Contract Shape
+
+| Concern                | Validated Shape                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Flue endpoint          | `POST /agents/<agent-name>/<id>`                                                                                                    |
+| Agent name             | File-derived route, such as `.flue/agents/support.ts` -> `/agents/support/:id`                                                      |
+| Agent ID               | Stable runtime scope, such as `user:<userId>:agent:<agentId>`                                                                       |
+| Conversation ID        | Use the Flue agent ID for the default conversation, or pass a thread identifier inside the agent and call `agent.session(threadId)` |
+| Resume behavior        | Reuse the same agent ID, and the same optional session/thread ID when used                                                          |
+| Cloudflare persistence | Durable Objects back session state for Cloudflare builds                                                                            |
+| Node persistence       | In-memory by default; pass `persist` to `init()` for durable storage                                                                |
+| Response behavior      | Documented examples return JSON from the agent handler; streaming needs a runnable check or adapter design                          |
+| Error handling         | Agentis should normalize Flue/network errors into app-level chat error states and store retry metadata                              |
+
+### Vite/Shadcn Integration Sketch
+
+```ts
+type AgentisChatRequest = {
+  agentId: string
+  conversationId: string
+  message: string
+}
+
+export async function sendAgentisChatMessage(input: AgentisChatRequest) {
+  const response = await fetch("/api/agentis/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Agent request failed: ${response.status}`)
+  }
+
+  return response.json() as Promise<{
+    conversationId: string
+    messageId: string
+    text: string
+    sources?: Array<{ title: string; path: string }>
+  }>
+}
+```
+
+### Backend Proxy Sketch
+
+```ts
+app.post("/api/agentis/chat", async (c) => {
+  const user = await requireUser(c)
+  const body = (await c.req.json()) as AgentisChatRequest
+
+  const flueAgentId = `user:${user.id}:agent:${body.agentId}`
+  const flueResponse = await fetch(
+    `${env.FLUE_ORIGIN}/agents/support/${encodeURIComponent(flueAgentId)}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        message: body.message,
+        source: "web",
+        conversationId: body.conversationId,
+        userId: user.id,
+      }),
+    }
+  )
+
+  if (!flueResponse.ok) {
+    return c.json(
+      {
+        error: "agent_request_failed",
+        status: flueResponse.status,
+      },
+      502
+    )
+  }
+
+  const data = await flueResponse.json()
+
+  return c.json({
+    conversationId: body.conversationId,
+    messageId: crypto.randomUUID(),
+    text: data.text ?? data.response ?? String(data),
+    sources: data.sources ?? [],
+  })
+})
+```
+
+### Validation Notes
+
+- The frontend should treat `conversationId` as Agentis product state and the Flue agent ID as backend runtime state. This keeps Agentis free to change runtime mapping later.
+- For one conversation per deployed support agent, the backend can use a stable Flue agent ID and the default `agent.session()`.
+- For multiple conversations under one runtime scope, the Flue agent can call `agent.session(threadId)` using the Agentis `conversationId`.
+- Cloudflare deployment is the strongest session-resume path because Durable Objects persist Flue session state across requests.
+- Node deployment requires a `SessionStore` through `persist` before Agentis can promise resume after process restart.
+- Flue docs show JSON request/response examples. Streaming UX should be handled by an Agentis adapter after a live Flue prototype confirms whether direct streaming is available in the chosen runtime.
+
+### Evidence
+
+- [Flue README, agents and sessions](https://github.com/withastro/flue/blob/main/README.md#agents-and-sessions)
+- [Flue Node deployment, routes and session store](https://github.com/withastro/flue/blob/main/docs/deploy-node.md)
+- [Flue Cloudflare deployment, session persistence](https://github.com/withastro/flue/blob/main/docs/deploy-cloudflare.md#session-persistence)
+- [Flue Render deployment, health and agent request examples](https://github.com/withastro/flue/blob/main/docs/deploy-render.md)
