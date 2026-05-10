@@ -186,19 +186,31 @@ Each candidate must be assessed with the same fields:
 - Risks and constraints:
 - Evidence links:
 
-## Synthesis Template
+## Synthesis
 
 ### Strongest Candidates for Hands-On Validation
 
-- `[candidate]`: `[why it should be validated next]`
+- Flue primary path: Validate Flue as the first backend harness because it maps directly to the user's target examples: support agent with mounted knowledge, issue triage in CI, and coding agent with a remote sandbox. It also gives Agentis a Cloudflare path for sessions, R2-backed knowledge, Durable Objects, and containers.
+- Vercel AI SDK UI path: Validate AI SDK for the custom web chat and model/tool streaming layer in the existing React/Vite/shadcn app. It complements Flue by handling chat UI transport, message persistence patterns, and typed tool-call streaming.
+- CopilotKit UI path: Validate CopilotKit if Agentis needs richer in-app actions, generative UI, shared app state, or human-in-the-loop controls in the product UI.
+- Mastra runner-up backend path: Validate Mastra in a small backend comparison if Flue's APIs, Cloudflare assumptions, or sandbox model create blockers. Mastra has broader production-agent features around memory, workflows, observability, channels, and deployers.
 
 ### Candidates to Exclude or Defer
 
-- `[candidate]`: `[reason]`
+- pi: Defer as an initial customer-facing runtime. It remains useful for internal coding-agent workers, harness experiments, advanced automation, and potential backend jobs where Agentis can provide strong sandboxing.
+- LangGraph.js: Defer until Agentis needs explicit graph orchestration, durable multi-step workflows, or deep human-in-the-loop controls beyond the first Flue/Mastra prototype.
+- CopilotKit as backend runtime: Use CopilotKit as a frontend agent UX layer.
+- Vercel AI SDK as sandbox runtime: Use it for model, chat, tool, and UI orchestration while pairing it with a backend harness or external sandbox for file and code execution.
 
 ### Unresolved Questions for Next Slice
 
-- `[question]`: `[prototype or inspection check]`
+- Can Flue run the support-agent pattern against Agentis docs or sample KB content with R2-backed or local mounted files? Prototype a minimal support agent and verify session resume behavior.
+- Can Flue expose a clean HTTP contract that the Vite/shadcn app can call for custom web chat? Build a minimal chat route and verify streaming, errors, and session IDs.
+- What is the lowest-friction Slack event path for the chosen backend? Prototype Slack URL verification plus one message event routed into Flue or Mastra.
+- Which sandbox strategy fits hosted coding agents: Flue virtual sandbox, Cloudflare containers, Daytona, another provider, or pi-in-microVM? Inspect setup complexity, isolation, startup time, and cost.
+- Does Mastra provide a faster production path for channels, memory, observability, and workflow suspend/resume? Build a comparable small agent endpoint if Flue validation exposes gaps.
+- Which UI layer gives Agentis the best product experience: AI SDK UI alone or AI SDK plus CopilotKit/AG-UI? Prototype one chat transcript with tool-call visibility and one human approval action.
+- What durable storage schema should Agentis own for users, agents, sessions, Slack installs, knowledge sources, and deployment state? Draft the initial data model during architecture selection.
 
 ## Verification Checklist
 
@@ -208,5 +220,5 @@ Each candidate must be assessed with the same fields:
 - [x] At least two additional related open-source alternatives are evaluated.
 - [x] Every candidate uses the same criteria.
 - [x] Every material claim includes an evidence link or hands-on note.
-- [ ] The synthesis names strongest candidate paths for hands-on validation.
-- [ ] The synthesis records unresolved questions and next checks.
+- [x] The synthesis names strongest candidate paths for hands-on validation.
+- [x] The synthesis records unresolved questions and next checks.
