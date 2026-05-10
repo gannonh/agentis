@@ -337,3 +337,47 @@ Use a staged Flue deployment path: virtual sandbox plus R2 for support-agent kno
 - [Flue Render deployment notes](https://github.com/withastro/flue/blob/main/docs/deploy-render.md)
 - [Cloudflare Containers pricing](https://developers.cloudflare.com/containers/pricing/)
 - [Daytona docs](https://www.daytona.io/docs/)
+
+## T010: S002 Decision Input
+
+### Viability Statement
+
+Flue remains viable as the strongest initial backend candidate for Agentis. It covers the support-agent and web-chat paths with HTTP agents, stable runtime IDs, R2-backed knowledge, Durable Object-backed sessions on Cloudflare, and a route to full Linux sandboxes through Cloudflare containers or remote sandbox connectors.
+
+### Validated Fit
+
+| Area                     | Finding                                                                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent configuration      | `.flue/agents` and `.flue/roles` can hold Agentis runtime code separately from the Vite/shadcn app while sharing repository context.                    |
+| Deployable runtime       | Cloudflare Workers is the strongest first deployment target because it combines HTTP agents, Durable Objects, R2, and container sandboxes.              |
+| Slack path               | Agentis should own Slack installation, signature verification, event dedupe, channel/thread mapping, and response posting, then call a Flue HTTP agent. |
+| Web chat path            | The Vite/shadcn app should call an Agentis backend route that maps users, agents, and conversations onto Flue agent IDs and sessions.                   |
+| Persistence and sessions | Cloudflare deployment supports durable session state. Node deployment needs a custom `persist` store before production use.                             |
+| Knowledge sources        | R2-backed files are the strongest first path for support docs. Local sandbox reads are useful for trusted prototypes.                                   |
+| Sandboxing               | Virtual sandbox fits support/retrieval agents. Cloudflare container sandbox or Daytona fits hosted coding agents.                                       |
+| Commercial hosting       | Flue on Cloudflare is a coherent first hosted architecture, with cost and cold-start checks still needed for container-heavy workloads.                 |
+
+### Architecture Recommendation Inputs
+
+- Choose Flue-on-Cloudflare as the default architecture candidate for the next slice.
+- Define the Agentis-owned data model for users, agents, conversations, Slack installs, knowledge sources, deployment state, and sandbox runs.
+- Keep Vercel AI SDK UI available for chat UI state and message rendering in the Vite/shadcn app.
+- Keep Mastra as the backend comparison candidate if architecture planning prioritizes built-in channels, memory, observability, and workflow features.
+- Keep Daytona as the remote sandbox fallback for coding-agent sessions that exceed Cloudflare container constraints.
+
+### Decisions Needed In Planned Slice 3
+
+- Cloudflare-first deployment or Node-first deployment for the first product milestone.
+- Agentis session schema: how product conversations map to Flue agent IDs, optional Flue session IDs, Slack thread IDs, and web chat IDs.
+- Persistence owner: which state lives in Agentis storage, Flue Durable Objects, R2, Slack install tables, and sandbox provider state.
+- Knowledge lifecycle: upload, indexing/search expectations, per-agent access boundaries, retention, and audit trail.
+- Sandbox lifecycle: per-user or per-conversation identity, startup policy, retention, cleanup, logs, quotas, and secrets boundary.
+- UI stack: AI SDK UI alone or AI SDK UI plus CopilotKit for richer in-app actions and human approval controls.
+
+### Carry-Forward Checks
+
+- Run a live Flue Cloudflare support-agent request against a small R2-backed knowledge base.
+- Run one web chat request through an Agentis backend proxy into a Flue HTTP agent and record the exact response envelope.
+- Run Slack URL verification and one message event through a local or staging adapter.
+- Run one Cloudflare container sandbox or Daytona command with realistic package install and file output behavior.
+- Compare a narrow Mastra endpoint if Flue validation blocks on sessions, Slack channel support, memory, observability, or deployment ergonomics.
