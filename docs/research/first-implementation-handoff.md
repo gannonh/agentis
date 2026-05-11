@@ -52,3 +52,50 @@ User-facing outcome: a user can create a support agent, attach a small documenta
 - Multi-agent orchestration.
 - Hosted coding-agent sandbox sessions.
 - Long-term knowledge ingestion pipelines.
+
+## Technical Entry Points
+
+### Web App
+
+- `apps/web/src/App.tsx`: replace the starter screen with the first support-agent template flow.
+- `apps/web/src/components`: add app-local components for template setup, knowledge source selection, chat transcript, message composer, and source references.
+- `apps/web/e2e/app.spec.ts`: cover the primary support-agent template path once the flow exists.
+- `apps/web/src/App.test.tsx`: cover rendering, form state, empty states, and response rendering.
+
+### Shared UI
+
+- `packages/ui/src/components/button.tsx`: keep using the shared button component.
+- `packages/ui/src/components`: add shared shadcn/ui components from the repository root when the app needs common controls.
+- `packages/ui/src/lib/utils.ts`: keep shared styling helpers here.
+
+### Agentis Backend Boundary
+
+- Add an Agentis-owned chat route before calling Flue. Browser code should call the Agentis route.
+- Define a support-agent request shape with Agentis IDs for agent, conversation, message, and knowledge source.
+- Define a support-agent response shape with assistant text, message ID, conversation ID, and source metadata.
+- Keep Flue endpoint mapping in an adapter module so UI and product code depend on Agentis contracts.
+
+### Runtime Path
+
+- Start with a local development path that returns a deterministic support-agent response shape or calls a local Flue agent when configured.
+- Add the Flue HTTP agent call behind the adapter once the backend route exists.
+- Keep Cloudflare Workers, Durable Objects, R2, and Containers as the hosted direction for the next architecture-backed build stage.
+
+### Persistence Assumptions
+
+- The first build can use in-memory or fixture-backed data for the support-agent template flow.
+- Product persistence design should still model users, organizations, agents, knowledge sources, conversations, messages, deployments, Slack installs, sandbox runs, audit records, and quotas.
+- Durable storage selection and schema migration work belong in a planned implementation slice.
+
+### Slack And Web Chat
+
+- Web chat is the first delivery surface.
+- Slack integration should reuse the same Agentis support-agent route once Slack OAuth, event verification, dedupe, token storage, and thread mapping are planned.
+
+### Known Blockers
+
+- Flue Cloudflare support-agent execution still needs a live request against a small R2-backed knowledge base.
+- The repository has no backend app package yet.
+- The product data model is not planned yet.
+- Slack installation and hosted deployment flows are future scope.
+- Cloudflare container sandbox cost and cold-start behavior still need validation before coding-agent templates start.
