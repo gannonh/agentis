@@ -1,14 +1,11 @@
-import path from "path"
-import tailwindcss from "@tailwindcss/vite"
-import react from "@vitejs/plugin-react"
+import path from "node:path"
+
 import { defineConfig } from "vitest/config"
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@workspace/ui": path.resolve(__dirname, "./src"),
     },
   },
   test: {
@@ -19,7 +16,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/main.tsx"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/test/**"],
       thresholds: {
         branches: 100,
         functions: 100,
