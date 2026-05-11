@@ -3,35 +3,36 @@ import { afterEach, describe, expect, test, vi } from "vitest"
 
 import { ThemeProvider, useTheme } from "./theme-provider"
 
-type MediaListener = () => void
+type MediaChangeEvent = { matches: boolean }
+type MediaListener = (event: MediaChangeEvent) => void
 
 function mockSystemTheme(matches: boolean) {
   const listeners = new Set<MediaListener>()
+  const mediaQueryList = {
+    get matches() {
+      return matches
+    },
+    media: "(prefers-color-scheme: dark)",
+    onchange: null,
+    addEventListener: vi.fn((_event: "change", listener: MediaListener) => {
+      listeners.add(listener)
+    }),
+    removeEventListener: vi.fn(
+      (_event: "change", listener: MediaListener) => {
+        listeners.delete(listener)
+      }
+    ),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }
 
-  vi.stubGlobal(
-    "matchMedia",
-    vi.fn((query: string) => ({
-      matches,
-      media: query,
-      onchange: null,
-      addEventListener: vi.fn((_event: "change", listener: MediaListener) => {
-        listeners.add(listener)
-      }),
-      removeEventListener: vi.fn(
-        (_event: "change", listener: MediaListener) => {
-          listeners.delete(listener)
-        }
-      ),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    }))
-  )
+  vi.stubGlobal("matchMedia", vi.fn(() => mediaQueryList))
 
   return {
     setMatches(nextMatches: boolean) {
       matches = nextMatches
-      listeners.forEach((listener) => listener())
+      listeners.forEach((listener) => listener({ matches: nextMatches }))
     },
   }
 }
@@ -133,6 +134,9 @@ describe("ThemeProvider", () => {
     fireEvent.keyDown(screen.getByLabelText("Name"), { key: "d" })
 
     const richText = screen.getByRole("textbox", { name: "Rich text" })
+    richText.setAttribute("contenteditable", "true")
+    expect(richText).toHaveAttribute("contenteditable", "true")
+    // jsdom does not derive isContentEditable from the contenteditable attribute.
     Object.defineProperty(richText, "isContentEditable", {
       configurable: true,
       value: true,
