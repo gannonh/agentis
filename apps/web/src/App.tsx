@@ -1,7 +1,17 @@
+import { useState } from "react"
 import { ArrowRight } from "@phosphor-icons/react"
 import { Button } from "@workspace/ui/components/button"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@workspace/ui/components/field"
+import { Input } from "@workspace/ui/components/input"
 
 export function App() {
+  const [templateName, setTemplateName] = useState("Customer support agent")
+
   return (
     <div className="bg-background flex min-h-svh flex-col">
       <header className="border-border flex min-h-14 items-center justify-between border-b px-4 sm:px-6">
@@ -29,6 +39,19 @@ export function App() {
               Start with a documentation-backed support agent that can answer
               product questions from a curated source set.
             </p>
+            <FieldGroup className="max-w-md">
+              <Field>
+                <FieldLabel htmlFor="template-name">Template name</FieldLabel>
+                <Input
+                  id="template-name"
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                />
+                <FieldDescription>
+                  This name appears in the setup preview.
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
             <div>
               <Button size="lg">
                 Start with support agent
@@ -39,11 +62,12 @@ export function App() {
 
           <div className="border-border bg-muted/40 flex w-full max-w-sm flex-col gap-4 border p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-medium">Template preview</h2>
+              <p className="text-sm font-medium">Template preview</p>
               <span className="text-muted-foreground text-xs">Ready</span>
             </div>
             <div className="flex flex-col gap-3 text-sm">
               <div className="border-border bg-background border p-3">
+                <h2 className="font-medium">{templateName}</h2>
                 Agent answers from selected documentation.
               </div>
               <div className="border-border bg-background border p-3">
