@@ -18,3 +18,37 @@ This template lets a user configure an agent from project or product documentati
 - It validates user-facing agent configuration, knowledge attachment, web chat, runtime invocation, session identity, and answer provenance.
 - It can start with web chat and leave Slack delivery as a follow-on integration once the product model is stable.
 - It avoids making hosted coding-agent sandbox behavior the first delivery blocker.
+
+## Next Milestone Candidate Scope
+
+Goal: deliver a working support-agent template path in the Agentis web app.
+
+User-facing outcome: a user can create a support agent, attach a small documentation source, ask a question in the Agentis web interface, and see an answer with source references.
+
+### Included
+
+- Support-agent template definition and seed configuration fields.
+- A minimal web app flow for creating or previewing the template.
+- Knowledge source attachment for local sample docs or a small uploaded markdown set.
+- Agentis-owned chat route that maps an Agentis agent and conversation onto a Flue agent request.
+- Vercel AI SDK chat UI integration for the first transcript view.
+- Basic answer provenance display with cited file paths or source labels.
+- Local development setup notes and one execution path that can run without Slack.
+
+### Acceptance Criteria
+
+- A maintainer can start the web app and reach the support-agent template flow.
+- The template flow exposes the minimum fields needed to name the agent and attach sample knowledge.
+- A chat request reaches the Agentis backend route and returns a support-agent answer shape.
+- The response includes source metadata that the UI can render.
+- The implementation keeps Flue-specific request mapping behind an Agentis-owned adapter.
+- Tests or documented checks cover the template flow, chat route contract, and response rendering.
+
+### Out Of Scope
+
+- Slack OAuth installation and event delivery.
+- Production billing, quotas, and tenant administration.
+- Hosted Cloudflare deployment automation.
+- Multi-agent orchestration.
+- Hosted coding-agent sandbox sessions.
+- Long-term knowledge ingestion pipelines.
