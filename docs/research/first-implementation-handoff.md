@@ -99,3 +99,36 @@ User-facing outcome: a user can create a support agent, attach a small documenta
 - The product data model is not planned yet.
 - Slack installation and hosted deployment flows are future scope.
 - Cloudflare container sandbox cost and cold-start behavior still need validation before coding-agent templates start.
+
+## Readiness Notes
+
+The next milestone can start from this handoff and plan implementation slices around web UI, Agentis backend contract, Flue adapter, knowledge source fixture, and chat response rendering.
+
+Recommended first implementation slices:
+
+1. Product shell and support-agent template UI.
+2. Support-agent contract types, fixtures, and adapter boundary.
+3. Web chat transcript and source rendering.
+4. Local Flue or deterministic support-agent response path.
+5. Documentation and acceptance checks for the first template flow.
+
+Readiness checklist:
+
+- The first template candidate is selected.
+- The first milestone candidate scope has acceptance criteria and exclusions.
+- Initial repo entry points are mapped.
+- Flue, Vercel AI SDK, and Agentis-owned boundary responsibilities are recorded.
+- Slack and hosted deployment remain planned follow-up surfaces.
+
+## Next Kata Handoff
+
+Use this candidate for the next milestone:
+
+- Title: `Support Agent Template MVP`
+- Goal: `Deliver a working support-agent template path that lets a user configure a documentation-backed agent and ask it questions through the Agentis web interface.`
+- Seed requirements:
+  - User can create or preview a support-agent template in the web app.
+  - User can attach sample documentation as the first knowledge source.
+  - User can ask a question through web chat and receive a cited answer.
+  - Maintainer can inspect the Agentis-owned chat route contract and Flue adapter boundary.
+  - Maintainer can run local checks for the template flow and chat response rendering.
