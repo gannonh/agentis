@@ -1,27 +1,117 @@
-# shadcn/ui monorepo template
+# Agentis
 
-This is a Vite monorepo template with shadcn/ui.
+Agentis is an early-stage SaaS product for configuring and deploying useful agents without requiring users to write code.
 
-## Adding components
+The project is currently in foundation work: researching the agent stack, validating runtime paths, and shaping the first implementation milestone.
 
-To add components to your app, run the following command at the root of your `web` app:
+## Architecture Direction
+
+The current recommendation is a Cloudflare-first architecture for the commercial product and hosted runtime.
+
+- Flue is the preferred first agent runtime and deployment harness.
+- Cloudflare Workers, Durable Objects, R2, and Containers form the initial hosted platform path.
+- Vercel AI SDK is the preferred chat and model UI layer inside the web app.
+- Agentis owns product routing, Slack integration, persistence, tenancy, secrets, quotas, knowledge lifecycle, deployment state, and sandbox policy.
+- Daytona remains the first fallback for remote sandbox workloads that exceed Cloudflare container fit.
+- Mastra remains a backend comparison path if Flue blocks on deployment, memory, observability, channels, or workflow ergonomics.
+
+See:
+
+- `docs/research/agent-stack-matrix.md`
+- `docs/research/agent-stack-validation.md`
+
+## Repository Structure
+
+- `apps/web`: Vite React app for the Agentis web interface.
+- `packages/ui`: Shared UI package, shadcn/ui components, styles, hooks, and helpers.
+- `docs/research`: Architecture research and validation notes.
+- `playwright.config.ts`: End-to-end test configuration.
+- `turbo.json`: Monorepo task pipeline.
+- `pnpm-workspace.yaml`: Workspace package configuration.
+
+## Requirements
+
+- Node.js 20 or newer
+- pnpm 9.15.9
+
+## Local Development
+
+Install dependencies:
+
+```bash
+pnpm install
+```
+
+Start the development server:
+
+```bash
+pnpm dev
+```
+
+Build all packages and apps:
+
+```bash
+pnpm build
+```
+
+Preview the web app after building:
+
+```bash
+pnpm --filter web preview
+```
+
+## Testing And Quality
+
+Run lint checks:
+
+```bash
+pnpm lint
+```
+
+Run type checks:
+
+```bash
+pnpm typecheck
+```
+
+Run unit tests:
+
+```bash
+pnpm test
+```
+
+Run coverage:
+
+```bash
+pnpm test:coverage
+```
+
+Run end-to-end tests:
+
+```bash
+pnpm test:e2e
+```
+
+Run the full CI check:
+
+```bash
+pnpm ci
+```
+
+## UI Components
+
+Add shadcn/ui components from the repository root:
 
 ```bash
 pnpm dlx shadcn@latest add button -c apps/web
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
+Shared components live in `packages/ui/src/components` and are imported through the workspace UI package:
 
 ```tsx
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@workspace/ui/components/button"
 ```
 
-## Switching presets
+## Status
 
-When you're working on a new app, it can take a few tries to find something you like so we've made switching presets really easy. Run init --preset in your app, and the CLI will take care of reconfiguring everything, including your components.
-
-`pnpm dlx shadcn@latest init --preset ad3qkJ7`
+Agentis is in early development. The current codebase is a Vite and shadcn/ui monorepo with research-backed architecture direction. Product implementation, persistence, Slack integration, hosted agent deployment, and sandbox lifecycle work are still being defined.
