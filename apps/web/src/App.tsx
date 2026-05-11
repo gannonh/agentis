@@ -1,16 +1,31 @@
 import { useState } from "react"
-import { ArrowRight } from "@phosphor-icons/react"
+import { ArrowRight, BookOpenText } from "@phosphor-icons/react"
 import { Button } from "@workspace/ui/components/button"
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldLegend,
+  FieldSet,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@workspace/ui/components/toggle-group"
+
+const sampleDocumentationSource = {
+  id: "product-docs",
+  name: "Product documentation sample",
+}
 
 export function App() {
   const [templateName, setTemplateName] = useState("Customer support agent")
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
+  const selectedSource = selectedSources.includes(sampleDocumentationSource.id)
+    ? sampleDocumentationSource
+    : undefined
 
   return (
     <div className="bg-background flex min-h-svh flex-col">
@@ -52,6 +67,32 @@ export function App() {
                 </FieldDescription>
               </Field>
             </FieldGroup>
+            <FieldSet className="max-w-md">
+              <FieldLegend>Knowledge source</FieldLegend>
+              <ToggleGroup
+                aria-label="Knowledge source"
+                value={selectedSources}
+                onValueChange={setSelectedSources}
+                className="w-full flex-col items-stretch"
+                orientation="vertical"
+                spacing={2}
+              >
+                <ToggleGroupItem
+                  value={sampleDocumentationSource.id}
+                  variant="outline"
+                  className="h-auto justify-start gap-3 px-3 py-2 text-left"
+                  aria-label={sampleDocumentationSource.name}
+                >
+                  <BookOpenText data-icon="inline-start" />
+                  <span className="flex flex-col gap-1">
+                    <span>{sampleDocumentationSource.name}</span>
+                    <span className="text-muted-foreground text-xs font-normal">
+                      Product setup, billing, and troubleshooting articles.
+                    </span>
+                  </span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </FieldSet>
             <div>
               <Button size="lg">
                 Start with support agent
@@ -71,7 +112,9 @@ export function App() {
                 Agent answers from selected documentation.
               </div>
               <div className="border-border bg-background border p-3">
-                Setup continues with identity and knowledge source choices.
+                {selectedSource
+                  ? `Selected source: ${selectedSource.name}`
+                  : "Select sample documentation to continue setup."}
               </div>
             </div>
           </div>

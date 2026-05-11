@@ -30,4 +30,17 @@ describe("App", () => {
       screen.getByRole("heading", { name: "Billing support" })
     ).toBeInTheDocument()
   })
+
+  test("selects sample documentation for the support-agent template", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+
+    expect(
+      screen.getByText("Selected source: Product documentation sample")
+    ).toBeInTheDocument()
+  })
 })
