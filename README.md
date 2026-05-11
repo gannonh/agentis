@@ -19,6 +19,7 @@ See:
 
 - `docs/research/agent-stack-matrix.md`
 - `docs/research/agent-stack-validation.md`
+- `docs/research/first-implementation-handoff.md`
 
 ## Repository Structure
 
