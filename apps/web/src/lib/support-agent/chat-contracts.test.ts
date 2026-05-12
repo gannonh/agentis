@@ -38,4 +38,18 @@ describe("support-agent chat contracts", () => {
       request.knowledgeSourceIds[0]
     )
   })
+
+  test("allows callers to pattern-match support-agent runtime failures", () => {
+    const response: SupportAgentChatResponse = {
+      agentId: "agent_support_template",
+      conversationId: "conversation_support_demo",
+      messageId: "message_assistant_setup_error",
+      inReplyToMessageId: "message_user_setup_question",
+      answer: "",
+      sources: [],
+      error: "Flue request timed out.",
+    }
+
+    expect(response.error).toBe("Flue request timed out.")
+  })
 })

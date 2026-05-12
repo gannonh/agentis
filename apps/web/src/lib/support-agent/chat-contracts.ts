@@ -20,4 +20,5 @@ export type SupportAgentChatResponse = {
   inReplyToMessageId: string
   answer: string
   sources: SupportAgentSource[]
+  error?: string
 }

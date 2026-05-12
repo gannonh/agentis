@@ -22,6 +22,18 @@ describe("Flue support-agent adapter boundary", () => {
     })
   })
 
+  test("copies knowledge source IDs so adapted input is stable after request mutation", () => {
+    const request = {
+      ...supportAgentChatRequestFixture,
+      knowledgeSourceIds: ["knowledge_product_docs"],
+    }
+
+    const input = toFlueSupportAgentRuntimeInput(request)
+    request.knowledgeSourceIds.push("knowledge_release_notes")
+
+    expect(input.knowledgeSourceIds).toEqual(["knowledge_product_docs"])
+  })
+
   test("lets callers depend on the Agentis runtime boundary", async () => {
     const runtime: SupportAgentRuntime = {
       async respond(request) {

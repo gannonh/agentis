@@ -27,6 +27,6 @@ export function toFlueSupportAgentRuntimeInput(
       id: request.messageId,
       content: request.question,
     },
-    knowledgeSourceIds: request.knowledgeSourceIds,
+    knowledgeSourceIds: [...request.knowledgeSourceIds],
   }
 }
