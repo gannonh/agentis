@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, test } from "vitest"
 
@@ -41,6 +41,20 @@ describe("App", () => {
 
     expect(
       screen.getByText("Selected source: Product documentation sample")
+    ).toBeInTheDocument()
+  })
+
+  test("requires a selected knowledge source before submitting a support question", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const supportQuestion = screen.getByLabelText("Support question")
+    await user.type(supportQuestion, "How do I connect a knowledge source?")
+    fireEvent.submit(supportQuestion.closest("form")!)
+
+    expect(screen.queryByText("User")).not.toBeInTheDocument()
+    expect(
+      screen.getByText("Select sample documentation to continue setup.")
     ).toBeInTheDocument()
   })
 
