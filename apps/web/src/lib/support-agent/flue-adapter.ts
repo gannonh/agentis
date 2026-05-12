@@ -1,7 +1,6 @@
 import type {
   SupportAgentChatRequest,
 } from "./chat-contracts"
-export type { SupportAgentRuntime } from "./runtime-boundary"
 
 export type FlueSupportAgentRuntimeInput = {
   agentId: string
