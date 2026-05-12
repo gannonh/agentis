@@ -32,6 +32,7 @@ Reference docs:
 
 - Install dependencies: `pnpm install`
 - Start dev server: `pnpm dev`
+- Start dev server for in-app browser demos: `pnpm dev -- -- --host 127.0.0.1`
 - Build: `pnpm build`
 - Lint: `pnpm lint`
 - Typecheck: `pnpm typecheck`
@@ -39,6 +40,13 @@ Reference docs:
 - Coverage: `pnpm test:coverage`
 - End-to-end tests: `pnpm test:e2e`
 - Full CI check: `pnpm ci`
+
+## In-App Browser Demo Workflow
+
+- Start the app with `pnpm dev -- -- --host 127.0.0.1` from the repo root and keep the server session running.
+- Use the exact Vite `Local:` URL printed by the dev server; the port can change when the default is occupied.
+- Open that URL in the Codex in-app browser.
+- If Browser Use cannot attach to the integrated browser backend, keep the app server running and provide the exact local URL for the user to open.
 
 ## UI Components
 

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowRight, BookOpenText } from "@phosphor-icons/react"
+import { ArrowRight, BookOpenText, PaperPlaneTilt } from "@phosphor-icons/react"
 import { Button } from "@workspace/ui/components/button"
 import {
   Field,
@@ -14,18 +14,67 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
+import {
+  supportAgentChatRequestFixture,
+  supportAgentChatResponseFixture,
+  type SupportAgentChatRequest,
+  type SupportAgentChatResponse,
+} from "./lib/support-agent"
 
 const sampleDocumentationSource = {
-  id: "product-docs",
+  id: "knowledge_product_docs",
   name: "Product documentation sample",
+}
+
+type SubmittedSupportTurn = {
+  request: SupportAgentChatRequest
+  response: SupportAgentChatResponse
 }
 
 export function App() {
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
+  const [supportQuestion, setSupportQuestion] = useState("")
+  const [submittedTurns, setSubmittedTurns] = useState<SubmittedSupportTurn[]>(
+    []
+  )
   const selectedSource = selectedSourceId === sampleDocumentationSource.id
     ? sampleDocumentationSource
     : undefined
+
+  function getSubmittedContext(request: SupportAgentChatRequest) {
+    return [
+      request.agentId,
+      request.conversationId,
+      request.messageId,
+      request.knowledgeSourceIds.join(", "),
+    ].join(" / ")
+  }
+
+  function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const question = supportQuestion.trim()
+    if (!question || !selectedSource) {
+      return
+    }
+
+    const messageId = submittedTurns.length === 0
+      ? supportAgentChatRequestFixture.messageId
+      : `${supportAgentChatRequestFixture.messageId}_${submittedTurns.length + 1}`
+    const request: SupportAgentChatRequest = {
+      ...supportAgentChatRequestFixture,
+      messageId,
+      question,
+      knowledgeSourceIds: [selectedSource.id],
+    }
+    const response: SupportAgentChatResponse = {
+      ...supportAgentChatResponseFixture,
+      inReplyToMessageId: request.messageId,
+    }
+    setSubmittedTurns((turns) => [...turns, { request, response }])
+    setSupportQuestion("")
+  }
 
   return (
     <div className="bg-background flex min-h-svh flex-col">
@@ -99,6 +148,29 @@ export function App() {
                 <ArrowRight data-icon="inline-end" />
               </Button>
             </div>
+            <form
+              className="flex max-w-md flex-col gap-3"
+              onSubmit={handleQuestionSubmit}
+            >
+              <Field>
+                <FieldLabel htmlFor="support-question">
+                  Support question
+                </FieldLabel>
+                <Input
+                  id="support-question"
+                  value={supportQuestion}
+                  onChange={(event) => setSupportQuestion(event.target.value)}
+                  placeholder="Ask about setup, billing, or troubleshooting"
+                />
+              </Field>
+              <Button
+                type="submit"
+                disabled={!selectedSource || !supportQuestion.trim()}
+              >
+                Ask support agent
+                <PaperPlaneTilt data-icon="inline-end" />
+              </Button>
+            </form>
           </div>
 
           <div className="border-border bg-muted/40 flex w-full max-w-sm flex-col gap-4 border p-4">
@@ -116,6 +188,37 @@ export function App() {
                   ? `Selected source: ${selectedSource.name}`
                   : "Select sample documentation to continue setup."}
               </div>
+              {submittedTurns.map(({ request, response }) => (
+                <div
+                  className="border-border bg-background flex flex-col gap-3 border p-3"
+                  key={request.messageId}
+                >
+                  <div>
+                    <p className="text-muted-foreground text-xs">User</p>
+                    <p>{request.question}</p>
+                  </div>
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    {getSubmittedContext(request)}
+                  </p>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Assistant</p>
+                    <p>{response.answer}</p>
+                    <div className="border-border mt-3 border-t pt-3">
+                      {response.sources.map((source) => (
+                        <div className="flex flex-col gap-1" key={source.id}>
+                          <p className="text-xs">Source: {source.title}</p>
+                          <p className="text-muted-foreground text-xs">
+                            Source ID: {source.id}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {source.excerpt}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
