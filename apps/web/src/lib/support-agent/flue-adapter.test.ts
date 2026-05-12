@@ -2,10 +2,8 @@ import { describe, expect, test } from "vitest"
 
 import { supportAgentChatRequestFixture } from "./chat-fixtures"
 import type { SupportAgentChatResponse } from "./chat-contracts"
-import {
-  toFlueSupportAgentRuntimeInput,
-  type SupportAgentRuntime,
-} from "./flue-adapter"
+import { toFlueSupportAgentRuntimeInput } from "./flue-adapter"
+import type { SupportAgentRuntime } from "./runtime-boundary"
 
 describe("Flue support-agent adapter boundary", () => {
   test("maps Agentis chat requests into the Flue-ready runtime input", () => {

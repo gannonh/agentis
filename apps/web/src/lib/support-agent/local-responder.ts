@@ -1,4 +1,4 @@
-import type { SupportAgentRuntime } from "./flue-adapter"
+import type { SupportAgentRuntime } from "./runtime-boundary"
 import { supportAgentChatResponseFixture } from "./chat-fixtures"
 
 export function createLocalSupportAgentResponder(): SupportAgentRuntime {
