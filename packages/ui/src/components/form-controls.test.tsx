@@ -36,6 +36,9 @@ describe("form control components", () => {
       "separator"
     )
     expect(screen.getByRole("separator")).toHaveClass("separator-class")
+    expect(screen.getByRole("separator")).toHaveClass(
+      "data-[orientation=vertical]:w-px"
+    )
   })
 
   test("builds toggle classes for variants and sizes", () => {
@@ -84,6 +87,9 @@ describe("form control components", () => {
       "data-orientation",
       "vertical"
     )
+    expect(screen.getByRole("group", { name: "Sources" })).toHaveClass(
+      "data-[orientation=vertical]:flex-col"
+    )
     expect(screen.getByRole("button", { name: "Docs" })).toHaveAttribute(
       "data-slot",
       "toggle-group-item"
@@ -95,6 +101,9 @@ describe("form control components", () => {
     expect(screen.getByRole("button", { name: "Docs" })).toHaveAttribute(
       "data-size",
       "lg"
+    )
+    expect(screen.getByRole("button", { name: "Docs" })).toHaveClass(
+      "group-data-[orientation=vertical]/toggle-group:data-[spacing=0]:data-[variant=outline]:border-t-0"
     )
     expect(screen.getByRole("button", { name: "Guide" })).toHaveAttribute(
       "data-variant",

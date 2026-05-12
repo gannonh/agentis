@@ -22,8 +22,8 @@ const sampleDocumentationSource = {
 
 export function App() {
   const [templateName, setTemplateName] = useState("Customer support agent")
-  const [selectedSources, setSelectedSources] = useState<string[]>([])
-  const selectedSource = selectedSources.includes(sampleDocumentationSource.id)
+  const [selectedSourceId, setSelectedSourceId] = useState<string>()
+  const selectedSource = selectedSourceId === sampleDocumentationSource.id
     ? sampleDocumentationSource
     : undefined
 
@@ -71,8 +71,8 @@ export function App() {
               <FieldLegend>Knowledge source</FieldLegend>
               <ToggleGroup
                 aria-label="Knowledge source"
-                value={selectedSources}
-                onValueChange={setSelectedSources}
+                value={selectedSourceId ? [selectedSourceId] : []}
+                onValueChange={(value) => setSelectedSourceId(value[0])}
                 className="w-full flex-col items-stretch"
                 orientation="vertical"
                 spacing={2}

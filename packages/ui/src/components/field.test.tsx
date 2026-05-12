@@ -49,6 +49,10 @@ describe("Field components", () => {
       "label"
     )
     expect(screen.getByText("Public name")).toHaveClass("title-class")
+    expect(screen.getByText("Public name")).toHaveAttribute(
+      "data-slot",
+      "field-title"
+    )
     expect(screen.getByText("Visible in previews.")).toHaveClass(
       "description-class"
     )
@@ -89,6 +93,14 @@ describe("Field components", () => {
 
     rerender(<FieldError errors={[{ message: "Required" }]} />)
     expect(screen.getByRole("alert")).toHaveTextContent("Required")
+    expect(screen.queryByRole("list")).not.toBeInTheDocument()
+
+    rerender(<FieldError errors={[{ message: "Required" }, undefined]} />)
+    expect(screen.getByRole("alert")).toHaveTextContent("Required")
+    expect(screen.queryByRole("list")).not.toBeInTheDocument()
+
+    rerender(<FieldError errors={[{ message: "" }, undefined]} />)
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
 
     rerender(
       <FieldError
