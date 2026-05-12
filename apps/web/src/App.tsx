@@ -15,8 +15,8 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 import {
+  createLocalSupportAgentResponder,
   supportAgentChatRequestFixture,
-  supportAgentChatResponseFixture,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
 } from "./lib/support-agent"
@@ -25,6 +25,8 @@ const sampleDocumentationSource = {
   id: "knowledge_product_docs",
   name: "Product documentation sample",
 }
+
+const localSupportAgentResponder = createLocalSupportAgentResponder()
 
 type SubmittedSupportTurn = {
   request: SupportAgentChatRequest
@@ -51,7 +53,7 @@ export function App() {
     ].join(" / ")
   }
 
-  function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const question = supportQuestion.trim()
@@ -68,10 +70,7 @@ export function App() {
       question,
       knowledgeSourceIds: [selectedSource.id],
     }
-    const response: SupportAgentChatResponse = {
-      ...supportAgentChatResponseFixture,
-      inReplyToMessageId: request.messageId,
-    }
+    const response = await localSupportAgentResponder.respond(request)
     setSubmittedTurns((turns) => [...turns, { request, response }])
     setSupportQuestion("")
   }

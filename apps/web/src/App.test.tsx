@@ -100,7 +100,7 @@ describe("App", () => {
     expect(screen.getByText("Assistant")).toBeInTheDocument()
     expect(
       screen.getByText(
-        "Open the support template and select Product documentation sample."
+        "Use Product documentation sample to answer: How do I connect a knowledge source?"
       )
     ).toBeInTheDocument()
   })
