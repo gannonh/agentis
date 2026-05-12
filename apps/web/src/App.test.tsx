@@ -66,4 +66,29 @@ describe("App", () => {
       )
     ).toBeInTheDocument()
   })
+
+  test("renders submitted user and assistant transcript messages", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    await user.type(
+      screen.getByLabelText("Support question"),
+      "How do I connect a knowledge source?"
+    )
+    await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+    expect(screen.getByText("User")).toBeInTheDocument()
+    expect(
+      screen.getByText("How do I connect a knowledge source?")
+    ).toBeInTheDocument()
+    expect(screen.getByText("Assistant")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Open the support template and select Product documentation sample."
+      )
+    ).toBeInTheDocument()
+  })
 })

@@ -16,7 +16,9 @@ import {
 } from "@workspace/ui/components/toggle-group"
 import {
   supportAgentChatRequestFixture,
+  supportAgentChatResponseFixture,
   type SupportAgentChatRequest,
+  type SupportAgentChatResponse,
 } from "./lib/support-agent"
 
 const sampleDocumentationSource = {
@@ -30,6 +32,8 @@ export function App() {
   const [supportQuestion, setSupportQuestion] = useState("")
   const [submittedRequest, setSubmittedRequest] =
     useState<SupportAgentChatRequest>()
+  const [submittedResponse, setSubmittedResponse] =
+    useState<SupportAgentChatResponse>()
   const selectedSource = selectedSourceId === sampleDocumentationSource.id
     ? sampleDocumentationSource
     : undefined
@@ -55,6 +59,10 @@ export function App() {
       ...supportAgentChatRequestFixture,
       question,
       knowledgeSourceIds: [selectedSource.id],
+    })
+    setSubmittedResponse({
+      ...supportAgentChatResponseFixture,
+      inReplyToMessageId: supportAgentChatRequestFixture.messageId,
     })
     setSupportQuestion("")
   }
@@ -172,11 +180,22 @@ export function App() {
                   : "Select sample documentation to continue setup."}
               </div>
               {submittedRequest ? (
-                <div className="border-border bg-background border p-3">
-                  <p>{submittedQuestion}</p>
+                <div className="border-border bg-background flex flex-col gap-3 border p-3">
+                  <div>
+                    <p className="text-muted-foreground text-xs">User</p>
+                    <p>{submittedQuestion}</p>
+                  </div>
                   <p className="text-muted-foreground mt-2 text-xs">
                     {submittedContext}
                   </p>
+                  {submittedResponse ? (
+                    <div>
+                      <p className="text-muted-foreground text-xs">
+                        Assistant
+                      </p>
+                      <p>{submittedResponse.answer}</p>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
