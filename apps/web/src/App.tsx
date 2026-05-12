@@ -41,6 +41,8 @@ type AppProps = {
 export function App({
   supportAgentResponder = localSupportAgentResponder,
 }: AppProps = {}) {
+  // Local runtime injection keeps this demo deterministic until the planned
+  // Vercel AI SDK chat integration owns the message lifecycle.
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
   const [supportQuestion, setSupportQuestion] = useState("")
