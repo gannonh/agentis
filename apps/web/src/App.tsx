@@ -26,26 +26,30 @@ const sampleDocumentationSource = {
   name: "Product documentation sample",
 }
 
+type SubmittedSupportTurn = {
+  request: SupportAgentChatRequest
+  response: SupportAgentChatResponse
+}
+
 export function App() {
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
   const [supportQuestion, setSupportQuestion] = useState("")
-  const [submittedRequest, setSubmittedRequest] =
-    useState<SupportAgentChatRequest>()
-  const [submittedResponse, setSubmittedResponse] =
-    useState<SupportAgentChatResponse>()
+  const [submittedTurns, setSubmittedTurns] = useState<SubmittedSupportTurn[]>(
+    []
+  )
   const selectedSource = selectedSourceId === sampleDocumentationSource.id
     ? sampleDocumentationSource
     : undefined
-  const submittedQuestion = submittedRequest?.question
-  const submittedContext = submittedRequest
-    ? [
-        submittedRequest.agentId,
-        submittedRequest.conversationId,
-        submittedRequest.messageId,
-        submittedRequest.knowledgeSourceIds.join(", "),
-      ].join(" / ")
-    : undefined
+
+  function getSubmittedContext(request: SupportAgentChatRequest) {
+    return [
+      request.agentId,
+      request.conversationId,
+      request.messageId,
+      request.knowledgeSourceIds.join(", "),
+    ].join(" / ")
+  }
 
   function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -55,15 +59,20 @@ export function App() {
       return
     }
 
-    setSubmittedRequest({
+    const messageId = submittedTurns.length === 0
+      ? supportAgentChatRequestFixture.messageId
+      : `${supportAgentChatRequestFixture.messageId}_${submittedTurns.length + 1}`
+    const request: SupportAgentChatRequest = {
       ...supportAgentChatRequestFixture,
+      messageId,
       question,
       knowledgeSourceIds: [selectedSource.id],
-    })
-    setSubmittedResponse({
+    }
+    const response: SupportAgentChatResponse = {
       ...supportAgentChatResponseFixture,
-      inReplyToMessageId: supportAgentChatRequestFixture.messageId,
-    })
+      inReplyToMessageId: request.messageId,
+    }
+    setSubmittedTurns((turns) => [...turns, { request, response }])
     setSupportQuestion("")
   }
 
@@ -179,20 +188,23 @@ export function App() {
                   ? `Selected source: ${selectedSource.name}`
                   : "Select sample documentation to continue setup."}
               </div>
-              {submittedRequest ? (
-                <div className="border-border bg-background flex flex-col gap-3 border p-3">
+              {submittedTurns.map(({ request, response }) => (
+                <div
+                  className="border-border bg-background flex flex-col gap-3 border p-3"
+                  key={request.messageId}
+                >
                   <div>
                     <p className="text-muted-foreground text-xs">User</p>
-                    <p>{submittedQuestion}</p>
+                    <p>{request.question}</p>
                   </div>
                   <p className="text-muted-foreground mt-2 text-xs">
-                    {submittedContext}
+                    {getSubmittedContext(request)}
                   </p>
                   <div>
                     <p className="text-muted-foreground text-xs">Assistant</p>
-                    <p>{submittedResponse!.answer}</p>
+                    <p>{response.answer}</p>
                     <div className="border-border mt-3 border-t pt-3">
-                      {submittedResponse!.sources.map((source) => (
+                      {response.sources.map((source) => (
                         <div className="flex flex-col gap-1" key={source.id}>
                           <p className="text-xs">Source: {source.title}</p>
                           <p className="text-muted-foreground text-xs">
@@ -206,7 +218,7 @@ export function App() {
                     </div>
                   </div>
                 </div>
-              ) : null}
+              ))}
             </div>
           </div>
         </section>
