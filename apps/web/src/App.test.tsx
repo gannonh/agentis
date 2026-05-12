@@ -43,4 +43,27 @@ describe("App", () => {
       screen.getByText("Selected source: Product documentation sample")
     ).toBeInTheDocument()
   })
+
+  test("submits a support question through the Agentis chat path", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    await user.type(
+      screen.getByLabelText("Support question"),
+      "How do I connect a knowledge source?"
+    )
+    await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+    expect(
+      screen.getByText("How do I connect a knowledge source?")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "agent_support_template / conversation_support_demo / message_user_setup_question / knowledge_product_docs"
+      )
+    ).toBeInTheDocument()
+  })
 })

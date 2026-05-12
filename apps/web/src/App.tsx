@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowRight, BookOpenText } from "@phosphor-icons/react"
+import { ArrowRight, BookOpenText, PaperPlaneTilt } from "@phosphor-icons/react"
 import { Button } from "@workspace/ui/components/button"
 import {
   Field,
@@ -14,18 +14,50 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
+import {
+  supportAgentChatRequestFixture,
+  type SupportAgentChatRequest,
+} from "./lib/support-agent"
 
 const sampleDocumentationSource = {
-  id: "product-docs",
+  id: "knowledge_product_docs",
   name: "Product documentation sample",
 }
 
 export function App() {
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
+  const [supportQuestion, setSupportQuestion] = useState("")
+  const [submittedRequest, setSubmittedRequest] =
+    useState<SupportAgentChatRequest>()
   const selectedSource = selectedSourceId === sampleDocumentationSource.id
     ? sampleDocumentationSource
     : undefined
+  const submittedQuestion = submittedRequest?.question
+  const submittedContext = submittedRequest
+    ? [
+        submittedRequest.agentId,
+        submittedRequest.conversationId,
+        submittedRequest.messageId,
+        submittedRequest.knowledgeSourceIds.join(", "),
+      ].join(" / ")
+    : undefined
+
+  function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const question = supportQuestion.trim()
+    if (!question || !selectedSource) {
+      return
+    }
+
+    setSubmittedRequest({
+      ...supportAgentChatRequestFixture,
+      question,
+      knowledgeSourceIds: [selectedSource.id],
+    })
+    setSupportQuestion("")
+  }
 
   return (
     <div className="bg-background flex min-h-svh flex-col">
@@ -99,6 +131,29 @@ export function App() {
                 <ArrowRight data-icon="inline-end" />
               </Button>
             </div>
+            <form
+              className="flex max-w-md flex-col gap-3"
+              onSubmit={handleQuestionSubmit}
+            >
+              <Field>
+                <FieldLabel htmlFor="support-question">
+                  Support question
+                </FieldLabel>
+                <Input
+                  id="support-question"
+                  value={supportQuestion}
+                  onChange={(event) => setSupportQuestion(event.target.value)}
+                  placeholder="Ask about setup, billing, or troubleshooting"
+                />
+              </Field>
+              <Button
+                type="submit"
+                disabled={!selectedSource || !supportQuestion.trim()}
+              >
+                Ask support agent
+                <PaperPlaneTilt data-icon="inline-end" />
+              </Button>
+            </form>
           </div>
 
           <div className="border-border bg-muted/40 flex w-full max-w-sm flex-col gap-4 border p-4">
@@ -116,6 +171,14 @@ export function App() {
                   ? `Selected source: ${selectedSource.name}`
                   : "Select sample documentation to continue setup."}
               </div>
+              {submittedRequest ? (
+                <div className="border-border bg-background border p-3">
+                  <p>{submittedQuestion}</p>
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    {submittedContext}
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
