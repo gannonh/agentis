@@ -194,6 +194,21 @@ export function App() {
                         Assistant
                       </p>
                       <p>{submittedResponse.answer}</p>
+                      <div className="border-border mt-3 border-t pt-3">
+                        {submittedResponse.sources.map((source) => (
+                          <div className="flex flex-col gap-1" key={source.id}>
+                            <p className="text-xs">
+                              Source: {source.title}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              Source ID: {source.id}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {source.excerpt}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
                 </div>

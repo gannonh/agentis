@@ -91,4 +91,28 @@ describe("App", () => {
       )
     ).toBeInTheDocument()
   })
+
+  test("renders cited source metadata for assistant answers", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    await user.type(
+      screen.getByLabelText("Support question"),
+      "How do I connect a knowledge source?"
+    )
+    await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+    expect(
+      screen.getByText("Source: Product documentation sample")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Source ID: source_product_docs_setup")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Select Product documentation sample during setup.")
+    ).toBeInTheDocument()
+  })
 })
