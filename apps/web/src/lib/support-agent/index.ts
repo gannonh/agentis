@@ -1,5 +1,6 @@
 export * from "./chat-contracts"
 export * from "./chat-fixtures"
+export * from "./configured-runtime"
 export * from "./flue-adapter"
 export * from "./local-responder"
 export * from "./model-runtime"
