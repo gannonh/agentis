@@ -1,11 +1,6 @@
 import type {
   SupportAgentChatRequest,
-  SupportAgentChatResponse,
 } from "./chat-contracts"
-
-export type SupportAgentRuntime = {
-  respond(request: SupportAgentChatRequest): Promise<SupportAgentChatResponse>
-}
 
 export type FlueSupportAgentRuntimeInput = {
   agentId: string

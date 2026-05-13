@@ -1,8 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, test } from "vitest"
+import { describe, expect, test, vi } from "vitest"
 
 import { App } from "./App"
+import type {
+  SupportAgentChatRequest,
+  SupportAgentChatResponse,
+  SupportAgentRuntime,
+} from "./lib/support-agent"
 
 describe("App", () => {
   async function submitSupportQuestion(
@@ -100,7 +105,7 @@ describe("App", () => {
     expect(screen.getByText("Assistant")).toBeInTheDocument()
     expect(
       screen.getByText(
-        "Open the support template and select Product documentation sample."
+        "Use Product documentation sample to answer: How do I connect a knowledge source?"
       )
     ).toBeInTheDocument()
   })
@@ -135,5 +140,75 @@ describe("App", () => {
     expect(screen.getByText("How do I troubleshoot billing?")).toBeInTheDocument()
     expect(screen.getAllByText("User")).toHaveLength(2)
     expect(screen.getAllByText("Assistant")).toHaveLength(2)
+  })
+
+  test("prevents concurrent support question submits from duplicating a turn", async () => {
+    const user = userEvent.setup()
+    let resolveResponse: (response: SupportAgentChatResponse) => void
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(
+        () =>
+          new Promise<SupportAgentChatResponse>((resolve) => {
+            resolveResponse = resolve
+          })
+      ),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    await user.type(
+      screen.getByLabelText("Support question"),
+      "How do I connect a knowledge source?"
+    )
+    const form = screen.getByLabelText("Support question").closest("form")!
+    fireEvent.submit(form)
+    fireEvent.submit(form)
+
+    expect(supportAgentResponder.respond).toHaveBeenCalledTimes(1)
+
+    const request = vi.mocked(supportAgentResponder.respond).mock
+      .calls[0][0] as SupportAgentChatRequest
+    resolveResponse!({
+      agentId: request.agentId,
+      conversationId: request.conversationId,
+      messageId: `message_assistant_${request.messageId}`,
+      inReplyToMessageId: request.messageId,
+      answer: "Use Product documentation sample to answer: How do I connect a knowledge source?",
+      sources: [],
+    })
+
+    expect(await screen.findAllByText("User")).toHaveLength(1)
+    expect(screen.getByLabelText("Support question")).toHaveValue("")
+  })
+
+  test("surfaces support runtime errors and keeps the question available", async () => {
+    const user = userEvent.setup()
+    const runtimeError = new Error("Runtime unavailable")
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined)
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async () => {
+        throw runtimeError
+      }),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user, "How do I connect a knowledge source?")
+
+    expect(
+      await screen.findByText("The support agent could not answer right now.")
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText("Support question")).toHaveValue(
+      "How do I connect a knowledge source?"
+    )
+    expect(screen.queryByText("Assistant")).not.toBeInTheDocument()
+    expect(consoleError).toHaveBeenCalledWith(
+      "Support agent response failed",
+      runtimeError
+    )
+    consoleError.mockRestore()
   })
 })

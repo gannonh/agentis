@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { ArrowRight, BookOpenText, PaperPlaneTilt } from "@phosphor-icons/react"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -15,10 +15,11 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 import {
+  createLocalSupportAgentResponder,
   supportAgentChatRequestFixture,
-  supportAgentChatResponseFixture,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
+  type SupportAgentRuntime,
 } from "./lib/support-agent"
 
 const sampleDocumentationSource = {
@@ -26,18 +27,33 @@ const sampleDocumentationSource = {
   name: "Product documentation sample",
 }
 
+const localSupportAgentResponder = createLocalSupportAgentResponder()
+
 type SubmittedSupportTurn = {
   request: SupportAgentChatRequest
   response: SupportAgentChatResponse
 }
 
-export function App() {
+type AppProps = {
+  supportAgentResponder?: SupportAgentRuntime
+}
+
+export function App({
+  supportAgentResponder = localSupportAgentResponder,
+}: AppProps = {}) {
+  // Local runtime injection keeps this demo deterministic until the planned
+  // Vercel AI SDK chat integration owns the message lifecycle.
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
   const [supportQuestion, setSupportQuestion] = useState("")
+  const [supportQuestionError, setSupportQuestionError] = useState<string>()
+  const [isSubmittingSupportQuestion, setIsSubmittingSupportQuestion] =
+    useState(false)
   const [submittedTurns, setSubmittedTurns] = useState<SubmittedSupportTurn[]>(
     []
   )
+  const isSubmittingRef = useRef(false)
+  const nextMessageSequenceRef = useRef(0)
   const selectedSource = selectedSourceId === sampleDocumentationSource.id
     ? sampleDocumentationSource
     : undefined
@@ -51,7 +67,7 @@ export function App() {
     ].join(" / ")
   }
 
-  function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const question = supportQuestion.trim()
@@ -59,21 +75,37 @@ export function App() {
       return
     }
 
-    const messageId = submittedTurns.length === 0
+    if (isSubmittingRef.current) {
+      return
+    }
+
+    isSubmittingRef.current = true
+    setIsSubmittingSupportQuestion(true)
+    setSupportQuestionError(undefined)
+
+    const messageSequence = nextMessageSequenceRef.current
+    nextMessageSequenceRef.current += 1
+    const messageId = messageSequence === 0
       ? supportAgentChatRequestFixture.messageId
-      : `${supportAgentChatRequestFixture.messageId}_${submittedTurns.length + 1}`
+      : `${supportAgentChatRequestFixture.messageId}_${messageSequence + 1}`
     const request: SupportAgentChatRequest = {
       ...supportAgentChatRequestFixture,
       messageId,
       question,
       knowledgeSourceIds: [selectedSource.id],
     }
-    const response: SupportAgentChatResponse = {
-      ...supportAgentChatResponseFixture,
-      inReplyToMessageId: request.messageId,
+    try {
+      const response = await supportAgentResponder.respond(request)
+      setSubmittedTurns((turns) => [...turns, { request, response }])
+      setSupportQuestion("")
+    } catch (error) {
+      console.error("Support agent response failed", error)
+      setSupportQuestionError("The support agent could not answer right now.")
+      nextMessageSequenceRef.current = messageSequence
+    } finally {
+      isSubmittingRef.current = false
+      setIsSubmittingSupportQuestion(false)
     }
-    setSubmittedTurns((turns) => [...turns, { request, response }])
-    setSupportQuestion("")
   }
 
   return (
@@ -162,10 +194,19 @@ export function App() {
                   onChange={(event) => setSupportQuestion(event.target.value)}
                   placeholder="Ask about setup, billing, or troubleshooting"
                 />
+                {supportQuestionError ? (
+                  <FieldDescription className="text-destructive">
+                    {supportQuestionError}
+                  </FieldDescription>
+                ) : null}
               </Field>
               <Button
                 type="submit"
-                disabled={!selectedSource || !supportQuestion.trim()}
+                disabled={
+                  !selectedSource ||
+                  !supportQuestion.trim() ||
+                  isSubmittingSupportQuestion
+                }
               >
                 Ask support agent
                 <PaperPlaneTilt data-icon="inline-end" />
