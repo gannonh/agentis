@@ -28,6 +28,12 @@ pnpm --filter web test -- src/lib/support-agent
 pnpm --filter web typecheck
 ```
 
+Run the optional live OpenAI gateway check:
+
+```bash
+OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-4.1-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
+```
+
 Run the repository checks:
 
 ```bash
@@ -59,7 +65,18 @@ pnpm ci
 
 ## Current Runtime Boundary
 
-The local MVP uses the Agentis-owned support-agent contract in `apps/web/src/lib/support-agent` and a deterministic local responder. The Flue adapter boundary remains available for the configured runtime path.
+The local MVP uses the Agentis-owned support-agent contract in `apps/web/src/lib/support-agent`. The browser demo selects deterministic `demo` mode through `createConfiguredSupportAgentRuntime({ mode: "demo" })`.
+
+The first real-call local path uses the AI SDK OpenAI gateway behind `SupportAgentRuntime`:
+
+- Required environment variable: `OPENAI_API_KEY`
+- Optional environment variable: `SUPPORT_AGENT_MODEL`
+- Default model: `gpt-4.1-mini`
+- Provider: `openai`
+
+The live gateway check is skipped when `OPENAI_API_KEY` is not set. The current browser UI does not send provider secrets to client state and does not include a server route for live model calls. Context strategy remains minimal; Planned Slice 2 owns documentation context selection and retrieval behavior.
+
+The Flue adapter boundary remains available for the configured runtime path.
 
 ## Acceptance Handoff
 
