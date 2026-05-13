@@ -1,0 +1,58 @@
+import { describe, expect, test } from "vitest"
+
+import {
+  resolveSupportAgentProviderConfig,
+  toPublicSupportAgentProviderConfig,
+} from "./provider-config"
+
+describe("support-agent provider config", () => {
+  test("accepts complete local provider config so the runtime can call a model", () => {
+    const result = resolveSupportAgentProviderConfig({
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      apiKey: "sk-local-test",
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      config: {
+        provider: "openai",
+        model: "gpt-4.1-mini",
+        apiKey: "sk-local-test",
+      },
+    })
+  })
+
+  test("fails clearly when provider config is missing", () => {
+    expect(resolveSupportAgentProviderConfig({})).toEqual({
+      ok: false,
+      error: {
+        code: "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING",
+        message: "Support agent provider config requires provider, model, and API key.",
+        missingFields: ["provider", "model", "apiKey"],
+      },
+    })
+  })
+
+  test("omits API keys from public provider config", () => {
+    const result = resolveSupportAgentProviderConfig({
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      apiKey: "sk-secret-value",
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      throw new Error("Expected provider config to resolve")
+    }
+
+    const publicConfig = toPublicSupportAgentProviderConfig(result.config)
+
+    expect(publicConfig).toEqual({
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      hasApiKey: true,
+    })
+    expect(JSON.stringify(publicConfig)).not.toContain("sk-secret-value")
+  })
+})
