@@ -60,3 +60,7 @@ pnpm ci
 ## Current Runtime Boundary
 
 The local MVP uses the Agentis-owned support-agent contract in `apps/web/src/lib/support-agent` and a deterministic local responder. The Flue adapter boundary remains available for the configured runtime path.
+
+## Acceptance Handoff
+
+See `docs/research/support-agent-mvp-acceptance.md` for MVP acceptance evidence and follow-up boundaries.
