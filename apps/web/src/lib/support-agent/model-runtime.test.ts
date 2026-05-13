@@ -8,7 +8,7 @@ import { SupportAgentRuntimeError } from "./runtime-boundary"
 describe("support-agent model runtime", () => {
   const config: SupportAgentProviderConfig = {
     provider: "openai",
-    model: "gpt-4.1-mini",
+    model: "gpt-5.4-mini",
     apiKey: "sk-runtime-test",
   }
 

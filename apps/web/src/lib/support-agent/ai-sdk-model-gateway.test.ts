@@ -19,7 +19,7 @@ describe("support-agent AI SDK model gateway", () => {
   test("calls the selected OpenAI model through the AI SDK", async () => {
     const config: SupportAgentProviderConfig = {
       provider: "openai",
-      model: "gpt-4.1-mini",
+      model: "gpt-5.4-mini",
       apiKey: "sk-runtime-test",
     }
     const generate = createAiSdkOpenAiTextGenerator()
@@ -34,7 +34,7 @@ describe("support-agent AI SDK model gateway", () => {
     expect(generateText).toHaveBeenCalledWith({
       model: {
         provider: "openai",
-        model: "gpt-4.1-mini",
+        model: "gpt-5.4-mini",
         apiKey: "sk-runtime-test",
       },
       system: "Answer as an Agentis support agent.",

@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest"
 import { createAiSdkOpenAiTextGenerator } from "./ai-sdk-model-gateway"
 
 const liveOpenAiApiKey = process.env.OPENAI_API_KEY
-const liveModel = process.env.SUPPORT_AGENT_MODEL ?? "gpt-4.1-mini"
+const liveModel = process.env.SUPPORT_AGENT_MODEL ?? "gpt-5.4-mini"
 const liveTest = liveOpenAiApiKey ? test : test.skip
 
 describe("support-agent AI SDK live gateway", () => {

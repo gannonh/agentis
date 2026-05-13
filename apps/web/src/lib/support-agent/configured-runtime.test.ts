@@ -13,7 +13,7 @@ describe("configured support-agent runtime", () => {
       mode: "model",
       provider: {
         provider: "openai",
-        model: "gpt-4.1-mini",
+        model: "gpt-5.4-mini",
         apiKey: "sk-runtime-test",
       },
       generateText,

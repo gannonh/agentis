@@ -9,7 +9,7 @@ describe("support-agent provider config", () => {
   test("accepts complete local provider config so the runtime can call a model", () => {
     const result = resolveSupportAgentProviderConfig({
       provider: "openai",
-      model: "gpt-4.1-mini",
+      model: "gpt-5.4-mini",
       apiKey: "sk-local-test",
     })
 
@@ -17,7 +17,7 @@ describe("support-agent provider config", () => {
       ok: true,
       config: {
         provider: "openai",
-        model: "gpt-4.1-mini",
+        model: "gpt-5.4-mini",
         apiKey: "sk-local-test",
       },
     })
@@ -37,7 +37,7 @@ describe("support-agent provider config", () => {
   test("omits API keys from public provider config", () => {
     const result = resolveSupportAgentProviderConfig({
       provider: "openai",
-      model: "gpt-4.1-mini",
+      model: "gpt-5.4-mini",
       apiKey: "sk-secret-value",
     })
 
@@ -50,7 +50,7 @@ describe("support-agent provider config", () => {
 
     expect(publicConfig).toEqual({
       provider: "openai",
-      model: "gpt-4.1-mini",
+      model: "gpt-5.4-mini",
       hasApiKey: true,
     })
     expect(JSON.stringify(publicConfig)).not.toContain("sk-secret-value")
