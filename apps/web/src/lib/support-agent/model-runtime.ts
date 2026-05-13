@@ -1,6 +1,9 @@
 import type { SupportAgentChatRequest } from "./chat-contracts"
 import type { SupportAgentProviderConfig } from "./provider-config"
-import type { SupportAgentRuntime } from "./runtime-boundary"
+import {
+  SupportAgentRuntimeError,
+  type SupportAgentRuntime,
+} from "./runtime-boundary"
 
 const supportAgentSystemPrompt =
   "Answer as an Agentis support agent. Use only the selected knowledge sources when they are available."
@@ -30,10 +33,10 @@ export function createSupportAgentModelRuntime({
 }: SupportAgentModelRuntimeOptions): SupportAgentRuntime {
   return {
     async respond(request) {
-      const result = await generateText({
+      const result = await generateSupportAgentText({
         config,
-        system: supportAgentSystemPrompt,
-        prompt: toSupportAgentPrompt(request),
+        generateText,
+        request,
       })
 
       return {
@@ -46,6 +49,54 @@ export function createSupportAgentModelRuntime({
       }
     },
   }
+}
+
+async function generateSupportAgentText({
+  config,
+  generateText,
+  request,
+}: SupportAgentModelRuntimeOptions & {
+  request: SupportAgentChatRequest
+}): Promise<SupportAgentTextGenerationResponse> {
+  try {
+    const result = await generateText({
+      config,
+      system: supportAgentSystemPrompt,
+      prompt: toSupportAgentPrompt(request),
+    })
+
+    if (typeof result.text !== "string" || !result.text.trim()) {
+      throw new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_PROVIDER_OUTPUT_MALFORMED",
+        message: "Support agent provider returned an empty answer.",
+      })
+    }
+
+    return result
+  } catch (error) {
+    if (error instanceof SupportAgentRuntimeError) {
+      throw error
+    }
+
+    if (isAbortError(error)) {
+      throw new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_PROVIDER_ABORTED",
+        message: "Support agent provider call was aborted.",
+      })
+    }
+
+    throw new SupportAgentRuntimeError({
+      code: "SUPPORT_AGENT_PROVIDER_CALL_FAILED",
+      message: "Support agent provider call failed.",
+    })
+  }
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === "AbortError" || error.name === "TimeoutError")
+  )
 }
 
 function toSupportAgentPrompt(request: SupportAgentChatRequest): string {

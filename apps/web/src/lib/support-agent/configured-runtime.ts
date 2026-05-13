@@ -3,8 +3,14 @@ import {
   createSupportAgentModelRuntime,
   type SupportAgentTextGenerator,
 } from "./model-runtime"
-import type { SupportAgentProviderConfig } from "./provider-config"
-import type { SupportAgentRuntime } from "./runtime-boundary"
+import {
+  resolveSupportAgentProviderConfig,
+  type SupportAgentProviderConfigInput,
+} from "./provider-config"
+import {
+  SupportAgentRuntimeError,
+  type SupportAgentRuntime,
+} from "./runtime-boundary"
 
 export type ConfiguredSupportAgentRuntime =
   | {
@@ -12,7 +18,7 @@ export type ConfiguredSupportAgentRuntime =
     }
   | {
       mode: "model"
-      provider: SupportAgentProviderConfig
+      provider: SupportAgentProviderConfigInput
       generateText: SupportAgentTextGenerator
     }
 
@@ -23,8 +29,21 @@ export function createConfiguredSupportAgentRuntime(
     return createLocalSupportAgentResponder()
   }
 
+  const providerConfig = resolveSupportAgentProviderConfig(config.provider)
+
+  if (!providerConfig.ok) {
+    return {
+      async respond() {
+        throw new SupportAgentRuntimeError({
+          code: providerConfig.error.code,
+          message: providerConfig.error.message,
+        })
+      },
+    }
+  }
+
   return createSupportAgentModelRuntime({
-    config: config.provider,
+    config: providerConfig.config,
     generateText: config.generateText,
   })
 }
