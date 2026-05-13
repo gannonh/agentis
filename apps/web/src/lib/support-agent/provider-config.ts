@@ -4,23 +4,31 @@ export type SupportAgentProviderConfigInput = {
   apiKey?: string
 }
 
+export type SupportAgentProvider = "openai"
+
 export type SupportAgentProviderConfig = {
-  provider: string
+  provider: SupportAgentProvider
   model: string
   apiKey: string
 }
 
 export type PublicSupportAgentProviderConfig = {
-  provider: string
+  provider: SupportAgentProvider
   model: string
   hasApiKey: boolean
 }
 
-export type SupportAgentProviderConfigError = {
-  code: "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING"
-  message: string
-  missingFields: Array<keyof SupportAgentProviderConfig>
-}
+export type SupportAgentProviderConfigError =
+  | {
+      code: "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING"
+      message: string
+      missingFields: Array<keyof SupportAgentProviderConfig>
+    }
+  | {
+      code: "SUPPORT_AGENT_PROVIDER_UNSUPPORTED"
+      message: string
+      provider: string
+    }
 
 export type SupportAgentProviderConfigResult =
   | {
@@ -57,6 +65,17 @@ export function resolveSupportAgentProviderConfig(
         code: "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING",
         message: "Support agent provider config requires provider, model, and API key.",
         missingFields,
+      },
+    }
+  }
+
+  if (provider !== "openai") {
+    return {
+      ok: false,
+      error: {
+        code: "SUPPORT_AGENT_PROVIDER_UNSUPPORTED",
+        message: "Support agent provider must be openai.",
+        provider,
       },
     }
   }

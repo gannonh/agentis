@@ -1,3 +1,4 @@
+export * from "./ai-sdk-model-gateway"
 export * from "./chat-contracts"
 export * from "./chat-fixtures"
 export * from "./configured-runtime"

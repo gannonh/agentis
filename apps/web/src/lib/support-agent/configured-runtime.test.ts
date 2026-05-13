@@ -53,4 +53,25 @@ describe("configured support-agent runtime", () => {
     )
     expect(generateText).not.toHaveBeenCalled()
   })
+
+  test("normalizes unsupported providers before model calls", async () => {
+    const generateText = vi.fn(async () => ({ text: "unused" }))
+    const runtime = createConfiguredSupportAgentRuntime({
+      mode: "model",
+      provider: {
+        provider: "anthropic",
+        model: "claude-sonnet-4.5",
+        apiKey: "sk-runtime-test",
+      },
+      generateText,
+    })
+
+    await expect(runtime.respond(supportAgentChatRequestFixture)).rejects.toEqual(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_PROVIDER_UNSUPPORTED",
+        message: "Support agent provider must be openai.",
+      })
+    )
+    expect(generateText).not.toHaveBeenCalled()
+  })
 })

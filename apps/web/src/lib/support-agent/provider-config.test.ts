@@ -34,6 +34,23 @@ describe("support-agent provider config", () => {
     })
   })
 
+  test("rejects unsupported providers before a model call is attempted", () => {
+    expect(
+      resolveSupportAgentProviderConfig({
+        provider: "anthropic",
+        model: "claude-sonnet-4.5",
+        apiKey: "sk-local-test",
+      })
+    ).toEqual({
+      ok: false,
+      error: {
+        code: "SUPPORT_AGENT_PROVIDER_UNSUPPORTED",
+        message: "Support agent provider must be openai.",
+        provider: "anthropic",
+      },
+    })
+  })
+
   test("omits API keys from public provider config", () => {
     const result = resolveSupportAgentProviderConfig({
       provider: "openai",

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import {
+  createAiSdkOpenAiTextGenerator,
   supportAgentChatRequestFixture,
   toFlueSupportAgentRuntimeInput,
   type SupportAgentRuntime,
@@ -28,5 +29,6 @@ describe("support-agent public module surface", () => {
       agentId: supportAgentChatRequestFixture.agentId,
       conversationId: supportAgentChatRequestFixture.conversationId,
     })
+    expect(createAiSdkOpenAiTextGenerator).toEqual(expect.any(Function))
   })
 })

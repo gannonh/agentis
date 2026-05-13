@@ -45,6 +45,32 @@ describe("support-agent model runtime", () => {
     expect(JSON.stringify(response)).not.toContain("sk-runtime-test")
   })
 
+  test("omits knowledge sources from the prompt when none were selected", async () => {
+    const generateText = vi.fn(async () => ({
+      text: "Ask your setup question without a selected source.",
+    }))
+    const runtime = createSupportAgentModelRuntime({
+      config,
+      generateText,
+    })
+
+    await runtime.respond({
+      ...supportAgentChatRequestFixture,
+      knowledgeSourceIds: [],
+    })
+
+    expect(generateText).toHaveBeenCalledWith({
+      config,
+      system: "Answer as an Agentis support agent. Use only the selected knowledge sources when they are available.",
+      prompt: [
+        "Agent: agent_support_template",
+        "Conversation: conversation_support_demo",
+        "Message: message_user_setup_question",
+        "Question: How do I connect a knowledge source?",
+      ].join("\n"),
+    })
+  })
+
   test("normalizes provider call failures", async () => {
     const runtime = createSupportAgentModelRuntime({
       config,

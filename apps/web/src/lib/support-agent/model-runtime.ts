@@ -100,11 +100,17 @@ function isAbortError(error: unknown): boolean {
 }
 
 function toSupportAgentPrompt(request: SupportAgentChatRequest): string {
-  return [
+  const parts = [
     `Agent: ${request.agentId}`,
     `Conversation: ${request.conversationId}`,
     `Message: ${request.messageId}`,
-    `Knowledge sources: ${request.knowledgeSourceIds.join(", ")}`,
-    `Question: ${request.question}`,
-  ].join("\n")
+  ]
+
+  if (request.knowledgeSourceIds.length > 0) {
+    parts.push(`Knowledge sources: ${request.knowledgeSourceIds.join(", ")}`)
+  }
+
+  parts.push(`Question: ${request.question}`)
+
+  return parts.join("\n")
 }
