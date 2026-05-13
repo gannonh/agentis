@@ -92,6 +92,35 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
+  test("delegates support chat through the configured runtime", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "Configured runtime handled the support question.",
+        sources: [],
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user)
+
+    expect(supportAgentResponder.respond).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentId: "agent_support_template",
+        conversationId: "conversation_support_demo",
+        messageId: "message_user_setup_question",
+        question: "How do I connect a knowledge source?",
+      })
+    )
+    expect(
+      screen.getByText("Configured runtime handled the support question.")
+    ).toBeInTheDocument()
+  })
+
   test("renders submitted user and assistant transcript messages", async () => {
     const user = userEvent.setup()
     render(<App />)

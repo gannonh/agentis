@@ -15,7 +15,7 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 import {
-  createLocalSupportAgentResponder,
+  createConfiguredSupportAgentRuntime,
   supportAgentChatRequestFixture,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
@@ -27,7 +27,9 @@ const sampleDocumentationSource = {
   name: "Product documentation sample",
 }
 
-const localSupportAgentResponder = createLocalSupportAgentResponder()
+const demoSupportAgentResponder = createConfiguredSupportAgentRuntime({
+  mode: "demo",
+})
 
 type SubmittedSupportTurn = {
   request: SupportAgentChatRequest
@@ -39,10 +41,8 @@ type AppProps = {
 }
 
 export function App({
-  supportAgentResponder = localSupportAgentResponder,
+  supportAgentResponder = demoSupportAgentResponder,
 }: AppProps = {}) {
-  // Local runtime injection keeps this demo deterministic until the planned
-  // Vercel AI SDK chat integration owns the message lifecycle.
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
   const [supportQuestion, setSupportQuestion] = useState("")
