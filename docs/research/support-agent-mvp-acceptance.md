@@ -31,8 +31,10 @@ pnpm --filter web typecheck
 For full repository confidence, run:
 
 ```bash
+pnpm lint
 pnpm test
 pnpm typecheck
+pnpm ci
 ```
 
 Capture acceptance evidence with these artifacts or command outputs:

@@ -101,6 +101,20 @@ export function toSupportAgentFailureState(
             "Inspect provider connectivity and retry the same question after the provider recovers.",
           retryable: true,
         }
+      default: {
+        const exhaustiveCheck: never = error.code
+
+        return {
+          kind: "model-generation-failed",
+          runtimeCode: exhaustiveCheck,
+          title: "Answer generation failed",
+          userMessage:
+            "The support agent could not generate an answer right now.",
+          maintainerMessage:
+            "Inspect provider connectivity and retry the same question after the provider recovers.",
+          retryable: true,
+        }
+      }
     }
   }
 

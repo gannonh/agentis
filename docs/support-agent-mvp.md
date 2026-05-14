@@ -150,7 +150,9 @@ Only run these when valid provider credentials and model access are available.
 
 ```bash
 OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-5.4-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
+# Choose one:
 OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
+# or (if you want an artifact file)
 SUPPORT_AGENT_EVAL_OUTPUT=./support-agent-eval-report.json OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
 ```
 

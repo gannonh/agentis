@@ -88,11 +88,30 @@ export function toSupportAgentChatResponse(
   request: SupportAgentChatRequest,
   response: FlueSupportAgentRuntimeResponse
 ): SupportAgentChatResponse {
-  if (request.knowledgeSourceIds.length > 0 && !response.provenance?.length) {
-    throw new SupportAgentRuntimeError({
-      code: "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE",
-      message: "Support agent response did not include citation data.",
-    })
+  const provenance = response.provenance ?? []
+
+  if (request.knowledgeSourceIds.length > 0) {
+    if (provenance.length === 0) {
+      throw new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE",
+        message: "Support agent response did not include citation data.",
+      })
+    }
+
+    const coveredKnowledgeSourceIds = new Set(
+      provenance.map((source) => source.knowledgeSourceId)
+    )
+    const hasCoverageForEverySelectedSource = request.knowledgeSourceIds.every(
+      (knowledgeSourceId) => coveredKnowledgeSourceIds.has(knowledgeSourceId)
+    )
+
+    if (!hasCoverageForEverySelectedSource) {
+      throw new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE",
+        message:
+          "Support agent response did not include citation data for every selected source.",
+      })
+    }
   }
 
   return {
@@ -102,11 +121,11 @@ export function toSupportAgentChatResponse(
     inReplyToMessageId:
       response.assistantMessage.inReplyToMessageId ?? request.messageId,
     answer: response.assistantMessage.content,
-    sources: response.provenance?.map((source) => ({
+    sources: provenance.map((source) => ({
       id: source.sourceId,
       knowledgeSourceId: source.knowledgeSourceId,
       title: source.title,
       excerpt: source.excerpt,
-    })) ?? [],
+    })),
   }
 }

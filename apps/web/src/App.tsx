@@ -251,7 +251,7 @@ export function App({
               {supportQuestionFailure ? (
                 <div
                   className="border-destructive/50 bg-background flex flex-col gap-2 border p-3 text-sm"
-                  role="status"
+                  role="alert"
                 >
                   <p className="font-medium">{supportQuestionFailure.title}</p>
                   <p>{supportQuestionFailure.userMessage}</p>

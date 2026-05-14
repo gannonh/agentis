@@ -334,6 +334,7 @@ describe("App", () => {
       await submitSupportQuestion(user, "How do I connect a knowledge source?")
 
       expect(await screen.findByText(title)).toBeInTheDocument()
+      expect(screen.getByRole("alert")).toHaveTextContent(title)
       expect(screen.getAllByText(userMessage).length).toBeGreaterThan(0)
       expect(screen.getByText(maintainerMessage)).toBeInTheDocument()
       expect(screen.getByText(`Runtime code: ${code}`)).toBeInTheDocument()
