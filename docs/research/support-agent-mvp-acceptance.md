@@ -14,9 +14,9 @@ The accepted path lets a maintainer start the app, configure the support-agent t
 ## Acceptance Evidence
 
 - `apps/web/src/App.test.tsx` covers the template entry, template preview updates, sample documentation selection, question submission, transcript rendering, citation rendering, duplicate submit prevention, and runtime error display.
-- `apps/web/src/lib/support-agent/*.test.ts` covers the Agentis-owned support-agent contracts, fixtures, local responder, Flue adapter mapping, runtime boundary, and public module surface.
+- `apps/web/src/lib/support-agent/*.test.ts` covers the Agentis-owned support-agent contracts, fixtures, local responder, Flue adapter mapping, runtime boundary, eval fixtures, eval runner, eval report scoring, and public module surface.
 - `apps/web/e2e/app.spec.ts` covers the browser-level support-agent setup path.
-- `docs/support-agent-mvp.md` records the local run commands and manual acceptance path.
+- `docs/support-agent-mvp.md` records the local run commands, model comparison eval command, compared candidates, scoring dimensions, incomplete-live-run uncertainty, and manual acceptance path.
 
 ## Follow-Up Boundaries
 

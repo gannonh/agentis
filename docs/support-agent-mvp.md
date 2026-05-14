@@ -34,6 +34,23 @@ Run the optional live OpenAI gateway check:
 OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-5.4-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
 ```
 
+Run the local support-agent model comparison eval:
+
+```bash
+OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
+```
+
+Default compared model candidates:
+
+- `openai:gpt-5-mini`, override with `SUPPORT_AGENT_EVAL_MODEL_A`
+- `openai:gpt-5.1-mini`, override with `SUPPORT_AGENT_EVAL_MODEL_B`
+
+Optional output path:
+
+```bash
+SUPPORT_AGENT_EVAL_OUTPUT=./support-agent-eval-report.json OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
+```
+
 Run the repository checks:
 
 ```bash
@@ -81,6 +98,31 @@ The first real-call local path uses the AI SDK OpenAI gateway behind `SupportAge
 The Vercel AI SDK gives Agentis a common call surface for model generation, streaming, tool calls, and provider adapters. Agentis still has to install each provider package, collect that provider's credentials, choose the provider factory, and map Agentis config into the provider call. This slice only wires `@ai-sdk/openai` through `createAiSdkOpenAiTextGenerator`, so `openai` is the only supported real provider in this demo. Additional providers need explicit Agentis gateway modules and tests before they are selectable.
 
 The live gateway check is skipped when `OPENAI_API_KEY` is not set. In this run, `OPENAI_API_KEY` was present and the optional live local model call ran through `pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts`. The current browser UI does not send provider secrets to client state and does not include a server route for live model calls.
+
+## Eval Workflow And Model Comparison
+
+The local eval harness lives in `apps/web/src/lib/support-agent`:
+
+- `eval-fixtures.ts` defines 10 support-agent questions with selected documentation context, expected answer terms, and required provenance source IDs.
+- `eval-runner.ts` executes each question for each configured model candidate through `respondWithSupportAgentRuntime`.
+- `eval-report.ts` records per-question and per-model results.
+- `scripts/support-agent-eval.mjs` is the local command entry point.
+
+The report scores four dimensions:
+
+- Correctness: required answer terms from each eval question.
+- Grounding: expected source IDs returned in provenance metadata.
+- Latency: milliseconds measured around the support-agent runtime boundary.
+- Cost: candidate-level cost notes, with provider billing usage recorded manually after live runs.
+
+Current local run evidence:
+
+- `OPENAI_API_KEY= SUPPORT_AGENT_EVAL_OPENAI_API_KEY= pnpm --filter web support-agent:eval` failed loudly before provider calls with `completed=false`, command `pnpm --filter web support-agent:eval`, candidates `openai:gpt-5-mini` and `openai:gpt-5.1-mini`, `credentialState=missing`, and missing `apiKey` in the note.
+- `pnpm --filter web support-agent:eval` reached the provider-call path in this workspace and failed with `Support agent provider call failed.` I am not certain whether the configured credential, model availability, or provider connectivity caused that failure because the normalized runtime boundary intentionally hides provider error details.
+
+Practical comparison finding: the harness can compare the two configured OpenAI candidates locally once credentials and model access are valid. No completed live answer-quality comparison is recorded in this slice. Keep `gpt-5-mini` as the lower-cost baseline candidate and `gpt-5.1-mini` as the quality comparison candidate until a completed eval report provides latency, grounding, correctness, and billing evidence.
+
+Recommended next model/context strategy: run the eval command with valid OpenAI access and save the JSON report. Use the first completed report to decide whether the higher-quality comparison model improves grounded answers enough to justify its cost. Keep the selected documentation-context contract stable before adding R2-backed Flue knowledge retrieval.
 
 ## Documentation Context Path
 
