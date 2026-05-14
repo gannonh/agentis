@@ -88,6 +88,22 @@ describe("support-agent failure state contract", () => {
     expect(JSON.stringify(failure)).not.toContain("source_product_docs_setup")
   })
 
+  test("maps unknown runtime error codes to the generic model-generation failure", () => {
+    const failure = toSupportAgentFailureState(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_RATE_LIMITED" as never,
+        message: "Provider rate limited with sk-live-secret",
+      })
+    )
+
+    expect(failure.kind).toBe("model-generation-failed")
+    expect(failure.runtimeCode).toBe("SUPPORT_AGENT_RATE_LIMITED")
+    expect(failure.userMessage).toBe(
+      "The support agent could not generate an answer right now."
+    )
+    expect(JSON.stringify(failure)).not.toContain("sk-live-secret")
+  })
+
   test("maps unknown runtime failures to sanitized generic generation state", () => {
     const failure = toSupportAgentFailureState(
       new Error("Unhandled runtime failure with sk-live-secret")
