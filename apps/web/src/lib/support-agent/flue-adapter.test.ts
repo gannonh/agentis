@@ -2,7 +2,10 @@ import { describe, expect, test } from "vitest"
 
 import { supportAgentChatRequestFixture } from "./chat-fixtures"
 import type { SupportAgentChatResponse } from "./chat-contracts"
-import { toFlueSupportAgentRuntimeInput } from "./flue-adapter"
+import {
+  toFlueSupportAgentRuntimeInput,
+  toSupportAgentChatResponse,
+} from "./flue-adapter"
 import type { SupportAgentRuntime } from "./runtime-boundary"
 
 describe("Flue support-agent adapter boundary", () => {
@@ -102,6 +105,52 @@ describe("Flue support-agent adapter boundary", () => {
         },
       },
     ])
+  })
+
+  test("maps Flue-shaped assistant answers into the Agentis chat response contract", () => {
+    const response = toSupportAgentChatResponse(supportAgentChatRequestFixture, {
+      runId: "flue_run_123",
+      provider: {
+        name: "openai",
+        apiKey: "sk-runtime-secret",
+      },
+      assistantMessage: {
+        id: "message_assistant_flue_setup_answer",
+        inReplyToMessageId: "message_user_setup_question",
+        content: "Select Product documentation sample before asking setup questions.",
+      },
+      provenance: [
+        {
+          sourceId: "source_product_docs_setup",
+          knowledgeSourceId: "knowledge_product_docs",
+          title: "Product documentation sample",
+          excerpt: "Select Product documentation sample during setup.",
+          runtimePath: "r2://agentis/private/context.json",
+        },
+      ],
+      runtimeMetadata: {
+        traceId: "trace-secret-runtime-only",
+      },
+    })
+
+    expect(response).toEqual({
+      agentId: "agent_support_template",
+      conversationId: "conversation_support_demo",
+      messageId: "message_assistant_flue_setup_answer",
+      inReplyToMessageId: "message_user_setup_question",
+      answer: "Select Product documentation sample before asking setup questions.",
+      sources: [
+        {
+          id: "source_product_docs_setup",
+          knowledgeSourceId: "knowledge_product_docs",
+          title: "Product documentation sample",
+          excerpt: "Select Product documentation sample during setup.",
+        },
+      ],
+    })
+    expect(JSON.stringify(response)).not.toContain("sk-runtime-secret")
+    expect(JSON.stringify(response)).not.toContain("trace-secret-runtime-only")
+    expect(JSON.stringify(response)).not.toContain("r2://agentis/private")
   })
 
   test("lets callers depend on the Agentis runtime boundary", async () => {

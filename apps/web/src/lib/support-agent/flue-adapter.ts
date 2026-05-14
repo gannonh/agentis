@@ -1,4 +1,7 @@
-import type { SupportAgentChatRequest } from "./chat-contracts"
+import type {
+  SupportAgentChatRequest,
+  SupportAgentChatResponse,
+} from "./chat-contracts"
 import { resolveSupportAgentDocumentationContext } from "./documentation-context"
 
 export type FlueSupportAgentRuntimeInput = {
@@ -24,6 +27,22 @@ export type FlueSupportAgentRuntimeInput = {
     path: string
     content: string
   }>
+}
+
+export type FlueSupportAgentRuntimeResponse = {
+  assistantMessage: {
+    id: string
+    inReplyToMessageId?: string
+    content: string
+  }
+  provenance?: Array<{
+    sourceId: string
+    knowledgeSourceId: string
+    title: string
+    excerpt: string
+    [runtimeField: string]: unknown
+  }>
+  [runtimeField: string]: unknown
 }
 
 export function toFlueSupportAgentRuntimeInput(
@@ -61,5 +80,25 @@ export function toFlueSupportAgentRuntimeInput(
       path: context.path,
       content: context.content,
     })),
+  }
+}
+
+export function toSupportAgentChatResponse(
+  request: SupportAgentChatRequest,
+  response: FlueSupportAgentRuntimeResponse
+): SupportAgentChatResponse {
+  return {
+    agentId: request.agentId,
+    conversationId: request.conversationId,
+    messageId: response.assistantMessage.id,
+    inReplyToMessageId:
+      response.assistantMessage.inReplyToMessageId ?? request.messageId,
+    answer: response.assistantMessage.content,
+    sources: response.provenance?.map((source) => ({
+      id: source.sourceId,
+      knowledgeSourceId: source.knowledgeSourceId,
+      title: source.title,
+      excerpt: source.excerpt,
+    })) ?? [],
   }
 }
