@@ -3,6 +3,7 @@ import type {
   SupportAgentChatResponse,
 } from "./chat-contracts"
 import { resolveSupportAgentDocumentationContext } from "./documentation-context"
+import { SupportAgentRuntimeError } from "./runtime-boundary"
 
 export type FlueSupportAgentRuntimeInput = {
   agentId: string
@@ -87,6 +88,13 @@ export function toSupportAgentChatResponse(
   request: SupportAgentChatRequest,
   response: FlueSupportAgentRuntimeResponse
 ): SupportAgentChatResponse {
+  if (request.knowledgeSourceIds.length > 0 && !response.provenance?.length) {
+    throw new SupportAgentRuntimeError({
+      code: "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE",
+      message: "Support agent response did not include citation data.",
+    })
+  }
+
   return {
     agentId: request.agentId,
     conversationId: request.conversationId,
