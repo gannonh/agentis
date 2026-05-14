@@ -351,6 +351,34 @@ describe("App", () => {
     }
   )
 
+  test("surfaces unknown runtime failures without a runtime code", async () => {
+    const user = userEvent.setup()
+    const runtimeError = new Error("Unhandled runtime failure with sk-live-secret")
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined)
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async () => {
+        throw runtimeError
+      }),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user, "How do I connect a knowledge source?")
+
+    expect(await screen.findByText("Answer generation failed")).toBeInTheDocument()
+    expect(
+      screen.getAllByText("The support agent could not generate an answer right now.").length
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText(/Runtime code:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sk-live-secret/)).not.toBeInTheDocument()
+    expect(consoleError).toHaveBeenCalledWith(
+      "Support agent response failed",
+      runtimeError
+    )
+    consoleError.mockRestore()
+  })
+
   test("clears stale failure state after a later successful support answer", async () => {
     const user = userEvent.setup()
     const consoleError = vi

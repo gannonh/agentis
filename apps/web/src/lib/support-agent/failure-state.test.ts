@@ -87,4 +87,20 @@ describe("support-agent failure state contract", () => {
     )
     expect(JSON.stringify(failure)).not.toContain("source_product_docs_setup")
   })
+
+  test("maps unknown runtime failures to sanitized generic generation state", () => {
+    const failure = toSupportAgentFailureState(
+      new Error("Unhandled runtime failure with sk-live-secret")
+    )
+
+    expect(failure).toEqual({
+      kind: "model-generation-failed",
+      title: "Answer generation failed",
+      userMessage: "The support agent could not generate an answer right now.",
+      maintainerMessage:
+        "Inspect the runtime logs for the failed local demo request, then retry after the runtime recovers.",
+      retryable: true,
+    })
+    expect(JSON.stringify(failure)).not.toContain("sk-live-secret")
+  })
 })
