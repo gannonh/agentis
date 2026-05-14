@@ -114,6 +114,18 @@ describe("App", () => {
         conversationId: "conversation_support_demo",
         messageId: "message_user_setup_question",
         question: "How do I connect a knowledge source?",
+        knowledgeSourceIds: ["knowledge_product_docs"],
+        knowledgeSources: [
+          {
+            id: "knowledge_product_docs",
+            title: "Product documentation sample",
+            description: "Product setup, billing, and troubleshooting articles.",
+            contextReference: {
+              type: "local-documentation",
+              path: "docs/knowledge/product-documentation-sample.md",
+            },
+          },
+        ],
       })
     )
     expect(

@@ -179,8 +179,11 @@ Question: ${payload.message}`
 - Flue documents a support-agent pattern where R2 is mounted as the sandbox filesystem and the agent searches it with built-in `grep`, `glob`, and `read` tools.
 - Cloudflare deployment gives this path durable session state through Durable Objects and durable knowledge files through R2.
 - Node/local validation can populate a virtual sandbox with `session.shell()` for small inline files. For direct reads from checked-in Agentis docs, use `sandbox: "local"` inside a trusted CI runner, container, or VM.
-- The Agentis support-agent prototype can answer from `docs/prompts.md` and the research matrix once the files are mounted or copied into the sandbox.
-- Live answer generation was not run in this task because no model API key, R2 bucket, or Slack install is configured in the repository. The inspected setup path is enough to proceed to architecture selection.
+- The Agentis support-agent prototype now has a local proof path for GUI-selected documentation: the web app sends selected knowledge-source IDs with display metadata and local documentation context references, then `resolveSupportAgentDocumentationContext` produces prompt-ready context for the support-agent runtime.
+- The Flue-ready adapter input includes selected source IDs, source metadata, and resolved documentation context while keeping the public `SupportAgentRuntime` contract owned by Agentis.
+- The recommended next Flue knowledge-access proof is a live Cloudflare Worker support-agent request that reads the same selected documentation set from an R2-backed virtual sandbox.
+- Provider-native file/search APIs, RAG, and hybrid retrieval remain comparison paths after the R2-backed Flue route has request/response evidence.
+- Live answer generation was not run in this task because no model API key, R2 bucket, or Slack install is configured in the repository. The local proof path is enough to validate GUI-to-runtime context mapping.
 
 ### Evidence
 

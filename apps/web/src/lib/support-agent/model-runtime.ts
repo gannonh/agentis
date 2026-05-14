@@ -1,4 +1,8 @@
 import type { SupportAgentChatRequest } from "./chat-contracts"
+import {
+  resolveSupportAgentDocumentationContext,
+  toSupportAgentSources,
+} from "./documentation-context"
 import type { SupportAgentProviderConfig } from "./provider-config"
 import {
   SupportAgentRuntimeError,
@@ -39,13 +43,15 @@ export function createSupportAgentModelRuntime({
         request,
       })
 
+      const documentationContext = resolveSupportAgentDocumentationContext(request)
+
       return {
         agentId: request.agentId,
         conversationId: request.conversationId,
         messageId: `message_assistant_${request.messageId}`,
         inReplyToMessageId: request.messageId,
         answer: result.text,
-        sources: [],
+        sources: toSupportAgentSources(documentationContext),
       }
     },
   }
@@ -106,8 +112,23 @@ function toSupportAgentPrompt(request: SupportAgentChatRequest): string {
     `Message: ${request.messageId}`,
   ]
 
+  const documentationContext = resolveSupportAgentDocumentationContext(request)
+
   if (request.knowledgeSourceIds.length > 0) {
     parts.push(`Knowledge sources: ${request.knowledgeSourceIds.join(", ")}`)
+  }
+
+  if (documentationContext.length > 0) {
+    parts.push(
+      "Documentation context:",
+      ...documentationContext.map((context) =>
+        [
+          `Source: ${context.title}`,
+          `Path: ${context.path}`,
+          context.content,
+        ].join("\n")
+      )
+    )
   }
 
   parts.push(`Question: ${request.question}`)
