@@ -16,6 +16,7 @@ import {
 } from "@workspace/ui/components/toggle-group"
 import {
   createConfiguredSupportAgentRuntime,
+  respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
@@ -110,7 +111,10 @@ export function App({
       knowledgeSources,
     }
     try {
-      const response = await supportAgentResponder.respond(request)
+      const response = await respondWithSupportAgentRuntime(
+        supportAgentResponder,
+        request
+      )
       setSubmittedTurns((turns) => [...turns, { request, response }])
       setSupportQuestion("")
     } catch (error) {

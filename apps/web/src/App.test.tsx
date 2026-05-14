@@ -224,6 +224,39 @@ describe("App", () => {
     expect(screen.getByLabelText("Support question")).toHaveValue("")
   })
 
+  test("rejects assistant responses that are not linked to the submitted message", async () => {
+    const user = userEvent.setup()
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined)
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: "message_assistant_wrong_reply",
+        inReplyToMessageId: "message_user_previous_question",
+        answer: "This answer is linked to an earlier user message.",
+        sources: [],
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user, "How do I connect a knowledge source?")
+
+    expect(
+      await screen.findByText("The support agent could not answer right now.")
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText("Support question")).toHaveValue(
+      "How do I connect a knowledge source?"
+    )
+    expect(screen.queryByText("Assistant")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("This answer is linked to an earlier user message.")
+    ).not.toBeInTheDocument()
+    expect(consoleError.mock.calls[0]?.[0]).toBe("Support agent response failed")
+    consoleError.mockRestore()
+  })
+
   test("surfaces support runtime errors and keeps the question available", async () => {
     const user = userEvent.setup()
     const runtimeError = new Error("Runtime unavailable")

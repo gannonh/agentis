@@ -14,6 +14,7 @@ export type SupportAgentRuntimeErrorCode =
   | "SUPPORT_AGENT_PROVIDER_ABORTED"
   | "SUPPORT_AGENT_PROVIDER_OUTPUT_MALFORMED"
   | "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN"
+  | "SUPPORT_AGENT_RESPONSE_LINKAGE_MISMATCH"
 
 export class SupportAgentRuntimeError extends Error {
   readonly code: SupportAgentRuntimeErrorCode
@@ -35,5 +36,18 @@ export async function respondWithSupportAgentRuntime(
   runtime: SupportAgentRuntime,
   request: SupportAgentChatRequest
 ): Promise<SupportAgentChatResponse> {
-  return runtime.respond(request)
+  const response = await runtime.respond(request)
+
+  if (
+    response.agentId !== request.agentId ||
+    response.conversationId !== request.conversationId ||
+    response.inReplyToMessageId !== request.messageId
+  ) {
+    throw new SupportAgentRuntimeError({
+      code: "SUPPORT_AGENT_RESPONSE_LINKAGE_MISMATCH",
+      message: "Support agent response did not match the submitted message.",
+    })
+  }
+
+  return response
 }
