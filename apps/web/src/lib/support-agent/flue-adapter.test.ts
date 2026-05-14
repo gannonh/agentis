@@ -6,7 +6,10 @@ import {
   toFlueSupportAgentRuntimeInput,
   toSupportAgentChatResponse,
 } from "./flue-adapter"
-import type { SupportAgentRuntime } from "./runtime-boundary"
+import {
+  SupportAgentRuntimeError,
+  type SupportAgentRuntime,
+} from "./runtime-boundary"
 
 describe("Flue support-agent adapter boundary", () => {
   test("maps Agentis chat requests into the Flue-ready runtime input", () => {
@@ -153,14 +156,83 @@ describe("Flue support-agent adapter boundary", () => {
     expect(JSON.stringify(response)).not.toContain("r2://agentis/private")
   })
 
-  test("falls back to the submitted message ID and empty sources when Flue omits optional response fields", () => {
-    expect(
+  test("raises a typed failure when selected-source provenance is unavailable", () => {
+    expect(() =>
       toSupportAgentChatResponse(supportAgentChatRequestFixture, {
         assistantMessage: {
           id: "message_assistant_flue_uncited_answer",
           content: "Answer without source metadata.",
         },
       })
+    ).toThrow(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE",
+        message: "Support agent response did not include citation data.",
+      })
+    )
+  })
+
+  test("raises a typed failure when provenance is missing for one selected source", () => {
+    expect(() =>
+      toSupportAgentChatResponse(
+        {
+          ...supportAgentChatRequestFixture,
+          knowledgeSourceIds: [
+            "knowledge_product_docs",
+            "knowledge_release_notes",
+          ],
+          knowledgeSources: [
+            ...supportAgentChatRequestFixture.knowledgeSources,
+            {
+              id: "knowledge_release_notes",
+              title: "Release notes sample",
+              description: "Recent product updates and support-agent changes.",
+              contextReference: {
+                type: "local-documentation",
+                path: "docs/knowledge/release-notes-sample.md",
+              },
+            },
+          ],
+        },
+        {
+          assistantMessage: {
+            id: "message_assistant_flue_partial_citation",
+            content: "Answer with one citation.",
+          },
+          provenance: [
+            {
+              sourceId: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
+        }
+      )
+    ).toThrow(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE",
+        message:
+          "Support agent response did not include citation data for every selected source.",
+      })
+    )
+  })
+
+  test("falls back to the submitted message ID and empty sources when no source was selected", () => {
+    expect(
+      toSupportAgentChatResponse(
+        {
+          ...supportAgentChatRequestFixture,
+          knowledgeSourceIds: [],
+          knowledgeSources: [],
+        },
+        {
+          assistantMessage: {
+            id: "message_assistant_flue_uncited_answer",
+            content: "Answer without source metadata.",
+          },
+        }
+      )
     ).toEqual({
       agentId: "agent_support_template",
       conversationId: "conversation_support_demo",

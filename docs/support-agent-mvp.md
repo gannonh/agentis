@@ -61,6 +61,103 @@ pnpm test:e2e
 pnpm ci
 ```
 
+## Local Demo Script
+
+Use this script for a repeatable local support-agent demo.
+
+### 1. Configure and start
+
+Required local tools:
+
+- Node and pnpm for the Vite workspace.
+- No provider credential is required for the deterministic browser demo.
+
+Optional live-provider environment:
+
+- `OPENAI_API_KEY`: required only for live OpenAI gateway and eval commands.
+- `SUPPORT_AGENT_MODEL`: optional live gateway model override. Default: `gpt-5.4-mini`.
+- `SUPPORT_AGENT_EVAL_MODEL_A`: optional eval baseline override. Default: `gpt-5-mini`.
+- `SUPPORT_AGENT_EVAL_MODEL_B`: optional eval comparison override. Default: `gpt-5.1-mini`.
+- `SUPPORT_AGENT_EVAL_OUTPUT`: optional eval report output path.
+
+Run:
+
+```bash
+pnpm install
+pnpm dev -- -- --host 127.0.0.1
+```
+
+Open the exact Vite `Local:` URL printed by the command.
+
+### 2. Configure the template
+
+1. Confirm the page heading is `Configure a support agent`.
+2. Edit `Template name` to `Billing support`.
+3. Confirm the `Template preview` heading changes to `Billing support`.
+4. Select `Product documentation sample`.
+5. Confirm the preview shows `Selected source: Product documentation sample`.
+
+### 3. Ask and verify a cited answer
+
+1. Enter `How do I connect a knowledge source?` in `Support question`.
+2. Choose `Ask support agent`.
+3. Confirm the transcript shows:
+   - `User`
+   - `How do I connect a knowledge source?`
+   - `Assistant`
+   - `Use Product documentation sample to answer: How do I connect a knowledge source?`
+4. Confirm provenance appears in the assistant turn:
+   - `Source: Product documentation sample`
+   - `Source ID: source_product_docs_setup`
+   - `Select Product documentation sample during setup.`
+5. Select `Release notes sample`, ask `What changed?`, and confirm the next answer cites:
+   - `Source: Release notes sample`
+   - `Source ID: source_release_notes_may`
+   - `May release notes summarize the newest support-agent changes.`
+
+### 4. Prove failure states
+
+The browser demo uses deterministic `demo` mode, so provider and runtime failures are proven through focused app/runtime tests with injected failure states. Run:
+
+```bash
+pnpm --filter web test -- App.test.tsx failure-state.test.ts flue-adapter.test.ts
+```
+
+Expected failure-state checkpoints:
+
+- Missing provider configuration:
+  - Title: `Provider configuration missing`
+  - User copy: `The support agent needs provider credentials before it can answer.`
+  - Runtime code: `SUPPORT_AGENT_PROVIDER_CONFIG_MISSING`
+- Context preparation failure:
+  - Title: `Documentation context unavailable`
+  - User copy: `The selected documentation could not be prepared for this question.`
+  - Runtime code: `SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN`
+- Model generation failure:
+  - Title: `Answer generation failed`
+  - User copy: `The support agent could not generate an answer right now.`
+  - Runtime code: `SUPPORT_AGENT_PROVIDER_CALL_FAILED`
+- Unavailable provenance:
+  - Title: `Citation data unavailable`
+  - User copy: `The support agent answered without citation data, so the answer was not shown.`
+  - Runtime code: `SUPPORT_AGENT_PROVENANCE_UNAVAILABLE`
+
+The same test run verifies that raw provider messages, secrets, stack traces, runtime paths, and provider internals stay out of UI-visible failure state.
+
+### 5. Run optional live checks
+
+Only run these when valid provider credentials and model access are available.
+
+```bash
+OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-5.4-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
+# Choose one:
+OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
+# or (if you want an artifact file)
+SUPPORT_AGENT_EVAL_OUTPUT=./support-agent-eval-report.json OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
+```
+
+If credentials are missing, skip the live commands and record `OPENAI_API_KEY not set` in acceptance notes. The deterministic browser demo and focused tests remain the local acceptance path.
+
 ## Template Flow
 
 1. Open the Vite local URL printed by `pnpm dev`.

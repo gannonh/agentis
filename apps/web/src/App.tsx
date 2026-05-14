@@ -18,8 +18,10 @@ import {
   createConfiguredSupportAgentRuntime,
   respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
+  toSupportAgentFailureState,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
+  type SupportAgentFailureState,
   type SupportAgentRuntime,
 } from "./lib/support-agent"
 
@@ -63,7 +65,8 @@ export function App({
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
   const [supportQuestion, setSupportQuestion] = useState("")
-  const [supportQuestionError, setSupportQuestionError] = useState<string>()
+  const [supportQuestionFailure, setSupportQuestionFailure] =
+    useState<SupportAgentFailureState>()
   const [isSubmittingSupportQuestion, setIsSubmittingSupportQuestion] =
     useState(false)
   const [submittedTurns, setSubmittedTurns] = useState<SubmittedSupportTurn[]>(
@@ -98,7 +101,7 @@ export function App({
 
     isSubmittingRef.current = true
     setIsSubmittingSupportQuestion(true)
-    setSupportQuestionError(undefined)
+    setSupportQuestionFailure(undefined)
 
     const messageSequence = nextMessageSequenceRef.current
     nextMessageSequenceRef.current += 1
@@ -128,9 +131,10 @@ export function App({
       )
       setSubmittedTurns((turns) => [...turns, { request, response }])
       setSupportQuestion("")
+      setSupportQuestionFailure(undefined)
     } catch (error) {
       console.error("Support agent response failed", error)
-      setSupportQuestionError("The support agent could not answer right now.")
+      setSupportQuestionFailure(toSupportAgentFailureState(error))
       nextMessageSequenceRef.current = messageSequence
     } finally {
       isSubmittingRef.current = false
@@ -227,9 +231,9 @@ export function App({
                   onChange={(event) => setSupportQuestion(event.target.value)}
                   placeholder="Ask about setup, billing, or troubleshooting"
                 />
-                {supportQuestionError ? (
+                {supportQuestionFailure ? (
                   <FieldDescription className="text-destructive">
-                    {supportQuestionError}
+                    {supportQuestionFailure.userMessage}
                   </FieldDescription>
                 ) : null}
               </Field>
@@ -244,6 +248,23 @@ export function App({
                 Ask support agent
                 <PaperPlaneTilt data-icon="inline-end" />
               </Button>
+              {supportQuestionFailure ? (
+                <div
+                  className="border-destructive/50 bg-background flex flex-col gap-2 border p-3 text-sm"
+                  role="alert"
+                >
+                  <p className="font-medium">{supportQuestionFailure.title}</p>
+                  <p>{supportQuestionFailure.userMessage}</p>
+                  <p className="text-muted-foreground">
+                    {supportQuestionFailure.maintainerMessage}
+                  </p>
+                  {supportQuestionFailure.runtimeCode ? (
+                    <p className="text-muted-foreground text-xs">
+                      Runtime code: {supportQuestionFailure.runtimeCode}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </form>
           </div>
 

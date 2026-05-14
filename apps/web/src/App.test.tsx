@@ -3,10 +3,11 @@ import userEvent from "@testing-library/user-event"
 import { describe, expect, test, vi } from "vitest"
 
 import { App } from "./App"
-import type {
-  SupportAgentChatRequest,
-  SupportAgentChatResponse,
-  SupportAgentRuntime,
+import {
+  SupportAgentRuntimeError,
+  type SupportAgentChatRequest,
+  type SupportAgentChatResponse,
+  type SupportAgentRuntime,
 } from "./lib/support-agent"
 
 describe("App", () => {
@@ -267,7 +268,7 @@ describe("App", () => {
     await submitSupportQuestion(user, "How do I connect a knowledge source?")
 
     expect(
-      await screen.findByText("The support agent could not answer right now.")
+      await screen.findByText("Answer generation failed")
     ).toBeInTheDocument()
     expect(screen.getByLabelText("Support question")).toHaveValue(
       "How do I connect a knowledge source?"
@@ -280,9 +281,80 @@ describe("App", () => {
     consoleError.mockRestore()
   })
 
-  test("surfaces support runtime errors and keeps the question available", async () => {
+  test.each([
+    {
+      code: "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING" as const,
+      title: "Provider configuration missing",
+      userMessage:
+        "The support agent needs provider credentials before it can answer.",
+      maintainerMessage:
+        "Set the support-agent provider environment variables, then retry the local demo.",
+    },
+    {
+      code: "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN" as const,
+      title: "Documentation context unavailable",
+      userMessage:
+        "The selected documentation could not be prepared for this question.",
+      maintainerMessage:
+        "Check that each selected source ID and local documentation path is registered for the demo.",
+    },
+    {
+      code: "SUPPORT_AGENT_PROVIDER_CALL_FAILED" as const,
+      title: "Answer generation failed",
+      userMessage: "The support agent could not generate an answer right now.",
+      maintainerMessage:
+        "Inspect provider connectivity and retry the same question after the provider recovers.",
+    },
+    {
+      code: "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE" as const,
+      title: "Citation data unavailable",
+      userMessage:
+        "The support agent answered without citation data, so the answer was not shown.",
+      maintainerMessage:
+        "Verify the runtime returned provenance for every selected demo source before accepting the answer.",
+    },
+  ])(
+    "surfaces $code as typed demo failure copy",
+    async ({ code, title, userMessage, maintainerMessage }) => {
+      const user = userEvent.setup()
+      const runtimeError = new SupportAgentRuntimeError({
+        code,
+        message: "Raw provider error with sk-live-secret and stack trace",
+      })
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined)
+      const supportAgentResponder: SupportAgentRuntime = {
+        respond: vi.fn(async () => {
+          throw runtimeError
+        }),
+      }
+      render(<App supportAgentResponder={supportAgentResponder} />)
+
+      await submitSupportQuestion(user, "How do I connect a knowledge source?")
+
+      expect(await screen.findByText(title)).toBeInTheDocument()
+      expect(screen.getByRole("alert")).toHaveTextContent(title)
+      expect(screen.getAllByText(userMessage).length).toBeGreaterThan(0)
+      expect(screen.getByText(maintainerMessage)).toBeInTheDocument()
+      expect(screen.getByText(`Runtime code: ${code}`)).toBeInTheDocument()
+      expect(screen.getByLabelText("Support question")).toHaveValue(
+        "How do I connect a knowledge source?"
+      )
+      expect(screen.queryByText("Assistant")).not.toBeInTheDocument()
+      expect(screen.queryByText(/sk-live-secret/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/stack trace/)).not.toBeInTheDocument()
+      expect(consoleError).toHaveBeenCalledWith(
+        "Support agent response failed",
+        runtimeError
+      )
+      consoleError.mockRestore()
+    }
+  )
+
+  test("surfaces unknown runtime failures without a runtime code", async () => {
     const user = userEvent.setup()
-    const runtimeError = new Error("Runtime unavailable")
+    const runtimeError = new Error("Unhandled runtime failure with sk-live-secret")
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined)
@@ -295,17 +367,61 @@ describe("App", () => {
 
     await submitSupportQuestion(user, "How do I connect a knowledge source?")
 
+    expect(await screen.findByText("Answer generation failed")).toBeInTheDocument()
     expect(
-      await screen.findByText("The support agent could not answer right now.")
-    ).toBeInTheDocument()
-    expect(screen.getByLabelText("Support question")).toHaveValue(
-      "How do I connect a knowledge source?"
-    )
-    expect(screen.queryByText("Assistant")).not.toBeInTheDocument()
+      screen.getAllByText("The support agent could not generate an answer right now.").length
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText(/Runtime code:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sk-live-secret/)).not.toBeInTheDocument()
     expect(consoleError).toHaveBeenCalledWith(
       "Support agent response failed",
       runtimeError
     )
+    consoleError.mockRestore()
+  })
+
+  test("clears stale failure state after a later successful support answer", async () => {
+    const user = userEvent.setup()
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined)
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi
+        .fn<SupportAgentRuntime["respond"]>()
+        .mockRejectedValueOnce(
+          new SupportAgentRuntimeError({
+            code: "SUPPORT_AGENT_PROVIDER_CALL_FAILED",
+            message: "Provider failed",
+          })
+        )
+        .mockImplementationOnce(async (request) => ({
+          agentId: request.agentId,
+          conversationId: request.conversationId,
+          messageId: `message_assistant_${request.messageId}`,
+          inReplyToMessageId: request.messageId,
+          answer: "Configured runtime handled the support question.",
+          sources: [
+            {
+              id: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
+        })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user, "How do I connect a knowledge source?")
+    expect(await screen.findByText("Answer generation failed")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+    expect(
+      await screen.findByText("Configured runtime handled the support question.")
+    ).toBeInTheDocument()
+    expect(screen.queryByText("Answer generation failed")).not.toBeInTheDocument()
+    expect(screen.getByText("Source: Product documentation sample")).toBeInTheDocument()
     consoleError.mockRestore()
   })
 })
