@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest"
 
-import { supportAgentEvalQuestions } from "./eval-fixtures"
+import {
+  supportAgentEvalQuestions,
+  type SupportAgentEvalQuestion,
+} from "./eval-fixtures"
 import { createSupportAgentEvalReport } from "./eval-report"
 import type { SupportAgentEvalRun } from "./eval-runner"
 
@@ -116,7 +119,7 @@ describe("support-agent eval report", () => {
     ])
   })
 
-  test("records failed correctness and grounding scores", () => {
+  test("fails grounding when answer is not grounded even if expected sources are returned", () => {
     const setupQuestion = supportAgentEvalQuestions[0]!
     const run: SupportAgentEvalRun = {
       results: [
@@ -131,7 +134,14 @@ describe("support-agent eval report", () => {
           },
           questionId: setupQuestion.id,
           answer: "Unsupported generic response.",
-          provenance: [],
+          provenance: [
+            {
+              id: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
           latencyMs: 50,
         },
       ],
@@ -156,7 +166,61 @@ describe("support-agent eval report", () => {
     })
     expect(report.results[0]?.scores.grounding).toMatchObject({
       status: "fail",
-      returnedSourceIds: [],
+      returnedSourceIds: ["source_product_docs_setup"],
+    })
+  })
+
+  test("fails grounding when no expected source IDs are configured", () => {
+    const setupQuestion = supportAgentEvalQuestions[0]!
+    const questionWithoutExpectedSources: SupportAgentEvalQuestion = {
+      ...setupQuestion,
+      id: "support-agent-eval-no-sources",
+      expectedGrounding: {
+        ...setupQuestion.expectedGrounding,
+        requiredSourceIds: [],
+      },
+    }
+    const run: SupportAgentEvalRun = {
+      results: [
+        {
+          candidate: {
+            id: "openai-gpt-5-mini",
+            label: "GPT-5 mini",
+            provider: "openai",
+            model: "gpt-5-mini",
+            hasApiKey: true,
+            costNote: "low-cost candidate",
+          },
+          questionId: questionWithoutExpectedSources.id,
+          answer: "Product documentation sample setup answer.",
+          provenance: [
+            {
+              id: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
+          latencyMs: 50,
+        },
+      ],
+    }
+
+    const report = createSupportAgentEvalReport({
+      generatedAt: "2026-05-14T00:00:00.000Z",
+      questions: [questionWithoutExpectedSources],
+      run,
+      execution: {
+        completed: true,
+        command: "pnpm --filter web support-agent:eval",
+        credentialState: "configured",
+        notes: "Live run completed with local OpenAI credentials.",
+      },
+    })
+
+    expect(report.results[0]?.scores.grounding).toMatchObject({
+      status: "fail",
+      expectedSourceIds: [],
     })
   })
 

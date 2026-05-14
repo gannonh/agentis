@@ -105,23 +105,24 @@ function scoreSupportAgentEvalResult(
   const returnedSourceIds = result.provenance.map((source) => source.id)
   const expectedSourceIds = question.expectedGrounding.requiredSourceIds
   const returnedSourceIdSet = new Set(returnedSourceIds)
-  const allExpectedSourcesReturned = expectedSourceIds.every((sourceId) =>
-    returnedSourceIdSet.has(sourceId)
-  )
+  const hasAllRequiredAnswerTerms =
+    matchedTerms.length === question.expectedAnswerTerms.length
+  const allExpectedSourcesReturned =
+    expectedSourceIds.length > 0 &&
+    expectedSourceIds.every((sourceId) => returnedSourceIdSet.has(sourceId))
 
   return {
     correctness: {
-      status:
-        matchedTerms.length === question.expectedAnswerTerms.length ? "pass" : "fail",
+      status: hasAllRequiredAnswerTerms ? "pass" : "fail",
       requiredTerms: question.expectedAnswerTerms,
       matchedTerms,
-      notes:
-        matchedTerms.length === question.expectedAnswerTerms.length
-          ? "Answer contains required eval terms."
-          : "Answer is missing one or more required eval terms.",
+      notes: hasAllRequiredAnswerTerms
+        ? "Answer contains required eval terms."
+        : "Answer is missing one or more required eval terms.",
     },
     grounding: {
-      status: allExpectedSourcesReturned ? "pass" : "fail",
+      status:
+        hasAllRequiredAnswerTerms && allExpectedSourcesReturned ? "pass" : "fail",
       expectedSourceIds,
       returnedSourceIds,
       notes: question.expectedGrounding.notes,

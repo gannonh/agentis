@@ -12,6 +12,10 @@ export type SupportAgentExpectedGrounding = {
   notes: string
 }
 
+export type SupportAgentEvalKnowledgeSourceId =
+  | "knowledge_product_docs"
+  | "knowledge_release_notes"
+
 export type SupportAgentEvalQuestion = {
   id: string
   description: string
@@ -142,7 +146,7 @@ function createEvalQuestion({
   id: string
   description: string
   question: string
-  knowledgeSourceIds: string[]
+  knowledgeSourceIds: SupportAgentEvalKnowledgeSourceId[]
   expectedAnswerTerms: string[]
   expectedGroundingNotes: string
 }): SupportAgentEvalQuestion {
@@ -166,7 +170,7 @@ function createEvalQuestion({
   }
 }
 
-function toExpectedSourceId(knowledgeSourceId: string): string {
+function toExpectedSourceId(knowledgeSourceId: SupportAgentEvalKnowledgeSourceId): string {
   if (knowledgeSourceId === "knowledge_release_notes") {
     return "source_release_notes_may"
   }
