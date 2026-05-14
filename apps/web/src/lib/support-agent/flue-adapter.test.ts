@@ -17,6 +17,30 @@ describe("Flue support-agent adapter boundary", () => {
         content: "How do I connect a knowledge source?",
       },
       knowledgeSourceIds: ["knowledge_product_docs"],
+      knowledgeSources: [
+        {
+          id: "knowledge_product_docs",
+          title: "Product documentation sample",
+          description: "Product setup, billing, and troubleshooting articles.",
+          contextReference: {
+            type: "local-documentation",
+            path: "docs/knowledge/product-documentation-sample.md",
+          },
+        },
+      ],
+      documentationContext: [
+        {
+          knowledgeSourceId: "knowledge_product_docs",
+          title: "Product documentation sample",
+          path: "docs/knowledge/product-documentation-sample.md",
+          content: [
+            "# Product documentation sample",
+            "Setup: select Product documentation sample while configuring the support agent.",
+            "Billing: use the billing article when customers ask about invoices, plan changes, or payment failures.",
+            "Troubleshooting: ask for the workspace URL, affected feature, and latest error before escalating.",
+          ].join("\n"),
+        },
+      ],
     })
   })
 
@@ -28,8 +52,24 @@ describe("Flue support-agent adapter boundary", () => {
 
     const input = toFlueSupportAgentRuntimeInput(request)
     request.knowledgeSourceIds.push("knowledge_release_notes")
+    request.knowledgeSources[0]!.title = "Changed title"
+    request.knowledgeSources[0]!.contextReference.path = "changed.md"
 
     expect(input.knowledgeSourceIds).toEqual(["knowledge_product_docs"])
+    expect(input.knowledgeSources).toEqual([
+      {
+        id: "knowledge_product_docs",
+        title: "Product documentation sample",
+        description: "Product setup, billing, and troubleshooting articles.",
+        contextReference: {
+          type: "local-documentation",
+          path: "docs/knowledge/product-documentation-sample.md",
+        },
+      },
+    ])
+    expect(input.documentationContext[0]?.path).toBe(
+      "docs/knowledge/product-documentation-sample.md"
+    )
   })
 
   test("lets callers depend on the Agentis runtime boundary", async () => {

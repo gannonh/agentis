@@ -13,6 +13,7 @@ export type SupportAgentRuntimeErrorCode =
   | "SUPPORT_AGENT_PROVIDER_CALL_FAILED"
   | "SUPPORT_AGENT_PROVIDER_ABORTED"
   | "SUPPORT_AGENT_PROVIDER_OUTPUT_MALFORMED"
+  | "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN"
 
 export class SupportAgentRuntimeError extends Error {
   readonly code: SupportAgentRuntimeErrorCode

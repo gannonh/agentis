@@ -76,9 +76,15 @@ The first real-call local path uses the AI SDK OpenAI gateway behind `SupportAge
 
 The Vercel AI SDK gives Agentis a common call surface for model generation, streaming, tool calls, and provider adapters. Agentis still has to install each provider package, collect that provider's credentials, choose the provider factory, and map Agentis config into the provider call. This slice only wires `@ai-sdk/openai` through `createAiSdkOpenAiTextGenerator`, so `openai` is the only supported real provider in this demo. Additional providers need explicit Agentis gateway modules and tests before they are selectable.
 
-The live gateway check is skipped when `OPENAI_API_KEY` is not set. The current browser UI does not send provider secrets to client state and does not include a server route for live model calls. Context strategy remains minimal; Planned Slice 2 owns documentation context selection and retrieval behavior.
+The live gateway check is skipped when `OPENAI_API_KEY` is not set. The current browser UI does not send provider secrets to client state and does not include a server route for live model calls.
 
-The Flue adapter boundary remains available for the configured runtime path.
+## Documentation Context Path
+
+The GUI sends selected documentation as `knowledgeSourceIds` plus display metadata and a local documentation context reference. `resolveSupportAgentDocumentationContext` turns those selected sources into typed local context for the demo runtime, and unknown selected source IDs raise `SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN`.
+
+The Flue adapter boundary remains the primary runtime path. `toFlueSupportAgentRuntimeInput` maps the Agentis-owned chat request into a Flue-ready input with selected source IDs, source metadata, and resolved documentation context. The smallest local proof path uses checked-in sample documentation content so focused tests can prove that changing the selected documentation changes the model prompt and Flue-ready input.
+
+Recommended next step for Flue knowledge access: run a live Flue Cloudflare support-agent request with the same context contract backed by an R2 virtual sandbox. Keep provider-native file/search APIs, RAG, and hybrid retrieval as comparison paths after the R2-backed Flue route has a working request/response proof.
 
 ## Acceptance Handoff
 

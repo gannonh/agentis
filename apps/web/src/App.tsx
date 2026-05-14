@@ -25,6 +25,11 @@ import {
 const sampleDocumentationSource = {
   id: "knowledge_product_docs",
   name: "Product documentation sample",
+  description: "Product setup, billing, and troubleshooting articles.",
+  contextReference: {
+    type: "local-documentation" as const,
+    path: "docs/knowledge/product-documentation-sample.md",
+  },
 }
 
 const demoSupportAgentResponder = createConfiguredSupportAgentRuntime({
@@ -93,6 +98,14 @@ export function App({
       messageId,
       question,
       knowledgeSourceIds: [selectedSource.id],
+      knowledgeSources: [
+        {
+          id: selectedSource.id,
+          title: selectedSource.name,
+          description: selectedSource.description,
+          contextReference: selectedSource.contextReference,
+        },
+      ],
     }
     try {
       const response = await supportAgentResponder.respond(request)
@@ -168,7 +181,7 @@ export function App({
                   <span className="flex flex-col gap-1">
                     <span>{sampleDocumentationSource.name}</span>
                     <span className="text-muted-foreground text-xs font-normal">
-                      Product setup, billing, and troubleshooting articles.
+                      {sampleDocumentationSource.description}
                     </span>
                   </span>
                 </ToggleGroupItem>
