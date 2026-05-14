@@ -80,7 +80,7 @@ The first real-call local path uses the AI SDK OpenAI gateway behind `SupportAge
 
 The Vercel AI SDK gives Agentis a common call surface for model generation, streaming, tool calls, and provider adapters. Agentis still has to install each provider package, collect that provider's credentials, choose the provider factory, and map Agentis config into the provider call. This slice only wires `@ai-sdk/openai` through `createAiSdkOpenAiTextGenerator`, so `openai` is the only supported real provider in this demo. Additional providers need explicit Agentis gateway modules and tests before they are selectable.
 
-The live gateway check is skipped when `OPENAI_API_KEY` is not set. In this run, `OPENAI_API_KEY` was present and the optional live local model call ran through `pnpm --filter web test -- App.test.tsx src/lib/support-agent`. The current browser UI does not send provider secrets to client state and does not include a server route for live model calls.
+The live gateway check is skipped when `OPENAI_API_KEY` is not set. In this run, `OPENAI_API_KEY` was present and the optional live local model call ran through `pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts`. The current browser UI does not send provider secrets to client state and does not include a server route for live model calls.
 
 ## Documentation Context Path
 
