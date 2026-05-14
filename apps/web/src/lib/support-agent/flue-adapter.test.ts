@@ -153,6 +153,24 @@ describe("Flue support-agent adapter boundary", () => {
     expect(JSON.stringify(response)).not.toContain("r2://agentis/private")
   })
 
+  test("falls back to the submitted message ID and empty sources when Flue omits optional response fields", () => {
+    expect(
+      toSupportAgentChatResponse(supportAgentChatRequestFixture, {
+        assistantMessage: {
+          id: "message_assistant_flue_uncited_answer",
+          content: "Answer without source metadata.",
+        },
+      })
+    ).toEqual({
+      agentId: "agent_support_template",
+      conversationId: "conversation_support_demo",
+      messageId: "message_assistant_flue_uncited_answer",
+      inReplyToMessageId: "message_user_setup_question",
+      answer: "Answer without source metadata.",
+      sources: [],
+    })
+  })
+
   test("lets callers depend on the Agentis runtime boundary", async () => {
     const runtime: SupportAgentRuntime = {
       async respond(request) {
