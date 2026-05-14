@@ -170,14 +170,10 @@ function summarizeByCandidate(
     averageLatencyMs: average(
       candidateResults.map((result) => result.scores.latency.milliseconds)
     ),
-    costNote: candidateResults[0]?.candidate.costNote ?? "No cost note recorded.",
+    costNote: candidateResults[0]!.candidate.costNote,
   }))
 }
 
 function average(values: number[]): number {
-  if (values.length === 0) {
-    return 0
-  }
-
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }

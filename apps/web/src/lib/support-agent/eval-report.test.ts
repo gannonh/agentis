@@ -115,4 +115,84 @@ describe("support-agent eval report", () => {
       },
     ])
   })
+
+  test("records failed correctness and grounding scores", () => {
+    const setupQuestion = supportAgentEvalQuestions[0]!
+    const run: SupportAgentEvalRun = {
+      results: [
+        {
+          candidate: {
+            id: "openai-gpt-5-mini",
+            label: "GPT-5 mini",
+            provider: "openai",
+            model: "gpt-5-mini",
+            hasApiKey: true,
+            costNote: "low-cost candidate",
+          },
+          questionId: setupQuestion.id,
+          answer: "Unsupported generic response.",
+          provenance: [],
+          latencyMs: 50,
+        },
+      ],
+    }
+
+    const report = createSupportAgentEvalReport({
+      generatedAt: "2026-05-14T00:00:00.000Z",
+      questions: [setupQuestion],
+      run,
+      execution: {
+        completed: true,
+        command: "pnpm --filter web support-agent:eval",
+        credentialState: "configured",
+        notes: "Live run completed with local OpenAI credentials.",
+      },
+    })
+
+    expect(report.results[0]?.scores.correctness).toMatchObject({
+      status: "fail",
+      matchedTerms: [],
+      notes: "Answer is missing one or more required eval terms.",
+    })
+    expect(report.results[0]?.scores.grounding).toMatchObject({
+      status: "fail",
+      returnedSourceIds: [],
+    })
+  })
+
+  test("fails loudly when a run references an unknown eval question", () => {
+    const setupQuestion = supportAgentEvalQuestions[0]!
+    const run: SupportAgentEvalRun = {
+      results: [
+        {
+          candidate: {
+            id: "openai-gpt-5-mini",
+            label: "GPT-5 mini",
+            provider: "openai",
+            model: "gpt-5-mini",
+            hasApiKey: true,
+            costNote: "low-cost candidate",
+          },
+          questionId: "unknown-question",
+          answer: "Product documentation sample setup answer.",
+          provenance: [],
+          latencyMs: 50,
+        },
+      ],
+    }
+
+    expect(() =>
+      createSupportAgentEvalReport({
+        generatedAt: "2026-05-14T00:00:00.000Z",
+        questions: [setupQuestion],
+        run,
+        execution: {
+          completed: true,
+          command: "pnpm --filter web support-agent:eval",
+          credentialState: "configured",
+          notes: "Live run completed with local OpenAI credentials.",
+        },
+      })
+    ).toThrow("Unknown support-agent eval question: unknown-question")
+  })
 })
