@@ -168,6 +168,29 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
+  test("renders provenance for the source selected when the question is submitted", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    await user.click(screen.getByRole("button", { name: "Release notes sample" }))
+    await user.type(screen.getByLabelText("Support question"), "What changed?")
+    await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+    expect(screen.getByText("Source: Release notes sample")).toBeInTheDocument()
+    expect(screen.getByText("Source ID: source_release_notes_may")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "May release notes summarize the newest support-agent changes."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("Source: Product documentation sample")
+    ).not.toBeInTheDocument()
+  })
+
   test("keeps earlier support questions in the transcript", async () => {
     const user = userEvent.setup()
     render(<App />)
