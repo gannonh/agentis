@@ -88,6 +88,29 @@ describe("support-agent documentation context", () => {
     )
   })
 
+  test("throws a support-agent runtime error for unregistered local docs", () => {
+    expect(() =>
+      resolveSupportAgentDocumentationContext({
+        ...supportAgentChatRequestFixture,
+        knowledgeSources: [
+          {
+            ...supportAgentChatRequestFixture.knowledgeSources[0]!,
+            contextReference: {
+              type: "local-documentation",
+              path: "docs/knowledge/unregistered.md",
+            },
+          },
+        ],
+      })
+    ).toThrow(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN",
+        message:
+          "No local documentation context is registered for knowledge source: knowledge_product_docs.",
+      })
+    )
+  })
+
   test("maps resolved context into response sources", () => {
     expect(
       toSupportAgentSources(
