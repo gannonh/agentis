@@ -72,6 +72,38 @@ describe("Flue support-agent adapter boundary", () => {
     )
   })
 
+  test("keeps mapped knowledgeSources scoped to selected IDs", () => {
+    const input = toFlueSupportAgentRuntimeInput({
+      ...supportAgentChatRequestFixture,
+      knowledgeSourceIds: ["knowledge_release_notes"],
+      knowledgeSources: [
+        ...supportAgentChatRequestFixture.knowledgeSources,
+        {
+          id: "knowledge_release_notes",
+          title: "Release notes sample",
+          description: "Recent product updates and support-agent changes.",
+          contextReference: {
+            type: "local-documentation",
+            path: "docs/knowledge/release-notes-sample.md",
+          },
+        },
+      ],
+    })
+
+    expect(input.knowledgeSourceIds).toEqual(["knowledge_release_notes"])
+    expect(input.knowledgeSources).toEqual([
+      {
+        id: "knowledge_release_notes",
+        title: "Release notes sample",
+        description: "Recent product updates and support-agent changes.",
+        contextReference: {
+          type: "local-documentation",
+          path: "docs/knowledge/release-notes-sample.md",
+        },
+      },
+    ])
+  })
+
   test("lets callers depend on the Agentis runtime boundary", async () => {
     const runtime: SupportAgentRuntime = {
       async respond(request) {

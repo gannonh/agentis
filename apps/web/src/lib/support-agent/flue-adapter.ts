@@ -30,6 +30,12 @@ export function toFlueSupportAgentRuntimeInput(
   request: SupportAgentChatRequest
 ): FlueSupportAgentRuntimeInput {
   const documentationContext = resolveSupportAgentDocumentationContext(request)
+  const knowledgeSourceIds = documentationContext.map(
+    (context) => context.knowledgeSourceId
+  )
+  const knowledgeSourcesById = new Map(
+    request.knowledgeSources.map((source) => [source.id, source])
+  )
 
   return {
     agentId: request.agentId,
@@ -38,13 +44,17 @@ export function toFlueSupportAgentRuntimeInput(
       id: request.messageId,
       content: request.question,
     },
-    knowledgeSourceIds: [...request.knowledgeSourceIds],
-    knowledgeSources: request.knowledgeSources.map((source) => ({
-      id: source.id,
-      title: source.title,
-      description: source.description,
-      contextReference: { ...source.contextReference },
-    })),
+    knowledgeSourceIds,
+    knowledgeSources: knowledgeSourceIds.map((knowledgeSourceId) => {
+      const source = knowledgeSourcesById.get(knowledgeSourceId)!
+
+      return {
+        id: source.id,
+        title: source.title,
+        description: source.description,
+        contextReference: { ...source.contextReference },
+      }
+    }),
     documentationContext: documentationContext.map((context) => ({
       knowledgeSourceId: context.knowledgeSourceId,
       title: context.title,

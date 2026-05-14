@@ -88,7 +88,7 @@ describe("support-agent documentation context", () => {
     )
   })
 
-  test("throws a support-agent runtime error for unregistered local docs", () => {
+  test("throws a support-agent runtime error for path mismatches against registered context", () => {
     expect(() =>
       resolveSupportAgentDocumentationContext({
         ...supportAgentChatRequestFixture,
@@ -106,7 +106,7 @@ describe("support-agent documentation context", () => {
       new SupportAgentRuntimeError({
         code: "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN",
         message:
-          "No local documentation context is registered for knowledge source: knowledge_product_docs.",
+          "Knowledge source path does not match registered context: knowledge_product_docs.",
       })
     )
   })

@@ -11,13 +11,16 @@ export function createLocalSupportAgentResponder(): SupportAgentRuntime {
       const sourceTitles = documentationContext
         .map((context) => context.title)
         .join(", ")
+      const answerPrefix = sourceTitles
+        ? `Use ${sourceTitles} to answer:`
+        : "Answer using available support context:"
 
       return {
         agentId: request.agentId,
         conversationId: request.conversationId,
         messageId: `message_assistant_${request.messageId}`,
         inReplyToMessageId: request.messageId,
-        answer: `Use ${sourceTitles} to answer: ${request.question}`,
+        answer: `${answerPrefix} ${request.question}`,
         sources: toSupportAgentSources(documentationContext),
       }
     },

@@ -93,19 +93,21 @@ export function App({
     const messageId = messageSequence === 0
       ? supportAgentChatRequestFixture.messageId
       : `${supportAgentChatRequestFixture.messageId}_${messageSequence + 1}`
+    const knowledgeSources: SupportAgentChatRequest["knowledgeSources"] = [
+      {
+        id: selectedSource.id,
+        title: selectedSource.name,
+        description: selectedSource.description,
+        contextReference: selectedSource.contextReference,
+      },
+    ]
+
     const request: SupportAgentChatRequest = {
       ...supportAgentChatRequestFixture,
       messageId,
       question,
-      knowledgeSourceIds: [selectedSource.id],
-      knowledgeSources: [
-        {
-          id: selectedSource.id,
-          title: selectedSource.name,
-          description: selectedSource.description,
-          contextReference: selectedSource.contextReference,
-        },
-      ],
+      knowledgeSourceIds: knowledgeSources.map((source) => source.id),
+      knowledgeSources,
     }
     try {
       const response = await supportAgentResponder.respond(request)

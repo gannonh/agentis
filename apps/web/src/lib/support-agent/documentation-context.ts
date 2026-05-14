@@ -6,6 +6,7 @@ import { SupportAgentRuntimeError } from "./runtime-boundary"
 
 type LocalDocumentationSource = {
   sourceId: string
+  path: string
   excerpt: string
   content: string
 }
@@ -20,11 +21,15 @@ export type SupportAgentDocumentationContext = {
   sourceId: string
 }
 
-const localDocumentationSources = new Map<string, LocalDocumentationSource>([
+const localDocumentationSourcesByKnowledgeSourceId = new Map<
+  string,
+  LocalDocumentationSource
+>([
   [
-    "docs/knowledge/product-documentation-sample.md",
+    "knowledge_product_docs",
     {
       sourceId: "source_product_docs_setup",
+      path: "docs/knowledge/product-documentation-sample.md",
       excerpt: "Select Product documentation sample during setup.",
       content: [
         "# Product documentation sample",
@@ -35,9 +40,10 @@ const localDocumentationSources = new Map<string, LocalDocumentationSource>([
     },
   ],
   [
-    "docs/knowledge/release-notes-sample.md",
+    "knowledge_release_notes",
     {
       sourceId: "source_release_notes_may",
+      path: "docs/knowledge/release-notes-sample.md",
       excerpt: "May release notes summarize the newest support-agent changes.",
       content: [
         "# Release notes sample",
@@ -58,20 +64,21 @@ export function resolveSupportAgentDocumentationContext(
 
   return selectedSourceIds.map((knowledgeSourceId) => {
     const source = sourcesById.get(knowledgeSourceId)
+    const localSource = localDocumentationSourcesByKnowledgeSourceId.get(
+      knowledgeSourceId
+    )
 
-    if (!source) {
+    if (!source || !localSource) {
       throw new SupportAgentRuntimeError({
         code: "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN",
         message: `Unknown support-agent knowledge source: ${knowledgeSourceId}.`,
       })
     }
 
-    const localSource = localDocumentationSources.get(source.contextReference.path)
-
-    if (!localSource) {
+    if (source.contextReference.path !== localSource.path) {
       throw new SupportAgentRuntimeError({
         code: "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN",
-        message: `No local documentation context is registered for knowledge source: ${knowledgeSourceId}.`,
+        message: `Knowledge source path does not match registered context: ${knowledgeSourceId}.`,
       })
     }
 
@@ -79,7 +86,7 @@ export function resolveSupportAgentDocumentationContext(
       knowledgeSourceId,
       title: source.title,
       description: source.description,
-      path: source.contextReference.path,
+      path: localSource.path,
       excerpt: localSource.excerpt,
       content: localSource.content,
       sourceId: localSource.sourceId,

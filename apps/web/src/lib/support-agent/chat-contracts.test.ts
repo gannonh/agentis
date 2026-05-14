@@ -45,6 +45,9 @@ describe("support-agent chat contracts", () => {
 
     expect(response.agentId).toBe(request.agentId)
     expect(response.conversationId).toBe(request.conversationId)
+    expect(request.knowledgeSourceIds).toEqual(
+      request.knowledgeSources.map((source) => source.id)
+    )
     expect(response.sources[0]?.knowledgeSourceId).toBe(
       request.knowledgeSourceIds[0]
     )
