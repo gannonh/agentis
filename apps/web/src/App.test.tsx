@@ -168,6 +168,29 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
+  test("renders provenance for the source selected when the question is submitted", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    await user.click(screen.getByRole("button", { name: "Release notes sample" }))
+    await user.type(screen.getByLabelText("Support question"), "What changed?")
+    await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+    expect(screen.getByText("Source: Release notes sample")).toBeInTheDocument()
+    expect(screen.getByText("Source ID: source_release_notes_may")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "May release notes summarize the newest support-agent changes."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("Source: Product documentation sample")
+    ).not.toBeInTheDocument()
+  })
+
   test("keeps earlier support questions in the transcript", async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -222,6 +245,39 @@ describe("App", () => {
 
     expect(await screen.findAllByText("User")).toHaveLength(1)
     expect(screen.getByLabelText("Support question")).toHaveValue("")
+  })
+
+  test("rejects assistant responses that are not linked to the submitted message", async () => {
+    const user = userEvent.setup()
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined)
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: "message_assistant_wrong_reply",
+        inReplyToMessageId: "message_user_previous_question",
+        answer: "This answer is linked to an earlier user message.",
+        sources: [],
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user, "How do I connect a knowledge source?")
+
+    expect(
+      await screen.findByText("The support agent could not answer right now.")
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText("Support question")).toHaveValue(
+      "How do I connect a knowledge source?"
+    )
+    expect(screen.queryByText("Assistant")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("This answer is linked to an earlier user message.")
+    ).not.toBeInTheDocument()
+    expect(consoleError.mock.calls[0]?.[0]).toBe("Support agent response failed")
+    consoleError.mockRestore()
   })
 
   test("surfaces support runtime errors and keeps the question available", async () => {

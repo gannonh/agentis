@@ -16,21 +16,33 @@ import {
 } from "@workspace/ui/components/toggle-group"
 import {
   createConfiguredSupportAgentRuntime,
+  respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
   type SupportAgentRuntime,
 } from "./lib/support-agent"
 
-const sampleDocumentationSource = {
-  id: "knowledge_product_docs",
-  name: "Product documentation sample",
-  description: "Product setup, billing, and troubleshooting articles.",
-  contextReference: {
-    type: "local-documentation" as const,
-    path: "docs/knowledge/product-documentation-sample.md",
+const sampleDocumentationSources = [
+  {
+    id: "knowledge_product_docs",
+    name: "Product documentation sample",
+    description: "Product setup, billing, and troubleshooting articles.",
+    contextReference: {
+      type: "local-documentation" as const,
+      path: "docs/knowledge/product-documentation-sample.md",
+    },
   },
-}
+  {
+    id: "knowledge_release_notes",
+    name: "Release notes sample",
+    description: "Recent product updates and support-agent changes.",
+    contextReference: {
+      type: "local-documentation" as const,
+      path: "docs/knowledge/release-notes-sample.md",
+    },
+  },
+]
 
 const demoSupportAgentResponder = createConfiguredSupportAgentRuntime({
   mode: "demo",
@@ -59,9 +71,9 @@ export function App({
   )
   const isSubmittingRef = useRef(false)
   const nextMessageSequenceRef = useRef(0)
-  const selectedSource = selectedSourceId === sampleDocumentationSource.id
-    ? sampleDocumentationSource
-    : undefined
+  const selectedSource = sampleDocumentationSources.find(
+    (source) => source.id === selectedSourceId
+  )
 
   function getSubmittedContext(request: SupportAgentChatRequest) {
     return [
@@ -110,7 +122,10 @@ export function App({
       knowledgeSources,
     }
     try {
-      const response = await supportAgentResponder.respond(request)
+      const response = await respondWithSupportAgentRuntime(
+        supportAgentResponder,
+        request
+      )
       setSubmittedTurns((turns) => [...turns, { request, response }])
       setSupportQuestion("")
     } catch (error) {
@@ -173,20 +188,23 @@ export function App({
                 orientation="vertical"
                 spacing={2}
               >
-                <ToggleGroupItem
-                  value={sampleDocumentationSource.id}
-                  variant="outline"
-                  className="h-auto justify-start gap-3 px-3 py-2 text-left"
-                  aria-label={sampleDocumentationSource.name}
-                >
-                  <BookOpenText data-icon="inline-start" />
-                  <span className="flex flex-col gap-1">
-                    <span>{sampleDocumentationSource.name}</span>
-                    <span className="text-muted-foreground text-xs font-normal">
-                      {sampleDocumentationSource.description}
+                {sampleDocumentationSources.map((source) => (
+                  <ToggleGroupItem
+                    value={source.id}
+                    variant="outline"
+                    className="h-auto justify-start gap-3 px-3 py-2 text-left"
+                    aria-label={source.name}
+                    key={source.id}
+                  >
+                    <BookOpenText data-icon="inline-start" />
+                    <span className="flex flex-col gap-1">
+                      <span>{source.name}</span>
+                      <span className="text-muted-foreground text-xs font-normal">
+                        {source.description}
+                      </span>
                     </span>
-                  </span>
-                </ToggleGroupItem>
+                  </ToggleGroupItem>
+                ))}
               </ToggleGroup>
             </FieldSet>
             <div>
