@@ -183,6 +183,17 @@ If credentials are missing, skip the gateway and eval commands and record `OPENA
    - `Source ID: source_release_notes_may`
    - `May release notes summarize the newest support-agent changes.`
 
+## Hosted Configuration Contract
+
+The browser-facing hosted deployment handoff is produced with `createHostedSupportAgentDeploymentConfig`. It includes:
+
+- Template identity: `agent_support_template` and the current template name.
+- Knowledge selection: selected knowledge source IDs and local documentation context references.
+- Runtime boundary: `flue-support-agent` with the `SupportAgentChatRequest` contract.
+- Deployment intent: `cloudflare-preview`, `prepare-hosted-preview`, and `credentials: server-side`.
+
+The contract omits provider credentials, provider model settings, deployment secrets, runtime paths, and adapter internals. Later Cloudflare deployment work should consume this public handoff and resolve provider/deployment credentials server-side.
+
 ## Current Runtime Boundary
 
 The local MVP browser flow uses a server-backed `SupportAgentRuntime` by default. The browser submits `SupportAgentChatRequest` to `/api/support-agent/respond`; the Vite dev server reads provider configuration from `.env` server-side, calls the OpenAI-backed model runtime, and returns a `SupportAgentChatResponse` with public runtime metadata.
