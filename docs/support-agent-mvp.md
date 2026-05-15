@@ -67,15 +67,16 @@ Use this script for a repeatable local support-agent demo.
 
 ### 1. Configure and start
 
-Required local tools:
+Required local tools and environment:
 
 - Node and pnpm for the Vite workspace.
-- No provider credential is required for the deterministic browser demo.
+- `.env` at the repository root or `apps/web/.env`.
+- `OPENAI_API_KEY`: required for the real local browser demo.
+- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-5.4-mini`.
+- Provider: `openai`.
 
-Optional live-provider environment:
+Optional eval environment:
 
-- `OPENAI_API_KEY`: required only for live OpenAI gateway and eval commands.
-- `SUPPORT_AGENT_MODEL`: optional live gateway model override. Default: `gpt-5.4-mini`.
 - `SUPPORT_AGENT_EVAL_MODEL_A`: optional eval baseline override. Default: `gpt-5-mini`.
 - `SUPPORT_AGENT_EVAL_MODEL_B`: optional eval comparison override. Default: `gpt-5.1-mini`.
 - `SUPPORT_AGENT_EVAL_OUTPUT`: optional eval report output path.
@@ -105,19 +106,20 @@ Open the exact Vite `Local:` URL printed by the command.
    - `User`
    - `How do I connect a knowledge source?`
    - `Assistant`
-   - `Use Product documentation sample to answer: How do I connect a knowledge source?`
-4. Confirm provenance appears in the assistant turn:
+   - `Runtime: OpenAI / <model>`
+4. Confirm the answer does not match the fixture shape `Use <source> to answer: <question>`.
+5. Confirm provenance appears in the assistant turn:
    - `Source: Product documentation sample`
    - `Source ID: source_product_docs_setup`
    - `Select Product documentation sample during setup.`
-5. Select `Release notes sample`, ask `What changed?`, and confirm the next answer cites:
+6. Select `Release notes sample`, ask `What changed?`, and confirm the next answer renders `Runtime: OpenAI / <model>` and cites:
    - `Source: Release notes sample`
    - `Source ID: source_release_notes_may`
    - `May release notes summarize the newest support-agent changes.`
 
 ### 4. Prove failure states
 
-The browser demo uses deterministic `demo` mode, so provider and runtime failures are proven through focused app/runtime tests with injected failure states. Run:
+The browser demo uses the server-backed provider runtime by default. Provider and runtime failures are also proven through focused app/runtime tests with injected failure states. Run:
 
 ```bash
 pnpm --filter web test -- App.test.tsx failure-state.test.ts flue-adapter.test.ts
@@ -156,7 +158,7 @@ OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
 SUPPORT_AGENT_EVAL_OUTPUT=./support-agent-eval-report.json OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
 ```
 
-If credentials are missing, skip the live commands and record `OPENAI_API_KEY not set` in acceptance notes. The deterministic browser demo and focused tests remain the local acceptance path.
+If credentials are missing, skip the gateway and eval commands and record `OPENAI_API_KEY not set` in acceptance notes. Gateway-only and eval-only runs are not a substitute for M003 real-demo browser evidence.
 
 ## Template Flow
 
@@ -183,18 +185,20 @@ If credentials are missing, skip the live commands and record `OPENAI_API_KEY no
 
 ## Current Runtime Boundary
 
-The local MVP uses the Agentis-owned support-agent contract in `apps/web/src/lib/support-agent`. The browser demo selects deterministic `demo` mode through `createConfiguredSupportAgentRuntime({ mode: "demo" })`. App submissions call the configured `SupportAgentRuntime` through `respondWithSupportAgentRuntime`, which requires the assistant answer to match the submitted agent ID, conversation ID, and in-reply-to user message ID before the transcript appends it.
+The local MVP browser flow uses a server-backed `SupportAgentRuntime` by default. The browser submits `SupportAgentChatRequest` to `/api/support-agent/respond`; the Vite dev server reads provider configuration from `.env` server-side, calls the OpenAI-backed model runtime, and returns a `SupportAgentChatResponse` with public runtime metadata.
 
-The first real-call local path uses the AI SDK OpenAI gateway behind `SupportAgentRuntime`:
+The deterministic responder remains available only for injected tests and explicit fixture usage. It is not acceptable evidence for M003 real-demo acceptance.
 
-- Required environment variable: `OPENAI_API_KEY`
-- Optional environment variable: `SUPPORT_AGENT_MODEL`
-- Default model: `gpt-5.4-mini`
+Required environment:
+
+- `.env` at the repository root or `apps/web/.env`
+- `OPENAI_API_KEY`: required for the real local browser demo
+- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-5.4-mini`
 - Provider: `openai`
 
 The Vercel AI SDK gives Agentis a common call surface for model generation, streaming, tool calls, and provider adapters. Agentis still has to install each provider package, collect that provider's credentials, choose the provider factory, and map Agentis config into the provider call. This slice only wires `@ai-sdk/openai` through `createAiSdkOpenAiTextGenerator`, so `openai` is the only supported real provider in this demo. Additional providers need explicit Agentis gateway modules and tests before they are selectable.
 
-The live gateway check is skipped when `OPENAI_API_KEY` is not set. In this run, `OPENAI_API_KEY` was present and the optional live local model call ran through `pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts`. The current browser UI does not send provider secrets to client state and does not include a server route for live model calls.
+The live gateway check is skipped when `OPENAI_API_KEY` is not set. In this run, `OPENAI_API_KEY` was present and the optional live local model call ran through `pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts`. The browser UI does not send provider secrets to client state; the Vite dev server reads provider configuration server-side for local real-model calls.
 
 ## Eval Workflow And Model Comparison
 
@@ -231,7 +235,7 @@ Current Flue-backed provenance limits:
 
 - Browser-visible source metadata is limited to source ID, knowledge source ID, title, and excerpt.
 - Flue run IDs, trace metadata, provider config, provider secrets, runtime storage paths, and other runtime-only fields stay outside `SupportAgentChatResponse`.
-- Local demo provenance comes from checked-in sample documentation context. A live Flue Cloudflare request still needs the same response contract backed by deployed context storage before it can replace the deterministic browser demo.
+- Local demo provenance comes from checked-in sample documentation context. A live Flue Cloudflare request still needs the same response contract backed by deployed context storage before it can replace the local browser flow.
 
 The smallest local proof path uses checked-in sample documentation content so focused tests can prove that changing the selected documentation changes the model prompt, Flue-ready input, and rendered transcript provenance.
 

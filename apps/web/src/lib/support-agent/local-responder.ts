@@ -22,6 +22,7 @@ export function createLocalSupportAgentResponder(): SupportAgentRuntime {
         inReplyToMessageId: request.messageId,
         answer: `${answerPrefix} ${request.question}`,
         sources: toSupportAgentSources(documentationContext),
+        runtime: { mode: "demo" },
       }
     },
   }

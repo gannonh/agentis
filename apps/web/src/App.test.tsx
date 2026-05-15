@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from "vitest"
 
 import { App } from "./App"
 import {
+  createLocalSupportAgentResponder,
   SupportAgentRuntimeError,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
@@ -24,6 +25,10 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Ask support agent" }))
   }
 
+  function renderAppWithDemoRuntime() {
+    return render(<App supportAgentResponder={createLocalSupportAgentResponder()} />)
+  }
+
   test("shows the support-agent template entry from the initial route", () => {
     render(<App />)
 
@@ -32,9 +37,7 @@ describe("App", () => {
         name: "Configure a support agent",
       })
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: "Start with support agent" })
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument()
   })
 
   test("updates the template preview when the support-agent name changes", async () => {
@@ -63,6 +66,23 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
+  test("shows a disabled bottom-right next action until setup continues", () => {
+    render(<App />)
+
+    const nextButton = screen.getByRole("button", { name: "Next" })
+
+    expect(nextButton.closest("div")).toHaveClass("justify-end")
+    expect(nextButton).toBeDisabled()
+    expect(nextButton).toHaveAttribute("aria-disabled", "true")
+    expect(nextButton).toHaveAttribute(
+      "title",
+      "The next setup step is not available in this demo yet."
+    )
+    expect(
+      screen.queryByRole("button", { name: "Start with support agent" })
+    ).not.toBeInTheDocument()
+  })
+
   test("requires a selected knowledge source before submitting a support question", async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -79,7 +99,7 @@ describe("App", () => {
 
   test("submits a support question through the Agentis chat path", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user)
 
@@ -134,9 +154,123 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
+  test("renders OpenAI runtime labels from runtime metadata", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "OpenAI handled the support question.",
+        sources: [],
+        runtime: {
+          mode: "model",
+          provider: "openai",
+          model: "test-model",
+        } as const,
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user)
+
+    expect(screen.getByText("Runtime: OpenAI / test-model")).toBeInTheDocument()
+  })
+
+  test("renders unknown model providers with title case labels", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "Custom provider handled the support question.",
+        sources: [],
+        runtime: {
+          mode: "model",
+          provider: "custom",
+          model: "test-model",
+        } as unknown as SupportAgentChatResponse["runtime"],
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user)
+
+    expect(screen.getByText("Runtime: Custom / test-model")).toBeInTheDocument()
+  })
+
+  test("falls back to the runtime mode when model metadata omits provider", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "Provider metadata was incomplete.",
+        sources: [],
+        runtime: {
+          mode: "model",
+          model: "fallback-model",
+        } as SupportAgentChatResponse["runtime"],
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user)
+
+    expect(screen.getByText("Runtime: model / fallback-model")).toBeInTheDocument()
+  })
+
+  test("uses the server-backed support-agent runtime by default", async () => {
+    const user = userEvent.setup()
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          agentId: "agent_support_template",
+          conversationId: "conversation_support_demo",
+          messageId: "message_assistant_message_user_setup_question",
+          inReplyToMessageId: "message_user_setup_question",
+          answer: "Real provider-backed answer from local dev endpoint.",
+          sources: [
+            {
+              id: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
+          runtime: {
+            mode: "model",
+            provider: "anthropic",
+            model: "test-model",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    )
+
+    try {
+      render(<App />)
+
+      await submitSupportQuestion(user)
+
+      expect(fetch).toHaveBeenCalledWith("/api/support-agent/respond", expect.any(Object))
+      expect(
+        await screen.findByText("Real provider-backed answer from local dev endpoint.")
+      ).toBeInTheDocument()
+      expect(screen.getByText("Runtime: Anthropic / test-model")).toBeInTheDocument()
+    } finally {
+      fetch.mockRestore()
+    }
+  })
+
   test("renders submitted user and assistant transcript messages", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user)
 
@@ -154,7 +288,7 @@ describe("App", () => {
 
   test("renders cited source metadata for assistant answers", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user)
 
@@ -171,7 +305,7 @@ describe("App", () => {
 
   test("renders provenance for the source selected when the question is submitted", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await user.click(
       screen.getByRole("button", { name: "Product documentation sample" })
@@ -194,7 +328,7 @@ describe("App", () => {
 
   test("keeps earlier support questions in the transcript", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user, "How do I connect a knowledge source?")
     await submitSupportQuestion(user, "How do I troubleshoot billing?")

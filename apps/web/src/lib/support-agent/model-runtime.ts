@@ -52,6 +52,11 @@ export function createSupportAgentModelRuntime({
         inReplyToMessageId: request.messageId,
         answer: result.text,
         sources: toSupportAgentSources(documentationContext),
+        runtime: {
+          mode: "model",
+          provider: config.provider,
+          model: config.model,
+        },
       }
     },
   }

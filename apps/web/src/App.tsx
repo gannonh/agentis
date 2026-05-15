@@ -15,7 +15,7 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 import {
-  createConfiguredSupportAgentRuntime,
+  createSupportAgentHttpRuntime,
   respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
   toSupportAgentFailureState,
@@ -46,8 +46,8 @@ const sampleDocumentationSources = [
   },
 ]
 
-const demoSupportAgentResponder = createConfiguredSupportAgentRuntime({
-  mode: "demo",
+const serverSupportAgentResponder = createSupportAgentHttpRuntime({
+  fetch: (...args) => globalThis.fetch(...args),
 })
 
 type SubmittedSupportTurn = {
@@ -60,7 +60,7 @@ type AppProps = {
 }
 
 export function App({
-  supportAgentResponder = demoSupportAgentResponder,
+  supportAgentResponder = serverSupportAgentResponder,
 }: AppProps = {}) {
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
@@ -85,6 +85,35 @@ export function App({
       request.messageId,
       request.knowledgeSourceIds.join(", "),
     ].join(" / ")
+  }
+
+  function getRuntimeLabel(response: SupportAgentChatResponse) {
+    if (response.runtime?.mode === "model") {
+      const runtime = response.runtime as { provider?: string; mode: string }
+      const provider = runtime.provider ?? runtime.mode
+      const providerLabel = runtime.provider
+        ? formatProviderLabel(provider)
+        : provider
+      return `Runtime: ${providerLabel} / ${response.runtime.model}`
+    }
+
+    if (response.runtime?.mode === "demo") {
+      return "Runtime: deterministic demo fixture"
+    }
+
+    return "Runtime: unavailable"
+  }
+
+  function formatProviderLabel(provider: string) {
+    if (provider === "openai") {
+      return "OpenAI"
+    }
+
+    if (provider === "anthropic") {
+      return "Anthropic"
+    }
+
+    return provider.charAt(0).toUpperCase() + provider.slice(1)
   }
 
   async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -211,12 +240,6 @@ export function App({
                 ))}
               </ToggleGroup>
             </FieldSet>
-            <div>
-              <Button size="lg">
-                Start with support agent
-                <ArrowRight data-icon="inline-end" />
-              </Button>
-            </div>
             <form
               className="flex max-w-md flex-col gap-3"
               onSubmit={handleQuestionSubmit}
@@ -266,6 +289,18 @@ export function App({
                 </div>
               ) : null}
             </form>
+            <div className="flex max-w-md justify-end">
+              <Button
+                size="lg"
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="The next setup step is not available in this demo yet."
+              >
+                Next
+                <ArrowRight data-icon="inline-end" />
+              </Button>
+            </div>
           </div>
 
           <div className="border-border bg-muted/40 flex w-full max-w-sm flex-col gap-4 border p-4">
@@ -298,6 +333,9 @@ export function App({
                   <div>
                     <p className="text-muted-foreground text-xs">Assistant</p>
                     <p>{response.answer}</p>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      {getRuntimeLabel(response)}
+                    </p>
                     <div className="border-border mt-3 border-t pt-3">
                       {response.sources.map((source) => (
                         <div className="flex flex-col gap-1" key={source.id}>

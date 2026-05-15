@@ -8,9 +8,13 @@ test("renders the support-agent setup and toggles the theme", async ({
   await expect(
     page.getByRole("heading", { name: "Configure a support agent" })
   ).toBeVisible()
-  await expect(
-    page.getByRole("button", { name: "Start with support agent" })
-  ).toBeVisible()
+  const nextButton = page.getByRole("button", { name: "Next" })
+  await expect(nextButton).toBeVisible()
+  await expect(nextButton).toBeDisabled()
+  await expect(nextButton).toHaveAttribute(
+    "title",
+    "The next setup step is not available in this demo yet."
+  )
 
   const root = page.locator("html")
   const initialTheme = await root.getAttribute("class")

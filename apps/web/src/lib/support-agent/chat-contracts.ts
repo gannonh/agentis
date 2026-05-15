@@ -24,6 +24,16 @@ export type SupportAgentSource = {
   excerpt: string
 }
 
+export type SupportAgentRuntimeMetadata =
+  | {
+      mode: "demo"
+    }
+  | {
+      mode: "model"
+      provider: "openai"
+      model: string
+    }
+
 export type SupportAgentChatResponse = {
   agentId: string
   conversationId: string
@@ -31,5 +41,6 @@ export type SupportAgentChatResponse = {
   inReplyToMessageId: string
   answer: string
   sources: SupportAgentSource[]
+  runtime?: SupportAgentRuntimeMetadata
   error?: string
 }

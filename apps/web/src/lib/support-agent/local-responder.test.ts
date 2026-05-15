@@ -13,7 +13,9 @@ describe("local support-agent responder", () => {
       knowledgeSourceIds: ["knowledge_product_docs"],
     }
 
-    await expect(responder.respond(request)).resolves.toEqual({
+    const response = await responder.respond(request)
+
+    expect(response).toEqual({
       agentId: "agent_support_template",
       conversationId: "conversation_support_demo",
       messageId: "message_assistant_message_user_billing_question",
@@ -27,6 +29,7 @@ describe("local support-agent responder", () => {
           excerpt: "Select Product documentation sample during setup.",
         },
       ],
+      runtime: { mode: "demo" },
     })
   })
 
@@ -47,6 +50,7 @@ describe("local support-agent responder", () => {
       answer:
         "Answer using available support context: How do I troubleshoot billing?",
       sources: [],
+      runtime: { mode: "demo" },
     })
   })
 })
