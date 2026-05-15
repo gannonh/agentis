@@ -31,7 +31,7 @@ pnpm --filter web typecheck
 Run the optional live OpenAI gateway check:
 
 ```bash
-OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-4o-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
+OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-5.4-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
 ```
 
 Run the local support-agent model comparison eval:
@@ -72,7 +72,7 @@ Required local tools and environment:
 - Node and pnpm for the Vite workspace.
 - `.env` at the repository root or `apps/web/.env`.
 - `OPENAI_API_KEY`: required for the real local browser demo.
-- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-4o-mini`.
+- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-5.4-mini`.
 - Provider: `openai`.
 
 Optional eval environment:
@@ -151,7 +151,7 @@ The same test run verifies that raw provider messages, secrets, stack traces, ru
 Only run these when valid provider credentials and model access are available.
 
 ```bash
-OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-4o-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
+OPENAI_API_KEY=sk-... SUPPORT_AGENT_MODEL=gpt-5.4-mini pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
 # Choose one:
 OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval
 # or (if you want an artifact file)
@@ -193,7 +193,7 @@ Required environment:
 
 - `.env` at the repository root or `apps/web/.env`
 - `OPENAI_API_KEY`: required for the real local browser demo
-- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-4o-mini`
+- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-5.4-mini`
 - Provider: `openai`
 
 The Vercel AI SDK gives Agentis a common call surface for model generation, streaming, tool calls, and provider adapters. Agentis still has to install each provider package, collect that provider's credentials, choose the provider factory, and map Agentis config into the provider call. This slice only wires `@ai-sdk/openai` through `createAiSdkOpenAiTextGenerator`, so `openai` is the only supported real provider in this demo. Additional providers need explicit Agentis gateway modules and tests before they are selectable.

@@ -96,7 +96,7 @@ describe("support-agent API handler", () => {
       expect.objectContaining({
         config: expect.objectContaining({
           provider: "openai",
-          model: "gpt-4o-mini",
+          model: "gpt-5.4-mini",
           apiKey: "sk-test-secret",
         }),
       })
@@ -104,7 +104,7 @@ describe("support-agent API handler", () => {
     expect(payload.runtime).toEqual({
       mode: "model",
       provider: "openai",
-      model: "gpt-4o-mini",
+      model: "gpt-5.4-mini",
     })
   })
 

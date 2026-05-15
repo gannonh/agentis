@@ -39,7 +39,7 @@ export function createSupportAgentApiHandler({
         mode: "model",
         provider: {
           provider: env.SUPPORT_AGENT_PROVIDER ?? "openai",
-          model: env.SUPPORT_AGENT_MODEL ?? "gpt-4o-mini",
+          model: env.SUPPORT_AGENT_MODEL ?? "gpt-5.4-mini",
           apiKey: env.OPENAI_API_KEY,
         },
         generateText,
