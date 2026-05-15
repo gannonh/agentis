@@ -48,6 +48,8 @@ const sampleDocumentationSources = [
   },
 ]
 
+type SampleDocumentationSource = (typeof sampleDocumentationSources)[number]
+
 const serverSupportAgentResponder = createSupportAgentHttpRuntime({
   fetch: (...args) => globalThis.fetch(...args),
 })
@@ -120,20 +122,16 @@ export function App({
     return provider.charAt(0).toUpperCase() + provider.slice(1)
   }
 
-  function handleHostedConfigPrepare() {
-    if (!selectedSource) {
-      return
-    }
-
+  function handleHostedConfigPrepare(source: SampleDocumentationSource) {
     setHostedDeploymentConfig(
       createHostedSupportAgentDeploymentConfig({
         templateName,
         knowledgeSources: [
           {
-            id: selectedSource.id,
-            title: selectedSource.name,
-            description: selectedSource.description,
-            contextReference: selectedSource.contextReference,
+            id: source.id,
+            title: source.name,
+            description: source.description,
+            contextReference: source.contextReference,
           },
         ],
       })
@@ -324,7 +322,11 @@ export function App({
                     ? "Prepare a browser-safe hosted deployment config."
                     : "Select a knowledge source before preparing hosted config."
                 }
-                onClick={handleHostedConfigPrepare}
+                onClick={
+                  selectedSource
+                    ? () => handleHostedConfigPrepare(selectedSource)
+                    : undefined
+                }
               >
                 Prepare hosted config
                 <ArrowRight data-icon="inline-end" />

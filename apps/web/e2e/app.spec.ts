@@ -8,12 +8,14 @@ test("renders the support-agent setup and toggles the theme", async ({
   await expect(
     page.getByRole("heading", { name: "Configure a support agent" })
   ).toBeVisible()
-  const nextButton = page.getByRole("button", { name: "Next" })
-  await expect(nextButton).toBeVisible()
-  await expect(nextButton).toBeDisabled()
-  await expect(nextButton).toHaveAttribute(
+  const prepareConfigButton = page.getByRole("button", {
+    name: "Prepare hosted config",
+  })
+  await expect(prepareConfigButton).toBeVisible()
+  await expect(prepareConfigButton).toBeDisabled()
+  await expect(prepareConfigButton).toHaveAttribute(
     "title",
-    "The next setup step is not available in this demo yet."
+    "Select a knowledge source before preparing hosted config."
   )
 
   const root = page.locator("html")
@@ -34,4 +36,5 @@ test("renders the support-agent setup and toggles the theme", async ({
   await expect(
     page.getByText("Selected source: Product documentation sample")
   ).toBeVisible()
+  await expect(prepareConfigButton).toBeEnabled()
 })
