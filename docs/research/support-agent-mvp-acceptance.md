@@ -42,7 +42,7 @@ Capture acceptance evidence with these artifacts or command outputs:
 - Terminal output from `pnpm --filter web test -- App.test.tsx failure-state.test.ts flue-adapter.test.ts` proving configure, context selection, ask, answer, cite, provider-config failure, context failure, model-generation failure, unavailable-provenance failure, and stale-failure clearing.
 - Terminal output from `pnpm --filter web test -- src/lib/support-agent` proving the support-agent runtime boundary, Flue adapter, local responder, model runtime, provider config, eval fixtures, eval runner, and eval report checks.
 - Terminal output from `pnpm --filter web typecheck` proving TypeScript coverage for the app, node scripts, and tests.
-- Optional browser screenshots or video from `pnpm dev -- -- --host 127.0.0.1` showing `Configure a support agent`, selected `Product documentation sample`, an assistant answer, and source metadata.
+- Browser screenshots or video from `pnpm dev -- -- --host 127.0.0.1` showing `Configure a support agent`, selected `Product documentation sample`, an assistant answer with `Runtime: OpenAI / <model>`, and source metadata.
 - Optional eval JSON from `SUPPORT_AGENT_EVAL_OUTPUT=./support-agent-eval-report.json OPENAI_API_KEY=sk-... pnpm --filter web support-agent:eval` when live provider credentials and model access are available.
 
 What this slice verifies:
@@ -56,9 +56,28 @@ What this slice verifies:
 
 Skipped live evidence:
 
-- Live browser provider execution is skipped because the current browser UI uses deterministic demo mode and does not expose a server route that accepts provider credentials.
 - Live OpenAI gateway and eval runs are optional because they depend on external credential validity, provider availability, model access, latency, and billing. When skipped, record whether `OPENAI_API_KEY` was unset or whether the maintainer intentionally deferred external provider calls.
 - Live Flue Cloudflare and R2-backed provenance evidence is skipped because hosted Flue deployment and R2-backed knowledge access remain outside this MVP acceptance boundary.
+
+## M003 Real-Demo Acceptance Gate
+
+M003 is not accepted unless the normal browser demo proves real model engagement.
+
+Required evidence:
+
+- Start the app with `pnpm dev -- -- --host 127.0.0.1`.
+- Load `OPENAI_API_KEY` from `.env` server-side.
+- Ask a question through the browser UI.
+- The assistant answer must render `Runtime: OpenAI / <model>`.
+- The answer must not match the deterministic fixture shape `Use <source> to answer: <question>`.
+- The transcript must render selected-source provenance.
+- UAT evidence must include a browser video or screenshots plus sanitized dev-server logs.
+
+Rejected evidence:
+
+- Deterministic `mode: "demo"` browser walkthroughs.
+- Gateway-only tests that do not exercise the browser app path.
+- Eval-only runs that do not show the local app receiving a real answer.
 
 ## Follow-Up Boundaries
 
