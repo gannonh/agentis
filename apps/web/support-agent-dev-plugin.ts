@@ -14,7 +14,7 @@ export function supportAgentDevPlugin(env: SupportAgentServerEnv): Plugin {
       const handler = createSupportAgentApiHandler({ env })
 
       server.middlewares.use(async (request, response, next) => {
-        if (!request.url?.startsWith(supportAgentApiPath)) {
+        if (!isSupportAgentApiRequest(request.url)) {
           next()
           return
         }
@@ -51,12 +51,33 @@ export function supportAgentDevPlugin(env: SupportAgentServerEnv): Plugin {
   }
 }
 
+function isSupportAgentApiRequest(requestUrl: string | undefined): boolean {
+  if (!requestUrl) {
+    return false
+  }
+
+  try {
+    return (
+      new URL(requestUrl, "http://localhost").pathname === supportAgentApiPath
+    )
+  } catch {
+    return false
+  }
+}
+
 function toHeaders(request: IncomingMessage): Headers {
   const headers = new Headers()
 
   for (const [key, value] of Object.entries(request.headers)) {
     if (typeof value === "string") {
       headers.set(key, value)
+      continue
+    }
+
+    if (Array.isArray(value)) {
+      for (const headerValue of value) {
+        headers.append(key, headerValue)
+      }
     }
   }
 
