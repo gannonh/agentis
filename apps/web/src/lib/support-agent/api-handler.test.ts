@@ -39,6 +39,7 @@ describe("support-agent API handler", () => {
       })
     )
     expect(payload.answer).toContain("Live model saw openai:test-model")
+    expect(payload.answer).toContain("selected docs")
     expect(payload.runtime).toEqual({
       mode: "model",
       provider: "openai",
