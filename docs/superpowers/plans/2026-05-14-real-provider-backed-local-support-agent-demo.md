@@ -50,6 +50,7 @@ This plan fixes the failed M003 acceptance gap only. It does not add production 
 ### Task 1: Add public runtime metadata to support-agent responses
 
 **Files:**
+
 - Modify: `apps/web/src/lib/support-agent/chat-contracts.ts`
 - Modify: `apps/web/src/lib/support-agent/local-responder.ts`
 - Modify: `apps/web/src/lib/support-agent/model-runtime.ts`
@@ -174,6 +175,7 @@ git commit -m "feat: expose support agent runtime metadata"
 ### Task 2: Add the browser HTTP runtime
 
 **Files:**
+
 - Create: `apps/web/src/lib/support-agent/http-runtime.ts`
 - Create: `apps/web/src/lib/support-agent/http-runtime.test.ts`
 
@@ -352,6 +354,7 @@ git commit -m "feat: add browser support agent HTTP runtime"
 ### Task 3: Add the server-side provider-backed API handler
 
 **Files:**
+
 - Create: `apps/web/src/lib/support-agent/api-handler.ts`
 - Create: `apps/web/src/lib/support-agent/api-handler.test.ts`
 
@@ -565,6 +568,7 @@ git commit -m "feat: add provider backed support agent API handler"
 ### Task 4: Register the real support-agent endpoint in local dev
 
 **Files:**
+
 - Create: `apps/web/support-agent-dev-plugin.ts`
 - Modify: `apps/web/vite.config.ts`
 - Modify: `apps/web/tsconfig.node.json`
@@ -734,6 +738,7 @@ git commit -m "feat: expose support agent provider endpoint in local dev"
 ### Task 5: Make the app use the real server endpoint by default
 
 **Files:**
+
 - Modify: `apps/web/src/App.tsx`
 - Modify: `apps/web/src/App.test.tsx`
 
@@ -907,6 +912,7 @@ git commit -m "feat: use provider backed support agent endpoint by default"
 ### Task 6: Update documentation and acceptance gates
 
 **Files:**
+
 - Modify: `docs/support-agent-mvp.md`
 - Modify: `docs/research/support-agent-mvp-acceptance.md`
 
@@ -977,6 +983,7 @@ git commit -m "docs: require real provider evidence for support agent acceptance
 ### Task 7: Run full verification and capture real-demo UAT
 
 **Files:**
+
 - No source changes expected.
 - Create evidence under `uat-evidence/mixed-<timestamp>/`.
 
@@ -1094,3 +1101,50 @@ No `TBD`, `TODO`, `implement later`, or unspecified test steps remain in this pl
 - API route constant is `supportAgentApiPath` and equals `/api/support-agent/respond`.
 - API handler factory is `createSupportAgentApiHandler` and accepts `{ env, generateText }`.
 - Vite plugin factory is `supportAgentDevPlugin` and accepts server env.
+
+## Demo instructions
+
+1. Set env:
+
+   ```bash
+   cp .env.example .env # if needed
+   # Ensure .env contains:
+   OPENAI_API_KEY=...
+   # Optional:
+   SUPPORT_AGENT_MODEL=gpt-5.4-mini
+   ```
+
+2. Start the app:
+
+   ```bash
+   pnpm dev -- -- --host 127.0.0.1
+   ```
+
+3. Open the printed local URL, usually `http://localhost:5173/`.
+
+4. Demo the product docs path:
+   - Set `Template name` to `Billing support`.
+   - Select `Product documentation sample`.
+   - Ask `Answer in one short sentence: how do I connect a knowledge source?`.
+   - Confirm the answer appears, runtime shows `Runtime: OpenAI / <model>`, source shows `Source ID: source_product_docs_setup`, and the answer does not match deterministic fixture wording.
+
+5. Demo the release notes path:
+   - Select `Release notes sample`.
+   - Ask `Answer in one short sentence: what changed in the May release notes?`.
+   - Confirm the answer appears, runtime shows `Runtime: OpenAI / <model>`, and source shows `Source ID: source_release_notes_may`.
+
+6. Optional proof commands:
+
+   ```bash
+   pnpm --filter web test -- App.test.tsx src/lib/support-agent
+   pnpm typecheck
+   set -a && source .env && set +a
+   pnpm --filter web test -- src/lib/support-agent/ai-sdk-model-gateway.live.test.ts
+   ```
+
+Existing UAT evidence:
+
+```text
+uat-evidence/mixed-20260514-174252/evidence.md
+uat-evidence/mixed-20260514-174252/recordings/real-provider-support-agent-demo.webm
+```
