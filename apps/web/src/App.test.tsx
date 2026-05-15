@@ -37,7 +37,9 @@ describe("App", () => {
         name: "Configure a support agent",
       })
     ).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Prepare hosted config" })
+    ).toBeInTheDocument()
   })
 
   test("updates the template preview when the support-agent name changes", async () => {
@@ -66,20 +68,87 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
-  test("shows a disabled bottom-right next action until setup continues", () => {
+  test("keeps the hosted config action disabled until a source is selected", () => {
     render(<App />)
 
-    const nextButton = screen.getByRole("button", { name: "Next" })
+    const nextButton = screen.getByRole("button", { name: "Prepare hosted config" })
 
     expect(nextButton.closest("div")).toHaveClass("justify-end")
     expect(nextButton).toBeDisabled()
     expect(nextButton).toHaveAttribute("aria-disabled", "true")
     expect(nextButton).toHaveAttribute(
       "title",
-      "The next setup step is not available in this demo yet."
+      "Select a knowledge source before preparing hosted config."
     )
     expect(
       screen.queryByRole("button", { name: "Start with support agent" })
+    ).not.toBeInTheDocument()
+  })
+
+  test("produces a hosted deployment config from the current template flow", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const templateName = screen.getByLabelText("Template name")
+    await user.clear(templateName)
+    await user.type(templateName, "Billing support")
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+
+    const prepareConfig = screen.getByRole("button", {
+      name: "Prepare hosted config",
+    })
+    expect(prepareConfig).toBeEnabled()
+
+    await user.click(prepareConfig)
+
+    const configRegion = screen.getByRole("region", {
+      name: "Hosted deployment config",
+    })
+    expect(configRegion).toHaveTextContent("Billing support")
+    expect(configRegion).toHaveTextContent("knowledge_product_docs")
+    expect(configRegion).toHaveTextContent("flue-support-agent")
+    expect(configRegion).toHaveTextContent("cloudflare-preview")
+    expect(configRegion).toHaveTextContent("Credentials: server-side")
+    expect(configRegion).not.toHaveTextContent(/apiKey|deploymentSecret|sk-/)
+  })
+
+  test("clears the prepared hosted config when setup inputs change", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    const prepareConfig = screen.getByRole("button", {
+      name: "Prepare hosted config",
+    })
+    await user.click(prepareConfig)
+
+    expect(
+      screen.getByRole("region", { name: "Hosted deployment config" })
+    ).toHaveTextContent("knowledge_product_docs")
+
+    const templateName = screen.getByLabelText("Template name")
+    await user.clear(templateName)
+    await user.type(templateName, "Billing support")
+
+    expect(
+      screen.queryByRole("region", { name: "Hosted deployment config" })
+    ).not.toBeInTheDocument()
+
+    await user.click(prepareConfig)
+    expect(
+      screen.getByRole("region", { name: "Hosted deployment config" })
+    ).toHaveTextContent("Billing support")
+
+    await user.click(
+      screen.getByRole("button", { name: "Release notes sample" })
+    )
+
+    expect(
+      screen.queryByRole("region", { name: "Hosted deployment config" })
     ).not.toBeInTheDocument()
   })
 

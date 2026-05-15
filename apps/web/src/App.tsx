@@ -15,12 +15,14 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 import {
+  createHostedSupportAgentDeploymentConfig,
   createSupportAgentHttpRuntime,
   respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
   toSupportAgentFailureState,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
+  type HostedSupportAgentDeploymentConfig,
   type SupportAgentFailureState,
   type SupportAgentRuntime,
 } from "./lib/support-agent"
@@ -46,6 +48,8 @@ const sampleDocumentationSources = [
   },
 ]
 
+type SampleDocumentationSource = (typeof sampleDocumentationSources)[number]
+
 const serverSupportAgentResponder = createSupportAgentHttpRuntime({
   fetch: (...args) => globalThis.fetch(...args),
 })
@@ -67,6 +71,8 @@ export function App({
   const [supportQuestion, setSupportQuestion] = useState("")
   const [supportQuestionFailure, setSupportQuestionFailure] =
     useState<SupportAgentFailureState>()
+  const [hostedDeploymentConfig, setHostedDeploymentConfig] =
+    useState<HostedSupportAgentDeploymentConfig>()
   const [isSubmittingSupportQuestion, setIsSubmittingSupportQuestion] =
     useState(false)
   const [submittedTurns, setSubmittedTurns] = useState<SubmittedSupportTurn[]>(
@@ -114,6 +120,32 @@ export function App({
     }
 
     return provider.charAt(0).toUpperCase() + provider.slice(1)
+  }
+
+  function handleTemplateNameChange(value: string) {
+    setTemplateName(value)
+    setHostedDeploymentConfig(undefined)
+  }
+
+  function handleKnowledgeSourceChange(value: string[]) {
+    setSelectedSourceId(value[0])
+    setHostedDeploymentConfig(undefined)
+  }
+
+  function handleHostedConfigPrepare(source: SampleDocumentationSource) {
+    setHostedDeploymentConfig(
+      createHostedSupportAgentDeploymentConfig({
+        templateName,
+        knowledgeSources: [
+          {
+            id: source.id,
+            title: source.name,
+            description: source.description,
+            contextReference: source.contextReference,
+          },
+        ],
+      })
+    )
   }
 
   async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -204,7 +236,9 @@ export function App({
                 <Input
                   id="template-name"
                   value={templateName}
-                  onChange={(event) => setTemplateName(event.target.value)}
+                  onChange={(event) =>
+                    handleTemplateNameChange(event.target.value)
+                  }
                 />
                 <FieldDescription>
                   This name appears in the setup preview.
@@ -216,7 +250,7 @@ export function App({
               <ToggleGroup
                 aria-label="Knowledge source"
                 value={selectedSourceId ? [selectedSourceId] : []}
-                onValueChange={(value) => setSelectedSourceId(value[0])}
+                onValueChange={handleKnowledgeSourceChange}
                 className="w-full flex-col items-stretch"
                 orientation="vertical"
                 spacing={2}
@@ -293,11 +327,20 @@ export function App({
               <Button
                 size="lg"
                 type="button"
-                disabled
-                aria-disabled="true"
-                title="The next setup step is not available in this demo yet."
+                disabled={!selectedSource}
+                aria-disabled={!selectedSource}
+                title={
+                  selectedSource
+                    ? "Prepare a browser-safe hosted deployment config."
+                    : "Select a knowledge source before preparing hosted config."
+                }
+                onClick={
+                  selectedSource
+                    ? () => handleHostedConfigPrepare(selectedSource)
+                    : undefined
+                }
               >
-                Next
+                Prepare hosted config
                 <ArrowRight data-icon="inline-end" />
               </Button>
             </div>
@@ -318,6 +361,44 @@ export function App({
                   ? `Selected source: ${selectedSource.name}`
                   : "Select sample documentation to continue setup."}
               </div>
+              {hostedDeploymentConfig ? (
+                <section
+                  aria-label="Hosted deployment config"
+                  className="border-border bg-background border p-3"
+                >
+                  <p className="text-xs font-medium">Hosted deployment config</p>
+                  <dl className="mt-2 flex flex-col gap-1 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground inline">Template: </dt>
+                      <dd className="inline">{hostedDeploymentConfig.template.name}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">Knowledge source IDs: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.knowledge.sourceIds.join(", ")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">Runtime adapter: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.runtime.adapter}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">Deployment target: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.deployment.target}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">Credentials: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.deployment.credentials}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              ) : null}
               {submittedTurns.map(({ request, response }) => (
                 <div
                   className="border-border bg-background flex flex-col gap-3 border p-3"
