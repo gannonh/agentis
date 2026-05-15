@@ -8,15 +8,37 @@ The support-agent template MVP proves the first Agentis product path for a docum
 - `S006`: Agentis owns the chat request and response contracts, deterministic fixtures, and the Flue adapter boundary.
 - `S007`: the web chat flow accepts a support question, renders user and assistant transcript messages, and displays source metadata.
 - `S008`: submitted questions route through the local support-agent response path while keeping runtime-facing logic behind the adapter boundary.
+- `S015`: the same template flow can produce a hosted-deployment-ready configuration handoff for a later Cloudflare preview deployment slice.
 
-The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, ask a question, and inspect the cited answer in the template preview.
+The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, prepare a hosted config handoff, ask a question, and inspect the cited answer in the template preview.
 
 ## Acceptance Evidence
 
-- `apps/web/src/App.test.tsx` covers the template entry, template preview updates, sample documentation selection, question submission, transcript rendering, citation rendering, duplicate submit prevention, typed runtime failure display, and stale failure clearing after a later successful answer.
-- `apps/web/src/lib/support-agent/*.test.ts` covers the Agentis-owned support-agent contracts, fixtures, local responder, Flue adapter mapping, runtime boundary, typed failure mapping, eval fixtures, eval runner, eval report scoring, and public module surface.
+- `apps/web/src/App.test.tsx` covers the template entry, template preview updates, sample documentation selection, hosted config action enablement, hosted config payload display, question submission, transcript rendering, citation rendering, duplicate submit prevention, typed runtime failure display, and stale failure clearing after a later successful answer.
+- `apps/web/src/lib/support-agent/*.test.ts` covers the Agentis-owned support-agent contracts, fixtures, local responder, hosted deployment config contract, Flue adapter mapping, runtime boundary, typed failure mapping, eval fixtures, eval runner, eval report scoring, and public module surface.
 - `apps/web/e2e/app.spec.ts` covers the browser-level support-agent setup path.
 - `docs/support-agent-mvp.md` records the local run commands, model comparison eval command, compared candidates, scoring dimensions, failure-state demo checkpoints, incomplete-live-run uncertainty, and manual acceptance path.
+
+## S015 Hosted Configuration Acceptance Checks
+
+Run these checks before accepting the hosted configuration path:
+
+```bash
+pnpm --filter web test -- App.test.tsx src/lib/support-agent
+rg -n "Hosted Configuration Contract|Prepare hosted config|cloudflare-preview|credentials: server-side|flue-support-agent" docs/support-agent-mvp.md docs/research/support-agent-mvp-acceptance.md apps/web/src
+```
+
+Manual configure-only checklist:
+
+1. Start the app with `pnpm dev -- -- --host 127.0.0.1`.
+2. Open the printed local URL.
+3. Set `Template name` to `Billing support`.
+4. Select `Product documentation sample`.
+5. Choose `Prepare hosted config`.
+6. Confirm the `Hosted deployment config` panel shows `Billing support`, `knowledge_product_docs`, `flue-support-agent`, `cloudflare-preview`, and `credentials: server-side`.
+7. Confirm no provider API key, deployment secret, provider model setting, runtime path, or adapter internal field appears in browser-visible config.
+
+This path prepares configuration only. Live Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and Flue deployment execution remain future deployment-slice work.
 
 ## S014 Demo Hardening Acceptance Checks
 
@@ -82,7 +104,7 @@ Rejected evidence:
 ## Follow-Up Boundaries
 
 - Slack: OAuth installation, event verification, event dedupe, bot token storage, Slack thread mapping, and message delivery remain future planned work.
-- Hosted deployment: Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and live Flue deployment automation remain future planned work.
+- Hosted deployment: S015 prepares the browser-safe configuration handoff. Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and live Flue deployment automation remain future planned work.
 - Production persistence: organizations, users, agents, knowledge sources, conversations, messages, deployments, audit records, quotas, and schema migrations remain future planned work.
 
 These follow-ups should enter future milestones as explicit requirements before implementation.

@@ -25,6 +25,7 @@ Run focused support-agent UI and contract checks:
 ```bash
 pnpm --filter web test -- App.test.tsx
 pnpm --filter web test -- src/lib/support-agent
+pnpm --filter web test -- App.test.tsx src/lib/support-agent
 pnpm --filter web typecheck
 ```
 
@@ -97,6 +98,9 @@ Open the exact Vite `Local:` URL printed by the command.
 3. Confirm the `Template preview` heading changes to `Billing support`.
 4. Select `Product documentation sample`.
 5. Confirm the preview shows `Selected source: Product documentation sample`.
+6. Choose `Prepare hosted config`.
+7. Confirm `Hosted deployment config` shows `Billing support`, `knowledge_product_docs`, `flue-support-agent`, `cloudflare-preview`, and `credentials: server-side`.
+8. Confirm the hosted config panel does not show provider API keys, deployment secrets, provider model settings, runtime paths, or adapter internals.
 
 ### 3. Ask and verify a cited answer
 
@@ -167,6 +171,13 @@ If credentials are missing, skip the gateway and eval commands and record `OPENA
 3. Edit `Template name` and confirm the `Template preview` heading updates.
 4. Select `Product documentation sample`.
 5. Confirm the preview shows `Selected source: Product documentation sample`.
+6. Choose `Prepare hosted config`.
+7. Confirm the `Hosted deployment config` panel shows:
+   - `Billing support` or the current template name.
+   - `knowledge_product_docs`.
+   - `flue-support-agent`.
+   - `cloudflare-preview`.
+   - `credentials: server-side`.
 
 ## Chat Path
 
@@ -185,14 +196,28 @@ If credentials are missing, skip the gateway and eval commands and record `OPENA
 
 ## Hosted Configuration Contract
 
-The browser-facing hosted deployment handoff is produced with `createHostedSupportAgentDeploymentConfig`. It includes:
+The browser-facing hosted deployment handoff is produced from the current UI by opening the Vite app, naming the template, selecting sample documentation, and choosing `Prepare hosted config`. The focused automated proof is:
+
+```bash
+pnpm --filter web test -- App.test.tsx src/lib/support-agent
+```
+
+The contract builder is `createHostedSupportAgentDeploymentConfig`. It includes:
 
 - Template identity: `agent_support_template` and the current template name.
 - Knowledge selection: selected knowledge source IDs and local documentation context references.
 - Runtime boundary: `flue-support-agent` with the `SupportAgentChatRequest` contract.
 - Deployment intent: `cloudflare-preview`, `prepare-hosted-preview`, and `credentials: server-side`.
 
-The contract omits provider credentials, provider model settings, deployment secrets, runtime paths, and adapter internals. Later Cloudflare deployment work should consume this public handoff and resolve provider/deployment credentials server-side.
+The contract omits provider credentials, provider model settings, deployment secrets, runtime paths, and adapter internals. The UI only shows a public handoff summary. Later Cloudflare deployment work should consume this public handoff and resolve provider/deployment credentials server-side.
+
+Configure-only acceptance checklist:
+
+- `Prepare hosted config` stays disabled until a knowledge source is selected.
+- The generated handoff reflects the current template name and selected documentation source.
+- The generated handoff declares the `flue-support-agent` runtime adapter and `SupportAgentChatRequest` contract.
+- The generated handoff declares `cloudflare-preview` and `prepare-hosted-preview` as deployment intent, not a live deployment.
+- Browser-visible text and state contain no provider API key, deployment secret, provider model setting, runtime path, or adapter internal field.
 
 ## Current Runtime Boundary
 
