@@ -34,10 +34,8 @@ export function supportAgentDevPlugin(env: SupportAgentServerEnv): Plugin {
             response.setHeader(key, value)
           })
           response.end(await apiResponse.text())
-        } catch (error) {
-          server.config.logger.error(
-            error instanceof Error ? error.message : String(error)
-          )
+        } catch {
+          server.config.logger.error("Support agent dev endpoint failed.")
           response.statusCode = 500
           response.setHeader("Content-Type", "application/json")
           response.end(
