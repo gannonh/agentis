@@ -37,9 +37,7 @@ describe("App", () => {
         name: "Configure a support agent",
       })
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: "Start with support agent" })
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument()
   })
 
   test("updates the template preview when the support-agent name changes", async () => {
@@ -66,6 +64,22 @@ describe("App", () => {
     expect(
       screen.getByText("Selected source: Product documentation sample")
     ).toBeInTheDocument()
+  })
+
+  test("shows an unwired bottom-right next action for template setup", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const nextButton = screen.getByRole("button", { name: "Next" })
+
+    expect(nextButton.closest("div")).toHaveClass("justify-end")
+    expect(
+      screen.queryByRole("button", { name: "Start with support agent" })
+    ).not.toBeInTheDocument()
+
+    await user.click(nextButton)
+
+    expect(screen.queryByText("User")).not.toBeInTheDocument()
   })
 
   test("requires a selected knowledge source before submitting a support question", async () => {

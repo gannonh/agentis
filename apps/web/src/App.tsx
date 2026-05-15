@@ -223,12 +223,6 @@ export function App({
                 ))}
               </ToggleGroup>
             </FieldSet>
-            <div>
-              <Button size="lg">
-                Start with support agent
-                <ArrowRight data-icon="inline-end" />
-              </Button>
-            </div>
             <form
               className="flex max-w-md flex-col gap-3"
               onSubmit={handleQuestionSubmit}
@@ -278,6 +272,12 @@ export function App({
                 </div>
               ) : null}
             </form>
+            <div className="flex max-w-md justify-end">
+              <Button size="lg" type="button">
+                Next
+                <ArrowRight data-icon="inline-end" />
+              </Button>
+            </div>
           </div>
 
           <div className="border-border bg-muted/40 flex w-full max-w-sm flex-col gap-4 border p-4">
