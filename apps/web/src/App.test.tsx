@@ -114,6 +114,44 @@ describe("App", () => {
     expect(configRegion).not.toHaveTextContent(/apiKey|deploymentSecret|sk-/)
   })
 
+  test("clears the prepared hosted config when setup inputs change", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    const prepareConfig = screen.getByRole("button", {
+      name: "Prepare hosted config",
+    })
+    await user.click(prepareConfig)
+
+    expect(
+      screen.getByRole("region", { name: "Hosted deployment config" })
+    ).toHaveTextContent("knowledge_product_docs")
+
+    const templateName = screen.getByLabelText("Template name")
+    await user.clear(templateName)
+    await user.type(templateName, "Billing support")
+
+    expect(
+      screen.queryByRole("region", { name: "Hosted deployment config" })
+    ).not.toBeInTheDocument()
+
+    await user.click(prepareConfig)
+    expect(
+      screen.getByRole("region", { name: "Hosted deployment config" })
+    ).toHaveTextContent("Billing support")
+
+    await user.click(
+      screen.getByRole("button", { name: "Release notes sample" })
+    )
+
+    expect(
+      screen.queryByRole("region", { name: "Hosted deployment config" })
+    ).not.toBeInTheDocument()
+  })
+
   test("requires a selected knowledge source before submitting a support question", async () => {
     const user = userEvent.setup()
     render(<App />)

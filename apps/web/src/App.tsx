@@ -122,6 +122,16 @@ export function App({
     return provider.charAt(0).toUpperCase() + provider.slice(1)
   }
 
+  function handleTemplateNameChange(value: string) {
+    setTemplateName(value)
+    setHostedDeploymentConfig(undefined)
+  }
+
+  function handleKnowledgeSourceChange(value: string[]) {
+    setSelectedSourceId(value[0])
+    setHostedDeploymentConfig(undefined)
+  }
+
   function handleHostedConfigPrepare(source: SampleDocumentationSource) {
     setHostedDeploymentConfig(
       createHostedSupportAgentDeploymentConfig({
@@ -226,7 +236,9 @@ export function App({
                 <Input
                   id="template-name"
                   value={templateName}
-                  onChange={(event) => setTemplateName(event.target.value)}
+                  onChange={(event) =>
+                    handleTemplateNameChange(event.target.value)
+                  }
                 />
                 <FieldDescription>
                   This name appears in the setup preview.
@@ -238,7 +250,7 @@ export function App({
               <ToggleGroup
                 aria-label="Knowledge source"
                 value={selectedSourceId ? [selectedSourceId] : []}
-                onValueChange={(value) => setSelectedSourceId(value[0])}
+                onValueChange={handleKnowledgeSourceChange}
                 className="w-full flex-col items-stretch"
                 orientation="vertical"
                 spacing={2}
