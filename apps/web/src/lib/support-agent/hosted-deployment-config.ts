@@ -5,10 +5,6 @@ export type HostedSupportAgentRuntimeAdapter = "flue-support-agent"
 export type HostedSupportAgentDeploymentConfigInput = {
   templateName: string
   knowledgeSources: SupportAgentKnowledgeSourceSelection[]
-  provider?: string
-  model?: string
-  apiKey?: string
-  deploymentSecret?: string
 }
 
 export type HostedSupportAgentDeploymentConfig = {

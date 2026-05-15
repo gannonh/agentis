@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest"
 import {
   createHostedSupportAgentDeploymentConfig,
   supportAgentChatRequestFixture,
+  type HostedSupportAgentDeploymentConfigInput,
 } from "./index"
 
 describe("hosted support-agent deployment config", () => {
@@ -40,14 +41,17 @@ describe("hosted support-agent deployment config", () => {
   })
 
   test("omits provider credentials and deployment secrets from browser-facing config", () => {
-    const config = createHostedSupportAgentDeploymentConfig({
+    const unsafeInput = {
       templateName: "Billing support",
       knowledgeSources: supportAgentChatRequestFixture.knowledgeSources,
       provider: "openai",
       model: "gpt-test",
       apiKey: "sk-browser-secret",
       deploymentSecret: "cloudflare-runtime-secret",
-    })
+    }
+    const config = createHostedSupportAgentDeploymentConfig(
+      unsafeInput as HostedSupportAgentDeploymentConfigInput
+    )
 
     const serializedConfig = JSON.stringify(config)
 

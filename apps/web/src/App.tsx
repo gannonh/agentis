@@ -15,12 +15,14 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 import {
+  createHostedSupportAgentDeploymentConfig,
   createSupportAgentHttpRuntime,
   respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
   toSupportAgentFailureState,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
+  type HostedSupportAgentDeploymentConfig,
   type SupportAgentFailureState,
   type SupportAgentRuntime,
 } from "./lib/support-agent"
@@ -67,6 +69,8 @@ export function App({
   const [supportQuestion, setSupportQuestion] = useState("")
   const [supportQuestionFailure, setSupportQuestionFailure] =
     useState<SupportAgentFailureState>()
+  const [hostedDeploymentConfig, setHostedDeploymentConfig] =
+    useState<HostedSupportAgentDeploymentConfig>()
   const [isSubmittingSupportQuestion, setIsSubmittingSupportQuestion] =
     useState(false)
   const [submittedTurns, setSubmittedTurns] = useState<SubmittedSupportTurn[]>(
@@ -114,6 +118,26 @@ export function App({
     }
 
     return provider.charAt(0).toUpperCase() + provider.slice(1)
+  }
+
+  function handleHostedConfigPrepare() {
+    if (!selectedSource) {
+      return
+    }
+
+    setHostedDeploymentConfig(
+      createHostedSupportAgentDeploymentConfig({
+        templateName,
+        knowledgeSources: [
+          {
+            id: selectedSource.id,
+            title: selectedSource.name,
+            description: selectedSource.description,
+            contextReference: selectedSource.contextReference,
+          },
+        ],
+      })
+    )
   }
 
   async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -293,11 +317,16 @@ export function App({
               <Button
                 size="lg"
                 type="button"
-                disabled
-                aria-disabled="true"
-                title="The next setup step is not available in this demo yet."
+                disabled={!selectedSource}
+                aria-disabled={!selectedSource}
+                title={
+                  selectedSource
+                    ? "Prepare a browser-safe hosted deployment config."
+                    : "Select a knowledge source before preparing hosted config."
+                }
+                onClick={handleHostedConfigPrepare}
               >
-                Next
+                Prepare hosted config
                 <ArrowRight data-icon="inline-end" />
               </Button>
             </div>
@@ -318,6 +347,44 @@ export function App({
                   ? `Selected source: ${selectedSource.name}`
                   : "Select sample documentation to continue setup."}
               </div>
+              {hostedDeploymentConfig ? (
+                <section
+                  aria-label="Hosted deployment config"
+                  className="border-border bg-background border p-3"
+                >
+                  <p className="text-xs font-medium">Hosted deployment config</p>
+                  <dl className="mt-2 flex flex-col gap-1 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground inline">Template: </dt>
+                      <dd className="inline">{hostedDeploymentConfig.template.name}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">Knowledge source IDs: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.knowledge.sourceIds.join(", ")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">Runtime adapter: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.runtime.adapter}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">Deployment target: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.deployment.target}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground inline">credentials: </dt>
+                      <dd className="inline">
+                        {hostedDeploymentConfig.deployment.credentials}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              ) : null}
               {submittedTurns.map(({ request, response }) => (
                 <div
                   className="border-border bg-background flex flex-col gap-3 border p-3"
