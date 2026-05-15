@@ -1,4 +1,7 @@
-import type { SupportAgentChatRequest } from "./chat-contracts"
+import type {
+  SupportAgentChatRequest,
+  SupportAgentChatResponse,
+} from "./chat-contracts"
 import {
   SupportAgentRuntimeError,
   type SupportAgentRuntime,
@@ -49,7 +52,7 @@ export function createSupportAgentHttpRuntime({
         throw new Error(message)
       }
 
-      return payload
+      return payload as SupportAgentChatResponse
     },
   }
 }
