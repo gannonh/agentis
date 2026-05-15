@@ -40,7 +40,19 @@ describe("hosted support-agent deployment config", () => {
     })
   })
 
+  test("requires at least one knowledge source", () => {
+    expect(() =>
+      createHostedSupportAgentDeploymentConfig({
+        templateName: "Billing support",
+        knowledgeSources: [],
+      })
+    ).toThrow("knowledgeSources must contain at least one entry")
+  })
+
   test("omits provider credentials and deployment secrets from browser-facing config", () => {
+    // The unsafeInput cast bypasses TypeScript to verify
+    // createHostedSupportAgentDeploymentConfig strips sensitive runtime fields;
+    // the string assertions guard the serialized browser-facing handoff.
     const unsafeInput = {
       templateName: "Billing support",
       knowledgeSources: supportAgentChatRequestFixture.knowledgeSources,

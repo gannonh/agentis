@@ -391,7 +391,7 @@ export function App({
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-muted-foreground inline">credentials: </dt>
+                      <dt className="text-muted-foreground inline">Credentials: </dt>
                       <dd className="inline">
                         {hostedDeploymentConfig.deployment.credentials}
                       </dd>

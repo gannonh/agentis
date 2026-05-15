@@ -35,6 +35,10 @@ export function createHostedSupportAgentDeploymentConfig({
   templateName,
   knowledgeSources,
 }: HostedSupportAgentDeploymentConfigInput): HostedSupportAgentDeploymentConfig {
+  if (knowledgeSources.length === 0) {
+    throw new Error("knowledgeSources must contain at least one entry")
+  }
+
   return {
     template: {
       id: "agent_support_template",

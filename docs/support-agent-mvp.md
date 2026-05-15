@@ -99,8 +99,8 @@ Open the exact Vite `Local:` URL printed by the command.
 4. Select `Product documentation sample`.
 5. Confirm the preview shows `Selected source: Product documentation sample`.
 6. Choose `Prepare hosted config`.
-7. Confirm `Hosted deployment config` shows `Billing support`, `knowledge_product_docs`, `flue-support-agent`, `cloudflare-preview`, and `credentials: server-side`.
-8. Confirm the hosted config panel does not show provider API keys, deployment secrets, provider model settings, runtime paths, or adapter internals.
+7. Confirm `Hosted deployment config` shows `Billing support`, `knowledge_product_docs`, `flue-support-agent`, `cloudflare-preview`, and `Credentials: server-side`.
+8. Confirm the hosted config panel does not show provider API key, deployment secret, provider model setting, runtime path, or adapter internal field.
 
 ### 3. Ask and verify a cited answer
 
@@ -177,7 +177,8 @@ If credentials are missing, skip the gateway and eval commands and record `OPENA
    - `knowledge_product_docs`.
    - `flue-support-agent`.
    - `cloudflare-preview`.
-   - `credentials: server-side`.
+   - `Credentials: server-side`.
+8. Confirm the hosted config panel does not show provider API key, deployment secret, provider model setting, runtime path, or adapter internal field.
 
 ## Chat Path
 
@@ -209,7 +210,7 @@ The contract builder is `createHostedSupportAgentDeploymentConfig`. It includes:
 - Runtime boundary: `flue-support-agent` with the `SupportAgentChatRequest` contract.
 - Deployment intent: `cloudflare-preview`, `prepare-hosted-preview`, and `credentials: server-side`.
 
-The contract omits provider credentials, provider model settings, deployment secrets, runtime paths, and adapter internals. The UI only shows a public handoff summary. Later Cloudflare deployment work should consume this public handoff and resolve provider/deployment credentials server-side.
+The contract omits provider API key, deployment secret, provider model setting, runtime path, or adapter internal field. The UI only shows a public handoff summary. Later Cloudflare deployment work should consume this public handoff and resolve provider/deployment credentials server-side.
 
 Configure-only acceptance checklist:
 

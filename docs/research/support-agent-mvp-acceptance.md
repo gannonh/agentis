@@ -10,7 +10,7 @@ The support-agent template MVP proves the first Agentis product path for a docum
 - `S008`: submitted questions route through the local support-agent response path while keeping runtime-facing logic behind the adapter boundary.
 - `S015`: the same template flow can produce a hosted-deployment-ready configuration handoff for a later Cloudflare preview deployment slice.
 
-The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, prepare a hosted config handoff, ask a question, and inspect the cited answer in the template preview.
+The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, and prepare a hosted config handoff (S015), or alternatively ask a question and inspect the cited answer in the template preview (S007/S008).
 
 ## Acceptance Evidence
 
@@ -35,7 +35,7 @@ Manual configure-only checklist:
 3. Set `Template name` to `Billing support`.
 4. Select `Product documentation sample`.
 5. Choose `Prepare hosted config`.
-6. Confirm the `Hosted deployment config` panel shows `Billing support`, `knowledge_product_docs`, `flue-support-agent`, `cloudflare-preview`, and `credentials: server-side`.
+6. Confirm the `Hosted deployment config` panel shows `Billing support`, `knowledge_product_docs`, `flue-support-agent`, `cloudflare-preview`, and `Credentials: server-side`.
 7. Confirm no provider API key, deployment secret, provider model setting, runtime path, or adapter internal field appears in browser-visible config.
 
 This path prepares configuration only. Live Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and Flue deployment execution remain future deployment-slice work.

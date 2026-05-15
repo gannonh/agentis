@@ -110,7 +110,7 @@ describe("App", () => {
     expect(configRegion).toHaveTextContent("knowledge_product_docs")
     expect(configRegion).toHaveTextContent("flue-support-agent")
     expect(configRegion).toHaveTextContent("cloudflare-preview")
-    expect(configRegion).toHaveTextContent("credentials: server-side")
+    expect(configRegion).toHaveTextContent("Credentials: server-side")
     expect(configRegion).not.toHaveTextContent(/apiKey|deploymentSecret|sk-/)
   })
 
