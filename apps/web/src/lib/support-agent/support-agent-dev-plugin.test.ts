@@ -2,7 +2,7 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http"
 import { Readable } from "node:stream"
-import type { ViteDevServer } from "vite"
+import type { PreviewServer, ViteDevServer } from "vite"
 import { describe, expect, it, vi } from "vitest"
 
 import { supportAgentDevPlugin } from "../../../support-agent-dev-plugin"
@@ -44,21 +44,32 @@ describe("supportAgentDevPlugin", () => {
     expect(next).toHaveBeenCalledOnce()
     expect(end).not.toHaveBeenCalled()
   })
+
+  it("registers the same support agent middleware for preview", async () => {
+    const middleware = createMiddleware("preview")
+    const request = createRequest(`${supportAgentApiPath}?source=preview`)
+    const { body, end, response } = createResponse()
+    const next = vi.fn()
+
+    await middleware(request, response, next)
+
+    expect(next).not.toHaveBeenCalled()
+    expect(response.statusCode).toBe(405)
+    expect(end).toHaveBeenCalledOnce()
+    expect(JSON.parse(body.value)).toEqual({
+      error: {
+        message: "Support agent endpoint requires POST.",
+      },
+    })
+  })
 })
 
-function createMiddleware(): SupportAgentMiddleware {
+function createMiddleware(
+  mode: "dev" | "preview" = "dev"
+): SupportAgentMiddleware {
   let middleware: SupportAgentMiddleware | undefined
   const plugin = supportAgentDevPlugin({})
-
-  if (typeof plugin.configureServer !== "function") {
-    throw new Error("Support agent dev plugin did not expose server middleware.")
-  }
-
-  const configureServer = plugin.configureServer as (
-    server: ViteDevServer
-  ) => void
-
-  configureServer({
+  const server = {
     middlewares: {
       use: (handler: SupportAgentMiddleware) => {
         middleware = handler
@@ -69,7 +80,31 @@ function createMiddleware(): SupportAgentMiddleware {
         error: vi.fn(),
       },
     },
-  } as unknown as ViteDevServer)
+  }
+
+  if (mode === "preview") {
+    if (typeof plugin.configurePreviewServer !== "function") {
+      throw new Error(
+        "Support agent dev plugin did not expose preview middleware."
+      )
+    }
+
+    const configurePreviewServer = plugin.configurePreviewServer as (
+      server: PreviewServer
+    ) => void
+
+    configurePreviewServer(server as unknown as PreviewServer)
+  } else {
+    if (typeof plugin.configureServer !== "function") {
+      throw new Error("Support agent dev plugin did not expose server middleware.")
+    }
+
+    const configureServer = plugin.configureServer as (
+      server: ViteDevServer
+    ) => void
+
+    configureServer(server as unknown as ViteDevServer)
+  }
 
   if (!middleware) {
     throw new Error("Support agent dev plugin did not register middleware.")

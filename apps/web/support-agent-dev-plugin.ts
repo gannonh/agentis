@@ -1,4 +1,4 @@
-import type { IncomingMessage } from "node:http"
+import type { IncomingMessage, ServerResponse } from "node:http"
 import type { Plugin } from "vite"
 
 import {
@@ -7,48 +7,75 @@ import {
   type SupportAgentServerEnv,
 } from "./src/lib/support-agent/api-handler"
 
+type SupportAgentMiddleware = (
+  request: IncomingMessage,
+  response: ServerResponse,
+  next: () => void
+) => void | Promise<void>
+
+type SupportAgentMiddlewareHost = {
+  middlewares: {
+    use: (middleware: SupportAgentMiddleware) => void
+  }
+  config: {
+    logger: {
+      error: (message: string) => void
+    }
+  }
+}
+
 export function supportAgentDevPlugin(env: SupportAgentServerEnv): Plugin {
   return {
     name: "agentis-support-agent-dev-api",
     configureServer(server) {
-      const handler = createSupportAgentApiHandler({ env })
-
-      server.middlewares.use(async (request, response, next) => {
-        if (!isSupportAgentApiRequest(request.url)) {
-          next()
-          return
-        }
-
-        try {
-          const body = await readRequestBody(request)
-          const apiResponse = await handler(
-            new Request(`http://localhost${supportAgentApiPath}`, {
-              method: request.method,
-              headers: toHeaders(request),
-              body: body.length > 0 ? body : undefined,
-            })
-          )
-
-          response.statusCode = apiResponse.status
-          apiResponse.headers.forEach((value, key) => {
-            response.setHeader(key, value)
-          })
-          response.end(await apiResponse.text())
-        } catch {
-          server.config.logger.error("Support agent dev endpoint failed.")
-          response.statusCode = 500
-          response.setHeader("Content-Type", "application/json")
-          response.end(
-            JSON.stringify({
-              error: {
-                message: "Support agent dev endpoint failed.",
-              },
-            })
-          )
-        }
-      })
+      registerSupportAgentMiddleware(env, server)
+    },
+    configurePreviewServer(server) {
+      registerSupportAgentMiddleware(env, server)
     },
   }
+}
+
+function registerSupportAgentMiddleware(
+  env: SupportAgentServerEnv,
+  server: SupportAgentMiddlewareHost
+) {
+  const handler = createSupportAgentApiHandler({ env })
+
+  server.middlewares.use(async (request, response, next) => {
+    if (!isSupportAgentApiRequest(request.url)) {
+      next()
+      return
+    }
+
+    try {
+      const body = await readRequestBody(request)
+      const apiResponse = await handler(
+        new Request(`http://localhost${supportAgentApiPath}`, {
+          method: request.method,
+          headers: toHeaders(request),
+          body: body.length > 0 ? body : undefined,
+        })
+      )
+
+      response.statusCode = apiResponse.status
+      apiResponse.headers.forEach((value, key) => {
+        response.setHeader(key, value)
+      })
+      response.end(await apiResponse.text())
+    } catch {
+      server.config.logger.error("Support agent dev endpoint failed.")
+      response.statusCode = 500
+      response.setHeader("Content-Type", "application/json")
+      response.end(
+        JSON.stringify({
+          error: {
+            message: "Support agent dev endpoint failed.",
+          },
+        })
+      )
+    }
+  })
 }
 
 function isSupportAgentApiRequest(requestUrl: string | undefined): boolean {
