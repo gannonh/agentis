@@ -89,7 +89,7 @@ export function App({
 
   function getRuntimeLabel(response: SupportAgentChatResponse) {
     if (response.runtime?.mode === "model") {
-      return `Runtime: ${response.runtime.provider === "openai" ? "OpenAI" : response.runtime.provider} / ${response.runtime.model}`
+      return `Runtime: OpenAI / ${response.runtime.model}`
     }
 
     if (response.runtime?.mode === "demo") {

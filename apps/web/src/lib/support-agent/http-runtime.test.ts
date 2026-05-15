@@ -62,4 +62,36 @@ describe("support-agent HTTP runtime", () => {
       })
     )
   })
+
+  test("maps untyped server failures to generic errors", async () => {
+    const fetch = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          error: {
+            message: "Support agent endpoint failed.",
+          },
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      )
+    )
+    const runtime = createSupportAgentHttpRuntime({ fetch })
+
+    await expect(runtime.respond(supportAgentChatRequestFixture)).rejects.toEqual(
+      new Error("Support agent endpoint failed.")
+    )
+  })
+
+  test("uses a fallback message for untyped server failures", async () => {
+    const fetch = vi.fn(async () =>
+      new Response(JSON.stringify({ error: {} }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      })
+    )
+    const runtime = createSupportAgentHttpRuntime({ fetch })
+
+    await expect(runtime.respond(supportAgentChatRequestFixture)).rejects.toEqual(
+      new Error("Support agent request failed.")
+    )
+  })
 })

@@ -73,6 +73,41 @@ describe("support-agent API handler", () => {
     expect(JSON.stringify(payload)).not.toContain("sk-test-secret")
   })
 
+  test("uses the default model when no model override is configured", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
+      text: `Default model ${config.model} handled the request.`,
+    }))
+    const handler = createSupportAgentApiHandler({
+      env: { OPENAI_API_KEY: "sk-test-secret" },
+      generateText,
+    })
+
+    const response = await handler(
+      new Request("http://localhost/api/support-agent/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(supportAgentChatRequestFixture),
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(generateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config: expect.objectContaining({
+          provider: "openai",
+          model: "gpt-4o-mini",
+          apiKey: "sk-test-secret",
+        }),
+      })
+    )
+    expect(payload.runtime).toEqual({
+      mode: "model",
+      provider: "openai",
+      model: "gpt-4o-mini",
+    })
+  })
+
   test("returns a sanitized provider-config failure when the API key is missing", async () => {
     const handler = createSupportAgentApiHandler({
       env: { SUPPORT_AGENT_MODEL: "test-model" },
