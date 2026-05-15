@@ -15,7 +15,7 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 import {
-  createConfiguredSupportAgentRuntime,
+  createSupportAgentHttpRuntime,
   respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
   toSupportAgentFailureState,
@@ -46,8 +46,8 @@ const sampleDocumentationSources = [
   },
 ]
 
-const demoSupportAgentResponder = createConfiguredSupportAgentRuntime({
-  mode: "demo",
+const serverSupportAgentResponder = createSupportAgentHttpRuntime({
+  fetch: (...args) => globalThis.fetch(...args),
 })
 
 type SubmittedSupportTurn = {
@@ -60,7 +60,7 @@ type AppProps = {
 }
 
 export function App({
-  supportAgentResponder = demoSupportAgentResponder,
+  supportAgentResponder = serverSupportAgentResponder,
 }: AppProps = {}) {
   const [templateName, setTemplateName] = useState("Customer support agent")
   const [selectedSourceId, setSelectedSourceId] = useState<string>()
@@ -85,6 +85,18 @@ export function App({
       request.messageId,
       request.knowledgeSourceIds.join(", "),
     ].join(" / ")
+  }
+
+  function getRuntimeLabel(response: SupportAgentChatResponse) {
+    if (response.runtime?.mode === "model") {
+      return `Runtime: ${response.runtime.provider === "openai" ? "OpenAI" : response.runtime.provider} / ${response.runtime.model}`
+    }
+
+    if (response.runtime?.mode === "demo") {
+      return "Runtime: deterministic demo fixture"
+    }
+
+    return "Runtime: unavailable"
   }
 
   async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -298,6 +310,9 @@ export function App({
                   <div>
                     <p className="text-muted-foreground text-xs">Assistant</p>
                     <p>{response.answer}</p>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      {getRuntimeLabel(response)}
+                    </p>
                     <div className="border-border mt-3 border-t pt-3">
                       {response.sources.map((source) => (
                         <div className="flex flex-col gap-1" key={source.id}>

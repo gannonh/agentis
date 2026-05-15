@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from "vitest"
 
 import { App } from "./App"
 import {
+  createLocalSupportAgentResponder,
   SupportAgentRuntimeError,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
@@ -22,6 +23,10 @@ describe("App", () => {
     }
     await user.type(screen.getByLabelText("Support question"), question)
     await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+  }
+
+  function renderAppWithDemoRuntime() {
+    return render(<App supportAgentResponder={createLocalSupportAgentResponder()} />)
   }
 
   test("shows the support-agent template entry from the initial route", () => {
@@ -79,7 +84,7 @@ describe("App", () => {
 
   test("submits a support question through the Agentis chat path", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user)
 
@@ -134,9 +139,49 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
+  test("uses the server-backed support-agent runtime by default", async () => {
+    const user = userEvent.setup()
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          agentId: "agent_support_template",
+          conversationId: "conversation_support_demo",
+          messageId: "message_assistant_message_user_setup_question",
+          inReplyToMessageId: "message_user_setup_question",
+          answer: "Real provider-backed answer from local dev endpoint.",
+          sources: [
+            {
+              id: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
+          runtime: {
+            mode: "model",
+            provider: "openai",
+            model: "test-model",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    )
+
+    render(<App />)
+
+    await submitSupportQuestion(user)
+
+    expect(fetch).toHaveBeenCalledWith("/api/support-agent/respond", expect.any(Object))
+    expect(
+      await screen.findByText("Real provider-backed answer from local dev endpoint.")
+    ).toBeInTheDocument()
+    expect(screen.getByText("Runtime: OpenAI / test-model")).toBeInTheDocument()
+    fetch.mockRestore()
+  })
+
   test("renders submitted user and assistant transcript messages", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user)
 
@@ -154,7 +199,7 @@ describe("App", () => {
 
   test("renders cited source metadata for assistant answers", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user)
 
@@ -171,7 +216,7 @@ describe("App", () => {
 
   test("renders provenance for the source selected when the question is submitted", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await user.click(
       screen.getByRole("button", { name: "Product documentation sample" })
@@ -194,7 +239,7 @@ describe("App", () => {
 
   test("keeps earlier support questions in the transcript", async () => {
     const user = userEvent.setup()
-    render(<App />)
+    renderAppWithDemoRuntime()
 
     await submitSupportQuestion(user, "How do I connect a knowledge source?")
     await submitSupportQuestion(user, "How do I troubleshoot billing?")
