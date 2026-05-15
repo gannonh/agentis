@@ -108,6 +108,59 @@ describe("support-agent API handler", () => {
     })
   })
 
+  test("returns a bad request when the chat request body is not an object", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>()
+    const handler = createSupportAgentApiHandler({
+      env: { OPENAI_API_KEY: "sk-test-secret" },
+      generateText,
+    })
+
+    const response = await handler(
+      new Request("http://localhost/api/support-agent/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "null",
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(payload).toEqual({
+      error: {
+        message: "Support agent request body is invalid.",
+      },
+    })
+    expect(generateText).not.toHaveBeenCalled()
+  })
+
+  test("returns a bad request when the chat request shape is invalid", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>()
+    const handler = createSupportAgentApiHandler({
+      env: { OPENAI_API_KEY: "sk-test-secret" },
+      generateText,
+    })
+
+    const response = await handler(
+      new Request("http://localhost/api/support-agent/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: "agent_support_template",
+          knowledgeSourceIds: ["knowledge_product_docs"],
+        }),
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(payload).toEqual({
+      error: {
+        message: "Support agent request body is invalid.",
+      },
+    })
+    expect(generateText).not.toHaveBeenCalled()
+  })
+
   test("returns a sanitized provider-config failure when the API key is missing", async () => {
     const handler = createSupportAgentApiHandler({
       env: { SUPPORT_AGENT_MODEL: "test-model" },

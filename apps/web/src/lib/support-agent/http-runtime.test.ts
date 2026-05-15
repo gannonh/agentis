@@ -94,4 +94,45 @@ describe("support-agent HTTP runtime", () => {
       new Error("Support agent request failed.")
     )
   })
+
+  test("maps empty server failures to generic errors", async () => {
+    const fetch = vi.fn(async () =>
+      new Response(null, {
+        status: 502,
+      })
+    )
+    const runtime = createSupportAgentHttpRuntime({ fetch })
+
+    await expect(runtime.respond(supportAgentChatRequestFixture)).rejects.toEqual(
+      new Error("Support agent request failed.")
+    )
+  })
+
+  test("maps non-JSON server failures to generic errors", async () => {
+    const fetch = vi.fn(async () =>
+      new Response("<html>Gateway error</html>", {
+        status: 502,
+        headers: { "Content-Type": "text/html" },
+      })
+    )
+    const runtime = createSupportAgentHttpRuntime({ fetch })
+
+    await expect(runtime.respond(supportAgentChatRequestFixture)).rejects.toEqual(
+      new Error("Support agent request failed.")
+    )
+  })
+
+  test("rejects successful non-JSON responses as invalid server responses", async () => {
+    const fetch = vi.fn(async () =>
+      new Response("not json", {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      })
+    )
+    const runtime = createSupportAgentHttpRuntime({ fetch })
+
+    await expect(runtime.respond(supportAgentChatRequestFixture)).rejects.toEqual(
+      new Error("Support agent server returned an invalid response format.")
+    )
+  })
 })

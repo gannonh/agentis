@@ -497,7 +497,7 @@ export function createSupportAgentApiHandler({
         mode: "model",
         provider: {
           provider: env.SUPPORT_AGENT_PROVIDER ?? "openai",
-          model: env.SUPPORT_AGENT_MODEL ?? "gpt-4o-mini",
+          model: env.SUPPORT_AGENT_MODEL ?? "gpt-5.4-mini",
           apiKey: env.OPENAI_API_KEY,
         },
         generateText,
@@ -931,7 +931,7 @@ Required environment:
 
 - `.env` at the repository root or `apps/web/.env`
 - `OPENAI_API_KEY`: required for the real local browser demo
-- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-4o-mini`
+- `SUPPORT_AGENT_MODEL`: optional model override. Default: `gpt-5.4-mini`
 - Provider: `openai`
 ```
 

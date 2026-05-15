@@ -89,7 +89,12 @@ export function App({
 
   function getRuntimeLabel(response: SupportAgentChatResponse) {
     if (response.runtime?.mode === "model") {
-      return `Runtime: OpenAI / ${response.runtime.model}`
+      const runtime = response.runtime as { provider?: string; mode: string }
+      const provider = runtime.provider ?? runtime.mode
+      const providerLabel = runtime.provider
+        ? formatProviderLabel(provider)
+        : provider
+      return `Runtime: ${providerLabel} / ${response.runtime.model}`
     }
 
     if (response.runtime?.mode === "demo") {
@@ -97,6 +102,18 @@ export function App({
     }
 
     return "Runtime: unavailable"
+  }
+
+  function formatProviderLabel(provider: string) {
+    if (provider === "openai") {
+      return "OpenAI"
+    }
+
+    if (provider === "anthropic") {
+      return "Anthropic"
+    }
+
+    return provider.charAt(0).toUpperCase() + provider.slice(1)
   }
 
   async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -273,7 +290,13 @@ export function App({
               ) : null}
             </form>
             <div className="flex max-w-md justify-end">
-              <Button size="lg" type="button">
+              <Button
+                size="lg"
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="The next setup step is not available in this demo yet."
+              >
                 Next
                 <ArrowRight data-icon="inline-end" />
               </Button>

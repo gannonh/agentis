@@ -66,20 +66,21 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
-  test("shows an unwired bottom-right next action for template setup", async () => {
-    const user = userEvent.setup()
+  test("shows a disabled bottom-right next action until setup continues", () => {
     render(<App />)
 
     const nextButton = screen.getByRole("button", { name: "Next" })
 
     expect(nextButton.closest("div")).toHaveClass("justify-end")
+    expect(nextButton).toBeDisabled()
+    expect(nextButton).toHaveAttribute("aria-disabled", "true")
+    expect(nextButton).toHaveAttribute(
+      "title",
+      "The next setup step is not available in this demo yet."
+    )
     expect(
       screen.queryByRole("button", { name: "Start with support agent" })
     ).not.toBeInTheDocument()
-
-    await user.click(nextButton)
-
-    expect(screen.queryByText("User")).not.toBeInTheDocument()
   })
 
   test("requires a selected knowledge source before submitting a support question", async () => {
@@ -153,6 +154,77 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
+  test("renders OpenAI runtime labels from runtime metadata", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "OpenAI handled the support question.",
+        sources: [],
+        runtime: {
+          mode: "model",
+          provider: "openai",
+          model: "test-model",
+        } as const,
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user)
+
+    expect(screen.getByText("Runtime: OpenAI / test-model")).toBeInTheDocument()
+  })
+
+  test("renders unknown model providers with title case labels", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "Custom provider handled the support question.",
+        sources: [],
+        runtime: {
+          mode: "model",
+          provider: "custom",
+          model: "test-model",
+        } as unknown as SupportAgentChatResponse["runtime"],
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user)
+
+    expect(screen.getByText("Runtime: Custom / test-model")).toBeInTheDocument()
+  })
+
+  test("falls back to the runtime mode when model metadata omits provider", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "Provider metadata was incomplete.",
+        sources: [],
+        runtime: {
+          mode: "model",
+          model: "fallback-model",
+        } as SupportAgentChatResponse["runtime"],
+      })),
+    }
+    render(<App supportAgentResponder={supportAgentResponder} />)
+
+    await submitSupportQuestion(user)
+
+    expect(screen.getByText("Runtime: model / fallback-model")).toBeInTheDocument()
+  })
+
   test("uses the server-backed support-agent runtime by default", async () => {
     const user = userEvent.setup()
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -173,7 +245,7 @@ describe("App", () => {
           ],
           runtime: {
             mode: "model",
-            provider: "openai",
+            provider: "anthropic",
             model: "test-model",
           },
         }),
@@ -181,16 +253,19 @@ describe("App", () => {
       )
     )
 
-    render(<App />)
+    try {
+      render(<App />)
 
-    await submitSupportQuestion(user)
+      await submitSupportQuestion(user)
 
-    expect(fetch).toHaveBeenCalledWith("/api/support-agent/respond", expect.any(Object))
-    expect(
-      await screen.findByText("Real provider-backed answer from local dev endpoint.")
-    ).toBeInTheDocument()
-    expect(screen.getByText("Runtime: OpenAI / test-model")).toBeInTheDocument()
-    fetch.mockRestore()
+      expect(fetch).toHaveBeenCalledWith("/api/support-agent/respond", expect.any(Object))
+      expect(
+        await screen.findByText("Real provider-backed answer from local dev endpoint.")
+      ).toBeInTheDocument()
+      expect(screen.getByText("Runtime: Anthropic / test-model")).toBeInTheDocument()
+    } finally {
+      fetch.mockRestore()
+    }
   })
 
   test("renders submitted user and assistant transcript messages", async () => {

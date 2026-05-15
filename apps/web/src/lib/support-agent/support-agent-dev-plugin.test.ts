@@ -62,13 +62,60 @@ describe("supportAgentDevPlugin", () => {
       },
     })
   })
+
+  it("rejects oversized support agent request bodies", async () => {
+    const middleware = createMiddleware()
+    const request = createRequest(supportAgentApiPath, {
+      method: "POST",
+      body: "x".repeat(1_000_001),
+    })
+    const { body, response } = createResponse()
+    const next = vi.fn()
+
+    await middleware(request, response, next)
+
+    expect(next).not.toHaveBeenCalled()
+    expect(response.statusCode).toBe(413)
+    expect(JSON.parse(body.value)).toEqual({
+      error: {
+        message: "Support agent dev request body is too large.",
+      },
+    })
+  })
+
+  it("logs middleware failures with error details", async () => {
+    const { logger, middleware } = createMiddlewareContext()
+    const request = createFailingRequest(supportAgentApiPath, new Error("stream broke"))
+    const { body, response } = createResponse()
+    const next = vi.fn()
+
+    await middleware(request, response, next)
+
+    expect(response.statusCode).toBe(500)
+    expect(JSON.parse(body.value)).toEqual({
+      error: {
+        message: "Support agent dev endpoint failed.",
+      },
+    })
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("Support agent dev endpoint failed.\nError: stream broke")
+    )
+  })
 })
 
 function createMiddleware(
   mode: "dev" | "preview" = "dev"
 ): SupportAgentMiddleware {
+  return createMiddlewareContext(mode).middleware
+}
+
+function createMiddlewareContext(mode: "dev" | "preview" = "dev"): {
+  logger: { error: ReturnType<typeof vi.fn> }
+  middleware: SupportAgentMiddleware
+} {
   let middleware: SupportAgentMiddleware | undefined
   const plugin = supportAgentDevPlugin({})
+  const logger = { error: vi.fn() }
   const server = {
     middlewares: {
       use: (handler: SupportAgentMiddleware) => {
@@ -76,9 +123,7 @@ function createMiddleware(
       },
     },
     config: {
-      logger: {
-        error: vi.fn(),
-      },
+      logger,
     },
   }
 
@@ -110,13 +155,31 @@ function createMiddleware(
     throw new Error("Support agent dev plugin did not register middleware.")
   }
 
-  return middleware
+  return { logger, middleware }
 }
 
-function createRequest(url: string): IncomingMessage {
-  const request = Readable.from([]) as IncomingMessage
+function createRequest(
+  url: string,
+  options: { body?: string; method?: string } = {}
+): IncomingMessage {
+  const request = Readable.from(
+    options.body ? [Buffer.from(options.body)] : []
+  ) as IncomingMessage
   request.url = url
-  request.method = "GET"
+  request.method = options.method ?? "GET"
+  request.headers = {}
+
+  return request
+}
+
+function createFailingRequest(url: string, error: Error): IncomingMessage {
+  const request = new Readable({
+    read() {
+      this.destroy(error)
+    },
+  }) as IncomingMessage
+  request.url = url
+  request.method = "POST"
   request.headers = {}
 
   return request

@@ -34,7 +34,20 @@ export function createSupportAgentHttpRuntime({
         body: JSON.stringify(request),
       })
 
-      const payload = await response.json()
+      const responseText = await response.text()
+      let payload: unknown = {}
+
+      if (responseText) {
+        try {
+          payload = JSON.parse(responseText)
+        } catch {
+          if (response.ok) {
+            throw new Error(
+              "Support agent server returned an invalid response format."
+            )
+          }
+        }
+      }
 
       if (!response.ok) {
         const errorPayload = payload as SupportAgentErrorPayload

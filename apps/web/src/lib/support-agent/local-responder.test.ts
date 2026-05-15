@@ -31,7 +31,6 @@ describe("local support-agent responder", () => {
       ],
       runtime: { mode: "demo" },
     })
-    expect(response.runtime).toEqual({ mode: "demo" })
   })
 
   test("uses a stable empty-context answer prefix when no docs are selected", async () => {

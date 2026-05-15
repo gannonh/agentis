@@ -34,7 +34,20 @@ export function createSupportAgentApiHandler({
     }
 
     try {
-      const chatRequest = (await request.json()) as SupportAgentChatRequest
+      const requestBody = await request.json()
+
+      if (!isSupportAgentChatRequest(requestBody)) {
+        return jsonResponse(
+          {
+            error: {
+              message: "Support agent request body is invalid.",
+            },
+          },
+          400
+        )
+      }
+
+      const chatRequest = requestBody
       const runtime = createConfiguredSupportAgentRuntime({
         mode: "model",
         provider: {
@@ -71,6 +84,26 @@ export function createSupportAgentApiHandler({
       )
     }
   }
+}
+
+function isSupportAgentChatRequest(
+  request: unknown
+): request is SupportAgentChatRequest {
+  if (!request || typeof request !== "object") {
+    return false
+  }
+
+  const candidate = request as Partial<SupportAgentChatRequest>
+
+  return (
+    typeof candidate.agentId === "string" &&
+    typeof candidate.conversationId === "string" &&
+    typeof candidate.messageId === "string" &&
+    typeof candidate.question === "string" &&
+    Array.isArray(candidate.knowledgeSourceIds) &&
+    candidate.knowledgeSourceIds.every((sourceId) => typeof sourceId === "string") &&
+    Array.isArray(candidate.knowledgeSources)
+  )
 }
 
 function jsonResponse(body: unknown, status: number): Response {

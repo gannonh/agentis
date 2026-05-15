@@ -66,11 +66,6 @@ describe("support-agent model runtime", () => {
         model: "test-model",
       },
     })
-    expect(response.runtime).toEqual({
-      mode: "model",
-      provider: "openai",
-      model: "test-model",
-    })
     expect(JSON.stringify(response)).not.toContain("sk-runtime-test")
   })
 
