@@ -48,6 +48,31 @@ describe("support-agent API handler", () => {
     expect(JSON.stringify(payload)).not.toContain("sk-test-secret")
   })
 
+  test("does not expose raw non-runtime error messages", async () => {
+    const handler = createSupportAgentApiHandler({
+      env: {
+        OPENAI_API_KEY: "sk-valid-test-key",
+        SUPPORT_AGENT_MODEL: "test-model",
+      },
+      generateText: vi.fn<SupportAgentTextGenerator>(),
+    })
+    const request = new Request("http://localhost/api/support-agent/respond", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(supportAgentChatRequestFixture),
+    })
+    vi.spyOn(request, "json").mockRejectedValue(
+      new Error("Provider exploded with sk-test-secret")
+    )
+
+    const response = await handler(request)
+    const payload = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(payload.error.message).toBe("Support agent request failed.")
+    expect(JSON.stringify(payload)).not.toContain("sk-test-secret")
+  })
+
   test("returns a sanitized provider-config failure when the API key is missing", async () => {
     const handler = createSupportAgentApiHandler({
       env: { SUPPORT_AGENT_MODEL: "test-model" },
