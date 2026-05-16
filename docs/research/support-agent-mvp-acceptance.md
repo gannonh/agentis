@@ -11,13 +11,14 @@ The support-agent template MVP proves the first Agentis product path for a docum
 - `S015`: the same template flow can produce a hosted-deployment-ready configuration handoff for a later Cloudflare preview deployment slice.
 - `S016`: the hosted configuration can be validated into a repeatable Cloudflare preview deployment command with server-side secret binding references.
 - `S017`: the hosted preview exposes `/support-agent/chat` and routes hosted questions through the Agentis-owned `/api/support-agent/respond` runtime boundary.
+- `S018`: hosted deployment status and actionable failures are visible through the app and `/support-agent/status`, and `support-agent:acceptance` gives maintainers a repeatable acceptance command covering configure, deploy, hosted chat, answer, citation, status, and failure handling.
 
-The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, prepare a hosted config handoff (S015), validate the Cloudflare preview command (S016), and open the hosted support-agent web chat URL to ask a cited question through the server runtime boundary (S017).
+The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, prepare a hosted config handoff (S015), validate the Cloudflare preview command (S016), open the hosted support-agent web chat URL to ask a cited question through the server runtime boundary (S017), inspect deployment status and actionable failures, then run the hosted acceptance script for repeatable evidence (S018).
 
 ## Acceptance Evidence
 
 - `apps/web/src/App.test.tsx` covers the template entry, template preview updates, sample documentation selection, hosted config action enablement, hosted config payload display, question submission, transcript rendering, citation rendering, duplicate submit prevention, typed runtime failure display, and stale failure clearing after a later successful answer.
-- `apps/web/src/lib/support-agent/*.test.ts` covers the Agentis-owned support-agent contracts, fixtures, local responder, hosted deployment config contract, Flue adapter mapping, runtime boundary, typed failure mapping, eval fixtures, eval runner, eval report scoring, and public module surface.
+- `apps/web/src/lib/support-agent/*.test.ts` covers the Agentis-owned support-agent contracts, fixtures, local responder, hosted deployment config contract, hosted deployment status/failure contract, hosted acceptance runner, Flue adapter mapping, runtime boundary, typed failure mapping, eval fixtures, eval runner, eval report scoring, and public module surface.
 - `apps/web/e2e/app.spec.ts` covers the browser-level support-agent setup path.
 - `docs/support-agent-mvp.md` records the local run commands, model comparison eval command, compared candidates, scoring dimensions, failure-state demo checkpoints, incomplete-live-run uncertainty, and manual acceptance path.
 
@@ -109,6 +110,58 @@ Expected hosted response shape:
 
 HSD-03 is accepted when the hosted chat URL opens and a user can submit a support question after deployment. HSD-04 is accepted when the answer route uses the Agentis-owned runtime/API boundary and browser-visible output excludes provider credentials, deployment secrets, runtime internals, and adapter implementation details.
 
+## S018 Deployment Status, Failures, And Acceptance Evidence Checks
+
+Run these checks before accepting the hosted status and acceptance evidence path:
+
+```bash
+pnpm --filter web test -- App.test.tsx src/lib/support-agent src/worker/support-agent-worker.test.ts
+pnpm --filter web support-agent:acceptance -- --dry-run
+pnpm --filter web typecheck
+rg -n "HSD-06|HSD-07|Hosted Deployment Status And Acceptance Evidence|support-agent:acceptance|HOSTED_DEPLOYMENT_SECRET_MISSING|evidence capture checklist" docs/support-agent-mvp.md docs/research/support-agent-mvp-acceptance.md apps/web/src apps/web/scripts apps/web/package.json
+```
+
+Hosted mode command:
+
+```bash
+SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL=https://<cloudflare-preview-host> pnpm --filter web support-agent:acceptance
+```
+
+Optional hosted mode inputs:
+
+- `--deployment-url` or `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`: deployed Worker origin. Required for hosted mode.
+- `--question` or `SUPPORT_AGENT_ACCEPTANCE_QUESTION`: acceptance question. Default: `How do I connect a knowledge source?`.
+
+Expected acceptance script output:
+
+- `completed: true` for a successful run.
+- `mode: "dry-run"` with `evidenceKind: "deterministic-dry-run"` for command-logic checks.
+- `mode: "hosted"` with `evidenceKind: "hosted"` for deployed endpoint evidence.
+- Step IDs: `configure`, `deploy-plan`, `open-hosted-chat`, `ask`, `answer`, `cite`, `inspect-status`, and `failure-handling`.
+
+Status state expectations for HSD-06:
+
+- `configured`: app has browser-safe hosted config ready for preview deployment.
+- `deploying`: preview deploy is underway and should be inspected again after completion.
+- `deployed`: hosted chat is ready at `/support-agent/chat`.
+- `failed`: actionable failure guidance is visible, such as `HOSTED_DEPLOYMENT_SECRET_MISSING`.
+- `unavailable`: status inspection failed and should be retried after endpoint/deployment checks.
+
+Manual evidence checklist:
+
+1. Configure: capture the template name, selected source, `Hosted deployment config`, and `Hosted deployment status` panels.
+2. Deploy: capture valid `support-agent:deploy:preview` output and Worker preview deploy output.
+3. Open hosted chat: capture `/support-agent/chat` rendering `Agentis hosted support-agent web chat` and `Deployment status` guidance.
+4. Ask: submit `Can the hosted support agent answer?` or the configured acceptance question.
+5. Answer: capture the assistant answer returned through `/api/support-agent/respond`.
+6. Cite: capture at least one source title and source ID in the hosted answer.
+7. Inspect status: save `/support-agent/status` JSON with `state: "deployed"` for the healthy path.
+8. Failure handling: capture HTTP 503 status output or focused test evidence for `HOSTED_DEPLOYMENT_SECRET_MISSING`, plus sanitized UI-visible failure text.
+
+The acceptance command must fail loudly when `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `/support-agent/chat`, `/api/support-agent/respond`, `/support-agent/status`, the hosted answer, or citation sources are missing. Dry-run output is not hosted evidence; use it to verify command logic before live hosted acceptance.
+
+HSD-06 is accepted when status and failure states are visible, actionable, and browser-safe. HSD-07 is accepted when the maintainer can repeat the acceptance command and capture the full configure, deploy, open hosted chat, ask, answer, cite, inspect status, and failure handling evidence set.
+
 ## S014 Demo Hardening Acceptance Checks
 
 Run these deterministic checks before accepting the local support-agent demo:
@@ -173,7 +226,7 @@ Rejected evidence:
 ## Follow-Up Boundaries
 
 - Slack: OAuth installation, event verification, event dedupe, bot token storage, Slack thread mapping, and message delivery remain future planned work.
-- Hosted deployment: S015 prepares the browser-safe configuration handoff. S016 validates the repeatable Cloudflare preview command and server-side secret binding boundary. S017 exposes the hosted support-agent web chat URL and server runtime API boundary. Durable Objects, R2-backed knowledge, Containers, and full Flue runtime execution remain future planned work.
+- Hosted deployment: S015 prepares the browser-safe configuration handoff. S016 validates the repeatable Cloudflare preview command and server-side secret binding boundary. S017 exposes the hosted support-agent web chat URL and server runtime API boundary. S018 adds browser-safe deployment status, actionable failure states, and repeatable acceptance evidence. Durable Objects, R2-backed knowledge, Containers, and full Flue runtime execution remain future planned work.
 - Production persistence: organizations, users, agents, knowledge sources, conversations, messages, deployments, audit records, quotas, and schema migrations remain future planned work.
 
 These follow-ups should enter future milestones as explicit requirements before implementation.
