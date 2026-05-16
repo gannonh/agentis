@@ -9,8 +9,10 @@ The support-agent template MVP proves the first Agentis product path for a docum
 - `S007`: the web chat flow accepts a support question, renders user and assistant transcript messages, and displays source metadata.
 - `S008`: submitted questions route through the local support-agent response path while keeping runtime-facing logic behind the adapter boundary.
 - `S015`: the same template flow can produce a hosted-deployment-ready configuration handoff for a later Cloudflare preview deployment slice.
+- `S016`: the hosted configuration can be validated into a repeatable Cloudflare preview deployment command with server-side secret binding references.
+- `S017`: the hosted preview exposes `/support-agent/chat` and routes hosted questions through the Agentis-owned `/api/support-agent/respond` runtime boundary.
 
-The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, and prepare a hosted config handoff (S015), or alternatively ask a question and inspect the cited answer in the template preview (S007/S008).
+The accepted path lets a maintainer start the app, configure the support-agent template with `Product documentation sample`, prepare a hosted config handoff (S015), validate the Cloudflare preview command (S016), and open the hosted support-agent web chat URL to ask a cited question through the server runtime boundary (S017).
 
 ## Acceptance Evidence
 
@@ -74,6 +76,37 @@ Manual secret-boundary checklist:
 3. Run the valid command with binding names only.
 4. Confirm output names `SUPPORT_AGENT_OPENAI_API_KEY` and `SUPPORT_AGENT_DEPLOYMENT_SECRET` as bindings.
 5. Confirm output does not include raw secret values or provider model configuration.
+
+## S017 Hosted Chat Runtime Acceptance Checks
+
+Run these checks before accepting the hosted support-agent web chat path:
+
+```bash
+pnpm --filter web test -- App.test.tsx src/lib/support-agent/api-handler.test.ts src/lib/support-agent/http-runtime.test.ts src/worker/support-agent-worker.test.ts src/lib/support-agent/runtime-boundary.test.ts
+pnpm --filter web typecheck
+rg -n "Hosted Chat Runtime Verification|hosted support-agent web chat|/support-agent/chat|/api/support-agent/respond|HSD-03|HSD-04|Runtime boundary: Agentis server endpoint" docs/support-agent-mvp.md docs/research/support-agent-mvp-acceptance.md apps/web/src
+```
+
+Manual hosted chat checklist:
+
+1. Run the Cloudflare preview deployment command from S016 with a valid hosted config and server-side binding references.
+2. Open the deployed hosted chat URL: `https://<cloudflare-preview-host>/support-agent/chat`.
+3. Confirm the page identifies the deployment as `Hosted support-agent web chat` and shows `Runtime boundary: Agentis server endpoint / flue-support-agent`.
+4. Ask `Can the hosted support agent answer?`.
+5. Confirm the browser request goes to `https://<cloudflare-preview-host>/api/support-agent/respond`.
+6. Confirm the assistant answer renders citation-capable source metadata for the selected documentation source.
+7. Confirm browser-visible state, HTML, network payloads, and command output do not contain raw provider API keys, deployment secret values, runtime paths, or adapter implementation details.
+
+Expected hosted response shape:
+
+- `agentId`: `agent_support_template`.
+- `conversationId`: the submitted conversation ID.
+- `inReplyToMessageId`: the submitted user message ID.
+- `answer`: assistant text from the hosted runtime.
+- `sources`: selected-source citation metadata with source ID, knowledge source ID, title, and excerpt.
+- `runtime`: public runtime metadata only, such as provider and model name. No secret values.
+
+HSD-03 is accepted when the hosted chat URL opens and a user can submit a support question after deployment. HSD-04 is accepted when the answer route uses the Agentis-owned runtime/API boundary and browser-visible output excludes provider credentials, deployment secrets, runtime internals, and adapter implementation details.
 
 ## S014 Demo Hardening Acceptance Checks
 
@@ -139,7 +172,7 @@ Rejected evidence:
 ## Follow-Up Boundaries
 
 - Slack: OAuth installation, event verification, event dedupe, bot token storage, Slack thread mapping, and message delivery remain future planned work.
-- Hosted deployment: S015 prepares the browser-safe configuration handoff. S016 validates the repeatable Cloudflare preview command and server-side secret binding boundary. Live Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and Flue runtime execution remain future planned work.
+- Hosted deployment: S015 prepares the browser-safe configuration handoff. S016 validates the repeatable Cloudflare preview command and server-side secret binding boundary. S017 exposes the hosted support-agent web chat URL and server runtime API boundary. Durable Objects, R2-backed knowledge, Containers, and full Flue runtime execution remain future planned work.
 - Production persistence: organizations, users, agents, knowledge sources, conversations, messages, deployments, audit records, quotas, and schema migrations remain future planned work.
 
 These follow-ups should enter future milestones as explicit requirements before implementation.

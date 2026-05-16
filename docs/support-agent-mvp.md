@@ -260,6 +260,45 @@ Server-side secret boundary checks (`server-side secret boundary`):
 - Command output includes secret binding names only.
 - Command output must not include raw provider API keys, deployment secret values, runtime paths, or adapter internals.
 
+## Hosted Chat Runtime Verification
+
+The Cloudflare preview deployment result maps to a hosted support-agent chat handoff with this public URL shape:
+
+```text
+https://<cloudflare-preview-host>/support-agent/chat
+```
+
+The hosted chat handoff also derives the server runtime endpoint:
+
+```text
+https://<cloudflare-preview-host>/api/support-agent/respond
+```
+
+Open the deployed chat after the Cloudflare preview command by visiting the `/support-agent/chat` URL returned by the deployment handoff. The hosted page renders `Hosted support-agent web chat`, the deployment public name, and `Runtime boundary: Agentis server endpoint / flue-support-agent`.
+
+Hosted ask/check flow:
+
+1. Open `https://<cloudflare-preview-host>/support-agent/chat`.
+2. Confirm `Product documentation sample` is selected from the deployment handoff metadata.
+3. Enter `Can the hosted support agent answer?` in `Support question`.
+4. Choose `Ask support agent`.
+5. Confirm the browser posts to `/api/support-agent/respond` on the deployed host, not to a provider API endpoint.
+6. Confirm the assistant response renders an answer plus citation-capable source metadata:
+   - `Source: Product documentation sample`
+   - `Source ID: source_product_docs_setup`
+   - A selected-source excerpt.
+7. Confirm browser-visible state and the hosted chat shell contain no provider API key, deployment secret, raw provider model config, runtime path, or adapter implementation detail.
+
+Focused proof commands:
+
+```bash
+pnpm --filter web test -- App.test.tsx src/lib/support-agent/http-runtime.test.ts src/worker/support-agent-worker.test.ts src/lib/support-agent/runtime-boundary.test.ts
+pnpm --filter web typecheck
+rg -n "Hosted Chat Runtime Verification|hosted support-agent web chat|/support-agent/chat|/api/support-agent/respond|HSD-03|HSD-04|Runtime boundary: Agentis server endpoint" docs/support-agent-mvp.md docs/research/support-agent-mvp-acceptance.md apps/web/src
+```
+
+HSD-03 acceptance is satisfied when the deployed `/support-agent/chat` URL opens the hosted chat path and the app can submit a question through the hosted runtime handoff. HSD-04 acceptance is satisfied when the hosted answer path routes through the Agentis-owned `/api/support-agent/respond` boundary and browser-visible output contains no provider credentials, deployment secrets, runtime internals, or adapter implementation details.
+
 ## Current Runtime Boundary
 
 The local MVP browser flow uses a server-backed `SupportAgentRuntime` by default. The browser submits `SupportAgentChatRequest` to `/api/support-agent/respond`; the Vite dev server reads provider configuration from `.env` server-side, calls the OpenAI-backed model runtime, and returns a `SupportAgentChatResponse` with public runtime metadata.
