@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json",
     "support-agent:eval": "tsx scripts/support-agent-eval.mjs",
     "support-agent:deploy:preview": "tsx scripts/support-agent-preview-deploy.mjs",
+    "support-agent:deploy:worker:preview": "wrangler deploy --env preview --config wrangler.toml",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -43,6 +44,7 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "vite": "^7.3.2",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "wrangler": "^4.92.0"
   }
 }

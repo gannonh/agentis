@@ -248,6 +248,12 @@ Expected output is a JSON preview deployment plan containing:
 - `wrangler.command`: `wrangler deploy --env preview`.
 - `wrangler.requiredSecretBindings`: the provider and deployment secret binding names.
 
+Deploy the hosted Worker preview after the plan validates:
+
+```bash
+pnpm --filter web support-agent:deploy:worker:preview
+```
+
 Failure notes:
 
 - Missing hosted config fails before deployment with `hosted deployment config is required`.
@@ -274,7 +280,7 @@ The hosted chat handoff also derives the server runtime endpoint:
 https://<cloudflare-preview-host>/api/support-agent/respond
 ```
 
-Open the deployed chat after the Cloudflare preview command by visiting the `/support-agent/chat` URL returned by the deployment handoff. The hosted page renders `Hosted support-agent web chat`, the deployment public name, and `Runtime boundary: Agentis server endpoint / flue-support-agent`.
+Open the deployed chat after the Cloudflare preview command by visiting the `/support-agent/chat` URL on the deployed Worker host. The hosted page renders `Agentis hosted support-agent web chat`, the selected source, a support-question form, and `Runtime boundary: Agentis-owned /api/support-agent/respond`.
 
 Hosted ask/check flow:
 
@@ -283,7 +289,7 @@ Hosted ask/check flow:
 3. Enter `Can the hosted support agent answer?` in `Support question`.
 4. Choose `Ask support agent`.
 5. Confirm the browser posts to `/api/support-agent/respond` on the deployed host, not to a provider API endpoint.
-6. Confirm the assistant response renders an answer plus citation-capable source metadata:
+6. Confirm the assistant response renders on the hosted page with public runtime metadata and citation-capable source metadata:
    - `Source: Product documentation sample`
    - `Source ID: source_product_docs_setup`
    - A selected-source excerpt.

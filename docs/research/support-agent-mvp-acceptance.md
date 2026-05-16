@@ -89,13 +89,14 @@ rg -n "Hosted Chat Runtime Verification|hosted support-agent web chat|/support-a
 
 Manual hosted chat checklist:
 
-1. Run the Cloudflare preview deployment command from S016 with a valid hosted config and server-side binding references.
-2. Open the deployed hosted chat URL: `https://<cloudflare-preview-host>/support-agent/chat`.
-3. Confirm the page identifies the deployment as `Hosted support-agent web chat` and shows `Runtime boundary: Agentis server endpoint / flue-support-agent`.
-4. Ask `Can the hosted support agent answer?`.
-5. Confirm the browser request goes to `https://<cloudflare-preview-host>/api/support-agent/respond`.
-6. Confirm the assistant answer renders citation-capable source metadata for the selected documentation source.
-7. Confirm browser-visible state, HTML, network payloads, and command output do not contain raw provider API keys, deployment secret values, runtime paths, or adapter implementation details.
+1. Run the S016 plan validation command with a valid hosted config and server-side binding references.
+2. Deploy the hosted Worker preview with `pnpm --filter web support-agent:deploy:worker:preview`.
+3. Open the deployed hosted chat URL: `https://<cloudflare-preview-host>/support-agent/chat`.
+4. Confirm the page identifies the deployment as `Agentis hosted support-agent web chat`, shows `Runtime boundary: Agentis-owned /api/support-agent/respond`, and provides a support-question form.
+5. Ask `Can the hosted support agent answer?`.
+6. Confirm the browser request goes to `https://<cloudflare-preview-host>/api/support-agent/respond`.
+7. Confirm the assistant answer renders on the hosted page with citation-capable source metadata for the selected documentation source.
+8. Confirm browser-visible state, HTML, network payloads, and command output do not contain raw provider API keys, deployment secret values, runtime paths, or adapter implementation details.
 
 Expected hosted response shape:
 

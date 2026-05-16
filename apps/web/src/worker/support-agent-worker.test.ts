@@ -24,7 +24,7 @@ describe("support-agent Cloudflare Worker", () => {
     })
   })
 
-  test("serves the hosted support-agent chat path without exposing Worker secrets", async () => {
+  test("serves a usable hosted support-agent chat page without exposing Worker secrets", async () => {
     const fetch = createSupportAgentWorkerFetch()
 
     const response = await fetch(
@@ -36,9 +36,73 @@ describe("support-agent Cloudflare Worker", () => {
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toContain("text/html")
     expect(html).toContain("Agentis hosted support-agent web chat")
-    expect(html).toContain("/api/support-agent/respond")
+    expect(html).toContain("Runtime boundary: Agentis-owned /api/support-agent/respond")
+    expect(html).toContain("<form id=\"support-agent-form\"")
+    expect(html).toContain("<textarea id=\"support-question\"")
+    expect(html).toContain("Ask support agent")
+    expect(html).toContain("fetch(apiPath")
+    expect(html).toContain("knowledge_product_docs")
     expect(html).not.toContain("sk-worker-secret")
     expect(html).not.toContain("deployment-secret")
+  })
+
+  test("hosted chat page submits questions to the Agentis runtime boundary and renders sources", async () => {
+    const fetch = createSupportAgentWorkerFetch()
+    const response = await fetch(
+      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/chat"),
+      createEnv()
+    )
+    const html = await response.text()
+    const runtimeFetch = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          agentId: "agent_support_template",
+          conversationId: "conversation_support_hosted",
+          messageId: "message_assistant_hosted",
+          inReplyToMessageId: "message_user_hosted",
+          answer: "Hosted answer through Agentis runtime.",
+          sources: [
+            {
+              id: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
+          runtime: {
+            mode: "model",
+            provider: "openai",
+            model: "gpt-5.4-mini",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    )
+    vi.stubGlobal("fetch", runtimeFetch)
+    document.documentElement.innerHTML = html
+    const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1]
+
+    expect(script).toBeDefined()
+    new Function(script!)()
+    document
+      .getElementById("support-agent-form")
+      ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "Hosted answer through Agentis runtime."
+      )
+    )
+
+    expect(runtimeFetch).toHaveBeenCalledWith(
+      "/api/support-agent/respond",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+    )
+    expect(document.body.textContent).toContain("Source: Product documentation sample")
+    expect(document.body.textContent).toContain("Runtime: openai / gpt-5.4-mini")
+    vi.unstubAllGlobals()
   })
 
   test("serves support-agent responses with Worker secrets server-side", async () => {
