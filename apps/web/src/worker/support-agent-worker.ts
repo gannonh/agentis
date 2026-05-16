@@ -3,6 +3,10 @@ import {
   supportAgentApiPath,
 } from "../lib/support-agent/api-handler"
 import { createAiSdkOpenAiTextGenerator } from "../lib/support-agent/ai-sdk-model-gateway"
+import {
+  createHostedSupportAgentDeploymentFailure,
+  createHostedSupportAgentDeploymentStatus,
+} from "../lib/support-agent/hosted-deployment-status"
 import type { SupportAgentTextGenerator } from "../lib/support-agent/model-runtime"
 
 export type SupportAgentWorkerEnv = {
@@ -31,6 +35,36 @@ export function createSupportAgentWorkerFetch({
           ok: true,
           service: "agentis-support-agent-preview",
         },
+        200
+      )
+    }
+
+    if (url.pathname === "/support-agent/status") {
+      if (!env.SUPPORT_AGENT_OPENAI_API_KEY || !env.SUPPORT_AGENT_DEPLOYMENT_SECRET) {
+        return jsonResponse(
+          createHostedSupportAgentDeploymentStatus({
+            state: "failed",
+            deployment: {
+              id: "agentis-support-agent-preview",
+              publicName: "Agentis support-agent preview",
+            },
+            failure: createHostedSupportAgentDeploymentFailure({
+              code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+            }),
+          }),
+          503
+        )
+      }
+
+      return jsonResponse(
+        createHostedSupportAgentDeploymentStatus({
+          state: "deployed",
+          deployment: {
+            id: "agentis-support-agent-preview",
+            publicName: "Agentis support-agent preview",
+            chatUrl: new URL("/support-agent/chat", url.origin).toString(),
+          },
+        }),
         200
       )
     }
@@ -85,6 +119,10 @@ function createHostedChatPageHtml(apiPath: string): string {
     <p class="muted">Hosted support</p>
     <h1>Agentis hosted support-agent web chat</h1>
     <p class="muted" data-api-path="${apiPath}">Runtime boundary: Agentis-owned ${apiPath}</p>
+    <section class="panel" aria-label="Deployment status">
+      <p><strong>Deployment status:</strong> inspect <code>/support-agent/status</code></p>
+      <p class="muted">Status responses expose browser-safe deployment state and actionable failure messages.</p>
+    </section>
     <section class="panel" aria-label="Knowledge source">
       <p><strong>Selected source:</strong> Product documentation sample</p>
       <p class="muted">Product setup, billing, and troubleshooting articles.</p>

@@ -5,8 +5,11 @@ import { describe, expect, test, vi } from "vitest"
 import { App } from "./App"
 import {
   createLocalSupportAgentResponder,
+  createHostedSupportAgentDeploymentFailure,
+  createHostedSupportAgentDeploymentStatus,
   SupportAgentRuntimeError,
   type HostedSupportAgentChatRuntimeHandoff,
+  type HostedSupportAgentDeploymentStatus,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
   type SupportAgentRuntime,
@@ -337,10 +340,90 @@ describe("App", () => {
         "Runtime boundary: Agentis server endpoint / flue-support-agent"
       )
     ).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: "Hosted deployment status" })).toHaveTextContent(
+      "Deployment ready"
+    )
+    expect(screen.getByText("The hosted support agent is ready to chat.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Open the hosted chat URL and run the hosted acceptance script.")
+    ).toBeInTheDocument()
     expect(
       screen.getByText("Selected source: Product documentation sample")
     ).toBeInTheDocument()
     expect(document.body).not.toHaveTextContent(/sk-|deployment-secret|apiKey/)
+  })
+
+  test("renders configured deployment status after preparing hosted config", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole("button", { name: "Product documentation sample" })
+    )
+    await user.click(screen.getByRole("button", { name: "Prepare hosted config" }))
+
+    const status = screen.getByRole("region", { name: "Hosted deployment status" })
+    expect(status).toHaveTextContent("Deployment configured")
+    expect(status).toHaveTextContent(
+      "The support agent is configured and ready to deploy."
+    )
+    expect(status).toHaveTextContent(
+      "Run the Cloudflare preview deployment command when server-side bindings are set."
+    )
+    expect(status).not.toHaveTextContent(/sk-|deployment-secret|apiKey/)
+  })
+
+  test("renders actionable deployment failure status without raw secrets", () => {
+    const hostedDeploymentStatus: HostedSupportAgentDeploymentStatus =
+      createHostedSupportAgentDeploymentStatus({
+        state: "failed",
+        deployment: {
+          id: "deployment_billing_support_preview",
+          publicName: "Billing support preview",
+        },
+        failure: createHostedSupportAgentDeploymentFailure({
+          code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+          cause: "Missing sk-live-secret from /private/worker stacktrace",
+        }),
+      })
+
+    render(<App hostedDeploymentStatus={hostedDeploymentStatus} />)
+
+    const status = screen.getByRole("region", { name: "Hosted deployment status" })
+    expect(status).toHaveTextContent("Deployment failed")
+    expect(status).toHaveTextContent(
+      "Set the required server-side support-agent secret bindings, then rerun the Cloudflare preview deployment command."
+    )
+    expect(status).toHaveTextContent("Failure code: HOSTED_DEPLOYMENT_SECRET_MISSING")
+    expect(status).not.toHaveTextContent(/sk-live-secret|\/private\/worker|stacktrace/)
+  })
+
+  test("clears stale deployment failure text after a later healthy status", () => {
+    const failedStatus = createHostedSupportAgentDeploymentStatus({
+      state: "failed",
+      failure: createHostedSupportAgentDeploymentFailure({
+        code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+      }),
+    })
+    const deployedStatus = createHostedSupportAgentDeploymentStatus({
+      state: "deployed",
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+        chatUrl: "https://billing-support-preview.example.workers.dev/support-agent/chat",
+      },
+    })
+    const { rerender } = render(<App hostedDeploymentStatus={failedStatus} />)
+
+    expect(screen.getByText("Deployment failed")).toBeInTheDocument()
+
+    rerender(<App hostedDeploymentStatus={deployedStatus} />)
+
+    expect(screen.getByText("Deployment ready")).toBeInTheDocument()
+    expect(screen.queryByText("Deployment failed")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Failure code: HOSTED_DEPLOYMENT_SECRET_MISSING")
+    ).not.toBeInTheDocument()
   })
 
   test("submits hosted chat questions through the hosted Agentis API endpoint", async () => {

@@ -24,6 +24,56 @@ describe("support-agent Cloudflare Worker", () => {
     })
   })
 
+  test("returns hosted deployment status without exposing Worker secrets", async () => {
+    const fetch = createSupportAgentWorkerFetch()
+
+    const response = await fetch(
+      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/status"),
+      createEnv()
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload).toMatchObject({
+      state: "deployed",
+      title: "Deployment ready",
+      userMessage: "The hosted support agent is ready to chat.",
+      maintainerMessage:
+        "Open the hosted chat URL and run the hosted acceptance script.",
+      retryable: false,
+      deployment: {
+        id: "agentis-support-agent-preview",
+        publicName: "Agentis support-agent preview",
+        chatUrl:
+          "https://agentis-support-agent-preview.example.workers.dev/support-agent/chat",
+      },
+    })
+    expect(JSON.stringify(payload)).not.toContain("sk-worker-secret")
+    expect(JSON.stringify(payload)).not.toContain("deployment-secret")
+  })
+
+  test("returns actionable hosted deployment failure when server secrets are missing", async () => {
+    const fetch = createSupportAgentWorkerFetch()
+
+    const response = await fetch(
+      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/status"),
+      createEnv({ SUPPORT_AGENT_OPENAI_API_KEY: undefined })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(503)
+    expect(payload).toMatchObject({
+      state: "failed",
+      title: "Deployment failed",
+      failure: {
+        code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+        title: "Server-side secret binding missing",
+      },
+    })
+    expect(JSON.stringify(payload)).not.toContain("sk-worker-secret")
+    expect(JSON.stringify(payload)).not.toContain("OPENAI_API_KEY")
+  })
+
   test("serves a usable hosted support-agent chat page without exposing Worker secrets", async () => {
     const fetch = createSupportAgentWorkerFetch()
 
@@ -37,6 +87,8 @@ describe("support-agent Cloudflare Worker", () => {
     expect(response.headers.get("Content-Type")).toContain("text/html")
     expect(html).toContain("Agentis hosted support-agent web chat")
     expect(html).toContain("Runtime boundary: Agentis-owned /api/support-agent/respond")
+    expect(html).toContain("Deployment status")
+    expect(html).toContain("/support-agent/status")
     expect(html).toContain("<form id=\"support-agent-form\"")
     expect(html).toContain("<textarea id=\"support-question\"")
     expect(html).toContain("Ask support agent")

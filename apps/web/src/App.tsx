@@ -16,6 +16,7 @@ import {
 } from "@workspace/ui/components/toggle-group"
 import {
   createHostedSupportAgentDeploymentConfig,
+  createHostedSupportAgentDeploymentStatus,
   createHostedSupportAgentHttpRuntime,
   createSupportAgentHttpRuntime,
   respondWithSupportAgentRuntime,
@@ -25,6 +26,7 @@ import {
   type SupportAgentChatResponse,
   type HostedSupportAgentChatRuntimeHandoff,
   type HostedSupportAgentDeploymentConfig,
+  type HostedSupportAgentDeploymentStatus,
   type SupportAgentFailureState,
   type SupportAgentRuntime,
 } from "./lib/support-agent"
@@ -63,11 +65,13 @@ type SubmittedSupportTurn = {
 
 type AppProps = {
   hostedChatHandoff?: HostedSupportAgentChatRuntimeHandoff
+  hostedDeploymentStatus?: HostedSupportAgentDeploymentStatus
   supportAgentResponder?: SupportAgentRuntime
 }
 
 export function App({
   hostedChatHandoff,
+  hostedDeploymentStatus,
   supportAgentResponder,
 }: AppProps = {}) {
   const activeSupportAgentResponder =
@@ -86,6 +90,8 @@ export function App({
     useState<SupportAgentFailureState>()
   const [hostedDeploymentConfig, setHostedDeploymentConfig] =
     useState<HostedSupportAgentDeploymentConfig>()
+  const [preparedHostedDeploymentStatus, setPreparedHostedDeploymentStatus] =
+    useState<HostedSupportAgentDeploymentStatus>()
   const [isSubmittingSupportQuestion, setIsSubmittingSupportQuestion] =
     useState(false)
   const [submittedTurns, setSubmittedTurns] = useState<SubmittedSupportTurn[]>(
@@ -96,6 +102,19 @@ export function App({
   const selectedSource = sampleDocumentationSources.find(
     (source) => source.id === selectedSourceId
   )
+  const visibleHostedDeploymentStatus =
+    hostedDeploymentStatus ??
+    preparedHostedDeploymentStatus ??
+    (hostedChatHandoff
+      ? createHostedSupportAgentDeploymentStatus({
+          state: "deployed",
+          deployment: {
+            id: hostedChatHandoff.deployment.id,
+            publicName: hostedChatHandoff.deployment.publicName,
+            chatUrl: hostedChatHandoff.deployment.chatUrl,
+          },
+        })
+      : undefined)
 
   function getSubmittedContext(request: SupportAgentChatRequest) {
     return [
@@ -138,25 +157,36 @@ export function App({
   function handleTemplateNameChange(value: string) {
     setTemplateName(value)
     setHostedDeploymentConfig(undefined)
+    setPreparedHostedDeploymentStatus(undefined)
   }
 
   function handleKnowledgeSourceChange(value: string[]) {
     setSelectedSourceId(value[0])
     setHostedDeploymentConfig(undefined)
+    setPreparedHostedDeploymentStatus(undefined)
   }
 
   function handleHostedConfigPrepare(source: SampleDocumentationSource) {
-    setHostedDeploymentConfig(
-      createHostedSupportAgentDeploymentConfig({
-        templateName,
-        knowledgeSources: [
-          {
-            id: source.id,
-            title: source.name,
-            description: source.description,
-            contextReference: source.contextReference,
-          },
-        ],
+    const config = createHostedSupportAgentDeploymentConfig({
+      templateName,
+      knowledgeSources: [
+        {
+          id: source.id,
+          title: source.name,
+          description: source.description,
+          contextReference: source.contextReference,
+        },
+      ],
+    })
+
+    setHostedDeploymentConfig(config)
+    setPreparedHostedDeploymentStatus(
+      createHostedSupportAgentDeploymentStatus({
+        state: "configured",
+        deployment: {
+          id: "support-agent-preview-config",
+          publicName: config.template.name,
+        },
       })
     )
   }
@@ -385,6 +415,32 @@ export function App({
                   ? `Selected source: ${selectedSource.name}`
                   : "Select sample documentation to continue setup."}
               </div>
+              {visibleHostedDeploymentStatus ? (
+                <section
+                  aria-label="Hosted deployment status"
+                  className="border-border bg-background border p-3"
+                >
+                  <p className="text-xs font-medium">
+                    {visibleHostedDeploymentStatus.title}
+                  </p>
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    {visibleHostedDeploymentStatus.userMessage}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    {visibleHostedDeploymentStatus.maintainerMessage}
+                  </p>
+                  {visibleHostedDeploymentStatus.deployment?.chatUrl ? (
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      Chat URL: {visibleHostedDeploymentStatus.deployment.chatUrl}
+                    </p>
+                  ) : null}
+                  {visibleHostedDeploymentStatus.failure ? (
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      Failure code: {visibleHostedDeploymentStatus.failure.code}
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
               {hostedDeploymentConfig ? (
                 <section
                   aria-label="Hosted deployment config"
