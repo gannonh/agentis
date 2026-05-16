@@ -31,6 +31,38 @@ export type HostedSupportAgentDeploymentConfig = {
   }
 }
 
+export type CloudflarePreviewDeploymentRequestInput = {
+  config: HostedSupportAgentDeploymentConfig
+  deploymentId: string
+  publicName: string
+  secretReferences: {
+    providerApiKeyBinding: string
+    deploymentSecretBinding: string
+  }
+}
+
+export type CloudflarePreviewDeploymentRequest = {
+  command: {
+    package: "web"
+    script: "support-agent:deploy:preview"
+  }
+  target: {
+    platform: "cloudflare"
+    environment: "preview"
+  }
+  deployment: {
+    id: string
+    publicName: string
+    templateId: HostedSupportAgentDeploymentConfig["template"]["id"]
+    templateName: string
+  }
+  runtime: HostedSupportAgentDeploymentConfig["runtime"] & {
+    credentials: "server-side"
+  }
+  knowledge: HostedSupportAgentDeploymentConfig["knowledge"]
+  secrets: CloudflarePreviewDeploymentRequestInput["secretReferences"]
+}
+
 export function createHostedSupportAgentDeploymentConfig({
   templateName,
   knowledgeSources,
@@ -61,5 +93,36 @@ export function createHostedSupportAgentDeploymentConfig({
       intent: "prepare-hosted-preview",
       credentials: "server-side",
     },
+  }
+}
+
+export function createCloudflarePreviewDeploymentRequest({
+  config,
+  deploymentId,
+  publicName,
+  secretReferences,
+}: CloudflarePreviewDeploymentRequestInput): CloudflarePreviewDeploymentRequest {
+  return {
+    command: {
+      package: "web",
+      script: "support-agent:deploy:preview",
+    },
+    target: {
+      platform: "cloudflare",
+      environment: "preview",
+    },
+    deployment: {
+      id: deploymentId,
+      publicName,
+      templateId: config.template.id,
+      templateName: config.template.name,
+    },
+    runtime: {
+      adapter: config.runtime.adapter,
+      requestContract: config.runtime.requestContract,
+      credentials: config.deployment.credentials,
+    },
+    knowledge: config.knowledge,
+    secrets: secretReferences,
   }
 }
