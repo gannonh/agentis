@@ -6,6 +6,7 @@ import { App } from "./App"
 import {
   createLocalSupportAgentResponder,
   SupportAgentRuntimeError,
+  type HostedSupportAgentChatRuntimeHandoff,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
   type SupportAgentRuntime,
@@ -27,6 +28,36 @@ describe("App", () => {
 
   function renderAppWithDemoRuntime() {
     return render(<App supportAgentResponder={createLocalSupportAgentResponder()} />)
+  }
+
+  function createHostedChatHandoff(): HostedSupportAgentChatRuntimeHandoff {
+    return {
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+        chatUrl: "https://billing-support-preview.example.workers.dev/support-agent/chat",
+      },
+      template: {
+        id: "agent_support_template",
+        name: "Billing support",
+      },
+      runtime: {
+        adapter: "flue-support-agent",
+        requestContract: "SupportAgentChatRequest",
+        apiEndpoint: "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
+        credentials: "server-side",
+      },
+      knowledge: {
+        sourceIds: ["knowledge_product_docs"],
+        contextReferences: [
+          {
+            knowledgeSourceId: "knowledge_product_docs",
+            type: "local-documentation",
+            path: "docs/knowledge/product-documentation-sample.md",
+          },
+        ],
+      },
+    }
   }
 
   test("shows the support-agent template entry from the initial route", () => {
@@ -292,6 +323,74 @@ describe("App", () => {
     await submitSupportQuestion(user)
 
     expect(screen.getByText("Runtime: model / fallback-model")).toBeInTheDocument()
+  })
+
+  test("renders the hosted support-agent web chat path from deployment metadata", () => {
+    render(<App hostedChatHandoff={createHostedChatHandoff()} />)
+
+    expect(
+      screen.getByRole("heading", { name: "Hosted support-agent web chat" })
+    ).toBeInTheDocument()
+    expect(screen.getByText("Deployment: Billing support preview")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Runtime boundary: Agentis server endpoint / flue-support-agent"
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Selected source: Product documentation sample")
+    ).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(/sk-|deployment-secret|apiKey/)
+  })
+
+  test("submits hosted chat questions through the hosted Agentis API endpoint", async () => {
+    const user = userEvent.setup()
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          agentId: "agent_support_template",
+          conversationId: "conversation_support_demo",
+          messageId: "message_assistant_message_user_setup_question",
+          inReplyToMessageId: "message_user_setup_question",
+          answer: "Hosted preview answered through Agentis runtime.",
+          sources: [
+            {
+              id: "source_product_docs_setup",
+              knowledgeSourceId: "knowledge_product_docs",
+              title: "Product documentation sample",
+              excerpt: "Select Product documentation sample during setup.",
+            },
+          ],
+          runtime: {
+            mode: "model",
+            provider: "openai",
+            model: "test-model",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    )
+
+    try {
+      render(<App hostedChatHandoff={createHostedChatHandoff()} />)
+
+      await user.type(
+        screen.getByLabelText("Support question"),
+        "Can the hosted support agent answer?"
+      )
+      await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+      expect(fetch).toHaveBeenCalledWith(
+        "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
+        expect.any(Object)
+      )
+      expect(
+        await screen.findByText("Hosted preview answered through Agentis runtime.")
+      ).toBeInTheDocument()
+      expect(screen.getByText("Source: Product documentation sample")).toBeInTheDocument()
+    } finally {
+      fetch.mockRestore()
+    }
   })
 
   test("uses the server-backed support-agent runtime by default", async () => {

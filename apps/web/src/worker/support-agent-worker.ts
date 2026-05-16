@@ -35,6 +35,13 @@ export function createSupportAgentWorkerFetch({
       )
     }
 
+    if (url.pathname === "/support-agent/chat") {
+      return htmlResponse(
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Agentis hosted support-agent web chat</title></head><body><main><h1>Agentis hosted support-agent web chat</h1><p data-api-path="${supportAgentApiPath}">Runtime API: ${supportAgentApiPath}</p></main></body></html>`,
+        200
+      )
+    }
+
     if (url.pathname === supportAgentApiPath) {
       const handler = createSupportAgentApiHandler({
         env: {
@@ -50,6 +57,13 @@ export function createSupportAgentWorkerFetch({
 
     return jsonResponse({ ok: false, error: "Not found" }, 404)
   }
+}
+
+function htmlResponse(body: string, status: number): Response {
+  return new Response(body, {
+    status,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  })
 }
 
 function jsonResponse(body: unknown, status: number): Response {

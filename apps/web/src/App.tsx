@@ -16,12 +16,14 @@ import {
 } from "@workspace/ui/components/toggle-group"
 import {
   createHostedSupportAgentDeploymentConfig,
+  createHostedSupportAgentHttpRuntime,
   createSupportAgentHttpRuntime,
   respondWithSupportAgentRuntime,
   supportAgentChatRequestFixture,
   toSupportAgentFailureState,
   type SupportAgentChatRequest,
   type SupportAgentChatResponse,
+  type HostedSupportAgentChatRuntimeHandoff,
   type HostedSupportAgentDeploymentConfig,
   type SupportAgentFailureState,
   type SupportAgentRuntime,
@@ -60,14 +62,25 @@ type SubmittedSupportTurn = {
 }
 
 type AppProps = {
+  hostedChatHandoff?: HostedSupportAgentChatRuntimeHandoff
   supportAgentResponder?: SupportAgentRuntime
 }
 
 export function App({
-  supportAgentResponder = serverSupportAgentResponder,
+  hostedChatHandoff,
+  supportAgentResponder,
 }: AppProps = {}) {
-  const [templateName, setTemplateName] = useState("Customer support agent")
-  const [selectedSourceId, setSelectedSourceId] = useState<string>()
+  const activeSupportAgentResponder =
+    supportAgentResponder ??
+    (hostedChatHandoff
+      ? createHostedSupportAgentHttpRuntime({ handoff: hostedChatHandoff })
+      : serverSupportAgentResponder)
+  const [templateName, setTemplateName] = useState(
+    hostedChatHandoff?.template.name ?? "Customer support agent"
+  )
+  const [selectedSourceId, setSelectedSourceId] = useState<string | undefined>(
+    hostedChatHandoff?.knowledge.sourceIds[0]
+  )
   const [supportQuestion, setSupportQuestion] = useState("")
   const [supportQuestionFailure, setSupportQuestionFailure] =
     useState<SupportAgentFailureState>()
@@ -187,7 +200,7 @@ export function App({
     }
     try {
       const response = await respondWithSupportAgentRuntime(
-        supportAgentResponder,
+        activeSupportAgentResponder,
         request
       )
       setSubmittedTurns((turns) => [...turns, { request, response }])
@@ -220,16 +233,27 @@ export function App({
           <div className="flex max-w-xl flex-col gap-5">
             <div className="flex flex-col gap-2">
               <p className="text-muted-foreground text-xs font-medium uppercase">
-                Support template
+                {hostedChatHandoff ? "Hosted support" : "Support template"}
               </p>
               <h1 className="text-3xl font-semibold tracking-normal text-balance">
-                Configure a support agent
+                {hostedChatHandoff
+                  ? "Hosted support-agent web chat"
+                  : "Configure a support agent"}
               </h1>
             </div>
             <p className="text-muted-foreground max-w-lg text-base leading-7">
-              Start with a documentation-backed support agent that can answer
-              product questions from a curated source set.
+              {hostedChatHandoff
+                ? "Ask the deployed support agent through the Agentis server runtime boundary."
+                : "Start with a documentation-backed support agent that can answer product questions from a curated source set."}
             </p>
+            {hostedChatHandoff ? (
+              <div className="border-border bg-background flex max-w-md flex-col gap-1 border p-3 text-sm">
+                <p>Deployment: {hostedChatHandoff.deployment.publicName}</p>
+                <p className="text-muted-foreground text-xs">
+                  Runtime boundary: Agentis server endpoint / {hostedChatHandoff.runtime.adapter}
+                </p>
+              </div>
+            ) : null}
             <FieldGroup className="max-w-md">
               <Field>
                 <FieldLabel htmlFor="template-name">Template name</FieldLabel>

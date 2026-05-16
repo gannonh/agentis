@@ -24,6 +24,23 @@ describe("support-agent Cloudflare Worker", () => {
     })
   })
 
+  test("serves the hosted support-agent chat path without exposing Worker secrets", async () => {
+    const fetch = createSupportAgentWorkerFetch()
+
+    const response = await fetch(
+      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/chat"),
+      createEnv()
+    )
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Content-Type")).toContain("text/html")
+    expect(html).toContain("Agentis hosted support-agent web chat")
+    expect(html).toContain("/api/support-agent/respond")
+    expect(html).not.toContain("sk-worker-secret")
+    expect(html).not.toContain("deployment-secret")
+  })
+
   test("serves support-agent responses with Worker secrets server-side", async () => {
     const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
       text: `Worker model ${config.provider}:${config.model} answered.`,

@@ -1,4 +1,5 @@
 import type {
+  HostedSupportAgentChatRuntimeHandoff,
   SupportAgentChatRequest,
   SupportAgentChatResponse,
 } from "./chat-contracts"
@@ -15,11 +16,37 @@ type SupportAgentHttpRuntimeOptions = {
   fetch?: typeof globalThis.fetch
 }
 
+type HostedSupportAgentHttpRuntimeOptions = {
+  handoff: HostedSupportAgentChatRuntimeHandoff
+  fetch?: typeof globalThis.fetch
+}
+
 type SupportAgentErrorPayload = {
   error?: {
     runtimeCode?: SupportAgentRuntimeErrorCode
     message?: string
   }
+}
+
+export function createHostedSupportAgentHttpRuntime({
+  handoff,
+  fetch = globalThis.fetch,
+}: HostedSupportAgentHttpRuntimeOptions): SupportAgentRuntime {
+  if (
+    handoff.runtime.adapter !== "flue-support-agent" ||
+    handoff.runtime.requestContract !== "SupportAgentChatRequest" ||
+    handoff.runtime.credentials !== "server-side" ||
+    !handoff.runtime.apiEndpoint.trim()
+  ) {
+    throw new Error(
+      "hosted support-agent handoff must use the server runtime API boundary"
+    )
+  }
+
+  return createSupportAgentHttpRuntime({
+    endpoint: handoff.runtime.apiEndpoint,
+    fetch,
+  })
 }
 
 export function createSupportAgentHttpRuntime({
