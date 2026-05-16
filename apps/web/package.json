@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json",
     "support-agent:eval": "tsx scripts/support-agent-eval.mjs",
     "support-agent:deploy:preview": "tsx scripts/support-agent-preview-deploy.mjs",
+    "support-agent:acceptance": "tsx scripts/support-agent-hosted-acceptance.mjs",
     "support-agent:deploy:worker:preview": "wrangler deploy --env preview --config wrangler.toml",
     "preview": "vite preview"
   },
