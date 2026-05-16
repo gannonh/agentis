@@ -48,6 +48,20 @@ Reference docs:
 - Open that URL in the Codex in-app browser.
 - If Browser Use cannot attach to the integrated browser backend, keep the app server running and provide the exact local URL for the user to open.
 
+## Cloudflare Worker Development
+
+- Agentis proved the support-agent Worker can run on Cloudflare, but production hardening is not ready. Do not leave public deployments running with model credentials unless auth, rate limits, quotas, and abuse monitoring are in place.
+- Do hosted runtime work primarily against the local Cloudflare Workers runtime, not ad hoc Node harnesses.
+- Use Wrangler local dev for hosted support-agent paths:
+
+```bash
+pnpm --filter web exec wrangler dev --env preview --config wrangler.toml
+```
+
+- Use Vite dev for the product UI/configuration flow, and Wrangler dev for `/support-agent/chat` plus `/api/support-agent/respond` behavior.
+- Keep local Worker secrets in `apps/web/.dev.vars`; do not commit `.dev.vars` or raw provider keys.
+- Use `pnpm --filter web support-agent:deploy:worker:preview` only when a real Cloudflare preview deployment is explicitly needed for proof or release work.
+
 ## UI Components
 
 Add shadcn/ui components from the repository root:
