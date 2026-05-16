@@ -121,7 +121,7 @@ function createHostedChatPageHtml(apiPath: string): string {
         if (character === "&") return "&amp;";
         if (character === "<") return "&lt;";
         if (character === ">") return "&gt;";
-        if (character === "\\\"") return "&quot;";
+        if (character === '"') return "&quot;";
         return "&#39;";
       });
     }
