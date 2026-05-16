@@ -2,9 +2,11 @@ import { describe, expect, test } from "vitest"
 
 import {
   createCloudflarePreviewDeploymentRequest,
+  createHostedSupportAgentChatRuntimeHandoff,
   createHostedSupportAgentDeploymentConfig,
   supportAgentChatRequestFixture,
   type CloudflarePreviewDeploymentRequestInput,
+  type HostedSupportAgentChatRuntimeHandoffInput,
   type HostedSupportAgentDeploymentConfigInput,
 } from "./index"
 
@@ -157,5 +159,66 @@ describe("hosted support-agent deployment config", () => {
     expect(serializedRequest).not.toContain("runtimePath")
     expect(serializedRequest).not.toContain("adapterInternals")
     expect(serializedRequest).not.toContain("/tmp/agentis/runtime.ts")
+  })
+
+  test("creates a browser-safe hosted chat runtime handoff from a preview deployment result", () => {
+    const config = createHostedSupportAgentDeploymentConfig({
+      templateName: "Billing support",
+      knowledgeSources: supportAgentChatRequestFixture.knowledgeSources,
+    })
+
+    const handoff = createHostedSupportAgentChatRuntimeHandoff({
+      config,
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+        url: "https://billing-support-preview.example.workers.dev",
+      },
+    })
+
+    expect(handoff).toEqual({
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+        chatUrl: "https://billing-support-preview.example.workers.dev/support-agent/chat",
+      },
+      template: {
+        id: "agent_support_template",
+        name: "Billing support",
+      },
+      runtime: {
+        adapter: "flue-support-agent",
+        requestContract: "SupportAgentChatRequest",
+        apiEndpoint: "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
+        credentials: "server-side",
+      },
+      knowledge: config.knowledge,
+    })
+  })
+
+  test("keeps secrets and adapter internals out of the hosted chat runtime handoff", () => {
+    const config = createHostedSupportAgentDeploymentConfig({
+      templateName: "Billing support",
+      knowledgeSources: supportAgentChatRequestFixture.knowledgeSources,
+    })
+
+    const handoff = createHostedSupportAgentChatRuntimeHandoff({
+      config,
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+        url: "https://billing-support-preview.example.workers.dev",
+      },
+      apiKey: "sk-hosted-secret",
+      deploymentSecret: "raw-deployment-secret",
+      adapterImplementation: "internal worker source",
+    } as HostedSupportAgentChatRuntimeHandoffInput)
+
+    const serializedHandoff = JSON.stringify(handoff)
+
+    expect(serializedHandoff).not.toContain("sk-hosted-secret")
+    expect(serializedHandoff).not.toContain("raw-deployment-secret")
+    expect(serializedHandoff).not.toContain("adapterImplementation")
+    expect(serializedHandoff).not.toContain("internal worker source")
   })
 })
