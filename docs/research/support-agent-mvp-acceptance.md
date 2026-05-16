@@ -38,7 +38,42 @@ Manual configure-only checklist:
 6. Confirm the `Hosted deployment config` panel shows `Billing support`, `knowledge_product_docs`, `flue-support-agent`, `cloudflare-preview`, and `Credentials: server-side`.
 7. Confirm no provider API key, deployment secret, provider model setting, runtime path, or adapter internal field appears in browser-visible config.
 
-This path prepares configuration only. Live Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and Flue deployment execution remain future deployment-slice work.
+This path prepares configuration only. S016 adds the repeatable Cloudflare preview deployment command validation path.
+
+## S016 Cloudflare Preview Deployment Acceptance Checks
+
+Run these checks before accepting the preview deployment command path:
+
+```bash
+pnpm --filter web test -- src/lib/support-agent/cloudflare-preview-deploy.test.ts src/lib/support-agent/hosted-deployment-config.test.ts src/lib/support-agent/runtime-boundary.test.ts
+pnpm --filter web typecheck
+rg -n "support-agent:deploy:preview|Cloudflare Preview Deployment Command|server-side secret boundary|wrangler deploy --env preview|SUPPORT_AGENT_PROVIDER_API_KEY_BINDING|SUPPORT_AGENT_DEPLOYMENT_SECRET_BINDING" docs/support-agent-mvp.md docs/research/support-agent-mvp-acceptance.md apps/web/package.json apps/web/scripts apps/web/src/lib/support-agent
+```
+
+Command validation checks:
+
+```bash
+pnpm --filter web support-agent:deploy:preview
+pnpm --filter web support-agent:deploy:preview -- --config ./support-agent-hosted-config.json
+SUPPORT_AGENT_PROVIDER_API_KEY_BINDING=SUPPORT_AGENT_OPENAI_API_KEY \
+SUPPORT_AGENT_DEPLOYMENT_SECRET_BINDING=SUPPORT_AGENT_DEPLOYMENT_SECRET \
+pnpm --filter web support-agent:deploy:preview -- --config ./support-agent-hosted-config.json
+```
+
+Expected results:
+
+- Missing `--config` fails before deployment with `hosted deployment config is required`.
+- Missing secret binding refs fail before deployment with `provider API key secret reference is required` or `deployment secret reference is required`.
+- Valid config plus secret binding refs prints a JSON plan with `support-agent:deploy:preview`, `wrangler deploy --env preview`, `flue-support-agent`, `SupportAgentChatRequest`, selected knowledge references, and server-side binding names.
+- The serialized browser config and command output contain no raw provider API key, raw deployment secret, runtime path, or adapter internals.
+
+Manual secret-boundary checklist:
+
+1. Produce hosted config from the UI with `Prepare hosted config`.
+2. Save the public hosted config JSON outside browser state inspection artifacts.
+3. Run the valid command with binding names only.
+4. Confirm output names `SUPPORT_AGENT_OPENAI_API_KEY` and `SUPPORT_AGENT_DEPLOYMENT_SECRET` as bindings.
+5. Confirm output does not include raw secret values or provider model configuration.
 
 ## S014 Demo Hardening Acceptance Checks
 
@@ -104,7 +139,7 @@ Rejected evidence:
 ## Follow-Up Boundaries
 
 - Slack: OAuth installation, event verification, event dedupe, bot token storage, Slack thread mapping, and message delivery remain future planned work.
-- Hosted deployment: S015 prepares the browser-safe configuration handoff. Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and live Flue deployment automation remain future planned work.
+- Hosted deployment: S015 prepares the browser-safe configuration handoff. S016 validates the repeatable Cloudflare preview command and server-side secret binding boundary. Live Cloudflare Workers, Durable Objects, R2-backed knowledge, Containers, and Flue runtime execution remain future planned work.
 - Production persistence: organizations, users, agents, knowledge sources, conversations, messages, deployments, audit records, quotas, and schema migrations remain future planned work.
 
 These follow-ups should enter future milestones as explicit requirements before implementation.

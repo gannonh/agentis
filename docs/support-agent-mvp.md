@@ -220,6 +220,46 @@ Configure-only acceptance checklist:
 - The generated handoff declares `cloudflare-preview` and `prepare-hosted-preview` as deployment intent, not a live deployment.
 - Browser-visible text and state contain no provider API key, deployment secret, provider model setting, runtime path, or adapter internal field.
 
+## Cloudflare Preview Deployment Command
+
+The repeatable maintainer command consumes the hosted config JSON produced by the configure flow and validates the Cloudflare preview deployment request before deployment proceeds:
+
+```bash
+SUPPORT_AGENT_PROVIDER_API_KEY_BINDING=SUPPORT_AGENT_OPENAI_API_KEY \
+SUPPORT_AGENT_DEPLOYMENT_SECRET_BINDING=SUPPORT_AGENT_DEPLOYMENT_SECRET \
+pnpm --filter web support-agent:deploy:preview -- --config ./support-agent-hosted-config.json
+```
+
+Required inputs:
+
+- `--config`: path to the hosted config JSON.
+- `SUPPORT_AGENT_PROVIDER_API_KEY_BINDING`: server-side provider API key binding name.
+- `SUPPORT_AGENT_DEPLOYMENT_SECRET_BINDING`: server-side deployment secret binding name.
+
+Optional inputs:
+
+- `SUPPORT_AGENT_DEPLOYMENT_ID`: deployment identifier. Default: `support-agent-preview`.
+- `SUPPORT_AGENT_PUBLIC_NAME`: public deployment name. Default: `<template name> preview`.
+
+Expected output is a JSON preview deployment plan containing:
+
+- `command`: the repeatable package command.
+- `request`: public template metadata, selected knowledge references, `flue-support-agent`, `SupportAgentChatRequest`, and server-side secret binding references.
+- `wrangler.command`: `wrangler deploy --env preview`.
+- `wrangler.requiredSecretBindings`: the provider and deployment secret binding names.
+
+Failure notes:
+
+- Missing hosted config fails before deployment with `hosted deployment config is required`.
+- Missing provider API key binding fails before deployment with `provider API key secret reference is required`.
+- Missing deployment secret binding fails before deployment with `deployment secret reference is required`.
+
+Server-side secret boundary checks (`server-side secret boundary`):
+
+- Browser-visible hosted config contains no provider API key, deployment secret, provider model setting, runtime path, or adapter internal field.
+- Command output includes secret binding names only.
+- Command output must not include raw provider API keys, deployment secret values, runtime paths, or adapter internals.
+
 ## Current Runtime Boundary
 
 The local MVP browser flow uses a server-backed `SupportAgentRuntime` by default. The browser submits `SupportAgentChatRequest` to `/api/support-agent/respond`; the Vite dev server reads provider configuration from `.env` server-side, calls the OpenAI-backed model runtime, and returns a `SupportAgentChatResponse` with public runtime metadata.
@@ -276,7 +316,7 @@ Current Flue-backed provenance limits:
 
 The smallest local proof path uses checked-in sample documentation content so focused tests can prove that changing the selected documentation changes the model prompt, Flue-ready input, and rendered transcript provenance.
 
-Recommended next step for Flue knowledge access: run a live Flue Cloudflare support-agent request with the same context contract backed by an R2 virtual sandbox. Keep provider-native file/search APIs, RAG, and hybrid retrieval as comparison paths after the R2-backed Flue route has a working request/response proof.
+Recommended next step for Flue knowledge access: run a live Flue Cloudflare support-agent request with the same context contract backed by an R2 virtual sandbox. The preview deployment command now validates the request shape and server-side binding references before that live runtime proof. Keep provider-native file/search APIs, RAG, and hybrid retrieval as comparison paths after the R2-backed Flue route has a working request/response proof.
 
 ## Acceptance Handoff
 
