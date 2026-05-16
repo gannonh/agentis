@@ -1,5 +1,6 @@
 export * from "./ai-sdk-model-gateway"
 export * from "./chat-contracts"
+export * from "./cloudflare-preview-deploy"
 export * from "./chat-fixtures"
 export * from "./configured-runtime"
 export * from "./documentation-context"
