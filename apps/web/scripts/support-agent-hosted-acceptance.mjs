@@ -18,7 +18,7 @@ loadEnvFile(path.join(appDir, ".env"))
 loadEnvFile(path.join(appDir, ".dev.vars"))
 
 try {
-  const { mode, deploymentUrl, question } =
+  const { mode, deploymentUrl, deploymentAccessToken, deploymentSecret, question } =
     resolveHostedSupportAgentAcceptanceOptions({
       args: process.argv.slice(2),
       env: process.env,
@@ -26,6 +26,8 @@ try {
   const report = await runHostedSupportAgentAcceptance({
     mode,
     deploymentUrl,
+    deploymentAccessToken,
+    deploymentSecret,
     question,
   })
 

@@ -17,12 +17,18 @@ if [[ "${1:-}" == "--" ]]; then
   shift
 fi
 
+wrangler_args=(
+  dev
+  --env preview
+  --config wrangler.toml
+  --ip "${WORKER_DEV_IP:-127.0.0.1}"
+  --port "${WORKER_DEV_PORT:-8787}"
+  --show-interactive-dev-session=false
+)
+
+if [[ -f "$ENV_FILE" ]]; then
+  wrangler_args+=(--env-file "$ENV_FILE")
+fi
+
 cd "$APP_DIR"
-exec wrangler dev \
-  --env preview \
-  --config wrangler.toml \
-  --ip "${WORKER_DEV_IP:-127.0.0.1}" \
-  --port "${WORKER_DEV_PORT:-8787}" \
-  --env-file "$ENV_FILE" \
-  --show-interactive-dev-session=false \
-  "$@"
+exec wrangler "${wrangler_args[@]}" "$@"

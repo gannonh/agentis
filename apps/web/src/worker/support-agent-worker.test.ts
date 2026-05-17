@@ -1,6 +1,9 @@
 import { describe, expect, test, vi } from "vitest"
 
-import { supportAgentChatRequestFixture } from "../lib/support-agent"
+import {
+  createHostedSupportAgentAccessToken,
+  supportAgentChatRequestFixture,
+} from "../lib/support-agent"
 import type { SupportAgentTextGenerator } from "../lib/support-agent/model-runtime"
 import {
   createSupportAgentWorkerFetch,
@@ -24,7 +27,7 @@ describe("support-agent Cloudflare Worker", () => {
     expect(html).toContain("/support-agent/status")
     expect(html).toContain("/health")
     expect(html).not.toContain("sk-worker-secret")
-    expect(html).not.toContain("deployment-secret")
+    expect(html).not.toContain("access-token-value")
   })
 
   test("returns health status", async () => {
@@ -68,7 +71,7 @@ describe("support-agent Cloudflare Worker", () => {
       },
     })
     expect(JSON.stringify(payload)).not.toContain("sk-worker-secret")
-    expect(JSON.stringify(payload)).not.toContain("deployment-secret")
+    expect(JSON.stringify(payload)).not.toContain("access-token-value")
   })
 
   test("returns actionable hosted deployment failure when server secrets are missing", async () => {
@@ -109,12 +112,13 @@ describe("support-agent Cloudflare Worker", () => {
     expect(html).toContain("Deployment status")
     expect(html).toContain("/support-agent/status")
     expect(html).toContain("<form id=\"support-agent-form\"")
+    expect(html).toContain("<input id=\"access-token\"")
     expect(html).toContain("<textarea id=\"support-question\"")
     expect(html).toContain("Ask support agent")
     expect(html).toContain("fetch(apiPath")
     expect(html).toContain("knowledge_product_docs")
     expect(html).not.toContain("sk-worker-secret")
-    expect(html).not.toContain("deployment-secret")
+    expect(html).not.toContain('value="access-token-value"')
   })
 
   test("hosted chat page submits questions to the Agentis runtime boundary and renders sources", async () => {
@@ -155,6 +159,10 @@ describe("support-agent Cloudflare Worker", () => {
 
     expect(script).toBeDefined()
     new Function(script!)()
+    const accessTokenInput = document.getElementById(
+      "access-token"
+    ) as HTMLInputElement
+    accessTokenInput.value = "access-token-value"
     document
       .getElementById("support-agent-form")
       ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
@@ -168,12 +176,143 @@ describe("support-agent Cloudflare Worker", () => {
       "/api/support-agent/respond",
       expect.objectContaining({
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-agentis-access-token": "access-token-value",
+        },
       })
     )
     expect(document.body.textContent).toContain("Source: Product documentation sample")
     expect(document.body.textContent).toContain("Runtime: openai / gpt-5.4-mini")
     vi.unstubAllGlobals()
+  })
+
+  test("returns deployment failure for support-agent responses when server secrets are missing", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
+      text: `Worker model ${config.provider}:${config.model} answered.`,
+    }))
+    const fetch = createSupportAgentWorkerFetch({ generateText })
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/api/support-agent/respond",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": "access-token-value",
+          },
+          body: JSON.stringify(supportAgentChatRequestFixture),
+        }
+      ),
+      createEnv({ SUPPORT_AGENT_DEPLOYMENT_SECRET: undefined })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(503)
+    expect(payload).toEqual({
+      error: {
+        runtimeCode: "SUPPORT_AGENT_HOSTED_BINDING_MISSING",
+        message: "Server-side secret binding missing",
+        title: "Deployment failed",
+        userMessage: "The hosted support agent could not be deployed.",
+        maintainerMessage:
+          "Set the required server-side support-agent secret bindings, then rerun the Cloudflare preview deployment command.",
+      },
+    })
+    expect(generateText).not.toHaveBeenCalled()
+    expect(JSON.stringify(payload)).not.toContain("access-token-value")
+  })
+
+  test("rejects support-agent responses without the deployment access token", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
+      text: `Worker model ${config.provider}:${config.model} answered.`,
+    }))
+    const fetch = createSupportAgentWorkerFetch({ generateText })
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/api/support-agent/respond",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(supportAgentChatRequestFixture),
+        }
+      ),
+      createEnv()
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(payload).toEqual({
+      error: {
+        runtimeCode: "SUPPORT_AGENT_HOSTED_ACCESS_DENIED",
+        message: "Hosted support-agent access is required.",
+        userMessage: "Enter the hosted deployment access token and retry.",
+      },
+    })
+    expect(generateText).not.toHaveBeenCalled()
+    expect(JSON.stringify(payload)).not.toContain("access-token-value")
+  })
+
+  test("serves support-agent responses with bearer deployment access token", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
+      text: `Worker model ${config.provider}:${config.model} answered.`,
+    }))
+    const fetch = createSupportAgentWorkerFetch({ generateText })
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/api/support-agent/respond",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: "Bearer access-token-value",
+          },
+          body: JSON.stringify(supportAgentChatRequestFixture),
+        }
+      ),
+      createEnv()
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.answer).toBe("Worker model openai:gpt-5.4-mini answered.")
+  })
+
+  test("serves support-agent responses with an access token derived from the deployment secret", async () => {
+    const deploymentSecret = "deployment-secret"
+    const derivedAccessToken = await createHostedSupportAgentAccessToken(
+      deploymentSecret
+    )
+    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
+      text: `Worker model ${config.provider}:${config.model} answered.`,
+    }))
+    const fetch = createSupportAgentWorkerFetch({ generateText })
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/api/support-agent/respond",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": derivedAccessToken,
+          },
+          body: JSON.stringify(supportAgentChatRequestFixture),
+        }
+      ),
+      createEnv({
+        SUPPORT_AGENT_DEPLOYMENT_SECRET: deploymentSecret,
+        SUPPORT_AGENT_ACCESS_TOKEN: undefined,
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.answer).toBe("Worker model openai:gpt-5.4-mini answered.")
+    expect(JSON.stringify(payload)).not.toContain(deploymentSecret)
   })
 
   test("serves support-agent responses with Worker secrets server-side", async () => {
@@ -187,7 +326,10 @@ describe("support-agent Cloudflare Worker", () => {
         "https://agentis-support-agent-preview.example.workers.dev/api/support-agent/respond",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": "access-token-value",
+          },
           body: JSON.stringify(supportAgentChatRequestFixture),
         }
       ),
@@ -234,6 +376,7 @@ function createEnv(
   return {
     SUPPORT_AGENT_OPENAI_API_KEY: "sk-worker-secret",
     SUPPORT_AGENT_DEPLOYMENT_SECRET: "deployment-secret",
+    SUPPORT_AGENT_ACCESS_TOKEN: "access-token-value",
     SUPPORT_AGENT_MODEL: "gpt-5.4-mini",
     ...overrides,
   }

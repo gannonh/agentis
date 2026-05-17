@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vitest"
 
 import {
+  createHostedSupportAgentAccessToken,
   resolveHostedSupportAgentAcceptanceOptions,
   runHostedSupportAgentAcceptance,
 } from "./index"
@@ -17,6 +18,8 @@ describe("hosted support-agent acceptance runner", () => {
     ).toEqual({
       mode: "hosted",
       deploymentUrl: "https://agentis-support-agent-preview.example.workers.dev",
+      deploymentAccessToken: undefined,
+      deploymentSecret: undefined,
       question: undefined,
     })
   })
@@ -42,11 +45,14 @@ describe("hosted support-agent acceptance runner", () => {
         env: {
           WORKERS_URL: "https://agentis-support-agent-preview.example.workers.dev",
           SUPPORT_AGENT_ACCEPTANCE_QUESTION: "ignored env question",
+          SUPPORT_AGENT_ACCESS_TOKEN: "access-token-value",
         },
       })
     ).toEqual({
       mode: "dry-run",
       deploymentUrl: "https://agentis-support-agent-preview.example.workers.dev",
+      deploymentAccessToken: "access-token-value",
+      deploymentSecret: undefined,
       question: "Can the hosted support agent answer?",
     })
   })
@@ -57,8 +63,33 @@ describe("hosted support-agent acceptance runner", () => {
     ).toEqual({
       mode: "hosted",
       deploymentUrl: undefined,
+      deploymentAccessToken: undefined,
+      deploymentSecret: undefined,
       question: undefined,
     })
+  })
+
+  test("derives deterministic browser access tokens from deployment secrets", async () => {
+    await expect(createHostedSupportAgentAccessToken("   ")).rejects.toThrow(
+      "deployment secret is required to derive access token"
+    )
+    await expect(
+      createHostedSupportAgentAccessToken(" deployment-secret ")
+    ).resolves.toBe(await createHostedSupportAgentAccessToken("deployment-secret"))
+    await expect(
+      createHostedSupportAgentAccessToken("deployment-secret")
+    ).resolves.toHaveLength(64)
+  })
+
+  test("requires a deployment access token before hosted acceptance calls the model endpoint", async () => {
+    await expect(
+      runHostedSupportAgentAcceptance({
+        mode: "hosted",
+        deploymentUrl: "https://billing-support-preview.example.workers.dev",
+      })
+    ).rejects.toThrow(
+      "deployment access token is required; set --access-token, SUPPORT_AGENT_ACCESS_TOKEN, or SUPPORT_AGENT_DEPLOYMENT_SECRET to derive a preview token"
+    )
   })
 
   test("runs a clearly labeled deterministic dry-run covering hosted acceptance steps", async () => {
@@ -151,6 +182,7 @@ describe("hosted support-agent acceptance runner", () => {
     const report = await runHostedSupportAgentAcceptance({
       mode: "hosted",
       deploymentUrl: "https://billing-support-preview.example.workers.dev",
+      deploymentAccessToken: "access-token-value",
       fetch,
     })
 
@@ -165,8 +197,60 @@ describe("hosted support-agent acceptance runner", () => {
     )
     expect(fetch).toHaveBeenCalledWith(
       "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
-      expect.objectContaining({ method: "POST" })
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-agentis-access-token": "access-token-value",
+        },
+      })
     )
+  })
+
+  test("derives hosted acceptance access token from a local deployment secret", async () => {
+    const expectedAccessToken = await createHostedSupportAgentAccessToken(
+      "deployment-secret"
+    )
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.endsWith("/support-agent/chat")) {
+        return new Response("Agentis hosted support-agent web chat", { status: 200 })
+      }
+
+      if (url.endsWith("/api/support-agent/respond")) {
+        return new Response(
+          JSON.stringify({
+            answer: "Hosted support-agent acceptance answer.",
+            sources: [{ id: "source_product_docs_setup" }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      }
+
+      return new Response(JSON.stringify({ state: "deployed" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    })
+
+    await runHostedSupportAgentAcceptance({
+      mode: "hosted",
+      deploymentUrl: "https://billing-support-preview.example.workers.dev",
+      deploymentSecret: "deployment-secret",
+      fetch,
+    })
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
+      expect.objectContaining({
+        headers: {
+          "Content-Type": "application/json",
+          "x-agentis-access-token": expectedAccessToken,
+        },
+      })
+    )
+    expect(JSON.stringify(fetch.mock.calls)).not.toContain("deployment-secret")
   })
 
   test("uses deployed state as status evidence when hosted status has no title", async () => {
@@ -196,6 +280,7 @@ describe("hosted support-agent acceptance runner", () => {
     const report = await runHostedSupportAgentAcceptance({
       mode: "hosted",
       deploymentUrl: "https://billing-support-preview.example.workers.dev",
+      deploymentAccessToken: "access-token-value",
       fetch,
     })
 
@@ -211,6 +296,7 @@ describe("hosted support-agent acceptance runner", () => {
       runHostedSupportAgentAcceptance({
         mode: "hosted",
         deploymentUrl: "https://billing-support-preview.example.workers.dev",
+        deploymentAccessToken: "access-token-value",
         fetch,
       })
     ).rejects.toThrow("hosted chat URL failed with HTTP 404")
@@ -223,6 +309,7 @@ describe("hosted support-agent acceptance runner", () => {
       runHostedSupportAgentAcceptance({
         mode: "hosted",
         deploymentUrl: "https://billing-support-preview.example.workers.dev",
+        deploymentAccessToken: "access-token-value",
         fetch,
       })
     ).rejects.toThrow(
@@ -245,6 +332,7 @@ describe("hosted support-agent acceptance runner", () => {
       runHostedSupportAgentAcceptance({
         mode: "hosted",
         deploymentUrl: "https://billing-support-preview.example.workers.dev",
+        deploymentAccessToken: "access-token-value",
         fetch,
       })
     ).rejects.toThrow("hosted support-agent response failed with HTTP 500")
@@ -282,6 +370,7 @@ describe("hosted support-agent acceptance runner", () => {
       runHostedSupportAgentAcceptance({
         mode: "hosted",
         deploymentUrl: "https://billing-support-preview.example.workers.dev",
+        deploymentAccessToken: "access-token-value",
         fetch,
       })
     ).rejects.toThrow("hosted response requires a non-empty answer")
@@ -312,6 +401,7 @@ describe("hosted support-agent acceptance runner", () => {
       runHostedSupportAgentAcceptance({
         mode: "hosted",
         deploymentUrl: "https://billing-support-preview.example.workers.dev",
+        deploymentAccessToken: "access-token-value",
         fetch,
       })
     ).rejects.toThrow("hosted status inspection failed with HTTP 404")
@@ -345,6 +435,7 @@ describe("hosted support-agent acceptance runner", () => {
       runHostedSupportAgentAcceptance({
         mode: "hosted",
         deploymentUrl: "https://billing-support-preview.example.workers.dev",
+        deploymentAccessToken: "access-token-value",
         fetch,
       })
     ).rejects.toThrow("hosted deployment status must be deployed")
@@ -384,6 +475,7 @@ describe("hosted support-agent acceptance runner", () => {
       runHostedSupportAgentAcceptance({
         mode: "hosted",
         deploymentUrl: "https://billing-support-preview.example.workers.dev",
+        deploymentAccessToken: "access-token-value",
         fetch,
       })
     ).rejects.toThrow("citation-capable response requires at least one source")

@@ -3,6 +3,7 @@ import {
   supportAgentApiPath,
 } from "../lib/support-agent/api-handler"
 import { createAiSdkOpenAiTextGenerator } from "../lib/support-agent/ai-sdk-model-gateway"
+import { createHostedSupportAgentAccessToken } from "../lib/support-agent/hosted-access-token"
 import {
   createHostedSupportAgentDeploymentFailure,
   createHostedSupportAgentDeploymentStatus,
@@ -12,6 +13,7 @@ import type { SupportAgentTextGenerator } from "../lib/support-agent/model-runti
 export type SupportAgentWorkerEnv = {
   SUPPORT_AGENT_OPENAI_API_KEY?: string
   SUPPORT_AGENT_DEPLOYMENT_SECRET?: string
+  SUPPORT_AGENT_ACCESS_TOKEN?: string
   SUPPORT_AGENT_MODEL?: string
   SUPPORT_AGENT_PROVIDER?: string
 }
@@ -44,20 +46,8 @@ export function createSupportAgentWorkerFetch({
     }
 
     if (url.pathname === "/support-agent/status") {
-      if (!env.SUPPORT_AGENT_OPENAI_API_KEY || !env.SUPPORT_AGENT_DEPLOYMENT_SECRET) {
-        return jsonResponse(
-          createHostedSupportAgentDeploymentStatus({
-            state: "failed",
-            deployment: {
-              id: "agentis-support-agent-preview",
-              publicName: "Agentis support-agent preview",
-            },
-            failure: createHostedSupportAgentDeploymentFailure({
-              code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
-            }),
-          }),
-          503
-        )
+      if (!hasRequiredServerBindings(env)) {
+        return jsonResponse(createMissingSecretStatus(), 503)
       }
 
       return jsonResponse(
@@ -78,6 +68,25 @@ export function createSupportAgentWorkerFetch({
     }
 
     if (url.pathname === supportAgentApiPath) {
+      if (!hasRequiredServerBindings(env)) {
+        return jsonResponse(createMissingSecretError(), 503)
+      }
+
+      const accessToken = await resolveWorkerAccessToken(env)
+
+      if (!hasDeploymentAccess(request, accessToken)) {
+        return jsonResponse(
+          {
+            error: {
+              runtimeCode: "SUPPORT_AGENT_HOSTED_ACCESS_DENIED",
+              message: "Hosted support-agent access is required.",
+              userMessage: "Enter the hosted deployment access token and retry.",
+            },
+          },
+          401
+        )
+      }
+
       const handler = createSupportAgentApiHandler({
         env: {
           OPENAI_API_KEY: env.SUPPORT_AGENT_OPENAI_API_KEY,
@@ -92,6 +101,59 @@ export function createSupportAgentWorkerFetch({
 
     return jsonResponse({ ok: false, error: "Not found" }, 404)
   }
+}
+
+function hasRequiredServerBindings(env: SupportAgentWorkerEnv): env is SupportAgentWorkerEnv & {
+  SUPPORT_AGENT_OPENAI_API_KEY: string
+  SUPPORT_AGENT_DEPLOYMENT_SECRET: string
+} {
+  return Boolean(env.SUPPORT_AGENT_OPENAI_API_KEY && env.SUPPORT_AGENT_DEPLOYMENT_SECRET)
+}
+
+function createMissingSecretStatus() {
+  return createHostedSupportAgentDeploymentStatus({
+    state: "failed",
+    deployment: {
+      id: "agentis-support-agent-preview",
+      publicName: "Agentis support-agent preview",
+    },
+    failure: createHostedSupportAgentDeploymentFailure({
+      code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+    }),
+  })
+}
+
+async function resolveWorkerAccessToken(
+  env: SupportAgentWorkerEnv & { SUPPORT_AGENT_DEPLOYMENT_SECRET: string }
+): Promise<string> {
+  return (
+    env.SUPPORT_AGENT_ACCESS_TOKEN?.trim() ||
+    (await createHostedSupportAgentAccessToken(env.SUPPORT_AGENT_DEPLOYMENT_SECRET))
+  )
+}
+
+function createMissingSecretError() {
+  const status = createMissingSecretStatus()
+
+  return {
+    error: {
+      runtimeCode: "SUPPORT_AGENT_HOSTED_BINDING_MISSING",
+      message: status.failure!.title,
+      title: status.title,
+      userMessage: status.userMessage,
+      maintainerMessage: status.maintainerMessage,
+    },
+  }
+}
+
+function hasDeploymentAccess(request: Request, accessToken: string): boolean {
+  const headerToken = request.headers.get("x-agentis-access-token")
+  const authorization = request.headers.get("authorization")
+  const bearerToken = authorization?.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length)
+    : undefined
+
+  return headerToken === accessToken || bearerToken === accessToken
 }
 
 function createWorkerIndexPageHtml(origin: string): string {
@@ -165,7 +227,8 @@ function createHostedChatPageHtml(apiPath: string): string {
     p { line-height: 1.6; }
     .panel { background: white; border: 1px solid #cbd5e1; margin-top: 24px; padding: 20px; }
     label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-    textarea { box-sizing: border-box; font: inherit; min-height: 120px; padding: 12px; resize: vertical; width: 100%; }
+    input, textarea { box-sizing: border-box; font: inherit; padding: 12px; width: 100%; }
+    textarea { min-height: 120px; resize: vertical; }
     button { background: #0f172a; border: 0; color: white; cursor: pointer; font: inherit; font-weight: 600; margin-top: 12px; padding: 10px 14px; }
     button:disabled { cursor: not-allowed; opacity: 0.55; }
     .muted { color: #475569; font-size: 14px; }
@@ -189,6 +252,9 @@ function createHostedChatPageHtml(apiPath: string): string {
     </section>
     <section class="panel" aria-label="Hosted support-agent chat">
       <form id="support-agent-form">
+        <label for="access-token">Deployment access token</label>
+        <input id="access-token" name="accessToken" type="password" autocomplete="off" placeholder="Required for hosted preview access">
+        <p class="muted">This token stays in your browser request and is not rendered into the page.</p>
         <label for="support-question">Support question</label>
         <textarea id="support-question" name="question" placeholder="Ask about setup, billing, or troubleshooting">How do I connect a knowledge source?</textarea>
         <button id="submit-question" type="submit">Ask support agent</button>
@@ -201,6 +267,7 @@ function createHostedChatPageHtml(apiPath: string): string {
     const apiPath = ${JSON.stringify(apiPath)};
     const form = document.getElementById("support-agent-form");
     const questionInput = document.getElementById("support-question");
+    const accessTokenInput = document.getElementById("access-token");
     const submitButton = document.getElementById("submit-question");
     const status = document.getElementById("chat-status");
     const result = document.getElementById("chat-result");
@@ -227,9 +294,15 @@ function createHostedChatPageHtml(apiPath: string): string {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const question = questionInput.value.trim();
+      const accessToken = accessTokenInput.value.trim();
 
       if (!question) {
         status.textContent = "Enter a support question first.";
+        return;
+      }
+
+      if (!accessToken) {
+        status.textContent = "Enter the deployment access token first.";
         return;
       }
 
@@ -250,7 +323,10 @@ function createHostedChatPageHtml(apiPath: string): string {
       try {
         const response = await fetch(apiPath, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": accessToken
+          },
           body: JSON.stringify(request)
         });
         const payload = await response.json();

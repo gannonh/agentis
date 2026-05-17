@@ -16,12 +16,15 @@ export type SupportAgentRuntimeErrorCode =
   | "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN"
   | "SUPPORT_AGENT_PROVENANCE_UNAVAILABLE"
   | "SUPPORT_AGENT_RESPONSE_LINKAGE_MISMATCH"
+  | "SUPPORT_AGENT_HOSTED_ACCESS_DENIED"
+  | "SUPPORT_AGENT_HOSTED_BINDING_MISSING"
 
 export type SupportAgentFailureKind =
   | "provider-configuration-missing"
   | "context-preparation-failed"
   | "model-generation-failed"
   | "provenance-unavailable"
+  | "hosted-access-denied"
 
 export type SupportAgentFailureState = {
   kind: SupportAgentFailureKind
@@ -63,6 +66,26 @@ export function toSupportAgentFailureState(
             "The support agent needs provider credentials before it can answer.",
           maintainerMessage:
             "Set the support-agent provider environment variables, then retry the local demo.",
+          retryable: false,
+        }
+      case "SUPPORT_AGENT_HOSTED_ACCESS_DENIED":
+        return {
+          kind: "hosted-access-denied",
+          runtimeCode: error.code,
+          title: "Hosted access required",
+          userMessage: "Enter the hosted deployment access token and retry.",
+          maintainerMessage:
+            "Use the current browser access token for this preview, then retry.",
+          retryable: false,
+        }
+      case "SUPPORT_AGENT_HOSTED_BINDING_MISSING":
+        return {
+          kind: "hosted-access-denied",
+          runtimeCode: error.code,
+          title: "Hosted deployment incomplete",
+          userMessage: "The hosted support agent could not be deployed.",
+          maintainerMessage:
+            "Set the required server-side support-agent bindings, then rerun the Cloudflare preview deployment command.",
           retryable: false,
         }
       case "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN":

@@ -74,10 +74,15 @@ export function App({
   hostedDeploymentStatus,
   supportAgentResponder,
 }: AppProps = {}) {
+  const [hostedDeploymentAccessToken, setHostedDeploymentAccessToken] =
+    useState("")
   const activeSupportAgentResponder =
     supportAgentResponder ??
     (hostedChatHandoff
-      ? createHostedSupportAgentHttpRuntime({ handoff: hostedChatHandoff })
+      ? createHostedSupportAgentHttpRuntime({
+          handoff: hostedChatHandoff,
+          deploymentAccessToken: hostedDeploymentAccessToken.trim() || undefined,
+        })
       : serverSupportAgentResponder)
   const [templateName, setTemplateName] = useState(
     hostedChatHandoff?.template.name ?? "Customer support agent"
@@ -332,6 +337,25 @@ export function App({
               className="flex max-w-md flex-col gap-3"
               onSubmit={handleQuestionSubmit}
             >
+              {hostedChatHandoff ? (
+                <Field>
+                  <FieldLabel htmlFor="hosted-deployment-access-token">
+                    Deployment access token
+                  </FieldLabel>
+                  <Input
+                    id="hosted-deployment-access-token"
+                    type="password"
+                    value={hostedDeploymentAccessToken}
+                    onChange={(event) =>
+                      setHostedDeploymentAccessToken(event.target.value)
+                    }
+                    placeholder="Required for hosted preview access"
+                  />
+                  <FieldDescription>
+                    The token is sent as a request header and is not stored in the deployment handoff.
+                  </FieldDescription>
+                </Field>
+              ) : null}
               <Field>
                 <FieldLabel htmlFor="support-question">
                   Support question
@@ -353,6 +377,7 @@ export function App({
                 disabled={
                   !selectedSource ||
                   !supportQuestion.trim() ||
+                  (hostedChatHandoff && !hostedDeploymentAccessToken.trim()) ||
                   isSubmittingSupportQuestion
                 }
               >

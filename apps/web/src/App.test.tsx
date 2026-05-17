@@ -350,7 +350,7 @@ describe("App", () => {
     expect(
       screen.getByText("Selected source: Product documentation sample")
     ).toBeInTheDocument()
-    expect(document.body).not.toHaveTextContent(/sk-|deployment-secret|apiKey/)
+    expect(document.body).not.toHaveTextContent(/sk-|access-token-value|apiKey/)
   })
 
   test("renders configured deployment status after preparing hosted config", async () => {
@@ -370,7 +370,7 @@ describe("App", () => {
     expect(status).toHaveTextContent(
       "Run the Cloudflare preview deployment command when server-side bindings are set."
     )
-    expect(status).not.toHaveTextContent(/sk-|deployment-secret|apiKey/)
+    expect(status).not.toHaveTextContent(/sk-|access-token-value|apiKey/)
   })
 
   test("renders actionable deployment failure status without raw secrets", () => {
@@ -458,6 +458,10 @@ describe("App", () => {
       render(<App hostedChatHandoff={createHostedChatHandoff()} />)
 
       await user.type(
+        screen.getByLabelText("Deployment access token"),
+        " access-token-value "
+      )
+      await user.type(
         screen.getByLabelText("Support question"),
         "Can the hosted support agent answer?"
       )
@@ -465,7 +469,12 @@ describe("App", () => {
 
       expect(fetch).toHaveBeenCalledWith(
         "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
-        expect.any(Object)
+        expect.objectContaining({
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": "access-token-value",
+          },
+        })
       )
       expect(
         await screen.findByText("Hosted preview answered through Agentis runtime.")
@@ -697,6 +706,20 @@ describe("App", () => {
         "The support agent answered without citation data, so the answer was not shown.",
       maintainerMessage:
         "Verify the runtime returned provenance for every selected demo source before accepting the answer.",
+    },
+    {
+      code: "SUPPORT_AGENT_HOSTED_ACCESS_DENIED" as const,
+      title: "Hosted access required",
+      userMessage: "Enter the hosted deployment access token and retry.",
+      maintainerMessage:
+        "Use the current browser access token for this preview, then retry.",
+    },
+    {
+      code: "SUPPORT_AGENT_HOSTED_BINDING_MISSING" as const,
+      title: "Hosted deployment incomplete",
+      userMessage: "The hosted support agent could not be deployed.",
+      maintainerMessage:
+        "Set the required server-side support-agent bindings, then rerun the Cloudflare preview deployment command.",
     },
   ])(
     "surfaces $code as typed demo failure copy",

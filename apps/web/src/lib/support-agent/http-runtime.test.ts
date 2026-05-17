@@ -66,6 +66,7 @@ describe("support-agent HTTP runtime", () => {
       )
     )
     const runtime = createHostedSupportAgentHttpRuntime({
+      deploymentAccessToken: " access-token-value ",
       handoff: {
         deployment: {
           id: "deployment_billing_support_preview",
@@ -102,6 +103,10 @@ describe("support-agent HTTP runtime", () => {
       "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
       expect.objectContaining({
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-agentis-access-token": "access-token-value",
+        },
         body: JSON.stringify(supportAgentChatRequestFixture),
       })
     )

@@ -1,4 +1,5 @@
 import { createSupportAgentCloudflarePreviewDeployPlan } from "./cloudflare-preview-deploy"
+import { createHostedSupportAgentAccessToken } from "./hosted-access-token"
 import { createHostedSupportAgentDeploymentConfig } from "./hosted-deployment-config"
 import {
   createHostedSupportAgentDeploymentFailure,
@@ -40,6 +41,8 @@ export type HostedSupportAgentAcceptanceReport = {
 export type HostedSupportAgentAcceptanceInput = {
   mode: HostedSupportAgentAcceptanceMode
   deploymentUrl?: string
+  deploymentAccessToken?: string
+  deploymentSecret?: string
   question?: string
   fetch?: typeof globalThis.fetch
 }
@@ -48,6 +51,8 @@ export type HostedSupportAgentAcceptanceEnv = Partial<
   Record<
     | "SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL"
     | "SUPPORT_AGENT_ACCEPTANCE_QUESTION"
+    | "SUPPORT_AGENT_ACCESS_TOKEN"
+    | "SUPPORT_AGENT_DEPLOYMENT_SECRET"
     | "WORKERS_URL"
     | "AGENTIS_SUPPORT_WORKER_NAME"
     | "WORKERS_DEV_SUBDOMAIN",
@@ -65,7 +70,7 @@ export function resolveHostedSupportAgentAcceptanceOptions({
   env,
 }: HostedSupportAgentAcceptanceOptionsInput): Pick<
   HostedSupportAgentAcceptanceInput,
-  "mode" | "deploymentUrl" | "question"
+  "mode" | "deploymentUrl" | "deploymentAccessToken" | "deploymentSecret" | "question"
 > {
   const mode: HostedSupportAgentAcceptanceMode = args.includes("--dry-run")
     ? "dry-run"
@@ -75,10 +80,13 @@ export function resolveHostedSupportAgentAcceptanceOptions({
     env.SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL ??
     env.WORKERS_URL ??
     deriveWorkersDevUrl(env)
+  const deploymentAccessToken =
+    readOption(args, "--access-token") ?? env.SUPPORT_AGENT_ACCESS_TOKEN
+  const deploymentSecret = env.SUPPORT_AGENT_DEPLOYMENT_SECRET
   const question =
     readOption(args, "--question") ?? env.SUPPORT_AGENT_ACCEPTANCE_QUESTION
 
-  return { mode, deploymentUrl, question }
+  return { mode, deploymentUrl, deploymentAccessToken, deploymentSecret, question }
 }
 
 function readOption(args: string[], name: string): string | undefined {
@@ -104,6 +112,8 @@ function deriveWorkersDevUrl(
 export async function runHostedSupportAgentAcceptance({
   mode,
   deploymentUrl,
+  deploymentAccessToken,
+  deploymentSecret,
   question = supportAgentChatRequestFixture.question,
   fetch = globalThis.fetch,
 }: HostedSupportAgentAcceptanceInput): Promise<HostedSupportAgentAcceptanceReport> {
@@ -117,7 +127,24 @@ export async function runHostedSupportAgentAcceptance({
     )
   }
 
-  return runHostedAcceptance({ deploymentUrl, question, fetch })
+  const resolvedAccessToken =
+    deploymentAccessToken?.trim() ||
+    (deploymentSecret
+      ? await createHostedSupportAgentAccessToken(deploymentSecret)
+      : undefined)
+
+  if (!resolvedAccessToken) {
+    throw new Error(
+      "deployment access token is required; set --access-token, SUPPORT_AGENT_ACCESS_TOKEN, or SUPPORT_AGENT_DEPLOYMENT_SECRET to derive a preview token"
+    )
+  }
+
+  return runHostedAcceptance({
+    deploymentUrl,
+    deploymentAccessToken: resolvedAccessToken,
+    question,
+    fetch,
+  })
 }
 
 function runDryRunAcceptance(
@@ -214,10 +241,12 @@ function runDryRunAcceptance(
 
 async function runHostedAcceptance({
   deploymentUrl,
+  deploymentAccessToken,
   question,
   fetch,
 }: {
   deploymentUrl: string
+  deploymentAccessToken: string
   question: string
   fetch: typeof globalThis.fetch
 }): Promise<HostedSupportAgentAcceptanceReport> {
@@ -264,7 +293,10 @@ async function runHostedAcceptance({
   }
   const response = await fetch(respondUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-agentis-access-token": deploymentAccessToken.trim(),
+    },
     body: JSON.stringify(request),
   })
   if (!response.ok) {

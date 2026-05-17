@@ -14,10 +14,12 @@ const defaultSupportAgentEndpoint = "/api/support-agent/respond"
 type SupportAgentHttpRuntimeOptions = {
   endpoint?: string
   fetch?: typeof globalThis.fetch
+  headers?: Record<string, string>
 }
 
 type HostedSupportAgentHttpRuntimeOptions = {
   handoff: HostedSupportAgentChatRuntimeHandoff
+  deploymentAccessToken?: string
   fetch?: typeof globalThis.fetch
 }
 
@@ -30,8 +32,11 @@ type SupportAgentErrorPayload = {
 
 export function createHostedSupportAgentHttpRuntime({
   handoff,
+  deploymentAccessToken,
   fetch = globalThis.fetch,
 }: HostedSupportAgentHttpRuntimeOptions): SupportAgentRuntime {
+  const trimmedAccessToken = deploymentAccessToken?.trim()
+
   if (
     handoff.runtime.adapter !== "flue-support-agent" ||
     handoff.runtime.requestContract !== "SupportAgentChatRequest" ||
@@ -45,19 +50,23 @@ export function createHostedSupportAgentHttpRuntime({
 
   return createSupportAgentHttpRuntime({
     endpoint: handoff.runtime.apiEndpoint,
+    headers: trimmedAccessToken
+      ? { "x-agentis-access-token": trimmedAccessToken }
+      : undefined,
     fetch,
   })
 }
 
 export function createSupportAgentHttpRuntime({
   endpoint = defaultSupportAgentEndpoint,
+  headers = {},
   fetch = globalThis.fetch,
 }: SupportAgentHttpRuntimeOptions = {}): SupportAgentRuntime {
   return {
     async respond(request: SupportAgentChatRequest) {
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify(request),
       })
 
