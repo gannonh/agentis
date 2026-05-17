@@ -62,6 +62,23 @@ Preview the web app after building:
 pnpm --filter web preview
 ```
 
+Run the support-agent Worker locally:
+
+```bash
+pnpm support-agent:worker:dev
+pnpm support-agent:worker:check
+```
+
+Deploy, verify, and remove the Cloudflare preview Worker when hosted proof is needed:
+
+```bash
+pnpm support-agent:worker:deploy
+pnpm support-agent:worker:acceptance
+pnpm support-agent:worker:delete
+```
+
+The Worker root page links to `/support-agent/chat`, `/support-agent/status`, and `/health`.
+
 ## Testing And Quality
 
 Run lint checks:

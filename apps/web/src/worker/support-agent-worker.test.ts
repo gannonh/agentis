@@ -8,6 +8,25 @@ import {
 } from "./support-agent-worker"
 
 describe("support-agent Cloudflare Worker", () => {
+  test("serves a root index pointing to support-agent Worker endpoints", async () => {
+    const fetch = createSupportAgentWorkerFetch()
+
+    const response = await fetch(
+      new Request("https://agentis-support-agent-preview.example.workers.dev/"),
+      createEnv()
+    )
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Content-Type")).toContain("text/html")
+    expect(html).toContain("Agentis support-agent preview Worker")
+    expect(html).toContain("/support-agent/chat")
+    expect(html).toContain("/support-agent/status")
+    expect(html).toContain("/health")
+    expect(html).not.toContain("sk-worker-secret")
+    expect(html).not.toContain("deployment-secret")
+  })
+
   test("returns health status", async () => {
     const fetch = createSupportAgentWorkerFetch()
 

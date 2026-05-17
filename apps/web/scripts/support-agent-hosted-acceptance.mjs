@@ -1,33 +1,28 @@
 #!/usr/bin/env node
 
-import { runHostedSupportAgentAcceptance } from "../src/lib/support-agent/index.ts"
+import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
 
-function readMode(args) {
-  if (args.includes("--dry-run")) {
-    return "dry-run"
-  }
+import {
+  resolveHostedSupportAgentAcceptanceOptions,
+  runHostedSupportAgentAcceptance,
+} from "../src/lib/support-agent/index.ts"
 
-  return "hosted"
-}
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+const appDir = path.resolve(scriptDir, "..")
+const workspaceDir = path.resolve(appDir, "../..")
 
-function readOption(args, name) {
-  const index = args.indexOf(name)
-
-  if (index === -1) {
-    return undefined
-  }
-
-  return args[index + 1]
-}
+loadEnvFile(path.join(workspaceDir, ".env"))
+loadEnvFile(path.join(appDir, ".env"))
+loadEnvFile(path.join(appDir, ".dev.vars"))
 
 try {
-  const args = process.argv.slice(2)
-  const mode = readMode(args)
-  const deploymentUrl =
-    readOption(args, "--deployment-url") ??
-    process.env.SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL
-  const question =
-    readOption(args, "--question") ?? process.env.SUPPORT_AGENT_ACCEPTANCE_QUESTION
+  const { mode, deploymentUrl, question } =
+    resolveHostedSupportAgentAcceptanceOptions({
+      args: process.argv.slice(2),
+      env: process.env,
+    })
   const report = await runHostedSupportAgentAcceptance({
     mode,
     deploymentUrl,
@@ -50,4 +45,43 @@ try {
     )
   )
   process.exitCode = 1
+}
+
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return
+  }
+
+  for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim()
+
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue
+    }
+
+    const separatorIndex = trimmed.indexOf("=")
+
+    if (separatorIndex === -1) {
+      continue
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim()
+
+    if (process.env[key] !== undefined) {
+      continue
+    }
+
+    process.env[key] = unquoteEnvValue(trimmed.slice(separatorIndex + 1).trim())
+  }
+}
+
+function unquoteEnvValue(value) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1)
+  }
+
+  return value
 }

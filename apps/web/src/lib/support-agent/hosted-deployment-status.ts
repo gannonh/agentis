@@ -159,6 +159,7 @@ export function createHostedSupportAgentDeploymentStatus({
         retryable: failure?.retryable ?? true,
         failure,
       }
+    /* v8 ignore next 4 -- TypeScript exhaustiveness guard for future state additions. */
     default: {
       const exhaustiveCheck: never = state
       return exhaustiveCheck

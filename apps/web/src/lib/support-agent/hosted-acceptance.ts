@@ -44,6 +44,63 @@ export type HostedSupportAgentAcceptanceInput = {
   fetch?: typeof globalThis.fetch
 }
 
+export type HostedSupportAgentAcceptanceEnv = Partial<
+  Record<
+    | "SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL"
+    | "SUPPORT_AGENT_ACCEPTANCE_QUESTION"
+    | "WORKERS_URL"
+    | "AGENTIS_SUPPORT_WORKER_NAME"
+    | "WORKERS_DEV_SUBDOMAIN",
+    string
+  >
+>
+
+export type HostedSupportAgentAcceptanceOptionsInput = {
+  args: string[]
+  env: HostedSupportAgentAcceptanceEnv
+}
+
+export function resolveHostedSupportAgentAcceptanceOptions({
+  args,
+  env,
+}: HostedSupportAgentAcceptanceOptionsInput): Pick<
+  HostedSupportAgentAcceptanceInput,
+  "mode" | "deploymentUrl" | "question"
+> {
+  const mode: HostedSupportAgentAcceptanceMode = args.includes("--dry-run")
+    ? "dry-run"
+    : "hosted"
+  const deploymentUrl =
+    readOption(args, "--deployment-url") ??
+    env.SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL ??
+    env.WORKERS_URL ??
+    deriveWorkersDevUrl(env)
+  const question =
+    readOption(args, "--question") ?? env.SUPPORT_AGENT_ACCEPTANCE_QUESTION
+
+  return { mode, deploymentUrl, question }
+}
+
+function readOption(args: string[], name: string): string | undefined {
+  const index = args.indexOf(name)
+
+  if (index === -1) {
+    return undefined
+  }
+
+  return args[index + 1]
+}
+
+function deriveWorkersDevUrl(
+  env: HostedSupportAgentAcceptanceEnv
+): string | undefined {
+  if (!env.AGENTIS_SUPPORT_WORKER_NAME || !env.WORKERS_DEV_SUBDOMAIN) {
+    return undefined
+  }
+
+  return `https://${env.AGENTIS_SUPPORT_WORKER_NAME}.${env.WORKERS_DEV_SUBDOMAIN}.workers.dev`
+}
+
 export async function runHostedSupportAgentAcceptance({
   mode,
   deploymentUrl,
@@ -55,7 +112,9 @@ export async function runHostedSupportAgentAcceptance({
   }
 
   if (!deploymentUrl) {
-    throw new Error("SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL is required")
+    throw new Error(
+      "deployment URL is required; set --deployment-url, SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL, WORKERS_URL, or AGENTIS_SUPPORT_WORKER_NAME with WORKERS_DEV_SUBDOMAIN"
+    )
   }
 
   return runHostedAcceptance({ deploymentUrl, question, fetch })
@@ -144,7 +203,7 @@ function runDryRunAcceptance(
         id: "failure-handling",
         title: "Verify actionable failure handling",
         status: "passed",
-        evidence: failureStatus.failure?.code ?? failureStatus.title,
+        evidence: failureStatus.failure!.code,
       },
     ],
     notes: [
@@ -265,7 +324,7 @@ async function runHostedAcceptance({
     id: "failure-handling",
     title: "Verify actionable failure handling",
     status: "passed",
-    evidence: failureStatus.failure?.code ?? failureStatus.title,
+    evidence: failureStatus.failure!.code,
   })
 
   return {

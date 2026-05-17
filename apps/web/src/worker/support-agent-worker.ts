@@ -29,6 +29,10 @@ export function createSupportAgentWorkerFetch({
   return async (request, env) => {
     const url = new URL(request.url)
 
+    if (url.pathname === "/") {
+      return htmlResponse(createWorkerIndexPageHtml(url.origin), 200)
+    }
+
     if (url.pathname === "/health") {
       return jsonResponse(
         {
@@ -88,6 +92,62 @@ export function createSupportAgentWorkerFetch({
 
     return jsonResponse({ ok: false, error: "Not found" }, 404)
   }
+}
+
+function createWorkerIndexPageHtml(origin: string): string {
+  const endpoints = [
+    {
+      path: "/support-agent/chat",
+      label: "Hosted support-agent chat",
+      description: "Open the browser chat surface for the preview deployment.",
+    },
+    {
+      path: "/support-agent/status",
+      label: "Deployment status",
+      description: "Inspect browser-safe deployment state and actionable failures.",
+    },
+    {
+      path: "/health",
+      label: "Health check",
+      description: "Verify the Worker is reachable.",
+    },
+  ]
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentis support-agent preview Worker</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #f8fafc; color: #0f172a; }
+    main { box-sizing: border-box; margin: 0 auto; max-width: 760px; min-height: 100vh; padding: 48px 24px; }
+    h1 { font-size: 32px; letter-spacing: -0.03em; margin: 0 0 12px; }
+    p { line-height: 1.6; }
+    .muted { color: #475569; }
+    .endpoint { background: white; border: 1px solid #cbd5e1; display: block; margin-top: 16px; padding: 16px; text-decoration: none; }
+    .endpoint strong { color: #0f172a; display: block; }
+    .endpoint code { color: #334155; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="muted">Hosted support</p>
+    <h1>Agentis support-agent preview Worker</h1>
+    <p class="muted">Use these endpoints to verify the hosted support-agent preview.</p>
+    ${endpoints
+      .map(
+        (endpoint) => `<a class="endpoint" href="${endpoint.path}">
+      <strong>${endpoint.label}</strong>
+      <code>${origin}${endpoint.path}</code>
+      <p class="muted">${endpoint.description}</p>
+    </a>`
+      )
+      .join("\n    ")}
+  </main>
+</body>
+</html>`
 }
 
 function createHostedChatPageHtml(apiPath: string): string {

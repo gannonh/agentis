@@ -317,7 +317,7 @@ HSD-06 status states are browser-safe and visible in the Agentis flow or Worker 
 
 Actionable failure states use public codes such as `HOSTED_DEPLOYMENT_SECRET_MISSING`, `HOSTED_DEPLOYMENT_STATUS_UNAVAILABLE`, `HOSTED_DEPLOYMENT_CHAT_UNREACHABLE`, and `HOSTED_DEPLOYMENT_RUNTIME_UNAVAILABLE`. UI-visible status output and `/support-agent/status` responses must not include provider credentials, deployment secret values, raw stack traces, runtime paths, or adapter implementation details.
 
-The hosted Worker status endpoint is:
+The hosted Worker root path serves an index page that links to the chat, status, and health endpoints. The hosted Worker status endpoint is:
 
 ```text
 https://<cloudflare-preview-host>/support-agent/status
@@ -329,13 +329,17 @@ HSD-07 acceptance command:
 
 ```bash
 pnpm --filter web support-agent:acceptance -- --dry-run
-SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL=https://<cloudflare-preview-host> pnpm --filter web support-agent:acceptance
+pnpm support-agent:worker:acceptance
+# or override the target explicitly:
+pnpm support-agent:worker:acceptance -- --deployment-url https://<cloudflare-preview-host>
 ```
+
+The command loads `.env`, `apps/web/.env`, and `apps/web/.dev.vars`. Hosted mode resolves the deployment URL from `--deployment-url`, `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `WORKERS_URL`, or `AGENTIS_SUPPORT_WORKER_NAME` plus `WORKERS_DEV_SUBDOMAIN`. Prefer `support-agent:worker:*` scripts for Worker workflows because they source root `.env` before calling Wrangler or acceptance commands.
 
 Optional input:
 
 ```bash
-SUPPORT_AGENT_ACCEPTANCE_QUESTION="Can the hosted support agent answer?" pnpm --filter web support-agent:acceptance
+SUPPORT_AGENT_ACCEPTANCE_QUESTION="Can the hosted support agent answer?" pnpm support-agent:worker:acceptance
 ```
 
 Expected output is JSON with `completed: true`, `mode`, `evidenceKind`, and these step IDs:
@@ -349,12 +353,12 @@ Expected output is JSON with `completed: true`, `mode`, `evidenceKind`, and thes
 - `inspect-status`
 - `failure-handling`
 
-Dry-run output is labeled `deterministic-dry-run` and validates command logic only. Hosted mode requires `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL` or `--deployment-url`, opens `/support-agent/chat`, posts the question to `/api/support-agent/respond`, requires a non-empty answer and at least one citation source, inspects `/support-agent/status`, and fails loudly when the deployment URL, status endpoint, chat endpoint, response, or citation evidence is missing.
+Dry-run output is labeled `deterministic-dry-run` and validates command logic only. Hosted mode requires a deployment URL from `--deployment-url`, `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `WORKERS_URL`, or `AGENTIS_SUPPORT_WORKER_NAME` plus `WORKERS_DEV_SUBDOMAIN`, opens `/support-agent/chat`, posts the question to `/api/support-agent/respond`, requires a non-empty answer and at least one citation source, inspects `/support-agent/status`, and fails loudly when the deployment URL, status endpoint, chat endpoint, response, or citation evidence is missing.
 
 Evidence capture checklist:
 
 1. Configure: capture the `Hosted deployment config` and `Hosted deployment status` panels after `Prepare hosted config`.
-2. Deploy: save the `support-agent:deploy:preview` JSON plan and Worker preview deploy output.
+2. Deploy: save the `support-agent:deploy:preview` JSON plan and `pnpm support-agent:worker:deploy` output.
 3. Open hosted chat: capture `/support-agent/chat` showing `Agentis hosted support-agent web chat`.
 4. Ask: record the submitted support question.
 5. Answer: record the assistant answer from `/api/support-agent/respond`.

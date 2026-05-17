@@ -111,6 +111,32 @@ describe("hosted support-agent deployment status contract", () => {
     expect(serialized).not.toContain("OPENAI_API_KEY")
   })
 
+  test("uses default browser-safe messages when failure details are absent", () => {
+    expect(
+      createHostedSupportAgentDeploymentStatus({ state: "failed" })
+    ).toMatchObject({
+      state: "failed",
+      title: "Deployment failed",
+      userMessage: "The hosted support agent could not be deployed.",
+      maintainerMessage:
+        "Inspect the Cloudflare preview deployment output, then retry deployment.",
+      retryable: true,
+      failure: undefined,
+    })
+
+    expect(
+      createHostedSupportAgentDeploymentStatus({ state: "unavailable" })
+    ).toMatchObject({
+      state: "unavailable",
+      title: "Deployment status unavailable",
+      userMessage: "The hosted support agent status could not be inspected.",
+      maintainerMessage:
+        "Check the hosted status endpoint and Cloudflare preview deployment URL, then retry status inspection.",
+      retryable: true,
+      failure: undefined,
+    })
+  })
+
   test("maps unavailable status inspection to a retryable browser-safe state", () => {
     const status = createHostedSupportAgentDeploymentStatus({
       state: "unavailable",

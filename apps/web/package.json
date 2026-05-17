@@ -15,7 +15,12 @@
     "support-agent:deploy:preview": "tsx scripts/support-agent-preview-deploy.mjs",
     "support-agent:acceptance": "tsx scripts/support-agent-hosted-acceptance.mjs",
     "support-agent:deploy:worker:preview": "wrangler deploy --env preview --config wrangler.toml",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "support-agent:worker:dev": "bash scripts/support-agent-worker-dev.sh",
+    "support-agent:worker:check": "bash scripts/support-agent-worker-check.sh",
+    "support-agent:worker:deploy": "bash scripts/support-agent-worker-deploy.sh",
+    "support-agent:worker:acceptance": "bash scripts/support-agent-worker-acceptance.sh",
+    "support-agent:worker:delete": "bash scripts/support-agent-worker-delete.sh"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",

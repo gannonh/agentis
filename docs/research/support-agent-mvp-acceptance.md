@@ -91,8 +91,8 @@ rg -n "Hosted Chat Runtime Verification|hosted support-agent web chat|/support-a
 Manual hosted chat checklist:
 
 1. Run the S016 plan validation command with a valid hosted config and server-side binding references.
-2. Deploy the hosted Worker preview with `pnpm --filter web support-agent:deploy:worker:preview`.
-3. Open the deployed hosted chat URL: `https://<cloudflare-preview-host>/support-agent/chat`.
+2. Deploy the hosted Worker preview with `pnpm support-agent:worker:deploy`.
+3. Open the deployed Worker root URL to see endpoint links, then open `https://<cloudflare-preview-host>/support-agent/chat`.
 4. Confirm the page identifies the deployment as `Agentis hosted support-agent web chat`, shows `Runtime boundary: Agentis-owned /api/support-agent/respond`, and provides a support-question form.
 5. Ask `Can the hosted support agent answer?`.
 6. Confirm the browser request goes to `https://<cloudflare-preview-host>/api/support-agent/respond`.
@@ -124,13 +124,18 @@ rg -n "HSD-06|HSD-07|Hosted Deployment Status And Acceptance Evidence|support-ag
 Hosted mode command:
 
 ```bash
-SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL=https://<cloudflare-preview-host> pnpm --filter web support-agent:acceptance
+pnpm support-agent:worker:acceptance
+# or override the target explicitly:
+pnpm support-agent:worker:acceptance -- --deployment-url https://<cloudflare-preview-host>
 ```
 
 Optional hosted mode inputs:
 
-- `--deployment-url` or `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`: deployed Worker origin. Required for hosted mode.
+- `--deployment-url`, `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, or `WORKERS_URL`: deployed Worker origin. Required for hosted mode.
+- `AGENTIS_SUPPORT_WORKER_NAME` plus `WORKERS_DEV_SUBDOMAIN`: used to derive `https://<worker-name>.<subdomain>.workers.dev` when a direct URL is not set.
 - `--question` or `SUPPORT_AGENT_ACCEPTANCE_QUESTION`: acceptance question. Default: `How do I connect a knowledge source?`.
+
+The command loads `.env`, `apps/web/.env`, and `apps/web/.dev.vars` before resolving those inputs. Prefer `support-agent:worker:*` scripts for Worker workflows because they source root `.env` before calling Wrangler or acceptance commands.
 
 Expected acceptance script output:
 
@@ -151,14 +156,14 @@ Manual evidence checklist:
 
 1. Configure: capture the template name, selected source, `Hosted deployment config`, and `Hosted deployment status` panels.
 2. Deploy: capture valid `support-agent:deploy:preview` output and Worker preview deploy output.
-3. Open hosted chat: capture `/support-agent/chat` rendering `Agentis hosted support-agent web chat` and `Deployment status` guidance.
+3. Open hosted chat: capture the root endpoint index and `/support-agent/chat` rendering `Agentis hosted support-agent web chat` and `Deployment status` guidance.
 4. Ask: submit `Can the hosted support agent answer?` or the configured acceptance question.
 5. Answer: capture the assistant answer returned through `/api/support-agent/respond`.
 6. Cite: capture at least one source title and source ID in the hosted answer.
 7. Inspect status: save `/support-agent/status` JSON with `state: "deployed"` for the healthy path.
 8. Failure handling: capture HTTP 503 status output or focused test evidence for `HOSTED_DEPLOYMENT_SECRET_MISSING`, plus sanitized UI-visible failure text.
 
-The acceptance command must fail loudly when `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `/support-agent/chat`, `/api/support-agent/respond`, `/support-agent/status`, the hosted answer, or citation sources are missing. Dry-run output is not hosted evidence; use it to verify command logic before live hosted acceptance.
+The acceptance command must fail loudly when no deployment URL can be resolved from `--deployment-url`, `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `WORKERS_URL`, or `AGENTIS_SUPPORT_WORKER_NAME` plus `WORKERS_DEV_SUBDOMAIN`, and when `/support-agent/chat`, `/api/support-agent/respond`, `/support-agent/status`, the hosted answer, or citation sources are missing. Dry-run output is not hosted evidence; use it to verify command logic before live hosted acceptance.
 
 HSD-06 is accepted when status and failure states are visible, actionable, and browser-safe. HSD-07 is accepted when the maintainer can repeat the acceptance command and capture the full configure, deploy, open hosted chat, ask, answer, cite, inspect status, and failure handling evidence set.
 
