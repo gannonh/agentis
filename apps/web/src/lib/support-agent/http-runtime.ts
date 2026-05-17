@@ -1,4 +1,5 @@
 import type {
+  HostedSupportAgentChatRuntimeHandoff,
   SupportAgentChatRequest,
   SupportAgentChatResponse,
 } from "./chat-contracts"
@@ -13,6 +14,13 @@ const defaultSupportAgentEndpoint = "/api/support-agent/respond"
 type SupportAgentHttpRuntimeOptions = {
   endpoint?: string
   fetch?: typeof globalThis.fetch
+  headers?: Record<string, string>
+}
+
+type HostedSupportAgentHttpRuntimeOptions = {
+  handoff: HostedSupportAgentChatRuntimeHandoff
+  deploymentAccessToken: string
+  fetch?: typeof globalThis.fetch
 }
 
 type SupportAgentErrorPayload = {
@@ -22,15 +30,45 @@ type SupportAgentErrorPayload = {
   }
 }
 
+export function createHostedSupportAgentHttpRuntime({
+  handoff,
+  deploymentAccessToken,
+  fetch = globalThis.fetch,
+}: HostedSupportAgentHttpRuntimeOptions): SupportAgentRuntime {
+  const trimmedAccessToken = deploymentAccessToken.trim()
+
+  if (!trimmedAccessToken) {
+    throw new Error("hosted deployment access token is required")
+  }
+
+  if (
+    handoff.runtime.adapter !== "flue-support-agent" ||
+    handoff.runtime.requestContract !== "SupportAgentChatRequest" ||
+    handoff.runtime.credentials !== "server-side" ||
+    !handoff.runtime.apiEndpoint.trim()
+  ) {
+    throw new Error(
+      "hosted support-agent handoff must use the server runtime API boundary"
+    )
+  }
+
+  return createSupportAgentHttpRuntime({
+    endpoint: handoff.runtime.apiEndpoint,
+    headers: { "x-agentis-access-token": trimmedAccessToken },
+    fetch,
+  })
+}
+
 export function createSupportAgentHttpRuntime({
   endpoint = defaultSupportAgentEndpoint,
+  headers = {},
   fetch = globalThis.fetch,
 }: SupportAgentHttpRuntimeOptions = {}): SupportAgentRuntime {
   return {
     async respond(request: SupportAgentChatRequest) {
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify(request),
       })
 

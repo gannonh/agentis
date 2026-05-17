@@ -44,3 +44,29 @@ export type SupportAgentChatResponse = {
   runtime?: SupportAgentRuntimeMetadata
   error?: string
 }
+
+export type HostedSupportAgentChatRuntimeHandoff = {
+  deployment: {
+    id: string
+    publicName: string
+    chatUrl: string
+  }
+  template: {
+    id: "agent_support_template"
+    name: string
+  }
+  runtime: {
+    adapter: "flue-support-agent"
+    requestContract: "SupportAgentChatRequest"
+    apiEndpoint: string
+    credentials: "server-side"
+  }
+  knowledge: {
+    sourceIds: string[]
+    contextReferences: Array<{
+      knowledgeSourceId: string
+      type: SupportAgentKnowledgeSourceSelection["contextReference"]["type"]
+      path: string
+    }>
+  }
+}

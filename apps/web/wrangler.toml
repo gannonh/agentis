@@ -1,0 +1,16 @@
+name = "agentis-support-agent-preview"
+main = "src/worker/support-agent-worker.ts"
+compatibility_date = "2026-05-16"
+workers_dev = true
+
+[vars]
+SUPPORT_AGENT_PROVIDER = "openai"
+SUPPORT_AGENT_MODEL = "gpt-5.4-mini"
+
+[env.preview]
+name = "agentis-support-agent-preview"
+workers_dev = true
+
+[env.preview.vars]
+SUPPORT_AGENT_PROVIDER = "openai"
+SUPPORT_AGENT_MODEL = "gpt-5.4-mini"

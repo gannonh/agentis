@@ -1,4 +1,7 @@
-import type { SupportAgentKnowledgeSourceSelection } from "./chat-contracts"
+import type {
+  HostedSupportAgentChatRuntimeHandoff,
+  SupportAgentKnowledgeSourceSelection,
+} from "./chat-contracts"
 
 export type HostedSupportAgentRuntimeAdapter = "flue-support-agent"
 
@@ -63,6 +66,15 @@ export type CloudflarePreviewDeploymentRequest = {
   secrets: CloudflarePreviewDeploymentRequestInput["secretReferences"]
 }
 
+export type HostedSupportAgentChatRuntimeHandoffInput = {
+  config: HostedSupportAgentDeploymentConfig
+  deployment: {
+    id: string
+    publicName: string
+    url: string
+  }
+}
+
 export function createHostedSupportAgentDeploymentConfig({
   templateName,
   knowledgeSources,
@@ -124,5 +136,30 @@ export function createCloudflarePreviewDeploymentRequest({
     },
     knowledge: config.knowledge,
     secrets: secretReferences,
+  }
+}
+
+export function createHostedSupportAgentChatRuntimeHandoff({
+  config,
+  deployment,
+}: HostedSupportAgentChatRuntimeHandoffInput): HostedSupportAgentChatRuntimeHandoff {
+  const deploymentUrl = new URL(deployment.url)
+  const chatUrl = new URL("/support-agent/chat", deploymentUrl)
+  const apiEndpoint = new URL("/api/support-agent/respond", deploymentUrl)
+
+  return {
+    deployment: {
+      id: deployment.id,
+      publicName: deployment.publicName,
+      chatUrl: chatUrl.toString(),
+    },
+    template: config.template,
+    runtime: {
+      adapter: config.runtime.adapter,
+      requestContract: config.runtime.requestContract,
+      apiEndpoint: apiEndpoint.toString(),
+      credentials: config.deployment.credentials,
+    },
+    knowledge: config.knowledge,
   }
 }

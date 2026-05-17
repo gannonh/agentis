@@ -48,6 +48,38 @@ Reference docs:
 - Open that URL in the Codex in-app browser.
 - If Browser Use cannot attach to the integrated browser backend, keep the app server running and provide the exact local URL for the user to open.
 
+## Cloudflare Worker Development
+
+- Agentis proved the support-agent Worker can run on Cloudflare, but production hardening is not ready. Do not leave public deployments running with model credentials unless auth, rate limits, quotas, and abuse monitoring are in place.
+- Do hosted runtime work primarily against the local Cloudflare Workers runtime, not ad hoc Node harnesses.
+- Use Vite dev for the product UI/configuration flow, and Wrangler dev for `/`, `/health`, `/support-agent/chat`, `/support-agent/status`, and `/api/support-agent/respond` behavior.
+- Support-agent Worker entrypoint: `apps/web/src/worker/support-agent-worker.ts`.
+- Worker config: `apps/web/wrangler.toml`, env `preview`, Worker name `agentis-support-agent-preview`, `workers_dev = true`.
+- Cloudflare secrets are already expected to exist for preview: `SUPPORT_AGENT_OPENAI_API_KEY` and `SUPPORT_AGENT_DEPLOYMENT_SECRET`. Do not ask the user to recreate them unless `wrangler secret list` or `/support-agent/status` shows they are missing.
+- Root `.env` is the local source for Cloudflare auth and Worker URL metadata: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `AGENTIS_SUPPORT_WORKER_NAME`, `WORKERS_DEV_SUBDOMAIN`, `WORKERS_URL`, plus local support-agent secrets. Do not commit `.env`, `.dev.vars`, or raw provider keys.
+- Prefer the package scripts over raw Wrangler commands because they load root `.env` consistently.
+- Use local Wrangler for normal hosted-runtime validation:
+
+```bash
+pnpm support-agent:worker:dev
+pnpm support-agent:worker:check
+```
+
+- Use the real Cloudflare preview only when hosted proof is explicitly needed:
+
+```bash
+pnpm support-agent:worker:deploy
+pnpm support-agent:worker:acceptance
+```
+
+- `support-agent:acceptance` and `support-agent:worker:acceptance` load `.env`, `apps/web/.env`, and `apps/web/.dev.vars`. They resolve the hosted URL from `--deployment-url`, `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `WORKERS_URL`, or `AGENTIS_SUPPORT_WORKER_NAME` plus `WORKERS_DEV_SUBDOMAIN`.
+- If hosted acceptance reaches `WORKERS_URL` but `/support-agent/status` returns 404, the deployed Worker is stale or not the support-agent Worker. Redeploy the preview Worker before debugging application code.
+- Remove the preview deployment after hosted proof when requested:
+
+```bash
+pnpm support-agent:worker:delete
+```
+
 ## UI Components
 
 Add shadcn/ui components from the repository root:

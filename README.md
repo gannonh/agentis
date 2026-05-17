@@ -33,7 +33,7 @@ See:
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - pnpm 9.15.9
 
 ## Local Development
@@ -61,6 +61,23 @@ Preview the web app after building:
 ```bash
 pnpm --filter web preview
 ```
+
+Run the support-agent Worker locally:
+
+```bash
+pnpm support-agent:worker:dev
+pnpm support-agent:worker:check
+```
+
+Deploy, verify, and remove the Cloudflare preview Worker when hosted proof is needed:
+
+```bash
+pnpm support-agent:worker:deploy
+pnpm support-agent:worker:acceptance
+pnpm support-agent:worker:delete
+```
+
+The Worker root page links to `/support-agent/chat`, `/support-agent/status`, and `/health`.
 
 ## Testing And Quality
 

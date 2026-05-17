@@ -248,6 +248,12 @@ Expected output is a JSON preview deployment plan containing:
 - `wrangler.command`: `wrangler deploy --env preview`.
 - `wrangler.requiredSecretBindings`: the provider and deployment secret binding names.
 
+Deploy the hosted Worker preview after the plan validates:
+
+```bash
+pnpm --filter web support-agent:deploy:worker:preview
+```
+
 Failure notes:
 
 - Missing hosted config fails before deployment with `hosted deployment config is required`.
@@ -259,6 +265,117 @@ Server-side secret boundary checks (`server-side secret boundary`):
 - Browser-visible hosted config contains no provider API key, deployment secret, provider model setting, runtime path, or adapter internal field.
 - Command output includes secret binding names only.
 - Command output must not include raw provider API keys, deployment secret values, runtime paths, or adapter internals.
+
+## Hosted Chat Runtime Verification
+
+The Cloudflare preview deployment result maps to a hosted support-agent chat handoff with this public URL shape:
+
+```text
+https://<cloudflare-preview-host>/support-agent/chat
+```
+
+The hosted chat handoff also derives the server runtime endpoint:
+
+```text
+https://<cloudflare-preview-host>/api/support-agent/respond
+```
+
+Open the deployed chat after the Cloudflare preview command by visiting the `/support-agent/chat` URL on the deployed Worker host. The hosted page renders `Agentis hosted support-agent web chat`, the selected source, a support-question form, and `Runtime boundary: Agentis-owned /api/support-agent/respond`.
+
+Hosted ask/check flow:
+
+1. Open `https://<cloudflare-preview-host>/support-agent/chat`.
+2. Confirm `Product documentation sample` is selected from the deployment handoff metadata.
+3. Enter `Can the hosted support agent answer?` in `Support question`.
+4. Choose `Ask support agent`.
+5. Confirm the browser posts to `/api/support-agent/respond` on the deployed host, not to a provider API endpoint.
+6. Confirm the assistant response renders on the hosted page with public runtime metadata and citation-capable source metadata:
+   - `Source: Product documentation sample`
+   - `Source ID: source_product_docs_setup`
+   - A selected-source excerpt.
+7. Confirm browser-visible state and the hosted chat shell contain no provider API key, deployment secret, raw provider model config, runtime path, or adapter implementation detail.
+
+Focused proof commands:
+
+```bash
+pnpm --filter web test -- App.test.tsx src/lib/support-agent/http-runtime.test.ts src/worker/support-agent-worker.test.ts src/lib/support-agent/runtime-boundary.test.ts
+pnpm --filter web typecheck
+rg -n "Hosted Chat Runtime Verification|hosted support-agent web chat|/support-agent/chat|/api/support-agent/respond|HSD-03|HSD-04|Runtime boundary: Agentis server endpoint" docs/support-agent-mvp.md docs/research/support-agent-mvp-acceptance.md apps/web/src
+```
+
+HSD-03 acceptance is satisfied when the deployed `/support-agent/chat` URL opens the hosted chat path and the app can submit a question through the hosted runtime handoff. HSD-04 acceptance is satisfied when the hosted answer path routes through the Agentis-owned `/api/support-agent/respond` boundary and browser-visible output contains no provider credentials, deployment secrets, runtime internals, or adapter implementation details.
+
+## Hosted Deployment Status And Acceptance Evidence
+
+HSD-06 status states are browser-safe and visible in the Agentis flow or Worker status endpoint:
+
+- `configured`: hosted config exists and is ready for the Cloudflare preview deployment command.
+- `deploying`: deployment is in progress and should be inspected again after the preview command finishes.
+- `deployed`: hosted chat is ready and the maintainer can open `/support-agent/chat`.
+- `failed`: deployment failed with actionable maintainer guidance.
+- `unavailable`: status inspection could not reach a valid hosted status endpoint.
+
+Actionable failure states use public codes such as `HOSTED_DEPLOYMENT_SECRET_MISSING`, `HOSTED_DEPLOYMENT_STATUS_UNAVAILABLE`, `HOSTED_DEPLOYMENT_CHAT_UNREACHABLE`, and `HOSTED_DEPLOYMENT_RUNTIME_UNAVAILABLE`. UI-visible status output and `/support-agent/status` responses must not include provider credentials, deployment secret values, raw stack traces, runtime paths, or adapter implementation details.
+
+The hosted Worker root path serves an index page that links to the chat, status, and health endpoints. The hosted Worker status endpoint is:
+
+```text
+https://<cloudflare-preview-host>/support-agent/status
+```
+
+Expected healthy status output includes `state: "deployed"`, title `Deployment ready`, the hosted chat URL, and maintainer guidance to run the acceptance script. Missing server-side bindings return HTTP 503 with `state: "failed"` and `HOSTED_DEPLOYMENT_SECRET_MISSING`.
+
+HSD-07 acceptance command:
+
+```bash
+pnpm --filter web support-agent:acceptance -- --dry-run
+pnpm support-agent:worker:acceptance
+# or override the target explicitly:
+pnpm support-agent:worker:acceptance -- --deployment-url https://<cloudflare-preview-host>
+```
+
+The command loads `.env`, `apps/web/.env`, and `apps/web/.dev.vars`. Hosted mode resolves the deployment URL from `--deployment-url`, `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `WORKERS_URL`, or `AGENTIS_SUPPORT_WORKER_NAME` plus `WORKERS_DEV_SUBDOMAIN`. Prefer `support-agent:worker:*` scripts for Worker workflows because they source root `.env` before calling Wrangler or acceptance commands.
+
+Optional input:
+
+```bash
+SUPPORT_AGENT_ACCEPTANCE_QUESTION="Can the hosted support agent answer?" pnpm support-agent:worker:acceptance
+```
+
+Expected output is JSON with `completed: true`, `mode`, `evidenceKind`, and these step IDs:
+
+- `configure`
+- `deploy-plan`
+- `open-hosted-chat`
+- `ask`
+- `answer`
+- `cite`
+- `inspect-status`
+- `failure-handling`
+
+Dry-run output is labeled `deterministic-dry-run` and validates command logic only. Hosted mode requires a deployment URL from `--deployment-url`, `SUPPORT_AGENT_HOSTED_DEPLOYMENT_URL`, `WORKERS_URL`, or `AGENTIS_SUPPORT_WORKER_NAME` plus `WORKERS_DEV_SUBDOMAIN`, opens `/support-agent/chat`, posts the question to `/api/support-agent/respond`, requires a non-empty answer and at least one citation source, inspects `/support-agent/status`, and fails loudly when the deployment URL, status endpoint, chat endpoint, response, or citation evidence is missing.
+
+Evidence capture checklist:
+
+1. Configure: capture the `Hosted deployment config` and `Hosted deployment status` panels after `Prepare hosted config`.
+2. Deploy: save the `support-agent:deploy:preview` JSON plan and `pnpm support-agent:worker:deploy` output.
+3. Open hosted chat: capture `/support-agent/chat` showing `Agentis hosted support-agent web chat`.
+4. Ask: record the submitted support question.
+5. Answer: record the assistant answer from `/api/support-agent/respond`.
+6. Cite: record at least one source ID and source title in the hosted answer.
+7. Inspect status: save `/support-agent/status` JSON.
+8. Failure handling: save an actionable failure response or focused test output covering `HOSTED_DEPLOYMENT_SECRET_MISSING` and sanitized UI/status output.
+
+Focused proof commands:
+
+```bash
+pnpm --filter web test -- App.test.tsx src/lib/support-agent src/worker/support-agent-worker.test.ts
+pnpm --filter web support-agent:acceptance -- --dry-run
+pnpm --filter web typecheck
+rg -n "HSD-06|HSD-07|Hosted Deployment Status And Acceptance Evidence|support-agent:acceptance|HOSTED_DEPLOYMENT_SECRET_MISSING|evidence capture checklist" docs/support-agent-mvp.md docs/research/support-agent-mvp-acceptance.md apps/web/src apps/web/scripts apps/web/package.json
+```
+
+HSD-06 is accepted when a user or maintainer can inspect `configured`, `deploying`, `deployed`, `failed`, and `unavailable` deployment status states with actionable browser-safe messages. HSD-07 is accepted when the maintainer can run the acceptance command and produce evidence for configure, deploy, open hosted chat, ask, answer, cite, inspect status, and failure handling.
 
 ## Current Runtime Boundary
 

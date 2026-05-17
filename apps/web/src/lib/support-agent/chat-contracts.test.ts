@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import type {
+  HostedSupportAgentChatRuntimeHandoff,
   SupportAgentChatRequest,
   SupportAgentChatResponse,
 } from "./chat-contracts"
@@ -65,5 +66,40 @@ describe("support-agent chat contracts", () => {
     }
 
     expect(response.error).toBe("Flue request timed out.")
+  })
+
+  test("describes the browser-visible hosted chat runtime handoff", () => {
+    const handoff: HostedSupportAgentChatRuntimeHandoff = {
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+        chatUrl: "https://billing-support-preview.example.workers.dev/support-agent/chat",
+      },
+      template: {
+        id: "agent_support_template",
+        name: "Billing support",
+      },
+      runtime: {
+        adapter: "flue-support-agent",
+        requestContract: "SupportAgentChatRequest",
+        apiEndpoint: "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
+        credentials: "server-side",
+      },
+      knowledge: {
+        sourceIds: ["knowledge_product_docs"],
+        contextReferences: [
+          {
+            knowledgeSourceId: "knowledge_product_docs",
+            type: "local-documentation",
+            path: "docs/knowledge/product-documentation-sample.md",
+          },
+        ],
+      },
+    }
+
+    expect(handoff.deployment.chatUrl).toContain("/support-agent/chat")
+    expect(handoff.runtime.apiEndpoint).toContain("/api/support-agent/respond")
+    expect(JSON.stringify(handoff)).not.toContain("apiKey")
+    expect(JSON.stringify(handoff)).not.toContain("deploymentSecret")
   })
 })
