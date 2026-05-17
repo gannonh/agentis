@@ -1,11 +1,16 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { describe, expect, test } from "vitest"
 
 describe("support-agent Worker deployment config", () => {
   test("defines a deployable Cloudflare preview Worker without secret values", () => {
-    const config = readFileSync(path.resolve("wrangler.toml"), "utf8")
+    const thisDir = path.dirname(fileURLToPath(import.meta.url))
+    const config = readFileSync(
+      path.resolve(thisDir, "../../wrangler.toml"),
+      "utf8"
+    )
 
     expect(config).toContain('name = "agentis-support-agent-preview"')
     expect(config).toContain('main = "src/worker/support-agent-worker.ts"')

@@ -70,7 +70,11 @@ export function resolveHostedSupportAgentAcceptanceOptions({
   env,
 }: HostedSupportAgentAcceptanceOptionsInput): Pick<
   HostedSupportAgentAcceptanceInput,
-  "mode" | "deploymentUrl" | "deploymentAccessToken" | "deploymentSecret" | "question"
+  | "mode"
+  | "deploymentUrl"
+  | "deploymentAccessToken"
+  | "deploymentSecret"
+  | "question"
 > {
   const mode: HostedSupportAgentAcceptanceMode = args.includes("--dry-run")
     ? "dry-run"
@@ -86,7 +90,13 @@ export function resolveHostedSupportAgentAcceptanceOptions({
   const question =
     readOption(args, "--question") ?? env.SUPPORT_AGENT_ACCEPTANCE_QUESTION
 
-  return { mode, deploymentUrl, deploymentAccessToken, deploymentSecret, question }
+  return {
+    mode,
+    deploymentUrl,
+    deploymentAccessToken,
+    deploymentSecret,
+    question,
+  }
 }
 
 function readOption(args: string[], name: string): string | undefined {
@@ -266,17 +276,25 @@ async function runHostedAcceptance({
     id: "deploy-plan",
     title: "Create Cloudflare preview deploy plan",
     status: "passed",
-    evidence: "Hosted mode requires the maintainer-supplied deployed preview URL.",
+    evidence:
+      "Hosted mode requires the maintainer-supplied deployed preview URL.",
   })
 
-  const chatResponse = await fetch(chatUrl)
+  const chatResponse = await fetchHostedAcceptanceUrl(
+    "chat",
+    chatUrl,
+    undefined,
+    fetch
+  )
   if (!chatResponse.ok) {
     throw new Error(`hosted chat URL failed with HTTP ${chatResponse.status}`)
   }
 
   const chatHtml = await chatResponse.text()
   if (!chatHtml.includes("hosted support-agent")) {
-    throw new Error("hosted chat URL did not return the support-agent chat page")
+    throw new Error(
+      "hosted chat URL did not return the support-agent chat page"
+    )
   }
   steps.push({
     id: "open-hosted-chat",
@@ -291,16 +309,23 @@ async function runHostedAcceptance({
     messageId: "message_user_acceptance",
     question,
   }
-  const response = await fetch(respondUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-agentis-access-token": deploymentAccessToken.trim(),
+  const response = await fetchHostedAcceptanceUrl(
+    "respond",
+    respondUrl,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-agentis-access-token": deploymentAccessToken.trim(),
+      },
+      body: JSON.stringify(request),
     },
-    body: JSON.stringify(request),
-  })
+    fetch
+  )
   if (!response.ok) {
-    throw new Error(`hosted support-agent response failed with HTTP ${response.status}`)
+    throw new Error(
+      `hosted support-agent response failed with HTTP ${response.status}`
+    )
   }
   const payload = (await response.json()) as SupportAgentChatResponse
 
@@ -331,11 +356,21 @@ async function runHostedAcceptance({
     evidence: payload.sources.map((source) => source.id).join(", "),
   })
 
-  const statusResponse = await fetch(statusUrl)
+  const statusResponse = await fetchHostedAcceptanceUrl(
+    "status",
+    statusUrl,
+    undefined,
+    fetch
+  )
   if (!statusResponse.ok) {
-    throw new Error(`hosted status inspection failed with HTTP ${statusResponse.status}`)
+    throw new Error(
+      `hosted status inspection failed with HTTP ${statusResponse.status}`
+    )
   }
-  const statusPayload = (await statusResponse.json()) as { state?: string; title?: string }
+  const statusPayload = (await statusResponse.json()) as {
+    state?: string
+    title?: string
+  }
   if (statusPayload.state !== "deployed") {
     throw new Error("hosted deployment status must be deployed")
   }
@@ -366,7 +401,32 @@ async function runHostedAcceptance({
     deploymentUrl: baseUrl,
     question,
     steps,
-    notes: ["Hosted mode used maintainer-supplied deployment URL and live endpoints."],
+    notes: [
+      "Hosted mode used maintainer-supplied deployment URL and live endpoints.",
+    ],
+  }
+}
+
+async function fetchHostedAcceptanceUrl(
+  label: "chat" | "respond" | "status",
+  input: Parameters<typeof globalThis.fetch>[0],
+  init: RequestInit | undefined,
+  fetch: typeof globalThis.fetch,
+  timeoutMs = 15_000
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`hosted ${label} request timed out after ${timeoutMs}ms`)
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeout)
   }
 }
 

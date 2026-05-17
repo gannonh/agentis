@@ -19,7 +19,7 @@ type SupportAgentHttpRuntimeOptions = {
 
 type HostedSupportAgentHttpRuntimeOptions = {
   handoff: HostedSupportAgentChatRuntimeHandoff
-  deploymentAccessToken?: string
+  deploymentAccessToken: string
   fetch?: typeof globalThis.fetch
 }
 
@@ -35,7 +35,11 @@ export function createHostedSupportAgentHttpRuntime({
   deploymentAccessToken,
   fetch = globalThis.fetch,
 }: HostedSupportAgentHttpRuntimeOptions): SupportAgentRuntime {
-  const trimmedAccessToken = deploymentAccessToken?.trim()
+  const trimmedAccessToken = deploymentAccessToken.trim()
+
+  if (!trimmedAccessToken) {
+    throw new Error("hosted deployment access token is required")
+  }
 
   if (
     handoff.runtime.adapter !== "flue-support-agent" ||
@@ -50,9 +54,7 @@ export function createHostedSupportAgentHttpRuntime({
 
   return createSupportAgentHttpRuntime({
     endpoint: handoff.runtime.apiEndpoint,
-    headers: trimmedAccessToken
-      ? { "x-agentis-access-token": trimmedAccessToken }
-      : undefined,
+    headers: { "x-agentis-access-token": trimmedAccessToken },
     fetch,
   })
 }

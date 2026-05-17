@@ -51,7 +51,8 @@ describe("hosted support-agent deployment status contract", () => {
         deployment: {
           id: "deployment_billing_support_preview",
           publicName: "Billing support preview",
-          chatUrl: "https://support-agent-preview.example.com/support-agent/chat",
+          chatUrl:
+            "https://support-agent-preview.example.com/support-agent/chat",
         },
       })
     ).toMatchObject({
@@ -111,6 +112,18 @@ describe("hosted support-agent deployment status contract", () => {
     expect(serialized).not.toContain("OPENAI_API_KEY")
   })
 
+  test("returns a fresh deployment failure object for each request", () => {
+    const firstFailure = createHostedSupportAgentDeploymentFailure({
+      code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+    })
+    const secondFailure = createHostedSupportAgentDeploymentFailure({
+      code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+    })
+
+    expect(firstFailure).toEqual(secondFailure)
+    expect(firstFailure).not.toBe(secondFailure)
+  })
+
   test("uses default browser-safe messages when failure details are absent", () => {
     expect(
       createHostedSupportAgentDeploymentStatus({ state: "failed" })
@@ -140,6 +153,10 @@ describe("hosted support-agent deployment status contract", () => {
   test("maps unavailable status inspection to a retryable browser-safe state", () => {
     const status = createHostedSupportAgentDeploymentStatus({
       state: "unavailable",
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+      },
       failure: createHostedSupportAgentDeploymentFailure({
         code: "HOSTED_DEPLOYMENT_STATUS_UNAVAILABLE",
         cause: "GET /internal/status failed with raw Cloudflare worker stack",
@@ -153,6 +170,10 @@ describe("hosted support-agent deployment status contract", () => {
       maintainerMessage:
         "Check the hosted status endpoint and Cloudflare preview deployment URL, then retry status inspection.",
       retryable: true,
+      deployment: {
+        id: "deployment_billing_support_preview",
+        publicName: "Billing support preview",
+      },
       failure: {
         code: "HOSTED_DEPLOYMENT_STATUS_UNAVAILABLE",
         title: "Status endpoint unavailable",

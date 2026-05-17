@@ -27,7 +27,7 @@ check_path() {
   local code
 
   body="$(mktemp)"
-  code="$(curl -sS -o "$body" -w "%{http_code}" "$BASE_URL$path")" || STATUS=$?
+  code="$(curl -sS --connect-timeout 5 --max-time 15 -o "$body" -w "%{http_code}" "$BASE_URL$path")" || STATUS=$?
 
   printf '%s %s HTTP %s\n' "$BASE_URL" "$path" "$code"
   cat "$body"

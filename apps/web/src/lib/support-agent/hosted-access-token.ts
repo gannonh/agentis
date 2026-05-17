@@ -1,4 +1,5 @@
 const hostedSupportAgentAccessTokenSalt = "agentis-support-agent-preview-access"
+const textEncoder = new TextEncoder()
 
 export async function createHostedSupportAgentAccessToken(
   deploymentSecret: string
@@ -9,12 +10,101 @@ export async function createHostedSupportAgentAccessToken(
     throw new Error("deployment secret is required to derive access token")
   }
 
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(`${hostedSupportAgentAccessTokenSalt}:${secret}`)
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    await importHmacKey(secret, ["sign"]),
+    textEncoder.encode(hostedSupportAgentAccessTokenSalt)
   )
 
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("")
+  return bytesToHex(new Uint8Array(signature))
+}
+
+export async function verifyHostedSupportAgentAccessToken({
+  deploymentSecret,
+  accessToken,
+}: {
+  deploymentSecret: string
+  accessToken: string | undefined
+}): Promise<boolean> {
+  const secret = deploymentSecret.trim()
+  const token = accessToken?.trim()
+
+  if (!secret || !token) {
+    return false
+  }
+
+  const signature = hexToBytes(token)
+  if (!signature) {
+    return false
+  }
+
+  return crypto.subtle.verify(
+    "HMAC",
+    await importHmacKey(secret, ["verify"]),
+    signature,
+    textEncoder.encode(hostedSupportAgentAccessTokenSalt)
+  )
+}
+
+export async function verifyHostedSupportAgentStaticAccessToken({
+  expectedAccessToken,
+  accessToken,
+}: {
+  expectedAccessToken: string
+  accessToken: string | undefined
+}): Promise<boolean> {
+  const expectedToken = expectedAccessToken.trim()
+  const token = accessToken?.trim()
+
+  if (!expectedToken || !token) {
+    return false
+  }
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    await importHmacKey(expectedToken, ["sign"]),
+    textEncoder.encode(hostedSupportAgentAccessTokenSalt)
+  )
+
+  return crypto.subtle.verify(
+    "HMAC",
+    await importHmacKey(token, ["verify"]),
+    signature,
+    textEncoder.encode(hostedSupportAgentAccessTokenSalt)
+  )
+}
+
+function importHmacKey(
+  secret: string,
+  keyUsages: Array<"sign" | "verify">
+): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    "raw",
+    textEncoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    keyUsages
+  )
+}
+
+function bytesToHex(bytes: Uint8Array) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  )
+}
+
+function hexToBytes(hex: string): ArrayBuffer | undefined {
+  if (hex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(hex)) {
+    return undefined
+  }
+
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16)
+  }
+
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength
+  )
 }

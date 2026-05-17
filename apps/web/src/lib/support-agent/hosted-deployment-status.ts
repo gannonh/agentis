@@ -94,7 +94,7 @@ const FAILURE_MESSAGES: Record<
 export function createHostedSupportAgentDeploymentFailure({
   code,
 }: HostedSupportAgentDeploymentFailureInput): HostedSupportAgentDeploymentFailure {
-  return FAILURE_MESSAGES[code]
+  return { ...FAILURE_MESSAGES[code] }
 }
 
 export function createHostedSupportAgentDeploymentStatus({
@@ -138,7 +138,8 @@ export function createHostedSupportAgentDeploymentStatus({
         state,
         title: "Deployment failed",
         userMessage:
-          failure?.userMessage ?? "The hosted support agent could not be deployed.",
+          failure?.userMessage ??
+          "The hosted support agent could not be deployed.",
         maintainerMessage:
           failure?.maintainerMessage ??
           "Inspect the Cloudflare preview deployment output, then retry deployment.",
@@ -157,6 +158,7 @@ export function createHostedSupportAgentDeploymentStatus({
           failure?.maintainerMessage ??
           "Check the hosted status endpoint and Cloudflare preview deployment URL, then retry status inspection.",
         retryable: failure?.retryable ?? true,
+        deployment,
         failure,
       }
     /* v8 ignore next 4 -- TypeScript exhaustiveness guard for future state additions. */

@@ -3,7 +3,10 @@ import {
   supportAgentApiPath,
 } from "../lib/support-agent/api-handler"
 import { createAiSdkOpenAiTextGenerator } from "../lib/support-agent/ai-sdk-model-gateway"
-import { createHostedSupportAgentAccessToken } from "../lib/support-agent/hosted-access-token"
+import {
+  verifyHostedSupportAgentAccessToken,
+  verifyHostedSupportAgentStaticAccessToken,
+} from "../lib/support-agent/hosted-access-token"
 import {
   createHostedSupportAgentDeploymentFailure,
   createHostedSupportAgentDeploymentStatus,
@@ -72,15 +75,14 @@ export function createSupportAgentWorkerFetch({
         return jsonResponse(createMissingSecretError(), 503)
       }
 
-      const accessToken = await resolveWorkerAccessToken(env)
-
-      if (!hasDeploymentAccess(request, accessToken)) {
+      if (!(await hasDeploymentAccess(request, env))) {
         return jsonResponse(
           {
             error: {
               runtimeCode: "SUPPORT_AGENT_HOSTED_ACCESS_DENIED",
               message: "Hosted support-agent access is required.",
-              userMessage: "Enter the hosted deployment access token and retry.",
+              userMessage:
+                "Enter the hosted deployment access token and retry.",
             },
           },
           401
@@ -103,11 +105,16 @@ export function createSupportAgentWorkerFetch({
   }
 }
 
-function hasRequiredServerBindings(env: SupportAgentWorkerEnv): env is SupportAgentWorkerEnv & {
+function hasRequiredServerBindings(
+  env: SupportAgentWorkerEnv
+): env is SupportAgentWorkerEnv & {
   SUPPORT_AGENT_OPENAI_API_KEY: string
   SUPPORT_AGENT_DEPLOYMENT_SECRET: string
 } {
-  return Boolean(env.SUPPORT_AGENT_OPENAI_API_KEY && env.SUPPORT_AGENT_DEPLOYMENT_SECRET)
+  return Boolean(
+    env.SUPPORT_AGENT_OPENAI_API_KEY?.trim() &&
+    env.SUPPORT_AGENT_DEPLOYMENT_SECRET?.trim()
+  )
 }
 
 function createMissingSecretStatus() {
@@ -121,15 +128,6 @@ function createMissingSecretStatus() {
       code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
     }),
   })
-}
-
-async function resolveWorkerAccessToken(
-  env: SupportAgentWorkerEnv & { SUPPORT_AGENT_DEPLOYMENT_SECRET: string }
-): Promise<string> {
-  return (
-    env.SUPPORT_AGENT_ACCESS_TOKEN?.trim() ||
-    (await createHostedSupportAgentAccessToken(env.SUPPORT_AGENT_DEPLOYMENT_SECRET))
-  )
 }
 
 function createMissingSecretError() {
@@ -146,14 +144,45 @@ function createMissingSecretError() {
   }
 }
 
-function hasDeploymentAccess(request: Request, accessToken: string): boolean {
-  const headerToken = request.headers.get("x-agentis-access-token")
+async function hasDeploymentAccess(
+  request: Request,
+  env: SupportAgentWorkerEnv & { SUPPORT_AGENT_DEPLOYMENT_SECRET: string }
+): Promise<boolean> {
   const authorization = request.headers.get("authorization")
   const bearerToken = authorization?.startsWith("Bearer ")
     ? authorization.slice("Bearer ".length)
     : undefined
+  const candidateTokens = [
+    request.headers.get("x-agentis-access-token") ?? undefined,
+    bearerToken,
+  ].filter((token): token is string => Boolean(token?.trim()))
 
-  return headerToken === accessToken || bearerToken === accessToken
+  for (const candidateToken of candidateTokens) {
+    const configuredAccessToken = env.SUPPORT_AGENT_ACCESS_TOKEN?.trim()
+
+    if (configuredAccessToken) {
+      if (
+        await verifyHostedSupportAgentStaticAccessToken({
+          expectedAccessToken: configuredAccessToken,
+          accessToken: candidateToken,
+        })
+      ) {
+        return true
+      }
+      continue
+    }
+
+    if (
+      await verifyHostedSupportAgentAccessToken({
+        deploymentSecret: env.SUPPORT_AGENT_DEPLOYMENT_SECRET,
+        accessToken: candidateToken,
+      })
+    ) {
+      return true
+    }
+  }
+
+  return false
 }
 
 function createWorkerIndexPageHtml(origin: string): string {
@@ -166,7 +195,8 @@ function createWorkerIndexPageHtml(origin: string): string {
     {
       path: "/support-agent/status",
       label: "Deployment status",
-      description: "Inspect browser-safe deployment state and actionable failures.",
+      description:
+        "Inspect browser-safe deployment state and actionable failures.",
     },
     {
       path: "/health",

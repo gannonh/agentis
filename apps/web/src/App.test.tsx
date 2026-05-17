@@ -30,7 +30,9 @@ describe("App", () => {
   }
 
   function renderAppWithDemoRuntime() {
-    return render(<App supportAgentResponder={createLocalSupportAgentResponder()} />)
+    return render(
+      <App supportAgentResponder={createLocalSupportAgentResponder()} />
+    )
   }
 
   function createHostedChatHandoff(): HostedSupportAgentChatRuntimeHandoff {
@@ -38,7 +40,8 @@ describe("App", () => {
       deployment: {
         id: "deployment_billing_support_preview",
         publicName: "Billing support preview",
-        chatUrl: "https://billing-support-preview.example.workers.dev/support-agent/chat",
+        chatUrl:
+          "https://billing-support-preview.example.workers.dev/support-agent/chat",
       },
       template: {
         id: "agent_support_template",
@@ -47,7 +50,8 @@ describe("App", () => {
       runtime: {
         adapter: "flue-support-agent",
         requestContract: "SupportAgentChatRequest",
-        apiEndpoint: "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
+        apiEndpoint:
+          "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
         credentials: "server-side",
       },
       knowledge: {
@@ -105,7 +109,9 @@ describe("App", () => {
   test("keeps the hosted config action disabled until a source is selected", () => {
     render(<App />)
 
-    const nextButton = screen.getByRole("button", { name: "Prepare hosted config" })
+    const nextButton = screen.getByRole("button", {
+      name: "Prepare hosted config",
+    })
 
     expect(nextButton.closest("div")).toHaveClass("justify-end")
     expect(nextButton).toBeDisabled()
@@ -243,7 +249,8 @@ describe("App", () => {
           {
             id: "knowledge_product_docs",
             title: "Product documentation sample",
-            description: "Product setup, billing, and troubleshooting articles.",
+            description:
+              "Product setup, billing, and troubleshooting articles.",
             contextReference: {
               type: "local-documentation",
               path: "docs/knowledge/product-documentation-sample.md",
@@ -325,7 +332,9 @@ describe("App", () => {
 
     await submitSupportQuestion(user)
 
-    expect(screen.getByText("Runtime: model / fallback-model")).toBeInTheDocument()
+    expect(
+      screen.getByText("Runtime: model / fallback-model")
+    ).toBeInTheDocument()
   })
 
   test("renders the hosted support-agent web chat path from deployment metadata", () => {
@@ -334,23 +343,169 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "Hosted support-agent web chat" })
     ).toBeInTheDocument()
-    expect(screen.getByText("Deployment: Billing support preview")).toBeInTheDocument()
+    expect(
+      screen.getByText("Deployment: Billing support preview")
+    ).toBeInTheDocument()
     expect(
       screen.getByText(
         "Runtime boundary: Agentis server endpoint / flue-support-agent"
       )
     ).toBeInTheDocument()
-    expect(screen.getByRole("region", { name: "Hosted deployment status" })).toHaveTextContent(
-      "Deployment ready"
-    )
-    expect(screen.getByText("The hosted support agent is ready to chat.")).toBeInTheDocument()
     expect(
-      screen.getByText("Open the hosted chat URL and run the hosted acceptance script.")
+      screen.getByRole("region", { name: "Hosted deployment status" })
+    ).toHaveTextContent("Deployment ready")
+    expect(
+      screen.getByText("The hosted support agent is ready to chat.")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Open the hosted chat URL and run the hosted acceptance script."
+      )
     ).toBeInTheDocument()
     expect(
       screen.getByText("Selected source: Product documentation sample")
     ).toBeInTheDocument()
     expect(document.body).not.toHaveTextContent(/sk-|access-token-value|apiKey/)
+  })
+
+  test("updates hosted metadata when the hosted handoff arrives after mount", () => {
+    const { rerender } = render(<App />)
+
+    expect(
+      screen.getByRole("heading", { name: "Configure a support agent" })
+    ).toBeInTheDocument()
+
+    rerender(<App hostedChatHandoff={createHostedChatHandoff()} />)
+
+    expect(
+      screen.getByRole("heading", { name: "Hosted support-agent web chat" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Deployment: Billing support preview")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Billing support" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("region", { name: "Hosted deployment status" })
+    ).toHaveTextContent("Deployment ready")
+    expect(
+      screen.getByText("The hosted support agent is ready to chat.")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Open the hosted chat URL and run the hosted acceptance script."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Selected source: Product documentation sample")
+    ).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(/sk-|access-token-value|apiKey/)
+  })
+
+  test("labels hosted handoff knowledge sources with opaque ids", () => {
+    const hostedChatHandoff: HostedSupportAgentChatRuntimeHandoff = {
+      ...createHostedChatHandoff(),
+      knowledge: {
+        sourceIds: ["---"],
+        contextReferences: [
+          {
+            knowledgeSourceId: "---",
+            type: "local-documentation",
+            path: "docs/knowledge/opaque.md",
+          },
+        ],
+      },
+    }
+
+    render(<App hostedChatHandoff={hostedChatHandoff} />)
+
+    expect(
+      screen.getByText("Selected source: Hosted knowledge source")
+    ).toBeInTheDocument()
+  })
+
+  test("keeps hosted chat disabled when handoff source lacks context", () => {
+    const hostedChatHandoff: HostedSupportAgentChatRuntimeHandoff = {
+      ...createHostedChatHandoff(),
+      knowledge: {
+        sourceIds: ["partner_portal_docs"],
+        contextReferences: [],
+      },
+    }
+
+    render(<App hostedChatHandoff={hostedChatHandoff} />)
+
+    expect(
+      screen.getByText("Select sample documentation to continue setup.")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Ask support agent" })
+    ).toBeDisabled()
+  })
+
+  test("submits hosted chat with non-sample handoff knowledge sources", async () => {
+    const user = userEvent.setup()
+    const supportAgentResponder: SupportAgentRuntime = {
+      respond: vi.fn(async (request) => ({
+        agentId: request.agentId,
+        conversationId: request.conversationId,
+        messageId: `message_assistant_${request.messageId}`,
+        inReplyToMessageId: request.messageId,
+        answer: "Hosted non-sample knowledge source answered.",
+        sources: [],
+      })),
+    }
+    const hostedChatHandoff: HostedSupportAgentChatRuntimeHandoff = {
+      ...createHostedChatHandoff(),
+      knowledge: {
+        sourceIds: ["partner_portal_docs"],
+        contextReferences: [
+          {
+            knowledgeSourceId: "partner_portal_docs",
+            type: "local-documentation",
+            path: "docs/knowledge/partner-portal.md",
+          },
+        ],
+      },
+    }
+
+    render(
+      <App
+        hostedChatHandoff={hostedChatHandoff}
+        supportAgentResponder={supportAgentResponder}
+      />
+    )
+
+    expect(
+      screen.getByText("Selected source: Partner portal docs")
+    ).toBeInTheDocument()
+    await user.type(
+      screen.getByLabelText("Deployment access token"),
+      "access-token-value"
+    )
+    await user.type(
+      screen.getByLabelText("Support question"),
+      "Can hosted docs answer?"
+    )
+    await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+
+    expect(supportAgentResponder.respond).toHaveBeenCalledWith(
+      expect.objectContaining({
+        knowledgeSourceIds: ["partner_portal_docs"],
+        knowledgeSources: [
+          {
+            id: "partner_portal_docs",
+            title: "Partner portal docs",
+            description: "Hosted deployment knowledge source.",
+            contextReference: {
+              type: "local-documentation",
+              path: "docs/knowledge/partner-portal.md",
+            },
+          },
+        ],
+      })
+    )
   })
 
   test("renders configured deployment status after preparing hosted config", async () => {
@@ -360,9 +515,13 @@ describe("App", () => {
     await user.click(
       screen.getByRole("button", { name: "Product documentation sample" })
     )
-    await user.click(screen.getByRole("button", { name: "Prepare hosted config" }))
+    await user.click(
+      screen.getByRole("button", { name: "Prepare hosted config" })
+    )
 
-    const status = screen.getByRole("region", { name: "Hosted deployment status" })
+    const status = screen.getByRole("region", {
+      name: "Hosted deployment status",
+    })
     expect(status).toHaveTextContent("Deployment configured")
     expect(status).toHaveTextContent(
       "The support agent is configured and ready to deploy."
@@ -389,13 +548,19 @@ describe("App", () => {
 
     render(<App hostedDeploymentStatus={hostedDeploymentStatus} />)
 
-    const status = screen.getByRole("region", { name: "Hosted deployment status" })
+    const status = screen.getByRole("region", {
+      name: "Hosted deployment status",
+    })
     expect(status).toHaveTextContent("Deployment failed")
     expect(status).toHaveTextContent(
       "Set the required server-side support-agent secret bindings, then rerun the Cloudflare preview deployment command."
     )
-    expect(status).toHaveTextContent("Failure code: HOSTED_DEPLOYMENT_SECRET_MISSING")
-    expect(status).not.toHaveTextContent(/sk-live-secret|\/private\/worker|stacktrace/)
+    expect(status).toHaveTextContent(
+      "Failure code: HOSTED_DEPLOYMENT_SECRET_MISSING"
+    )
+    expect(status).not.toHaveTextContent(
+      /sk-live-secret|\/private\/worker|stacktrace/
+    )
   })
 
   test("clears stale deployment failure text after a later healthy status", () => {
@@ -410,7 +575,8 @@ describe("App", () => {
       deployment: {
         id: "deployment_billing_support_preview",
         publicName: "Billing support preview",
-        chatUrl: "https://billing-support-preview.example.workers.dev/support-agent/chat",
+        chatUrl:
+          "https://billing-support-preview.example.workers.dev/support-agent/chat",
       },
     })
     const { rerender } = render(<App hostedDeploymentStatus={failedStatus} />)
@@ -465,7 +631,9 @@ describe("App", () => {
         screen.getByLabelText("Support question"),
         "Can the hosted support agent answer?"
       )
-      await user.click(screen.getByRole("button", { name: "Ask support agent" }))
+      await user.click(
+        screen.getByRole("button", { name: "Ask support agent" })
+      )
 
       expect(fetch).toHaveBeenCalledWith(
         "https://billing-support-preview.example.workers.dev/api/support-agent/respond",
@@ -477,9 +645,13 @@ describe("App", () => {
         })
       )
       expect(
-        await screen.findByText("Hosted preview answered through Agentis runtime.")
+        await screen.findByText(
+          "Hosted preview answered through Agentis runtime."
+        )
       ).toBeInTheDocument()
-      expect(screen.getByText("Source: Product documentation sample")).toBeInTheDocument()
+      expect(
+        screen.getByText("Source: Product documentation sample")
+      ).toBeInTheDocument()
     } finally {
       fetch.mockRestore()
     }
@@ -518,11 +690,18 @@ describe("App", () => {
 
       await submitSupportQuestion(user)
 
-      expect(fetch).toHaveBeenCalledWith("/api/support-agent/respond", expect.any(Object))
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/support-agent/respond",
+        expect.any(Object)
+      )
       expect(
-        await screen.findByText("Real provider-backed answer from local dev endpoint.")
+        await screen.findByText(
+          "Real provider-backed answer from local dev endpoint."
+        )
       ).toBeInTheDocument()
-      expect(screen.getByText("Runtime: Anthropic / test-model")).toBeInTheDocument()
+      expect(
+        screen.getByText("Runtime: Anthropic / test-model")
+      ).toBeInTheDocument()
     } finally {
       fetch.mockRestore()
     }
@@ -570,12 +749,16 @@ describe("App", () => {
     await user.click(
       screen.getByRole("button", { name: "Product documentation sample" })
     )
-    await user.click(screen.getByRole("button", { name: "Release notes sample" }))
+    await user.click(
+      screen.getByRole("button", { name: "Release notes sample" })
+    )
     await user.type(screen.getByLabelText("Support question"), "What changed?")
     await user.click(screen.getByRole("button", { name: "Ask support agent" }))
 
     expect(screen.getByText("Source: Release notes sample")).toBeInTheDocument()
-    expect(screen.getByText("Source ID: source_release_notes_may")).toBeInTheDocument()
+    expect(
+      screen.getByText("Source ID: source_release_notes_may")
+    ).toBeInTheDocument()
     expect(
       screen.getByText(
         "May release notes summarize the newest support-agent changes."
@@ -596,7 +779,9 @@ describe("App", () => {
     expect(
       screen.getByText("How do I connect a knowledge source?")
     ).toBeInTheDocument()
-    expect(screen.getByText("How do I troubleshoot billing?")).toBeInTheDocument()
+    expect(
+      screen.getByText("How do I troubleshoot billing?")
+    ).toBeInTheDocument()
     expect(screen.getAllByText("User")).toHaveLength(2)
     expect(screen.getAllByText("Assistant")).toHaveLength(2)
   })
@@ -634,7 +819,8 @@ describe("App", () => {
       conversationId: request.conversationId,
       messageId: `message_assistant_${request.messageId}`,
       inReplyToMessageId: request.messageId,
-      answer: "Use Product documentation sample to answer: How do I connect a knowledge source?",
+      answer:
+        "Use Product documentation sample to answer: How do I connect a knowledge source?",
       sources: [],
     })
 
@@ -671,7 +857,9 @@ describe("App", () => {
     expect(
       screen.queryByText("This answer is linked to an earlier user message.")
     ).not.toBeInTheDocument()
-    expect(consoleError.mock.calls[0]?.[0]).toBe("Support agent response failed")
+    expect(consoleError.mock.calls[0]?.[0]).toBe(
+      "Support agent response failed"
+    )
     consoleError.mockRestore()
   })
 
@@ -762,7 +950,9 @@ describe("App", () => {
 
   test("surfaces unknown runtime failures without a runtime code", async () => {
     const user = userEvent.setup()
-    const runtimeError = new Error("Unhandled runtime failure with sk-live-secret")
+    const runtimeError = new Error(
+      "Unhandled runtime failure with sk-live-secret"
+    )
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined)
@@ -775,9 +965,13 @@ describe("App", () => {
 
     await submitSupportQuestion(user, "How do I connect a knowledge source?")
 
-    expect(await screen.findByText("Answer generation failed")).toBeInTheDocument()
     expect(
-      screen.getAllByText("The support agent could not generate an answer right now.").length
+      await screen.findByText("Answer generation failed")
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByText(
+        "The support agent could not generate an answer right now."
+      ).length
     ).toBeGreaterThan(0)
     expect(screen.queryByText(/Runtime code:/)).not.toBeInTheDocument()
     expect(screen.queryByText(/sk-live-secret/)).not.toBeInTheDocument()
@@ -821,15 +1015,23 @@ describe("App", () => {
     render(<App supportAgentResponder={supportAgentResponder} />)
 
     await submitSupportQuestion(user, "How do I connect a knowledge source?")
-    expect(await screen.findByText("Answer generation failed")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Answer generation failed")
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Ask support agent" }))
 
     expect(
-      await screen.findByText("Configured runtime handled the support question.")
+      await screen.findByText(
+        "Configured runtime handled the support question."
+      )
     ).toBeInTheDocument()
-    expect(screen.queryByText("Answer generation failed")).not.toBeInTheDocument()
-    expect(screen.getByText("Source: Product documentation sample")).toBeInTheDocument()
+    expect(
+      screen.queryByText("Answer generation failed")
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText("Source: Product documentation sample")
+    ).toBeInTheDocument()
     consoleError.mockRestore()
   })
 })

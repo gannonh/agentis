@@ -34,7 +34,9 @@ describe("support-agent Cloudflare Worker", () => {
     const fetch = createSupportAgentWorkerFetch()
 
     const response = await fetch(
-      new Request("https://agentis-support-agent-preview.example.workers.dev/health"),
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/health"
+      ),
       createEnv()
     )
     const payload = await response.json()
@@ -50,7 +52,9 @@ describe("support-agent Cloudflare Worker", () => {
     const fetch = createSupportAgentWorkerFetch()
 
     const response = await fetch(
-      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/status"),
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/support-agent/status"
+      ),
       createEnv()
     )
     const payload = await response.json()
@@ -78,7 +82,9 @@ describe("support-agent Cloudflare Worker", () => {
     const fetch = createSupportAgentWorkerFetch()
 
     const response = await fetch(
-      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/status"),
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/support-agent/status"
+      ),
       createEnv({ SUPPORT_AGENT_OPENAI_API_KEY: undefined })
     )
     const payload = await response.json()
@@ -96,11 +102,37 @@ describe("support-agent Cloudflare Worker", () => {
     expect(JSON.stringify(payload)).not.toContain("OPENAI_API_KEY")
   })
 
+  test("treats whitespace-only Worker secrets as missing bindings", async () => {
+    const fetch = createSupportAgentWorkerFetch()
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/support-agent/status"
+      ),
+      createEnv({
+        SUPPORT_AGENT_OPENAI_API_KEY: "   ",
+        SUPPORT_AGENT_DEPLOYMENT_SECRET: "   ",
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(503)
+    expect(payload).toMatchObject({
+      state: "failed",
+      title: "Deployment failed",
+      failure: {
+        code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
+      },
+    })
+  })
+
   test("serves a usable hosted support-agent chat page without exposing Worker secrets", async () => {
     const fetch = createSupportAgentWorkerFetch()
 
     const response = await fetch(
-      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/chat"),
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/support-agent/chat"
+      ),
       createEnv()
     )
     const html = await response.text()
@@ -108,12 +140,14 @@ describe("support-agent Cloudflare Worker", () => {
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toContain("text/html")
     expect(html).toContain("Agentis hosted support-agent web chat")
-    expect(html).toContain("Runtime boundary: Agentis-owned /api/support-agent/respond")
+    expect(html).toContain(
+      "Runtime boundary: Agentis-owned /api/support-agent/respond"
+    )
     expect(html).toContain("Deployment status")
     expect(html).toContain("/support-agent/status")
-    expect(html).toContain("<form id=\"support-agent-form\"")
-    expect(html).toContain("<input id=\"access-token\"")
-    expect(html).toContain("<textarea id=\"support-question\"")
+    expect(html).toContain('<form id="support-agent-form"')
+    expect(html).toContain('<input id="access-token"')
+    expect(html).toContain('<textarea id="support-question"')
     expect(html).toContain("Ask support agent")
     expect(html).toContain("fetch(apiPath")
     expect(html).toContain("knowledge_product_docs")
@@ -124,73 +158,87 @@ describe("support-agent Cloudflare Worker", () => {
   test("hosted chat page submits questions to the Agentis runtime boundary and renders sources", async () => {
     const fetch = createSupportAgentWorkerFetch()
     const response = await fetch(
-      new Request("https://agentis-support-agent-preview.example.workers.dev/support-agent/chat"),
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/support-agent/chat"
+      ),
       createEnv()
     )
     const html = await response.text()
-    const runtimeFetch = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          agentId: "agent_support_template",
-          conversationId: "conversation_support_hosted",
-          messageId: "message_assistant_hosted",
-          inReplyToMessageId: "message_user_hosted",
-          answer: "Hosted answer through Agentis runtime.",
-          sources: [
-            {
-              id: "source_product_docs_setup",
-              knowledgeSourceId: "knowledge_product_docs",
-              title: "Product documentation sample",
-              excerpt: "Select Product documentation sample during setup.",
+    const runtimeFetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            agentId: "agent_support_template",
+            conversationId: "conversation_support_hosted",
+            messageId: "message_assistant_hosted",
+            inReplyToMessageId: "message_user_hosted",
+            answer: "Hosted answer through Agentis runtime.",
+            sources: [
+              {
+                id: "source_product_docs_setup",
+                knowledgeSourceId: "knowledge_product_docs",
+                title: "Product documentation sample",
+                excerpt: "Select Product documentation sample during setup.",
+              },
+            ],
+            runtime: {
+              mode: "model",
+              provider: "openai",
+              model: "gpt-5.4-mini",
             },
-          ],
-          runtime: {
-            mode: "model",
-            provider: "openai",
-            model: "gpt-5.4-mini",
-          },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      )
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
     )
     vi.stubGlobal("fetch", runtimeFetch)
-    document.documentElement.innerHTML = html
-    const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1]
+    try {
+      document.documentElement.innerHTML = html
+      const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1]
 
-    expect(script).toBeDefined()
-    new Function(script!)()
-    const accessTokenInput = document.getElementById(
-      "access-token"
-    ) as HTMLInputElement
-    accessTokenInput.value = "access-token-value"
-    document
-      .getElementById("support-agent-form")
-      ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
-    await vi.waitFor(() =>
-      expect(document.body.textContent).toContain(
-        "Hosted answer through Agentis runtime."
+      expect(script).toBeDefined()
+      new Function(script!)()
+      const accessTokenInput = document.getElementById(
+        "access-token"
+      ) as HTMLInputElement
+      accessTokenInput.value = "access-token-value"
+      document
+        .getElementById("support-agent-form")
+        ?.dispatchEvent(
+          new Event("submit", { bubbles: true, cancelable: true })
+        )
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain(
+          "Hosted answer through Agentis runtime."
+        )
       )
-    )
 
-    expect(runtimeFetch).toHaveBeenCalledWith(
-      "/api/support-agent/respond",
-      expect.objectContaining({
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-agentis-access-token": "access-token-value",
-        },
-      })
-    )
-    expect(document.body.textContent).toContain("Source: Product documentation sample")
-    expect(document.body.textContent).toContain("Runtime: openai / gpt-5.4-mini")
-    vi.unstubAllGlobals()
+      expect(runtimeFetch).toHaveBeenCalledWith(
+        "/api/support-agent/respond",
+        expect.objectContaining({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": "access-token-value",
+          },
+        })
+      )
+      expect(document.body.textContent).toContain(
+        "Source: Product documentation sample"
+      )
+      expect(document.body.textContent).toContain(
+        "Runtime: openai / gpt-5.4-mini"
+      )
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   test("returns deployment failure for support-agent responses when server secrets are missing", async () => {
-    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
-      text: `Worker model ${config.provider}:${config.model} answered.`,
-    }))
+    const generateText = vi.fn<SupportAgentTextGenerator>(
+      async ({ config }) => ({
+        text: `Worker model ${config.provider}:${config.model} answered.`,
+      })
+    )
     const fetch = createSupportAgentWorkerFetch({ generateText })
 
     const response = await fetch(
@@ -225,9 +273,11 @@ describe("support-agent Cloudflare Worker", () => {
   })
 
   test("rejects support-agent responses without the deployment access token", async () => {
-    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
-      text: `Worker model ${config.provider}:${config.model} answered.`,
-    }))
+    const generateText = vi.fn<SupportAgentTextGenerator>(
+      async ({ config }) => ({
+        text: `Worker model ${config.provider}:${config.model} answered.`,
+      })
+    )
     const fetch = createSupportAgentWorkerFetch({ generateText })
 
     const response = await fetch(
@@ -255,10 +305,41 @@ describe("support-agent Cloudflare Worker", () => {
     expect(JSON.stringify(payload)).not.toContain("access-token-value")
   })
 
+  test("serves support-agent responses after skipping an invalid header token", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>(
+      async ({ config }) => ({
+        text: `Worker model ${config.provider}:${config.model} answered.`,
+      })
+    )
+    const fetch = createSupportAgentWorkerFetch({ generateText })
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/api/support-agent/respond",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": "wrong-token-value",
+            authorization: "Bearer access-token-value",
+          },
+          body: JSON.stringify(supportAgentChatRequestFixture),
+        }
+      ),
+      createEnv()
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.answer).toBe("Worker model openai:gpt-5.4-mini answered.")
+  })
+
   test("serves support-agent responses with bearer deployment access token", async () => {
-    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
-      text: `Worker model ${config.provider}:${config.model} answered.`,
-    }))
+    const generateText = vi.fn<SupportAgentTextGenerator>(
+      async ({ config }) => ({
+        text: `Worker model ${config.provider}:${config.model} answered.`,
+      })
+    )
     const fetch = createSupportAgentWorkerFetch({ generateText })
 
     const response = await fetch(
@@ -281,14 +362,42 @@ describe("support-agent Cloudflare Worker", () => {
     expect(payload.answer).toBe("Worker model openai:gpt-5.4-mini answered.")
   })
 
+  test("rejects support-agent responses with an invalid derived access token", async () => {
+    const generateText = vi.fn<SupportAgentTextGenerator>(
+      async ({ config }) => ({
+        text: `Worker model ${config.provider}:${config.model} answered.`,
+      })
+    )
+    const fetch = createSupportAgentWorkerFetch({ generateText })
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/api/support-agent/respond",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-agentis-access-token": "wrong-token-value",
+          },
+          body: JSON.stringify(supportAgentChatRequestFixture),
+        }
+      ),
+      createEnv({ SUPPORT_AGENT_ACCESS_TOKEN: undefined })
+    )
+
+    expect(response.status).toBe(401)
+    expect(generateText).not.toHaveBeenCalled()
+  })
+
   test("serves support-agent responses with an access token derived from the deployment secret", async () => {
     const deploymentSecret = "deployment-secret"
-    const derivedAccessToken = await createHostedSupportAgentAccessToken(
-      deploymentSecret
+    const derivedAccessToken =
+      await createHostedSupportAgentAccessToken(deploymentSecret)
+    const generateText = vi.fn<SupportAgentTextGenerator>(
+      async ({ config }) => ({
+        text: `Worker model ${config.provider}:${config.model} answered.`,
+      })
     )
-    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
-      text: `Worker model ${config.provider}:${config.model} answered.`,
-    }))
     const fetch = createSupportAgentWorkerFetch({ generateText })
 
     const response = await fetch(
@@ -316,9 +425,11 @@ describe("support-agent Cloudflare Worker", () => {
   })
 
   test("serves support-agent responses with Worker secrets server-side", async () => {
-    const generateText = vi.fn<SupportAgentTextGenerator>(async ({ config }) => ({
-      text: `Worker model ${config.provider}:${config.model} answered.`,
-    }))
+    const generateText = vi.fn<SupportAgentTextGenerator>(
+      async ({ config }) => ({
+        text: `Worker model ${config.provider}:${config.model} answered.`,
+      })
+    )
     const fetch = createSupportAgentWorkerFetch({ generateText })
 
     const response = await fetch(
@@ -360,7 +471,9 @@ describe("support-agent Cloudflare Worker", () => {
     const fetch = createSupportAgentWorkerFetch()
 
     const response = await fetch(
-      new Request("https://agentis-support-agent-preview.example.workers.dev/nope"),
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/nope"
+      ),
       createEnv()
     )
     const payload = await response.json()

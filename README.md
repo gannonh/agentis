@@ -33,7 +33,7 @@ See:
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - pnpm 9.15.9
 
 ## Local Development
