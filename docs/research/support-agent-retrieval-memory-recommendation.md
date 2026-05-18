@@ -11,6 +11,47 @@ Requirements mapped here:
 
 This document records recommendations for discussion. It does not lock the runtime architecture decision.
 
+## T078 Recommendations For Discussion
+
+### Recommended direction
+
+Use an Agentis-owned retrieval and memory facade as the product contract, then validate one Cloudflare-first backend behind it before broadening backend support.
+
+Recommended first validation stack:
+
+1. Retrieval facade owned by Agentis.
+2. Cloudflare AI Search as the first managed backend candidate.
+3. Custom Cloudflare Vectorize RAG as the control-oriented fallback if AI Search cannot satisfy citation, lifecycle, or tenant-boundary requirements.
+4. Provider-native file search as an optional adapter for provider-specific deployments and fast experiments.
+5. Graph retrieval as a later advanced capability for entity-heavy or multi-hop workloads.
+
+Memory recommendation:
+
+1. Enable deployment-scoped knowledge memory from selected sources.
+2. Enable short-term conversation memory for the current web chat or Slack thread.
+3. Enable ephemeral request/session memory for retrieval chunks, tool outputs, and answer-generation state.
+4. Keep user long-term memory, organization-learned memory, graph memory, and cross-agent shared memory out of the first support-agent runtime until product policy, consent, retention, deletion, and audit controls are planned.
+
+### Confidence levels
+
+| Recommendation | Confidence | Basis | Main uncertainty |
+| --- | --- | --- | --- |
+| Agentis-owned retrieval facade | High | Preserves product citation contract, tenant checks, source lifecycle, and backend portability across Cloudflare AI Search, Vectorize, provider-native search, and future graph retrieval. | Exact TypeScript contract and storage schema still need implementation planning. |
+| Cloudflare AI Search first validation backend | Medium | Official docs align with documentation search, agent tool use, memory, per-tenant/per-agent file search, hybrid search, REST APIs, namespaces, and Workers integration. | Live response shape, source metadata completeness, deletion behavior, and operational maturity need proof. |
+| Custom Vectorize RAG fallback | Medium-high | Cloudflare-native and gives Agentis source/chunk/citation control with metadata and namespace filters. | More build work: ingestion, chunking, reranking, evals, deletion, and observability. |
+| Provider-native file search optional adapter | Medium | Fast source-backed validation with provider-managed retrieval and file citations. | Lock-in, data residency, deletion evidence, and provider-shaped citation IDs. |
+| Defer GraphRAG for first support-agent path | High | Graph retrieval adds indexing, graph quality, update/delete, and provenance complexity before baseline cited retrieval is proven. | Some enterprise/internal use cases may need graph retrieval sooner. |
+| Keep long-term user memory disabled in Phase 1 | High | Reduces consent, retention, deletion, and prompt-injection risk while KM-05 boundaries are still being defined. | Product requirements may later require personalized support memory. |
+
+### Decision criteria before runtime implementation
+
+- Can the backend return deployment-scoped chunks with stable Agentis source IDs and user-visible citation text?
+- Can deleted or disabled sources be proven absent from future retrieval and answer generation?
+- Can every retrieval request enforce tenant, deployment, agent, source, and source-version filters before any model call?
+- Can the UI, Slack responses, logs, and future APIs render citations without exposing provider-internal IDs or secrets?
+- Can retrieval run inside the Cloudflare-first hosted path with acceptable latency, cost, and operational observability?
+- Can memory categories stay separated so durable knowledge, conversation context, ephemeral request state, and future user memory do not collapse into one ungoverned store?
+
 ## Source Inventory
 
 Access date for all sources: 2026-05-18.
@@ -207,16 +248,25 @@ Agentis should model retrieval and memory as platform capabilities that each con
 - Do not encode support-specific assumptions in source IDs, memory tables, citations, retrieval backend contracts, or answer schemas.
 - Treat long-term user memory, organization-learned memory, graph memory, and multi-agent shared memory as opt-in future capabilities with separate product controls.
 
+## Open Questions For User Decision Review
+
+1. Should Cloudflare AI Search be the first live retrieval backend to validate, with Vectorize RAG as the fallback if lifecycle or citation controls fall short?
+2. What retention default should Agentis use for support-agent conversation memory before production privacy and compliance policy exists?
+3. Should provider-native file search be offered as a customer-selectable backend later, or kept as an internal experiment path until Agentis proves Cloudflare-native retrieval?
+4. What citation granularity is required for the first hosted support agent: source title only, source title plus excerpt, or file/chunk/line-level references when available?
+5. Which memory categories require admin-visible audit events in the next implementation milestone?
+6. Should future user memory be scoped by user, account/customer, deployment, or a combination?
+
 ## Requirement Traceability
 
 | Requirement | Coverage |
 | --- | --- |
-| KM-01 | T075 source-backed findings identify viable retrieval paths. T076 compares those paths across reliability, implementation effort, source citation support, deployment scope, Cloudflare compatibility, tenant boundaries, lifecycle, cost/lock-in, and production hardening. T079 maps reusable retrieval capabilities across onboarding, sales/support, internal knowledge, workflow, coding/sandbox, and multi-agent flows. |
-| KM-05 | T077 defines the first support-agent memory boundary across knowledge memory, conversation memory, session/task memory, user memory, organizational memory, provider-hosted memory, retention, deletion, tenant/deployment scope, and future hardening. T079 maps reusable memory capabilities and future agent-type boundaries. |
+| KM-01 | T075 source-backed findings identify viable retrieval paths. T076 compares those paths across reliability, implementation effort, source citation support, deployment scope, Cloudflare compatibility, tenant boundaries, lifecycle, cost/lock-in, and production hardening. T078 recommends an Agentis-owned retrieval facade with Cloudflare-first validation and backend decision criteria. T079 maps reusable retrieval capabilities across onboarding, sales/support, internal knowledge, workflow, coding/sandbox, and multi-agent flows. |
+| KM-05 | T077 defines the first support-agent memory boundary across knowledge memory, conversation memory, session/task memory, user memory, organizational memory, provider-hosted memory, retention, deletion, tenant/deployment scope, and future hardening. T078 recommends Phase 1 memory categories and defers long-term user/shared memory. T079 maps reusable memory capabilities and future agent-type boundaries. |
 
 ## Execution Notes
 
-- Final architecture recommendation is intentionally deferred to T078.
-- Current comparison favors an Agentis-owned retrieval facade with a Cloudflare-first backend for discussion.
+- Recommendations are discussion-ready and do not lock the final architecture decision.
+- Current comparison favors an Agentis-owned retrieval facade with a Cloudflare-first backend for validation.
 - Current memory boundary keeps long-term personal and cross-user memory out of the first support-agent runtime.
 - Horizontal platform criteria favor reusable retrieval and memory contracts over support-only schemas.
