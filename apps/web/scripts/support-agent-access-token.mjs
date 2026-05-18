@@ -17,5 +17,12 @@ if (!deploymentSecret) {
   process.exit(1)
 }
 
-const accessToken = await createHostedSupportAgentAccessToken(deploymentSecret)
-console.log(accessToken)
+try {
+  const accessToken =
+    await createHostedSupportAgentAccessToken(deploymentSecret)
+  console.log(accessToken)
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error)
+  console.error(`Failed to generate access token: ${message}`)
+  process.exit(1)
+}
