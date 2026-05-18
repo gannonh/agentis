@@ -100,3 +100,13 @@ import { Button } from "@workspace/ui/components/button"
 - Prefer small changes that keep the Vite monorepo, shared UI package, and research docs aligned.
 - Do not assume implementation details for persistence, auth, billing, Slack installation, hosted deployment, or sandbox lifecycle until they are planned.
 - When updating architecture or product direction, update the README and relevant research docs together when applicable.
+
+## Cursor Cloud specific instructions
+
+- The update script runs `pnpm install` and `npx playwright install --with-deps chromium` on every VM startup. Dependencies and Playwright browsers are ready when the agent session begins.
+- The Vite dev server (started via `pnpm dev -- -- --host 127.0.0.1`) listens on `localhost:5173` by default. If port 5173 is occupied, Vite picks the next available port — always use the URL printed in the terminal output.
+- The Turbo `dev` task uses a TUI. When capturing dev server output, use `curl` against the expected port rather than parsing the tmux pane.
+- No API keys are required for local UI development or testing. Without `OPENAI_API_KEY`, the support-agent endpoint returns a typed demo-mode failure (`SUPPORT_AGENT_PROVIDER_CONFIG_MISSING`), which is expected and testable.
+- The pre-push hook runs `pnpm lint` and `pnpm test:coverage`. Both must pass before pushing.
+- E2E tests (`pnpm test:e2e`) build the web app first, then start `vite preview` on port 4173 and run Playwright against it. They do not require an API key.
+- All standard commands are listed in the Local Commands section above — refer there instead of memorizing them.
