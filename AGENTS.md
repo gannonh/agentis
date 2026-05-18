@@ -58,11 +58,14 @@ Reference docs:
 - Cloudflare secrets are already expected to exist for preview: `SUPPORT_AGENT_OPENAI_API_KEY` and `SUPPORT_AGENT_DEPLOYMENT_SECRET`. Do not ask the user to recreate them unless `wrangler secret list` or `/support-agent/status` shows they are missing.
 - Root `.env` is the local source for Cloudflare auth and Worker URL metadata: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `AGENTIS_SUPPORT_WORKER_NAME`, `WORKERS_DEV_SUBDOMAIN`, `WORKERS_URL`, plus local support-agent secrets. Do not commit `.env`, `.dev.vars`, or raw provider keys.
 - Prefer the package scripts over raw Wrangler commands because they load root `.env` consistently.
+- Hosted `/support-agent/chat` and `/api/support-agent/respond` require a derived preview access token in the `x-agentis-access-token` header, not the raw deployment secret. Run `pnpm support-agent:access-token` after loading root `.env`, or set `SUPPORT_AGENT_ACCESS_TOKEN` for a static token.
+- Wrangler local dev writes `apps/web/.wrangler/`; it is gitignored and should not be committed.
 - Use local Wrangler for normal hosted-runtime validation:
 
 ```bash
 pnpm support-agent:worker:dev
 pnpm support-agent:worker:check
+pnpm support-agent:access-token
 ```
 
 - Use the real Cloudflare preview only when hosted proof is explicitly needed:

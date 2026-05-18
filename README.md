@@ -67,7 +67,10 @@ Run the support-agent Worker locally:
 ```bash
 pnpm support-agent:worker:dev
 pnpm support-agent:worker:check
+pnpm support-agent:access-token
 ```
+
+`support-agent:access-token` prints the derived preview access token (64-character hex) for `/support-agent/chat`. Paste that value into **Deployment access token**. Do not paste `SUPPORT_AGENT_DEPLOYMENT_SECRET` itself.
 
 Deploy, verify, and remove the Cloudflare preview Worker when hosted proof is needed:
 
