@@ -31,3 +31,6 @@ npm-debug.log*
 .DS_Store
 *.pem
 uat-evidence/
+
+# Wrangler (local dev cache)
+.wrangler/
