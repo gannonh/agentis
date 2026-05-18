@@ -133,13 +133,49 @@ Risks for KM-01:
 - Graph retrieval should remain an advanced capability until baseline cited retrieval, lifecycle controls, and tenant isolation are proven.
 - KM-01 should be validated with retrieval conformance tests: query returns only deployment-scoped chunks, each answer cites Agentis source IDs, deleted sources disappear from results, and empty retrieval produces a safe no-answer state.
 
+## T077 Support-Agent Memory Scope
+
+Memory sources reviewed for this section use a consistent taxonomy: Mem0 separates conversation, session, user, and organizational memory; Zep stores session chat history and builds a user-level knowledge graph; LangChain Deep Agents documents agent-scoped, user-scoped, and organization-scoped memory, including read-only shared memory for policies and security-sensitive content.
+
+### Memory Boundary Matrix
+
+| Memory category | First support-agent boundary | Scope key | Retention | Deletion | Tenant/deployment boundary | Write policy | KM-05 conclusion |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Knowledge memory | Product docs, release notes, FAQs, policy files, and source metadata selected for a deployed support agent. This is retrieval content, not learned conversation memory. | `organizationId`, `deploymentId`, `agentId`, `knowledgeSourceId`, `sourceVersionId` | Retain while the deployment or source version is active. Keep disabled source records for audit until product policy says they can be purged. | Deleting a source must remove object storage content, search/vector index entries, provider-hosted files if used, and cached retrieval excerpts. | Hard boundary: a support-agent query can only retrieve sources assigned to that deployment and tenant. | Application writes only. The agent must not modify shared knowledge sources during chat. | In scope for the first knowledge path. This is the primary memory type needed for KM-01 and KM-05. |
+| Conversation memory | Recent web chat or Slack thread turns used to answer the current support question and preserve short-term context. | `organizationId`, `deploymentId`, `conversationId`, optional Slack `teamId/channelId/threadTs` | Short retention by default for the first hosted path; exact duration remains a product decision. Summaries can be added later after consent and policy review. | User/admin deletion must remove stored messages and detach them from answer-generation context. | Conversation context cannot cross conversations unless an approved summary or explicit retrieval rule exists. | Runtime may append conversation turns; it must not promote facts into long-term memory automatically in Phase 1. | In scope as short-term context. Long-term conversation-derived memory remains future hardening. |
+| Session / task memory | Temporary tool results, retrieval chunks, generated answer drafts, status codes, and execution metadata for one support-agent request or one active conversation session. | `requestId`, `conversationId`, `deploymentId` | Ephemeral; keep only logs/metadata required for debugging and audit under configured retention. | Clear on request completion except allowed observability records. | Must inherit the conversation and deployment boundary. | Runtime writes allowed for transient state only. | In scope as ephemeral runtime state, not user-facing durable memory. |
+| User memory | User preferences, account details, prior issue facts, or personalized support context. | `organizationId`, `userId`, optional `deploymentId` | Out of scope for the first support-agent knowledge path until consent, admin policy, and deletion semantics are defined. | Must support user-level deletion and export before activation. | User memory must never leak across organizations and should be deployment-limited unless explicitly shared. | Disabled in Phase 1. Future writes require explicit product policy and user/admin controls. | Future hardening. Do not store personal long-term memory in S020 recommendations. |
+| Organizational / agent memory | Shared tenant policies, support escalation rules, style guidance, and agent operating instructions. | `organizationId`, `agentId`, optional `policyVersionId` | Retain while configured by admins. Version changes should be auditable. | Admin deletion or version retirement should remove it from future prompts/retrieval. | Tenant-wide only inside one organization; never global across customers. | Read-only to the agent. Application/admin writes only. | Future product scope except for checked-in system instructions and selected knowledge sources. |
+| Provider-hosted memory | Vector stores, files, search indexes, and annotations held by OpenAI or another provider-native retrieval service. | Provider resource IDs mapped to Agentis source, deployment, and tenant records | Mirror Agentis source retention. Provider expiration policies may reduce storage cost but cannot replace Agentis lifecycle state. | Agentis must call provider deletion APIs and record deletion evidence. | One tenant/deployment per provider resource set unless provider filters are proven by tests. | Application writes through controlled ingestion jobs only. | Allowed only behind an Agentis registry and deletion/audit contract. |
+
+### Risks And Open Questions
+
+- Retention duration is a product and compliance decision. Until that decision exists, keep long-term user memory disabled and keep conversation retention minimal.
+- Conversation-derived memory can improve support quality, but it creates consent, correction, deletion, and prompt-injection risks.
+- Shared organization memory should be read-only to agents because user-writeable shared memory can inject instructions into later conversations.
+- Provider-hosted file/search memory needs deletion evidence and data residency review before production use.
+- Retrieval caches and answer logs can become shadow memory. They need the same tenant, retention, and deletion policies as the source data they contain.
+- If Slack is added, thread identity and user identity must map into Agentis-owned conversation records before any memory is persisted.
+
+### T077 Decision Boundary
+
+For the first support-agent knowledge path, Agentis should treat memory as:
+
+1. Deployment-scoped knowledge memory from selected sources.
+2. Short-term conversation memory for the current conversation or Slack thread.
+3. Ephemeral request/session memory for retrieval and answer-generation internals.
+
+User-level long-term memory, organization-wide learned memory, cross-conversation summaries, and graph-based customer history should stay out of the Phase 1 runtime until product policy, consent, deletion, and audit requirements are planned.
+
 ## Requirement Traceability
 
 | Requirement | Coverage |
 | --- | --- |
 | KM-01 | T075 source-backed findings identify viable retrieval paths. T076 compares those paths across reliability, implementation effort, source citation support, deployment scope, Cloudflare compatibility, tenant boundaries, lifecycle, cost/lock-in, and production hardening. |
+| KM-05 | T077 defines the first support-agent memory boundary across knowledge memory, conversation memory, session/task memory, user memory, organizational memory, provider-hosted memory, retention, deletion, tenant/deployment scope, and future hardening. |
 
 ## Execution Notes
 
 - Final architecture recommendation is intentionally deferred to T078.
 - Current comparison favors an Agentis-owned retrieval facade with a Cloudflare-first backend for discussion.
+- Current memory boundary keeps long-term personal and cross-user memory out of the first support-agent runtime.
