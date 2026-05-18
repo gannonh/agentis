@@ -94,10 +94,11 @@ Manual hosted chat checklist:
 2. Deploy the hosted Worker preview with `pnpm support-agent:worker:deploy`.
 3. Open the deployed Worker root URL to see endpoint links, then open `https://<cloudflare-preview-host>/support-agent/chat`.
 4. Confirm the page identifies the deployment as `Agentis hosted support-agent web chat`, shows `Runtime boundary: Agentis-owned /api/support-agent/respond`, and provides a support-question form.
-5. Ask `Can the hosted support agent answer?`.
-6. Confirm the browser request goes to `https://<cloudflare-preview-host>/api/support-agent/respond`.
-7. Confirm the assistant answer renders on the hosted page with citation-capable source metadata for the selected documentation source.
-8. Confirm browser-visible state, HTML, network payloads, and command output do not contain raw provider API keys, deployment secret values, runtime paths, or adapter implementation details.
+5. Run `pnpm support-agent:access-token` from the repo root after loading `.env`, then paste the derived preview access token into **Deployment access token**. Do not paste `SUPPORT_AGENT_DEPLOYMENT_SECRET`.
+6. Ask `Can the hosted support agent answer?`.
+7. Confirm the browser request goes to `https://<cloudflare-preview-host>/api/support-agent/respond` with `x-agentis-access-token` set to the derived token.
+8. Confirm the assistant answer renders on the hosted page with citation-capable source metadata for the selected documentation source.
+9. Confirm browser-visible state, HTML, network payloads, and command output do not contain raw provider API keys, deployment secret values, runtime paths, or adapter implementation details.
 
 Expected hosted response shape:
 

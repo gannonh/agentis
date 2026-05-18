@@ -18,7 +18,8 @@
     "support-agent:worker:check": "pnpm --filter web support-agent:worker:check",
     "support-agent:worker:deploy": "pnpm --filter web support-agent:worker:deploy",
     "support-agent:worker:acceptance": "pnpm --filter web support-agent:worker:acceptance",
-    "support-agent:worker:delete": "pnpm --filter web support-agent:worker:delete"
+    "support-agent:worker:delete": "pnpm --filter web support-agent:worker:delete",
+    "support-agent:access-token": "pnpm --filter web support-agent:access-token"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

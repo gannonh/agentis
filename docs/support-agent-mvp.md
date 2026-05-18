@@ -212,6 +212,8 @@ The contract builder is `createHostedSupportAgentDeploymentConfig`. It includes:
 
 The contract omits provider API key, deployment secret, provider model setting, runtime path, or adapter internal field. The UI only shows a public handoff summary. Later Cloudflare deployment work should consume this public handoff and resolve provider/deployment credentials server-side.
 
+`Prepare hosted config` stores the handoff in browser state only. The UI does not download or save `support-agent-hosted-config.json` yet. Maintainers who need the JSON file for `support-agent:deploy:preview` must create it from the handoff shape or test fixtures. `support-agent:worker:deploy` ships the fixed preview Worker code from `wrangler.toml`; it does not read that JSON at runtime today.
+
 Configure-only acceptance checklist:
 
 - `Prepare hosted config` stays disabled until a knowledge source is selected.
@@ -282,18 +284,31 @@ https://<cloudflare-preview-host>/api/support-agent/respond
 
 Open the deployed chat after the Cloudflare preview command by visiting the `/support-agent/chat` URL on the deployed Worker host. The hosted page renders `Agentis hosted support-agent web chat`, the selected source, a support-question form, and `Runtime boundary: Agentis-owned /api/support-agent/respond`.
 
+## Preview access token
+
+Hosted chat and the hosted runtime API require a derived preview access token in the `x-agentis-access-token` request header. The token is an HMAC hex value derived from `SUPPORT_AGENT_DEPLOYMENT_SECRET`, not the secret itself.
+
+Generate the token from the repo root after loading `.env`:
+
+```bash
+pnpm support-agent:access-token
+```
+
+If `SUPPORT_AGENT_ACCESS_TOKEN` is set, the command prints that static token instead. Paste the printed value into **Deployment access token** on `/support-agent/chat` or in the Vite app hosted handoff before asking a question.
+
 Hosted ask/check flow:
 
 1. Open `https://<cloudflare-preview-host>/support-agent/chat`.
 2. Confirm `Product documentation sample` is selected from the deployment handoff metadata.
-3. Enter `Can the hosted support agent answer?` in `Support question`.
-4. Choose `Ask support agent`.
-5. Confirm the browser posts to `/api/support-agent/respond` on the deployed host, not to a provider API endpoint.
-6. Confirm the assistant response renders on the hosted page with public runtime metadata and citation-capable source metadata:
+3. Run `pnpm support-agent:access-token` and paste the derived token into **Deployment access token**.
+4. Enter `Can the hosted support agent answer?` in `Support question`.
+5. Choose `Ask support agent`.
+6. Confirm the browser posts to `/api/support-agent/respond` on the deployed host, not to a provider API endpoint.
+7. Confirm the assistant response renders on the hosted page with public runtime metadata and citation-capable source metadata:
    - `Source: Product documentation sample`
    - `Source ID: source_product_docs_setup`
    - A selected-source excerpt.
-7. Confirm browser-visible state and the hosted chat shell contain no provider API key, deployment secret, raw provider model config, runtime path, or adapter implementation detail.
+8. Confirm browser-visible state and the hosted chat shell contain no provider API key, deployment secret, raw provider model config, runtime path, or adapter implementation detail.
 
 Focused proof commands:
 
