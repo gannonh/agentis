@@ -284,7 +284,7 @@ function createHostedChatPageHtml(apiPath: string): string {
       <form id="support-agent-form">
         <label for="access-token">Deployment access token</label>
         <input id="access-token" name="accessToken" type="password" autocomplete="off" placeholder="Required for hosted preview access">
-        <p class="muted">This token stays in your browser request and is not rendered into the page.</p>
+        <p class="muted">Use the derived preview access token (64-character hex), not the deployment secret. From the repo root, run <code>pnpm support-agent:access-token</code> after loading <code>.env</code>.</p>
         <label for="support-question">Support question</label>
         <textarea id="support-question" name="question" placeholder="Ask about setup, billing, or troubleshooting">How do I connect a knowledge source?</textarea>
         <button id="submit-question" type="submit">Ask support agent</button>

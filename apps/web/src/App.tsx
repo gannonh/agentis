@@ -427,8 +427,10 @@ export function App({
                     placeholder="Required for hosted preview access"
                   />
                   <FieldDescription>
-                    The token is sent as a request header and is not stored in
-                    the deployment handoff.
+                    Paste the derived preview access token (64-character hex),
+                    not the deployment secret. Generate it with{" "}
+                    <code>pnpm support-agent:access-token</code> from the repo
+                    root after loading <code>.env</code>.
                   </FieldDescription>
                 </Field>
               ) : null}
