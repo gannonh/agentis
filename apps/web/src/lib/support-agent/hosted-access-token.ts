@@ -46,10 +46,6 @@ export async function verifyHostedSupportAgentAccessToken({
   )
 }
 
-function signatureBytes(signature: ArrayBuffer): Uint8Array {
-  return new Uint8Array(signature)
-}
-
 export async function verifyHostedSupportAgentStaticAccessToken({
   expectedAccessToken,
   accessToken,
@@ -64,12 +60,10 @@ export async function verifyHostedSupportAgentStaticAccessToken({
     return false
   }
 
-  const signature = signatureBytes(
-    await crypto.subtle.sign(
-      "HMAC",
-      await importHmacKey(expectedToken, ["sign"]),
-      textEncoder.encode(hostedSupportAgentAccessTokenSalt)
-    )
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    await importHmacKey(expectedToken, ["sign"]),
+    textEncoder.encode(hostedSupportAgentAccessTokenSalt)
   )
 
   return crypto.subtle.verify(
@@ -99,7 +93,7 @@ function bytesToHex(bytes: Uint8Array) {
   )
 }
 
-function hexToBytes(hex: string): Uint8Array | undefined {
+function hexToBytes(hex: string): ArrayBuffer | undefined {
   if (hex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(hex)) {
     return undefined
   }
@@ -109,5 +103,8 @@ function hexToBytes(hex: string): Uint8Array | undefined {
     bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16)
   }
 
-  return bytes
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength
+  )
 }
