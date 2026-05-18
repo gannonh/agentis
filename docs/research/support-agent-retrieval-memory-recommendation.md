@@ -167,15 +167,56 @@ For the first support-agent knowledge path, Agentis should treat memory as:
 
 User-level long-term memory, organization-wide learned memory, cross-conversation summaries, and graph-based customer history should stay out of the Phase 1 runtime until product policy, consent, deletion, and audit requirements are planned.
 
+## T079 Horizontal Agent-Platform Implications
+
+Agentis should model retrieval and memory as platform capabilities that each configured agent type can enable with explicit policies. The support-agent path should validate the narrowest useful version of those capabilities without hard-coding the product around support-only assumptions.
+
+### Future Agent Use-Case Matrix
+
+| Agent type | Retrieval needs | Memory needs | Reusable platform capabilities | Support-agent-specific assumptions to avoid baking in | Over-specialization risk | Decision criteria mapped to KM-01/KM-05 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Onboarding agent | Product docs, setup guides, account-specific checklist templates, billing/plan docs, and contextual help articles. | Short-term onboarding session state, completed steps, user preferences, and optional account setup facts. | Source registry, deployment-scoped retrieval, cited answers, per-user progress memory, retention/deletion controls. | Assuming all sources are static docs or all conversations are one-off support questions. | A support-only schema may miss task progress, user-specific milestones, and resumable onboarding workflows. | KM-01 requires source citations for docs and templates. KM-05 requires explicit user/session memory consent and deletion. |
+| Sales / support agent | Public docs, pricing/package rules, CRM excerpts, support macros, policy docs, and prior ticket summaries. | Conversation/thread memory, customer/account context, escalation notes, and CRM-linked facts. | Tenant-scoped retrieval, source ACL checks, citations, conversation summaries, integration source metadata, audit trail. | Assuming support knowledge is public or deployment-wide. | CRM and ticket data may need row-level permissions and stricter retention than product docs. | KM-01 requires permissioned source retrieval and citations. KM-05 requires account/customer memory boundaries and deletion/export policy. |
+| Internal knowledge agent | Wikis, SOPs, engineering docs, decision records, incident notes, and policy docs. | User preferences, team context, recent projects, and organization-level read-only policies. | Hybrid retrieval, exact keyword matching, source freshness, org/team ACL filters, read-only org memory. | Assuming customer-facing answer style and citations are enough. | Internal agents often need freshness, team permissions, and exact incident or code names. | KM-01 requires source version/freshness metadata. KM-05 requires organization memory to be read-only unless admins approve writes. |
+| Workflow agent | Process docs, runbooks, tool schemas, workflow state, forms, and task records. | Durable task/session state, approvals, tool outputs, and resumable checkpoints. | Retrieval facade, workflow state store, short-term session memory, audit logs, deletion rules for tool outputs. | Treating every memory as natural-language chat history. | Workflow state can be corrupted if stored only as conversational memory. | KM-01 requires cited procedural sources for generated steps. KM-05 requires durable state boundaries separate from chat memory. |
+| Coding / sandbox agent | Repository files, docs, dependency docs, issues, logs, traces, and sandbox filesystem search. | Session checkpoints, task plans, tool outputs, branch/worktree state, and optional project memory. | Scoped file retrieval, sandbox artifact registry, source citation to files/lines, ephemeral task memory, retention of logs/artifacts. | Assuming all retrieval content is uploaded markdown. | Coding agents need filesystem and execution provenance, not only document chunks. | KM-01 requires file/line or artifact citations. KM-05 requires sandbox retention, cleanup, and secrets boundaries. |
+| Multi-agent flow | Shared docs, role-specific context packs, handoff artifacts, and task outputs from other agents. | Per-agent scratch memory, shared read-only artifacts, supervisor decisions, and workflow-level state. | Artifact registry, role-scoped retrieval, shared memory permissions, provenance across agent handoffs, audit trail. | Assuming one agent, one conversation, and one knowledge source set. | Cross-agent memory can leak tenant data or unapproved instructions if not permissioned. | KM-01 requires provenance through handoffs. KM-05 requires read/write permissions for shared memory and supervisor-owned decisions. |
+
+### Reusable Retrieval Capabilities
+
+- Agentis source registry with tenant, deployment, agent, source, source-version, permission, freshness, and deletion state.
+- Retrieval facade that returns normalized chunks with source ID, title, excerpt, location when available, backend metadata, retrieval score, and access policy evidence.
+- Backend adapters for Cloudflare AI Search, custom Vectorize RAG, provider-native file search, and later graph retrieval.
+- Hybrid keyword/vector support for exact product terms, error codes, policy names, and semantic questions.
+- Citation contract that UI, Slack, API responses, and audit logs can all render without exposing provider-internal IDs.
+- Retrieval conformance tests for tenant isolation, source deletion, empty/no-answer behavior, and citation completeness.
+
+### Reusable Memory Capabilities
+
+- Memory category model: knowledge, conversation, session/task, user, organization/agent, provider-hosted, and sandbox/artifact memory.
+- Scope keys for organization, deployment, agent, conversation, user, source, request, and sandbox.
+- Retention and deletion policy hooks before any memory category becomes durable.
+- Read-only shared memory for organization policies and selected knowledge sources.
+- Explicit write permissions for user memory, shared memory, and agent-learned memory.
+- Audit events for memory reads, writes, promotions, deletions, and provider-hosted lifecycle actions.
+
+### T079 Decision Criteria
+
+- Prefer platform primitives that work for multiple agent types even when S020 validates them through the support-agent use case.
+- Keep support-agent defaults narrow: deployment-scoped knowledge, current conversation context, and ephemeral request state.
+- Do not encode support-specific assumptions in source IDs, memory tables, citations, retrieval backend contracts, or answer schemas.
+- Treat long-term user memory, organization-learned memory, graph memory, and multi-agent shared memory as opt-in future capabilities with separate product controls.
+
 ## Requirement Traceability
 
 | Requirement | Coverage |
 | --- | --- |
-| KM-01 | T075 source-backed findings identify viable retrieval paths. T076 compares those paths across reliability, implementation effort, source citation support, deployment scope, Cloudflare compatibility, tenant boundaries, lifecycle, cost/lock-in, and production hardening. |
-| KM-05 | T077 defines the first support-agent memory boundary across knowledge memory, conversation memory, session/task memory, user memory, organizational memory, provider-hosted memory, retention, deletion, tenant/deployment scope, and future hardening. |
+| KM-01 | T075 source-backed findings identify viable retrieval paths. T076 compares those paths across reliability, implementation effort, source citation support, deployment scope, Cloudflare compatibility, tenant boundaries, lifecycle, cost/lock-in, and production hardening. T079 maps reusable retrieval capabilities across onboarding, sales/support, internal knowledge, workflow, coding/sandbox, and multi-agent flows. |
+| KM-05 | T077 defines the first support-agent memory boundary across knowledge memory, conversation memory, session/task memory, user memory, organizational memory, provider-hosted memory, retention, deletion, tenant/deployment scope, and future hardening. T079 maps reusable memory capabilities and future agent-type boundaries. |
 
 ## Execution Notes
 
 - Final architecture recommendation is intentionally deferred to T078.
 - Current comparison favors an Agentis-owned retrieval facade with a Cloudflare-first backend for discussion.
 - Current memory boundary keeps long-term personal and cross-user memory out of the first support-agent runtime.
+- Horizontal platform criteria favor reusable retrieval and memory contracts over support-only schemas.
