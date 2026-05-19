@@ -39,4 +39,28 @@ describe("support knowledge contracts", () => {
     expect(serialized).not.toContain("s3://")
     expect(serialized).not.toContain("contentText")
   })
+
+  test("uses display title and default heading fallbacks for citations", () => {
+    const chunk: SupportKnowledgeRetrievedChunk = {
+      chunkId: "chunk_plain",
+      citationId: "citation_plain",
+      parsedDocumentId: "pdoc_plain",
+      knowledgeSourceId: "knowledge_product_docs",
+      sourceVersionId: "ksrcv_product_docs_2026_05_19",
+      chunkOrdinal: 0,
+      excerpt: "Excerpt only.",
+      contentText: "Server-only body.",
+      tokenCount: 4,
+      chunkHash: "hash_plain",
+      retrievedAt: "2026-05-19T00:00:00.000Z",
+    }
+
+    expect(toBrowserSafeCitation(chunk, "Registry title").title).toBe(
+      "Registry title"
+    )
+    expect(toBrowserSafeCitation({ ...chunk, headingPath: "Setup" }).title).toBe(
+      "Setup"
+    )
+    expect(toBrowserSafeCitation(chunk).title).toBe("Support source")
+  })
 })

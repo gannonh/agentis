@@ -8,8 +8,10 @@ import {
 } from "./knowledge-deployment-scope"
 import {
   getSupportKnowledgeRegistryRecord,
+  getSupportKnowledgeSourceVersion,
   listSupportKnowledgeRegistryRecords,
   requireSupportKnowledgeRegistryRecord,
+  requireSupportKnowledgeSourceVersion,
 } from "./knowledge-source-registry"
 import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 
@@ -57,5 +59,20 @@ describe("support knowledge source registry", () => {
         "knowledge_unknown"
       )
     ).toThrow(SupportKnowledgeRuntimeError)
+  })
+
+  test("requireSupportKnowledgeSourceVersion fails for unknown version ids", () => {
+    expect(getSupportKnowledgeSourceVersion("ksrcv_missing")).toBeUndefined()
+    expect(() => requireSupportKnowledgeSourceVersion("ksrcv_missing")).toThrow(
+      SupportKnowledgeRuntimeError
+    )
+  })
+
+  test("requireSupportKnowledgeSourceVersion returns demo versions", () => {
+    expect(
+      requireSupportKnowledgeSourceVersion("ksrcv_product_docs_2026_05_19")
+    ).toMatchObject({
+      knowledgeSourceId: "knowledge_product_docs",
+    })
   })
 })

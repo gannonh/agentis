@@ -77,7 +77,6 @@ export async function retrieveSupportKnowledge({
 
   for (const knowledgeSourceId of knowledgeSourceIds) {
     const record = requireSupportKnowledgeRegistryRecord(scope, knowledgeSourceId)
-    assertLifecycleEligible(record.lifecycleState)
     const version = getSupportKnowledgeSourceVersion(record.activeVersionId)
 
     if (!version || version.knowledgeSourceId !== knowledgeSourceId) {
@@ -87,6 +86,7 @@ export async function retrieveSupportKnowledge({
     }
 
     assertIndexEligible(version.indexStatus, record.lifecycleState)
+    assertLifecycleEligible(record.lifecycleState)
     const retrieved = await adapter.retrieve({ record, version, question })
     chunks.push(...retrieved)
   }
