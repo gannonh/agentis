@@ -104,3 +104,108 @@ The current implementation has a browser-safe citation shape and server-side sec
 - Disabled source records may remain for audit, but disabled content must be excluded from retrieval.
 - Deletion evidence should outlive raw content so maintainers can prove purge completion without retaining retrievable content.
 - Every state transition emits a lifecycle event with actor, reason, timestamps, and previous/next state.
+
+## T082 Parsing, Chunking, and Metadata Contracts
+
+### Contract layers
+
+| Layer | Purpose | Required identifiers | Browser-safe output |
+| --- | --- | --- | --- |
+| Source selection | Records which deployment can use a source. | `organizationId`, `deploymentId`, `agentId`, `knowledgeSourceId` | Source title, description, source type, lifecycle state. |
+| Source version | Freezes a specific fetched or uploaded content version. | `knowledgeSourceId`, `sourceVersionId`, `versionLabel` | Version label, freshness status, last refreshed timestamp. |
+| Parsed document | Normalizes raw source content into text blocks with source structure. | `parsedDocumentId`, `knowledgeSourceId`, `sourceVersionId` | Public document title and optional public location label. |
+| Chunk | Splits parsed documents into retrievable units. | `chunkId`, `parsedDocumentId`, `sourceVersionId`, `knowledgeSourceId` | Citation title, excerpt, public section label, source version ID. |
+| Citation | Converts retrieved chunks into UI, Slack, API, and audit-safe provenance. | `citationId`, `chunkId`, `knowledgeSourceId`, `sourceVersionId` | Citation ID, source title, excerpt, source version ID, optional public URL/section. |
+
+### Parsed document contract
+
+| Field | Required | Browser-safe? | Notes |
+| --- | --- | --- | --- |
+| `parsedDocumentId` | Yes | No | Internal stable ID for parser output. |
+| `knowledgeSourceId` | Yes | Yes | Product-level source identity. |
+| `sourceVersionId` | Yes | Yes | Lets browser citations show which version grounded an answer. |
+| `sourceType` | Yes | Yes | Examples: `markdown`, `uploaded_file`, `url`. |
+| `title` | Yes | Yes | User-facing source title after sanitization. |
+| `publicLocationLabel` | Optional | Yes | Human label such as `Setup guide`, `FAQ`, or `Release notes`. |
+| `canonicalUrl` | Optional | Yes only when public or tenant-authorized | Never expose signed URLs or private storage URLs. |
+| `contentText` | Yes | No | Normalized text used for chunking and indexing. |
+| `contentHash` | Yes | No | Used for freshness and dedupe. Do not expose hashes for private content. |
+| `parserVersion` | Yes | No | Parser implementation/version used to create this record. |
+| `parseStatus` | Yes | Yes, sanitized | `parsed`, `parse_failed`, or `unsupported_format`. |
+| `parseDiagnostics` | Optional | No | Stack traces, unsupported nodes, byte offsets, or raw failure details. |
+
+### Chunk contract
+
+| Field | Required | Browser-safe? | Notes |
+| --- | --- | --- | --- |
+| `chunkId` | Yes | Yes | Stable product citation identifier, not the provider vector ID. |
+| `parsedDocumentId` | Yes | No | Internal join to parser output. |
+| `knowledgeSourceId` | Yes | Yes | Required for deployment and tenant scope checks. |
+| `sourceVersionId` | Yes | Yes | Required for freshness and deletion checks. |
+| `chunkOrdinal` | Yes | No | Deterministic order within the parsed document. |
+| `headingPath` | Optional | Yes | Sanitized public section hierarchy. |
+| `excerpt` | Yes | Yes | Short citation excerpt with secrets and private internals removed. |
+| `contentText` | Yes | No | Full retrievable chunk text. |
+| `tokenCount` | Yes | No | Helps tune chunking and cost. |
+| `location` | Optional | Yes only when safe | Public URL, section anchor, page label, or line range when allowed. |
+| `chunkHash` | Yes | No | Used to compare refreshes and purge stale index entries. |
+| `embeddingMetadata` | Optional | No | Embedding model, vector namespace, vector ID, dimensions, and provider IDs. |
+
+### Browser-safe citation contract
+
+The future `SupportAgentSource` shape should grow from the current `id`, `knowledgeSourceId`, `title`, and `excerpt` fields into a normalized citation record:
+
+```ts
+type SupportAgentCitation = {
+  id: string
+  knowledgeSourceId: string
+  sourceVersionId: string
+  chunkId: string
+  title: string
+  excerpt: string
+  freshnessStatus: "fresh" | "stale" | "unknown"
+  locationLabel?: string
+  publicUrl?: string
+  retrievedAt: string
+}
+```
+
+Server-only adapter metadata must stay out of browser payloads:
+
+```ts
+type SupportAgentRetrievalServerMetadata = {
+  backend: "cloudflare-ai-search" | "cloudflare-vectorize" | "provider-native"
+  providerResourceId?: string
+  providerFileId?: string
+  providerVectorId?: string
+  namespace?: string
+  storageUri?: string
+  score?: number
+  queryTraceId?: string
+  rawDiagnostics?: unknown
+}
+```
+
+### Chunking rules
+
+- Chunking must be deterministic for a `(sourceVersionId, parserVersion, chunkingStrategyVersion)` tuple.
+- A chunk must never mix content from different tenants, deployments, knowledge sources, or source versions.
+- Markdown heading paths should become public section labels when the source itself is visible to the deployment.
+- Chunk text can include private content, but citation excerpts must pass a browser-safe sanitizer before response rendering.
+- The initial chunking strategy can tune size and overlap during retrieval evals, but each generated chunk needs stable IDs and strategy metadata.
+
+### Source examples
+
+| Source type | Browser-safe example | Server-only example |
+| --- | --- | --- |
+| Markdown/docs fixture | `knowledgeSourceId: knowledge_product_docs`, title `Product documentation sample`, `sourceVersionId: ksrcv_product_docs_2026_05_19`, location label `Setup` | Local fixture registry entry, normalized `contentText`, parser diagnostics. |
+| Uploaded file | Display title `Support FAQ.pdf`, version label `Uploaded May 19`, citation page label `p. 3` | R2 object key, file checksum, parser trace, extracted text, provider file/vector IDs. |
+| URL-like support source | Public URL `https://docs.example.com/setup`, title `Setup guide`, section `Connect a source` | Crawl job ID, fetched bytes, redirect history, private auth headers, raw fetch errors. |
+
+### Freshness and version fields
+
+- `sourceVersionId` identifies the version that produced parsed documents, chunks, index entries, citations, and deletion evidence.
+- `versionLabel` is browser-safe, human-readable, and can be a date, semantic version, or upload label.
+- `freshnessStatus` is browser-safe and uses `fresh`, `stale`, or `unknown` until product policy defines stricter freshness windows.
+- `lastRefreshedAt`, `nextRefreshAfter`, and `staleDetectedAt` are browser-safe only when they do not reveal private connector timing.
+- `contentHash`, fetch ETags, object keys, vector IDs, provider IDs, and raw diagnostics remain server-only.
