@@ -113,12 +113,15 @@ Open the exact Vite `Local:` URL printed by the command.
    - `Runtime: OpenAI / <model>`
 4. Confirm the answer does not match the fixture shape `Use <source> to answer: <question>`.
 5. Confirm provenance appears in the assistant turn:
+   - `Sources cited`
    - `Source: Product documentation sample`
-   - `Source ID: source_product_docs_setup`
+   - `Citation ID: citation_chunk_product_docs_setup` (or the top-ranked chunk for the question)
+   - `Knowledge source: knowledge_product_docs`
+   - `Chunk: chunk_product_docs_setup`
    - `Select Product documentation sample during setup.`
 6. Select `Release notes sample`, ask `What changed?`, and confirm the next answer renders `Runtime: OpenAI / <model>` and cites:
    - `Source: Release notes sample`
-   - `Source ID: source_release_notes_may`
+   - `Citation ID: citation_chunk_release_notes_may`
    - `May release notes summarize the newest support-agent changes.`
 
 ### 4. Prove failure states
@@ -188,11 +191,11 @@ If credentials are missing, skip the gateway and eval commands and record `OPENA
 4. Confirm the transcript shows the submitted `User` message.
 5. Confirm the `Assistant` answer appears with source metadata:
    - `Source: Product documentation sample`
-   - `Source ID: source_product_docs_setup`
+   - `Citation ID: citation_chunk_product_docs_setup`
    - `Select Product documentation sample during setup.`
 6. Switch the selected source to `Release notes sample`, ask another question, and confirm the new assistant turn cites:
    - `Source: Release notes sample`
-   - `Source ID: source_release_notes_may`
+   - `Citation ID: citation_chunk_release_notes_may`
    - `May release notes summarize the newest support-agent changes.`
 
 ## Hosted Configuration Contract
@@ -306,7 +309,7 @@ Hosted ask/check flow:
 6. Confirm the browser posts to `/api/support-agent/respond` on the deployed host, not to a provider API endpoint.
 7. Confirm the assistant response renders on the hosted page with public runtime metadata and citation-capable source metadata:
    - `Source: Product documentation sample`
-   - `Source ID: source_product_docs_setup`
+   - `Citation ID: citation_chunk_product_docs_setup`
    - A selected-source excerpt.
 8. Confirm browser-visible state and the hosted chat shell contain no provider API key, deployment secret, raw provider model config, runtime path, or adapter implementation detail.
 
