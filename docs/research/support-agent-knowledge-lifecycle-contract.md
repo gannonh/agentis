@@ -209,3 +209,76 @@ type SupportAgentRetrievalServerMetadata = {
 - `freshnessStatus` is browser-safe and uses `fresh`, `stale`, or `unknown` until product policy defines stricter freshness windows.
 - `lastRefreshedAt`, `nextRefreshAfter`, and `staleDetectedAt` are browser-safe only when they do not reveal private connector timing.
 - `contentHash`, fetch ETags, object keys, vector IDs, provider IDs, and raw diagnostics remain server-only.
+
+## T083 Indexing and Adapter Lifecycle Expectations
+
+### Retrieval facade responsibilities
+
+The Agentis-owned retrieval facade owns product identity, scope enforcement, lifecycle checks, and browser-safe result normalization before any backend adapter is called.
+
+Required query preconditions:
+
+1. Resolve `organizationId`, `deploymentId`, `agentId`, and allowed `knowledgeSourceId` values from Agentis state.
+2. Exclude sources whose lifecycle state is `disabled`, `delete_requested`, `deleting`, `delete_failed`, or `deleted`.
+3. Require an active or policy-allowed stale `sourceVersionId` for every retrievable source.
+4. Pass only scope filters and backend-safe metadata to the adapter.
+5. Normalize every adapter result into a browser-safe citation contract before answer generation.
+
+### Index status model
+
+| Status | Meaning | Query behavior | Browser-safe? |
+| --- | --- | --- | --- |
+| `not_indexed` | Source exists, but no index job has been requested. | Do not retrieve. Return `SUPPORT_KNOWLEDGE_MISSING_CONTENT`. | Yes. |
+| `index_queued` | Index job is accepted but not started. | Do not retrieve unless a previous active version is still allowed. | Yes. |
+| `indexing` | Adapter is creating or updating backend index entries. | Do not serve the in-progress version. Prior active version may serve if allowed. | Yes. |
+| `indexed` | Backend confirms retrievable entries for the source version. | Retrieval allowed. | Yes. |
+| `index_stale` | Backend index exists but source freshness is expired or a newer version is available. | Retrieval allowed only when stale serving policy permits it and citations mark `stale`. | Yes. |
+| `index_unavailable` | Backend index cannot be reached or inspected. | Do not retrieve. Return `SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE`. | Yes, with sanitized message. |
+| `delete_pending` | Source is excluded from retrieval and waiting for purge work. | Do not retrieve. Return `SUPPORT_KNOWLEDGE_DELETION_PENDING` if directly requested. | Yes. |
+| `deleting` | Adapter is purging index entries and provider resources. | Do not retrieve. | Yes. |
+| `deleted` | Adapter purge completed. | Do not retrieve. | Yes. |
+| `index_failed` | Index job failed. | Do not retrieve the failed version. Prior active version may serve if allowed. | Yes, with sanitized message. |
+
+### Typed failure states
+
+| Code | Trigger | Browser-safe response | Server-only evidence |
+| --- | --- | --- | --- |
+| `SUPPORT_KNOWLEDGE_MISSING_CONTENT` | Selected source has no active version, parse output, chunks, or index entries. | `The selected knowledge source is not ready yet.` | Missing record IDs, parser job IDs, storage keys. |
+| `SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE` | Adapter cannot reach Cloudflare AI Search, Vectorize, or provider-native retrieval backend. | `Knowledge search is unavailable right now.` | Backend request IDs, status codes, stack traces, retry metadata. |
+| `SUPPORT_KNOWLEDGE_STALE_SOURCE` | Source is stale and policy disallows stale serving. | `The selected knowledge source needs a refresh before it can be used.` | Freshness policy, source hashes, upstream ETags, refresh job IDs. |
+| `SUPPORT_KNOWLEDGE_DELETION_PENDING` | Source is disabled for retrieval because deletion was requested or is running. | `The selected knowledge source is being removed.` | Deletion request IDs, purge job details, provider deletion receipts. |
+| `SUPPORT_KNOWLEDGE_SOURCE_DELETED` | Request references a deleted source or source version. | `The selected knowledge source is no longer available.` | Tombstone IDs and retention policy metadata. |
+| `SUPPORT_KNOWLEDGE_SCOPE_MISMATCH` | Source, version, chunk, namespace, or provider resource does not belong to the request deployment. | `The selected knowledge source is unavailable for this deployment.` | Tenant/deployment mismatch details and adapter resource IDs. |
+| `SUPPORT_KNOWLEDGE_ADAPTER_ERROR` | Adapter returns malformed data, missing citations, backend error, timeout, or unsupported capability. | `Knowledge search failed before an answer could be grounded.` | Raw adapter payload, provider request IDs, trace IDs, retry classification. |
+
+### Backend adapter expectations
+
+| Adapter path | First role | Must provide | Must not expose to browser |
+| --- | --- | --- | --- |
+| Cloudflare AI Search | First validation backend for managed document index/search. | Instance/namespace mapping, source version status, chunk/result normalization, deletion and refresh evidence, unavailable-index failure mapping. | Instance secrets, internal namespace strategy when sensitive, raw search traces, provider diagnostics. |
+| Cloudflare Vectorize | Fallback when Agentis needs stronger chunk, metadata, ranking, or lifecycle control. | Namespace/filter enforcement, vector ID to `chunkId` mapping, embedding model metadata server-side, index purge confirmation. | Vector IDs, embedding vectors, object keys, internal scores unless product chooses to expose confidence later. |
+| Provider-native file search | Optional adapter for provider-specific deployments and fast experiments. | Provider file/vector-store mapping to Agentis source/version/chunk IDs, citation normalization, deletion receipts, expiration status. | Provider file IDs, vector store IDs, raw annotations when they reveal provider internals or private paths. |
+
+### Refresh expectations
+
+- Refresh always creates a new source version before parsing or indexing starts.
+- The previous active version remains the serving version until the new version reaches `indexed` and passes citation normalization checks.
+- If refresh fails, the source moves to `refresh_failed` or keeps `index_stale` with an explicit policy decision about stale serving.
+- Refresh writes lifecycle events for request, fetch, parse, chunk, index, activation, failure, and stale detection.
+- A refresh cannot overwrite deletion state. `delete_requested` and later states take precedence over queued refresh work.
+
+### Deletion expectations
+
+- Deletion first records `excludedFromRetrievalAt` in Agentis state and removes the source from query eligibility.
+- The adapter must purge backend index entries for every active and historical source version covered by the deletion request.
+- Provider-native adapters must record provider deletion or expiration evidence, not only the API request attempt.
+- Caches, eval fixtures, and generated answer drafts that include deleted content need purge or retention-policy handling.
+- Query-time checks must fail closed when a requested source is `delete_pending`, `deleting`, `delete_failed`, or `deleted`.
+
+### Conformance checks before Planned Slice 3
+
+- Query with no active source returns `SUPPORT_KNOWLEDGE_MISSING_CONTENT` and does not call the model.
+- Query while the index is unavailable returns `SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE` and does not leak backend diagnostics.
+- Query against a stale source either marks citations `stale` or fails with `SUPPORT_KNOWLEDGE_STALE_SOURCE`, based on policy.
+- Query after deletion request returns `SUPPORT_KNOWLEDGE_DELETION_PENDING` or `SUPPORT_KNOWLEDGE_SOURCE_DELETED` and never returns deleted chunks.
+- Adapter results that miss `knowledgeSourceId`, `sourceVersionId`, `chunkId`, title, or excerpt fail with `SUPPORT_KNOWLEDGE_ADAPTER_ERROR` before answer generation.
