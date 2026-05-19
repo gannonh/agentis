@@ -17,10 +17,10 @@ import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 
 describe("support knowledge source registry", () => {
   test("demo deployment includes product docs and release notes", () => {
-    const scope = resolveSupportAgentDeploymentScope(
-      supportAgentChatRequestFixture,
-      supportAgentDemoDeploymentId
-    )
+    const scope = resolveSupportAgentDeploymentScope({
+      ...supportAgentChatRequestFixture,
+      deploymentId: supportAgentDemoDeploymentId,
+    })
     const records = listSupportKnowledgeRegistryRecords(scope)
 
     expect(records.map((record) => record.knowledgeSourceId).sort()).toEqual([
@@ -30,10 +30,10 @@ describe("support knowledge source registry", () => {
   })
 
   test("billing deployment assigns only product documentation", () => {
-    const scope = resolveSupportAgentDeploymentScope(
-      supportAgentChatRequestFixture,
-      supportAgentBillingDeploymentId
-    )
+    const scope = resolveSupportAgentDeploymentScope({
+      ...supportAgentChatRequestFixture,
+      deploymentId: supportAgentBillingDeploymentId,
+    })
     const records = listSupportKnowledgeRegistryRecords(scope)
 
     expect(records).toHaveLength(1)
@@ -44,18 +44,18 @@ describe("support knowledge source registry", () => {
   })
 
   test("unknown deployment or source IDs fail closed", () => {
-    const scope = resolveSupportAgentDeploymentScope(
-      supportAgentChatRequestFixture,
-      "deployment_unknown"
-    )
+    const scope = resolveSupportAgentDeploymentScope({
+      ...supportAgentChatRequestFixture,
+      deploymentId: "deployment_unknown",
+    })
 
     expect(listSupportKnowledgeRegistryRecords(scope)).toEqual([])
     expect(() =>
       requireSupportKnowledgeRegistryRecord(
-        resolveSupportAgentDeploymentScope(
-          supportAgentChatRequestFixture,
-          supportAgentDemoDeploymentId
-        ),
+        resolveSupportAgentDeploymentScope({
+          ...supportAgentChatRequestFixture,
+          deploymentId: supportAgentDemoDeploymentId,
+        }),
         "knowledge_unknown"
       )
     ).toThrow(SupportKnowledgeRuntimeError)

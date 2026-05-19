@@ -305,6 +305,7 @@ export function App({
       ...supportAgentChatRequestFixture,
       messageId,
       question,
+      deploymentId: hostedChatHandoff?.deployment.id,
       knowledgeSourceIds: knowledgeSources.map((source) => source.id),
       knowledgeSources,
     }

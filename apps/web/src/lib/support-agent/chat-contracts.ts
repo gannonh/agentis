@@ -13,6 +13,7 @@ export type SupportAgentChatRequest = {
   conversationId: string
   messageId: string
   question: string
+  deploymentId?: string
   knowledgeSourceIds: string[]
   knowledgeSources: SupportAgentKnowledgeSourceSelection[]
 }

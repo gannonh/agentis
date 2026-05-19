@@ -34,6 +34,7 @@ describe("support knowledge contracts", () => {
       knowledgeSourceId: "knowledge_product_docs",
       sourceVersionId: "ksrcv_product_docs_2026_05_19",
       chunkId: "chunk_product_docs_setup",
+      freshnessStatus: "unknown",
     })
     expect(serialized).not.toContain("vec_secret")
     expect(serialized).not.toContain("s3://")
@@ -62,5 +63,25 @@ describe("support knowledge contracts", () => {
       "Setup"
     )
     expect(toBrowserSafeCitation(chunk).title).toBe("Support source")
+  })
+
+  test("forwards source version freshness when provided", () => {
+    const chunk: SupportKnowledgeRetrievedChunk = {
+      chunkId: "chunk_plain",
+      citationId: "citation_plain",
+      parsedDocumentId: "pdoc_plain",
+      knowledgeSourceId: "knowledge_product_docs",
+      sourceVersionId: "ksrcv_product_docs_2026_05_19",
+      chunkOrdinal: 0,
+      excerpt: "Excerpt only.",
+      contentText: "Server-only body.",
+      tokenCount: 4,
+      chunkHash: "hash_plain",
+      retrievedAt: "2026-05-19T00:00:00.000Z",
+    }
+
+    expect(toBrowserSafeCitation(chunk, "Registry title", "stale").freshnessStatus).toBe(
+      "stale"
+    )
   })
 })

@@ -57,22 +57,37 @@ export class SupportAgentRuntimeError extends Error {
   }
 }
 
+function toKnowledgeRetrievalFailureState(
+  code: SupportKnowledgeRuntimeErrorCode
+): SupportAgentFailureState {
+  return {
+    kind: "knowledge-retrieval-failed",
+    runtimeCode: code,
+    title: "Knowledge retrieval unavailable",
+    userMessage: supportKnowledgeRuntimeErrorMessages[code],
+    maintainerMessage:
+      "Check deployment source registry eligibility, index status, and adapter health before retrying.",
+    retryable: code === "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",
+  }
+}
+
+function isSupportKnowledgeRuntimeErrorCode(
+  code: string
+): code is SupportKnowledgeRuntimeErrorCode {
+  return code in supportKnowledgeRuntimeErrorMessages
+}
+
 export function toSupportAgentFailureState(
   error: unknown
 ): SupportAgentFailureState {
   if (error instanceof SupportKnowledgeRuntimeError) {
-    return {
-      kind: "knowledge-retrieval-failed",
-      runtimeCode: error.code,
-      title: "Knowledge retrieval unavailable",
-      userMessage: supportKnowledgeRuntimeErrorMessages[error.code],
-      maintainerMessage:
-        "Check deployment source registry eligibility, index status, and adapter health before retrying.",
-      retryable: error.code === "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",
-    }
+    return toKnowledgeRetrievalFailureState(error.code)
   }
 
   if (error instanceof SupportAgentRuntimeError) {
+    if (isSupportKnowledgeRuntimeErrorCode(error.code)) {
+      return toKnowledgeRetrievalFailureState(error.code)
+    }
     switch (error.code) {
       case "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING":
       case "SUPPORT_AGENT_PROVIDER_UNSUPPORTED":

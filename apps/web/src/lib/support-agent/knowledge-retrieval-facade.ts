@@ -12,6 +12,7 @@ import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 import {
   getSupportKnowledgeSourceVersion,
   requireSupportKnowledgeRegistryRecord,
+  requireSupportKnowledgeSourceVersion,
 } from "./knowledge-source-registry"
 
 const blockedLifecycleStates = new Set([
@@ -85,7 +86,7 @@ export async function retrieveSupportKnowledge({
       })
     }
 
-    assertIndexEligible(version.indexStatus, record.lifecycleState)
+    assertIndexEligible(version.indexStatus)
     assertLifecycleEligible(record.lifecycleState)
     const retrieved = await adapter.retrieve({ record, version, question })
     chunks.push(...retrieved)
@@ -98,7 +99,13 @@ export async function retrieveSupportKnowledge({
         scope,
         chunk.knowledgeSourceId
       )
-      return toBrowserSafeCitation(chunk, record.displayTitle)
+      const version = requireSupportKnowledgeSourceVersion(chunk.sourceVersionId)
+
+      return toBrowserSafeCitation(
+        chunk,
+        record.displayTitle,
+        version.freshnessStatus
+      )
     }),
   }
 }
@@ -132,11 +139,8 @@ function assertLifecycleEligible(lifecycleState: string): void {
   }
 }
 
-function assertIndexEligible(
-  indexStatus: string,
-  lifecycleState: string
-): void {
-  if (indexStatus === "index_stale" && lifecycleState === "stale") {
+function assertIndexEligible(indexStatus: string): void {
+  if (indexStatus === "index_stale") {
     throw new SupportKnowledgeRuntimeError({
       code: "SUPPORT_KNOWLEDGE_STALE_SOURCE",
     })

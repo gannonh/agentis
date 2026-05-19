@@ -104,6 +104,25 @@ describe("support-agent failure state contract", () => {
     expect(JSON.stringify(failure)).not.toContain("sk-live-secret")
   })
 
+  test("maps HTTP-originated knowledge runtime codes to knowledge retrieval failures", () => {
+    const failure = toSupportAgentFailureState(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE" as never,
+        message: "Knowledge search is unavailable right now.",
+      })
+    )
+
+    expect(failure).toEqual({
+      kind: "knowledge-retrieval-failed",
+      runtimeCode: "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",
+      title: "Knowledge retrieval unavailable",
+      userMessage: "Knowledge search is unavailable right now.",
+      maintainerMessage:
+        "Check deployment source registry eligibility, index status, and adapter health before retrying.",
+      retryable: true,
+    })
+  })
+
   test("maps unknown runtime failures to sanitized generic generation state", () => {
     const failure = toSupportAgentFailureState(
       new Error("Unhandled runtime failure with sk-live-secret")

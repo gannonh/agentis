@@ -145,6 +145,11 @@ describe("support knowledge retrieval facade", () => {
         indexStatus: "index_stale",
         code: "SUPPORT_KNOWLEDGE_STALE_SOURCE",
       },
+      {
+        lifecycleState: "active",
+        indexStatus: "index_stale",
+        code: "SUPPORT_KNOWLEDGE_STALE_SOURCE",
+      },
     ]
 
     for (const testCase of cases) {

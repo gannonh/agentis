@@ -5,6 +5,7 @@ import {
   createHostedSupportAgentHttpRuntime,
   createSupportAgentHttpRuntime,
 } from "./http-runtime"
+import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 import { SupportAgentRuntimeError } from "./runtime-boundary"
 
 describe("support-agent HTTP runtime", () => {
@@ -206,6 +207,30 @@ describe("support-agent HTTP runtime", () => {
       new SupportAgentRuntimeError({
         code: "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING",
         message: "Provider configuration missing.",
+      })
+    )
+  })
+
+  test("maps knowledge server failures to support-knowledge runtime errors", async () => {
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              runtimeCode: "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",
+              message: "Knowledge search is unavailable right now.",
+            },
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        )
+    )
+    const runtime = createSupportAgentHttpRuntime({ fetch })
+
+    await expect(
+      runtime.respond(supportAgentChatRequestFixture)
+    ).rejects.toEqual(
+      new SupportKnowledgeRuntimeError({
+        code: "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",
       })
     )
   })

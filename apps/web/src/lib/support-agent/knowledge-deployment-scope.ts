@@ -8,12 +8,11 @@ export const supportAgentDemoDeploymentId = "deployment_support_demo"
 export const supportAgentBillingDeploymentId = "deployment_billing_support_preview"
 
 export function resolveSupportAgentDeploymentScope(
-  request: SupportAgentChatRequest,
-  deploymentId: string = supportAgentDemoDeploymentId
+  request: SupportAgentChatRequest
 ): SupportAgentDeploymentScope {
   return {
     organizationId: supportAgentDemoOrganizationId,
-    deploymentId,
+    deploymentId: request.deploymentId ?? supportAgentDemoDeploymentId,
     agentId: request.agentId,
   }
 }
