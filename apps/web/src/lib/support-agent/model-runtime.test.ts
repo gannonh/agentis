@@ -16,7 +16,7 @@ describe("support-agent model runtime", () => {
   }
 
   test("maps Agentis chat requests through a model generator", async () => {
-    const generateText = vi.fn(async () => ({
+    const generateText = vi.fn<SupportAgentTextGenerator>(async () => ({
       text: "Select the documentation source, then ask your setup question.",
     }))
     const runtime = createSupportAgentModelRuntime({
@@ -26,26 +26,11 @@ describe("support-agent model runtime", () => {
 
     const response = await runtime.respond(supportAgentChatRequestFixture)
 
-    expect(generateText).toHaveBeenCalledWith({
-      config,
-      system: "Answer as an Agentis support agent. Use only the selected knowledge sources when they are available.",
-      prompt: [
-        "Agent: agent_support_template",
-        "Conversation: conversation_support_demo",
-        "Message: message_user_setup_question",
-        "Knowledge sources: knowledge_product_docs",
-        "Documentation context:",
-        [
-          "Source: Product documentation sample",
-          "Path: docs/knowledge/product-documentation-sample.md",
-          "# Product documentation sample",
-          "Setup: select Product documentation sample while configuring the support agent.",
-          "Billing: use the billing article when customers ask about invoices, plan changes, or payment failures.",
-          "Troubleshooting: ask for the workspace URL, affected feature, and latest error before escalating.",
-        ].join("\n"),
-        "Question: How do I connect a knowledge source?",
-      ].join("\n"),
-    })
+    const prompt = generateText.mock.calls[0]?.[0].prompt
+    expect(prompt).toContain("Knowledge sources: knowledge_product_docs")
+    expect(prompt).toContain("Retrieved knowledge excerpts:")
+    expect(prompt).toContain("chunk_product_docs_setup")
+    expect(prompt).not.toContain("# Product documentation sample")
     expect(response).toEqual({
       agentId: "agent_support_template",
       conversationId: "conversation_support_demo",
@@ -54,10 +39,14 @@ describe("support-agent model runtime", () => {
       answer: "Select the documentation source, then ask your setup question.",
       sources: [
         {
-          id: "source_product_docs_setup",
+          id: "citation_chunk_product_docs_setup",
           knowledgeSourceId: "knowledge_product_docs",
+          sourceVersionId: "ksrcv_product_docs_2026_05_19",
+          chunkId: "chunk_product_docs_setup",
           title: "Product documentation sample",
           excerpt: "Select Product documentation sample during setup.",
+          freshnessStatus: "fresh",
+          locationLabel: "Setup",
         },
       ],
       runtime: {
@@ -95,9 +84,8 @@ describe("support-agent model runtime", () => {
     })
 
     const prompt = generateText.mock.calls[0]?.[0].prompt
-    expect(prompt).toContain("# Release notes sample")
-    expect(prompt).toContain("Path: docs/knowledge/release-notes-sample.md")
-    expect(prompt).not.toContain("# Product documentation sample")
+    expect(prompt).toContain("chunk_release_notes")
+    expect(prompt).not.toContain("chunk_product_docs_setup")
   })
 
   test("omits knowledge sources from the prompt when none were selected", async () => {

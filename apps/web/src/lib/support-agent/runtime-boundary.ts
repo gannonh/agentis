@@ -2,6 +2,11 @@ import type {
   SupportAgentChatRequest,
   SupportAgentChatResponse,
 } from "./chat-contracts"
+import {
+  supportKnowledgeRuntimeErrorMessages,
+  type SupportKnowledgeRuntimeErrorCode,
+} from "./knowledge-contracts"
+import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 
 export type SupportAgentRuntime = {
   respond(request: SupportAgentChatRequest): Promise<SupportAgentChatResponse>
@@ -22,13 +27,14 @@ export type SupportAgentRuntimeErrorCode =
 export type SupportAgentFailureKind =
   | "provider-configuration-missing"
   | "context-preparation-failed"
+  | "knowledge-retrieval-failed"
   | "model-generation-failed"
   | "provenance-unavailable"
   | "hosted-access-denied"
 
 export type SupportAgentFailureState = {
   kind: SupportAgentFailureKind
-  runtimeCode?: SupportAgentRuntimeErrorCode
+  runtimeCode?: SupportAgentRuntimeErrorCode | SupportKnowledgeRuntimeErrorCode
   title: string
   userMessage: string
   maintainerMessage: string
@@ -51,10 +57,37 @@ export class SupportAgentRuntimeError extends Error {
   }
 }
 
+function toKnowledgeRetrievalFailureState(
+  code: SupportKnowledgeRuntimeErrorCode
+): SupportAgentFailureState {
+  return {
+    kind: "knowledge-retrieval-failed",
+    runtimeCode: code,
+    title: "Knowledge retrieval unavailable",
+    userMessage: supportKnowledgeRuntimeErrorMessages[code],
+    maintainerMessage:
+      "Check deployment source registry eligibility, index status, and adapter health before retrying.",
+    retryable: code === "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",
+  }
+}
+
+function isSupportKnowledgeRuntimeErrorCode(
+  code: string
+): code is SupportKnowledgeRuntimeErrorCode {
+  return code in supportKnowledgeRuntimeErrorMessages
+}
+
 export function toSupportAgentFailureState(
   error: unknown
 ): SupportAgentFailureState {
+  if (error instanceof SupportKnowledgeRuntimeError) {
+    return toKnowledgeRetrievalFailureState(error.code)
+  }
+
   if (error instanceof SupportAgentRuntimeError) {
+    if (isSupportKnowledgeRuntimeErrorCode(error.code)) {
+      return toKnowledgeRetrievalFailureState(error.code)
+    }
     switch (error.code) {
       case "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING":
       case "SUPPORT_AGENT_PROVIDER_UNSUPPORTED":

@@ -4,6 +4,11 @@ import type {
   SupportAgentChatResponse,
 } from "./chat-contracts"
 import {
+  supportKnowledgeRuntimeErrorMessages,
+  type SupportKnowledgeRuntimeErrorCode,
+} from "./knowledge-contracts"
+import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
+import {
   SupportAgentRuntimeError,
   type SupportAgentRuntime,
   type SupportAgentRuntimeErrorCode,
@@ -25,7 +30,7 @@ type HostedSupportAgentHttpRuntimeOptions = {
 
 type SupportAgentErrorPayload = {
   error?: {
-    runtimeCode?: SupportAgentRuntimeErrorCode
+    runtimeCode?: SupportAgentRuntimeErrorCode | SupportKnowledgeRuntimeErrorCode
     message?: string
   }
 }
@@ -94,6 +99,10 @@ export function createSupportAgentHttpRuntime({
           errorPayload.error?.message ?? "Support agent request failed."
 
         if (runtimeCode) {
+          if (isSupportKnowledgeRuntimeErrorCode(runtimeCode)) {
+            throw new SupportKnowledgeRuntimeError({ code: runtimeCode })
+          }
+
           throw new SupportAgentRuntimeError({
             code: runtimeCode,
             message,
@@ -106,4 +115,10 @@ export function createSupportAgentHttpRuntime({
       return payload as SupportAgentChatResponse
     },
   }
+}
+
+function isSupportKnowledgeRuntimeErrorCode(
+  code: string
+): code is SupportKnowledgeRuntimeErrorCode {
+  return code in supportKnowledgeRuntimeErrorMessages
 }

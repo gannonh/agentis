@@ -2,7 +2,7 @@ import type {
   SupportAgentChatRequest,
   SupportAgentChatResponse,
 } from "./chat-contracts"
-import { resolveSupportAgentDocumentationContext } from "./documentation-context"
+import { resolveSupportAgentGroundingContext } from "./knowledge-grounding"
 import { SupportAgentRuntimeError } from "./runtime-boundary"
 
 export type FlueSupportAgentRuntimeInput = {
@@ -22,11 +22,13 @@ export type FlueSupportAgentRuntimeInput = {
       path: string
     }
   }>
-  documentationContext: Array<{
+  groundingContext: Array<{
     knowledgeSourceId: string
+    sourceVersionId: string
+    chunkId: string
     title: string
-    path: string
-    content: string
+    excerpt: string
+    locationLabel?: string
   }>
 }
 
@@ -39,20 +41,22 @@ export type FlueSupportAgentRuntimeResponse = {
   provenance?: Array<{
     sourceId: string
     knowledgeSourceId: string
+    sourceVersionId?: string
+    chunkId?: string
     title: string
     excerpt: string
+    freshnessStatus?: "fresh" | "stale" | "unknown"
+    locationLabel?: string
     [runtimeField: string]: unknown
   }>
   [runtimeField: string]: unknown
 }
 
-export function toFlueSupportAgentRuntimeInput(
+export async function toFlueSupportAgentRuntimeInput(
   request: SupportAgentChatRequest
-): FlueSupportAgentRuntimeInput {
-  const documentationContext = resolveSupportAgentDocumentationContext(request)
-  const knowledgeSourceIds = documentationContext.map(
-    (context) => context.knowledgeSourceId
-  )
+): Promise<FlueSupportAgentRuntimeInput> {
+  const { retrieval } = await resolveSupportAgentGroundingContext(request)
+  const knowledgeSourceIds = [...new Set(request.knowledgeSourceIds)]
   const knowledgeSourcesById = new Map(
     request.knowledgeSources.map((source) => [source.id, source])
   )
@@ -75,11 +79,13 @@ export function toFlueSupportAgentRuntimeInput(
         contextReference: { ...source.contextReference },
       }
     }),
-    documentationContext: documentationContext.map((context) => ({
-      knowledgeSourceId: context.knowledgeSourceId,
-      title: context.title,
-      path: context.path,
-      content: context.content,
+    groundingContext: retrieval.citations.map((citation) => ({
+      knowledgeSourceId: citation.knowledgeSourceId,
+      sourceVersionId: citation.sourceVersionId,
+      chunkId: citation.chunkId,
+      title: citation.title,
+      excerpt: citation.excerpt,
+      locationLabel: citation.locationLabel,
     })),
   }
 }
@@ -124,8 +130,12 @@ export function toSupportAgentChatResponse(
     sources: provenance.map((source) => ({
       id: source.sourceId,
       knowledgeSourceId: source.knowledgeSourceId,
+      sourceVersionId: source.sourceVersionId,
+      chunkId: source.chunkId,
       title: source.title,
       excerpt: source.excerpt,
+      freshnessStatus: source.freshnessStatus,
+      locationLabel: source.locationLabel,
     })),
   }
 }

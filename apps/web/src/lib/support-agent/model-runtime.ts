@@ -1,9 +1,10 @@
 import type { SupportAgentChatRequest } from "./chat-contracts"
 import {
-  resolveSupportAgentDocumentationContext,
-  toSupportAgentSources,
-} from "./documentation-context"
+  resolveSupportAgentGroundingContext,
+  toGroundedPromptExcerpts,
+} from "./knowledge-grounding"
 import type { SupportAgentProviderConfig } from "./provider-config"
+import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 import {
   SupportAgentRuntimeError,
   type SupportAgentRuntime,
@@ -37,13 +38,13 @@ export function createSupportAgentModelRuntime({
 }: SupportAgentModelRuntimeOptions): SupportAgentRuntime {
   return {
     async respond(request) {
+      const grounding = await resolveSupportAgentGroundingContext(request)
       const result = await generateSupportAgentText({
         config,
         generateText,
         request,
+        retrieval: grounding.retrieval,
       })
-
-      const documentationContext = resolveSupportAgentDocumentationContext(request)
 
       return {
         agentId: request.agentId,
@@ -51,7 +52,7 @@ export function createSupportAgentModelRuntime({
         messageId: `message_assistant_${request.messageId}`,
         inReplyToMessageId: request.messageId,
         answer: result.text,
-        sources: toSupportAgentSources(documentationContext),
+        sources: grounding.sources,
         runtime: {
           mode: "model",
           provider: config.provider,
@@ -66,14 +67,18 @@ async function generateSupportAgentText({
   config,
   generateText,
   request,
+  retrieval,
 }: SupportAgentModelRuntimeOptions & {
   request: SupportAgentChatRequest
+  retrieval: Awaited<
+    ReturnType<typeof resolveSupportAgentGroundingContext>
+  >["retrieval"]
 }): Promise<SupportAgentTextGenerationResponse> {
   try {
     const result = await generateText({
       config,
       system: supportAgentSystemPrompt,
-      prompt: toSupportAgentPrompt(request),
+      prompt: toSupportAgentPrompt(request, retrieval),
     })
 
     if (typeof result.text !== "string" || !result.text.trim()) {
@@ -85,7 +90,10 @@ async function generateSupportAgentText({
 
     return result
   } catch (error) {
-    if (error instanceof SupportAgentRuntimeError) {
+    if (
+      error instanceof SupportAgentRuntimeError ||
+      error instanceof SupportKnowledgeRuntimeError
+    ) {
       throw error
     }
 
@@ -110,30 +118,26 @@ function isAbortError(error: unknown): boolean {
   )
 }
 
-function toSupportAgentPrompt(request: SupportAgentChatRequest): string {
+function toSupportAgentPrompt(
+  request: SupportAgentChatRequest,
+  retrieval: Awaited<
+    ReturnType<typeof resolveSupportAgentGroundingContext>
+  >["retrieval"]
+): string {
   const parts = [
     `Agent: ${request.agentId}`,
     `Conversation: ${request.conversationId}`,
     `Message: ${request.messageId}`,
   ]
 
-  const documentationContext = resolveSupportAgentDocumentationContext(request)
-
   if (request.knowledgeSourceIds.length > 0) {
     parts.push(`Knowledge sources: ${request.knowledgeSourceIds.join(", ")}`)
   }
 
-  if (documentationContext.length > 0) {
-    parts.push(
-      "Documentation context:",
-      ...documentationContext.map((context) =>
-        [
-          `Source: ${context.title}`,
-          `Path: ${context.path}`,
-          context.content,
-        ].join("\n")
-      )
-    )
+  const groundedExcerpts = toGroundedPromptExcerpts(retrieval)
+
+  if (groundedExcerpts.length > 0) {
+    parts.push("Retrieved knowledge excerpts:", ...groundedExcerpts)
   }
 
   parts.push(`Question: ${request.question}`)

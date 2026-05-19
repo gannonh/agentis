@@ -12,10 +12,12 @@ import {
 } from "./runtime-boundary"
 
 describe("Flue support-agent adapter boundary", () => {
-  test("maps Agentis chat requests into the Flue-ready runtime input", () => {
-    expect(
-      toFlueSupportAgentRuntimeInput(supportAgentChatRequestFixture)
-    ).toEqual({
+  test("maps Agentis chat requests into the Flue-ready runtime input", async () => {
+    const input = await toFlueSupportAgentRuntimeInput(
+      supportAgentChatRequestFixture
+    )
+
+    expect(input).toMatchObject({
       agentId: "agent_support_template",
       conversationId: "conversation_support_demo",
       userMessage: {
@@ -23,40 +25,24 @@ describe("Flue support-agent adapter boundary", () => {
         content: "How do I connect a knowledge source?",
       },
       knowledgeSourceIds: ["knowledge_product_docs"],
-      knowledgeSources: [
-        {
-          id: "knowledge_product_docs",
-          title: "Product documentation sample",
-          description: "Product setup, billing, and troubleshooting articles.",
-          contextReference: {
-            type: "local-documentation",
-            path: "docs/knowledge/product-documentation-sample.md",
-          },
-        },
-      ],
-      documentationContext: [
-        {
-          knowledgeSourceId: "knowledge_product_docs",
-          title: "Product documentation sample",
-          path: "docs/knowledge/product-documentation-sample.md",
-          content: [
-            "# Product documentation sample",
-            "Setup: select Product documentation sample while configuring the support agent.",
-            "Billing: use the billing article when customers ask about invoices, plan changes, or payment failures.",
-            "Troubleshooting: ask for the workspace URL, affected feature, and latest error before escalating.",
-          ].join("\n"),
-        },
-      ],
     })
+    expect(input.groundingContext.length).toBeGreaterThan(0)
+    expect(input.groundingContext[0]).toMatchObject({
+      knowledgeSourceId: "knowledge_product_docs",
+      sourceVersionId: "ksrcv_product_docs_2026_05_19",
+      chunkId: expect.any(String),
+      excerpt: expect.any(String),
+    })
+    expect(JSON.stringify(input)).not.toContain("contentText")
   })
 
-  test("copies knowledge source IDs so adapted input is stable after request mutation", () => {
+  test("copies knowledge source IDs so adapted input is stable after request mutation", async () => {
     const request = {
       ...supportAgentChatRequestFixture,
       knowledgeSourceIds: ["knowledge_product_docs"],
     }
 
-    const input = toFlueSupportAgentRuntimeInput(request)
+    const input = await toFlueSupportAgentRuntimeInput(request)
     request.knowledgeSourceIds.push("knowledge_release_notes")
     request.knowledgeSources[0]!.title = "Changed title"
     request.knowledgeSources[0]!.contextReference.path = "changed.md"
@@ -73,13 +59,13 @@ describe("Flue support-agent adapter boundary", () => {
         },
       },
     ])
-    expect(input.documentationContext[0]?.path).toBe(
-      "docs/knowledge/product-documentation-sample.md"
+    expect(input.groundingContext[0]?.knowledgeSourceId).toBe(
+      "knowledge_product_docs"
     )
   })
 
-  test("keeps mapped knowledgeSources scoped to selected IDs", () => {
-    const input = toFlueSupportAgentRuntimeInput({
+  test("keeps mapped knowledgeSources scoped to selected IDs", async () => {
+    const input = await toFlueSupportAgentRuntimeInput({
       ...supportAgentChatRequestFixture,
       knowledgeSourceIds: ["knowledge_release_notes"],
       knowledgeSources: [
@@ -124,8 +110,10 @@ describe("Flue support-agent adapter boundary", () => {
       },
       provenance: [
         {
-          sourceId: "source_product_docs_setup",
+          sourceId: "citation_chunk_product_docs_setup",
           knowledgeSourceId: "knowledge_product_docs",
+          sourceVersionId: "ksrcv_product_docs_2026_05_19",
+          chunkId: "chunk_product_docs_setup",
           title: "Product documentation sample",
           excerpt: "Select Product documentation sample during setup.",
           runtimePath: "r2://agentis/private/context.json",
@@ -144,8 +132,10 @@ describe("Flue support-agent adapter boundary", () => {
       answer: "Select Product documentation sample before asking setup questions.",
       sources: [
         {
-          id: "source_product_docs_setup",
+          id: "citation_chunk_product_docs_setup",
           knowledgeSourceId: "knowledge_product_docs",
+          sourceVersionId: "ksrcv_product_docs_2026_05_19",
+          chunkId: "chunk_product_docs_setup",
           title: "Product documentation sample",
           excerpt: "Select Product documentation sample during setup.",
         },
@@ -201,7 +191,7 @@ describe("Flue support-agent adapter boundary", () => {
           },
           provenance: [
             {
-              sourceId: "source_product_docs_setup",
+              sourceId: "citation_chunk_product_docs_setup",
               knowledgeSourceId: "knowledge_product_docs",
               title: "Product documentation sample",
               excerpt: "Select Product documentation sample during setup.",

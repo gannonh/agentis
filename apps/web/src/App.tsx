@@ -30,6 +30,7 @@ import {
   type SupportAgentFailureState,
   type SupportAgentRuntime,
 } from "./lib/support-agent"
+import { SupportAgentProvenanceList } from "./lib/support-agent/support-agent-provenance"
 
 type SupportKnowledgeSource = {
   id: string
@@ -304,6 +305,7 @@ export function App({
       ...supportAgentChatRequestFixture,
       messageId,
       question,
+      deploymentId: hostedChatHandoff?.deployment.id,
       knowledgeSourceIds: knowledgeSources.map((source) => source.id),
       knowledgeSources,
     }
@@ -615,19 +617,7 @@ export function App({
                     <p className="mt-2 text-xs text-muted-foreground">
                       {getRuntimeLabel(response)}
                     </p>
-                    <div className="mt-3 border-t border-border pt-3">
-                      {response.sources.map((source) => (
-                        <div className="flex flex-col gap-1" key={source.id}>
-                          <p className="text-xs">Source: {source.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Source ID: {source.id}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {source.excerpt}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                    <SupportAgentProvenanceList sources={response.sources} />
                   </div>
                 </div>
               ))}
