@@ -172,8 +172,8 @@ function createEvalQuestion({
 
 function toExpectedSourceId(knowledgeSourceId: SupportAgentEvalKnowledgeSourceId): string {
   if (knowledgeSourceId === "knowledge_release_notes") {
-    return "source_release_notes_may"
+    return "citation_chunk_release_notes_may"
   }
 
-  return "source_product_docs_setup"
+  return "citation_chunk_product_docs_setup"
 }

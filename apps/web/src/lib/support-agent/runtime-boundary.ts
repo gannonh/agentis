@@ -2,7 +2,10 @@ import type {
   SupportAgentChatRequest,
   SupportAgentChatResponse,
 } from "./chat-contracts"
-import type { SupportKnowledgeRuntimeErrorCode } from "./knowledge-contracts"
+import {
+  supportKnowledgeRuntimeErrorMessages,
+  type SupportKnowledgeRuntimeErrorCode,
+} from "./knowledge-contracts"
 import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 
 export type SupportAgentRuntime = {
@@ -10,7 +13,6 @@ export type SupportAgentRuntime = {
 }
 
 export type SupportAgentRuntimeErrorCode =
-  | SupportKnowledgeRuntimeErrorCode
   | "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING"
   | "SUPPORT_AGENT_PROVIDER_UNSUPPORTED"
   | "SUPPORT_AGENT_PROVIDER_CALL_FAILED"
@@ -32,7 +34,7 @@ export type SupportAgentFailureKind =
 
 export type SupportAgentFailureState = {
   kind: SupportAgentFailureKind
-  runtimeCode?: SupportAgentRuntimeErrorCode
+  runtimeCode?: SupportAgentRuntimeErrorCode | SupportKnowledgeRuntimeErrorCode
   title: string
   userMessage: string
   maintainerMessage: string
@@ -63,7 +65,7 @@ export function toSupportAgentFailureState(
       kind: "knowledge-retrieval-failed",
       runtimeCode: error.code,
       title: "Knowledge retrieval unavailable",
-      userMessage: error.message,
+      userMessage: supportKnowledgeRuntimeErrorMessages[error.code],
       maintainerMessage:
         "Check deployment source registry eligibility, index status, and adapter health before retrying.",
       retryable: error.code === "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",

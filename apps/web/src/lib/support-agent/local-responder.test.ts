@@ -23,10 +23,14 @@ describe("local support-agent responder", () => {
       answer: "Use Product documentation sample to answer: How do I troubleshoot billing?",
       sources: [
         {
-          id: "source_product_docs_setup",
+          id: "citation_chunk_product_docs_setup",
           knowledgeSourceId: "knowledge_product_docs",
+          sourceVersionId: "ksrcv_product_docs_2026_05_19",
+          chunkId: "chunk_product_docs_setup",
           title: "Product documentation sample",
           excerpt: "Select Product documentation sample during setup.",
+          freshnessStatus: "fresh",
+          locationLabel: "Setup",
         },
       ],
       runtime: { mode: "demo" },

@@ -1,16 +1,11 @@
-import {
-  resolveSupportAgentDocumentationContext,
-  toSupportAgentSources,
-} from "./documentation-context"
+import { resolveSupportAgentGroundingContext } from "./knowledge-grounding"
 import type { SupportAgentRuntime } from "./runtime-boundary"
 
 export function createLocalSupportAgentResponder(): SupportAgentRuntime {
   return {
     async respond(request) {
-      const documentationContext = resolveSupportAgentDocumentationContext(request)
-      const sourceTitles = documentationContext
-        .map((context) => context.title)
-        .join(", ")
+      const { sources } = await resolveSupportAgentGroundingContext(request)
+      const sourceTitles = sources.map((source) => source.title).join(", ")
       const answerPrefix = sourceTitles
         ? `Use ${sourceTitles} to answer:`
         : "Answer using available support context:"
@@ -21,7 +16,7 @@ export function createLocalSupportAgentResponder(): SupportAgentRuntime {
         messageId: `message_assistant_${request.messageId}`,
         inReplyToMessageId: request.messageId,
         answer: `${answerPrefix} ${request.question}`,
-        sources: toSupportAgentSources(documentationContext),
+        sources,
         runtime: { mode: "demo" },
       }
     },

@@ -47,7 +47,7 @@ describe("support-agent eval runner", () => {
       answer: expect.stringContaining("first model answer"),
       provenance: [
         {
-          id: "source_product_docs_setup",
+          id: "citation_chunk_product_docs_setup",
           knowledgeSourceId: "knowledge_product_docs",
           title: "Product documentation sample",
         },

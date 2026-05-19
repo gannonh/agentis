@@ -30,7 +30,9 @@ export const supportAgentChatResponseFixture: SupportAgentChatResponse = {
   answer: "Open the support template and select Product documentation sample.",
   sources: [
     {
-      id: "source_product_docs_setup",
+      id: "citation_chunk_product_docs_setup",
+      sourceVersionId: "ksrcv_product_docs_2026_05_19",
+      chunkId: "chunk_product_docs_setup",
       knowledgeSourceId: "knowledge_product_docs",
       title: "Product documentation sample",
       excerpt: "Select Product documentation sample during setup.",

@@ -23,10 +23,10 @@ describe("support-agent eval report", () => {
             costNote: "low-cost candidate",
           },
           questionId: setupQuestion.id,
-          answer: "Product documentation sample setup answer with source_product_docs_setup.",
+          answer: "Product documentation sample setup answer with citation_chunk_product_docs_setup.",
           provenance: [
             {
-              id: "source_product_docs_setup",
+              id: "citation_chunk_product_docs_setup",
               knowledgeSourceId: "knowledge_product_docs",
               title: "Product documentation sample",
               excerpt: "Select Product documentation sample during setup.",
@@ -47,7 +47,7 @@ describe("support-agent eval report", () => {
           answer: "May selected documentation context from the Agentis GUI.",
           provenance: [
             {
-              id: "source_release_notes_may",
+              id: "citation_chunk_release_notes_may",
               knowledgeSourceId: "knowledge_release_notes",
               title: "Release notes sample",
               excerpt: "May release notes summarize the newest support-agent changes.",
@@ -87,8 +87,8 @@ describe("support-agent eval report", () => {
       },
       grounding: {
         status: "pass",
-        expectedSourceIds: ["source_product_docs_setup"],
-        returnedSourceIds: ["source_product_docs_setup"],
+        expectedSourceIds: ["citation_chunk_product_docs_setup"],
+        returnedSourceIds: ["citation_chunk_product_docs_setup"],
         notes: "Answer should cite the product docs setup excerpt.",
       },
       latency: {
@@ -136,7 +136,7 @@ describe("support-agent eval report", () => {
           answer: "Unsupported generic response.",
           provenance: [
             {
-              id: "source_product_docs_setup",
+              id: "citation_chunk_product_docs_setup",
               knowledgeSourceId: "knowledge_product_docs",
               title: "Product documentation sample",
               excerpt: "Select Product documentation sample during setup.",
@@ -166,7 +166,7 @@ describe("support-agent eval report", () => {
     })
     expect(report.results[0]?.scores.grounding).toMatchObject({
       status: "fail",
-      returnedSourceIds: ["source_product_docs_setup"],
+      returnedSourceIds: ["citation_chunk_product_docs_setup"],
     })
   })
 
@@ -195,7 +195,7 @@ describe("support-agent eval report", () => {
           answer: "Product documentation sample setup answer.",
           provenance: [
             {
-              id: "source_product_docs_setup",
+              id: "citation_chunk_product_docs_setup",
               knowledgeSourceId: "knowledge_product_docs",
               title: "Product documentation sample",
               excerpt: "Select Product documentation sample during setup.",

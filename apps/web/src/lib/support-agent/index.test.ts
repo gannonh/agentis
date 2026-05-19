@@ -8,7 +8,7 @@ import {
 } from "."
 
 describe("support-agent public module surface", () => {
-  test("re-exports fixtures and adapter helpers through one module", () => {
+  test("re-exports fixtures and adapter helpers through one module", async () => {
     const runtime: SupportAgentRuntime = {
       async respond(request) {
         return {
@@ -23,9 +23,9 @@ describe("support-agent public module surface", () => {
     }
 
     expect(runtime).toHaveProperty("respond")
-    expect(
+    await expect(
       toFlueSupportAgentRuntimeInput(supportAgentChatRequestFixture)
-    ).toMatchObject({
+    ).resolves.toMatchObject({
       agentId: supportAgentChatRequestFixture.agentId,
       conversationId: supportAgentChatRequestFixture.conversationId,
     })

@@ -20,8 +20,12 @@ export type SupportAgentChatRequest = {
 export type SupportAgentSource = {
   id: string
   knowledgeSourceId: string
+  sourceVersionId?: string
+  chunkId?: string
   title: string
   excerpt: string
+  freshnessStatus?: "fresh" | "stale" | "unknown"
+  locationLabel?: string
 }
 
 export type SupportAgentRuntimeMetadata =
