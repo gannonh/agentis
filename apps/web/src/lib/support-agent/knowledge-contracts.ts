@@ -183,14 +183,15 @@ export const supportKnowledgeRuntimeErrorMessages: Record<
 }
 
 export function toBrowserSafeCitation(
-  chunk: SupportKnowledgeRetrievedChunk
+  chunk: SupportKnowledgeRetrievedChunk,
+  title?: string
 ): SupportKnowledgeCitation {
   return {
     id: chunk.citationId,
     knowledgeSourceId: chunk.knowledgeSourceId,
     sourceVersionId: chunk.sourceVersionId,
     chunkId: chunk.chunkId,
-    title: chunk.headingPath ?? chunk.excerpt.split(".")[0] ?? "Support source",
+    title: title ?? chunk.headingPath ?? "Support source",
     excerpt: chunk.excerpt,
     freshnessStatus: "fresh",
     locationLabel: chunk.location?.locationLabel ?? chunk.headingPath,

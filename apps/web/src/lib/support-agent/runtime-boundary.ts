@@ -2,12 +2,15 @@ import type {
   SupportAgentChatRequest,
   SupportAgentChatResponse,
 } from "./chat-contracts"
+import type { SupportKnowledgeRuntimeErrorCode } from "./knowledge-contracts"
+import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 
 export type SupportAgentRuntime = {
   respond(request: SupportAgentChatRequest): Promise<SupportAgentChatResponse>
 }
 
 export type SupportAgentRuntimeErrorCode =
+  | SupportKnowledgeRuntimeErrorCode
   | "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING"
   | "SUPPORT_AGENT_PROVIDER_UNSUPPORTED"
   | "SUPPORT_AGENT_PROVIDER_CALL_FAILED"
@@ -22,6 +25,7 @@ export type SupportAgentRuntimeErrorCode =
 export type SupportAgentFailureKind =
   | "provider-configuration-missing"
   | "context-preparation-failed"
+  | "knowledge-retrieval-failed"
   | "model-generation-failed"
   | "provenance-unavailable"
   | "hosted-access-denied"
@@ -54,6 +58,18 @@ export class SupportAgentRuntimeError extends Error {
 export function toSupportAgentFailureState(
   error: unknown
 ): SupportAgentFailureState {
+  if (error instanceof SupportKnowledgeRuntimeError) {
+    return {
+      kind: "knowledge-retrieval-failed",
+      runtimeCode: error.code,
+      title: "Knowledge retrieval unavailable",
+      userMessage: error.message,
+      maintainerMessage:
+        "Check deployment source registry eligibility, index status, and adapter health before retrying.",
+      retryable: error.code === "SUPPORT_KNOWLEDGE_INDEX_UNAVAILABLE",
+    }
+  }
+
   if (error instanceof SupportAgentRuntimeError) {
     switch (error.code) {
       case "SUPPORT_AGENT_PROVIDER_CONFIG_MISSING":
