@@ -16,7 +16,7 @@ describe("support-agent model runtime", () => {
   }
 
   test("maps Agentis chat requests through a model generator", async () => {
-    const generateText = vi.fn(async () => ({
+    const generateText = vi.fn<SupportAgentTextGenerator>(async () => ({
       text: "Select the documentation source, then ask your setup question.",
     }))
     const runtime = createSupportAgentModelRuntime({
