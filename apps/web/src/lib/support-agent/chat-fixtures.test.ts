@@ -29,6 +29,8 @@ describe("support-agent chat fixtures", () => {
         chunkId: "chunk_product_docs_setup",
         title: "Product documentation sample",
         excerpt: "Select Product documentation sample during setup.",
+        freshnessStatus: "fresh",
+        locationLabel: "Setup",
       },
     ])
   })

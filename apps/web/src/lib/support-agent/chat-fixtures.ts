@@ -36,6 +36,8 @@ export const supportAgentChatResponseFixture: SupportAgentChatResponse = {
       knowledgeSourceId: "knowledge_product_docs",
       title: "Product documentation sample",
       excerpt: "Select Product documentation sample during setup.",
+      freshnessStatus: "fresh",
+      locationLabel: "Setup",
     },
   ],
 }

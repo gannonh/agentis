@@ -45,6 +45,8 @@ export type FlueSupportAgentRuntimeResponse = {
     chunkId?: string
     title: string
     excerpt: string
+    freshnessStatus?: "fresh" | "stale" | "unknown"
+    locationLabel?: string
     [runtimeField: string]: unknown
   }>
   [runtimeField: string]: unknown
@@ -132,6 +134,8 @@ export function toSupportAgentChatResponse(
       chunkId: source.chunkId,
       title: source.title,
       excerpt: source.excerpt,
+      freshnessStatus: source.freshnessStatus,
+      locationLabel: source.locationLabel,
     })),
   }
 }
