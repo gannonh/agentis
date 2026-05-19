@@ -735,8 +735,10 @@ describe("App", () => {
       screen.getByText("Source: Product documentation sample")
     ).toBeInTheDocument()
     expect(
-      screen.getByText("Source ID: source_product_docs_setup")
+      screen.getByText("citation_chunk_product_docs_setup")
     ).toBeInTheDocument()
+    expect(screen.getByText("knowledge_product_docs")).toBeInTheDocument()
+    expect(screen.getByText("chunk_product_docs_setup")).toBeInTheDocument()
     expect(
       screen.getByText("Select Product documentation sample during setup.")
     ).toBeInTheDocument()
@@ -756,9 +758,8 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Ask support agent" }))
 
     expect(screen.getByText("Source: Release notes sample")).toBeInTheDocument()
-    expect(
-      screen.getByText("Source ID: source_release_notes_may")
-    ).toBeInTheDocument()
+    expect(screen.getByText("citation_chunk_release_notes_may")).toBeInTheDocument()
+    expect(screen.getByText("knowledge_release_notes")).toBeInTheDocument()
     expect(
       screen.getByText(
         "May release notes summarize the newest support-agent changes."
@@ -826,6 +827,7 @@ describe("App", () => {
 
     expect(await screen.findAllByText("User")).toHaveLength(1)
     expect(screen.getByLabelText("Support question")).toHaveValue("")
+    expect(screen.queryByLabelText("Answer provenance")).not.toBeInTheDocument()
   })
 
   test("rejects assistant responses that are not linked to the submitted message", async () => {
