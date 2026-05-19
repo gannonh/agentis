@@ -34,3 +34,4 @@ uat-evidence/
 
 # Wrangler (local dev cache)
 .wrangler/
+.kata-tmp/
