@@ -49,3 +49,58 @@ S020 carry-forward:
 ### KM-02 conclusion
 
 The current implementation has a browser-safe citation shape and server-side secret boundary for the demo path. KM-02 now needs a durable source registry, source version lifecycle, normalized parsed document/chunk metadata, adapter status contract, and deletion evidence model before deployment-scoped grounding moves from fixture-backed demo content to indexed support content.
+
+## T081 Lifecycle State Model
+
+### Source lifecycle states
+
+| State | Meaning | Allowed next states | Browser-safe? | Owner |
+| --- | --- | --- | --- | --- |
+| `candidate` | A source exists in a connector, upload, repository, or fixture and can be selected for a deployment. | `selected`, `ignored` | Yes, when listed in source picker. | Agentis app and connector registry. |
+| `selected` | An admin or setup flow selected the source for a support-agent deployment. | `refresh_queued`, `disabled`, `delete_requested` | Yes. | Agentis app. |
+| `refresh_queued` | Agentis accepted a refresh or first-ingest request and has not started parsing/indexing. | `refreshing`, `disabled`, `delete_requested` | Yes, as status only. | Agentis app and ingestion queue. |
+| `refreshing` | Agentis is fetching, parsing, chunking, and handing content to the retrieval backend. | `active`, `stale`, `refresh_failed`, `delete_requested` | Yes, as status only. | Agentis ingestion worker. |
+| `active` | A source version is available for retrieval and citation in the deployment. | `refresh_queued`, `stale`, `disabled`, `delete_requested` | Yes. | Agentis source registry. |
+| `stale` | The selected source version remains usable, but Agentis detected a newer upstream version or expired freshness window. | `refresh_queued`, `disabled`, `delete_requested` | Yes. | Agentis source registry. |
+| `refresh_failed` | A refresh attempt failed and the previous active version remains the serving version when one exists. | `refresh_queued`, `disabled`, `delete_requested` | Yes, with sanitized message only. | Agentis ingestion worker. |
+| `disabled` | The source is intentionally excluded from future retrieval but retained for audit and possible re-enable. | `refresh_queued`, `delete_requested` | Yes. | Agentis app. |
+| `delete_requested` | An admin or retention policy requested deletion. Source must be excluded from new retrieval before backend purge starts. | `deleting` | Yes, as status only. | Agentis app. |
+| `deleting` | Agentis is purging source content, parsed output, chunks, indexes, provider resources, and caches. | `deleted`, `delete_failed` | Yes, as status only. | Agentis ingestion worker and adapter. |
+| `delete_failed` | One or more purge steps failed and the source stays excluded from retrieval. | `deleting`, `deleted` | Yes, with sanitized message only. | Agentis ingestion worker and adapter. |
+| `deleted` | Raw content and retrievable artifacts are purged. Only a retention-bounded tombstone and deletion evidence remain. | None | Yes, as tombstone status only. | Agentis source registry. |
+
+### Required source metadata
+
+| Record | Required fields | Browser-safe fields | Server-only fields |
+| --- | --- | --- | --- |
+| Source registry record | `organizationId`, `deploymentId`, `agentId`, `knowledgeSourceId`, `sourceType`, `displayTitle`, `description`, `lifecycleState`, `activeVersionId`, `createdAt`, `updatedAt` | `knowledgeSourceId`, `displayTitle`, `description`, `sourceType`, `lifecycleState`, `activeVersionId`, freshness timestamps | Connector credentials, internal storage path, provider resource IDs, raw fetch errors, operational traces |
+| Source version record | `sourceVersionId`, `knowledgeSourceId`, `versionLabel`, `contentHash`, `createdAt`, `selectedAt`, `freshnessStatus`, `parseStatus`, `indexStatus` | `sourceVersionId`, `versionLabel`, `freshnessStatus`, parse/index status labels, citation-ready title | Raw document bytes, parser diagnostics, provider file IDs, vector/index IDs, embedding model metadata |
+| Lifecycle event | `eventId`, `knowledgeSourceId`, `sourceVersionId`, `eventType`, `actorType`, `actorId`, `occurredAt`, `previousState`, `nextState`, `reason` | Event type, timestamps, safe actor label, previous and next states | Actor internal IDs when sensitive, stack traces, provider request IDs, secret-bearing connector context |
+| Deletion evidence | `deletionRequestId`, `knowledgeSourceId`, `sourceVersionIds`, `requestedAt`, `excludedFromRetrievalAt`, `objectStoragePurgedAt`, `indexPurgedAt`, `providerResourcesPurgedAt`, `cachePurgedAt`, `completedAt` | Deletion state, requested/completed timestamps, high-level evidence status | Provider deletion receipts, storage object keys, internal job IDs, raw adapter error payloads |
+
+### Ownership boundaries
+
+| Boundary | Owns | Must not own |
+| --- | --- | --- |
+| Browser UI | Source selection intent, display title, user-facing status, citation rendering, safe freshness/deletion labels. | Provider IDs, storage paths, raw content for private sources, connector credentials, adapter traces. |
+| Agentis app/API | Source registry, deployment/source assignment, state transitions, access checks, audit event creation. | Backend-specific index internals beyond adapter metadata. |
+| Ingestion worker | Fetching, parsing, chunking, version creation, refresh jobs, deletion jobs, lifecycle event emission. | Browser presentation or tenant authorization policy decisions. |
+| Retrieval facade | Query-time scope enforcement, normalized retrieval status, citation-ready chunks, adapter conformance. | Direct UI state mutation or provider-specific leaks. |
+| Backend adapter | Cloudflare AI Search, Vectorize, or provider-native resource calls and backend-specific failure mapping. | Product source identity, browser citation contract, retention policy decisions. |
+
+### Transition rules
+
+- A source cannot enter `active` without a source version, successful parse, successful index or accepted no-index state, and at least one browser-safe citation label.
+- A source in `disabled`, `delete_requested`, `deleting`, `delete_failed`, or `deleted` must be excluded from new retrieval before any answer generation call.
+- Refresh creates a new source version. The active version changes only after parsing and indexing checks pass.
+- Refresh failure keeps the previous active version available only when its lifecycle state is still `active` or `stale` and policy allows stale serving.
+- Deletion records `excludedFromRetrievalAt` before any backend purge. This prevents serving deleted content while provider or index deletion is still pending.
+- `deleted` retains only tombstone and deletion evidence under the configured audit retention window.
+
+### Retention and audit defaults
+
+- Raw source content is retained only for active or refreshable versions.
+- Parsed documents and chunks mirror their source version retention.
+- Disabled source records may remain for audit, but disabled content must be excluded from retrieval.
+- Deletion evidence should outlive raw content so maintainers can prove purge completion without retaining retrievable content.
+- Every state transition emits a lifecycle event with actor, reason, timestamps, and previous/next state.
