@@ -282,3 +282,58 @@ Required query preconditions:
 - Query against a stale source either marks citations `stale` or fails with `SUPPORT_KNOWLEDGE_STALE_SOURCE`, based on policy.
 - Query after deletion request returns `SUPPORT_KNOWLEDGE_DELETION_PENDING` or `SUPPORT_KNOWLEDGE_SOURCE_DELETED` and never returns deleted chunks.
 - Adapter results that miss `knowledgeSourceId`, `sourceVersionId`, `chunkId`, title, or excerpt fail with `SUPPORT_KNOWLEDGE_ADAPTER_ERROR` before answer generation.
+
+## T084 Handoff for Deployment-Scoped Grounding
+
+### Final artifact location
+
+This file is the S021 lifecycle contract artifact in the agreed research documentation area:
+
+- `docs/research/support-agent-knowledge-lifecycle-contract.md`
+
+Planned Slice 3 can use this artifact as the implementation precondition for deployment-scoped grounding. The slice should convert the contract into code and tests without widening the milestone scope beyond KM-02 and the first grounding path.
+
+### Grounding path preconditions
+
+| Area | Required before implementation | Source section |
+| --- | --- | --- |
+| Source selection | Source registry records include `organizationId`, `deploymentId`, `agentId`, `knowledgeSourceId`, lifecycle state, active version, and browser-safe display metadata. | T081 |
+| Source versions | Refresh creates immutable source versions and only activates a version after parse, chunk, and index checks pass. | T081, T082, T083 |
+| Parsing | Raw content normalizes into parsed documents with parser version, source type, title, content text, parse status, and server-only diagnostics. | T082 |
+| Chunking | Chunks carry stable `chunkId`, `knowledgeSourceId`, `sourceVersionId`, heading/location metadata, browser-safe excerpt, server-only full text, and chunking strategy metadata. | T082 |
+| Metadata boundaries | Browser payloads expose only product source IDs, version IDs, citation IDs, safe titles, excerpts, freshness labels, safe locations, and sanitized status messages. | T080, T082 |
+| Indexing | Retrieval is allowed only for eligible source lifecycle states and `indexed` or policy-allowed `index_stale` versions. | T083 |
+| Refresh | New source versions do not become active until backend indexing and citation normalization pass. Prior active versions serve only when policy allows it. | T081, T083 |
+| Deletion | `excludedFromRetrievalAt` is recorded before purge work. Deleting or deleted sources must fail closed and never reach answer generation. | T081, T083 |
+| Adapter failures | Missing content, unavailable index, stale source, deletion pending, deleted source, scope mismatch, and adapter errors map to typed browser-safe failure states. | T083 |
+| Browser-safe contracts | UI, hosted chat, Slack, APIs, and audit logs render normalized citations without provider IDs, storage paths, secrets, raw diagnostics, or runtime traces. | T080, T082, T083 |
+
+### Planned Slice 3 implementation requirements
+
+- Add Agentis-owned support knowledge contract types for source registry records, source versions, parsed documents, chunks, citations, index statuses, lifecycle states, and typed failure states.
+- Extend or replace the current fixture-backed documentation context so retrieval uses source/version/chunk records instead of passing full demo content directly to the model prompt.
+- Add a retrieval facade that enforces deployment/source/version eligibility before calling a backend adapter.
+- Implement the first Cloudflare AI Search validation adapter behind the facade, or a local contract stub if live Cloudflare binding validation is split into a later task.
+- Keep Vectorize and provider-native retrieval behind adapter interfaces with the same lifecycle and citation contract.
+- Update `SupportAgentSource` or add a new citation type so browser responses can include `sourceVersionId`, `chunkId`, freshness, and safe location fields.
+- Add failure-state tests proving that missing content, unavailable index, stale source policy failure, deletion pending, deleted source, scope mismatch, and adapter malformed results fail before model calls.
+- Add browser-safety tests proving provider IDs, storage URIs, object keys, vector IDs, raw adapter diagnostics, stack traces, and credentials do not appear in browser-visible responses.
+- Add deletion and refresh tests that prove disabled/deleting/deleted sources cannot ground answers and active versions do not switch until indexing succeeds.
+
+### KM-02 traceability
+
+| Task | KM-02 coverage |
+| --- | --- |
+| T080 | Audited current source IDs, context references, browser-visible fields, runtime-only fields, and lifecycle gaps. |
+| T081 | Defined lifecycle states, source/version/event/deletion metadata, ownership boundaries, transitions, retention, and audit defaults. |
+| T082 | Specified parsing, chunking, source/chunk identifiers, freshness/version fields, browser-safe citation fields, and server-only metadata boundaries. |
+| T083 | Defined retrieval facade lifecycle checks, index statuses, refresh/deletion expectations, typed failure states, and adapter expectations for Cloudflare AI Search, Vectorize, and provider-native paths. |
+| T084 | Consolidated implementation preconditions and handoff requirements for the deployment-scoped grounding path in Planned Slice 3. |
+
+### Open decisions before production hardening
+
+- Freshness policy: exact windows for stale serving and user-visible stale labels.
+- Retention policy: audit tombstone duration and raw-content purge timelines.
+- Citation granularity: whether first production citations require file/chunk/line-level references or source title plus excerpt.
+- Live backend choice: whether Cloudflare AI Search satisfies lifecycle, citation, and deletion evidence once validated with real content.
+- Admin UX: how much lifecycle and deletion evidence should be visible to maintainers in the product UI.

@@ -436,6 +436,8 @@ Recommended next model/context strategy: run the eval command with valid OpenAI 
 
 ## Documentation Context Path
 
+The S021 knowledge lifecycle contract is recorded in `docs/research/support-agent-knowledge-lifecycle-contract.md`. Use it as the handoff for source selection, source versions, parsing, chunking, indexing, refresh, deletion, browser-safe citation fields, and deployment-scoped grounding preconditions.
+
 The GUI sends selected documentation as `knowledgeSourceIds` plus display metadata and a local documentation context reference. `resolveSupportAgentDocumentationContext` turns those selected sources into typed local context for the demo runtime, and unknown selected source IDs raise `SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN`.
 
 The Flue adapter boundary remains the primary runtime path. `toFlueSupportAgentRuntimeInput` maps the Agentis-owned chat request into a Flue-ready input with selected source IDs, source metadata, and resolved documentation context. `toSupportAgentChatResponse` maps a Flue-shaped assistant answer back into the browser-safe Agentis chat response with answer text, assistant message ID, in-reply-to linkage, and provenance source metadata.
