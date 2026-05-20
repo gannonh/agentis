@@ -178,6 +178,8 @@
   },
   "active": "1e569190c670dad0",
   "lastOpenFiles": [
+    "DESIGN.md",
+    "PRODUCT.md",
     "docs/comps/app-new-project-form-dark.png",
     "docs/comps/app-integrations-catalog-dark.png",
     "docs/comps/app-learning-dashboard-dark.png",
@@ -188,7 +190,6 @@
     "docs/comps/landing-slack-morning-brief.png",
     "docs/comps/landing-learning-skill-modal.png",
     "docs/comps/landing-fleet-daily-briefing-invocations.png",
-    "docs/comps/landing-fleet-chief-of-staff-config.png",
     "docs/overview.md",
     "docs/comps/overview.md",
     "docs/comps",

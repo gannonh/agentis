@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-20T18:28:45Z",
+  "title": "Design System: Agentis",
+  "extensions": {
+    "colorMeta": {
+      "workbench-bg": {
+        "role": "neutral",
+        "displayName": "Quiet Workbench",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.37 0 0)", "oklch(0.49 0 0)", "oklch(0.62 0 0)", "oklch(0.75 0 0)", "oklch(0.88 0 0)", "oklch(0.98 0 0)"]
+      },
+      "ink-primary": {
+        "role": "primary",
+        "displayName": "Workbench Ink",
+        "canonical": "oklch(0.145 0 0)",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.37 0 0)", "oklch(0.49 0 0)", "oklch(0.62 0 0)", "oklch(0.75 0 0)", "oklch(0.88 0 0)", "oklch(0.98 0 0)"]
+      },
+      "agent-blue": {
+        "role": "primary",
+        "displayName": "Agent Blue",
+        "canonical": "oklch(0.488 0.243 264.376)",
+        "tonalRamp": ["oklch(0.15 0.08 264.376)", "oklch(0.25 0.12 264.376)", "oklch(0.37 0.17 264.376)", "oklch(0.49 0.243 264.376)", "oklch(0.62 0.18 264.376)", "oklch(0.75 0.12 264.376)", "oklch(0.86 0.07 264.376)", "oklch(0.95 0.03 264.376)"]
+      },
+      "destructive": {
+        "role": "destructive",
+        "displayName": "Controlled Destructive",
+        "canonical": "oklch(0.577 0.245 27.325)",
+        "tonalRamp": ["oklch(0.15 0.08 27.325)", "oklch(0.25 0.12 27.325)", "oklch(0.37 0.17 27.325)", "oklch(0.58 0.245 27.325)", "oklch(0.68 0.18 27.325)", "oklch(0.78 0.12 27.325)", "oklch(0.88 0.07 27.325)", "oklch(0.95 0.03 27.325)"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Route titles, onboarding headlines, and important empty-state headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Main UI copy, descriptions, and readable explanations."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, nav labels, metadata, status chips, and compact controls."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "150ms to 250ms, ease-out-quart",
+        "purpose": "State changes only: hover, focus, active, selected, expanded, and loading transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Compact primary action using Workbench Ink and inverse foreground.",
+      "html": "<button class=\"ds-btn-primary\">Run agent</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 1.75rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem; border: 1px solid transparent; background: oklch(0.145 0 0); color: oklch(0.985 0 0); font-family: 'IBM Plex Sans Variable', sans-serif; font-size: 0.75rem; line-height: 1.5; font-weight: 500; white-space: nowrap; transition: background-color 180ms cubic-bezier(0.165, 0.84, 0.44, 1), transform 180ms cubic-bezier(0.165, 0.84, 0.44, 1); } .ds-btn-primary:hover { background: oklch(0.145 0 0 / 80%); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.708 0 0 / 30%); outline-offset: 2px; border-color: oklch(0.708 0 0); } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Subtle secondary action with a visible boundary and quiet hover fill.",
+      "html": "<button class=\"ds-btn-outline\">Connect tool</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; height: 1.75rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem; border: 1px solid oklch(0.922 0 0); background: transparent; color: oklch(0.145 0 0); font-family: 'IBM Plex Sans Variable', sans-serif; font-size: 0.75rem; line-height: 1.5; font-weight: 500; white-space: nowrap; transition: background-color 180ms cubic-bezier(0.165, 0.84, 0.44, 1), transform 180ms cubic-bezier(0.165, 0.84, 0.44, 1); } .ds-btn-outline:hover { background: oklch(0.922 0 0 / 50%); } .ds-btn-outline:focus-visible { outline: 2px solid oklch(0.708 0 0 / 30%); outline-offset: 2px; border-color: oklch(0.708 0 0); } .ds-btn-outline:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis action for toolbars, navigation, and repeated controls.",
+      "html": "<button class=\"ds-btn-ghost\">View details</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 1.75rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem; border: 1px solid transparent; background: transparent; color: oklch(0.145 0 0); font-family: 'IBM Plex Sans Variable', sans-serif; font-size: 0.75rem; line-height: 1.5; font-weight: 500; white-space: nowrap; transition: background-color 180ms cubic-bezier(0.165, 0.84, 0.44, 1), transform 180ms cubic-bezier(0.165, 0.84, 0.44, 1); } .ds-btn-ghost:hover { background: oklch(0.97 0 0); } .ds-btn-ghost:focus-visible { outline: 2px solid oklch(0.708 0 0 / 30%); outline-offset: 2px; border-color: oklch(0.708 0 0); } .ds-btn-ghost:active { transform: translateY(1px); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Workshop",
+    "overview": "Agentis should feel like a composed workbench for autonomous work. The interface supports long-running tasks, reusable agents, connected tools, artifacts, and quality controls with quiet precision. It should make complex agent behavior visible without turning the product into a spectacle.\n\nThe current system is a product register foundation: IBM Plex Sans, shadcn/ui primitives, Tailwind 4, compact Base UI buttons, OKLCH tokens, and a themeable light or dark surface. The product atmosphere is restrained, operational, and exact. It rejects generic AI SaaS patterns: purple gradients, vague magic language, floating orbs, mascot energy, and undifferentiated AI dashboard clichés.",
+    "keyCharacteristics": [
+      "Dense enough for expert workflows, calm enough for first-run comprehension.",
+      "Tonal layers, borders, and focus rings carry hierarchy before shadow does.",
+      "Accent color is functional: active navigation, selection, status, and primary intent.",
+      "Components are compact, readable, and visibly stateful."
+    ],
+    "rules": [
+      {
+        "name": "The Functional Accent Rule",
+        "body": "Agent Blue appears only when it tells the user where they are, what is selected, or what action matters.",
+        "section": "colors"
+      },
+      {
+        "name": "The Neutral Honesty Rule",
+        "body": "Neutral surfaces must carry most of the product. If a screen needs decoration to feel complete, the information structure is not strong enough.",
+        "section": "colors"
+      },
+      {
+        "name": "The Compact Clarity Rule",
+        "body": "Controls may be small, but labels must stay readable and focusable. Do not trade legibility for density.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tonal Layer Rule",
+        "body": "Start with surface contrast and border clarity. Add shadow only when an element floats above the document flow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the product register by default: app shell, threads, agents, command center, integrations, and task workflows.",
+      "Do make agent work legible through state, steps, tools, outputs, and quality signals.",
+      "Do keep accent color functional: active navigation, current selection, system status, and primary intent.",
+      "Do use tonal layers and subtle borders before shadow.",
+      "Do support WCAG 2.2 AA with keyboard access, visible focus, reduced motion support, sufficient contrast, semantic structure, and non-color-only state indicators."
+    ],
+    "donts": [
+      "Don't use generic AI SaaS patterns: purple gradients, vague magic language, floating orbs, mascot energy, and undifferentiated AI dashboard clichés.",
+      "Don't use gradient text.",
+      "Don't use side-stripe borders as colored accents on cards, list items, callouts, or alerts.",
+      "Don't use glassmorphism as decoration.",
+      "Don't create identical card grids with icon, heading, and text repeated without meaningful structure.",
+      "Don't make agent autonomy feel opaque, unserious, or decorative."
+    ]
+  }
+}
