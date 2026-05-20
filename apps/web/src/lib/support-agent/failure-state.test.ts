@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest"
 
+import { SupportKnowledgeRuntimeError } from "./knowledge-runtime-error"
 import {
   SupportAgentRuntimeError,
   toSupportAgentFailureState,
@@ -104,6 +105,18 @@ describe("support-agent failure state contract", () => {
     expect(JSON.stringify(failure)).not.toContain("sk-live-secret")
   })
 
+  test("maps missing AI Search configuration code to browser-safe knowledge configuration state", () => {
+    const failure = toSupportAgentFailureState(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_AI_SEARCH_CONFIG_MISSING",
+        message: "Cloudflare AI Search binding is not configured",
+      })
+    )
+
+    expect(failure.runtimeCode).toBe("SUPPORT_AGENT_AI_SEARCH_CONFIG_MISSING")
+    expect(failure.kind).toBe("knowledge-search-configuration-missing")
+  })
+
   test("maps AI Search configuration failures to browser-safe knowledge configuration state", () => {
     const failure = toSupportAgentFailureState(
       new SupportAgentRuntimeError({
@@ -124,6 +137,26 @@ describe("support-agent failure state contract", () => {
     })
     expect(JSON.stringify(failure)).not.toContain("sk-live")
     expect(JSON.stringify(failure)).not.toContain("secret-ns")
+  })
+
+  test("maps SupportKnowledgeRuntimeError instances to knowledge retrieval failures", () => {
+    const failure = toSupportAgentFailureState(
+      new SupportKnowledgeRuntimeError({
+        code: "SUPPORT_KNOWLEDGE_STALE_SOURCE",
+        message: "internal stale diagnostics with secret-token",
+      })
+    )
+
+    expect(failure).toEqual({
+      kind: "knowledge-retrieval-failed",
+      runtimeCode: "SUPPORT_KNOWLEDGE_STALE_SOURCE",
+      title: "Knowledge retrieval unavailable",
+      userMessage: "The selected knowledge source needs a refresh before it can be used.",
+      maintainerMessage:
+        "Check deployment source registry eligibility, index status, and adapter health before retrying.",
+      retryable: false,
+    })
+    expect(JSON.stringify(failure)).not.toContain("secret-token")
   })
 
   test("maps HTTP-originated knowledge runtime codes to knowledge retrieval failures", () => {

@@ -31,6 +31,7 @@ export type SupportAgentWorkerEnv = {
   SUPPORT_AGENT_AI_SEARCH?: unknown
   SUPPORT_AGENT_AI_SEARCH_INSTANCE?: unknown
   SUPPORT_AGENT_AI_SEARCH_NAMESPACE?: string
+  SUPPORT_AGENT_AI_SEARCH_INSTANCE_NAME?: string
 }
 
 export type SupportAgentWorkerOptions = {

@@ -200,14 +200,17 @@ export function resolveSupportAgentAiSearchConfigFromWorkerEnv(env: {
   SUPPORT_AGENT_AI_SEARCH?: unknown
   SUPPORT_AGENT_AI_SEARCH_INSTANCE?: unknown
   SUPPORT_AGENT_AI_SEARCH_NAMESPACE?: string
+  SUPPORT_AGENT_AI_SEARCH_INSTANCE_NAME?: string
 }): SupportAgentAiSearchConfigResolution {
   const hasNamespaceBinding = Boolean(env.SUPPORT_AGENT_AI_SEARCH)
-  const hasInstanceBinding = Boolean(env.SUPPORT_AGENT_AI_SEARCH_INSTANCE)
+  const hasInstanceBinding =
+    typeof env.SUPPORT_AGENT_AI_SEARCH_INSTANCE === "object" &&
+    env.SUPPORT_AGENT_AI_SEARCH_INSTANCE !== null
   const namespaceFromEnv = env.SUPPORT_AGENT_AI_SEARCH_NAMESPACE?.trim()
   const instanceNameFromEnv =
     typeof env.SUPPORT_AGENT_AI_SEARCH_INSTANCE === "string"
       ? env.SUPPORT_AGENT_AI_SEARCH_INSTANCE.trim()
-      : undefined
+      : env.SUPPORT_AGENT_AI_SEARCH_INSTANCE_NAME?.trim()
 
   if (hasNamespaceBinding) {
     return resolveSupportAgentAiSearchConfig({
