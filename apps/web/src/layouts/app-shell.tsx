@@ -18,18 +18,18 @@ export function AppShell() {
           Skip to main content
         </a>
         <AppSidebar />
-        <SidebarInset className="min-h-svh">
+        <SidebarInset
+          id="main-content"
+          tabIndex={-1}
+          className="min-h-svh outline-none"
+        >
           <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4 lg:hidden">
             <SidebarTrigger />
             <span className="text-sm font-medium">Agentis</span>
           </header>
-          <main
-            id="main-content"
-            tabIndex={-1}
-            className="flex flex-1 flex-col overflow-auto p-6 outline-none"
-          >
+          <div className="flex flex-1 flex-col overflow-auto p-6">
             <Outlet />
-          </main>
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

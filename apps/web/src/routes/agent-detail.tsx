@@ -10,7 +10,7 @@ import { AgentDetailHero } from "@/components/agent-detail/agent-detail-hero"
 import { AgentDetailInspector } from "@/components/agent-detail/agent-detail-inspector"
 import { AgentOverviewTab } from "@/components/agent-detail/agent-overview-tab"
 import { PageLayout } from "@/components/shell/page-layout"
-import { EmptyState } from "@/components/shell/empty-state"
+import { PageHeader } from "@/components/shell/page-header"
 import { getAgent, getWorkspace } from "@/fixtures"
 
 export function AgentDetailPage() {
@@ -21,15 +21,13 @@ export function AgentDetailPage() {
   if (!agent || agent.id === "command-center") {
     return (
       <PageLayout variant="narrow">
-        <EmptyState
+        <PageHeader
           title="Agent not found"
           description="Choose an agent from the sidebar or Command Center roster."
-          action={
-            <Button render={<Link to="/command-center" />} variant="outline" size="sm">
-              Command Center
-            </Button>
-          }
         />
+        <Button render={<Link to="/command-center" />} variant="outline" size="sm">
+          Command Center
+        </Button>
       </PageLayout>
     )
   }

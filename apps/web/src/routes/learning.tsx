@@ -6,6 +6,7 @@ import { LearningSecondaryPanel } from "@/components/learning/learning-secondary
 import { SkillsCard } from "@/components/learning/skills-card"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
+import { EmptyState } from "@/components/shell/empty-state"
 import { getWorkspace } from "@/fixtures"
 
 export function LearningPage() {
@@ -35,9 +36,16 @@ export function LearningPage() {
       <AgentFilterBar value={agentFilter} onChange={setAgentFilter} />
 
       <section className="flex flex-col gap-3" aria-label="Learning conversations">
-        {conversations.map((conversation) => (
-          <LearningConversationRow key={conversation.id} conversation={conversation} />
-        ))}
+        {conversations.length === 0 ? (
+          <EmptyState
+            title="No conversations for this agent"
+            description="Try another filter or start a thread with this agent."
+          />
+        ) : (
+          conversations.map((conversation) => (
+            <LearningConversationRow key={conversation.id} conversation={conversation} />
+          ))
+        )}
       </section>
     </PageLayout>
   )

@@ -1,5 +1,6 @@
 import { demoWorkspace } from "./demo-workspace"
 import type { Agent, Thread, Workspace } from "./schema"
+import { workspaceSchema } from "./schema"
 
 let workspace: Workspace = demoWorkspace
 
@@ -32,7 +33,10 @@ export function getNavAgents(): Agent[] {
 }
 
 export function formatRelativeTime(iso: string): string {
-  const then = new Date(iso).getTime()
+  const then = Date.parse(iso)
+  if (Number.isNaN(then)) {
+    return "—"
+  }
   const now = new Date("2026-05-20T12:51:00.000Z").getTime()
   const diffMs = Math.max(0, now - then)
   const minutes = Math.floor(diffMs / 60_000)
@@ -49,7 +53,7 @@ export function formatRelativeTime(iso: string): string {
 
 /** Test-only: reset fixture snapshot */
 export function __setWorkspaceForTests(next: Workspace): void {
-  workspace = next
+  workspace = workspaceSchema.parse(next)
 }
 
 export function __resetWorkspaceForTests(): void {

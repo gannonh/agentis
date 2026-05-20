@@ -53,16 +53,22 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(isActive && "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground")
 
 function ThreadSidebarItem({ thread }: { thread: Thread }) {
-  const match = useMatch({ path: "/threads/new", end: true })
+  const newThreadMatch = useMatch({ path: "/threads/new", end: true })
+  const isActive = Boolean(newThreadMatch) && thread.status === "active"
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        isActive={Boolean(match)}
+        isActive={isActive}
         render={<NavLink to="/threads/new" end className={navLinkClass} />}
       >
         <span
-          className="size-2 shrink-0 rounded-full bg-sidebar-primary"
+          className={cn(
+            "size-2 shrink-0 rounded-full",
+            thread.status === "finished"
+              ? "bg-muted-foreground"
+              : "bg-sidebar-primary"
+          )}
           aria-hidden
         />
         <span>{thread.title}</span>
@@ -77,8 +83,6 @@ function ThreadSidebarItem({ thread }: { thread: Thread }) {
 export function AppSidebar() {
   const workspace = getWorkspace()
   const agents = getNavAgents().filter((a) => a.id !== "command-center")
-  const activeThread = workspace.threads[0]
-
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -188,7 +192,9 @@ export function AppSidebar() {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {activeThread ? <ThreadSidebarItem thread={activeThread} /> : null}
+                  {workspace.threads.map((thread) => (
+                    <ThreadSidebarItem key={thread.id} thread={thread} />
+                  ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>

@@ -21,11 +21,13 @@ export const agentRosterStatusSchema = z.enum(["active", "idle", "error"])
 
 export const qualityTrendSchema = z.enum(["up", "down", "flat"])
 
+export const agentNavIconSchema = z.enum(["search", "command"])
+
 export const agentSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
-  icon: z.string().optional(),
+  icon: agentNavIconSchema.optional(),
   model: z.string(),
   rosterStatus: agentRosterStatusSchema.optional(),
   qualityTrend: qualityTrendSchema.optional(),
@@ -207,5 +209,6 @@ export type Artifact = z.infer<typeof artifactSchema>
 export type Integration = z.infer<typeof integrationSchema>
 export type StarterAgent = z.infer<typeof starterAgentSchema>
 export type PickerAgentIcon = z.infer<typeof pickerAgentIconSchema>
+export type AgentNavIcon = z.infer<typeof agentNavIconSchema>
 export type NeedsAttentionItem = z.infer<typeof needsAttentionItemSchema>
 export type LearningConversation = z.infer<typeof learningConversationSchema>

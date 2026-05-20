@@ -31,6 +31,27 @@ function isTheme(value: string | null): value is Theme {
   return THEME_VALUES.includes(value as Theme)
 }
 
+function readStoredTheme(storageKey: string, defaultTheme: Theme): Theme {
+  try {
+    const storedTheme = localStorage.getItem(storageKey)
+    if (isTheme(storedTheme)) {
+      return storedTheme
+    }
+  } catch {
+    // Private mode or blocked storage — fall back to default.
+  }
+
+  return defaultTheme
+}
+
+function writeStoredTheme(storageKey: string, nextTheme: Theme): void {
+  try {
+    localStorage.setItem(storageKey, nextTheme)
+  } catch {
+    // Ignore quota / blocked storage; in-memory theme still updates.
+  }
+}
+
 function getSystemTheme(): ResolvedTheme {
   if (window.matchMedia(COLOR_SCHEME_QUERY).matches) {
     return "dark"
@@ -84,18 +105,13 @@ export function ThemeProvider({
   disableTransitionOnChange = true,
   ...props
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(() => {
-    const storedTheme = localStorage.getItem(storageKey)
-    if (isTheme(storedTheme)) {
-      return storedTheme
-    }
-
-    return defaultTheme
-  })
+  const [theme, setThemeState] = React.useState<Theme>(() =>
+    readStoredTheme(storageKey, defaultTheme)
+  )
 
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
-      localStorage.setItem(storageKey, nextTheme)
+      writeStoredTheme(storageKey, nextTheme)
       setThemeState(nextTheme)
     },
     [storageKey]
@@ -167,7 +183,7 @@ export function ThemeProvider({
                 ? "light"
                 : "dark"
 
-        localStorage.setItem(storageKey, nextTheme)
+        writeStoredTheme(storageKey, nextTheme)
         return nextTheme
       })
     }

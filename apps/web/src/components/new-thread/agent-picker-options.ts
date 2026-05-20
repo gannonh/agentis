@@ -1,5 +1,10 @@
 import { getStarterAgents, getYourPickerAgents } from "@/fixtures"
-import type { Agent, PickerAgentIcon, StarterAgent } from "@/fixtures/schema"
+import type { Agent, AgentNavIcon, PickerAgentIcon, StarterAgent } from "@/fixtures/schema"
+
+const rosterIconToPickerIcon: Record<AgentNavIcon, PickerAgentIcon> = {
+  search: "search",
+  command: "briefing",
+}
 
 export const DEFAULT_AGENT_PICKER_ID = "agentis"
 
@@ -15,7 +20,7 @@ function agentToPickerOption(agent: Agent): PickerOption {
     id: agent.id,
     name: agent.name,
     description: agent.description,
-    icon: (agent.icon ?? "search") as PickerAgentIcon,
+    icon: rosterIconToPickerIcon[agent.icon ?? "search"],
   }
 }
 

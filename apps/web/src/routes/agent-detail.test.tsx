@@ -32,4 +32,32 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText(/Tools \(20\)/)).toBeInTheDocument()
     expect(screen.getByText("Exa")).toBeInTheDocument()
   })
+
+  it("shows not found for unknown agent id", () => {
+    render(
+      <MemoryRouter initialEntries={["/agents/unknown-agent"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole("heading", { name: "Agent not found" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Command Center" })).toHaveAttribute(
+      "href",
+      "/command-center"
+    )
+  })
+
+  it("shows not found for command-center agent id", () => {
+    render(
+      <MemoryRouter initialEntries={["/agents/command-center"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole("heading", { name: "Agent not found" })).toBeInTheDocument()
+  })
 })

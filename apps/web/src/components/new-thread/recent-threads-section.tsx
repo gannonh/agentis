@@ -1,18 +1,27 @@
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { PickerAgentIconMark } from "@/lib/picker-agent-icon"
-import { formatRelativeTime } from "@/fixtures"
-import type { Thread } from "@/fixtures/schema"
+import { formatRelativeTime, getAgent } from "@/fixtures"
+import type { AgentNavIcon, PickerAgentIcon, Thread } from "@/fixtures/schema"
+
+const rosterIconToPickerIcon: Record<AgentNavIcon, PickerAgentIcon> = {
+  search: "search",
+  command: "briefing",
+}
 
 type RecentThreadsSectionProps = {
   threads: Thread[]
 }
 
-function agentIconForThread(thread: Thread) {
-  if (thread.agentName === "Senior Reviewer") {
-    return "search" as const
+function agentIconForThread(thread: Thread): PickerAgentIcon {
+  if (!thread.agentId) {
+    return "agentis"
   }
-  return "agentis" as const
+  const agent = getAgent(thread.agentId)
+  if (!agent?.icon) {
+    return "search"
+  }
+  return rosterIconToPickerIcon[agent.icon]
 }
 
 export function RecentThreadsSection({ threads }: RecentThreadsSectionProps) {
@@ -49,7 +58,7 @@ export function RecentThreadsSection({ threads }: RecentThreadsSectionProps) {
                     className="h-5 gap-1 border-transparent bg-transparent px-0 text-xs font-normal text-muted-foreground"
                   >
                     <span
-                      className="size-1.5 rounded-full bg-agent-blue"
+                      className="size-1.5 rounded-full bg-muted-foreground"
                       aria-hidden
                     />
                     Finished

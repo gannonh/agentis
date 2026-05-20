@@ -8,11 +8,14 @@ import { LibraryPage } from "@/routes/library"
 import { NewThreadPage } from "@/routes/new-thread"
 import { ProjectCreatePage } from "@/routes/project-create"
 import { SearchPage } from "@/routes/search"
+import { NotFoundPage } from "@/routes/not-found"
+import { RouteErrorPage } from "@/routes/route-error"
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <AppShell />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="/threads/new" replace /> },
       { path: "threads/new", element: <NewThreadPage /> },
@@ -23,6 +26,7 @@ export const router = createBrowserRouter([
       { path: "projects/new", element: <ProjectCreatePage /> },
       { path: "library", element: <LibraryPage /> },
       { path: "search", element: <SearchPage /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ])

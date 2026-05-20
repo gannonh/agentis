@@ -29,10 +29,19 @@ export function QualityTrendCell({ trend }: QualityTrendCellProps) {
     )
   }
 
+  if (trend === "down") {
+    return (
+      <span className="text-status-warning-foreground inline-flex items-center gap-1 text-xs">
+        <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
+        Down
+      </span>
+    )
+  }
+
   return (
-    <span className="text-status-warning-foreground inline-flex items-center gap-1 text-xs">
-      <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
-      Down
+    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+      <HugeiconsIcon icon={MinusSignIcon} className="size-3.5" strokeWidth={2} aria-hidden />
+      —
     </span>
   )
 }

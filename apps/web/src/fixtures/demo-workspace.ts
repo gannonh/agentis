@@ -1,8 +1,8 @@
-import type { Workspace } from "./schema"
+import { workspaceSchema } from "./schema"
 
 const DEMO_NOW = "2026-05-20T12:00:00.000Z"
 
-export const demoWorkspace: Workspace = {
+export const demoWorkspace = workspaceSchema.parse({
   user: {
     id: "user-demo",
     email: "demo@agentis.local",
@@ -179,6 +179,14 @@ export const demoWorkspace: Workspace = {
       agentName: "Senior Reviewer",
       messageCount: 5,
       updatedAt: DEMO_NOW,
+    },
+    {
+      id: "thread-editor-gate",
+      title: "Editor gate review",
+      agentId: "editor-quality-gate",
+      agentName: "Editor & Quality Gate",
+      messageCount: 12,
+      updatedAt: "2026-05-20T10:00:00.000Z",
     },
   ],
   integrations: [
@@ -424,4 +432,4 @@ export const demoWorkspace: Workspace = {
       icon: "sales",
     },
   ],
-}
+})

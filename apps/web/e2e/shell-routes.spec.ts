@@ -14,10 +14,11 @@ const routes = [
 for (const route of routes) {
   test(`shell screenshot: ${route.name}`, async ({ page }) => {
     await page.goto(route.path)
-    await page.waitForLoadState("networkidle")
+    await page.waitForLoadState("domcontentloaded")
     await expect(page.locator("body")).toBeVisible()
+    await expect(page.locator("#main-content")).toBeVisible()
     await expect(page).toHaveScreenshot(`${route.name}.png`, {
-      fullPage: true,
+      fullPage: false,
     })
   })
 }

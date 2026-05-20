@@ -20,7 +20,7 @@ describe("LearningPage", () => {
     expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Rubrics" })).toBeInTheDocument()
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Dismiss" })).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: "Dismiss" }).length).toBeGreaterThanOrEqual(1)
   })
 
   it("filters conversations by agent", async () => {
@@ -32,7 +32,10 @@ describe("LearningPage", () => {
     )
 
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    expect(screen.getByText("Editor gate review")).toBeInTheDocument()
+
     await user.click(screen.getByRole("button", { name: /Senior Reviewer/i }))
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    expect(screen.queryByText("Editor gate review")).not.toBeInTheDocument()
   })
 })

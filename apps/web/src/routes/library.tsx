@@ -10,6 +10,7 @@ import { Input } from "@workspace/ui/components/input"
 import { Badge } from "@workspace/ui/components/badge"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
+import { EmptyState } from "@/components/shell/empty-state"
 import { formatRelativeTime, getWorkspace } from "@/fixtures"
 
 export function LibraryPage() {
@@ -37,6 +38,12 @@ export function LibraryPage() {
         </div>
       </div>
 
+      {workspace.artifacts.length === 0 ? (
+        <EmptyState
+          title="No artifacts yet"
+          description="Deliverables from agent runs will appear here once threads produce output."
+        />
+      ) : (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {workspace.artifacts.map((artifact) => (
           <Card key={artifact.id}>
@@ -71,6 +78,7 @@ export function LibraryPage() {
           </Card>
         ))}
       </div>
+      )}
     </PageLayout>
   )
 }
