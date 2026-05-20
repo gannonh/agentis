@@ -1,0 +1,103 @@
+import { NavLink } from "react-router"
+import { Badge } from "@workspace/ui/components/badge"
+import { Input } from "@workspace/ui/components/input"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table"
+import { AgentRosterIcon, rosterStatusClass } from "@/components/command-center/agent-roster-icons"
+import { QualityScoreCell } from "@/components/command-center/quality-score-cell"
+import { QualityTrendCell } from "@/components/command-center/quality-trend-cell"
+import { formatRelativeTime } from "@/fixtures"
+import type { Agent } from "@/fixtures/schema"
+import { cn } from "@workspace/ui/lib/utils"
+
+type AgentRosterProps = {
+  agents: Agent[]
+}
+
+export function AgentRoster({ agents }: AgentRosterProps) {
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="agent-roster-heading">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 id="agent-roster-heading" className="text-sm font-medium">
+            Agent roster
+          </h2>
+          <Badge
+            variant="secondary"
+            className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+          >
+            {agents.length} {agents.length === 1 ? "agent" : "agents"}
+          </Badge>
+        </div>
+        <Input
+          placeholder="Search agents…"
+          className="h-8 max-w-xs"
+          disabled
+          aria-label="Search agents"
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Agent</TableHead>
+              <TableHead className="text-right">Runs</TableHead>
+              <TableHead>Quality</TableHead>
+              <TableHead>Quality trend</TableHead>
+              <TableHead className="text-right">Cost / run</TableHead>
+              <TableHead className="text-right">Cost</TableHead>
+              <TableHead className="text-right">Last active</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {agents.map((agent) => (
+              <TableRow key={agent.id}>
+                <TableCell>
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={cn(
+                        "size-2 shrink-0 rounded-full",
+                        rosterStatusClass(agent.rosterStatus ?? "idle")
+                      )}
+                      aria-hidden
+                    />
+                    <AgentRosterIcon icon={agent.icon} />
+                    <NavLink
+                      to={`/agents/${agent.id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {agent.name}
+                    </NavLink>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{agent.runCount}</TableCell>
+                <TableCell>
+                  <QualityScoreCell score={agent.qualityScore} />
+                </TableCell>
+                <TableCell>
+                  <QualityTrendCell trend={agent.qualityTrend} />
+                </TableCell>
+                <TableCell className="text-muted-foreground text-right text-sm tabular-nums">
+                  {agent.costPerRun != null ? `$${agent.costPerRun.toFixed(2)}` : "—"}
+                </TableCell>
+                <TableCell className="text-right text-sm tabular-nums">
+                  ${agent.totalCost.toFixed(2)}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-right text-sm">
+                  {agent.lastRunAt ? formatRelativeTime(agent.lastRunAt) : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </section>
+  )
+}

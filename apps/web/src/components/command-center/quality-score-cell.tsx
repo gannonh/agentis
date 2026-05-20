@@ -1,0 +1,29 @@
+import { cn } from "@workspace/ui/lib/utils"
+
+type QualityScoreCellProps = {
+  score: number | null | undefined
+}
+
+export function QualityScoreCell({ score }: QualityScoreCellProps) {
+  if (score == null) {
+    return <span className="text-muted-foreground">—</span>
+  }
+
+  const tone =
+    score >= 90 ? "bg-emerald-500" : score >= 80 ? "bg-emerald-500/70" : "bg-amber-500"
+
+  return (
+    <div className="flex min-w-[7rem] items-center gap-2">
+      <div
+        className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+        role="presentation"
+      >
+        <div
+          className={cn("h-full rounded-full", tone)}
+          style={{ width: `${Math.min(100, score)}%` }}
+        />
+      </div>
+      <span className="w-8 shrink-0 text-right text-xs tabular-nums">{score}%</span>
+    </div>
+  )
+}

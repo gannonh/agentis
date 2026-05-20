@@ -30,6 +30,7 @@ describe("AppSidebar", () => {
     renderSidebar()
     expect(screen.getByText("Command Center")).toBeInTheDocument()
     expect(screen.getByText("Senior Reviewer")).toBeInTheDocument()
+    expect(screen.getByText("Editor & Quality Gate")).toBeInTheDocument()
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
   })
 

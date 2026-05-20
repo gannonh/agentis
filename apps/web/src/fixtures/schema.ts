@@ -17,12 +17,18 @@ export const workspaceUserSchema = z.object({
   displayName: z.string(),
 })
 
+export const agentRosterStatusSchema = z.enum(["active", "idle", "error"])
+
+export const qualityTrendSchema = z.enum(["up", "down", "flat"])
+
 export const agentSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
   icon: z.string().optional(),
   model: z.string(),
+  rosterStatus: agentRosterStatusSchema.optional(),
+  qualityTrend: qualityTrendSchema.optional(),
   lastRunAt: z.string().optional(),
   lastUpdatedAt: z.string().optional(),
   runCount: z.number().default(0),
@@ -75,6 +81,7 @@ export const needsAttentionItemSchema = z.object({
   title: z.string(),
   tag: z.string(),
   agentId: z.string().optional(),
+  threadId: z.string().optional(),
 })
 
 export const skillSchema = z.object({
