@@ -9,6 +9,7 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { Badge } from "@workspace/ui/components/badge"
 import { PageHeader } from "@/components/shell/page-header"
+import { PageLayout } from "@/components/shell/page-layout"
 import { getWorkspace } from "@/fixtures"
 
 const statusLabel: Record<string, string> = {
@@ -23,7 +24,7 @@ export function IntegrationsPage() {
   const featured = workspace.integrations.slice(0, 12)
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-8">
+    <PageLayout>
       <PageHeader
         title="Integrations"
         description="Connect services and data warehouses for your agent."
@@ -111,6 +112,6 @@ export function IntegrationsPage() {
           ))}
         </div>
       </section>
-    </div>
+    </PageLayout>
   )
 }

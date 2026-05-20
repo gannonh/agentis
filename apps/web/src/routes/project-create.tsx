@@ -12,12 +12,13 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { Textarea } from "@workspace/ui/components/textarea"
 import { PageHeader } from "@/components/shell/page-header"
+import { PageLayout } from "@/components/shell/page-layout"
 
 export function ProjectCreatePage() {
   const [name, setName] = useState("")
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-8">
+    <PageLayout variant="narrow">
       <PageHeader
         title="New project"
         description="Group threads with shared goals and context."
@@ -73,6 +74,6 @@ export function ProjectCreatePage() {
           <Button disabled={name.trim().length === 0}>Create project</Button>
         </CardFooter>
       </Card>
-    </div>
+    </PageLayout>
   )
 }

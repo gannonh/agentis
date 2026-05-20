@@ -32,4 +32,9 @@ describe("AppSidebar", () => {
     expect(screen.getByText("Senior Reviewer")).toBeInTheDocument()
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
   })
+
+  it("does not show referral promo copy", () => {
+    renderSidebar()
+    expect(screen.queryByText(/referral/i)).not.toBeInTheDocument()
+  })
 })

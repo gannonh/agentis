@@ -1,4 +1,4 @@
-import { NavLink } from "react-router"
+import { NavLink, useMatch } from "react-router"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
@@ -34,10 +34,45 @@ import {
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
 import { cn } from "@workspace/ui/lib/utils"
+import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
 import { getNavAgents, getWorkspace } from "@/fixtures"
+import type { Thread } from "@/fixtures/schema"
+
+const agentIcons = {
+  search: Search01Icon,
+  command: CommandIcon,
+} as const
+
+function agentNavIcon(icon?: string) {
+  const Icon =
+    icon && icon in agentIcons ? agentIcons[icon as keyof typeof agentIcons] : Search01Icon
+  return <HugeiconsIcon icon={Icon} strokeWidth={2} />
+}
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(isActive && "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground")
+
+function ThreadSidebarItem({ thread }: { thread: Thread }) {
+  const match = useMatch({ path: "/threads/new", end: true })
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        isActive={Boolean(match)}
+        render={<NavLink to="/threads/new" end className={navLinkClass} />}
+      >
+        <span
+          className="size-2 shrink-0 rounded-full bg-sidebar-primary"
+          aria-hidden
+        />
+        <span>{thread.title}</span>
+      </SidebarMenuButton>
+      <SidebarMenuBadge>
+        {thread.status === "finished" ? "Finished" : thread.status}
+      </SidebarMenuBadge>
+    </SidebarMenuItem>
+  )
+}
 
 export function AppSidebar() {
   const workspace = getWorkspace()
@@ -66,47 +101,26 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<NavLink to="/threads/new" className={navLinkClass} />}
-                  isActive={false}
-                >
-                  <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
-                  <span>New thread</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<NavLink to="/search" className={navLinkClass} />}
-                >
-                  <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
-                  <span>Search</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<NavLink to="/library" className={navLinkClass} />}
-                >
-                  <HugeiconsIcon icon={BookOpen01Icon} strokeWidth={2} />
-                  <span>Library</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<NavLink to="/learning" className={navLinkClass} />}
-                >
-                  <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
-                  <span>Learning</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<NavLink to="/integrations" className={navLinkClass} />}
-                >
-                  <HugeiconsIcon icon={Link01Icon} strokeWidth={2} />
-                  <span>Integrations</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <SidebarNavItem to="/threads/new" end>
+                <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
+                <span>New thread</span>
+              </SidebarNavItem>
+              <SidebarNavItem to="/search">
+                <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
+                <span>Search</span>
+              </SidebarNavItem>
+              <SidebarNavItem to="/library">
+                <HugeiconsIcon icon={BookOpen01Icon} strokeWidth={2} />
+                <span>Library</span>
+              </SidebarNavItem>
+              <SidebarNavItem to="/learning">
+                <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
+                <span>Learning</span>
+              </SidebarNavItem>
+              <SidebarNavItem to="/integrations">
+                <HugeiconsIcon icon={Link01Icon} strokeWidth={2} />
+                <span>Integrations</span>
+              </SidebarNavItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -123,30 +137,15 @@ export function AppSidebar() {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={
-                        <NavLink to="/command-center" className={navLinkClass} />
-                      }
-                    >
-                      <HugeiconsIcon icon={CommandIcon} strokeWidth={2} />
-                      <span>Command Center</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <SidebarNavItem to="/command-center">
+                    <HugeiconsIcon icon={CommandIcon} strokeWidth={2} />
+                    <span>Command Center</span>
+                  </SidebarNavItem>
                   {agents.map((agent) => (
-                    <SidebarMenuItem key={agent.id}>
-                      <SidebarMenuButton
-                        render={
-                          <NavLink
-                            to={`/agents/${agent.id}`}
-                            className={navLinkClass}
-                          />
-                        }
-                      >
-                        <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
-                        <span>{agent.name}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <SidebarNavItem key={agent.id} to={`/agents/${agent.id}`}>
+                      {agentNavIcon(agent.icon)}
+                      <span>{agent.name}</span>
+                    </SidebarNavItem>
                   ))}
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -167,17 +166,9 @@ export function AppSidebar() {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={
-                        <NavLink to="/projects/new" className={navLinkClass} />
-                      }
-                    >
-                      <span className="text-muted-foreground text-xs">
-                        New project
-                      </span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <SidebarNavItem to="/projects/new">
+                    <span className="text-muted-foreground text-xs">New project</span>
+                  </SidebarNavItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -197,24 +188,7 @@ export function AppSidebar() {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {activeThread ? (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        render={
-                          <NavLink to="/threads/new" className={navLinkClass} />
-                        }
-                      >
-                        <span
-                          className="size-2 shrink-0 rounded-full bg-sidebar-primary"
-                          aria-hidden
-                        />
-                        <span>{activeThread.title}</span>
-                      </SidebarMenuButton>
-                      <SidebarMenuBadge>
-                        {activeThread.status === "finished" ? "Finished" : activeThread.status}
-                      </SidebarMenuBadge>
-                    </SidebarMenuItem>
-                  ) : null}
+                  {activeThread ? <ThreadSidebarItem thread={activeThread} /> : null}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -236,9 +210,6 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <p className="text-muted-foreground px-2 py-1 text-xs group-data-[collapsible=icon]:hidden">
-          Earn $100 per referral
-        </p>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="cursor-default">

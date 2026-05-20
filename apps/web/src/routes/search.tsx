@@ -1,9 +1,10 @@
 import { PageHeader } from "@/components/shell/page-header"
+import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 
 export function SearchPage() {
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+    <PageLayout variant="focused">
       <PageHeader
         title="Search"
         description="Find threads, agents, artifacts, and learnings across your workspace."
@@ -12,6 +13,6 @@ export function SearchPage() {
         title="Search is coming soon"
         description="Full-text search across threads, agents, and the library will ship in a later milestone."
       />
-    </div>
+    </PageLayout>
   )
 }

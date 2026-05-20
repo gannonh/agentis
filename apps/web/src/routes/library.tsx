@@ -9,13 +9,14 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { Badge } from "@workspace/ui/components/badge"
 import { PageHeader } from "@/components/shell/page-header"
+import { PageLayout } from "@/components/shell/page-layout"
 import { formatRelativeTime, getWorkspace } from "@/fixtures"
 
 export function LibraryPage() {
   const workspace = getWorkspace()
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-8">
+    <PageLayout>
       <PageHeader
         title="Library"
         description="Browse deliverables produced across threads and agent runs."
@@ -65,6 +66,6 @@ export function LibraryPage() {
           </Card>
         ))}
       </div>
-    </div>
+    </PageLayout>
   )
 }

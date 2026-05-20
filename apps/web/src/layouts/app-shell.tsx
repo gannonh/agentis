@@ -17,9 +17,9 @@ export function AppShell() {
             <SidebarTrigger />
             <span className="text-sm font-medium">Agentis</span>
           </header>
-          <div className="flex flex-1 flex-col overflow-auto p-6">
+          <main className="flex flex-1 flex-col overflow-auto p-6">
             <Outlet />
-          </div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

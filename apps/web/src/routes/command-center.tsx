@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { PageHeader } from "@/components/shell/page-header"
+import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 import {
   formatRelativeTime,
@@ -22,20 +23,25 @@ import {
   getWorkspace,
 } from "@/fixtures"
 
-function MetricCard({
-  label,
-  value,
-}: {
-  label: string
-  value: string | number
-}) {
+function FleetStats({ metrics }: { metrics: ReturnType<typeof getWorkspace>["commandCenter"] }) {
+  const items: { label: string; value: string | number }[] = [
+    { label: "Agents", value: metrics.agents },
+    { label: "Active", value: metrics.active },
+    { label: "Total runs", value: metrics.totalRuns },
+    { label: "Avg score", value: metrics.avgScore ?? "—" },
+    { label: "Total cost", value: `$${metrics.totalCost.toFixed(2)}` },
+    { label: "Pending", value: metrics.pending },
+  ]
+
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3">
-      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        {label}
-      </span>
-      <span className="text-2xl font-medium tabular-nums">{value}</span>
-    </div>
+    <dl className="flex flex-wrap gap-x-8 gap-y-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-baseline gap-2">
+          <dt className="text-muted-foreground text-xs font-medium">{item.label}</dt>
+          <dd className="text-sm font-medium tabular-nums">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
@@ -45,26 +51,13 @@ export function CommandCenterPage() {
   const roster = getAgentsForRoster()
 
   return (
-    <div className="flex w-full flex-col gap-8">
+    <PageLayout>
       <PageHeader
         title="Command Center"
         description="Fleet overview, quality, cost, and items that need your attention."
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <MetricCard label="Agents" value={metrics.agents} />
-        <MetricCard label="Active" value={metrics.active} />
-        <MetricCard label="Total runs" value={metrics.totalRuns} />
-        <MetricCard
-          label="Avg score"
-          value={metrics.avgScore ?? "—"}
-        />
-        <MetricCard
-          label="Total cost"
-          value={`$${metrics.totalCost.toFixed(2)}`}
-        />
-        <MetricCard label="Pending" value={metrics.pending} />
-      </div>
+      <FleetStats metrics={metrics} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
@@ -184,6 +177,6 @@ export function CommandCenterPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   )
 }

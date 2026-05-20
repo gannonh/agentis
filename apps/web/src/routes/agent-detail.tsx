@@ -15,6 +15,7 @@ import {
   TabsTrigger,
 } from "@workspace/ui/components/tabs"
 import { PageHeader } from "@/components/shell/page-header"
+import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 import { formatRelativeTime, getAgent, getWorkspace } from "@/fixtures"
 
@@ -25,7 +26,7 @@ export function AgentDetailPage() {
 
   if (!agent || agent.id === "command-center") {
     return (
-      <div className="mx-auto max-w-lg">
+      <PageLayout variant="narrow">
         <EmptyState
           title="Agent not found"
           description="Choose an agent from the sidebar or Command Center roster."
@@ -35,14 +36,14 @@ export function AgentDetailPage() {
             </Button>
           }
         />
-      </div>
+      </PageLayout>
     )
   }
 
   const recentThreads = workspace.threads.filter((t) => t.agentId === agent.id)
 
   return (
-    <div className="flex w-full flex-col gap-6 lg:flex-row lg:gap-8">
+    <PageLayout className="gap-6 lg:flex-row lg:gap-8">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <PageHeader
           title={agent.name}
@@ -201,6 +202,6 @@ export function AgentDetailPage() {
           <CardContent className="text-muted-foreground text-xs">—</CardContent>
         </Card>
       </aside>
-    </div>
+    </PageLayout>
   )
 }

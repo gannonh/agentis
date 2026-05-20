@@ -8,6 +8,7 @@ import {
 } from "@workspace/ui/components/card"
 import { Badge } from "@workspace/ui/components/badge"
 import { PageHeader } from "@/components/shell/page-header"
+import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 import { formatRelativeTime, getWorkspace } from "@/fixtures"
 
@@ -17,16 +18,11 @@ export function LearningPage() {
   const visibleSkills = workspace.skills.slice(0, 5)
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-8">
+    <PageLayout>
       <PageHeader
         title="Learning"
         description="Your agents learn from conversations. Review suggestions below and accept the ones worth keeping."
       />
-
-      <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
-        Your agents learn from conversations. Review suggestions below and accept
-        the ones worth keeping.
-      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -116,6 +112,6 @@ export function LearningPage() {
           </Card>
         ))}
       </section>
-    </div>
+    </PageLayout>
   )
 }
