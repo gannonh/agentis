@@ -69,7 +69,9 @@ describe("support-agent API handler", () => {
     const payload = await response.json()
 
     expect(response.status).toBe(500)
-    expect(payload.error.message).toBe("Support agent request failed.")
+    expect(payload.error.message).toBe(
+      "The support agent could not generate an answer right now."
+    )
     expect(JSON.stringify(payload)).not.toContain("sk-test-secret")
   })
 
@@ -186,7 +188,7 @@ describe("support-agent API handler", () => {
         maintainerMessage:
           "Set the support-agent provider environment variables, then retry the local demo.",
         message:
-          "Support agent provider config requires provider, model, and API key.",
+          "The support agent needs provider credentials before it can answer.",
       },
     })
   })

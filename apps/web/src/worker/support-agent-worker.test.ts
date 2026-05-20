@@ -73,9 +73,15 @@ describe("support-agent Cloudflare Worker", () => {
         chatUrl:
           "https://agentis-support-agent-preview.example.workers.dev/support-agent/chat",
       },
+      aiSearch: {
+        state: "missing",
+        bindingMode: "none",
+        runtimeCode: "SUPPORT_AGENT_AI_SEARCH_CONFIG_MISSING",
+      },
     })
     expect(JSON.stringify(payload)).not.toContain("sk-worker-secret")
     expect(JSON.stringify(payload)).not.toContain("access-token-value")
+    expect(JSON.stringify(payload.aiSearch)).not.toContain("env.")
   })
 
   test("returns actionable hosted deployment failure when server secrets are missing", async () => {
@@ -97,9 +103,35 @@ describe("support-agent Cloudflare Worker", () => {
         code: "HOSTED_DEPLOYMENT_SECRET_MISSING",
         title: "Server-side secret binding missing",
       },
+      aiSearch: {
+        state: "missing",
+        bindingMode: "none",
+      },
     })
     expect(JSON.stringify(payload)).not.toContain("sk-worker-secret")
     expect(JSON.stringify(payload)).not.toContain("OPENAI_API_KEY")
+  })
+
+  test("reports configured AI Search status without exposing namespace identifiers", async () => {
+    const fetch = createSupportAgentWorkerFetch()
+
+    const response = await fetch(
+      new Request(
+        "https://agentis-support-agent-preview.example.workers.dev/support-agent/status"
+      ),
+      createEnv({
+        SUPPORT_AGENT_AI_SEARCH: {},
+        SUPPORT_AGENT_AI_SEARCH_NAMESPACE: "agentis-support-agent",
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.aiSearch).toMatchObject({
+      state: "configured",
+      bindingMode: "namespace",
+    })
+    expect(JSON.stringify(payload.aiSearch)).not.toContain("agentis-support-agent")
   })
 
   test("treats whitespace-only Worker secrets as missing bindings", async () => {
@@ -261,11 +293,11 @@ describe("support-agent Cloudflare Worker", () => {
     expect(payload).toEqual({
       error: {
         runtimeCode: "SUPPORT_AGENT_HOSTED_BINDING_MISSING",
-        message: "Server-side secret binding missing",
-        title: "Deployment failed",
+        title: "Hosted deployment incomplete",
         userMessage: "The hosted support agent could not be deployed.",
         maintainerMessage:
-          "Set the required server-side support-agent secret bindings, then rerun the Cloudflare preview deployment command.",
+          "Set the required server-side support-agent bindings, then rerun the Cloudflare preview deployment command.",
+        message: "The hosted support agent could not be deployed.",
       },
     })
     expect(generateText).not.toHaveBeenCalled()
@@ -297,8 +329,11 @@ describe("support-agent Cloudflare Worker", () => {
     expect(payload).toEqual({
       error: {
         runtimeCode: "SUPPORT_AGENT_HOSTED_ACCESS_DENIED",
-        message: "Hosted support-agent access is required.",
+        title: "Hosted access required",
         userMessage: "Enter the hosted deployment access token and retry.",
+        maintainerMessage:
+          "Use the current browser access token for this preview, then retry.",
+        message: "Enter the hosted deployment access token and retry.",
       },
     })
     expect(generateText).not.toHaveBeenCalled()

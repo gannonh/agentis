@@ -6,7 +6,7 @@ import {
   toSupportAgentFailureState,
 } from "./index"
 import type { SupportAgentTextGenerator } from "./model-runtime"
-import { SupportAgentRuntimeError } from "./runtime-boundary"
+import { toBrowserSafeSupportAgentApiError } from "./browser-safe-error"
 
 export const supportAgentApiPath = "/api/support-agent/respond"
 
@@ -65,20 +65,10 @@ export function createSupportAgentApiHandler({
       return jsonResponse(response, 200)
     } catch (error) {
       const failure = toSupportAgentFailureState(error)
-      const message =
-        error instanceof SupportAgentRuntimeError
-          ? error.message
-          : "Support agent request failed."
 
       return jsonResponse(
         {
-          error: {
-            runtimeCode: failure.runtimeCode,
-            title: failure.title,
-            userMessage: failure.userMessage,
-            maintainerMessage: failure.maintainerMessage,
-            message,
-          },
+          error: toBrowserSafeSupportAgentApiError(failure),
         },
         500
       )

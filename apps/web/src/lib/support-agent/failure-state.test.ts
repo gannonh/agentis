@@ -104,6 +104,28 @@ describe("support-agent failure state contract", () => {
     expect(JSON.stringify(failure)).not.toContain("sk-live-secret")
   })
 
+  test("maps AI Search configuration failures to browser-safe knowledge configuration state", () => {
+    const failure = toSupportAgentFailureState(
+      new SupportAgentRuntimeError({
+        code: "SUPPORT_AGENT_AI_SEARCH_CONFIG_INVALID",
+        message:
+          "Invalid binding env.SUPPORT_AGENT_AI_SEARCH namespace=secret-ns token=sk-live",
+      })
+    )
+
+    expect(failure).toEqual({
+      kind: "knowledge-search-configuration-missing",
+      runtimeCode: "SUPPORT_AGENT_AI_SEARCH_CONFIG_INVALID",
+      title: "Knowledge search not configured",
+      userMessage: "Knowledge search is not configured for this deployment yet.",
+      maintainerMessage:
+        "Add the Cloudflare AI Search Worker binding and rerun the AI Search configuration check.",
+      retryable: false,
+    })
+    expect(JSON.stringify(failure)).not.toContain("sk-live")
+    expect(JSON.stringify(failure)).not.toContain("secret-ns")
+  })
+
   test("maps HTTP-originated knowledge runtime codes to knowledge retrieval failures", () => {
     const failure = toSupportAgentFailureState(
       new SupportAgentRuntimeError({

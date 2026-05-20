@@ -23,9 +23,12 @@ export type SupportAgentRuntimeErrorCode =
   | "SUPPORT_AGENT_RESPONSE_LINKAGE_MISMATCH"
   | "SUPPORT_AGENT_HOSTED_ACCESS_DENIED"
   | "SUPPORT_AGENT_HOSTED_BINDING_MISSING"
+  | "SUPPORT_AGENT_AI_SEARCH_CONFIG_MISSING"
+  | "SUPPORT_AGENT_AI_SEARCH_CONFIG_INVALID"
 
 export type SupportAgentFailureKind =
   | "provider-configuration-missing"
+  | "knowledge-search-configuration-missing"
   | "context-preparation-failed"
   | "knowledge-retrieval-failed"
   | "model-generation-failed"
@@ -119,6 +122,18 @@ export function toSupportAgentFailureState(
           userMessage: "The hosted support agent could not be deployed.",
           maintainerMessage:
             "Set the required server-side support-agent bindings, then rerun the Cloudflare preview deployment command.",
+          retryable: false,
+        }
+      case "SUPPORT_AGENT_AI_SEARCH_CONFIG_MISSING":
+      case "SUPPORT_AGENT_AI_SEARCH_CONFIG_INVALID":
+        return {
+          kind: "knowledge-search-configuration-missing",
+          runtimeCode: error.code,
+          title: "Knowledge search not configured",
+          userMessage:
+            "Knowledge search is not configured for this deployment yet.",
+          maintainerMessage:
+            "Add the Cloudflare AI Search Worker binding and rerun the AI Search configuration check.",
           retryable: false,
         }
       case "SUPPORT_AGENT_CONTEXT_SOURCE_UNKNOWN":

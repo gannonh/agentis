@@ -8,10 +8,19 @@ import {
   verifyHostedSupportAgentStaticAccessToken,
 } from "../lib/support-agent/hosted-access-token"
 import {
+  resolveSupportAgentAiSearchConfigFromWorkerEnv,
+  toPublicSupportAgentAiSearchStatus,
+} from "../lib/support-agent/ai-search-config"
+import { toBrowserSafeSupportAgentApiError } from "../lib/support-agent/browser-safe-error"
+import {
   createHostedSupportAgentDeploymentFailure,
   createHostedSupportAgentDeploymentStatus,
 } from "../lib/support-agent/hosted-deployment-status"
 import type { SupportAgentTextGenerator } from "../lib/support-agent/model-runtime"
+import {
+  SupportAgentRuntimeError,
+  toSupportAgentFailureState,
+} from "../lib/support-agent/runtime-boundary"
 
 export type SupportAgentWorkerEnv = {
   SUPPORT_AGENT_OPENAI_API_KEY?: string
@@ -19,6 +28,9 @@ export type SupportAgentWorkerEnv = {
   SUPPORT_AGENT_ACCESS_TOKEN?: string
   SUPPORT_AGENT_MODEL?: string
   SUPPORT_AGENT_PROVIDER?: string
+  SUPPORT_AGENT_AI_SEARCH?: unknown
+  SUPPORT_AGENT_AI_SEARCH_INSTANCE?: unknown
+  SUPPORT_AGENT_AI_SEARCH_NAMESPACE?: string
 }
 
 export type SupportAgentWorkerOptions = {
@@ -49,19 +61,32 @@ export function createSupportAgentWorkerFetch({
     }
 
     if (url.pathname === "/support-agent/status") {
+      const aiSearch = toPublicSupportAgentAiSearchStatus(
+        resolveSupportAgentAiSearchConfigFromWorkerEnv(env)
+      )
+
       if (!hasRequiredServerBindings(env)) {
-        return jsonResponse(createMissingSecretStatus(), 503)
+        return jsonResponse(
+          {
+            ...createMissingSecretStatus(),
+            aiSearch,
+          },
+          503
+        )
       }
 
       return jsonResponse(
-        createHostedSupportAgentDeploymentStatus({
-          state: "deployed",
-          deployment: {
-            id: "agentis-support-agent-preview",
-            publicName: "Agentis support-agent preview",
-            chatUrl: new URL("/support-agent/chat", url.origin).toString(),
-          },
-        }),
+        {
+          ...createHostedSupportAgentDeploymentStatus({
+            state: "deployed",
+            deployment: {
+              id: "agentis-support-agent-preview",
+              publicName: "Agentis support-agent preview",
+              chatUrl: new URL("/support-agent/chat", url.origin).toString(),
+            },
+          }),
+          aiSearch,
+        },
         200
       )
     }
@@ -78,12 +103,14 @@ export function createSupportAgentWorkerFetch({
       if (!(await hasDeploymentAccess(request, env))) {
         return jsonResponse(
           {
-            error: {
-              runtimeCode: "SUPPORT_AGENT_HOSTED_ACCESS_DENIED",
-              message: "Hosted support-agent access is required.",
-              userMessage:
-                "Enter the hosted deployment access token and retry.",
-            },
+            error: toBrowserSafeSupportAgentApiError(
+              toSupportAgentFailureState(
+                new SupportAgentRuntimeError({
+                  code: "SUPPORT_AGENT_HOSTED_ACCESS_DENIED",
+                  message: "Hosted support-agent access is required.",
+                })
+              )
+            ),
           },
           401
         )
@@ -134,13 +161,14 @@ function createMissingSecretError() {
   const status = createMissingSecretStatus()
 
   return {
-    error: {
-      runtimeCode: "SUPPORT_AGENT_HOSTED_BINDING_MISSING",
-      message: status.failure!.title,
-      title: status.title,
-      userMessage: status.userMessage,
-      maintainerMessage: status.maintainerMessage,
-    },
+    error: toBrowserSafeSupportAgentApiError(
+      toSupportAgentFailureState(
+        new SupportAgentRuntimeError({
+          code: "SUPPORT_AGENT_HOSTED_BINDING_MISSING",
+          message: status.failure!.title,
+        })
+      )
+    ),
   }
 }
 
