@@ -65,6 +65,7 @@ Reference docs:
 ```bash
 pnpm support-agent:worker:dev
 pnpm support-agent:worker:check
+pnpm support-agent:worker:ai-search-check
 pnpm support-agent:access-token
 ```
 

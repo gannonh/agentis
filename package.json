@@ -16,6 +16,7 @@
     "typecheck": "turbo typecheck",
     "support-agent:worker:dev": "pnpm --filter web support-agent:worker:dev",
     "support-agent:worker:check": "pnpm --filter web support-agent:worker:check",
+    "support-agent:worker:ai-search-check": "pnpm --filter web support-agent:worker:ai-search-check",
     "support-agent:worker:deploy": "pnpm --filter web support-agent:worker:deploy",
     "support-agent:worker:acceptance": "pnpm --filter web support-agent:worker:acceptance",
     "support-agent:worker:delete": "pnpm --filter web support-agent:worker:delete",
