@@ -21,5 +21,8 @@ describe("support-agent Worker deployment config", () => {
     expect(config).not.toContain("SUPPORT_AGENT_OPENAI_API_KEY =")
     expect(config).not.toContain("SUPPORT_AGENT_DEPLOYMENT_SECRET =")
     expect(config).not.toContain("sk-")
+    expect(config).toContain("[[ai_search_namespaces]]")
+    expect(config).toContain('binding = "SUPPORT_AGENT_AI_SEARCH"')
+    expect(config).not.toMatch(/^\s*binding = "SUPPORT_AGENT_AI_SEARCH"/m)
   })
 })
