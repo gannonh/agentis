@@ -205,7 +205,7 @@ export function AppSidebar() {
                         }
                       >
                         <span
-                          className="size-2 shrink-0 rounded-full bg-[oklch(0.488_0.243_264.376)]"
+                          className="size-2 shrink-0 rounded-full bg-sidebar-primary"
                           aria-hidden
                         />
                         <span>{activeThread.title}</span>
