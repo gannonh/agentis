@@ -1,4 +1,6 @@
+export * from "./ai-search-config"
 export * from "./ai-sdk-model-gateway"
+export * from "./browser-safe-error"
 export * from "./chat-contracts"
 export * from "./cloudflare-preview-deploy"
 export * from "./chat-fixtures"
