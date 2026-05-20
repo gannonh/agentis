@@ -144,6 +144,26 @@ export const artifactSchema = z.object({
   createdAt: z.string(),
 })
 
+export const pickerAgentIconSchema = z.enum([
+  "agentis",
+  "search",
+  "briefing",
+  "chief",
+  "analyst",
+  "developer",
+  "investment",
+  "recruiter",
+  "sales",
+  "create",
+])
+
+export const starterAgentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  icon: pickerAgentIconSchema,
+})
+
 export const capabilityExampleSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -168,6 +188,7 @@ export const workspaceSchema = z.object({
   connectedIntegrations: z.number(),
   artifacts: z.array(artifactSchema),
   capabilityExamples: z.array(capabilityExampleSchema),
+  starterAgents: z.array(starterAgentSchema),
 })
 
 export type Workspace = z.infer<typeof workspaceSchema>
@@ -177,3 +198,5 @@ export type Run = z.infer<typeof runSchema>
 export type Skill = z.infer<typeof skillSchema>
 export type Artifact = z.infer<typeof artifactSchema>
 export type Integration = z.infer<typeof integrationSchema>
+export type StarterAgent = z.infer<typeof starterAgentSchema>
+export type PickerAgentIcon = z.infer<typeof pickerAgentIconSchema>

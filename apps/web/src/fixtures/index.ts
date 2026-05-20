@@ -19,6 +19,14 @@ export function getAgentsForRoster(): Agent[] {
   return workspace.agents.filter((agent) => agent.id !== "command-center")
 }
 
+export function getYourPickerAgents(): Agent[] {
+  return getAgentsForRoster()
+}
+
+export function getStarterAgents() {
+  return workspace.starterAgents
+}
+
 export function getNavAgents(): Agent[] {
   return workspace.agents
 }

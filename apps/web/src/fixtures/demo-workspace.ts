@@ -363,4 +363,48 @@ export const demoWorkspace: Workspace = {
       cost: "$8.82",
     },
   ],
+  starterAgents: [
+    {
+      id: "starter-daily-briefing",
+      name: "Daily Briefing",
+      description: "Structured morning briefing delivered to your channels.",
+      icon: "briefing",
+    },
+    {
+      id: "starter-chief-of-staff",
+      name: "Chief of Staff",
+      description: "Inbox triage, meeting prep, and daily priorities.",
+      icon: "chief",
+    },
+    {
+      id: "starter-data-analyst",
+      name: "Data Analyst",
+      description: "Turn raw data into charts, insights, and recommendations.",
+      icon: "analyst",
+    },
+    {
+      id: "starter-developer",
+      name: "Developer",
+      description: "Write, debug, and ship code from a single thread.",
+      icon: "developer",
+    },
+    {
+      id: "starter-investment-analyst",
+      name: "Investment Analyst",
+      description: "Research companies and draft investment memos.",
+      icon: "investment",
+    },
+    {
+      id: "starter-recruiter",
+      name: "Recruiter",
+      description: "Source candidates and craft personalized outreach.",
+      icon: "recruiter",
+    },
+    {
+      id: "starter-sales-prospector",
+      name: "Sales Prospector",
+      description: "Find prospects, enrich leads, and draft sequences.",
+      icon: "sales",
+    },
+  ],
 }
