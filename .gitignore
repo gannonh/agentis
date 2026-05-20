@@ -12,8 +12,6 @@ node_modules
 
 # Testing
 coverage
-playwright-report
-test-results
 
 # Turbo
 .turbo
@@ -30,8 +28,3 @@ npm-debug.log*
 # Misc
 .DS_Store
 *.pem
-uat-evidence/
-
-# Wrangler (local dev cache)
-.wrangler/
-.kata-tmp/
