@@ -118,6 +118,12 @@ export const integrationSchema = z.object({
   description: z.string(),
   status: z.enum(["connected", "oauth_required", "not_configured", "not_connected"]),
   category: z.string().optional(),
+  featured: z.boolean().default(false),
+  connectedAccounts: z.number().optional(),
+})
+
+export const integrationNoticeSchema = z.object({
+  message: z.string(),
 })
 
 export const integrationCategorySchema = z.object({
@@ -186,6 +192,7 @@ export const workspaceSchema = z.object({
   integrations: z.array(integrationSchema),
   integrationCategories: z.array(integrationCategorySchema),
   connectedIntegrations: z.number(),
+  integrationNotice: integrationNoticeSchema.optional(),
   artifacts: z.array(artifactSchema),
   capabilityExamples: z.array(capabilityExampleSchema),
   starterAgents: z.array(starterAgentSchema),
