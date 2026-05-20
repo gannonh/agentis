@@ -32,7 +32,7 @@ export function AgentDetailHero({ agent }: AgentDetailHeroProps) {
 
       <div className="relative">
         <div
-          className="h-24 w-full overflow-hidden rounded-lg border border-border bg-gradient-to-br from-emerald-500/15 via-muted/80 to-muted"
+          className="bg-muted h-24 w-full rounded-lg border border-border"
           aria-hidden
         />
         <div className="absolute bottom-0 left-4 flex translate-y-1/2 items-end gap-4">

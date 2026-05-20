@@ -21,7 +21,7 @@ export function FeaturedIntegrationsGrid({ integrations }: FeaturedIntegrationsG
       <div className="mb-3 flex items-center gap-1.5">
         <HugeiconsIcon
           icon={StarIcon}
-          className="size-3.5 text-amber-600 dark:text-amber-500"
+          className="text-status-warning-foreground size-3.5"
           strokeWidth={2}
           aria-hidden
         />

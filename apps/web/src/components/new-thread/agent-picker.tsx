@@ -12,52 +12,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
+import {
+  agentToPickerMenuOption,
+  buildPickerOptions,
+  DEFAULT_AGENT_PICKER_ID,
+  defaultPickerOption,
+  starterToPickerMenuOption,
+  type PickerOption,
+} from "@/components/new-thread/agent-picker-options"
 import { PickerAgentIconMark } from "@/lib/picker-agent-icon"
 import { getStarterAgents, getYourPickerAgents } from "@/fixtures"
-import type { Agent, StarterAgent } from "@/fixtures/schema"
 import { cn } from "@workspace/ui/lib/utils"
-
-export const DEFAULT_AGENT_PICKER_ID = "agentis"
-
-export type PickerOption = {
-  id: string
-  name: string
-  description: string
-  icon: Agent["icon"] | StarterAgent["icon"] | "agentis" | "create"
-}
-
-function agentToPickerOption(agent: Agent): PickerOption {
-  return {
-    id: agent.id,
-    name: agent.name,
-    description: agent.description,
-    icon: agent.icon ?? "search",
-  }
-}
-
-function starterToPickerOption(starter: StarterAgent): PickerOption {
-  return {
-    id: starter.id,
-    name: starter.name,
-    description: starter.description,
-    icon: starter.icon,
-  }
-}
-
-const defaultOption: PickerOption = {
-  id: DEFAULT_AGENT_PICKER_ID,
-  name: "Agentis",
-  description: "General purpose agent",
-  icon: "agentis",
-}
-
-export function buildPickerOptions(): PickerOption[] {
-  return [
-    defaultOption,
-    ...getYourPickerAgents().map(agentToPickerOption),
-    ...getStarterAgents().map(starterToPickerOption),
-  ]
-}
 
 type AgentPickerProps = {
   value: string
@@ -102,7 +67,7 @@ export function AgentPicker({ value, onChange, defaultOpen }: AgentPickerProps) 
 
   const selected = useMemo(() => {
     const options = buildPickerOptions()
-    return options.find((option) => option.id === value) ?? defaultOption
+    return options.find((option) => option.id === value) ?? defaultPickerOption
   }, [value])
 
   return (
@@ -121,6 +86,7 @@ export function AgentPicker({ value, onChange, defaultOpen }: AgentPickerProps) 
           icon={ArrowDown01Icon}
           className="size-4 text-muted-foreground"
           strokeWidth={2}
+          aria-hidden
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -129,8 +95,8 @@ export function AgentPicker({ value, onChange, defaultOpen }: AgentPickerProps) 
       >
         <DropdownMenuGroup>
           <PickerMenuItem
-            option={defaultOption}
-            selected={value === defaultOption.id}
+            option={defaultPickerOption}
+            selected={value === defaultPickerOption.id}
             onSelect={onChange}
           />
         </DropdownMenuGroup>
@@ -138,11 +104,11 @@ export function AgentPicker({ value, onChange, defaultOpen }: AgentPickerProps) 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-[0.65rem] font-medium tracking-wide uppercase">
+          <DropdownMenuLabel className="text-xs font-medium tracking-wide uppercase">
             Your agents
           </DropdownMenuLabel>
           {yourAgents.map((agent) => {
-            const option = agentToPickerOption(agent)
+            const option = agentToPickerMenuOption(agent)
             return (
               <PickerMenuItem
                 key={agent.id}
@@ -157,11 +123,11 @@ export function AgentPicker({ value, onChange, defaultOpen }: AgentPickerProps) 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-[0.65rem] font-medium tracking-wide uppercase">
+          <DropdownMenuLabel className="text-xs font-medium tracking-wide uppercase">
             Starter agents
           </DropdownMenuLabel>
           {starterAgents.map((starter) => {
-            const option = starterToPickerOption(starter)
+            const option = starterToPickerMenuOption(starter)
             return (
               <PickerMenuItem
                 key={starter.id}

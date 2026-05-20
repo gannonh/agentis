@@ -16,7 +16,7 @@ type InspectorSectionProps = {
   title: string
   count: number
   defaultOpen?: boolean
-  children: ReactNode
+  children?: ReactNode
   emptyLabel?: string
 }
 

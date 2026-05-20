@@ -32,7 +32,7 @@ export function NeedsAttentionPanel({ items, pendingCount }: NeedsAttentionPanel
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <HugeiconsIcon
           icon={Alert02Icon}
-          className="size-4 text-amber-600 dark:text-amber-500"
+          className="text-status-warning-foreground size-4"
           strokeWidth={2}
           aria-hidden
         />

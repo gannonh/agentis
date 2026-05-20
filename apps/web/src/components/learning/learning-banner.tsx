@@ -12,10 +12,10 @@ import {
 export function LearningBanner() {
   return (
     <Collapsible defaultOpen className="group/banner">
-      <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10">
+      <div className="border-status-success-border bg-status-success-muted rounded-lg border">
         <CollapsibleTrigger className="flex w-full items-start gap-3 px-4 py-3 text-left">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-            <HugeiconsIcon icon={SparklesIcon} className="size-4" strokeWidth={2} />
+          <span className="bg-status-success-muted text-status-success-foreground flex size-9 shrink-0 items-center justify-center rounded-full">
+            <HugeiconsIcon icon={SparklesIcon} className="size-4" strokeWidth={2} aria-hidden />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="text-sm font-medium">Your agents learn from conversations</p>
@@ -29,10 +29,11 @@ export function LearningBanner() {
               icon={ArrowDown01Icon}
               className="size-3.5 transition-transform group-data-panel-open/banner:rotate-180"
               strokeWidth={2}
+              aria-hidden
             />
           </span>
         </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-emerald-500/20 px-4 py-3">
+        <CollapsibleContent className="border-status-success-border border-t px-4 py-3">
           <p className="text-muted-foreground text-xs">
             Accepted skills, memories, and rubrics stay linked to the agents that earned them.
           </p>

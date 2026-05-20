@@ -14,6 +14,9 @@ colors:
   dark-muted: "oklch(0.269 0 0)"
   dark-border-subtle: "oklch(1 0 0 / 10%)"
   agent-blue: "oklch(0.488 0.243 264.376)"
+  status-success: "oklch(0.52 0.14 155)"
+  status-warning: "oklch(0.68 0.14 75)"
+  status-info: "oklch(0.55 0.12 250)"
   destructive: "oklch(0.577 0.245 27.325)"
 typography:
   display:

@@ -11,13 +11,23 @@ export function AppShell() {
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen className="min-h-svh">
+        <a
+          href="#main-content"
+          className="bg-background text-foreground focus-visible:ring-ring sr-only fixed top-4 left-4 z-50 rounded-md border border-border px-3 py-2 text-sm font-medium shadow-sm focus:not-sr-only focus-visible:ring-2 focus-visible:outline-none"
+        >
+          Skip to main content
+        </a>
         <AppSidebar />
         <SidebarInset className="min-h-svh">
           <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4 lg:hidden">
             <SidebarTrigger />
             <span className="text-sm font-medium">Agentis</span>
           </header>
-          <main className="flex flex-1 flex-col overflow-auto p-6">
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex flex-1 flex-col overflow-auto p-6 outline-none"
+          >
             <Outlet />
           </main>
         </SidebarInset>

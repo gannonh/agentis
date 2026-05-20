@@ -9,15 +9,15 @@ export function IntegrationNoticeBanner({ message }: IntegrationNoticeBannerProp
   return (
     <div
       role="status"
-      className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-4 py-2.5"
+      className="border-status-success-border bg-status-success-muted flex items-center gap-2 rounded-lg border px-4 py-2.5"
     >
       <HugeiconsIcon
         icon={Tick01Icon}
-        className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+        className="text-status-success-foreground size-4 shrink-0"
         strokeWidth={2}
         aria-hidden
       />
-      <p className="text-sm font-medium text-emerald-950 dark:text-emerald-100">{message}</p>
+      <p className="text-status-success-foreground text-sm font-medium">{message}</p>
     </div>
   )
 }

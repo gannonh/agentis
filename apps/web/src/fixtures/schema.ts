@@ -207,3 +207,5 @@ export type Artifact = z.infer<typeof artifactSchema>
 export type Integration = z.infer<typeof integrationSchema>
 export type StarterAgent = z.infer<typeof starterAgentSchema>
 export type PickerAgentIcon = z.infer<typeof pickerAgentIconSchema>
+export type NeedsAttentionItem = z.infer<typeof needsAttentionItemSchema>
+export type LearningConversation = z.infer<typeof learningConversationSchema>

@@ -7,7 +7,7 @@ type MarkStyle = {
 const markStyles: Record<string, MarkStyle> = {
   "google-drive": {
     label: "G",
-    className: "bg-emerald-600/90 text-white",
+    className: "bg-status-success text-white",
   },
   github: {
     label: "GH",
@@ -15,27 +15,27 @@ const markStyles: Record<string, MarkStyle> = {
   },
   airtable: {
     label: "A",
-    className: "bg-amber-500/90 text-neutral-950",
+    className: "bg-status-warning text-neutral-950",
   },
   slack: {
     label: "S",
-    className: "bg-violet-600/90 text-white",
+    className: "bg-agent-blue text-white",
   },
   gmail: {
     label: "M",
-    className: "bg-red-600/90 text-white",
+    className: "bg-destructive text-white",
   },
   "google-calendar": {
     label: "31",
-    className: "bg-sky-600/90 text-white text-[0.6rem]",
+    className: "bg-status-info text-white text-xs",
   },
   databricks: {
     label: "DB",
-    className: "bg-red-700/90 text-white text-[0.6rem]",
+    className: "bg-destructive text-white text-xs",
   },
   snowflake: {
     label: "SF",
-    className: "bg-sky-500/90 text-white text-[0.6rem]",
+    className: "bg-status-info text-white text-xs",
   },
   notion: {
     label: "N",
@@ -43,15 +43,15 @@ const markStyles: Record<string, MarkStyle> = {
   },
   dropbox: {
     label: "D",
-    className: "bg-blue-600/90 text-white",
+    className: "bg-status-info text-white",
   },
   outlook: {
     label: "O",
-    className: "bg-blue-700/90 text-white",
+    className: "bg-status-info text-white",
   },
   onedrive: {
     label: "1",
-    className: "bg-blue-500/90 text-white",
+    className: "bg-status-info text-white",
   },
 }
 

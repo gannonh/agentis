@@ -23,7 +23,12 @@ export function LibraryPage() {
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Input placeholder="Search artifacts…" className="max-w-md" disabled />
+        <Input
+          placeholder="Search artifacts…"
+          className="max-w-md"
+          disabled
+          aria-label="Search artifacts"
+        />
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">All types</Badge>
           <Badge variant="outline">Documents</Badge>

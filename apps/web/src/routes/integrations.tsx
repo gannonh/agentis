@@ -4,7 +4,7 @@ import { RefreshIcon } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
 import { ConnectionStatusPanel } from "@/components/integrations/connection-status-panel"
 import { FeaturedIntegrationsGrid } from "@/components/integrations/featured-integrations-grid"
-import { IntegrationInfoCards } from "@/components/integrations/integration-info-cards"
+import { IntegrationInfoIntro } from "@/components/integrations/integration-info-intro"
 import { IntegrationNoticeBanner } from "@/components/integrations/integration-notice-banner"
 import { IntegrationsBackNav } from "@/components/integrations/integrations-back-nav"
 import { IntegrationsSearch } from "@/components/integrations/integrations-search"
@@ -56,7 +56,7 @@ export function IntegrationsPage() {
         <IntegrationNoticeBanner message={workspace.integrationNotice.message} />
       ) : null}
 
-      <IntegrationInfoCards />
+      <IntegrationInfoIntro />
 
       <ConnectionStatusPanel
         connectedCount={workspace.connectedIntegrations}

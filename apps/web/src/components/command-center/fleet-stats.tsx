@@ -5,49 +5,47 @@ type FleetStatsProps = {
   metrics: Workspace["commandCenter"]
 }
 
+type StatItem = {
+  label: string
+  value: string | number
+  highlight?: "success" | "warning"
+}
+
 export function FleetStats({ metrics }: FleetStatsProps) {
-  const items: { label: string; value: string | number; highlight?: boolean }[] = [
+  const items: StatItem[] = [
     { label: "Agents", value: metrics.agents },
-    { label: "Active", value: metrics.active, highlight: metrics.active > 0 },
+    { label: "Active", value: metrics.active, highlight: metrics.active > 0 ? "success" : undefined },
     { label: "Total runs", value: metrics.totalRuns },
     {
       label: "Avg score",
       value: metrics.avgScore != null ? `${metrics.avgScore}%` : "—",
-      highlight: metrics.avgScore != null && metrics.avgScore >= 80,
+      highlight:
+        metrics.avgScore != null && metrics.avgScore >= 80 ? "success" : undefined,
     },
     { label: "Total cost", value: `$${metrics.totalCost.toFixed(2)}` },
     {
       label: "Pending",
       value: metrics.pending,
-      highlight: metrics.pending > 0,
+      highlight: metrics.pending > 0 ? "warning" : undefined,
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <dl className="flex flex-wrap gap-x-6 gap-y-2 border-b border-border pb-6 text-sm">
       {items.map((item) => (
-        <div
-          key={item.label}
-          className="flex flex-col gap-0.5 rounded-lg border border-border bg-card px-4 py-3"
-        >
-          <span className="text-muted-foreground text-[0.65rem] font-medium uppercase tracking-wide">
-            {item.label}
-          </span>
-          <span
+        <div key={item.label} className="flex items-baseline gap-2">
+          <dt className="text-muted-foreground text-xs font-medium">{item.label}</dt>
+          <dd
             className={cn(
-              "text-lg font-medium tabular-nums",
-              item.highlight &&
-                item.label === "Pending" &&
-                "text-amber-600 dark:text-amber-500",
-              item.highlight &&
-                (item.label === "Active" || item.label === "Avg score") &&
-                "text-emerald-600 dark:text-emerald-500"
+              "font-medium tabular-nums",
+              item.highlight === "warning" && "text-status-warning-foreground",
+              item.highlight === "success" && "text-status-success-foreground"
             )}
           >
             {item.value}
-          </span>
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   )
 }

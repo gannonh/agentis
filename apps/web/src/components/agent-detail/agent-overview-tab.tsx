@@ -21,7 +21,7 @@ function threadStatusBadge(status: Thread["status"]) {
     return (
       <Badge
         variant="outline"
-        className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+        className="border-status-warning-border bg-status-warning-muted text-status-warning-foreground"
       >
         Finished
       </Badge>

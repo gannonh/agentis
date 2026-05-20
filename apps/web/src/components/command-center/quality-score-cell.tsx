@@ -10,13 +10,21 @@ export function QualityScoreCell({ score }: QualityScoreCellProps) {
   }
 
   const tone =
-    score >= 90 ? "bg-emerald-500" : score >= 80 ? "bg-emerald-500/70" : "bg-amber-500"
+    score >= 90
+      ? "bg-status-success"
+      : score >= 80
+        ? "bg-status-success/70"
+        : "bg-status-warning"
 
   return (
     <div className="flex min-w-[7rem] items-center gap-2">
       <div
         className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
-        role="presentation"
+        role="progressbar"
+        aria-valuenow={score}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Quality score ${score} percent`}
       >
         <div
           className={cn("h-full rounded-full", tone)}

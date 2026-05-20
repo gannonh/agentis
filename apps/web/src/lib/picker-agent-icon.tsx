@@ -1,11 +1,9 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  Add01Icon,
   Analytics01Icon,
   Briefcase01Icon,
   ChartIncreaseIcon,
   Edit01Icon,
-  Image01Icon,
   Rocket01Icon,
   Search01Icon,
   Sun03Icon,
@@ -28,14 +26,14 @@ const iconMap = {
 } as const
 
 const toneMap: Partial<Record<PickerAgentIcon, string>> = {
-  search: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  search: "bg-status-success-muted text-status-success-foreground",
   briefing: "bg-muted text-muted-foreground",
-  chief: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  analyst: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  developer: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-  investment: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  recruiter: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-  sales: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+  chief: "bg-status-warning-muted text-status-warning-foreground",
+  analyst: "bg-status-info-muted text-status-info-foreground",
+  developer: "bg-agent-blue/15 text-agent-blue",
+  investment: "bg-status-success-muted text-status-success-foreground",
+  recruiter: "bg-agent-blue/15 text-agent-blue",
+  sales: "bg-destructive/10 text-destructive",
   create: "bg-muted text-muted-foreground",
 }
 

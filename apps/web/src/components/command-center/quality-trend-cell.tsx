@@ -14,7 +14,7 @@ export function QualityTrendCell({ trend }: QualityTrendCellProps) {
   if (!trend || trend === "flat") {
     return (
       <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-        <HugeiconsIcon icon={MinusSignIcon} className="size-3.5" strokeWidth={2} />
+        <HugeiconsIcon icon={MinusSignIcon} className="size-3.5" strokeWidth={2} aria-hidden />
         Flat
       </span>
     )
@@ -22,16 +22,16 @@ export function QualityTrendCell({ trend }: QualityTrendCellProps) {
 
   if (trend === "up") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-500">
-        <HugeiconsIcon icon={ArrowUp01Icon} className="size-3.5" strokeWidth={2} />
+      <span className="text-status-success-foreground inline-flex items-center gap-1 text-xs">
+        <HugeiconsIcon icon={ArrowUp01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
         Up
       </span>
     )
   }
 
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
-      <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5" strokeWidth={2} />
+    <span className="text-status-warning-foreground inline-flex items-center gap-1 text-xs">
+      <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
       Down
     </span>
   )

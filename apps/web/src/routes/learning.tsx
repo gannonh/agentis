@@ -2,8 +2,7 @@ import { useMemo, useState } from "react"
 import { AgentFilterBar } from "@/components/learning/agent-filter-bar"
 import { LearningBanner } from "@/components/learning/learning-banner"
 import { LearningConversationRow } from "@/components/learning/learning-conversation-row"
-import { MemoriesCard } from "@/components/learning/memories-card"
-import { RubricsCard } from "@/components/learning/rubrics-card"
+import { LearningSecondaryPanel } from "@/components/learning/learning-secondary-panel"
 import { SkillsCard } from "@/components/learning/skills-card"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
@@ -29,14 +28,9 @@ export function LearningPage() {
 
       <LearningBanner />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <SkillsCard
-          skills={workspace.skills}
-          pinnedCount={pinnedCount}
-        />
-        <MemoriesCard />
-        <RubricsCard />
-      </div>
+      <SkillsCard skills={workspace.skills} pinnedCount={pinnedCount} />
+
+      <LearningSecondaryPanel />
 
       <AgentFilterBar value={agentFilter} onChange={setAgentFilter} />
 

@@ -52,13 +52,13 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
     <article
       className={cn(
         "relative flex flex-col gap-3 rounded-lg border bg-card p-4",
-        isConnected ? "border-emerald-500/35" : "border-border"
+        isConnected ? "border-status-success-border" : "border-border"
       )}
     >
       {isConnected ? (
         <HugeiconsIcon
           icon={Tick01Icon}
-          className="absolute top-3 right-3 size-4 text-emerald-600 dark:text-emerald-500"
+          className="absolute top-3 right-3 size-4 text-status-success-foreground"
           strokeWidth={2}
           aria-hidden
         />

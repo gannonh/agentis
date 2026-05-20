@@ -23,7 +23,7 @@ export function ConnectionStatusPanel({
       <div className="flex min-w-0 items-center gap-2">
         <HugeiconsIcon
           icon={Tick01Icon}
-          className="size-4 shrink-0 text-emerald-600 dark:text-emerald-500"
+          className="text-status-success-foreground size-4 shrink-0"
           strokeWidth={2}
           aria-hidden
         />
@@ -33,7 +33,7 @@ export function ConnectionStatusPanel({
         <span
           className={cn(
             "text-sm font-medium tabular-nums",
-            connectedCount > 0 && "text-emerald-600 dark:text-emerald-500"
+            connectedCount > 0 && "text-status-success-foreground"
           )}
         >
           {countLabel}
@@ -45,7 +45,7 @@ export function ConnectionStatusPanel({
             <Badge
               key={name}
               variant="outline"
-              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+              className="border-status-success-border bg-status-success-muted text-status-success-foreground"
             >
               {name}
             </Badge>

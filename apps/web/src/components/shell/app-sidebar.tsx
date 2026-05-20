@@ -198,15 +198,17 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton render={<a href="#teams">Teams</a>}>
-              <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
+            <SidebarMenuButton disabled className="opacity-70">
+              <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} aria-hidden />
               <span>Teams</span>
+              <span className="text-muted-foreground sr-only">(coming soon)</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton render={<a href="#help">Help</a>}>
-              <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
+            <SidebarMenuButton disabled className="opacity-70">
+              <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} aria-hidden />
               <span>Help</span>
+              <span className="text-muted-foreground sr-only">(coming soon)</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

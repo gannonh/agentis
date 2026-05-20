@@ -9,7 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import { AgentRosterIcon, rosterStatusClass } from "@/components/command-center/agent-roster-icons"
+import { AgentRosterIcon } from "@/components/command-center/agent-roster-icons"
+import {
+  rosterStatusClass,
+  rosterStatusLabel,
+} from "@/components/command-center/roster-status"
 import { QualityScoreCell } from "@/components/command-center/quality-score-cell"
 import { QualityTrendCell } from "@/components/command-center/quality-trend-cell"
 import { formatRelativeTime } from "@/fixtures"
@@ -30,7 +34,7 @@ export function AgentRoster({ agents }: AgentRosterProps) {
           </h2>
           <Badge
             variant="secondary"
-            className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+            className="border-status-success-border bg-status-success-muted text-status-success-foreground"
           >
             {agents.length} {agents.length === 1 ? "agent" : "agents"}
           </Badge>
@@ -43,7 +47,8 @@ export function AgentRoster({ agents }: AgentRosterProps) {
         />
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+        <div className="min-w-[40rem] overflow-hidden rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -61,13 +66,18 @@ export function AgentRoster({ agents }: AgentRosterProps) {
               <TableRow key={agent.id}>
                 <TableCell>
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className={cn(
-                        "size-2 shrink-0 rounded-full",
-                        rosterStatusClass(agent.rosterStatus ?? "idle")
-                      )}
-                      aria-hidden
-                    />
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          rosterStatusClass(agent.rosterStatus ?? "idle")
+                        )}
+                        aria-hidden
+                      />
+                      <span className="sr-only">
+                        {rosterStatusLabel(agent.rosterStatus ?? "idle")}
+                      </span>
+                    </span>
                     <AgentRosterIcon icon={agent.icon} />
                     <NavLink
                       to={`/agents/${agent.id}`}
@@ -97,6 +107,7 @@ export function AgentRoster({ agents }: AgentRosterProps) {
             ))}
           </TableBody>
         </Table>
+        </div>
       </div>
     </section>
   )
