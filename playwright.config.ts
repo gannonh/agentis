@@ -20,10 +20,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm --filter web dev -- --host 127.0.0.1 --port 5173",
+    command: process.env.CI
+      ? "pnpm --filter web preview:e2e"
+      : "pnpm --filter web dev:e2e",
     url: "http://127.0.0.1:5173",
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: process.env.CI ? 60_000 : 120_000,
   },
   snapshotPathTemplate:
     "{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}",
