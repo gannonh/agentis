@@ -34,10 +34,12 @@ Git commit: 957bd96f
 - Dev servers were started for UAT; stop with port kill or Ctrl+C when finished reviewing.
 
 ## Manual Run Instructions
+
 1. Run the product using the documented local command for this target.
    Expected: the feature path is reachable without setup or launch errors.
 2. Follow the same user path described in the acceptance slices above.
    Expected: each passing slice reaches the visible or inspectable outcome shown in the evidence.
 
-Recommendation: Pending user sign-off
-Please reply: accept / reject
+## Recommendation
+
+Pending user sign-off. Please reply: accept / reject

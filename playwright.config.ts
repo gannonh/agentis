@@ -23,7 +23,7 @@ export default defineConfig({
     {
       command: "pnpm --filter api dev",
       url: "http://127.0.0.1:3001/api/health",
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: process.env.CI ? 60_000 : 120_000,
       env: {
         AGENTIS_MOCK_RUNTIME: "1",

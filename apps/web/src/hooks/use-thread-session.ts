@@ -31,6 +31,7 @@ export function useThreadSession(threadId: string | undefined) {
   const [streaming, setStreaming] = useState(false)
   const streamAbortRef = useRef<AbortController | null>(null)
   const pollRef = useRef<number | null>(null)
+  const mountedRef = useRef(true)
 
   const refresh = useCallback(async () => {
     if (!threadId) return null
@@ -49,7 +50,11 @@ export function useThreadSession(threadId: string | undefined) {
   const startPolling = useCallback(() => {
     stopPolling()
     pollRef.current = window.setInterval(() => {
-      void refresh()
+      void refresh().catch((pollError) => {
+        const message =
+          pollError instanceof Error ? pollError.message : "Failed to refresh thread"
+        setError(message)
+      })
     }, 400)
   }, [refresh, stopPolling])
 
@@ -78,7 +83,9 @@ export function useThreadSession(threadId: string | undefined) {
         stopPolling()
         setStreaming(false)
         streamAbortRef.current = null
-        await refresh()
+        if (mountedRef.current) {
+          await refresh()
+        }
       }
     },
     [refresh, startPolling, stopPolling]
@@ -92,9 +99,11 @@ export function useThreadSession(threadId: string | undefined) {
       }
       if (latestRun.status === "queued") {
         await drainStream(latestRun.id)
+        return
       }
+      startPolling()
     },
-    [drainStream]
+    [drainStream, startPolling]
   )
 
   useEffect(() => {
@@ -105,6 +114,7 @@ export function useThreadSession(threadId: string | undefined) {
     }
 
     let cancelled = false
+    mountedRef.current = true
     setLoading(true)
     setError(null)
 
@@ -127,6 +137,7 @@ export function useThreadSession(threadId: string | undefined) {
 
     return () => {
       cancelled = true
+      mountedRef.current = false
       stopPolling()
       streamAbortRef.current?.abort()
     }

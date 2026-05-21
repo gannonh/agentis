@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -33,8 +33,14 @@ export function ThreadDetailPage() {
     getMessageText,
   } = useThreadSession(threadId)
 
-  const [mode, setMode] = useState<ThreadMode>(detail?.thread.mode ?? "plan")
+  const [mode, setMode] = useState<ThreadMode>("plan")
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (detail?.thread.mode) {
+      setMode(detail.thread.mode)
+    }
+  }, [detail?.thread.mode])
 
   const composerDisabled = !health.available
 
@@ -121,7 +127,7 @@ export function ThreadDetailPage() {
                   onSubmit={handleSubmit}
                   disabled={composerDisabled || loading}
                   health={health}
-                  mode={detail?.thread.mode ?? mode}
+                  mode={mode}
                   onModeChange={setMode}
                   submitting={submitting || streaming}
                 />

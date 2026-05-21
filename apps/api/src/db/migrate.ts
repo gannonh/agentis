@@ -8,7 +8,7 @@ import { createDatabase } from "./client.js"
 const databaseUrl = process.env.DATABASE_URL ?? "./data/agentis.db"
 mkdirSync(dirname(databaseUrl), { recursive: true })
 
-const db = createDatabase(databaseUrl)
+const { db } = createDatabase(databaseUrl)
 const migrationsFolder = join(
   fileURLToPath(new URL("../..", import.meta.url)),
   "drizzle"

@@ -1,11 +1,18 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "./app.js"
-import { createTestContext } from "./test/setup.js"
+import { createTestContext, type TestContext } from "./test/setup.js"
 import { isRuntimeAvailable } from "./config.js"
+
+let ctx: TestContext | undefined
+
+afterEach(() => {
+  ctx?.cleanup()
+  ctx = undefined
+})
 
 describe("api routes", () => {
   it("reports missing runtime key", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const app = createApp(ctx.repos, {
       ...ctx.config,
       openAiApiKey: undefined,
@@ -19,11 +26,10 @@ describe("api routes", () => {
 
     expect(body.available).toBe(false)
     expect(body.reason).toBe("missing_api_key")
-    ctx.cleanup()
   })
 
   it("creates a thread with queued run", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
 
     const response = await app.request("/api/threads", {
@@ -41,11 +47,10 @@ describe("api routes", () => {
     expect(body.thread.id).toBeTruthy()
     expect(body.message.role).toBe("user")
     expect(body.run.status).toBe("queued")
-    ctx.cleanup()
   })
 
   it("returns thread detail for resume", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
 
     const created = await app.request("/api/threads", {
@@ -63,11 +68,10 @@ describe("api routes", () => {
 
     expect(body.messages).toHaveLength(1)
     expect(body.runs).toHaveLength(1)
-    ctx.cleanup()
   })
 
   it("marks run aborted via abort endpoint", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
 
     const thread = ctx.repos.threads.create({
@@ -94,7 +98,6 @@ describe("api routes", () => {
 
     expect(response.status).toBe(200)
     expect(body.run.status).toBe("aborted")
-    ctx.cleanup()
   })
 })
 

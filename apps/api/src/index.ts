@@ -12,7 +12,7 @@ import { createApp } from "./app.js"
 const config = loadConfig()
 mkdirSync(dirname(config.databaseUrl), { recursive: true })
 
-const db = createDatabase(config.databaseUrl)
+const { db } = createDatabase(config.databaseUrl)
 const migrationsFolder = join(
   fileURLToPath(new URL("..", import.meta.url)),
   "drizzle"

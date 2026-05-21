@@ -56,10 +56,18 @@ export async function fetchRuntimeHealth(): Promise<RuntimeHealth> {
 
 export async function listThreads(): Promise<ThreadListItem[]> {
   const response = await fetch(`${API_BASE}/api/threads`)
-  const data = await response.json()
   if (!response.ok) {
-    throw new ApiError("Failed to load threads", response.status)
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
   }
+  const data = await response.json()
   return zodArray(threadListItemSchema, data)
 }
 

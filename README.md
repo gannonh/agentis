@@ -37,7 +37,7 @@ Open [http://localhost:5173](http://localhost:5173). The Vite dev server proxies
 
 ## Project structure
 
-```
+```text
 apps/web/          # Vite + React frontend
 apps/api/          # Hono API, Drizzle SQLite, run executor
 packages/ui/       # Shared shadcn/ui components and styles

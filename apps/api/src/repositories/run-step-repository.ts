@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm"
+import { asc, eq, inArray } from "drizzle-orm"
 import type { RunStep, RunStepStatus, RunStepType } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { runSteps } from "../db/schema.js"
@@ -42,7 +42,13 @@ export class RunStepRepository {
 
   listByRunIds(runIds: string[]): RunStep[] {
     if (runIds.length === 0) return []
-    return runIds.flatMap((runId) => this.listByRunId(runId))
+    return this.db
+      .select()
+      .from(runSteps)
+      .where(inArray(runSteps.runId, runIds))
+      .orderBy(asc(runSteps.createdAt))
+      .all()
+      .map(mapRunStep)
   }
 
   update(

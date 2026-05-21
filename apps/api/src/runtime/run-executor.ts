@@ -7,6 +7,7 @@ import type { AppConfig } from "../config.js"
 import {
   abortRun as signalAbort,
   clearAbortController,
+  getAbortSignal,
   registerAbortController,
 } from "./abort-registry.js"
 import { getWorkspaceSummaryTool } from "./get-workspace-summary.js"
@@ -62,8 +63,11 @@ export class RunExecutor {
     if (!this.config.openAiApiKey && !this.config.mockRuntime) {
       throw new Error("OPENAI_API_KEY is not configured")
     }
-    if (run.status !== "queued" && run.status !== "running") {
+    if (run.status !== "queued") {
       throw new Error(`Run is not streamable: ${run.status}`)
+    }
+    if (getAbortSignal(runId)) {
+      throw new Error("Stream already in progress")
     }
 
     const thread = this.repos.threads.getById(run.threadId)
@@ -289,12 +293,13 @@ export class RunExecutor {
     const run = this.repos.runs.getById(runId)
     if (!run) return null
 
-    signalAbort(runId)
+    const hadActiveStream = signalAbort(runId)
 
     if (
-      run.status === "queued" ||
-      run.status === "running" ||
-      run.status === "tool-calling"
+      !hadActiveStream &&
+      (run.status === "queued" ||
+        run.status === "running" ||
+        run.status === "tool-calling")
     ) {
       const messages = this.repos.messages.listByThreadId(run.threadId)
       const streamingMessage = messages.find(

@@ -8,6 +8,8 @@ CREATE TABLE `messages` (
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE INDEX `messages_thread_id_created_at_idx` ON `messages` (`thread_id`,`created_at`);
+--> statement-breakpoint
 CREATE TABLE `run_steps` (
 	`id` text PRIMARY KEY NOT NULL,
 	`run_id` text NOT NULL,
@@ -19,6 +21,8 @@ CREATE TABLE `run_steps` (
 	`updated_at` text NOT NULL,
 	FOREIGN KEY (`run_id`) REFERENCES `runs`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
+CREATE INDEX `run_steps_run_id_created_at_idx` ON `run_steps` (`run_id`,`created_at`);
 --> statement-breakpoint
 CREATE TABLE `runs` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -32,6 +36,8 @@ CREATE TABLE `runs` (
 	`cost` real,
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
+CREATE INDEX `runs_thread_id_started_at_idx` ON `runs` (`thread_id`,`started_at`);
 --> statement-breakpoint
 CREATE TABLE `threads` (
 	`id` text PRIMARY KEY NOT NULL,
