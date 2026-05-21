@@ -1,0 +1,111 @@
+{
+  "scope": "M02 threads and run lifecycle (feat/M02-threads-and-run-lifecycle @ 957bd96f)",
+  "target": "web",
+  "timestamp": "2026-05-21T20:22:45.000Z",
+  "git_commit": "957bd96f",
+  "gitignored": false,
+  "artifacts": [
+    {
+      "type": "video",
+      "path": "recordings/m02-ui-walkthrough.webm",
+      "description": "Browser walkthrough: new-thread shell, thread detail stream, reload"
+    },
+    {
+      "type": "screenshot",
+      "path": "screenshots/01-new-thread.png",
+      "description": "New thread home with runtime available and API-backed sidebar threads"
+    },
+    {
+      "type": "screenshot",
+      "path": "screenshots/05-thread-detail-response.png",
+      "description": "Thread detail after real OpenAI run completed"
+    },
+    {
+      "type": "screenshot",
+      "path": "screenshots/06-thread-reload.png",
+      "description": "Thread detail after reload shows persisted assistant message"
+    },
+    {
+      "type": "json",
+      "path": "responses/runtime-health.json",
+      "description": "API runtime health: available true, gpt-4o-mini"
+    },
+    {
+      "type": "json",
+      "path": "responses/create-thread.json",
+      "description": "POST /api/threads returns 201 with thread, message, run"
+    },
+    {
+      "type": "json",
+      "path": "responses/list-threads.json",
+      "description": "GET /api/threads lists persisted threads for sidebar"
+    },
+    {
+      "type": "log",
+      "path": "logs/playwright-ci-mock.log",
+      "description": "Playwright e2e: create+stream+persist and abort slices (mock runtime)"
+    },
+    {
+      "type": "log",
+      "path": "logs/06-reload-body.txt",
+      "description": "Page body includes assistant text after reload"
+    }
+  ],
+  "commands": [
+    {
+      "command": "pnpm --filter api test",
+      "name": "api-unit-tests",
+      "exit_code": 0,
+      "output_path": "logs/api-unit-tests.log"
+    },
+    {
+      "command": "pnpm --filter web test",
+      "name": "web-unit-tests",
+      "exit_code": 0,
+      "output_path": "logs/web-unit-tests.log"
+    },
+    {
+      "command": "CI=1 pnpm exec playwright test apps/web/e2e/thread-lifecycle.spec.ts",
+      "name": "playwright-ci-mock",
+      "exit_code": 0,
+      "output_path": "logs/playwright-ci-mock.log"
+    }
+  ],
+  "slices": [
+    {
+      "name": "Runtime health and composer enabled",
+      "result": "Pass",
+      "evidence": ["responses/runtime-health.json", "screenshots/01-new-thread.png"]
+    },
+    {
+      "name": "Create thread via API",
+      "result": "Pass",
+      "evidence": ["responses/create-thread.json", "responses/list-threads.json"]
+    },
+    {
+      "name": "Stream run and persist messages (real OpenAI)",
+      "result": "Pass",
+      "evidence": ["screenshots/05-thread-detail-response.png", "screenshots/06-thread-reload.png", "logs/06-reload-body.txt", "recordings/m02-ui-walkthrough.webm"]
+    },
+    {
+      "name": "Abort with partial transcript (mock runtime)",
+      "result": "Pass",
+      "evidence": ["logs/playwright-ci-mock.log"]
+    },
+    {
+      "name": "Sidebar and recent threads from API",
+      "result": "Pass",
+      "evidence": ["screenshots/01-new-thread.png", "responses/list-threads.json"]
+    },
+    {
+      "name": "Create thread from new-thread UI (agent-browser)",
+      "result": "Fail",
+      "evidence": ["screenshots/02-after-send.png", "screenshots/03-thread-detail.png"],
+      "notes": "agent-browser fill/click did not submit PromptInput; covered by Playwright e2e instead"
+    }
+  ],
+  "notes": [
+    "uat-evidence/ is not gitignored; do not commit unless requested.",
+    "Dev servers were started for UAT; stop with port kill or Ctrl+C when finished reviewing."
+  ]
+}

@@ -1,0 +1,40 @@
+
+> agentis@0.0.1 dev /Volumes/EVO/dev/agentis
+> turbo dev
+
+• turbo 2.9.4
+
+   • Packages in scope: @workspace/shared, @workspace/ui, api, web
+   • Running dev in 4 packages
+   • Remote caching disabled
+
+api:dev: cache bypass, force executing 45383960e3dc21ee
+web:dev: cache bypass, force executing a979e8429fcb614a
+api:dev: 
+api:dev: > api@0.0.1 dev /Volumes/EVO/dev/agentis/apps/api
+api:dev: > tsx watch src/index.ts
+api:dev: 
+web:dev: 
+web:dev: > web@0.0.1 dev /Volumes/EVO/dev/agentis/apps/web
+web:dev: > vite
+web:dev: 
+web:dev: 
+web:dev:   VITE v7.3.2  ready in 174 ms
+web:dev: 
+web:dev:   ➜  Local:   http://localhost:5173/
+web:dev:   ➜  Network: use --host to expose
+web:dev: 1:21:38 PM [vite] http proxy error: /api/runtime/health
+web:dev: Error: connect ECONNREFUSED 127.0.0.1:3001
+web:dev:     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+api:dev: ◇ injected env (8) from ../../.env // tip: ⌘ suppress logs { quiet: true }
+api:dev: Agentis API listening on http://127.0.0.1:3001
+api:dev: 1:23:24 PM [tsx] Previous process hasn't exited yet. Force killing...
+ ERROR  web#dev: command (/Volumes/EVO/dev/agentis/apps/web) /opt/homebrew/bin/pnpm run dev exited (137)
+
+ Tasks:    0 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    1m46.871s 
+Failed:    web#dev
+
+ ERROR  run failed: command  exited (137)
+ ELIFECYCLE  Command failed with exit code 137.

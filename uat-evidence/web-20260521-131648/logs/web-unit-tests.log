@@ -1,0 +1,20 @@
+$ "pnpm" "--filter" "web" "test"
+cwd: /Volumes/EVO/dev/agentis
+started_at: 2026-05-21T20:22:32.366Z
+
+
+> web@0.0.1 test /Volumes/EVO/dev/agentis/apps/web
+> vitest run
+
+
+ RUN  v4.1.7 /Volumes/EVO/dev/agentis/apps/web
+
+
+ Test Files  13 passed (13)
+      Tests  22 passed (22)
+   Start at  13:22:32
+   Duration  4.88s (transform 1.68s, setup 1.02s, import 17.04s, tests 5.58s, environment 8.37s)
+
+
+exit_code: 0
+finished_at: 2026-05-21T20:22:37.676Z

@@ -1,0 +1,20 @@
+$ "pnpm" "--filter" "api" "test"
+cwd: /Volumes/EVO/dev/agentis
+started_at: 2026-05-21T20:21:39.879Z
+
+
+> api@0.0.1 test /Volumes/EVO/dev/agentis/apps/api
+> vitest run
+
+
+ RUN  v4.1.7 /Volumes/EVO/dev/agentis/apps/api
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:21:40
+   Duration  683ms (transform 122ms, setup 0ms, import 817ms, tests 40ms, environment 1ms)
+
+
+exit_code: 0
+finished_at: 2026-05-21T20:21:41.353Z

@@ -1,0 +1,70 @@
+
+> agentis@0.0.1 dev /Volumes/EVO/dev/agentis
+> turbo dev
+
+• turbo 2.9.4
+
+   • Packages in scope: @workspace/shared, @workspace/ui, api, web
+   • Running dev in 4 packages
+   • Remote caching disabled
+
+api:dev: cache bypass, force executing 45383960e3dc21ee
+web:dev: cache bypass, force executing a979e8429fcb614a
+web:dev: 
+web:dev: > web@0.0.1 dev /Volumes/EVO/dev/agentis/apps/web
+web:dev: > vite
+web:dev: 
+api:dev: 
+api:dev: > api@0.0.1 dev /Volumes/EVO/dev/agentis/apps/api
+api:dev: > tsx watch src/index.ts
+api:dev: 
+web:dev: 
+web:dev:   VITE v7.3.2  ready in 372 ms
+web:dev: 
+web:dev:   ➜  Local:   http://localhost:5173/
+web:dev:   ➜  Network: use --host to expose
+api:dev: ◇ injected env (8) from ../../.env // tip: ⌘ suppress logs { quiet: true }
+api:dev: Agentis API listening on http://127.0.0.1:3001
+api:dev: ZodError: [
+api:dev:   {
+api:dev:     "code": "invalid_type",
+api:dev:     "expected": "string",
+api:dev:     "received": "undefined",
+api:dev:     "path": [
+api:dev:       "prompt"
+api:dev:     ],
+api:dev:     "message": "Required"
+api:dev:   }
+api:dev: ]
+api:dev:     at get error (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js:39:31)
+api:dev:     at ZodObject.parse (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js:114:22)
+api:dev:     at <anonymous> (/Volumes/EVO/dev/agentis/apps/api/src/routes/threads.ts:37:44)
+api:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+api:dev:     at async dispatch (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/hono@4.12.21/node_modules/hono/dist/compose.js:22:17)
+api:dev:     at async cors2 (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/hono@4.12.21/node_modules/hono/dist/middleware/cors/index.js:79:5)
+api:dev:     at async dispatch (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/hono@4.12.21/node_modules/hono/dist/compose.js:22:17)
+api:dev:     at async file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/hono@4.12.21/node_modules/hono/dist/hono-base.js:306:25
+api:dev:     at async responseViaResponseObject (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/@hono+node-server@1.19.14_hono@4.12.21/node_modules/@hono/node-server/dist/index.mjs:487:13)
+api:dev:     at async Server.<anonymous> (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/@hono+node-server@1.19.14_hono@4.12.21/node_modules/@hono/node-server/dist/index.mjs:630:14) {
+api:dev:   issues: [
+api:dev:     {
+api:dev:       code: 'invalid_type',
+api:dev:       expected: 'string',
+api:dev:       received: 'undefined',
+api:dev:       path: [Array],
+api:dev:       message: 'Required'
+api:dev:     }
+api:dev:   ],
+api:dev:   addIssue: [Function (anonymous)],
+api:dev:   addIssues: [Function (anonymous)]
+api:dev: }
+api:dev: 1:21:12 PM [tsx] Previous process hasn't exited yet. Force killing...
+ ERROR  web#dev: command (/Volumes/EVO/dev/agentis/apps/web) /opt/homebrew/bin/pnpm run dev exited (137)
+
+ Tasks:    0 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    4m18.068s 
+Failed:    web#dev
+
+ ERROR  run failed: command  exited (137)
+ ELIFECYCLE  Command failed with exit code 137.
