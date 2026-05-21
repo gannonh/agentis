@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from "react"
-import { Link } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import { PageLayout } from "@/components/shell/page-layout"
 import { PageHeader } from "@/components/shell/page-header"
@@ -34,7 +33,7 @@ export class RootErrorBoundary extends Component<
             title="Something went wrong"
             description="An unexpected error occurred while rendering this page."
           />
-          <Button render={<Link to="/threads/new" />} variant="outline" size="sm">
+          <Button render={<a href="/threads/new" />} variant="outline" size="sm">
             Back to home
           </Button>
         </PageLayout>

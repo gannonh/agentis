@@ -37,7 +37,7 @@ export function formatRelativeTime(iso: string): string {
   if (Number.isNaN(then)) {
     return "—"
   }
-  const now = new Date("2026-05-20T12:51:00.000Z").getTime()
+  const now = Date.now()
   const diffMs = Math.max(0, now - then)
   const minutes = Math.floor(diffMs / 60_000)
   if (minutes < 60) {
