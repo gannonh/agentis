@@ -1,5 +1,4 @@
-# M02 Threads and Run Lifecycle Implementation Plan
-
+# {==M02 Threads and Run Lifecycle Implementation Plan==}{>>this is a comment<<}{id="c1" by="user" at="2026-05-21T13:48:54.555Z"}
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build an API-backed thread surface where users create, stream, abort, and resume OpenAI-powered runs with persisted transcripts and timeline steps.
@@ -8,80 +7,137 @@
 
 **Tech Stack:** Hono, Drizzle ORM, SQLite, Vercel AI SDK, `@ai-sdk/openai`, AI Elements, React 19, React Router, Vitest, Playwright, pnpm workspaces, Turbo.
 
----
-
+* * *
 ## Scope check
-
 The approved spec is one vertical slice: thread creation, local persistence, streaming execution, abort, resume, and thread UI. Chat SDK, Composio, worker queues, app-entered API keys, Docker Compose, and API-backed non-thread screens are outside this plan.
-
 ## File structure
-
 Create and modify these files only unless a generated AI Elements component requires an additional support file:
-
 ### API service
-
 - Create: `apps/api/package.json` - API package scripts and dependencies.
+  
 - Create: `apps/api/tsconfig.json` - Node TypeScript config.
+  
 - Create: `apps/api/vitest.config.ts` - API test config.
+  
 - Create: `apps/api/drizzle.config.ts` - Drizzle migration config.
+  
 - Create: `apps/api/.env.example` - documented server env variables without secrets.
+  
 - Create: `apps/api/src/index.ts` - Hono server entrypoint.
+  
 - Create: `apps/api/src/app.ts` - Hono app composition and CORS.
+  
 - Create: `apps/api/src/config/env.ts` - env parsing and runtime health.
+  
 - Create: `apps/api/src/db/schema.ts` - Drizzle tables and enums.
+  
 - Create: `apps/api/src/db/client.ts` - SQLite client factory.
+  
 - Create: `apps/api/src/db/repositories.ts` - thread, message, run, and step persistence.
+  
 - Create: `apps/api/src/domain/types.ts` - API-facing domain types.
+  
 - Create: `apps/api/src/domain/ids.ts` - stable id generation.
+  
 - Create: `apps/api/src/runtime/get-workspace-summary-tool.ts` - local demo tool.
+  
 - Create: `apps/api/src/runtime/run-executor.ts` - ToolLoopAgent execution and NDJSON stream events.
+  
 - Create: `apps/api/src/http/thread-routes.ts` - thread and run routes.
+  
 - Create: `apps/api/src/test/repositories.test.ts` - repository tests.
+  
 - Create: `apps/api/src/test/thread-routes.test.ts` - route tests.
+  
 - Create: `apps/api/src/test/run-executor.test.ts` - executor tests with a deterministic fake stream.
-
+  
 ### Web client
-
 - Modify: `apps/web/package.json` - add AI SDK React dependency if AI Elements does not add it.
+  
 - Modify: `apps/web/vite.config.ts` - proxy `/api` to the API dev server.
+  
 - Modify: `apps/web/src/router.tsx` - add `/threads/:threadId` route.
+  
 - Modify: `apps/web/src/components/shell/app-sidebar.tsx` - read real API thread list for the Threads section only.
+  
 - Modify: `apps/web/src/routes/new-thread.tsx` - use API-backed launch composer.
+  
 - Create: `apps/web/src/routes/thread-detail.tsx` - durable thread session route.
+  
 - Create: `apps/web/src/lib/api-client.ts` - typed fetch helpers and stream parser.
+  
 - Create: `apps/web/src/lib/thread-types.ts` - web-facing thread types matching API DTOs.
+  
 - Create: `apps/web/src/hooks/use-runtime-health.ts` - health fetch state.
+  
 - Create: `apps/web/src/hooks/use-thread-list.ts` - real thread list state.
+  
 - Create: `apps/web/src/hooks/use-thread-session.ts` - thread detail, streaming, and abort state.
+  
 - Create: `apps/web/src/components/thread/thread-launcher.tsx` - `/threads/new` composer.
+  
 - Create: `apps/web/src/components/thread/thread-session.tsx` - transcript, timeline, and follow-up composer.
+  
 - Create: `apps/web/src/components/thread/run-timeline.tsx` - visible lifecycle steps.
+  
 - Create: `apps/web/src/components/thread/runtime-disabled-callout.tsx` - runtime unavailable states.
+  
 - Create via AI Elements CLI: `apps/web/src/components/ai-elements/*` - conversation, message, prompt-input, reasoning, tool, loader.
+  
 - Test: `apps/web/src/routes/new-thread.test.tsx` - update launch route expectations.
+  
 - Test: `apps/web/src/routes/thread-detail.test.tsx` - add session route tests.
+  
 - Test: `apps/web/src/components/shell/app-sidebar.test.tsx` - update Threads navigation expectations.
-
+  
 ### E2E
-
 - Create or modify: `tests/e2e/m02-thread-lifecycle.spec.ts` - create, stream, abort, resume, and complete flows.
+  
 
----
-
+* * *
 ## Task 1: Create the API workspace skeleton
-
 **Files:**
-- Create: `apps/api/package.json`
-- Create: `apps/api/tsconfig.json`
-- Create: `apps/api/vitest.config.ts`
-- Create: `apps/api/drizzle.config.ts`
-- Create: `apps/api/.env.example`
-- Create: `apps/api/src/index.ts`
-- Create: `apps/api/src/app.ts`
-- Create: `apps/api/src/config/env.ts`
-- Modify: `turbo.json`
 
-- [ ] **Step 1: Create the API package manifest**
+- [ ] 
+  
+  Create: `apps/api/package.json`
+  
+- [ ] 
+  
+  Create: `apps/api/tsconfig.json`
+  
+- [ ] 
+  
+  Create: `apps/api/vitest.config.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/drizzle.config.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/.env.example`
+  
+- [ ] 
+  
+  Create: `apps/api/src/index.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/app.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/config/env.ts`
+  
+- [ ] 
+  
+  Modify: `turbo.json`
+  
+- [ ] 
+  
+  **Step 1: Create the API package manifest**
+  
 
 Write `apps/api/package.json`:
 
@@ -123,7 +179,10 @@ Write `apps/api/package.json`:
 }
 ```
 
-- [ ] **Step 2: Install API dependencies**
+- [ ] 
+  
+  **Step 2: Install API dependencies**
+  
 
 Run:
 
@@ -133,7 +192,10 @@ pnpm install
 
 Expected: pnpm updates `pnpm-lock.yaml` and installs `ai`, `@ai-sdk/openai`, Hono, Drizzle, and SQLite packages.
 
-- [ ] **Step 3: Add API TypeScript config**
+- [ ] 
+  
+  **Step 3: Add API TypeScript config**
+  
 
 Write `apps/api/tsconfig.json`:
 
@@ -156,7 +218,10 @@ Write `apps/api/tsconfig.json`:
 }
 ```
 
-- [ ] **Step 4: Add API Vitest config**
+- [ ] 
+  
+  **Step 4: Add API Vitest config**
+  
 
 Write `apps/api/vitest.config.ts`:
 
@@ -175,7 +240,10 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 5: Add Drizzle config**
+- [ ] 
+  
+  **Step 5: Add Drizzle config**
+  
 
 Write `apps/api/drizzle.config.ts`:
 
@@ -192,7 +260,10 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 6: Add API env example**
+- [ ] 
+  
+  **Step 6: Add API env example**
+  
 
 Write `apps/api/.env.example`:
 
@@ -205,7 +276,10 @@ OPENAI_MODEL=gpt-5-mini
 WEB_ORIGIN=http://localhost:5173
 ```
 
-- [ ] **Step 7: Add env parser**
+- [ ] 
+  
+  **Step 7: Add env parser**
+  
 
 Write `apps/api/src/config/env.ts`:
 
@@ -238,7 +312,10 @@ export function getRuntimeHealth(env: Env) {
 }
 ```
 
-- [ ] **Step 8: Add a minimal Hono app**
+- [ ] 
+  
+  **Step 8: Add a minimal Hono app**
+  
 
 Write `apps/api/src/app.ts`:
 
@@ -292,7 +369,10 @@ serve(
 )
 ```
 
-- [ ] **Step 9: Verify local API typecheck and health test manually**
+- [ ] 
+  
+  **Step 9: Verify local API typecheck and health test manually**
+  
 
 Run:
 
@@ -330,7 +410,10 @@ Expected shape:
 
 Stop the dev server after this check.
 
-- [ ] **Step 10: Commit API skeleton**
+- [ ] 
+  
+  **Step 10: Commit API skeleton**
+  
 
 Run:
 
@@ -339,19 +422,38 @@ git add apps/api/package.json apps/api/tsconfig.json apps/api/vitest.config.ts a
 git commit -m "feat(api): add hono service skeleton"
 ```
 
----
-
+* * *
 ## Task 2: Add SQLite schema and repositories
-
 **Files:**
-- Create: `apps/api/src/domain/types.ts`
-- Create: `apps/api/src/domain/ids.ts`
-- Create: `apps/api/src/db/schema.ts`
-- Create: `apps/api/src/db/client.ts`
-- Create: `apps/api/src/db/repositories.ts`
-- Create: `apps/api/src/test/repositories.test.ts`
 
-- [ ] **Step 1: Write failing repository tests**
+- [ ] 
+  
+  Create: `apps/api/src/domain/types.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/domain/ids.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/db/schema.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/db/client.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/db/repositories.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/test/repositories.test.ts`
+  
+- [ ] 
+  
+  **Step 1: Write failing repository tests**
+  
 
 Write `apps/api/src/test/repositories.test.ts`:
 
@@ -474,7 +576,10 @@ describe("thread repositories", () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [ ] 
+  
+  **Step 2: Run tests to verify they fail**
+  
 
 Run:
 
@@ -484,7 +589,10 @@ pnpm --filter api test -- src/test/repositories.test.ts
 
 Expected: FAIL because `../db/schema.js` and `../db/repositories.js` do not exist.
 
-- [ ] **Step 3: Add domain types**
+- [ ] 
+  
+  **Step 3: Add domain types**
+  
 
 Write `apps/api/src/domain/types.ts`:
 
@@ -571,7 +679,10 @@ export function createId(prefix: string): string {
 }
 ```
 
-- [ ] **Step 4: Add Drizzle schema**
+- [ ] 
+  
+  **Step 4: Add Drizzle schema**
+  
 
 Write `apps/api/src/db/schema.ts`:
 
@@ -623,7 +734,10 @@ export const runSteps = sqliteTable("run_steps", {
 })
 ```
 
-- [ ] **Step 5: Add database client**
+- [ ] 
+  
+  **Step 5: Add database client**
+  
 
 Write `apps/api/src/db/client.ts`:
 
@@ -649,7 +763,10 @@ export function createDatabaseClient(databaseUrl: string) {
 }
 ```
 
-- [ ] **Step 6: Add repositories**
+- [ ] 
+  
+  **Step 6: Add repositories**
+  
 
 Write `apps/api/src/db/repositories.ts`:
 
@@ -893,7 +1010,10 @@ export function createRepositories(db: Db) {
 }
 ```
 
-- [ ] **Step 7: Run repository tests**
+- [ ] 
+  
+  **Step 7: Run repository tests**
+  
 
 Run:
 
@@ -903,7 +1023,10 @@ pnpm --filter api test -- src/test/repositories.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 8: Generate migration**
+- [ ] 
+  
+  **Step 8: Generate migration**
+  
 
 Run:
 
@@ -913,7 +1036,10 @@ pnpm --filter api db:generate
 
 Expected: Drizzle creates SQL files under `apps/api/drizzle/`.
 
-- [ ] **Step 9: Commit schema and repositories**
+- [ ] 
+  
+  **Step 9: Commit schema and repositories**
+  
 
 Run:
 
@@ -922,16 +1048,26 @@ git add apps/api/src/domain/types.ts apps/api/src/domain/ids.ts apps/api/src/db/
 git commit -m "feat(api): persist thread run records"
 ```
 
----
-
+* * *
 ## Task 3: Add thread and runtime health routes
-
 **Files:**
-- Create: `apps/api/src/http/thread-routes.ts`
-- Modify: `apps/api/src/app.ts`
-- Create: `apps/api/src/test/thread-routes.test.ts`
 
-- [ ] **Step 1: Write failing route tests**
+- [ ] 
+  
+  Create: `apps/api/src/http/thread-routes.ts`
+  
+- [ ] 
+  
+  Modify: `apps/api/src/app.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/test/thread-routes.test.ts`
+  
+- [ ] 
+  
+  **Step 1: Write failing route tests**
+  
 
 Write `apps/api/src/test/thread-routes.test.ts`:
 
@@ -1008,7 +1144,10 @@ describe("thread routes", () => {
 })
 ```
 
-- [ ] **Step 2: Run route tests to verify they fail**
+- [ ] 
+  
+  **Step 2: Run route tests to verify they fail**
+  
 
 Run:
 
@@ -1018,7 +1157,10 @@ pnpm --filter api test -- src/test/thread-routes.test.ts
 
 Expected: FAIL because `createApp` does not accept repositories and `/api/threads` routes do not exist.
 
-- [ ] **Step 3: Add thread routes**
+- [ ] 
+  
+  **Step 3: Add thread routes**
+  
 
 Write `apps/api/src/http/thread-routes.ts`:
 
@@ -1080,7 +1222,10 @@ export function createThreadRoutes(repos: Repositories) {
 }
 ```
 
-- [ ] **Step 4: Wire repositories into the app**
+- [ ] 
+  
+  **Step 4: Wire repositories into the app**
+  
 
 Replace `apps/api/src/app.ts` with:
 
@@ -1121,7 +1266,10 @@ export function createApp(
 }
 ```
 
-- [ ] **Step 5: Run route tests**
+- [ ] 
+  
+  **Step 5: Run route tests**
+  
 
 Run:
 
@@ -1131,7 +1279,10 @@ pnpm --filter api test -- src/test/thread-routes.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit routes**
+- [ ] 
+  
+  **Step 6: Commit routes**
+  
 
 Run:
 
@@ -1140,17 +1291,30 @@ git add apps/api/src/http/thread-routes.ts apps/api/src/app.ts apps/api/src/test
 git commit -m "feat(api): add thread routes"
 ```
 
----
-
+* * *
 ## Task 4: Add ToolLoopAgent run streaming and abort
-
 **Files:**
-- Create: `apps/api/src/runtime/get-workspace-summary-tool.ts`
-- Create: `apps/api/src/runtime/run-executor.ts`
-- Modify: `apps/api/src/http/thread-routes.ts`
-- Create: `apps/api/src/test/run-executor.test.ts`
 
-- [ ] **Step 1: Verify current AI SDK APIs before coding**
+- [ ] 
+  
+  Create: `apps/api/src/runtime/get-workspace-summary-tool.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/runtime/run-executor.ts`
+  
+- [ ] 
+  
+  Modify: `apps/api/src/http/thread-routes.ts`
+  
+- [ ] 
+  
+  Create: `apps/api/src/test/run-executor.test.ts`
+  
+- [ ] 
+  
+  **Step 1: Verify current AI SDK APIs before coding**
+  
 
 Run:
 
@@ -1170,7 +1334,10 @@ curl -s https://ai-gateway.vercel.sh/v1/models | jq -r '.data[] | select(.id | s
 
 Expected: output includes current OpenAI GPT-5 model ids. Keep `OPENAI_MODEL` configurable even if the default remains `gpt-5-mini`.
 
-- [ ] **Step 2: Write failing executor tests**
+- [ ] 
+  
+  **Step 2: Write failing executor tests**
+  
 
 Write `apps/api/src/test/run-executor.test.ts`:
 
@@ -1239,7 +1406,10 @@ describe("run executor", () => {
 })
 ```
 
-- [ ] **Step 3: Run executor tests to verify they fail**
+- [ ] 
+  
+  **Step 3: Run executor tests to verify they fail**
+  
 
 Run:
 
@@ -1249,7 +1419,10 @@ pnpm --filter api test -- src/test/run-executor.test.ts
 
 Expected: FAIL because `../runtime/run-executor.js` does not exist.
 
-- [ ] **Step 4: Add the local demo tool**
+- [ ] 
+  
+  **Step 4: Add the local demo tool**
+  
 
 Write `apps/api/src/runtime/get-workspace-summary-tool.ts`:
 
@@ -1276,7 +1449,10 @@ export const getWorkspaceSummaryTool = tool({
 })
 ```
 
-- [ ] **Step 5: Add run executor and NDJSON event helpers**
+- [ ] 
+  
+  **Step 5: Add run executor and NDJSON event helpers**
+  
 
 Write `apps/api/src/runtime/run-executor.ts`:
 
@@ -1449,7 +1625,10 @@ export async function* executeOpenAIRun(input: {
 }
 ```
 
-- [ ] **Step 6: Run executor tests**
+- [ ] 
+  
+  **Step 6: Run executor tests**
+  
 
 Run:
 
@@ -1459,7 +1638,10 @@ pnpm --filter api test -- src/test/run-executor.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 7: Add stream and abort routes**
+- [ ] 
+  
+  **Step 7: Add stream and abort routes**
+  
 
 Modify `apps/api/src/http/thread-routes.ts` so it includes these additions:
 
@@ -1565,7 +1747,10 @@ Modify `apps/api/src/app.ts` route wiring:
   app.route("/api", createThreadRoutes(repos, env))
 ```
 
-- [ ] **Step 8: Run API typecheck**
+- [ ] 
+  
+  **Step 8: Run API typecheck**
+  
 
 Run:
 
@@ -1575,7 +1760,10 @@ pnpm --filter api typecheck
 
 Expected: PASS. If TypeScript reports an AI SDK property name mismatch in `run-executor.ts`, inspect `node_modules/ai/dist/index.d.ts` and rename only the mismatched stream part property.
 
-- [ ] **Step 9: Commit runtime streaming**
+- [ ] 
+  
+  **Step 9: Commit runtime streaming**
+  
 
 Run:
 
@@ -1584,18 +1772,34 @@ git add apps/api/src/runtime/get-workspace-summary-tool.ts apps/api/src/runtime/
 git commit -m "feat(api): stream runs with local tool calls"
 ```
 
----
-
+* * *
 ## Task 5: Add web API client and Vite proxy
-
 **Files:**
-- Modify: `apps/web/vite.config.ts`
-- Create: `apps/web/src/lib/thread-types.ts`
-- Create: `apps/web/src/lib/api-client.ts`
-- Create: `apps/web/src/hooks/use-runtime-health.ts`
-- Create: `apps/web/src/hooks/use-thread-list.ts`
 
-- [ ] **Step 1: Write client type files**
+- [ ] 
+  
+  Modify: `apps/web/vite.config.ts`
+  
+- [ ] 
+  
+  Create: `apps/web/src/lib/thread-types.ts`
+  
+- [ ] 
+  
+  Create: `apps/web/src/lib/api-client.ts`
+  
+- [ ] 
+  
+  Create: `apps/web/src/hooks/use-runtime-health.ts`
+  
+- [ ] 
+  
+  Create: `apps/web/src/hooks/use-thread-list.ts`
+  
+- [ ] 
+  
+  **Step 1: Write client type files**
+  
 
 Write `apps/web/src/lib/thread-types.ts`:
 
@@ -1670,7 +1874,10 @@ export type RunStreamEvent =
   | { type: "error"; message: string }
 ```
 
-- [ ] **Step 2: Write API client**
+- [ ] 
+  
+  **Step 2: Write API client**
+  
 
 Write `apps/web/src/lib/api-client.ts`:
 
@@ -1761,7 +1968,10 @@ export async function* streamRun(input: {
 }
 ```
 
-- [ ] **Step 3: Add hooks**
+- [ ] 
+  
+  **Step 3: Add hooks**
+  
 
 Write `apps/web/src/hooks/use-runtime-health.ts`:
 
@@ -1828,7 +2038,10 @@ export function useThreadList() {
 }
 ```
 
-- [ ] **Step 4: Add Vite API proxy**
+- [ ] 
+  
+  **Step 4: Add Vite API proxy**
+  
 
 Modify `apps/web/vite.config.ts`:
 
@@ -1854,7 +2067,10 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 5: Run web typecheck**
+- [ ] 
+  
+  **Step 5: Run web typecheck**
+  
 
 Run:
 
@@ -1864,7 +2080,10 @@ pnpm --filter web typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit web client foundation**
+- [ ] 
+  
+  **Step 6: Commit web client foundation**
+  
 
 Run:
 
@@ -1873,21 +2092,46 @@ git add apps/web/vite.config.ts apps/web/src/lib/thread-types.ts apps/web/src/li
 git commit -m "feat(web): add thread api client"
 ```
 
----
-
+* * *
 ## Task 6: Install AI Elements and build thread UI components
-
 **Files:**
-- Create via CLI: `apps/web/src/components/ai-elements/*`
-- Create: `apps/web/src/components/thread/runtime-disabled-callout.tsx`
-- Create: `apps/web/src/components/thread/run-timeline.tsx`
-- Create: `apps/web/src/components/thread/thread-launcher.tsx`
-- Create: `apps/web/src/components/thread/thread-session.tsx`
-- Create: `apps/web/src/hooks/use-thread-session.ts`
-- Modify: `apps/web/package.json`
-- Modify: `pnpm-lock.yaml`
 
-- [ ] **Step 1: Install AI Elements components**
+- [ ] 
+  
+  Create via CLI: `apps/web/src/components/ai-elements/*`
+  
+- [ ] 
+  
+  Create: `apps/web/src/components/thread/runtime-disabled-callout.tsx`
+  
+- [ ] 
+  
+  Create: `apps/web/src/components/thread/run-timeline.tsx`
+  
+- [ ] 
+  
+  Create: `apps/web/src/components/thread/thread-launcher.tsx`
+  
+- [ ] 
+  
+  Create: `apps/web/src/components/thread/thread-session.tsx`
+  
+- [ ] 
+  
+  Create: `apps/web/src/hooks/use-thread-session.ts`
+  
+- [ ] 
+  
+  Modify: `apps/web/package.json`
+  
+- [ ] 
+  
+  Modify: `pnpm-lock.yaml`
+  
+- [ ] 
+  
+  **Step 1: Install AI Elements components**
+  
 
 Run from repo root:
 
@@ -1902,7 +2146,10 @@ pnpm dlx ai-elements@latest add loader
 
 Expected: files are added under `apps/web/src/components/ai-elements/` or the CLI reports their actual destination. If files are added to a different package because of monorepo detection, move them under `apps/web/src/components/ai-elements/` and fix imports to use `@/components/ai-elements/*` and `@workspace/ui/*`.
 
-- [ ] **Step 2: Add React AI SDK dependency if missing**
+- [ ] 
+  
+  **Step 2: Add React AI SDK dependency if missing**
+  
 
 Run:
 
@@ -1912,7 +2159,10 @@ pnpm --filter web add @ai-sdk/react ai
 
 Expected: `apps/web/package.json` includes `@ai-sdk/react` and `ai`.
 
-- [ ] **Step 3: Review generated components**
+- [ ] 
+  
+  **Step 3: Review generated components**
+  
 
 Run:
 
@@ -1923,7 +2173,10 @@ pnpm --filter web typecheck
 
 Expected: no unresolved `@/components/ui` imports remain. If `lucide-react` appears, keep it only if the generated component declares it in `apps/web/package.json`; otherwise replace icons at usage sites with Hugeicons and do not edit generated internals unless typecheck fails.
 
-- [ ] **Step 4: Add runtime disabled callout**
+- [ ] 
+  
+  **Step 4: Add runtime disabled callout**
+  
 
 Write `apps/web/src/components/thread/runtime-disabled-callout.tsx`:
 
@@ -1952,7 +2205,10 @@ export function RuntimeDisabledCallout({
 }
 ```
 
-- [ ] **Step 5: Add run timeline**
+- [ ] 
+  
+  **Step 5: Add run timeline**
+  
 
 Write `apps/web/src/components/thread/run-timeline.tsx`:
 
@@ -2012,7 +2268,10 @@ export function RunTimeline({ runs, steps }: { runs: RunRecord[]; steps: RunStep
 }
 ```
 
-- [ ] **Step 6: Add thread session hook**
+- [ ] 
+  
+  **Step 6: Add thread session hook**
+  
 
 Write `apps/web/src/hooks/use-thread-session.ts`:
 
@@ -2084,7 +2343,10 @@ export function useThreadSession(threadId: string) {
 }
 ```
 
-- [ ] **Step 7: Add thread launcher component**
+- [ ] 
+  
+  **Step 7: Add thread launcher component**
+  
 
 Write `apps/web/src/components/thread/thread-launcher.tsx`:
 
@@ -2159,7 +2421,10 @@ export function ThreadLauncher({
 }
 ```
 
-- [ ] **Step 8: Add thread session component**
+- [ ] 
+  
+  **Step 8: Add thread session component**
+  
 
 Write `apps/web/src/components/thread/thread-session.tsx`:
 
@@ -2244,7 +2509,10 @@ export function ThreadSession({ threadId }: { threadId: string }) {
 }
 ```
 
-- [ ] **Step 9: Run web typecheck**
+- [ ] 
+  
+  **Step 9: Run web typecheck**
+  
 
 Run:
 
@@ -2254,7 +2522,10 @@ pnpm --filter web typecheck
 
 Expected: PASS. If AI Elements `PromptInputSubmit` uses a different status union, open `apps/web/src/components/ai-elements/prompt-input.tsx`, use its exported prop type, and map `active` to the nearest built-in active status.
 
-- [ ] **Step 10: Commit AI Elements thread UI components**
+- [ ] 
+  
+  **Step 10: Commit AI Elements thread UI components**
+  
 
 Run:
 
@@ -2263,20 +2534,42 @@ git add apps/web/package.json pnpm-lock.yaml apps/web/src/components/ai-elements
 git commit -m "feat(web): add ai elements thread surface"
 ```
 
----
-
+* * *
 ## Task 7: Wire routes, sidebar, and launch page
-
 **Files:**
-- Modify: `apps/web/src/router.tsx`
-- Create: `apps/web/src/routes/thread-detail.tsx`
-- Modify: `apps/web/src/routes/new-thread.tsx`
-- Modify: `apps/web/src/components/shell/app-sidebar.tsx`
-- Modify: `apps/web/src/routes/new-thread.test.tsx`
-- Create: `apps/web/src/routes/thread-detail.test.tsx`
-- Modify: `apps/web/src/components/shell/app-sidebar.test.tsx`
 
-- [ ] **Step 1: Add thread detail route**
+- [ ] 
+  
+  Modify: `apps/web/src/router.tsx`
+  
+- [ ] 
+  
+  Create: `apps/web/src/routes/thread-detail.tsx`
+  
+- [ ] 
+  
+  Modify: `apps/web/src/routes/new-thread.tsx`
+  
+- [ ] 
+  
+  Modify: `apps/web/src/components/shell/app-sidebar.tsx`
+  
+- [ ] 
+  
+  Modify: `apps/web/src/routes/new-thread.test.tsx`
+  
+- [ ] 
+  
+  Create: `apps/web/src/routes/thread-detail.test.tsx`
+  
+- [ ] 
+  
+  Modify: `apps/web/src/components/shell/app-sidebar.test.tsx`
+  
+- [ ] 
+  
+  **Step 1: Add thread detail route**
+  
 
 Write `apps/web/src/routes/thread-detail.tsx`:
 
@@ -2312,7 +2605,10 @@ Add below the `/threads/new` route:
 { path: "threads/:threadId", element: <ThreadDetailPage /> },
 ```
 
-- [ ] **Step 2: Update new thread page**
+- [ ] 
+  
+  **Step 2: Update new thread page**
+  
 
 Replace `apps/web/src/routes/new-thread.tsx` with:
 
@@ -2353,7 +2649,10 @@ export function NewThreadPage() {
 }
 ```
 
-- [ ] **Step 3: Update sidebar thread navigation**
+- [ ] 
+  
+  **Step 3: Update sidebar thread navigation**
+  
 
 In `apps/web/src/components/shell/app-sidebar.tsx`, replace fixture thread usage with `useThreadList()`:
 
@@ -2394,7 +2693,10 @@ const { threads } = useThreadList()
 
 The Threads section should map `threads` instead of `workspace.threads`.
 
-- [ ] **Step 4: Update tests for new thread**
+- [ ] 
+  
+  **Step 4: Update tests for new thread**
+  
 
 Replace `apps/web/src/routes/new-thread.test.tsx` with:
 
@@ -2435,7 +2737,10 @@ describe("NewThreadPage", () => {
 })
 ```
 
-- [ ] **Step 5: Add thread detail test**
+- [ ] 
+  
+  **Step 5: Add thread detail test**
+  
 
 Write `apps/web/src/routes/thread-detail.test.tsx`:
 
@@ -2481,7 +2786,10 @@ describe("ThreadDetailPage", () => {
 })
 ```
 
-- [ ] **Step 6: Run route tests**
+- [ ] 
+  
+  **Step 6: Run route tests**
+  
 
 Run:
 
@@ -2491,7 +2799,10 @@ pnpm --filter web test -- src/routes/new-thread.test.tsx src/routes/thread-detai
 
 Expected: PASS. If sidebar tests need fetch stubs, add the same `/api/threads` mock used in `new-thread.test.tsx`.
 
-- [ ] **Step 7: Commit route wiring**
+- [ ] 
+  
+  **Step 7: Commit route wiring**
+  
 
 Run:
 
@@ -2500,16 +2811,26 @@ git add apps/web/src/router.tsx apps/web/src/routes/thread-detail.tsx apps/web/s
 git commit -m "feat(web): wire durable thread routes"
 ```
 
----
-
+* * *
 ## Task 8: Add end-to-end lifecycle coverage and docs updates
-
 **Files:**
-- Create: `tests/e2e/m02-thread-lifecycle.spec.ts`
-- Modify: `README.md`
-- Modify: `docs/agentis-prd-roadmap.md` only if M02 status or development notes need to be updated after implementation succeeds.
 
-- [ ] **Step 1: Add E2E lifecycle test**
+- [ ] 
+  
+  Create: `tests/e2e/m02-thread-lifecycle.spec.ts`
+  
+- [ ] 
+  
+  Modify: `README.md`
+  
+- [ ] 
+  
+  Modify: `docs/agentis-prd-roadmap.md` only if M02 status or development notes need to be updated after implementation succeeds.
+  
+- [ ] 
+  
+  **Step 1: Add E2E lifecycle test**
+  
 
 Write `tests/e2e/m02-thread-lifecycle.spec.ts`:
 
@@ -2525,13 +2846,15 @@ test.describe("M02 thread lifecycle", () => {
 })
 ```
 
-- [ ] **Step 2: Add README M02 development commands**
+- [ ] 
+  
+  **Step 2: Add README M02 development commands**
+  
 
 Open `README.md` and add this section near local development commands:
 
-```md
+````md
 ### M02 local runtime
-
 The web app can run against a local API runtime for threads and streaming runs.
 
 ```bash
@@ -2539,10 +2862,11 @@ cp apps/api/.env.example apps/api/.env
 pnpm --filter api db:migrate
 pnpm --filter api dev
 pnpm --filter web dev
-```
+````
 
 Set `OPENAI_API_KEY` in `apps/api/.env` to enable real model execution. Without the key, the thread composer stays visible and explains that runtime execution is disabled.
-```
+
+````
 
 - [ ] **Step 3: Run full verification**
 
@@ -2554,11 +2878,14 @@ pnpm build
 pnpm lint
 pnpm test:coverage
 pnpm test:e2e
-```
+````
 
 Expected: all commands exit 0. If `pnpm test:e2e` fails because the API server is not part of the existing Playwright webServer setup, update the Playwright config so it starts both `pnpm --filter api dev` and `pnpm --filter web dev:e2e` for E2E runs, then rerun `pnpm test:e2e`.
 
-- [ ] **Step 4: Manual acceptance check with real OpenAI key**
+- [ ] 
+  
+  **Step 4: Manual acceptance check with real OpenAI key**
+  
 
 Run:
 
@@ -2573,17 +2900,28 @@ pnpm --filter web dev
 In the browser:
 
 1. Open `http://localhost:5173/threads/new`.
+  
 2. Enter `Use the workspace summary tool, then summarize what you found.`
+  
 3. Submit the prompt.
+  
 4. Confirm the app navigates to `/threads/<id>`.
+  
 5. Confirm assistant text streams into the transcript.
+  
 6. Confirm the run timeline shows `getWorkspaceSummary` tool-call or tool-result steps.
+  
 7. Submit another prompt and click Abort while it streams.
+  
 8. Reload the page and confirm the partial assistant response remains visible with an aborted marker.
+  
 
 Expected: all eight checks pass.
 
-- [ ] **Step 5: Commit E2E and docs**
+- [ ] 
+  
+  **Step 5: Commit E2E and docs**
+  
 
 Run:
 
@@ -2594,14 +2932,18 @@ git commit -m "test(m02): cover thread lifecycle acceptance"
 
 If `docs/agentis-prd-roadmap.md` or `playwright.config.ts` did not change, omit it from `git add`.
 
----
-
+* * *
 ## Task 9: Final review and integration verification
-
 **Files:**
-- No planned source edits unless verification finds a defect.
 
-- [ ] **Step 1: Inspect git status**
+- [ ] 
+  
+  No planned source edits unless verification finds a defect.
+  
+- [ ] 
+  
+  **Step 1: Inspect git status**
+  
 
 Run:
 
@@ -2611,7 +2953,10 @@ git status --short
 
 Expected: no uncommitted implementation files. Existing user-owned files that were dirty before implementation should remain untouched or be explicitly called out.
 
-- [ ] **Step 2: Run final verification**
+- [ ] 
+  
+  **Step 2: Run final verification**
+  
 
 Run:
 
@@ -2621,7 +2966,10 @@ pnpm typecheck && pnpm build && pnpm lint && pnpm test:coverage && pnpm test:e2e
 
 Expected: all commands exit 0.
 
-- [ ] **Step 3: Produce acceptance evidence**
+- [ ] 
+  
+  **Step 3: Produce acceptance evidence**
+  
 
 Record these outputs in the implementation summary:
 
@@ -2632,12 +2980,26 @@ git log --oneline -5
 
 Also include:
 
-- The final thread URL used for manual testing.
-- Whether `OPENAI_API_KEY` was present during manual acceptance.
-- Whether abort preserved partial assistant text after reload.
-- Whether the local tool appeared in the run timeline.
-
-- [ ] **Step 4: Final commit if verification fixes were needed**
+- [ ] 
+  
+  The final thread URL used for manual testing.
+  
+- [ ] 
+  
+  Whether `OPENAI_API_KEY` was present during manual acceptance.
+  
+- [ ] 
+  
+  Whether abort preserved partial assistant text after reload.
+  
+- [ ] 
+  
+  Whether the local tool appeared in the run timeline.
+  
+- [ ] 
+  
+  **Step 4: Final commit if verification fixes were needed**
+  
 
 If any fix was required during Task 9, commit only those files:
 
@@ -2648,11 +3010,12 @@ git commit -m "fix(m02): stabilize thread lifecycle verification"
 
 If no fixes were required, do not create an empty commit.
 
----
-
+* * *
 ## Self-review notes
-
 - Spec coverage: API service, Hono, OpenAI through AI SDK, AI Elements UI, SQLite with Drizzle, direct API execution, server `.env`, abort partial preservation, local demo tool, `/threads/new` plus `/threads/:threadId`, and fixture separation are covered.
+  
 - Dependency risk: AI SDK stream part names must be verified from installed docs before runtime implementation. Task 4 includes required verification before editing runtime code.
+  
 - Scope: This is one implementation plan for one vertical M02 slice. Chat SDK and Composio remain out of scope.
+  
 - Testing: API, web, E2E, and manual acceptance checks are included.

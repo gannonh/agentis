@@ -65,7 +65,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 
 ## Roadmap
 
-### M01: Foundation and Shell UI
+### M01: Foundation and Shell UI ✅
 
 Goal: set up missing project tooling and build a polished, navigable shell for the key Agentis screens using mock data.
 
