@@ -1,0 +1,119 @@
+import { describe, expect, it } from "vitest"
+import { createApp } from "./app.js"
+import { createTestContext } from "./test/setup.js"
+import { isRuntimeAvailable } from "./config.js"
+
+describe("api routes", () => {
+  it("reports missing runtime key", async () => {
+    const ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      openAiApiKey: undefined,
+    })
+
+    const response = await app.request("/api/runtime/health")
+    const body = (await response.json()) as {
+      available: boolean
+      reason?: string
+    }
+
+    expect(body.available).toBe(false)
+    expect(body.reason).toBe("missing_api_key")
+    ctx.cleanup()
+  })
+
+  it("creates a thread with queued run", async () => {
+    const ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize workspace status" }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      thread: { id: string }
+      message: { role: string }
+      run: { status: string }
+    }
+    expect(body.thread.id).toBeTruthy()
+    expect(body.message.role).toBe("user")
+    expect(body.run.status).toBe("queued")
+    ctx.cleanup()
+  })
+
+  it("returns thread detail for resume", async () => {
+    const ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Hello" }),
+    })
+    const { thread } = (await created.json()) as { thread: { id: string } }
+
+    const detail = await app.request(`/api/threads/${thread.id}`)
+    const body = (await detail.json()) as {
+      messages: unknown[]
+      runs: unknown[]
+    }
+
+    expect(body.messages).toHaveLength(1)
+    expect(body.runs).toHaveLength(1)
+    ctx.cleanup()
+  })
+
+  it("marks run aborted via abort endpoint", async () => {
+    const ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const thread = ctx.repos.threads.create({
+      title: "Abort",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const run = ctx.repos.runs.create({
+      threadId: thread.id,
+      model: thread.model,
+      status: "running",
+    })
+    ctx.repos.messages.create({
+      threadId: thread.id,
+      role: "assistant",
+      parts: [{ type: "text", text: "Partial answer" }],
+      status: "streaming",
+    })
+
+    const response = await app.request(`/api/runs/${run.id}/abort`, {
+      method: "POST",
+    })
+    const body = (await response.json()) as { run: { status: string } }
+
+    expect(response.status).toBe(200)
+    expect(body.run.status).toBe("aborted")
+    ctx.cleanup()
+  })
+})
+
+describe("config", () => {
+  it("detects runtime availability from api key or mock mode", () => {
+    expect(
+      isRuntimeAvailable({ openAiApiKey: "x", mockRuntime: false } as never)
+    ).toBe(true)
+    expect(
+      isRuntimeAvailable({
+        openAiApiKey: undefined,
+        mockRuntime: true,
+      } as never)
+    ).toBe(true)
+    expect(
+      isRuntimeAvailable({
+        openAiApiKey: undefined,
+        mockRuntime: false,
+      } as never)
+    ).toBe(false)
+  })
+})

@@ -4,25 +4,29 @@ Agentis is an early-stage open-source product for configuring and deploying usef
 
 The project is currently in foundation work. Treat the architecture direction as research-backed and still evolving.
 
-## Frontend (M01)
+## Frontend (M01 + M02 threads)
 
-- **App:** `apps/web` — Vite, React 19, React Router, mock fixtures only (no backend until M02).
-- **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared components.
-- **Demo data:** `apps/web/src/fixtures/` — zod schemas and `demo-workspace.ts` seed aligned with `docs/comps/`.
-- **MSW:** `apps/web/src/mocks/` — handlers stub future `/api/*` routes; optional in dev.
+- **App:** `apps/web` — Vite, React 19, React Router.
+- **API:** `apps/api` — Hono, Drizzle SQLite, OpenAI via Vercel AI SDK for thread/run lifecycle.
+- **Shared types:** `packages/shared` — Zod schemas for threads, messages, runs, and API DTOs.
+- **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared primitives. See [Component management](#component-management).
+- **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
+- **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, Learning, Library (not thread sessions).
+- **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
 ## Routes
 
-| Path               | Screen                    |
+| Path | Screen |
 | ------------------ | ------------------------- |
-| `/threads/new`     | New thread home (default) |
-| `/command-center`  | Command Center            |
-| `/agents/:agentId` | Agent detail              |
-| `/learning`        | Learning dashboard        |
-| `/integrations`    | Integrations catalog      |
-| `/projects/new`    | Create project            |
-| `/library`         | Artifact library          |
-| `/search`          | Search placeholder        |
+| `/threads/new` | New thread home (default) |
+| `/threads/:threadId` | Thread session (API-backed) |
+| `/command-center` | Command Center |
+| `/agents/:agentId` | Agent detail |
+| `/learning` | Learning dashboard |
+| `/integrations` | Integrations catalog |
+| `/projects/new` | Create project |
+| `/library` | Artifact library |
+| `/search` | Search placeholder |
 
 ## Commands
 
@@ -32,6 +36,65 @@ pnpm typecheck && pnpm build && pnpm lint
 pnpm test:coverage
 pnpm test:e2e
 ```
+
+## Component management
+
+Agentis uses a **two-layer** UI setup. Do not duplicate primitives or hand-roll registry components when an install path exists.
+
+| Layer | Location | Purpose |
+| ----- | -------- | ------- |
+| Shared primitives | `packages/ui/src/components/` | shadcn/ui building blocks used across the app (button, sidebar, dialog, input-group, …). Styles: `packages/ui/src/styles/globals.css`. |
+| App & AI surfaces | `apps/web/src/components/` | Product-specific UI. **AI Elements** live under `apps/web/src/components/ai-elements/` (conversation, message, prompt-input). |
+
+**Config:** [`apps/web/components.json`](apps/web/components.json) drives installs. The `ui` alias points at `@workspace/ui/components`, so registry installs often **update `packages/ui`** (and sometimes `globals.css`), not only `apps/web`.
+
+### Adding shadcn/ui primitives
+
+Run from the repo root with the web app as the shadcn root:
+
+```bash
+pnpm dlx shadcn@latest add <component> -c apps/web
+```
+
+Use `-y` to skip prompts and `-o` when you intend to refresh an existing file (e.g. after a preset or registry upgrade).
+
+### Adding AI Elements (thread / chat UI)
+
+Prefer the **shadcn CLI + AI Elements registry URLs**, not a bare `ai-elements add` without flags — the dedicated CLI can block on interactive overwrite prompts (e.g. `button.tsx`).
+
+```bash
+cd apps/web
+pnpm dlx shadcn@latest add -y -o \
+  "https://elements.ai-sdk.dev/api/registry/conversation.json" \
+  "https://elements.ai-sdk.dev/api/registry/message.json" \
+  "https://elements.ai-sdk.dev/api/registry/prompt-input.json"
+```
+
+Replace `<component>` in the URL for others (`tool`, `reasoning`, etc.) from [elements.ai-sdk.dev](https://elements.ai-sdk.dev).
+
+After install:
+
+1. Check **both** `apps/web/package.json` and `packages/ui/package.json` for new dependencies (`streamdown`, `lucide-react`, `use-stick-to-bottom`, …).
+2. Wire components in app code under `apps/web/src/` — do not copy-paste simplified stand-ins into `ai-elements/`.
+3. Run `pnpm typecheck && pnpm build` — registry files may need small fixes if `@base-ui/react` types drift (see `prompt-input.tsx`).
+
+### Icons and styling
+
+- **App shell / product chrome:** Hugeicons (project default in `components.json`).
+- **AI Elements registry files:** often **lucide-react** — keep both; do not mass-replace lucide icons inside generated `ai-elements/` without a deliberate design pass.
+- **Design tokens:** follow [DESIGN.md](DESIGN.md). AI Elements user bubbles use registry styling; avoid stacking conflicting Tailwind on `Message`/`MessageContent` unless intentional.
+
+### App integration notes
+
+- `TooltipProvider` wraps the shell in [`apps/web/src/layouts/app-shell.tsx`](apps/web/src/layouts/app-shell.tsx).
+- Thread composer uses `PromptInput`’s `onSubmit({ text, files })` API via [`thread-prompt-composer.tsx`](apps/web/src/components/thread/thread-prompt-composer.tsx) — not a custom textarea-only form.
+- Vite resolves `@/` to `apps/web/src`; shared UI imports use `@workspace/ui/components/...`.
+
+## M02 local runtime
+
+1. Set `OPENAI_API_KEY` in the repo root `.env` (see `.env.example`). The API loads that file on startup; `apps/api/.env` is optional for overrides.
+2. `pnpm dev` starts **api** (port 3001) and **web** (port 5173); Vite proxies `/api` to the API.
+3. For E2E/CI without OpenAI, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
 
 ## Design
 

@@ -1,0 +1,89 @@
+import { asc, desc, eq } from "drizzle-orm"
+import type { Run, RunStatus, RunUsage } from "@workspace/shared"
+import type { AppDatabase } from "../db/client.js"
+import { runs } from "../db/schema.js"
+import { createId, nowIso } from "../lib/ids.js"
+import { mapRun } from "../lib/mappers.js"
+
+export class RunRepository {
+  constructor(private readonly db: AppDatabase) {}
+
+  create(input: { threadId: string; model: string; status?: RunStatus }): Run {
+    const row = {
+      id: createId("run"),
+      threadId: input.threadId,
+      status: input.status ?? "queued",
+      model: input.model,
+      startedAt: nowIso(),
+      finishedAt: null,
+      errorSummary: null,
+      usageJson: null,
+      cost: null,
+    }
+    this.db.insert(runs).values(row).run()
+    return mapRun(row)
+  }
+
+  getById(id: string): Run | null {
+    const row = this.db.select().from(runs).where(eq(runs.id, id)).get()
+    return row ? mapRun(row) : null
+  }
+
+  listByThreadId(threadId: string): Run[] {
+    return this.db
+      .select()
+      .from(runs)
+      .where(eq(runs.threadId, threadId))
+      .orderBy(desc(runs.startedAt))
+      .all()
+      .map(mapRun)
+  }
+
+  getLatestByThreadId(threadId: string): Run | null {
+    const row = this.db
+      .select()
+      .from(runs)
+      .where(eq(runs.threadId, threadId))
+      .orderBy(desc(runs.startedAt))
+      .get()
+    return row ? mapRun(row) : null
+  }
+
+  updateStatus(
+    id: string,
+    status: RunStatus,
+    patch?: {
+      finishedAt?: string
+      errorSummary?: string | null
+      usage?: RunUsage | null
+      cost?: number | null
+    }
+  ): Run | null {
+    const existing = this.getById(id)
+    if (!existing) return null
+
+    this.db
+      .update(runs)
+      .set({
+        status,
+        finishedAt: patch?.finishedAt ?? existing.finishedAt ?? null,
+        errorSummary:
+          patch?.errorSummary !== undefined
+            ? patch.errorSummary
+            : existing.errorSummary ?? null,
+        usageJson:
+          patch?.usage !== undefined
+            ? patch.usage
+              ? JSON.stringify(patch.usage)
+              : null
+            : existing.usage
+              ? JSON.stringify(existing.usage)
+              : null,
+        cost: patch?.cost !== undefined ? patch.cost : (existing.cost ?? null),
+      })
+      .where(eq(runs.id, id))
+      .run()
+
+    return this.getById(id)
+  }
+}

@@ -15,7 +15,4 @@ export const handlers = [
     }
     return HttpResponse.json(agent)
   }),
-  http.get("/api/threads", () => {
-    return HttpResponse.json(demoWorkspace.threads)
-  }),
 ]

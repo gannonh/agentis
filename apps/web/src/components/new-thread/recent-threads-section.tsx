@@ -1,78 +1,59 @@
-import { Badge } from "@workspace/ui/components/badge"
+import { useEffect, useState } from "react"
+import { Link } from "react-router"
 import { Button } from "@workspace/ui/components/button"
-import { PickerAgentIconMark } from "@/lib/picker-agent-icon"
-import { formatRelativeTime, getAgent } from "@/fixtures"
-import type { AgentNavIcon, PickerAgentIcon, Thread } from "@/fixtures/schema"
+import type { ThreadListItem } from "@workspace/shared"
+import { listThreads } from "@/lib/api/client"
 
-const rosterIconToPickerIcon: Record<AgentNavIcon, PickerAgentIcon> = {
-  search: "search",
-  command: "briefing",
-}
+export function RecentThreadsSection() {
+  const [threads, setThreads] = useState<ThreadListItem[]>([])
+  const [loading, setLoading] = useState(true)
 
-type RecentThreadsSectionProps = {
-  threads: Thread[]
-}
+  useEffect(() => {
+    void (async () => {
+      try {
+        const items = await listThreads()
+        setThreads(items.slice(0, 3))
+      } catch {
+        setThreads([])
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
 
-function agentIconForThread(thread: Thread): PickerAgentIcon {
-  if (!thread.agentId) {
-    return "agentis"
+  if (loading) {
+    return (
+      <section className="flex w-full max-w-3xl flex-col gap-3">
+        <h2 className="text-sm font-medium">Recent threads</h2>
+        <p className="text-muted-foreground text-xs">Loading…</p>
+      </section>
+    )
   }
-  const agent = getAgent(thread.agentId)
-  if (!agent?.icon) {
-    return "search"
-  }
-  return rosterIconToPickerIcon[agent.icon]
-}
 
-export function RecentThreadsSection({ threads }: RecentThreadsSectionProps) {
   if (threads.length === 0) {
     return null
   }
 
   return (
-    <section className="flex w-full flex-col gap-3" aria-labelledby="recent-threads-heading">
-      <div className="flex items-center justify-between gap-2">
-        <h2 id="recent-threads-heading" className="text-sm font-medium">
-          Recent threads
-        </h2>
-        <Button variant="ghost" size="sm" className="h-8 text-xs" disabled>
+    <section className="flex w-full max-w-3xl flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium">Recent threads</h2>
+        <Button variant="ghost" size="sm" disabled>
           Show all
         </Button>
       </div>
-
-      <ul className="flex flex-col gap-2">
+      <ul className="grid gap-2">
         {threads.map((thread) => (
           <li key={thread.id}>
-            <div className="rounded-lg border border-border bg-card px-4 py-3">
-              <div className="mb-2 flex items-center gap-2">
-                <PickerAgentIconMark icon={agentIconForThread(thread)} size="sm" />
-                <span className="text-muted-foreground text-xs font-medium">
-                  {thread.agentName ?? "Agentis"}
-                </span>
-              </div>
-              <p className="text-base font-medium">{thread.title}</p>
-              <div className="mt-2 flex items-center gap-2">
-                {thread.status === "finished" ? (
-                  <Badge
-                    variant="outline"
-                    className="h-5 gap-1 border-transparent bg-transparent px-0 text-xs font-normal text-muted-foreground"
-                  >
-                    <span
-                      className="size-1.5 rounded-full bg-muted-foreground"
-                      aria-hidden
-                    />
-                    Finished
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="capitalize">
-                    {thread.status}
-                  </Badge>
-                )}
-                <span className="text-muted-foreground text-xs">
-                  · {formatRelativeTime(thread.updatedAt)}
-                </span>
-              </div>
-            </div>
+            <Link
+              to={`/threads/${thread.id}`}
+              className="hover:bg-muted/50 flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm transition-colors"
+            >
+              <span className="truncate font-medium">{thread.title}</span>
+              <span className="text-muted-foreground text-xs capitalize">
+                {thread.lastRunStatus ?? thread.status}
+              </span>
+            </Link>
           </li>
         ))}
       </ul>

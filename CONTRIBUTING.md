@@ -6,8 +6,11 @@ Thank you for your interest in contributing. Agentis is early-stage; we welcome 
 
 1. Fork and clone the repository.
 2. Install dependencies: `pnpm install`
-3. Copy environment sample: `cp apps/web/.env.example apps/web/.env`
-4. Start the dev server: `pnpm dev`
+3. Copy environment samples:
+   - `cp .env.example .env` and set `OPENAI_API_KEY` at the repo root
+   - `cp apps/web/.env.example apps/web/.env` (optional web overrides)
+4. Optional: `apps/api/.env` for API-only overrides (otherwise root `.env` is used).
+5. Start dev servers: `pnpm dev` (API on `:3001`, web on `:5173`)
 
 ## Quality checks
 
@@ -44,6 +47,8 @@ pnpm dlx shadcn@latest add <component> -c apps/web
 
 Follow [DESIGN.md](DESIGN.md) for visual and interaction conventions.
 
-## Mock data
+## Data boundaries
 
-Until M02, the frontend uses typed fixtures in `apps/web/src/fixtures/`. Update seed data there when demo screens should reflect new product concepts.
+- **Thread sessions** (`/threads/new`, `/threads/:threadId`) use the API in `apps/api` and shared schemas in `packages/shared`.
+- **Other product surfaces** (Command Center, Agents, Integrations, Learning, Library) still use typed fixtures in `apps/web/src/fixtures/` until later milestones.
+- Update fixture seed data when demo screens should reflect new product concepts outside the thread flow.
