@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react"
 import { NavLink, useMatch } from "react-router"
+import type { ThreadListItem } from "@workspace/shared"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
@@ -36,7 +38,7 @@ import {
 import { cn } from "@workspace/ui/lib/utils"
 import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
 import { getNavAgents, getWorkspace } from "@/fixtures"
-import type { Thread } from "@/fixtures/schema"
+import { listThreads } from "@/lib/api/client"
 
 const agentIcons = {
   search: Search01Icon,
@@ -52,15 +54,16 @@ function agentNavIcon(icon?: string) {
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(isActive && "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground")
 
-function ThreadSidebarItem({ thread }: { thread: Thread }) {
-  const newThreadMatch = useMatch({ path: "/threads/new", end: true })
-  const isActive = Boolean(newThreadMatch) && thread.status === "active"
+function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
+  const match = useMatch({ path: `/threads/${thread.id}`, end: true })
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        isActive={isActive}
-        render={<NavLink to="/threads/new" end className={navLinkClass} />}
+        isActive={Boolean(match)}
+        render={
+          <NavLink to={`/threads/${thread.id}`} end className={navLinkClass} />
+        }
       >
         <span
           className={cn(
@@ -83,6 +86,13 @@ function ThreadSidebarItem({ thread }: { thread: Thread }) {
 export function AppSidebar() {
   const workspace = getWorkspace()
   const agents = getNavAgents().filter((a) => a.id !== "command-center")
+  const [threads, setThreads] = useState<ThreadListItem[]>([])
+
+  useEffect(() => {
+    void listThreads()
+      .then(setThreads)
+      .catch(() => setThreads([]))
+  }, [])
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -192,7 +202,7 @@ export function AppSidebar() {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {workspace.threads.map((thread) => (
+                  {threads.map((thread) => (
                     <ThreadSidebarItem key={thread.id} thread={thread} />
                   ))}
                 </SidebarMenu>

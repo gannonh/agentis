@@ -20,4 +20,12 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // AI Elements registry components export hooks/helpers alongside components.
+    files: ['src/components/ai-elements/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+      '@typescript-eslint/ban-ts-comment': 'off',
+    },
+  },
 ])

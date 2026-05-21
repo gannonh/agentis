@@ -1,0 +1,14 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K(node:17868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:17868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/2] [chromium] › apps/web/e2e/thread-lifecycle.spec.ts:4:3 › thread lifecycle › creates thread, completes mock response, and persists on reload
+[1A[2K[2/2] [chromium] › apps/web/e2e/thread-lifecycle.spec.ts:24:3 › thread lifecycle › aborts a running response and preserves partial transcript
+[1A[2K  2 passed (9.2s)

@@ -4,28 +4,28 @@ overview: Implement M02 by adding a new Hono + Drizzle + SQLite `apps/api` servi
 todos:
   - id: shared-schemas
     content: Add packages/shared with Thread/Message/Run/RunStep Zod schemas and API DTOs
-    status: pending
+    status: completed
   - id: api-scaffold
     content: Scaffold apps/api (Hono, Drizzle, SQLite, turbo dev, .env.example)
-    status: pending
+    status: completed
   - id: db-repos
     content: Implement Drizzle schema, migrations, repositories + repository tests
-    status: pending
+    status: completed
   - id: api-routes-executor
     content: Build health/threads/runs routes, run executor, getWorkspaceSummary tool, abort registry + API tests
-    status: pending
+    status: completed
   - id: web-deps-client
     content: Add AI SDK + AI Elements to apps/web; api client; vite proxy; runtime health hook
-    status: pending
+    status: completed
   - id: thread-routes-ui
     content: Add /threads/:threadId, wire new-thread + thread-detail with AI Elements, streaming, abort, timeline
-    status: pending
+    status: completed
   - id: sidebar-threads
     content: Sidebar and recent-threads use GET /api/threads with correct NavLinks
-    status: pending
+    status: completed
   - id: tests-docs
     content: Web tests, e2e lifecycle specs, playwright multi-server, AGENTS/README/CONTRIBUTING updates
-    status: pending
+    status: completed
 isProject: false
 ---
 

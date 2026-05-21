@@ -1,73 +1,52 @@
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Add01Icon,
-  ArrowDown01Icon,
-  ArrowUp01Icon,
-  Settings01Icon,
-} from "@hugeicons/core-free-icons"
-import { Button } from "@workspace/ui/components/button"
-import { Textarea } from "@workspace/ui/components/textarea"
+import { useState } from "react"
+import { useNavigate } from "react-router"
+import type { ThreadMode } from "@workspace/shared"
+import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
+import { createThread } from "@/lib/api/client"
+import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
 
 export function ThreadComposer() {
+  const navigate = useNavigate()
+  const { health } = useRuntimeHealth()
+  const [mode, setMode] = useState<ThreadMode>("plan")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (prompt: string) => {
+    if (!prompt.trim() || !health.available) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const { thread, run } = await createThread({
+        prompt: prompt.trim(),
+        mode,
+        model: health.model,
+      })
+      navigate(`/threads/${thread.id}`, {
+        state: { startRunId: run.id },
+      })
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to create thread"
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm">
-      <div className="flex flex-col gap-3 bg-card p-4 pb-2 dark:bg-[oklch(0.1776_0_0)]">
-        <label htmlFor="thread-task" className="sr-only">
-          Task
-        </label>
-        <Textarea
-          id="thread-task"
-          placeholder="What's the task?"
-          className="min-h-28 resize-none border-0 !bg-transparent p-0 text-base shadow-none focus-visible:ring-0 disabled:opacity-100 dark:!bg-transparent"
-          disabled
-        />
-      </div>
-
-      <div className="flex items-center justify-between gap-2 border-t border-border bg-card px-3 py-2">
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            disabled
-            aria-label="Add attachment"
-          >
-            <HugeiconsIcon icon={Add01Icon} className="size-4" strokeWidth={2} />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            disabled
-            aria-label="Composer settings"
-          >
-            <HugeiconsIcon icon={Settings01Icon} className="size-4" strokeWidth={2} />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1" disabled>
-            Plan
-            <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5" strokeWidth={2} />
-          </Button>
-          <Button
-            type="button"
-            size="icon"
-            className="size-8 rounded-full"
-            disabled
-            aria-label="Submit task"
-          >
-            <HugeiconsIcon icon={ArrowUp01Icon} className="size-4" strokeWidth={2} />
-          </Button>
-        </div>
-      </div>
-
-      <div className="border-t border-border bg-card px-4 py-2.5">
-        <p className="text-muted-foreground text-xs">
-          Connect your integrations → Slack, Gmail, Drive…
-        </p>
-      </div>
+    <div className="w-full max-w-3xl">
+      {error ? <p className="text-destructive mb-2 text-xs">{error}</p> : null}
+      <ThreadPromptComposer
+        onSubmit={handleSubmit}
+        disabled={!health.available}
+        health={health}
+        mode={mode}
+        onModeChange={setMode}
+        submitting={submitting}
+      />
     </div>
   )
 }

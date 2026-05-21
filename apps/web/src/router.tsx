@@ -6,6 +6,7 @@ import { IntegrationsPage } from "@/routes/integrations"
 import { LearningPage } from "@/routes/learning"
 import { LibraryPage } from "@/routes/library"
 import { NewThreadPage } from "@/routes/new-thread"
+import { ThreadDetailPage } from "@/routes/thread-detail"
 import { ProjectCreatePage } from "@/routes/project-create"
 import { SearchPage } from "@/routes/search"
 import { NotFoundPage } from "@/routes/not-found"
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/threads/new" replace /> },
       { path: "threads/new", element: <NewThreadPage /> },
+      { path: "threads/:threadId", element: <ThreadDetailPage /> },
       { path: "command-center", element: <CommandCenterPage /> },
       { path: "agents/:agentId", element: <AgentDetailPage /> },
       { path: "learning", element: <LearningPage /> },

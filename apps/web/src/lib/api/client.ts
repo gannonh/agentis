@@ -1,0 +1,137 @@
+import {
+  abortRunResponseSchema,
+  createFollowUpResponseSchema,
+  createThreadRequestSchema,
+  createThreadResponseSchema,
+  runtimeHealthSchema,
+  threadDetailSchema,
+  threadListItemSchema,
+  type CreateFollowUpRequest,
+  type CreateThreadRequest,
+  type RuntimeHealth,
+  type ThreadDetail,
+  type ThreadListItem,
+} from "@workspace/shared"
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ""
+
+class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+  }
+}
+
+async function parseJson<T>(response: Response, schema: {
+  parse: (data: unknown) => T
+}): Promise<T> {
+  const data = await response.json()
+  if (!response.ok) {
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+  return schema.parse(data)
+}
+
+export async function fetchRuntimeHealth(): Promise<RuntimeHealth> {
+  try {
+    const response = await fetch(`${API_BASE}/api/runtime/health`)
+    if (!response.ok) {
+      return { available: false, reason: "api_unavailable" }
+    }
+    return runtimeHealthSchema.parse(await response.json())
+  } catch {
+    return { available: false, reason: "api_unavailable" }
+  }
+}
+
+export async function listThreads(): Promise<ThreadListItem[]> {
+  const response = await fetch(`${API_BASE}/api/threads`)
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+  const data = await response.json()
+  return zodArray(threadListItemSchema, data)
+}
+
+function zodArray<T>(schema: { parse: (data: unknown) => T }, data: unknown): T[] {
+  if (!Array.isArray(data)) {
+    throw new ApiError("Invalid threads response", 500)
+  }
+  return data.map((item) => schema.parse(item))
+}
+
+export async function createThread(body: CreateThreadRequest) {
+  const payload = createThreadRequestSchema.parse(body)
+  const response = await fetch(`${API_BASE}/api/threads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, createThreadResponseSchema)
+}
+
+export async function getThread(threadId: string): Promise<ThreadDetail> {
+  const response = await fetch(`${API_BASE}/api/threads/${threadId}`)
+  return parseJson(response, threadDetailSchema)
+}
+
+export async function sendFollowUp(
+  threadId: string,
+  body: CreateFollowUpRequest
+) {
+  const response = await fetch(`${API_BASE}/api/threads/${threadId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  return parseJson(response, createFollowUpResponseSchema)
+}
+
+export async function streamRun(runId: string, signal?: AbortSignal) {
+  const response = await fetch(`${API_BASE}/api/runs/${runId}/stream`, {
+    method: "POST",
+    signal,
+  })
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+  if (!response.body) {
+    throw new ApiError("Missing stream body", 500)
+  }
+  return response.body
+}
+
+export async function abortRun(runId: string) {
+  const response = await fetch(`${API_BASE}/api/runs/${runId}/abort`, {
+    method: "POST",
+  })
+  return parseJson(response, abortRunResponseSchema)
+}
+
+export { ApiError }

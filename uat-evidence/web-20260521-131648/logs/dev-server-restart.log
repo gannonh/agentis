@@ -1,0 +1,51 @@
+
+> agentis@0.0.1 dev /Volumes/EVO/dev/agentis
+> turbo dev
+
+• turbo 2.9.4
+
+   • Packages in scope: @workspace/shared, @workspace/ui, api, web
+   • Running dev in 4 packages
+   • Remote caching disabled
+
+api:dev: cache bypass, force executing 45383960e3dc21ee
+web:dev: cache bypass, force executing a979e8429fcb614a
+api:dev: 
+api:dev: > api@0.0.1 dev /Volumes/EVO/dev/agentis/apps/api
+api:dev: > tsx watch src/index.ts
+api:dev: 
+web:dev: 
+web:dev: > web@0.0.1 dev /Volumes/EVO/dev/agentis/apps/web
+web:dev: > vite
+web:dev: 
+web:dev: Port 5173 is in use, trying another one...
+web:dev: 
+web:dev:   VITE v7.3.2  ready in 244 ms
+web:dev: 
+web:dev:   ➜  Local:   http://localhost:5174/
+web:dev:   ➜  Network: use --host to expose
+api:dev: ◇ injected env (8) from ../../.env // tip: ⌘ override existing { override: true }
+api:dev: node:events:487
+api:dev:       throw er; // Unhandled 'error' event
+api:dev:       ^
+api:dev: 
+api:dev: Error: listen EADDRINUSE: address already in use :::3001
+api:dev:     at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+api:dev:     at listenInCluster (node:net:2065:12)
+api:dev:     at Server.listen (node:net:2170:7)
+api:dev:     at serve (file:///Volumes/EVO/dev/agentis/node_modules/.pnpm/@hono+node-server@1.19.14_hono@4.12.21/node_modules/@hono/node-server/dist/index.mjs:651:10)
+api:dev:     at <anonymous> (/Volumes/EVO/dev/agentis/apps/api/src/index.ts:25:1)
+api:dev:     at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+api:dev:     at async node:internal/modules/esm/loader:639:26
+api:dev:     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+api:dev: Emitted 'error' event on Server instance at:
+api:dev:     at emitErrorNT (node:net:2044:8)
+api:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+api:dev:   code: 'EADDRINUSE',
+api:dev:   errno: -48,
+api:dev:   syscall: 'listen',
+api:dev:   address: '::',
+api:dev:   port: 3001
+api:dev: }
+api:dev: 
+api:dev: Node.js v24.15.0

@@ -19,14 +19,27 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: process.env.CI
-      ? "pnpm --filter web preview:e2e"
-      : "pnpm --filter web dev:e2e",
-    url: "http://127.0.0.1:5173",
-    reuseExistingServer: !process.env.CI,
-    timeout: process.env.CI ? 60_000 : 120_000,
-  },
+  webServer: [
+    {
+      command: "pnpm --filter api dev",
+      url: "http://127.0.0.1:3001/api/health",
+      reuseExistingServer: false,
+      timeout: process.env.CI ? 60_000 : 120_000,
+      env: {
+        AGENTIS_MOCK_RUNTIME: "1",
+        DATABASE_URL: "./data/e2e-agentis.db",
+        PORT: "3001",
+      },
+    },
+    {
+      command: process.env.CI
+        ? "pnpm --filter web preview:e2e"
+        : "pnpm --filter web dev:e2e",
+      url: "http://127.0.0.1:5173",
+      reuseExistingServer: !process.env.CI,
+      timeout: process.env.CI ? 60_000 : 120_000,
+    },
+  ],
   snapshotPathTemplate:
     "{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}",
   expect: {

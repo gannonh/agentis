@@ -12,9 +12,9 @@
   "iconLibrary": "hugeicons",
   "aliases": {
     "components": "@/components",
-    "hooks": "@/hooks",
-    "lib": "@/lib",
     "utils": "@workspace/ui/lib/utils",
+    "hooks": "@workspace/ui/hooks",
+    "lib": "@workspace/ui/lib",
     "ui": "@workspace/ui/components"
   },
   "rtl": false,
