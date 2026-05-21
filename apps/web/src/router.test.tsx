@@ -1,0 +1,31 @@
+import { render, screen } from "@testing-library/react"
+import { RouterProvider, createMemoryRouter } from "react-router"
+import { router } from "@/router"
+
+describe("router", () => {
+  it("redirects / to new thread home inside the shell", () => {
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    expect(screen.getByRole("link", { name: /Skip to main content/i })).toHaveAttribute(
+      "href",
+      "#main-content"
+    )
+    expect(
+      screen.getByRole("heading", { name: "Let's get to work." })
+    ).toBeInTheDocument()
+  })
+
+  it("renders not found for unknown paths", async () => {
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/does-not-exist"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument()
+  })
+})
