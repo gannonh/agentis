@@ -243,22 +243,11 @@ export class RunExecutor {
         clearAbortController(runId)
         const partialText = getTextFromParts(assistantParts)
         assistantParts = setTextPart(assistantParts, partialText)
-        this.repos.messages.updatePartsAndStatus(
-          assistantMessage.id,
-          assistantParts,
-          "aborted"
-        )
-        this.repos.runs.updateStatus(runId, "aborted", {
-          finishedAt: nowIso(),
+        this.persistAbortedRun(runId, run.threadId, {
+          assistantMessageId: assistantMessage.id,
+          parts: assistantParts,
+          partialText,
         })
-        this.repos.steps.create({
-          runId,
-          type: "aborted",
-          status: "completed",
-          title: "Aborted",
-          payload: { partialText },
-        })
-        this.repos.threads.touch(run.threadId)
       },
       onError: async ({ error }) => {
         clearAbortController(runId)
@@ -293,43 +282,66 @@ export class RunExecutor {
     const run = this.repos.runs.getById(runId)
     if (!run) return null
 
-    const hadActiveStream = signalAbort(runId)
+    signalAbort(runId)
 
     if (
-      !hadActiveStream &&
-      (run.status === "queued" ||
-        run.status === "running" ||
-        run.status === "tool-calling")
+      run.status === "queued" ||
+      run.status === "running" ||
+      run.status === "tool-calling"
     ) {
       const messages = this.repos.messages.listByThreadId(run.threadId)
       const streamingMessage = messages.find(
         (message) => message.status === "streaming"
       )
-      if (streamingMessage) {
-        this.repos.messages.updatePartsAndStatus(
-          streamingMessage.id,
-          streamingMessage.parts,
-          "aborted"
-        )
-      }
-
-      this.repos.runs.updateStatus(runId, "aborted", {
-        finishedAt: nowIso(),
+      this.persistAbortedRun(runId, run.threadId, {
+        assistantMessageId: streamingMessage?.id,
+        parts: streamingMessage?.parts,
+        partialText: streamingMessage
+          ? getTextFromParts(streamingMessage.parts)
+          : "",
       })
-      this.repos.steps.create({
-        runId,
-        type: "aborted",
-        status: "completed",
-        title: "Aborted",
-        payload: {
-          partialText: streamingMessage
-            ? getTextFromParts(streamingMessage.parts)
-            : "",
-        },
-      })
-      this.repos.threads.touch(run.threadId)
     }
 
     return this.repos.runs.getById(runId)
+  }
+
+  private persistAbortedRun(
+    runId: string,
+    threadId: string,
+    input?: {
+      assistantMessageId?: string
+      parts?: MessagePart[]
+      partialText?: string
+    }
+  ) {
+    const run = this.repos.runs.getById(runId)
+    if (
+      !run ||
+      run.status === "aborted" ||
+      run.status === "completed" ||
+      run.status === "failed"
+    ) {
+      return
+    }
+
+    if (input?.assistantMessageId && input.parts) {
+      this.repos.messages.updatePartsAndStatus(
+        input.assistantMessageId,
+        input.parts,
+        "aborted"
+      )
+    }
+
+    this.repos.runs.updateStatus(runId, "aborted", {
+      finishedAt: nowIso(),
+    })
+    this.repos.steps.create({
+      runId,
+      type: "aborted",
+      status: "completed",
+      title: "Aborted",
+      payload: { partialText: input?.partialText ?? "" },
+    })
+    this.repos.threads.touch(threadId)
   }
 }
