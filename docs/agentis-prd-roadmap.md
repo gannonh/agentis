@@ -107,7 +107,7 @@ Acceptance:
 - Recent threads in the sidebar and home screen update after successful runs.
 - A demo run works against at least one configured model provider.
 
-### M03: Composio Integrations and Tool Access
+### M03: Composio Integrations and Tool Access ✅
 
 Goal: let users connect external tools through Composio and grant those tools to threads and agents.
 
