@@ -4,6 +4,7 @@ import {
   createThreadRequestSchema,
   threadListItemSchema,
 } from "@workspace/shared"
+import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
 import { RunExecutor } from "../runtime/run-executor.js"
@@ -118,10 +119,11 @@ export function createThreadRoutes(
 
 export function createRunRoutes(
   repos: Repositories,
-  config: AppConfig
+  config: AppConfig,
+  services: ComposioServices
 ) {
   const app = new Hono()
-  const executor = new RunExecutor(repos, config)
+  const executor = new RunExecutor(repos, config, services)
 
   app.post("/:id/stream", async (c) => {
     try {

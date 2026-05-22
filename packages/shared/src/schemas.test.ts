@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest"
 import {
+  connectIntegrationResponseSchema,
   createThreadRequestSchema,
+  integrationToolkitSchema,
+  integrationsListResponseSchema,
   messageSchema,
   runSchema,
   threadDetailSchema,
+  threadToolGrantsResponseSchema,
   threadSchema,
+  toolAccessGrantSchema,
 } from "./schemas.js"
 
 describe("shared schemas", () => {
@@ -49,6 +54,56 @@ describe("shared schemas", () => {
 
   it("rejects empty create thread prompts", () => {
     expect(() => createThreadRequestSchema.parse({ prompt: "" })).toThrow()
+  })
+
+  it("parses integration and grant payloads", () => {
+    const now = new Date().toISOString()
+    const toolkit = integrationToolkitSchema.parse({
+      slug: "github",
+      name: "GitHub",
+      description: "Manage repos",
+      category: "developer",
+      featured: true,
+      status: "connected",
+      connectedAccountCount: 1,
+      availableTools: ["GITHUB_LIST_REPOS"],
+    })
+    expect(toolkit.slug).toBe("github")
+
+    const grant = toolAccessGrantSchema.parse({
+      id: "grant-1",
+      scopeType: "thread",
+      scopeId: "thread-1",
+      toolkitSlug: "github",
+      connectionId: "conn-1",
+      createdAt: now,
+    })
+    expect(grant.scopeType).toBe("thread")
+
+    const list = integrationsListResponseSchema.parse({
+      toolkits: [toolkit],
+      composioConfigured: true,
+      composioMockEnabled: false,
+    })
+    expect(list.toolkits).toHaveLength(1)
+
+    const connect = connectIntegrationResponseSchema.parse({
+      connection: {
+        id: "conn-1",
+        toolkitSlug: "github",
+        status: "pending",
+        createdAt: now,
+        updatedAt: now,
+      },
+      redirectUrl: "https://example.com/oauth",
+    })
+    expect(connect.redirectUrl).toContain("oauth")
+
+    const grants = threadToolGrantsResponseSchema.parse({
+      grants: [grant],
+      availableToolkits: [toolkit],
+    })
+    expect(grants.grants).toHaveLength(1)
   })
 
   it("accepts minimal entities", () => {

@@ -24,14 +24,20 @@ export function createTestContext() {
   )
   migrate(db, { migrationsFolder })
 
-  const repos = createRepositories(db)
   const config: AppConfig = {
     port: 3001,
     databaseUrl,
     openAiApiKey: "test-key",
     defaultModel: "gpt-4o-mini",
     mockRuntime: false,
+    composioApiKey: undefined,
+    composioRedirectBaseUrl: "http://127.0.0.1:3001",
+    composioUserId: "agentis-local-user",
+    composioToolkitVersions: {},
+    mockComposio: true,
+    webAppOrigin: "http://localhost:5173",
   }
+  const repos = createRepositories(db, config)
 
   return {
     repos,

@@ -109,10 +109,100 @@ export const runStepSchema = z.object({
   updatedAt: z.string(),
 })
 
+export const connectionStatusSchema = z.enum([
+  "not_connected",
+  "pending",
+  "connected",
+  "expired",
+  "error",
+])
+
+export const toolAccessScopeTypeSchema = z.enum(["thread", "agent"])
+
+export const integrationToolkitSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  description: z.string(),
+  category: z.string(),
+  featured: z.boolean(),
+  status: connectionStatusSchema,
+  connectedAccountCount: z.number(),
+  availableTools: z.array(z.string()),
+})
+
+export const integrationConnectionSchema = z.object({
+  id: z.string(),
+  toolkitSlug: z.string(),
+  composioConnectedAccountId: z.string().nullable().optional(),
+  composioConnectionRequestId: z.string().nullable().optional(),
+  status: connectionStatusSchema,
+  accountLabel: z.string().nullable().optional(),
+  scopes: z.array(z.string()).optional(),
+  errorCode: z.string().nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const toolAccessGrantSchema = z.object({
+  id: z.string(),
+  scopeType: toolAccessScopeTypeSchema,
+  scopeId: z.string(),
+  toolkitSlug: z.string(),
+  connectionId: z.string(),
+  createdAt: z.string(),
+})
+
+export const integrationsListResponseSchema = z.object({
+  toolkits: z.array(integrationToolkitSchema),
+  composioConfigured: z.boolean(),
+  composioMockEnabled: z.boolean(),
+})
+
+export const connectIntegrationResponseSchema = z.object({
+  connection: integrationConnectionSchema,
+  redirectUrl: z.string(),
+})
+
+export const refreshIntegrationsResponseSchema = z.object({
+  toolkits: z.array(integrationToolkitSchema),
+})
+
+export const threadToolGrantsResponseSchema = z.object({
+  grants: z.array(toolAccessGrantSchema),
+  availableToolkits: z.array(integrationToolkitSchema),
+})
+
+export const createToolGrantRequestSchema = z.object({
+  toolkitSlug: z.string(),
+  connectionId: z.string().optional(),
+})
+
+export const composioRemediationCodeSchema = z.enum([
+  "composio_not_configured",
+  "toolkit_not_connected",
+  "toolkit_not_granted",
+  "connection_pending",
+  "connection_expired",
+  "tool_execution_failed",
+])
+
 export const runtimeHealthSchema = z.object({
   available: z.boolean(),
   reason: z.enum(["api_unavailable", "missing_api_key"]).optional(),
   model: z.string().optional(),
+  composio: z
+    .object({
+      available: z.boolean(),
+      reason: z
+        .enum([
+          "missing_api_key",
+          "missing_redirect_base_url",
+          "mock_enabled",
+        ])
+        .optional(),
+    })
+    .optional(),
 })
 
 export const createThreadRequestSchema = z.object({
@@ -168,6 +258,29 @@ export type Message = z.infer<typeof messageSchema>
 export type Run = z.infer<typeof runSchema>
 export type RunUsage = z.infer<typeof runUsageSchema>
 export type RunStep = z.infer<typeof runStepSchema>
+export type ConnectionStatus = z.infer<typeof connectionStatusSchema>
+export type ToolAccessScopeType = z.infer<typeof toolAccessScopeTypeSchema>
+export type IntegrationToolkit = z.infer<typeof integrationToolkitSchema>
+export type IntegrationConnection = z.infer<typeof integrationConnectionSchema>
+export type ToolAccessGrant = z.infer<typeof toolAccessGrantSchema>
+export type IntegrationsListResponse = z.infer<
+  typeof integrationsListResponseSchema
+>
+export type ConnectIntegrationResponse = z.infer<
+  typeof connectIntegrationResponseSchema
+>
+export type RefreshIntegrationsResponse = z.infer<
+  typeof refreshIntegrationsResponseSchema
+>
+export type ThreadToolGrantsResponse = z.infer<
+  typeof threadToolGrantsResponseSchema
+>
+export type CreateToolGrantRequest = z.infer<
+  typeof createToolGrantRequestSchema
+>
+export type ComposioRemediationCode = z.infer<
+  typeof composioRemediationCodeSchema
+>
 export type RuntimeHealth = z.infer<typeof runtimeHealthSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>

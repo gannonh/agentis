@@ -1,4 +1,11 @@
-import { index, sqliteTable, text, real } from "drizzle-orm/sqlite-core"
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  real,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core"
 
 export const threads = sqliteTable("threads", {
   id: text("id").primaryKey(),
@@ -48,6 +55,66 @@ export const runs = sqliteTable(
   },
   (table) => [
     index("runs_thread_id_started_at_idx").on(table.threadId, table.startedAt),
+  ]
+)
+
+export const integrationToolkits = sqliteTable("integration_toolkits", {
+  slug: text("slug").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),
+  featured: integer("featured", { mode: "boolean" }).notNull(),
+  authConfigId: text("auth_config_id"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+})
+
+export const integrationConnections = sqliteTable(
+  "integration_connections",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    toolkitSlug: text("toolkit_slug")
+      .notNull()
+      .references(() => integrationToolkits.slug),
+    composioConnectedAccountId: text("composio_connected_account_id"),
+    composioConnectionRequestId: text("composio_connection_request_id"),
+    status: text("status").notNull(),
+    accountLabel: text("account_label"),
+    scopesJson: text("scopes_json"),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("integration_connections_user_id_idx").on(table.userId),
+    index("integration_connections_toolkit_slug_idx").on(table.toolkitSlug),
+  ]
+)
+
+export const toolAccessGrants = sqliteTable(
+  "tool_access_grants",
+  {
+    id: text("id").primaryKey(),
+    scopeType: text("scope_type").notNull(),
+    scopeId: text("scope_id").notNull(),
+    toolkitSlug: text("toolkit_slug")
+      .notNull()
+      .references(() => integrationToolkits.slug),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => integrationConnections.id),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("tool_access_grants_scope_idx").on(table.scopeType, table.scopeId),
+    index("tool_access_grants_connection_id_idx").on(table.connectionId),
+    uniqueIndex("tool_access_grants_scope_toolkit_unique").on(
+      table.scopeType,
+      table.scopeId,
+      table.toolkitSlug
+    ),
   ]
 )
 

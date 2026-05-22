@@ -15,6 +15,7 @@ import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer
 import { PageLayout } from "@/components/shell/page-layout"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
 import { useThreadSession } from "@/hooks/use-thread-session"
+import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
 import type { ThreadMode } from "@workspace/shared"
 
 export function ThreadDetailPage() {
@@ -32,6 +33,12 @@ export function ThreadDetailPage() {
     abortActiveRun,
     getMessageText,
   } = useThreadSession(threadId)
+  const {
+    grants: toolGrants,
+    availableToolkits,
+    grantToolkit,
+    revokeGrant,
+  } = useThreadToolGrants(threadId)
 
   const [mode, setMode] = useState<ThreadMode>("plan")
   const [submitting, setSubmitting] = useState(false)
@@ -130,6 +137,11 @@ export function ThreadDetailPage() {
                   mode={mode}
                   onModeChange={setMode}
                   submitting={submitting || streaming}
+                  threadId={threadId}
+                  toolGrants={toolGrants}
+                  availableToolkits={availableToolkits}
+                  onGrantTool={grantToolkit}
+                  onRevokeTool={revokeGrant}
                 />
               </div>
             </div>

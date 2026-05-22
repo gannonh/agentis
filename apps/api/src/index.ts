@@ -10,6 +10,11 @@ import { createRepositories } from "./repositories/index.js"
 import { createApp } from "./app.js"
 
 const config = loadConfig()
+if (config.mockComposio) {
+  console.warn(
+    "[agentis] Composio DEMO MODE (AGENTIS_MOCK_COMPOSIO=1). Set AGENTIS_MOCK_COMPOSIO=0 in repo .env for live Composio."
+  )
+}
 mkdirSync(dirname(config.databaseUrl), { recursive: true })
 
 const { db } = createDatabase(config.databaseUrl)
@@ -19,7 +24,8 @@ const migrationsFolder = join(
 )
 migrate(db, { migrationsFolder })
 
-const repos = createRepositories(db)
+const repos = createRepositories(db, config)
+repos.integrationToolkits.seedFeatured()
 const app = createApp(repos, config)
 
 serve(

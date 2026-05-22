@@ -19,6 +19,8 @@ import {
   type ThreadMode,
 } from "@workspace/shared"
 import type { ChatStatus } from "ai"
+import type { IntegrationToolkit, ToolAccessGrant } from "@workspace/shared"
+import { ToolAccessPicker } from "@/components/thread/tool-access-picker"
 
 type ThreadPromptComposerProps = {
   onSubmit: (prompt: string) => void | Promise<void>
@@ -27,6 +29,11 @@ type ThreadPromptComposerProps = {
   mode: ThreadMode
   onModeChange: (mode: ThreadMode) => void
   submitting?: boolean
+  threadId?: string
+  toolGrants?: ToolAccessGrant[]
+  availableToolkits?: IntegrationToolkit[]
+  onGrantTool?: (toolkitSlug: string) => void | Promise<void>
+  onRevokeTool?: (grantId: string) => void | Promise<void>
 }
 
 export function ThreadPromptComposer({
@@ -36,6 +43,11 @@ export function ThreadPromptComposer({
   mode,
   onModeChange,
   submitting,
+  threadId,
+  toolGrants = [],
+  availableToolkits = [],
+  onGrantTool,
+  onRevokeTool,
 }: ThreadPromptComposerProps) {
   const blockedReason = !health.available
     ? health.reason === "missing_api_key"
@@ -51,6 +63,16 @@ export function ThreadPromptComposer({
         <p className="text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
           {blockedReason}
         </p>
+      ) : null}
+
+      {threadId && onGrantTool && onRevokeTool ? (
+        <ToolAccessPicker
+          grants={toolGrants}
+          availableToolkits={availableToolkits}
+          disabled={disabled || submitting}
+          onGrant={onGrantTool}
+          onRevoke={onRevokeTool}
+        />
       ) : null}
 
       <PromptInput
