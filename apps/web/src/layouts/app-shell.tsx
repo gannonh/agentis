@@ -1,3 +1,4 @@
+import { Agentation } from "agentation"
 import { Outlet } from "react-router"
 import {
   SidebarInset,
@@ -32,6 +33,7 @@ export function AppShell() {
           </div>
         </SidebarInset>
       </SidebarProvider>
+      {import.meta.env.DEV ? <Agentation /> : null}
     </TooltipProvider>
   )
 }
