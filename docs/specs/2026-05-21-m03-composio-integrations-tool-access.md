@@ -473,11 +473,11 @@ pnpm test:e2e
 
   Composer shows visible chips for granted connected tools.
 
-- [ ] 
+- [x] 
 
   A prompt can call a granted Composio-backed tool and complete the run.
 
-- [ ] 
+- [x] 
 
   Tool calls appear in the run timeline with inputs, outputs, duration, status, and errors.
 
