@@ -13,10 +13,28 @@ vi.mock("@/lib/api/client", () => ({
       status: "active",
       model: "gpt-4o-mini",
       mode: "plan",
+      projectId: "project_demo",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
   ]),
+}))
+
+vi.mock("@/hooks/use-projects", () => ({
+  useProjects: () => ({
+    projects: [
+      {
+        id: "project_demo",
+        name: "Product Launch Q4",
+        status: "active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ],
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }),
 }))
 
 function renderSidebar(initialPath = "/threads/new") {
@@ -54,5 +72,24 @@ describe("AppSidebar", () => {
   it("does not show referral promo copy", () => {
     renderSidebar()
     expect(screen.queryByText(/referral/i)).not.toBeInTheDocument()
+  })
+
+  it("lists API projects and highlights the active project from the thread", async () => {
+    renderSidebar("/threads/thread_demo")
+    await waitFor(() => {
+      expect(screen.getByText("Product Launch Q4")).toBeInTheDocument()
+    })
+    expect(screen.queryByText("New project")).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Product Launch Q4" })).toHaveAttribute(
+      "href",
+      "/projects/project_demo"
+    )
+  })
+
+  it("highlights project from new-thread query param", async () => {
+    renderSidebar("/threads/new?projectId=project_demo")
+    await waitFor(() => {
+      expect(screen.getByText("Product Launch Q4")).toBeInTheDocument()
+    })
   })
 })
