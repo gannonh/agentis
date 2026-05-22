@@ -5,7 +5,7 @@ test.describe("M04 projects and artifacts", () => {
     page,
   }) => {
     await page.goto("/projects/new")
-    await page.getByLabel(/project name/i).fill("E2E Launch")
+    await page.getByLabel(/^name/i).fill("E2E Launch")
     await page.getByLabel(/^goals$/i).fill("Validate artifact workflow")
     await page.getByRole("button", { name: /create project/i }).click()
 
@@ -43,7 +43,7 @@ test.describe("M04 projects and artifacts", () => {
     page,
   }) => {
     await page.goto("/projects/new")
-    await page.getByLabel(/project name/i).fill("Archive Me")
+    await page.getByLabel(/^name/i).fill("Archive Me")
     await page.getByRole("button", { name: /create project/i }).click()
     await expect(page).toHaveURL(/projectId=project_/)
     const projectId = new URL(page.url()).searchParams.get("projectId")

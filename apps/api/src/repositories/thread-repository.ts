@@ -43,7 +43,14 @@ export class ThreadRepository {
       .map(mapThread)
   }
 
-  touch(id: string, patch?: { title?: string; status?: ThreadStatus }) {
+  touch(
+    id: string,
+    patch?: {
+      title?: string
+      status?: ThreadStatus
+      projectId?: string | null
+    }
+  ) {
     const existing = this.getById(id)
     if (!existing) return null
     const updatedAt = nowIso()
@@ -52,6 +59,8 @@ export class ThreadRepository {
       .set({
         title: patch?.title ?? existing.title,
         status: patch?.status ?? existing.status,
+        projectId:
+          patch?.projectId !== undefined ? patch.projectId : existing.projectId,
         updatedAt,
       })
       .where(eq(threads.id, id))

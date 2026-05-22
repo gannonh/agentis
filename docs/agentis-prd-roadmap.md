@@ -128,7 +128,7 @@ Acceptance:
 - Attempts to use disconnected or ungranted tools produce a visible remediation path.
 - Connection state survives app restart.
 
-### M04: Projects, Context, and Artifacts
+### M04: Projects, Context, and Artifacts ✅
 
 Goal: make work durable by grouping threads into projects, injecting project context, and collecting generated artifacts.
 

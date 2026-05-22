@@ -1,57 +1,63 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import type { Project, ProjectMemory } from "@workspace/shared"
-import { Badge } from "@workspace/ui/components/badge"
+import type { Artifact, Project, ThreadListItem } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
-import { Input } from "@workspace/ui/components/input"
-import { Textarea } from "@workspace/ui/components/textarea"
-import { PageHeader } from "@/components/shell/page-header"
-import { PageLayout } from "@/components/shell/page-layout"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
+import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  archiveProject,
-  createProjectMemory,
-  deleteProjectMemory,
-  getProject,
-  listProjectMemories,
-  updateProject,
-  updateProjectMemory,
-} from "@/lib/api/projects-client"
+  Add01Icon,
+  ArrowLeft01Icon,
+  Attachment01Icon,
+  Edit01Icon,
+  File01Icon,
+  Folder01Icon,
+  Link01Icon,
+  Message01Icon,
+  MoreHorizontalIcon,
+  Target01Icon,
+} from "@hugeicons/core-free-icons"
+import { AddThreadDialog } from "@/components/projects/add-thread-dialog"
+import {
+  isProjectDocument,
+  isProjectFile,
+} from "@/components/projects/project-artifact-groups"
+import { ProjectArtifactsPanel } from "@/components/projects/project-artifacts-panel"
+import { ProjectEditSheet } from "@/components/projects/project-edit-sheet"
+import { ProjectThreadsPanel } from "@/components/projects/project-threads-panel"
+import { PageLayout } from "@/components/shell/page-layout"
+import { listThreads } from "@/lib/api/client"
+import { getProject, listArtifacts } from "@/lib/api/projects-client"
 
 export function ProjectDetailPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [project, setProject] = useState<Project | null>(null)
-  const [memories, setMemories] = useState<ProjectMemory[]>([])
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [goals, setGoals] = useState("")
-  const [newMemory, setNewMemory] = useState("")
+  const [threads, setThreads] = useState<ThreadListItem[]>([])
+  const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [addThreadOpen, setAddThreadOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!projectId) return
     setLoading(true)
     setError(null)
     try {
-      const [loadedProject, loadedMemories] = await Promise.all([
+      const [loadedProject, allThreads, projectArtifacts] = await Promise.all([
         getProject(projectId),
-        listProjectMemories(projectId),
+        listThreads(),
+        listArtifacts({ projectId }),
       ])
       setProject(loadedProject)
-      setMemories(loadedMemories)
-      setName(loadedProject.name)
-      setDescription(loadedProject.description ?? "")
-      setGoals(loadedProject.goals ?? "")
+      setThreads(allThreads.filter((thread) => thread.projectId === projectId))
+      setArtifacts(projectArtifacts)
     } catch (loadError) {
       setError(
         loadError instanceof Error ? loadError.message : "Failed to load project"
@@ -65,52 +71,14 @@ export function ProjectDetailPage() {
     void load()
   }, [load])
 
-  const handleSave = async () => {
-    if (!projectId) return
-    setSaving(true)
-    setError(null)
-    try {
-      const updated = await updateProject(projectId, {
-        name: name.trim(),
-        description: description.trim() || null,
-        goals: goals.trim() || null,
-      })
-      setProject(updated)
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : "Failed to save project"
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleArchive = async () => {
-    if (!projectId) return
-    setSaving(true)
-    try {
-      await archiveProject(projectId)
-      navigate("/threads/new")
-    } catch (archiveError) {
-      setError(
-        archiveError instanceof Error
-          ? archiveError.message
-          : "Failed to archive project"
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleAddMemory = async () => {
-    if (!projectId || !newMemory.trim()) return
-    const memory = await createProjectMemory(projectId, {
-      content: newMemory.trim(),
-      enabled: true,
-    })
-    setMemories((current) => [memory, ...current])
-    setNewMemory("")
-  }
+  const documentArtifacts = useMemo(
+    () => artifacts.filter(isProjectDocument),
+    [artifacts]
+  )
+  const fileArtifacts = useMemo(
+    () => artifacts.filter(isProjectFile),
+    [artifacts]
+  )
 
   if (!projectId) {
     return (
@@ -121,12 +89,7 @@ export function ProjectDetailPage() {
   }
 
   return (
-    <PageLayout variant="narrow">
-      <PageHeader
-        title={project?.name ?? "Project"}
-        description="Edit project details, memories, and archive status."
-      />
-
+    <PageLayout className="gap-8">
       {loading ? (
         <p className="text-muted-foreground text-sm">Loading project…</p>
       ) : null}
@@ -134,174 +97,192 @@ export function ProjectDetailPage() {
 
       {project ? (
         <>
-          <div className="flex items-center gap-2">
-            {project.status === "archived" ? (
-              <Badge variant="secondary">Archived</Badge>
-            ) : (
-              <Badge variant="outline">Active</Badge>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              render={
-                <Link
-                  to={`/threads/new?projectId=${encodeURIComponent(project.id)}`}
-                />
-              }
-            >
-              Start thread
-            </Button>
-          </div>
+          <header className="flex flex-col gap-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Back"
+                    render={<Link to="/threads/new" />}
+                  >
+                    <HugeiconsIcon
+                      icon={ArrowLeft01Icon}
+                      className="size-4"
+                      strokeWidth={2}
+                    />
+                  </Button>
+                  <HugeiconsIcon
+                    icon={Folder01Icon}
+                    className="text-muted-foreground size-5 shrink-0"
+                    strokeWidth={2}
+                  />
+                  <h1 className="truncate text-3xl font-medium tracking-tight">
+                    {project.name}
+                  </h1>
+                </div>
+                {project.description ? (
+                  <p className="text-muted-foreground max-w-3xl text-sm leading-relaxed">
+                    {project.description}
+                  </p>
+                ) : null}
+                {project.goals ? (
+                  <div className="text-muted-foreground flex max-w-3xl gap-2 text-sm leading-relaxed">
+                    <HugeiconsIcon
+                      icon={Target01Icon}
+                      className="mt-0.5 size-4 shrink-0"
+                      strokeWidth={2}
+                    />
+                    <p className="whitespace-pre-wrap">{project.goals}</p>
+                  </div>
+                ) : null}
+              </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Details</CardTitle>
-              <CardDescription>
-                Name, description, and goals used in thread context.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <label htmlFor="edit-name" className="text-sm font-medium">
-                  Name
-                </label>
-                <Input
-                  id="edit-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label htmlFor="edit-description" className="text-sm font-medium">
-                  Description
-                </label>
-                <Textarea
-                  id="edit-description"
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label htmlFor="edit-goals" className="text-sm font-medium">
-                  Goals
-                </label>
-                <Textarea
-                  id="edit-goals"
-                  rows={4}
-                  value={goals}
-                  onChange={(e) => setGoals(e.target.value)}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between gap-2">
-              {project.status === "active" ? (
+              <div className="flex shrink-0 items-center gap-1">
                 <Button
                   variant="outline"
-                  disabled={saving}
-                  onClick={() => void handleArchive()}
+                  size="icon-sm"
+                  aria-label="Edit project"
+                  onClick={() => setEditOpen(true)}
                 >
-                  Archive project
+                  <HugeiconsIcon icon={Edit01Icon} className="size-4" strokeWidth={2} />
                 </Button>
-              ) : (
-                <span />
-              )}
-              <Button disabled={saving} onClick={() => void handleSave()}>
-                {saving ? "Saving…" : "Save changes"}
-              </Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Project memories</CardTitle>
-              <CardDescription>
-                Enabled memories are included in run context.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a memory…"
-                  value={newMemory}
-                  onChange={(e) => setNewMemory(e.target.value)}
-                />
-                <Button
-                  variant="outline"
-                  disabled={!newMemory.trim()}
-                  onClick={() => void handleAddMemory()}
-                >
-                  Add
-                </Button>
-              </div>
-              {memories.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No memories yet.</p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {memories.map((memory) => (
-                    <li
-                      key={memory.id}
-                      className="border-border flex flex-col gap-2 rounded-lg border p-3"
-                    >
-                      <Textarea
-                        rows={2}
-                        defaultValue={memory.content}
-                        onBlur={(e) => {
-                          const value = e.target.value.trim()
-                          if (value && value !== memory.content) {
-                            void updateProjectMemory(projectId, memory.id, {
-                              content: value,
-                            }).then((updated) => {
-                              setMemories((current) =>
-                                current.map((item) =>
-                                  item.id === memory.id ? updated : item
-                                )
-                              )
-                            })
-                          }
-                        }}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label="Project actions"
                       />
-                      <div className="flex items-center justify-between gap-2">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={memory.enabled}
-                            onChange={(e) => {
-                              void updateProjectMemory(projectId, memory.id, {
-                                enabled: e.target.checked,
-                              }).then((updated) => {
-                                setMemories((current) =>
-                                  current.map((item) =>
-                                    item.id === memory.id ? updated : item
-                                  )
-                                )
-                              })
-                            }}
-                          />
-                          Enabled for context
-                        </label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            void deleteProjectMemory(projectId, memory.id).then(
-                              () => {
-                                setMemories((current) =>
-                                  current.filter((item) => item.id !== memory.id)
-                                )
-                              }
-                            )
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+                    }
+                  >
+                    <HugeiconsIcon
+                      icon={MoreHorizontalIcon}
+                      className="size-4"
+                      strokeWidth={2}
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      render={
+                        <Link
+                          to={`/library?projectId=${encodeURIComponent(project.id)}`}
+                        />
+                      }
+                    >
+                      Open in Library
+                    </DropdownMenuItem>
+                    {project.status === "active" ? (
+                      <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                        Edit project
+                      </DropdownMenuItem>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Link
+                to={`/threads/new?projectId=${encodeURIComponent(project.id)}`}
+                className="hover:bg-muted/40 flex flex-col gap-2 rounded-xl border border-border bg-card p-5 transition-colors"
+              >
+                <HugeiconsIcon
+                  icon={Add01Icon}
+                  className="size-6"
+                  strokeWidth={2}
+                />
+                <div>
+                  <p className="text-sm font-medium">New Thread</p>
+                  <p className="text-muted-foreground text-xs">
+                    Start a conversation in this project
+                  </p>
+                </div>
+              </Link>
+              <button
+                type="button"
+                className="hover:bg-muted/40 flex flex-col gap-2 rounded-xl border border-border bg-card p-5 text-left transition-colors"
+                onClick={() => setAddThreadOpen(true)}
+              >
+                <HugeiconsIcon
+                  icon={Link01Icon}
+                  className="size-6"
+                  strokeWidth={2}
+                />
+                <div>
+                  <p className="text-sm font-medium">Add Existing Thread</p>
+                  <p className="text-muted-foreground text-xs">
+                    Link an unassigned thread to this project
+                  </p>
+                </div>
+              </button>
+            </div>
+          </header>
+
+          <Tabs defaultValue="threads">
+            <TabsList className="h-auto w-full justify-start gap-1 rounded-full bg-muted p-1 sm:w-auto">
+              <TabsTrigger value="threads" className="rounded-full px-4">
+                <HugeiconsIcon
+                  icon={Message01Icon}
+                  className="mr-1.5 size-3.5"
+                  strokeWidth={2}
+                />
+                Threads ({threads.length})
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="rounded-full px-4">
+                <HugeiconsIcon
+                  icon={File01Icon}
+                  className="mr-1.5 size-3.5"
+                  strokeWidth={2}
+                />
+                Document ({documentArtifacts.length})
+              </TabsTrigger>
+              <TabsTrigger value="files" className="rounded-full px-4">
+                <HugeiconsIcon
+                  icon={Attachment01Icon}
+                  className="mr-1.5 size-3.5"
+                  strokeWidth={2}
+                />
+                Files ({fileArtifacts.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="threads" className="pt-6">
+              <ProjectThreadsPanel threads={threads} />
+            </TabsContent>
+            <TabsContent value="documents" className="pt-6">
+              <ProjectArtifactsPanel
+                artifacts={documentArtifacts}
+                title="Documents"
+                emptyMessage="No documents in this project yet."
+              />
+            </TabsContent>
+            <TabsContent value="files" className="pt-6">
+              <ProjectArtifactsPanel
+                artifacts={fileArtifacts}
+                title="Files"
+                emptyMessage="No files in this project yet."
+              />
+            </TabsContent>
+          </Tabs>
+
+          <ProjectEditSheet
+            projectId={project.id}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            onSaved={(updated) => {
+              setProject(updated)
+            }}
+            onArchived={() => navigate("/threads/new")}
+          />
+          <AddThreadDialog
+            projectId={project.id}
+            open={addThreadOpen}
+            onOpenChange={setAddThreadOpen}
+            onLinked={() => void load()}
+          />
         </>
       ) : null}
     </PageLayout>

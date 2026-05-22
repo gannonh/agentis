@@ -4,6 +4,7 @@ import {
   createThreadRequestSchema,
   threadDetailSchema,
   threadListItemSchema,
+  updateThreadRequestSchema,
 } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
@@ -18,6 +19,23 @@ function summarizeTitle(prompt: string) {
   return `${trimmed.slice(0, 57)}...`
 }
 
+function summarizeThreadPreview(prompt: string) {
+  const trimmed = prompt.trim().replace(/\s+/g, " ")
+  if (trimmed.length <= 160) return trimmed
+  return `${trimmed.slice(0, 157)}...`
+}
+
+function firstUserMessageText(
+  messages: { role: string; parts: { type: string; text?: string }[] }[]
+) {
+  const message = messages.find((item) => item.role === "user")
+  if (!message) return null
+  const textPart = message.parts.find(
+    (part) => part.type === "text" && typeof part.text === "string"
+  )
+  return textPart?.text?.trim() ? summarizeThreadPreview(textPart.text) : null
+}
+
 export function createThreadRoutes(
   repos: Repositories,
   config: AppConfig
@@ -29,10 +47,13 @@ export function createThreadRoutes(
     const threads = repos.threads.list().map((thread) => {
       const messages = repos.messages.listByThreadId(thread.id)
       const latestRun = repos.runs.getLatestByThreadId(thread.id)
+      const artifactCount = repos.artifacts.list({ threadId: thread.id }).length
       return threadListItemSchema.parse({
         ...thread,
         messageCount: messages.length,
         lastRunStatus: latestRun?.status,
+        summary: firstUserMessageText(messages),
+        artifactCount,
       })
     })
     return c.json(threads)
@@ -84,6 +105,37 @@ export function createThreadRoutes(
     })
 
     return c.json({ thread, message, run }, 201)
+  })
+
+  app.patch("/:id", async (c) => {
+    const thread = repos.threads.getById(c.req.param("id"))
+    if (!thread) {
+      return c.json({ error: "Thread not found" }, 404)
+    }
+
+    const body = updateThreadRequestSchema.parse(await c.req.json())
+    if (body.projectId !== undefined && body.projectId !== null) {
+      const projectValidation = contextService.validateProjectForNewThread(
+        body.projectId
+      )
+      if (!projectValidation.ok) {
+        return c.json(
+          {
+            error: projectValidation.message,
+            code: projectValidation.code,
+          },
+          400
+        )
+      }
+    }
+
+    const updated = repos.threads.touch(thread.id, {
+      projectId: body.projectId,
+    })
+    if (!updated) {
+      return c.json({ error: "Thread not found" }, 404)
+    }
+    return c.json(updated)
   })
 
   app.get("/:id", (c) => {

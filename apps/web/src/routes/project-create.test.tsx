@@ -37,7 +37,7 @@ describe("ProjectCreatePage", () => {
       </MemoryRouter>
     )
 
-    await user.type(screen.getByLabelText(/project name/i), "Launch")
+    await user.type(screen.getByLabelText(/^name/i), "Launch")
     await user.click(screen.getByRole("button", { name: /create project/i }))
 
     await waitFor(() => {

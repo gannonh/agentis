@@ -222,6 +222,10 @@ export const createFollowUpRequestSchema = z.object({
   prompt: z.string().min(1),
 })
 
+export const updateThreadRequestSchema = z.object({
+  projectId: z.string().nullable().optional(),
+})
+
 export const createFollowUpResponseSchema = z.object({
   message: messageSchema,
   run: runSchema,
@@ -329,6 +333,8 @@ export const threadDetailSchema = z.object({
 export const threadListItemSchema = threadSchema.extend({
   messageCount: z.number().optional(),
   lastRunStatus: runStatusSchema.optional(),
+  summary: z.string().nullable().optional(),
+  artifactCount: z.number().optional(),
 })
 
 export const abortRunResponseSchema = z.object({
@@ -377,6 +383,7 @@ export type RuntimeHealth = z.infer<typeof runtimeHealthSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>
 export type CreateFollowUpRequest = z.infer<typeof createFollowUpRequestSchema>
+export type UpdateThreadRequest = z.infer<typeof updateThreadRequestSchema>
 export type CreateFollowUpResponse = z.infer<typeof createFollowUpResponseSchema>
 export type ProjectStatus = z.infer<typeof projectStatusSchema>
 export type Project = z.infer<typeof projectSchema>

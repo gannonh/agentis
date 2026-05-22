@@ -9,8 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { Input } from "@workspace/ui/components/input"
-import { Textarea } from "@workspace/ui/components/textarea"
+import {
+  ProjectDetailsFields,
+  projectDetailsDescription,
+} from "@/components/projects/project-details-fields"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { createProject } from "@/lib/api/projects-client"
@@ -46,61 +48,35 @@ export function ProjectCreatePage() {
   }
 
   return (
-    <PageLayout variant="narrow">
+    <PageLayout variant="focused" className="gap-6">
       <PageHeader
         title="New project"
+        titleClassName="text-3xl font-medium tracking-tight"
         description="Group threads with shared goals and context."
       />
+
       <Card>
         <CardHeader>
-          <CardTitle>Project details</CardTitle>
-          <CardDescription>
-            Goals are injected into every thread&apos;s context.
-          </CardDescription>
+          <CardTitle className="text-base">Details</CardTitle>
+          <CardDescription>{projectDetailsDescription()}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {error ? <p className="text-destructive text-sm">{error}</p> : null}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="project-name" className="text-sm font-medium">
-              Project name <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="project-name"
-              placeholder="e.g., Product Launch Q2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="project-description" className="text-sm font-medium">
-              Description
-            </label>
-            <Textarea
-              id="project-description"
-              placeholder="Brief description of what this project is about…"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="project-goals" className="text-sm font-medium">
-              Goals
-            </label>
-            <Textarea
-              id="project-goals"
-              placeholder="What are the objectives? These will be shown in every thread…"
-              rows={4}
-              value={goals}
-              onChange={(e) => setGoals(e.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">
-              Goals are injected into every thread&apos;s context, helping the
-              agent stay aligned with project objectives.
-            </p>
-          </div>
+          <ProjectDetailsFields
+            name={name}
+            onNameChange={setName}
+            description={description}
+            onDescriptionChange={setDescription}
+            goals={goals}
+            onGoalsChange={setGoals}
+            nameRequired
+            namePlaceholder="e.g., Product Launch Q2"
+            descriptionPlaceholder="Brief description of what this project is about…"
+            goalsPlaceholder="What are the objectives? These will be shown in every thread…"
+            showGoalsHint
+          />
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
+        <CardFooter className="flex justify-between gap-2">
           <Button variant="outline" render={<Link to="/threads/new" />}>
             Cancel
           </Button>
