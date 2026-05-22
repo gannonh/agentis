@@ -17,7 +17,14 @@ async function ensureGithubConnected(request: import("@playwright/test").APIRequ
   if (!connect.ok() && github?.status === "pending") {
     const refresh = await request.post(`${API_BASE}/api/integrations/refresh`)
     expect(refresh.ok()).toBeTruthy()
-    return
+    const afterRefresh = await request.get(`${API_BASE}/api/integrations`)
+    expect(afterRefresh.ok()).toBeTruthy()
+    const refreshed = (await afterRefresh.json()) as {
+      toolkits: { slug: string; status: string }[]
+    }
+    if (refreshed.toolkits.find((t) => t.slug === "github")?.status === "connected") {
+      return
+    }
   }
   expect(connect.ok()).toBeTruthy()
   const body = (await connect.json()) as { redirectUrl: string }
@@ -65,7 +72,11 @@ test.describe("composio integrations", () => {
 
   test("shows remediation when Slack is requested without connection", async ({
     page,
+    request,
   }) => {
+    const reset = await request.delete(`${API_BASE}/api/integrations/slack/connection`)
+    expect([200, 204, 404]).toContain(reset.status())
+
     await page.goto("/threads/new")
     const composer = page.getByPlaceholder("What's the task?")
     await expect(composer).toBeEnabled({ timeout: 30_000 })

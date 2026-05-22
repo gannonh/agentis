@@ -140,7 +140,20 @@ export class IntegrationService {
       return updated!
     }
 
-    const refreshed = await this.composio.refreshConnectedAccount(accountId)
+    let refreshed
+    try {
+      refreshed = await this.composio.refreshConnectedAccount(accountId)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to refresh connected account"
+      const failed = this.repos.integrationConnections.update(connection.id, {
+        status: "error",
+        errorCode: "connection_error",
+        errorMessage: message,
+      })
+      return failed!
+    }
+
     const updated = this.repos.integrationConnections.update(connection.id, {
       status: refreshed.status,
       composioConnectedAccountId: refreshed.id,
@@ -175,6 +188,8 @@ export class IntegrationService {
           status: refreshed.status,
           accountLabel: refreshed.accountLabel,
           scopes: refreshed.scopes,
+          errorCode: refreshed.status === "error" ? "connection_error" : null,
+          errorMessage: null,
         })
       } catch (error) {
         const message =

@@ -87,6 +87,14 @@ export class ToolExecutionService {
       )
     }
 
+    if (connection.status === "error") {
+      return new ComposioRemediationError(
+        `${SUPPORTED_TOOLKIT_NAMES[toolkitSlug]} connection has an error. Re-connect from Integrations.`,
+        "toolkit_not_connected",
+        toolkitSlug
+      )
+    }
+
     if (!grant) {
       return new ComposioRemediationError(
         `${SUPPORTED_TOOLKIT_NAMES[toolkitSlug]} is connected but not granted to this thread. Enable it in the composer Tools menu.`,
@@ -166,7 +174,11 @@ export class ToolExecutionService {
       )
     }
     const connection = this.repos.integrationConnections.getById(connectionId)
-    if (!connection || connection.status !== "connected") {
+    if (
+      !connection ||
+      connection.status !== "connected" ||
+      !connection.composioConnectedAccountId
+    ) {
       throw new ComposioRemediationError(
         `${SUPPORTED_TOOLKIT_NAMES[toolkitSlug]} is not connected.`,
         "toolkit_not_connected",

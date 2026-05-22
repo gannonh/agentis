@@ -68,10 +68,15 @@ export class LiveComposioClient implements ComposioClientAdapter {
       throw new Error("Composio did not return a redirect URL for connection")
     }
 
+    const linked = connectionRequest as {
+      id: string
+      connectedAccountId?: string
+    }
+
     return {
-      connectionRequestId: connectionRequest.id,
+      connectionRequestId: linked.id,
       redirectUrl,
-      connectedAccountId: connectionRequest.id,
+      connectedAccountId: linked.connectedAccountId ?? linked.id,
     }
   }
 

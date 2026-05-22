@@ -8,8 +8,6 @@ import type {
 } from "./types.js"
 import { CURATED_COMPOSIO_TOOLS } from "./tool-catalog.js"
 
-const mockAccounts = new Map<string, ComposioConnectedAccount>()
-
 function mapMockStatus(status: string): ConnectionStatus {
   if (status === "ACTIVE") return "connected"
   if (status === "PENDING") return "pending"
@@ -18,6 +16,8 @@ function mapMockStatus(status: string): ConnectionStatus {
 }
 
 export class MockComposioClient implements ComposioClientAdapter {
+  private readonly mockAccounts = new Map<string, ComposioConnectedAccount>()
+
   async authorizeToolkit(
     userId: string,
     toolkitSlug: string,
@@ -25,7 +25,7 @@ export class MockComposioClient implements ComposioClientAdapter {
   ): Promise<ComposioAuthorizeResult> {
     const connectionRequestId = `mock-req-${toolkitSlug}-${userId}`
     const connectedAccountId = `mock-acct-${toolkitSlug}-${userId}`
-    mockAccounts.set(connectedAccountId, {
+    this.mockAccounts.set(connectedAccountId, {
       id: connectedAccountId,
       toolkitSlug,
       status: "pending",
@@ -45,7 +45,7 @@ export class MockComposioClient implements ComposioClientAdapter {
   async refreshConnectedAccount(
     connectedAccountId: string
   ): Promise<ComposioConnectedAccount> {
-    const existing = mockAccounts.get(connectedAccountId)
+    const existing = this.mockAccounts.get(connectedAccountId)
     if (!existing) {
       return {
         id: connectedAccountId,
@@ -60,13 +60,13 @@ export class MockComposioClient implements ComposioClientAdapter {
       status: "connected",
       scopes: ["repo"],
     }
-    mockAccounts.set(connectedAccountId, refreshed)
+    this.mockAccounts.set(connectedAccountId, refreshed)
     return refreshed
   }
 
   async listConnectedAccounts(userId: string): Promise<ComposioConnectedAccount[]> {
-    return [...mockAccounts.values()].filter((account) =>
-      account.id.includes(userId)
+    return [...this.mockAccounts.values()].filter(
+      (account) => account.id === `mock-acct-${account.toolkitSlug}-${userId}`
     )
   }
 

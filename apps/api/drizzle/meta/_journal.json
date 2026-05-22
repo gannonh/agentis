@@ -15,6 +15,13 @@
       "when": 1779416224852,
       "tag": "0001_outgoing_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779500000000,
+      "tag": "0002_tool_access_grants_scope_toolkit_unique",
+      "breakpoints": true
     }
   ]
 }

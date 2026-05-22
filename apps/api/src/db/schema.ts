@@ -1,4 +1,11 @@
-import { index, integer, sqliteTable, text, real } from "drizzle-orm/sqlite-core"
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  real,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core"
 
 export const threads = sqliteTable("threads", {
   id: text("id").primaryKey(),
@@ -103,6 +110,11 @@ export const toolAccessGrants = sqliteTable(
   (table) => [
     index("tool_access_grants_scope_idx").on(table.scopeType, table.scopeId),
     index("tool_access_grants_connection_id_idx").on(table.connectionId),
+    uniqueIndex("tool_access_grants_scope_toolkit_unique").on(
+      table.scopeType,
+      table.scopeId,
+      table.toolkitSlug
+    ),
   ]
 )
 

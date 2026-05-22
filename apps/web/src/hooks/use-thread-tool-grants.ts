@@ -15,7 +15,12 @@ export function useThreadToolGrants(threadId: string | undefined) {
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!threadId) return
+    if (!threadId) {
+      setGrants([])
+      setAvailableToolkits([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {

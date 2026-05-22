@@ -1,10 +1,17 @@
-import { describe, expect, it } from "vitest"
-import { createTestContext } from "../test/setup.js"
+import { afterEach, describe, expect, it } from "vitest"
+import { createTestContext, type TestContext } from "../test/setup.js"
 import { FEATURED_TOOLKIT_SLUGS } from "./integration-seeds.js"
+
+let ctx: TestContext | undefined
+
+afterEach(() => {
+  ctx?.cleanup()
+  ctx = undefined
+})
 
 describe("integration repositories", () => {
   it("seeds featured toolkits idempotently", () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
     ctx.repos.integrationToolkits.seedFeatured()
 
@@ -12,11 +19,10 @@ describe("integration repositories", () => {
     expect(toolkits.map((t) => t.slug).sort()).toEqual(
       [...FEATURED_TOOLKIT_SLUGS].sort()
     )
-    ctx.cleanup()
   })
 
   it("persists connection status across repository reads", () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
 
     const connection = ctx.repos.integrationConnections.create({
@@ -40,11 +46,10 @@ describe("integration repositories", () => {
     )
     expect(listed).toHaveLength(1)
     expect(listed[0]?.accountLabel).toBe("octocat")
-    ctx.cleanup()
   })
 
   it("creates and lists thread tool grants", () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
     const thread = ctx.repos.threads.create({
       title: "Grant test",
@@ -73,6 +78,32 @@ describe("integration repositories", () => {
     expect(
       ctx.repos.toolAccessGrants.listByScope("thread", thread.id)
     ).toHaveLength(0)
-    ctx.cleanup()
+  })
+
+  it("deletes grants before removing a connection", () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const thread = ctx.repos.threads.create({
+      title: "Reset test",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const connection = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    ctx.repos.toolAccessGrants.create({
+      scopeType: "thread",
+      scopeId: thread.id,
+      toolkitSlug: "github",
+      connectionId: connection.id,
+    })
+
+    const deleted = ctx.repos.integrationConnections.deleteByToolkitSlug("github")
+    expect(deleted).toBe(true)
+    expect(
+      ctx.repos.toolAccessGrants.listByScope("thread", thread.id)
+    ).toHaveLength(0)
   })
 })

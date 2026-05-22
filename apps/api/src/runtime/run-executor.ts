@@ -12,7 +12,10 @@ import type { ComposioServices } from "../composio/index.js"
 import {
   ComposioRemediationError,
 } from "../composio/tool-execution-service.js"
-import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
+import {
+  CURATED_COMPOSIO_TOOLS,
+  SUPPORTED_TOOLKIT_NAMES,
+} from "../composio/tool-catalog.js"
 import { summarizeToolOutput } from "../composio/sanitize.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
@@ -566,13 +569,17 @@ export class RunExecutor {
         title: "Composio tool failed",
         payload: { message },
       })
+      this.repos.threads.touch(run.threadId, { status: "failed" })
       throw new Error(message)
     }
 
+    const toolkitName = SUPPORTED_TOOLKIT_NAMES[toolkitSlug] ?? toolkitSlug
     const summaryText =
-      typeof toolOutput === "object" && toolOutput !== null
+      toolkitSlug === "github" &&
+      typeof toolOutput === "object" &&
+      toolOutput !== null
         ? `GitHub tool completed. Found ${(toolOutput as { repositories?: unknown[] }).repositories?.length ?? 0} repositories (mock).`
-        : "Composio tool completed."
+        : `${toolkitName} tool completed (mock).`
 
     const assistantParts: MessagePart[] = [
       { type: "text", text: summaryText },

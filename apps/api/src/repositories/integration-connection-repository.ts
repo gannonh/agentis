@@ -4,7 +4,7 @@ import type {
   IntegrationConnection,
 } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
-import { integrationConnections } from "../db/schema.js"
+import { integrationConnections, toolAccessGrants } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 
 type ConnectionRow = typeof integrationConnections.$inferSelect
@@ -64,7 +64,12 @@ export class IntegrationConnectionRepository {
     const row = this.db
       .select()
       .from(integrationConnections)
-      .where(eq(integrationConnections.id, id))
+      .where(
+        and(
+          eq(integrationConnections.id, id),
+          eq(integrationConnections.userId, this.userId)
+        )
+      )
       .get()
     return row ? mapConnection(row) : null
   }
@@ -163,7 +168,12 @@ export class IntegrationConnectionRepository {
             : existing.errorMessage ?? null,
         updatedAt,
       })
-      .where(eq(integrationConnections.id, id))
+      .where(
+        and(
+          eq(integrationConnections.id, id),
+          eq(integrationConnections.userId, this.userId)
+        )
+      )
       .run()
 
     return this.getById(id)
@@ -173,8 +183,17 @@ export class IntegrationConnectionRepository {
     const existing = this.getByToolkitSlug(toolkitSlug)
     if (!existing) return false
     this.db
+      .delete(toolAccessGrants)
+      .where(eq(toolAccessGrants.connectionId, existing.id))
+      .run()
+    this.db
       .delete(integrationConnections)
-      .where(eq(integrationConnections.id, existing.id))
+      .where(
+        and(
+          eq(integrationConnections.id, existing.id),
+          eq(integrationConnections.userId, this.userId)
+        )
+      )
       .run()
     return true
   }

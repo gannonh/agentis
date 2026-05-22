@@ -13,17 +13,21 @@ const statusLabel: Record<Run["status"], string> = {
 
 function formatPayload(step: RunStep) {
   const payload = step.payload
-  if (!payload || payload.provider !== "composio") {
+  if (!payload || typeof payload !== "object" || payload.provider !== "composio") {
     return null
   }
-  return payload as {
-    toolkitSlug?: string
-    toolSlug?: string
-    durationMs?: number
-    error?: string
-    remediation?: string
-    input?: unknown
-    output?: unknown
+  const record = payload as Record<string, unknown>
+  return {
+    toolkitSlug:
+      typeof record.toolkitSlug === "string" ? record.toolkitSlug : undefined,
+    toolSlug: typeof record.toolSlug === "string" ? record.toolSlug : undefined,
+    durationMs:
+      typeof record.durationMs === "number" ? record.durationMs : undefined,
+    error: typeof record.error === "string" ? record.error : undefined,
+    remediation:
+      typeof record.remediation === "string" ? record.remediation : undefined,
+    input: record.input,
+    output: record.output,
   }
 }
 

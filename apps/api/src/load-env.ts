@@ -28,17 +28,12 @@ if (existsSync(localEnvPath)) {
 
 // Orca/Playwright often export AGENTIS_MOCK_* in the parent shell. dotenv does not
 // override existing vars, so a developer's .env AGENTIS_MOCK_COMPOSIO=0 would lose.
-// Re-apply Agentis toggles from repo .env for normal dev; E2E sets AGENTIS_E2E=1.
+// Re-apply mock toggles from repo .env when not set in the shell (e.g. dev:live).
+// E2E sets AGENTIS_E2E=1; apps/api/.env overrides stay intact for API-specific keys.
 if (process.env.AGENTIS_E2E !== "1" && existsSync(rootEnvPath)) {
   const rootEnv = parse(readFileSync(rootEnvPath))
-  for (const key of [
-    "AGENTIS_MOCK_COMPOSIO",
-    "AGENTIS_MOCK_RUNTIME",
-    "DATABASE_URL",
-    "COMPOSIO_API_KEY",
-    "COMPOSIO_REDIRECT_BASE_URL",
-    "AGENTIS_WEB_ORIGIN",
-  ] as const) {
+  for (const key of ["AGENTIS_MOCK_COMPOSIO", "AGENTIS_MOCK_RUNTIME"] as const) {
+    if (process.env[key] !== undefined) continue
     const value = rootEnv[key]
     if (value !== undefined && value !== "") {
       process.env[key] = value

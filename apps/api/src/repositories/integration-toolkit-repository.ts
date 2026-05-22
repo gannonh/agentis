@@ -69,6 +69,15 @@ export class IntegrationToolkitRepository {
       .filter((row) =>
         (FEATURED_TOOLKIT_SLUGS as readonly string[]).includes(row.slug)
       )
+      .sort(
+        (a, b) =>
+          FEATURED_TOOLKIT_SLUGS.indexOf(
+            a.slug as (typeof FEATURED_TOOLKIT_SLUGS)[number]
+          ) -
+          FEATURED_TOOLKIT_SLUGS.indexOf(
+            b.slug as (typeof FEATURED_TOOLKIT_SLUGS)[number]
+          )
+      )
   }
 
   getBySlug(slug: string) {

@@ -103,7 +103,7 @@ export function IntegrationsPage() {
             variant="outline"
             size="sm"
             className="gap-1.5"
-            disabled={loading || !composioConfigured}
+            disabled={loading || (!composioConfigured && !composioMockEnabled)}
             onClick={() => void refreshStatuses()}
           >
             <HugeiconsIcon icon={RefreshIcon} className="size-3.5" strokeWidth={2} aria-hidden />

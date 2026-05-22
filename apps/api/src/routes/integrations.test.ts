@@ -117,4 +117,34 @@ describe("integration routes", () => {
     )
     expect(revoke.status).toBe(200)
   })
+
+  it("rejects grants when connection toolkit does not match request", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "mock-acct-github",
+    })
+    const thread = ctx.repos.threads.create({
+      title: "Mismatch grant",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const grant = await app.request(`/api/threads/${thread.id}/tool-grants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        toolkitSlug: "slack",
+        connectionId: github.id,
+      }),
+    })
+    expect(grant.status).toBe(400)
+    const body = (await grant.json()) as { error: string }
+    expect(body.error).toBe("toolkit_connection_mismatch")
+  })
 })

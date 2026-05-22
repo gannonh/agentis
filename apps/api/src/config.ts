@@ -78,8 +78,8 @@ export function isRuntimeAvailable(config: AppConfig) {
 
 export function isComposioAvailable(config: AppConfig) {
   if (config.mockComposio) return true
-  if (!config.composioApiKey) return false
-  if (!config.composioRedirectBaseUrl) return false
+  if (!config.composioApiKey?.trim()) return false
+  if (!config.composioRedirectBaseUrl?.trim()) return false
   return true
 }
 

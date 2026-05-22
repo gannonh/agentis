@@ -101,7 +101,10 @@ export function IntegrationCard({
             variant={action === "manage" ? "outline" : "secondary"}
             className="gap-1.5"
             disabled={
-              action === "connect" && (!composioConfigured || connecting || resetting)
+              action === "manage" ||
+              (action === "connect" &&
+                (!composioConfigured || connecting || resetting)) ||
+              !onConnect
             }
             onClick={() => {
               if (action === "connect" && onConnect) {

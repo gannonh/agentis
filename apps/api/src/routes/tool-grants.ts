@@ -57,6 +57,15 @@ export function createToolGrantRoutes(
         ? repos.integrationConnections.getById(body.connectionId)
         : repos.integrationConnections.getByToolkitSlug(body.toolkitSlug)
 
+    if (
+      connection &&
+      body.connectionId &&
+      body.toolkitSlug &&
+      connection.toolkitSlug !== body.toolkitSlug
+    ) {
+      return c.json({ error: "toolkit_connection_mismatch" }, 400)
+    }
+
     if (!connection || connection.status !== "connected") {
       return c.json(
         {

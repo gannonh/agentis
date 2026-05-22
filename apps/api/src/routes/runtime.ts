@@ -21,7 +21,7 @@ export function createRuntimeRoutes(config: AppConfig) {
       composio: {
         available: composioAvailable,
         reason: composioAvailable
-          ? getComposioUnavailableReason(config)
+          ? undefined
           : getComposioUnavailableReason(config),
       },
     })
