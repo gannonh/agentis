@@ -22,6 +22,11 @@ export type AppConfig = {
   composioToolkitVersions: Record<string, string>
   mockComposio: boolean
   webAppOrigin: string
+  storageRoot: string
+  artifactMaxUploadBytes: number
+  artifactPreviewMaxChars: number
+  projectGoalsMaxChars: number
+  projectMemoryMaxChars: number
 }
 
 function parseToolkitVersions(raw: string | undefined): Record<string, string> {
@@ -69,6 +74,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     composioToolkitVersions: resolveComposioToolkitVersions(env),
     mockComposio: env.AGENTIS_MOCK_COMPOSIO === "1",
     webAppOrigin: env.AGENTIS_WEB_ORIGIN ?? "http://localhost:5173",
+    storageRoot: env.AGENTIS_STORAGE_ROOT ?? "./data/storage",
+    artifactMaxUploadBytes: Number(
+      env.AGENTIS_ARTIFACT_MAX_UPLOAD_BYTES ?? 10_485_760
+    ),
+    artifactPreviewMaxChars: Number(
+      env.AGENTIS_ARTIFACT_PREVIEW_MAX_CHARS ?? 2_000
+    ),
+    projectGoalsMaxChars: Number(env.AGENTIS_PROJECT_GOALS_MAX_CHARS ?? 4_000),
+    projectMemoryMaxChars: Number(
+      env.AGENTIS_PROJECT_MEMORY_MAX_CHARS ?? 2_000
+    ),
   }
 }
 

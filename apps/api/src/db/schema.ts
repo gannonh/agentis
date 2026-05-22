@@ -7,6 +7,39 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core"
 
+export const projects = sqliteTable(
+  "projects",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    goals: text("goals"),
+    status: text("status").notNull(),
+    archivedAt: text("archived_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("projects_status_idx").on(table.status),
+    index("projects_updated_at_idx").on(table.updatedAt),
+  ]
+)
+
+export const projectMemories = sqliteTable(
+  "project_memories",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("project_memories_project_id_idx").on(table.projectId)]
+)
+
 export const threads = sqliteTable("threads", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
@@ -134,5 +167,36 @@ export const runSteps = sqliteTable(
   },
   (table) => [
     index("run_steps_run_id_created_at_idx").on(table.runId, table.createdAt),
+  ]
+)
+
+export const artifacts = sqliteTable(
+  "artifacts",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    description: text("description"),
+    type: text("type").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    storageKey: text("storage_key").notNull(),
+    previewText: text("preview_text"),
+    metadataJson: text("metadata_json"),
+    projectId: text("project_id").references(() => projects.id),
+    projectNameSnapshot: text("project_name_snapshot"),
+    threadId: text("thread_id").references(() => threads.id),
+    threadTitleSnapshot: text("thread_title_snapshot"),
+    runId: text("run_id").references(() => runs.id),
+    agentId: text("agent_id"),
+    agentNameSnapshot: text("agent_name_snapshot"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("artifacts_type_idx").on(table.type),
+    index("artifacts_project_id_idx").on(table.projectId),
+    index("artifacts_thread_id_idx").on(table.threadId),
+    index("artifacts_run_id_idx").on(table.runId),
+    index("artifacts_created_at_idx").on(table.createdAt),
   ]
 )

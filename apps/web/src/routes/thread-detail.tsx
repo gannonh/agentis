@@ -11,6 +11,7 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message"
 import { RunTimeline } from "@/components/thread/run-timeline"
+import { ThreadProjectContext } from "@/components/thread/thread-project-context"
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { PageLayout } from "@/components/shell/page-layout"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
@@ -147,7 +148,10 @@ export function ThreadDetailPage() {
             </div>
           </div>
 
-          <RunTimeline run={latestRun} steps={steps} />
+          <div className="flex w-80 shrink-0 flex-col border-l border-border">
+            <ThreadProjectContext context={detail?.projectContext} />
+            <RunTimeline run={latestRun} steps={steps} />
+          </div>
         </div>
       </div>
     </PageLayout>

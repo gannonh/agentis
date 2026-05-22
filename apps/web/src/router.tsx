@@ -8,6 +8,7 @@ import { LibraryPage } from "@/routes/library"
 import { NewThreadPage } from "@/routes/new-thread"
 import { ThreadDetailPage } from "@/routes/thread-detail"
 import { ProjectCreatePage } from "@/routes/project-create"
+import { ProjectDetailPage } from "@/routes/project-detail"
 import { SearchPage } from "@/routes/search"
 import { NotFoundPage } from "@/routes/not-found"
 import { RouteErrorPage } from "@/routes/route-error"
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: "learning", element: <LearningPage /> },
       { path: "integrations", element: <IntegrationsPage /> },
       { path: "projects/new", element: <ProjectCreatePage /> },
+      { path: "projects/:projectId", element: <ProjectDetailPage /> },
       { path: "library", element: <LibraryPage /> },
       { path: "search", element: <SearchPage /> },
       { path: "*", element: <NotFoundPage /> },

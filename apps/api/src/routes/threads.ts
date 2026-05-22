@@ -2,12 +2,15 @@ import { Hono } from "hono"
 import {
   createFollowUpRequestSchema,
   createThreadRequestSchema,
+  threadDetailSchema,
   threadListItemSchema,
 } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
+import { ProjectContextService } from "../projects/project-context-service.js"
 import { RunExecutor } from "../runtime/run-executor.js"
+import { ArtifactService } from "../artifacts/artifact-service.js"
 
 function summarizeTitle(prompt: string) {
   const trimmed = prompt.trim().replace(/\s+/g, " ")
@@ -20,6 +23,7 @@ export function createThreadRoutes(
   config: AppConfig
 ) {
   const app = new Hono()
+  const contextService = new ProjectContextService(repos, config)
 
   app.get("/", (c) => {
     const threads = repos.threads.list().map((thread) => {
@@ -36,6 +40,19 @@ export function createThreadRoutes(
 
   app.post("/", async (c) => {
     const body = createThreadRequestSchema.parse(await c.req.json())
+    const projectValidation = contextService.validateProjectForNewThread(
+      body.projectId
+    )
+    if (!projectValidation.ok) {
+      return c.json(
+        {
+          error: projectValidation.message,
+          code: projectValidation.code,
+        },
+        400
+      )
+    }
+
     const model = body.model ?? config.defaultModel
     const mode = body.mode ?? "plan"
 
@@ -79,7 +96,17 @@ export function createThreadRoutes(
     const runs = repos.runs.listByThreadId(thread.id)
     const steps = repos.steps.listByRunIds(runs.map((run) => run.id))
 
-    return c.json({ thread, messages, runs, steps })
+    const projectContext = contextService.assemble(thread.projectId)
+
+    return c.json(
+      threadDetailSchema.parse({
+        thread,
+        messages,
+        runs,
+        steps,
+        projectContext,
+      })
+    )
   })
 
   app.post("/:id/messages", async (c) => {
@@ -123,7 +150,8 @@ export function createRunRoutes(
   services: ComposioServices
 ) {
   const app = new Hono()
-  const executor = new RunExecutor(repos, config, services)
+  const artifactService = new ArtifactService(repos, config)
+  const executor = new RunExecutor(repos, config, services, artifactService)
 
   app.post("/:id/stream", async (c) => {
     try {

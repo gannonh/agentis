@@ -24,6 +24,9 @@ export function createTestContext() {
   )
   migrate(db, { migrationsFolder })
 
+  const storageRoot = join(tmpdir(), `agentis-storage-${randomUUID()}`)
+  mkdirSync(storageRoot, { recursive: true })
+
   const config: AppConfig = {
     port: 3001,
     databaseUrl,
@@ -36,6 +39,11 @@ export function createTestContext() {
     composioToolkitVersions: {},
     mockComposio: true,
     webAppOrigin: "http://localhost:5173",
+    storageRoot,
+    artifactMaxUploadBytes: 10_485_760,
+    artifactPreviewMaxChars: 2_000,
+    projectGoalsMaxChars: 4_000,
+    projectMemoryMaxChars: 2_000,
   }
   const repos = createRepositories(db, config)
 
@@ -45,6 +53,7 @@ export function createTestContext() {
     cleanup() {
       close()
       rmSync(databaseUrl, { force: true })
+      rmSync(storageRoot, { recursive: true, force: true })
     },
   }
 }
