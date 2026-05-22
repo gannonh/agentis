@@ -168,4 +168,14 @@ export class IntegrationConnectionRepository {
 
     return this.getById(id)
   }
+
+  deleteByToolkitSlug(toolkitSlug: string): boolean {
+    const existing = this.getByToolkitSlug(toolkitSlug)
+    if (!existing) return false
+    this.db
+      .delete(integrationConnections)
+      .where(eq(integrationConnections.id, existing.id))
+      .run()
+    return true
+  }
 }

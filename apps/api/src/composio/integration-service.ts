@@ -60,7 +60,7 @@ export class IntegrationService {
 
     const redirectBase =
       this.config.composioRedirectBaseUrl ?? "http://127.0.0.1:3001"
-    const callbackUrl = `${redirectBase}/api/integrations/callback`
+    const callbackUrl = `${redirectBase}/api/integrations/callback?toolkitSlug=${encodeURIComponent(toolkitSlug)}`
     const existing = this.repos.integrationConnections.getByToolkitSlug(toolkitSlug)
     if (existing?.status === "connected") {
       throw new Error("toolkit_already_connected")
@@ -99,6 +99,8 @@ export class IntegrationService {
   async completeCallback(input: {
     connectionRequestId?: string
     toolkitSlug?: string
+    connectedAccountId?: string
+    status?: string
     mock?: boolean
   }) {
     let connection =
@@ -118,7 +120,17 @@ export class IntegrationService {
       throw new Error("unknown_connection")
     }
 
-    const accountId = connection.composioConnectedAccountId
+    if (input.status === "failed") {
+      const updated = this.repos.integrationConnections.update(connection.id, {
+        status: "error",
+        errorCode: "connection_failed",
+        errorMessage: "Composio reported that authentication failed",
+      })
+      return updated!
+    }
+
+    const accountId =
+      input.connectedAccountId ?? connection.composioConnectedAccountId
     if (!accountId) {
       const updated = this.repos.integrationConnections.update(connection.id, {
         status: "error",
@@ -138,6 +150,17 @@ export class IntegrationService {
       errorMessage: null,
     })
     return updated!
+  }
+
+  resetConnection(toolkitSlug: string): boolean {
+    if (
+      !FEATURED_TOOLKIT_SLUGS.includes(
+        toolkitSlug as (typeof FEATURED_TOOLKIT_SLUGS)[number]
+      )
+    ) {
+      throw new Error("Unsupported toolkit")
+    }
+    return this.repos.integrationConnections.deleteByToolkitSlug(toolkitSlug)
   }
 
   async refreshAllConnections() {

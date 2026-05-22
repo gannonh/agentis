@@ -59,6 +59,30 @@ describe("integration routes", () => {
     expect(github?.connectedAccountCount).toBeGreaterThan(0)
   })
 
+  it("resets a pending connection so the toolkit shows not connected", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "pending",
+      composioConnectionRequestId: "req-stale",
+    })
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const reset = await app.request("/api/integrations/github/connection", {
+      method: "DELETE",
+    })
+    expect(reset.status).toBe(200)
+
+    const list = await app.request("/api/integrations")
+    const listBody = (await list.json()) as {
+      toolkits: { slug: string; status: string }[]
+    }
+    const github = listBody.toolkits.find((t) => t.slug === "github")
+    expect(github?.status).toBe("not_connected")
+  })
+
   it("grants and revokes thread toolkit access", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

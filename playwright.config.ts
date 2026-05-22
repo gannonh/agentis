@@ -23,15 +23,16 @@ export default defineConfig({
   webServer: [
     {
       command: "pnpm --filter api dev",
-      url: "http://127.0.0.1:3001/api/health",
-      reuseExistingServer: !process.env.CI,
+      url: "http://127.0.0.1:3002/api/health",
+      reuseExistingServer: false,
       timeout: process.env.CI ? 60_000 : 120_000,
       env: {
+        AGENTIS_E2E: "1",
         AGENTIS_MOCK_RUNTIME: "1",
         AGENTIS_MOCK_COMPOSIO: "1",
-        COMPOSIO_REDIRECT_BASE_URL: "http://127.0.0.1:3001",
+        COMPOSIO_REDIRECT_BASE_URL: "http://127.0.0.1:3002",
         DATABASE_URL: "./data/e2e-agentis.db",
-        PORT: "3001",
+        PORT: "3002",
       },
     },
     {

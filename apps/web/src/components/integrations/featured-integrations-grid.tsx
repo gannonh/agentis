@@ -7,14 +7,18 @@ type FeaturedIntegrationsGridProps = {
   integrations: IntegrationToolkit[]
   composioConfigured: boolean
   onConnect?: (slug: string) => void
+  onReset?: (slug: string) => void
   connectingSlug?: string | null
+  resettingSlug?: string | null
 }
 
 export function FeaturedIntegrationsGrid({
   integrations,
   composioConfigured,
   onConnect,
+  onReset,
   connectingSlug,
+  resettingSlug,
 }: FeaturedIntegrationsGridProps) {
   if (integrations.length === 0) {
     return (
@@ -44,7 +48,9 @@ export function FeaturedIntegrationsGrid({
             integration={integration}
             composioConfigured={composioConfigured}
             onConnect={onConnect}
+            onReset={onReset}
             connecting={connectingSlug === integration.slug}
+            resetting={resettingSlug === integration.slug}
           />
         ))}
       </div>

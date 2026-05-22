@@ -17,6 +17,7 @@ export function IntegrationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState("")
   const [connectingSlug, setConnectingSlug] = useState<string | null>(null)
+  const [resettingSlug, setResettingSlug] = useState<string | null>(null)
   const {
     toolkits,
     composioConfigured,
@@ -27,6 +28,7 @@ export function IntegrationsPage() {
     setNotice,
     connect,
     refreshStatuses,
+    resetConnection,
   } = useIntegrations()
 
   useEffect(() => {
@@ -71,10 +73,23 @@ export function IntegrationsPage() {
     }
   }
 
+  const handleReset = async (slug: string) => {
+    setResettingSlug(slug)
+    try {
+      await resetConnection(slug)
+    } finally {
+      setResettingSlug(null)
+    }
+  }
+
   const setupNotice =
     !composioConfigured && !composioMockEnabled
       ? "Add COMPOSIO_API_KEY and COMPOSIO_REDIRECT_BASE_URL to the repo root .env, or set AGENTIS_MOCK_COMPOSIO=1 for local demos."
       : null
+
+  const mockNotice = composioMockEnabled
+    ? "Demo mode: connections here are simulated from test data, not your real GitHub or Slack accounts. Restart the API without AGENTIS_MOCK_COMPOSIO=1 for live Composio."
+    : null
 
   return (
     <PageLayout className="gap-6">
@@ -103,6 +118,11 @@ export function IntegrationsPage() {
           {setupNotice}
         </p>
       ) : null}
+      {mockNotice ? (
+        <p className="text-muted-foreground rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
+          {mockNotice}
+        </p>
+      ) : null}
       {error ? (
         <p className="text-destructive rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs">
           {error}
@@ -125,7 +145,9 @@ export function IntegrationsPage() {
         integrations={featuredIntegrations}
         composioConfigured={composioConfigured}
         onConnect={(slug) => void handleConnect(slug)}
+        onReset={(slug) => void handleReset(slug)}
         connectingSlug={connectingSlug}
+        resettingSlug={resettingSlug}
       />
     </PageLayout>
   )

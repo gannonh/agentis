@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-const API_BASE = "http://127.0.0.1:3001"
+const API_BASE = "http://127.0.0.1:3002"
 
 async function ensureGithubConnected(request: import("@playwright/test").APIRequestContext) {
   const list = await request.get(`${API_BASE}/api/integrations`)

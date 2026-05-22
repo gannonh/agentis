@@ -14,6 +14,27 @@ function mapConnectionStatus(status: string): ConnectionStatus {
   return mapComposioAccountStatus(status)
 }
 
+async function resolveAuthConfigId(
+  composio: Composio,
+  toolkitSlug: string
+): Promise<string> {
+  const listed = await composio.authConfigs.list({ toolkit: toolkitSlug })
+  let authConfigId = listed.items[0]?.id
+
+  if (authConfigId) return authConfigId
+
+  const toolkit = await composio.toolkits.get(toolkitSlug)
+  if (!toolkit.authConfigDetails?.length) {
+    throw new Error(`No auth configs found for toolkit ${toolkitSlug}`)
+  }
+
+  const created = await composio.authConfigs.create(toolkitSlug, {
+    type: "use_composio_managed_auth",
+    name: `${toolkit.name} Auth Config`,
+  })
+  return created.id
+}
+
 export class LiveComposioClient implements ComposioClientAdapter {
   private readonly composio: Composio
 
@@ -29,21 +50,28 @@ export class LiveComposioClient implements ComposioClientAdapter {
     toolkitSlug: string,
     callbackUrl: string
   ): Promise<ComposioAuthorizeResult> {
-    const connectionRequest = await this.composio.toolkits.authorize(
+    const callback = new URL(callbackUrl)
+    callback.searchParams.set("toolkitSlug", toolkitSlug)
+
+    const authConfigId = await resolveAuthConfigId(this.composio, toolkitSlug)
+    const connectionRequest = await this.composio.connectedAccounts.link(
       userId,
-      toolkitSlug
+      authConfigId,
+      {
+        callbackUrl: callback.toString(),
+        allowMultiple: true,
+      }
     )
-    const redirectUrl =
-      connectionRequest.redirectUrl ??
-      `${callbackUrl}?connectionRequestId=${encodeURIComponent(connectionRequest.id)}`
+
+    const redirectUrl = connectionRequest.redirectUrl
+    if (!redirectUrl) {
+      throw new Error("Composio did not return a redirect URL for connection")
+    }
+
     return {
       connectionRequestId: connectionRequest.id,
       redirectUrl,
-      connectedAccountId:
-        "connectedAccountId" in connectionRequest
-          ? (connectionRequest as { connectedAccountId?: string })
-              .connectedAccountId
-          : undefined,
+      connectedAccountId: connectionRequest.id,
     }
   }
 
@@ -90,16 +118,26 @@ export class LiveComposioClient implements ComposioClientAdapter {
     input: ComposioToolExecuteInput
   ): Promise<ComposioToolExecuteResult> {
     const started = Date.now()
-    const result = await this.composio.tools.execute(input.toolSlug, {
-      userId: input.userId,
-      connectedAccountId: input.connectedAccountId,
-      arguments: input.arguments,
-      version: input.version,
-    })
-    return {
-      data: result.data,
-      error: result.error ?? undefined,
-      durationMs: Date.now() - started,
+    try {
+      const result = await this.composio.tools.execute(input.toolSlug, {
+        userId: input.userId,
+        connectedAccountId: input.connectedAccountId,
+        arguments: input.arguments,
+        version: input.version,
+      })
+      return {
+        data: result.data,
+        error: result.error ?? undefined,
+        durationMs: Date.now() - started,
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Composio tool execution failed"
+      return {
+        data: undefined,
+        error: message,
+        durationMs: Date.now() - started,
+      }
     }
   }
 }

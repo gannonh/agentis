@@ -13,7 +13,7 @@ const mockToolkits = [
     featured: true,
     status: "connected" as const,
     connectedAccountCount: 1,
-    availableTools: ["GITHUB_LIST_REPOSITORIES_FOR_AUTHENTICATED_USER"],
+    availableTools: ["GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER"],
   },
   {
     slug: "slack",
@@ -23,7 +23,7 @@ const mockToolkits = [
     featured: true,
     status: "not_connected" as const,
     connectedAccountCount: 0,
-    availableTools: ["SLACK_LIST_CHANNELS"],
+    availableTools: ["SLACK_LIST_ALL_CHANNELS"],
   },
 ]
 

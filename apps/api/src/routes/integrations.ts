@@ -54,12 +54,18 @@ export function createIntegrationRoutes(
     const connectionRequestId =
       c.req.query("connectionRequestId") ?? c.req.query("connection_request_id")
     const toolkitSlug = c.req.query("toolkitSlug") ?? c.req.query("toolkit_slug")
+    const connectedAccountId =
+      c.req.query("connected_account_id") ??
+      c.req.query("connectedAccountId")
+    const status = c.req.query("status")
     const mock = c.req.query("mock") === "1"
 
     try {
       const connection = await services.integrations.completeCallback({
         connectionRequestId: connectionRequestId ?? undefined,
         toolkitSlug: toolkitSlug ?? undefined,
+        connectedAccountId: connectedAccountId ?? undefined,
+        status: status ?? undefined,
         mock,
       })
       const slug = connection.toolkitSlug
@@ -74,6 +80,23 @@ export function createIntegrationRoutes(
         `${config.webAppOrigin}/integrations?error=${encodeURIComponent(message)}`,
         302
       )
+    }
+  })
+
+  app.delete("/:toolkitSlug/connection", (c) => {
+    try {
+      const reset = services.integrations.resetConnection(c.req.param("toolkitSlug"))
+      if (!reset) {
+        return c.json({ error: "not_found" }, 404)
+      }
+      return c.json({ ok: true })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to reset connection"
+      if (message === "Unsupported toolkit") {
+        return c.json({ error: message }, 404)
+      }
+      return c.json({ error: message }, 400)
     }
   })
 

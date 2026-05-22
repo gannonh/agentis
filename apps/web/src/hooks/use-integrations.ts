@@ -4,6 +4,7 @@ import {
   connectIntegration,
   listIntegrations,
   refreshIntegrations,
+  resetIntegrationConnection,
 } from "@/lib/api/client"
 
 export function useIntegrations() {
@@ -58,6 +59,24 @@ export function useIntegrations() {
     [refresh]
   )
 
+  const resetConnection = useCallback(
+    async (toolkitSlug: string) => {
+      setError(null)
+      try {
+        await resetIntegrationConnection(toolkitSlug)
+        await refresh()
+        setNotice("Connection reset. You can connect again.")
+      } catch (resetError) {
+        const message =
+          resetError instanceof Error
+            ? resetError.message
+            : "Failed to reset connection"
+        setError(message)
+      }
+    },
+    [refresh]
+  )
+
   const refreshStatuses = useCallback(async () => {
     setError(null)
     try {
@@ -84,5 +103,6 @@ export function useIntegrations() {
     refresh,
     connect,
     refreshStatuses,
+    resetConnection,
   }
 }

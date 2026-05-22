@@ -31,7 +31,14 @@ export class MockComposioClient implements ComposioClientAdapter {
       status: "pending",
       accountLabel: `Mock ${toolkitSlug}`,
     })
-    const redirectUrl = `${callbackUrl}?connectionRequestId=${encodeURIComponent(connectionRequestId)}&toolkitSlug=${encodeURIComponent(toolkitSlug)}&mock=1`
+    const redirect = new URL(callbackUrl)
+    redirect.searchParams.set(
+      "connectionRequestId",
+      connectionRequestId
+    )
+    redirect.searchParams.set("toolkitSlug", toolkitSlug)
+    redirect.searchParams.set("mock", "1")
+    const redirectUrl = redirect.toString()
     return { connectionRequestId, redirectUrl, connectedAccountId }
   }
 

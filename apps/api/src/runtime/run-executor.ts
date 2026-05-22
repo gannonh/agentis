@@ -1,5 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import { streamText, type LanguageModel, type ModelMessage, type UIMessage } from "ai"
+import {
+  stepCountIs,
+  streamText,
+  type LanguageModel,
+  type ModelMessage,
+  type UIMessage,
+} from "ai"
 import { MockLanguageModelV2 } from "ai/test"
 import type { Message, MessagePart, Run } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
@@ -7,6 +13,7 @@ import {
   ComposioRemediationError,
 } from "../composio/tool-execution-service.js"
 import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
+import { summarizeToolOutput } from "../composio/sanitize.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
 import {
@@ -33,6 +40,21 @@ function getTextFromParts(parts: MessagePart[]) {
 function setTextPart(parts: MessagePart[], text: string): MessagePart[] {
   const nonText = parts.filter((part) => part.type !== "text")
   return text ? [{ type: "text", text }, ...nonText] : nonText
+}
+
+function formatToolResultFallback(parts: MessagePart[]): string | null {
+  const toolResult = [...parts]
+    .reverse()
+    .find((part) => part.type === "tool-result")
+  if (!toolResult || toolResult.type !== "tool-result") return null
+  const summary = summarizeToolOutput(toolResult.output)
+  if (summary === undefined || summary === null) return null
+  if (typeof summary === "string") return summary
+  try {
+    return JSON.stringify(summary, null, 2)
+  } catch {
+    return String(summary)
+  }
 }
 
 function toModelMessages(messages: Message[]): ModelMessage[] {
@@ -143,6 +165,48 @@ export class RunExecutor {
     let assistantParts: MessagePart[] = [{ type: "text", text: "" }]
     const toolStepIds = new Map<string, string>()
 
+    const finalizeToolStep = (
+      toolCallId: string,
+      toolName: string,
+      input: {
+        toolInput?: unknown
+        toolOutput?: unknown
+        error?: string
+      }
+    ) => {
+      const toolkitSlug = composioToolNameToToolkit(toolName)
+      const curated = toolkitSlug
+        ? CURATED_COMPOSIO_TOOLS[toolkitSlug]
+        : undefined
+      const stepId = toolStepIds.get(toolCallId)
+      if (!stepId) return
+
+      const status = input.error ? "failed" : "completed"
+      this.repos.steps.update(stepId, {
+        status,
+        title: curated
+          ? `Composio: ${toolkitSlug}`
+          : `Tool: ${toolName}`,
+        payload:
+          toolkitSlug && curated
+            ? this.services.toolExecution.formatRunStepPayload({
+                toolkitSlug,
+                toolSlug: curated.toolSlug,
+                toolInput: input.toolInput,
+                toolOutput: input.toolOutput,
+                error: input.error,
+              })
+            : {
+                toolCallId,
+                toolName,
+                input: input.toolInput,
+                output: input.toolOutput,
+                error: input.error,
+              },
+      })
+      toolStepIds.delete(toolCallId)
+    }
+
     const modelMessages = toModelMessages(threadMessages)
     const model: LanguageModel = this.config.mockRuntime
       ? new MockLanguageModelV2({
@@ -178,9 +242,10 @@ export class RunExecutor {
     const result = streamText({
       model,
       system:
-        "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations.",
+        "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language.",
       messages: modelMessages,
       tools: runtimeTools,
+      stopWhen: stepCountIs(5),
       abortSignal: controller.signal,
       onChunk: async ({ chunk }) => {
         if (chunk.type === "text-delta") {
@@ -238,30 +303,10 @@ export class RunExecutor {
         }
 
         if (chunk.type === "tool-result") {
-          const toolkitSlug = composioToolNameToToolkit(chunk.toolName)
-          const curated = toolkitSlug
-            ? CURATED_COMPOSIO_TOOLS[toolkitSlug]
-            : undefined
-          const stepId = toolStepIds.get(chunk.toolCallId)
-          if (stepId) {
-            this.repos.steps.update(stepId, {
-              status: "completed",
-              title: curated
-                ? `Composio: ${toolkitSlug}`
-                : `Tool: ${chunk.toolName}`,
-              payload: toolkitSlug && curated
-                ? this.services.toolExecution.formatRunStepPayload({
-                    toolkitSlug,
-                    toolSlug: curated.toolSlug,
-                    toolOutput: chunk.output,
-                  })
-                : {
-                    toolCallId: chunk.toolCallId,
-                    toolName: chunk.toolName,
-                    output: chunk.output,
-                  },
-            })
-          }
+          finalizeToolStep(chunk.toolCallId, chunk.toolName, {
+            toolInput: chunk.input,
+            toolOutput: chunk.output,
+          })
           this.repos.runs.updateStatus(runId, "running")
           assistantParts = [
             ...assistantParts.filter(
@@ -285,8 +330,67 @@ export class RunExecutor {
           )
         }
       },
+      onStepFinish: async (stepResult) => {
+        for (const result of stepResult.toolResults) {
+          finalizeToolStep(result.toolCallId, result.toolName, {
+            toolInput: result.input,
+            toolOutput: result.output,
+          })
+          if (
+            !assistantParts.some(
+              (part) =>
+                part.type === "tool-result" &&
+                part.toolCallId === result.toolCallId
+            )
+          ) {
+            assistantParts = [
+              ...assistantParts.filter(
+                (part) =>
+                  !(
+                    part.type === "tool-call" &&
+                    part.toolCallId === result.toolCallId
+                  )
+              ),
+              {
+                type: "tool-result",
+                toolCallId: result.toolCallId,
+                toolName: result.toolName,
+                output: result.output,
+              },
+            ]
+          }
+        }
+        for (const part of stepResult.content) {
+          if (part.type !== "tool-error") continue
+          const message =
+            part.error instanceof Error
+              ? part.error.message
+              : typeof part.error === "string"
+                ? part.error
+                : "Tool execution failed"
+          finalizeToolStep(part.toolCallId, part.toolName, {
+            toolInput: part.input,
+            error: message,
+          })
+        }
+        this.repos.messages.updatePartsAndStatus(
+          assistantMessage.id,
+          assistantParts,
+          "streaming"
+        )
+      },
       onFinish: async ({ totalUsage }) => {
         clearAbortController(runId)
+        for (const stepId of toolStepIds.values()) {
+          this.repos.steps.update(stepId, { status: "failed" })
+        }
+        toolStepIds.clear()
+        if (!getTextFromParts(assistantParts).trim()) {
+          const fallback = formatToolResultFallback(assistantParts)
+          if (fallback) {
+            assistantParts = setTextPart(assistantParts, fallback)
+          }
+        }
         this.repos.messages.updatePartsAndStatus(
           assistantMessage.id,
           assistantParts,

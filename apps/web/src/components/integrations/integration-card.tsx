@@ -30,18 +30,29 @@ type IntegrationCardProps = {
   integration: IntegrationToolkit
   composioConfigured: boolean
   onConnect?: (slug: string) => void
-  onRefresh?: () => void
+  onReset?: (slug: string) => void
   connecting?: boolean
+  resetting?: boolean
 }
 
 export function IntegrationCard({
   integration,
   composioConfigured,
   onConnect,
+  onReset,
   connecting,
+  resetting,
 }: IntegrationCardProps) {
   const isConnected = integration.status === "connected"
+  const isPending = integration.status === "pending"
+  const canReset =
+    isPending || integration.status === "error" || integration.status === "expired"
   const action = isConnected ? "manage" : "connect"
+  const connectLabel = connecting
+    ? "Connecting…"
+    : isPending
+      ? "Continue setup"
+      : "Connect"
 
   return (
     <article
@@ -73,27 +84,39 @@ export function IntegrationCard({
         <p className="text-muted-foreground text-xs">
           {integrationStatusLabel(integration)}
         </p>
-        <Button
-          size="sm"
-          variant={action === "manage" ? "outline" : "secondary"}
-          className="shrink-0 gap-1.5"
-          disabled={
-            action === "connect" &&
-            (!composioConfigured || connecting || integration.status === "pending")
-          }
-          onClick={() => {
-            if (action === "connect" && onConnect) {
-              onConnect(integration.slug)
+        <div className="flex shrink-0 items-center gap-1.5">
+          {canReset && onReset ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs"
+              disabled={resetting || connecting}
+              onClick={() => onReset(integration.slug)}
+            >
+              {resetting ? "Resetting…" : "Reset"}
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant={action === "manage" ? "outline" : "secondary"}
+            className="gap-1.5"
+            disabled={
+              action === "connect" && (!composioConfigured || connecting || resetting)
             }
-          }}
-        >
-          {action === "manage" ? (
-            <HugeiconsIcon icon={Settings01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
-          ) : (
-            <HugeiconsIcon icon={LinkSquare01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
-          )}
-          {action === "manage" ? "Manage" : connecting ? "Connecting…" : "Connect"}
-        </Button>
+            onClick={() => {
+              if (action === "connect" && onConnect) {
+                onConnect(integration.slug)
+              }
+            }}
+          >
+            {action === "manage" ? (
+              <HugeiconsIcon icon={Settings01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
+            ) : (
+              <HugeiconsIcon icon={LinkSquare01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
+            )}
+            {action === "manage" ? "Manage" : connectLabel}
+          </Button>
+        </div>
       </div>
     </article>
   )

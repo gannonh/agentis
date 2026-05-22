@@ -153,6 +153,24 @@ export async function connectIntegration(
   return parseJson(response, connectIntegrationResponseSchema)
 }
 
+export async function resetIntegrationConnection(toolkitSlug: string): Promise<void> {
+  const response = await fetch(
+    `${API_BASE}/api/integrations/${toolkitSlug}/connection`,
+    { method: "DELETE" }
+  )
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+}
+
 export async function refreshIntegrations() {
   const response = await fetch(`${API_BASE}/api/integrations/refresh`, {
     method: "POST",

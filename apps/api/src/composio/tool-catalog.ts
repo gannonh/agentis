@@ -3,11 +3,11 @@ export const CURATED_COMPOSIO_TOOLS: Record<
   { toolSlug: string; description: string }
 > = {
   github: {
-    toolSlug: "GITHUB_LIST_REPOSITORIES_FOR_AUTHENTICATED_USER",
+    toolSlug: "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER",
     description: "List repositories for the connected GitHub account",
   },
   slack: {
-    toolSlug: "SLACK_LIST_CHANNELS",
+    toolSlug: "SLACK_LIST_ALL_CHANNELS",
     description: "List Slack channels for the connected workspace",
   },
   gmail: {

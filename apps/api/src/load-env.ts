@@ -1,7 +1,7 @@
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { config } from "dotenv"
+import { config, parse } from "dotenv"
 
 function findRepoRoot(startDir: string) {
   let current = startDir
@@ -18,9 +18,30 @@ const repoRoot = findRepoRoot(
   resolve(fileURLToPath(new URL("../..", import.meta.url)))
 )
 
-config({ path: resolve(repoRoot, ".env") })
+const rootEnvPath = resolve(repoRoot, ".env")
+config({ path: rootEnvPath })
 
 const localEnvPath = resolve(repoRoot, "apps/api/.env")
 if (existsSync(localEnvPath)) {
   config({ path: localEnvPath, override: true })
+}
+
+// Orca/Playwright often export AGENTIS_MOCK_* in the parent shell. dotenv does not
+// override existing vars, so a developer's .env AGENTIS_MOCK_COMPOSIO=0 would lose.
+// Re-apply Agentis toggles from repo .env for normal dev; E2E sets AGENTIS_E2E=1.
+if (process.env.AGENTIS_E2E !== "1" && existsSync(rootEnvPath)) {
+  const rootEnv = parse(readFileSync(rootEnvPath))
+  for (const key of [
+    "AGENTIS_MOCK_COMPOSIO",
+    "AGENTIS_MOCK_RUNTIME",
+    "DATABASE_URL",
+    "COMPOSIO_API_KEY",
+    "COMPOSIO_REDIRECT_BASE_URL",
+    "AGENTIS_WEB_ORIGIN",
+  ] as const) {
+    const value = rootEnv[key]
+    if (value !== undefined && value !== "") {
+      process.env[key] = value
+    }
+  }
 }
