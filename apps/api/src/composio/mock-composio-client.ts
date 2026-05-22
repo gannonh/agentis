@@ -1,0 +1,105 @@
+import type { ConnectionStatus } from "@workspace/shared"
+import type {
+  ComposioAuthorizeResult,
+  ComposioClientAdapter,
+  ComposioConnectedAccount,
+  ComposioToolExecuteInput,
+  ComposioToolExecuteResult,
+} from "./types.js"
+import { CURATED_COMPOSIO_TOOLS } from "./tool-catalog.js"
+
+const mockAccounts = new Map<string, ComposioConnectedAccount>()
+
+function mapMockStatus(status: string): ConnectionStatus {
+  if (status === "ACTIVE") return "connected"
+  if (status === "PENDING") return "pending"
+  if (status === "EXPIRED") return "expired"
+  return "error"
+}
+
+export class MockComposioClient implements ComposioClientAdapter {
+  async authorizeToolkit(
+    userId: string,
+    toolkitSlug: string,
+    callbackUrl: string
+  ): Promise<ComposioAuthorizeResult> {
+    const connectionRequestId = `mock-req-${toolkitSlug}-${userId}`
+    const connectedAccountId = `mock-acct-${toolkitSlug}-${userId}`
+    mockAccounts.set(connectedAccountId, {
+      id: connectedAccountId,
+      toolkitSlug,
+      status: "pending",
+      accountLabel: `Mock ${toolkitSlug}`,
+    })
+    const redirectUrl = `${callbackUrl}?connectionRequestId=${encodeURIComponent(connectionRequestId)}&toolkitSlug=${encodeURIComponent(toolkitSlug)}&mock=1`
+    return { connectionRequestId, redirectUrl, connectedAccountId }
+  }
+
+  async refreshConnectedAccount(
+    connectedAccountId: string
+  ): Promise<ComposioConnectedAccount> {
+    const existing = mockAccounts.get(connectedAccountId)
+    if (!existing) {
+      return {
+        id: connectedAccountId,
+        toolkitSlug: "github",
+        status: "connected",
+        accountLabel: "Mock account",
+        scopes: ["repo"],
+      }
+    }
+    const refreshed: ComposioConnectedAccount = {
+      ...existing,
+      status: "connected",
+      scopes: ["repo"],
+    }
+    mockAccounts.set(connectedAccountId, refreshed)
+    return refreshed
+  }
+
+  async listConnectedAccounts(userId: string): Promise<ComposioConnectedAccount[]> {
+    return [...mockAccounts.values()].filter((account) =>
+      account.id.includes(userId)
+    )
+  }
+
+  async executeTool(
+    input: ComposioToolExecuteInput
+  ): Promise<ComposioToolExecuteResult> {
+    const started = Date.now()
+    const toolkitSlug = Object.entries(CURATED_COMPOSIO_TOOLS).find(
+      ([, value]) => value.toolSlug === input.toolSlug
+    )?.[0]
+
+    if (input.toolSlug.includes("GITHUB")) {
+      return {
+        data: {
+          repositories: [
+            {
+              name: "agentis",
+              fullName: "composio/agentis",
+              private: false,
+            },
+          ],
+          toolkitSlug: toolkitSlug ?? "github",
+          mock: true,
+        },
+        durationMs: Date.now() - started,
+      }
+    }
+
+    return {
+      data: {
+        ok: true,
+        toolSlug: input.toolSlug,
+        toolkitSlug: toolkitSlug ?? "unknown",
+        mock: true,
+      },
+      durationMs: Date.now() - started,
+    }
+  }
+}
+
+export function mapComposioAccountStatus(status: string): ConnectionStatus {
+  return mapMockStatus(status)
+}

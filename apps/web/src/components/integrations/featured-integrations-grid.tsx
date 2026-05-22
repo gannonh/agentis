@@ -1,13 +1,21 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import { StarIcon } from "@hugeicons/core-free-icons"
+import type { IntegrationToolkit } from "@workspace/shared"
 import { IntegrationCard } from "@/components/integrations/integration-card"
-import type { Integration } from "@/fixtures/schema"
 
 type FeaturedIntegrationsGridProps = {
-  integrations: Integration[]
+  integrations: IntegrationToolkit[]
+  composioConfigured: boolean
+  onConnect?: (slug: string) => void
+  connectingSlug?: string | null
 }
 
-export function FeaturedIntegrationsGrid({ integrations }: FeaturedIntegrationsGridProps) {
+export function FeaturedIntegrationsGrid({
+  integrations,
+  composioConfigured,
+  onConnect,
+  connectingSlug,
+}: FeaturedIntegrationsGridProps) {
   if (integrations.length === 0) {
     return (
       <p className="text-muted-foreground rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm">
@@ -31,7 +39,13 @@ export function FeaturedIntegrationsGrid({ integrations }: FeaturedIntegrationsG
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {integrations.map((integration) => (
-          <IntegrationCard key={integration.id} integration={integration} />
+          <IntegrationCard
+            key={integration.slug}
+            integration={integration}
+            composioConfigured={composioConfigured}
+            onConnect={onConnect}
+            connecting={connectingSlug === integration.slug}
+          />
         ))}
       </div>
     </section>

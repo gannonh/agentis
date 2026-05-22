@@ -1,11 +1,19 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
+import type { ComposioServices } from "./composio/index.js"
+import { createComposioServices } from "./composio/index.js"
 import type { AppConfig } from "./config.js"
 import type { Repositories } from "./repositories/index.js"
+import { createIntegrationRoutes } from "./routes/integrations.js"
 import { createRuntimeRoutes } from "./routes/runtime.js"
 import { createRunRoutes, createThreadRoutes } from "./routes/threads.js"
+import { createToolGrantRoutes } from "./routes/tool-grants.js"
 
-export function createApp(repos: Repositories, config: AppConfig) {
+export function createApp(
+  repos: Repositories,
+  config: AppConfig,
+  services: ComposioServices = createComposioServices(repos, config)
+) {
   const app = new Hono()
 
   app.use(
@@ -18,8 +26,13 @@ export function createApp(repos: Repositories, config: AppConfig) {
   )
 
   app.route("/api/runtime", createRuntimeRoutes(config))
+  app.route("/api/integrations", createIntegrationRoutes(services, config))
   app.route("/api/threads", createThreadRoutes(repos, config))
-  app.route("/api/runs", createRunRoutes(repos, config))
+  app.route(
+    "/api/threads",
+    createToolGrantRoutes(repos, services, config)
+  )
+  app.route("/api/runs", createRunRoutes(repos, config, services))
 
   app.get("/api/health", (c) => c.json({ ok: true }))
 

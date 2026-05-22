@@ -3,50 +3,45 @@ import {
   LinkSquare01Icon,
   Settings01Icon,
   Tick01Icon,
-  Wrench01Icon,
 } from "@hugeicons/core-free-icons"
+import type { IntegrationToolkit } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import { IntegrationMark } from "@/lib/integration-mark"
-import type { Integration } from "@/fixtures/schema"
 import { cn } from "@workspace/ui/lib/utils"
 
-function integrationStatusLabel(integration: Integration): string {
-  if (integration.status === "connected" && integration.connectedAccounts) {
-    const count = integration.connectedAccounts
+function integrationStatusLabel(integration: IntegrationToolkit): string {
+  if (integration.status === "connected") {
+    const count = integration.connectedAccountCount
     return count === 1 ? "1 connected account" : `${count} connected accounts`
   }
-  if (integration.status === "oauth_required") {
-    return "OAuth required"
+  if (integration.status === "pending") {
+    return "Connection pending"
   }
-  if (integration.status === "not_configured") {
-    return "Not configured"
+  if (integration.status === "expired") {
+    return "Connection expired"
+  }
+  if (integration.status === "error") {
+    return "Connection error"
   }
   return "Not connected"
 }
 
-function integrationAction(integration: Integration): "manage" | "configure" | "connect" {
-  if (integration.status === "connected") {
-    return "manage"
-  }
-  if (integration.status === "not_configured" && integration.id === "databricks") {
-    return "configure"
-  }
-  return "connect"
-}
-
-const actionCopy = {
-  manage: "Manage",
-  configure: "Configure",
-  connect: "Connect",
-} as const
-
 type IntegrationCardProps = {
-  integration: Integration
+  integration: IntegrationToolkit
+  composioConfigured: boolean
+  onConnect?: (slug: string) => void
+  onRefresh?: () => void
+  connecting?: boolean
 }
 
-export function IntegrationCard({ integration }: IntegrationCardProps) {
+export function IntegrationCard({
+  integration,
+  composioConfigured,
+  onConnect,
+  connecting,
+}: IntegrationCardProps) {
   const isConnected = integration.status === "connected"
-  const action = integrationAction(integration)
+  const action = isConnected ? "manage" : "connect"
 
   return (
     <article
@@ -65,7 +60,7 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
       ) : null}
 
       <div className="flex items-start gap-3 pr-6">
-        <IntegrationMark integrationId={integration.id} />
+        <IntegrationMark integrationId={integration.slug} />
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="text-sm font-medium">{integration.name}</h3>
           <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
@@ -75,23 +70,29 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
       </div>
 
       <div className="mt-auto flex items-center justify-between gap-2">
-        <p className="text-muted-foreground text-xs">{integrationStatusLabel(integration)}</p>
+        <p className="text-muted-foreground text-xs">
+          {integrationStatusLabel(integration)}
+        </p>
         <Button
           size="sm"
-          variant={action === "configure" ? "outline" : "secondary"}
+          variant={action === "manage" ? "outline" : "secondary"}
           className="shrink-0 gap-1.5"
-          disabled
+          disabled={
+            action === "connect" &&
+            (!composioConfigured || connecting || integration.status === "pending")
+          }
+          onClick={() => {
+            if (action === "connect" && onConnect) {
+              onConnect(integration.slug)
+            }
+          }}
         >
           {action === "manage" ? (
             <HugeiconsIcon icon={Settings01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
-          ) : null}
-          {action === "configure" ? (
-            <HugeiconsIcon icon={Wrench01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
-          ) : null}
-          {action === "connect" ? (
+          ) : (
             <HugeiconsIcon icon={LinkSquare01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
-          ) : null}
-          {actionCopy[action]}
+          )}
+          {action === "manage" ? "Manage" : connecting ? "Connecting…" : "Connect"}
         </Button>
       </div>
     </article>

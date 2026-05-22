@@ -19,7 +19,8 @@ const migrationsFolder = join(
 )
 migrate(db, { migrationsFolder })
 
-const repos = createRepositories(db)
+const repos = createRepositories(db, config)
+repos.integrationToolkits.seedFeatured()
 const app = createApp(repos, config)
 
 serve(

@@ -1,16 +1,27 @@
 import {
   abortRunResponseSchema,
+  connectIntegrationResponseSchema,
   createFollowUpResponseSchema,
   createThreadRequestSchema,
   createThreadResponseSchema,
+  createToolGrantRequestSchema,
+  integrationsListResponseSchema,
+  refreshIntegrationsResponseSchema,
   runtimeHealthSchema,
   threadDetailSchema,
   threadListItemSchema,
+  threadToolGrantsResponseSchema,
+  toolAccessGrantSchema,
+  type ConnectIntegrationResponse,
   type CreateFollowUpRequest,
   type CreateThreadRequest,
+  type CreateToolGrantRequest,
+  type IntegrationsListResponse,
   type RuntimeHealth,
   type ThreadDetail,
   type ThreadListItem,
+  type ThreadToolGrantsResponse,
+  type ToolAccessGrant,
 } from "@workspace/shared"
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ""
@@ -125,6 +136,69 @@ export async function streamRun(runId: string, signal?: AbortSignal) {
     throw new ApiError("Missing stream body", 500)
   }
   return response.body
+}
+
+export async function listIntegrations(): Promise<IntegrationsListResponse> {
+  const response = await fetch(`${API_BASE}/api/integrations`)
+  return parseJson(response, integrationsListResponseSchema)
+}
+
+export async function connectIntegration(
+  toolkitSlug: string
+): Promise<ConnectIntegrationResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/integrations/${toolkitSlug}/connect`,
+    { method: "POST" }
+  )
+  return parseJson(response, connectIntegrationResponseSchema)
+}
+
+export async function refreshIntegrations() {
+  const response = await fetch(`${API_BASE}/api/integrations/refresh`, {
+    method: "POST",
+  })
+  return parseJson(response, refreshIntegrationsResponseSchema)
+}
+
+export async function getThreadToolGrants(
+  threadId: string
+): Promise<ThreadToolGrantsResponse> {
+  const response = await fetch(`${API_BASE}/api/threads/${threadId}/tool-grants`)
+  return parseJson(response, threadToolGrantsResponseSchema)
+}
+
+export async function grantThreadTool(
+  threadId: string,
+  body: CreateToolGrantRequest
+): Promise<ToolAccessGrant> {
+  const payload = createToolGrantRequestSchema.parse(body)
+  const response = await fetch(`${API_BASE}/api/threads/${threadId}/tool-grants`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, toolAccessGrantSchema)
+}
+
+export async function revokeThreadToolGrant(
+  threadId: string,
+  grantId: string
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE}/api/threads/${threadId}/tool-grants/${grantId}`,
+    { method: "DELETE" }
+  )
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
 }
 
 export async function abortRun(runId: string) {

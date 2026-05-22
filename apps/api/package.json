@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.0",
+    "@composio/core": "^0.10.0",
     "@hono/node-server": "^1.19.0",
     "@workspace/shared": "workspace:*",
     "ai": "^5.0.0",

@@ -2,6 +2,11 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { streamText, type LanguageModel, type ModelMessage, type UIMessage } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
 import type { Message, MessagePart, Run } from "@workspace/shared"
+import type { ComposioServices } from "../composio/index.js"
+import {
+  ComposioRemediationError,
+} from "../composio/tool-execution-service.js"
+import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
 import {
@@ -13,8 +18,9 @@ import {
 import { getWorkspaceSummaryTool } from "./get-workspace-summary.js"
 import { nowIso } from "../lib/ids.js"
 
-const tools = {
-  getWorkspaceSummary: getWorkspaceSummaryTool,
+function composioToolNameToToolkit(toolName: string): string | undefined {
+  if (!toolName.startsWith("composio_")) return undefined
+  return toolName.replace(/^composio_/, "").replace(/_/g, "-")
 }
 
 function getTextFromParts(parts: MessagePart[]) {
@@ -52,7 +58,8 @@ function toUiMessages(messages: Message[]): UIMessage[] {
 export class RunExecutor {
   constructor(
     private readonly repos: Repositories,
-    private readonly config: AppConfig
+    private readonly config: AppConfig,
+    private readonly services: ComposioServices
   ) {}
 
   async executeStream(runId: string) {
@@ -76,6 +83,44 @@ export class RunExecutor {
     }
 
     const threadMessages = this.repos.messages.listByThreadId(run.threadId)
+    const latestUserPrompt =
+      [...threadMessages]
+        .reverse()
+        .find((message) => message.role === "user")
+        ?.parts.filter((part) => part.type === "text")
+        .map((part) => part.text)
+        .join("") ?? ""
+
+    const remediation = this.services.toolExecution.checkPreflightRemediation(
+      latestUserPrompt,
+      run.threadId
+    )
+    if (remediation) {
+      return this.failWithRemediation(runId, run.threadId, remediation)
+    }
+
+    const composioTools = this.services.toolExecution.buildRuntimeTools(
+      run.threadId
+    )
+    const runtimeTools = {
+      getWorkspaceSummary: getWorkspaceSummaryTool,
+      ...composioTools,
+    }
+
+    if (
+      this.config.mockRuntime &&
+      Object.keys(composioTools).length > 0 &&
+      /github|repo/i.test(latestUserPrompt)
+    ) {
+      return this.executeMockComposioStream(
+        runId,
+        run,
+        threadMessages,
+        composioTools,
+        latestUserPrompt
+      )
+    }
+
     const assistantMessage = this.repos.messages.create({
       threadId: run.threadId,
       role: "assistant",
@@ -135,7 +180,7 @@ export class RunExecutor {
       system:
         "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations.",
       messages: modelMessages,
-      tools,
+      tools: runtimeTools,
       abortSignal: controller.signal,
       onChunk: async ({ chunk }) => {
         if (chunk.type === "text-delta") {
@@ -151,16 +196,28 @@ export class RunExecutor {
 
         if (chunk.type === "tool-call") {
           this.repos.runs.updateStatus(runId, "tool-calling")
+          const toolkitSlug = composioToolNameToToolkit(chunk.toolName)
+          const curated = toolkitSlug
+            ? CURATED_COMPOSIO_TOOLS[toolkitSlug]
+            : undefined
           const step = this.repos.steps.create({
             runId,
             type: "tool-call",
             status: "running",
-            title: `Tool: ${chunk.toolName}`,
-            payload: {
-              toolCallId: chunk.toolCallId,
-              toolName: chunk.toolName,
-              input: chunk.input,
-            },
+            title: curated
+              ? `Composio: ${toolkitSlug}`
+              : `Tool: ${chunk.toolName}`,
+            payload: toolkitSlug && curated
+              ? this.services.toolExecution.formatRunStepPayload({
+                  toolkitSlug,
+                  toolSlug: curated.toolSlug,
+                  toolInput: chunk.input,
+                })
+              : {
+                  toolCallId: chunk.toolCallId,
+                  toolName: chunk.toolName,
+                  input: chunk.input,
+                },
           })
           toolStepIds.set(chunk.toolCallId, step.id)
           assistantParts = [
@@ -181,16 +238,28 @@ export class RunExecutor {
         }
 
         if (chunk.type === "tool-result") {
+          const toolkitSlug = composioToolNameToToolkit(chunk.toolName)
+          const curated = toolkitSlug
+            ? CURATED_COMPOSIO_TOOLS[toolkitSlug]
+            : undefined
           const stepId = toolStepIds.get(chunk.toolCallId)
           if (stepId) {
             this.repos.steps.update(stepId, {
               status: "completed",
-              title: `Tool: ${chunk.toolName}`,
-              payload: {
-                toolCallId: chunk.toolCallId,
-                toolName: chunk.toolName,
-                output: chunk.output,
-              },
+              title: curated
+                ? `Composio: ${toolkitSlug}`
+                : `Tool: ${chunk.toolName}`,
+              payload: toolkitSlug && curated
+                ? this.services.toolExecution.formatRunStepPayload({
+                    toolkitSlug,
+                    toolSlug: curated.toolSlug,
+                    toolOutput: chunk.output,
+                  })
+                : {
+                    toolCallId: chunk.toolCallId,
+                    toolName: chunk.toolName,
+                    output: chunk.output,
+                  },
             })
           }
           this.repos.runs.updateStatus(runId, "running")
@@ -303,6 +372,188 @@ export class RunExecutor {
     }
 
     return this.repos.runs.getById(runId)
+  }
+
+  private failWithRemediation(
+    runId: string,
+    threadId: string,
+    error: ComposioRemediationError
+  ) {
+    const assistantMessage = this.repos.messages.create({
+      threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: error.message }],
+      status: "failed",
+    })
+    this.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: error.message,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Integration required",
+      payload: this.services.toolExecution.formatRunStepPayload({
+        toolkitSlug: error.toolkitSlug ?? "unknown",
+        toolSlug: "preflight",
+        error: error.message,
+        remediation: error.code,
+      }),
+    })
+    this.repos.threads.touch(threadId, { status: "failed" })
+    throw new Error(error.message)
+  }
+
+  private async executeMockComposioStream(
+    runId: string,
+    run: Run,
+    threadMessages: Message[],
+    composioTools: Record<string, ReturnType<typeof import("ai").tool>>,
+    latestUserPrompt: string
+  ) {
+    const thread = this.repos.threads.getById(run.threadId)
+    if (!thread) throw new Error("Thread not found")
+
+    const assistantMessage = this.repos.messages.create({
+      threadId: run.threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: "" }],
+      status: "streaming",
+    })
+
+    this.repos.runs.updateStatus(runId, "running")
+    this.repos.steps.create({
+      runId,
+      type: "running",
+      status: "running",
+      title: "Running",
+    })
+
+    const toolName = Object.keys(composioTools)[0]!
+    const toolkitSlug = composioToolNameToToolkit(toolName) ?? "github"
+    const curated = CURATED_COMPOSIO_TOOLS[toolkitSlug]!
+    const toolCallId = `mock-tool-${runId}`
+
+    let toolOutput: unknown = { note: "mock" }
+    try {
+      const toolDef = composioTools[toolName] as {
+        execute?: (input: { note?: string }) => Promise<unknown>
+      }
+      if (toolDef.execute) {
+        toolOutput = await toolDef.execute({ note: latestUserPrompt })
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Composio tool failed"
+      this.repos.messages.updatePartsAndStatus(
+        assistantMessage.id,
+        [{ type: "text", text: message }],
+        "failed"
+      )
+      this.repos.runs.updateStatus(runId, "failed", {
+        finishedAt: nowIso(),
+        errorSummary: message,
+      })
+      this.repos.steps.create({
+        runId,
+        type: "error",
+        status: "failed",
+        title: "Composio tool failed",
+        payload: { message },
+      })
+      throw new Error(message)
+    }
+
+    const summaryText =
+      typeof toolOutput === "object" && toolOutput !== null
+        ? `GitHub tool completed. Found ${(toolOutput as { repositories?: unknown[] }).repositories?.length ?? 0} repositories (mock).`
+        : "Composio tool completed."
+
+    const assistantParts: MessagePart[] = [
+      { type: "text", text: summaryText },
+      {
+        type: "tool-call",
+        toolCallId,
+        toolName,
+        input: {},
+      },
+      {
+        type: "tool-result",
+        toolCallId,
+        toolName,
+        output: toolOutput,
+      },
+    ]
+
+    this.repos.steps.create({
+      runId,
+      type: "tool-call",
+      status: "completed",
+      title: `Composio: ${toolkitSlug}`,
+      payload: this.services.toolExecution.formatRunStepPayload({
+        toolkitSlug,
+        toolSlug: curated.toolSlug,
+        toolInput: {},
+      }),
+    })
+    this.repos.steps.create({
+      runId,
+      type: "tool-result",
+      status: "completed",
+      title: `Composio: ${toolkitSlug}`,
+      payload: this.services.toolExecution.formatRunStepPayload({
+        toolkitSlug,
+        toolSlug: curated.toolSlug,
+        toolOutput,
+      }),
+    })
+
+    this.repos.messages.updatePartsAndStatus(
+      assistantMessage.id,
+      assistantParts,
+      "completed"
+    )
+    this.repos.runs.updateStatus(runId, "completed", {
+      finishedAt: nowIso(),
+      usage: { totalTokens: 0 },
+    })
+    this.repos.steps.create({
+      runId,
+      type: "completed",
+      status: "completed",
+      title: "Completed",
+    })
+    this.repos.threads.touch(run.threadId)
+
+    const model: LanguageModel = new MockLanguageModelV2({
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({
+              type: "text-delta",
+              id: "t1",
+              delta: summaryText,
+            })
+            controller.enqueue({
+              type: "finish",
+              finishReason: "stop",
+              usage: { inputTokens: 1, outputTokens: 10, totalTokens: 11 },
+            })
+            controller.close()
+          },
+        }),
+      }),
+    })
+
+    const result = streamText({
+      model,
+      messages: toModelMessages(threadMessages),
+    })
+
+    return result.toUIMessageStreamResponse({
+      originalMessages: toUiMessages(threadMessages),
+    })
   }
 
   private persistAbortedRun(

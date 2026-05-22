@@ -1,6 +1,6 @@
 # M03 Composio Integrations and Tool Access Spec
 ## Status
-Approved
+Implemented
 ## Goal
 Let users connect external tools through Composio, grant connected tools to a thread, and run a prompt that executes an allowed Composio tool with visible timeline logging and recovery paths.
 ## Background
@@ -586,3 +586,50 @@ pnpm test:e2e
   
 ## Open questions
 - None.
+
+## Build completion report
+
+- **Spec path:** `docs/specs/2026-05-21-m03-composio-integrations-tool-access.md`
+- **Base SHA:** `aa63db88b5a8ddeb29ea66245dc8342e19a189f4`
+- **Final head SHA:** `aa63db88b5a8ddeb29ea66245dc8342e19a189f4` (implementation uncommitted on branch `gannonhall/m03-compsio`)
+- **Execution mode:** Single-agent path; independent subagent spec/code review was not performed.
+
+### Tasks completed
+
+| Phase | Summary |
+| ----- | ------- |
+| 1 | Shared Zod DTOs, Drizzle tables/migration, repositories, seeds, config |
+| 2 | Composio adapter (mock + live), integration and tool-grant API routes, runtime health |
+| 3 | API-backed Integrations page and hooks |
+| 4 | Thread tool-access picker, grants API client, composer chips |
+| 5 | Run executor Composio bridge, preflight remediation, timeline metadata |
+| 6 | Playwright E2E (mock GitHub connect/grant/execute + Slack remediation), `.env.example` |
+
+### Verification results
+
+| Command | Result |
+| ------- | ------ |
+| `pnpm --filter @workspace/shared test` | Pass |
+| `pnpm --filter api test` (15) | Pass |
+| `pnpm --filter web test` (22) | Pass |
+| `pnpm typecheck` | Pass |
+| `pnpm build` | Pass (after removing unused `DropdownMenuSeparator` import) |
+| `pnpm lint` | Pass (1 pre-existing warning in `mockServiceWorker.js`) |
+| `pnpm test:coverage` | Pass |
+| `pnpm test:e2e` (12 tests) | Pass |
+
+### Approved deviations
+
+- **E2E web port:** Playwright and `dev:e2e` / `preview:e2e` use port **5175** (not 5173) to avoid conflicts with other local Vite apps; `strictPort: true` in Playwright config.
+- **Migration 0001:** Removed duplicate index DDL from drizzle-kit output; ordered `integration_toolkits` before `integration_connections`.
+- **Pending reconnect:** `startConnection` allows retry when status is `pending` (errors only on `connected`).
+
+### Known follow-up
+
+- Live Composio OAuth/callback not exercised in CI; manual check needs `COMPOSIO_API_KEY` + `COMPOSIO_REDIRECT_BASE_URL`.
+- MSW still serves fixture data for some non-thread routes; integrations/thread paths hit the API.
+- No git commits were made in this Build session unless the user requests them.
+
+### Spec compliance (self-review)
+
+Implemented scope matches the approved spec: five featured toolkits, connect flow, SQLite metadata, thread grants, curated runtime execution, timeline logging, remediation, mock modes, and server-only secrets. Non-goals (full catalog, agent UI, invocations, production auth) were not expanded.
