@@ -1,6 +1,6 @@
 # M03 Composio Integrations and Tool Access Spec
 ## Status
-Implemented
+Verified
 ## Goal
 Let users connect external tools through Composio, grant connected tools to a thread, and run a prompt that executes an allowed Composio tool with visible timeline logging and recovery paths.
 ## Background
@@ -591,7 +591,7 @@ pnpm test:e2e
 
 - **Spec path:** `docs/specs/2026-05-21-m03-composio-integrations-tool-access.md`
 - **Base SHA:** `aa63db88b5a8ddeb29ea66245dc8342e19a189f4`
-- **Final head SHA:** `aa63db88b5a8ddeb29ea66245dc8342e19a189f4` (implementation uncommitted on branch `gannonhall/m03-compsio`)
+- **Final head SHA:** `2165a6eaee7427c7a952f0b89d1894390d43eda4` (`feat(integrations): add Composio connections, grants, and runtime tools`)
 - **Execution mode:** Single-agent path; independent subagent spec/code review was not performed.
 
 ### Tasks completed
@@ -628,8 +628,75 @@ pnpm test:e2e
 
 - Live Composio OAuth/callback not exercised in CI; manual check needs `COMPOSIO_API_KEY` + `COMPOSIO_REDIRECT_BASE_URL`.
 - MSW still serves fixture data for some non-thread routes; integrations/thread paths hit the API.
-- No git commits were made in this Build session unless the user requests them.
-
 ### Spec compliance (self-review)
 
 Implemented scope matches the approved spec: five featured toolkits, connect flow, SQLite metadata, thread grants, curated runtime execution, timeline logging, remediation, mock modes, and server-only secrets. Non-goals (full catalog, agent UI, invocations, production auth) were not expanded.
+
+## Verification report
+
+**UAT scope:** M03 Composio integrations and tool access on branch `gannonhall/m03-compsio` at `2165a6ea`.
+
+### Verdict
+
+**Pass with follow-ups** — mock-mode acceptance criteria are met with automated and E2E evidence; live Composio OAuth was not exercised in this verify run.
+
+### Summary
+
+Committed implementation passes the full repo verification suite (37 unit tests, 12 E2E tests). Mock GitHub connect → grant → tool execution and Slack remediation paths are covered by Playwright and API/runtime tests. Live Composio remains a manual follow-up when credentials are available.
+
+### Acceptance matrix
+
+| Result | Criterion | Evidence |
+| ------ | --------- | -------- |
+| Pass | Connect integration from Integrations screen (mock mode) | `apps/web/e2e/composio-integrations.spec.ts` (GitHub connect via API + UI grant) |
+| Not tested | Connect in live Composio mode | Requires `COMPOSIO_API_KEY` + OAuth callback; CI uses `AGENTIS_MOCK_COMPOSIO=1` |
+| Pass | Five featured toolkits, API-backed status and search | `apps/api/src/routes/integrations.test.ts`; `apps/web/src/routes/integrations.test.tsx` |
+| Pass | Connection state survives restart | `integration-repositories.test.ts` (SQLite persistence); E2E reload keeps grant chip |
+| Pass | Enable connected integration for a thread | E2E Tools menu grant; `integrations.test.ts` grant/revoke routes |
+| Pass | Composer shows granted tool chips | E2E `GitHub connected` chip after grant + reload |
+| Pass | Prompt calls granted Composio tool and completes run | E2E mock GitHub tool output in conversation log |
+| Pass | Timeline shows tool metadata | `run-executor.test.ts`; runtime step payloads with sanitization |
+| Pass | Disconnected/ungranted remediation visible | E2E Slack message; `run-executor.test.ts` remediation step |
+| Pass | Secrets not in frontend/payloads/logs | `COMPOSIO_API_KEY` only in API config and user-facing setup strings; `sanitize.ts` redaction |
+| Pass | `typecheck`, `build`, `lint` | Verify run at `2165a6ea` |
+| Pass | `test:coverage`, `test:e2e` | 12/12 E2E pass; coverage task green |
+
+### Commands run (at `2165a6ea`)
+
+- `pnpm --filter @workspace/shared test` — pass
+- `pnpm --filter api test` — 15 pass
+- `pnpm --filter web test` — 22 pass
+- `pnpm typecheck` — pass
+- `pnpm build` — pass
+- `pnpm lint` — pass (1 pre-existing MSW warning)
+- `pnpm test:coverage` — pass
+- `pnpm test:e2e` — 12 pass
+
+### Manual test guide
+
+```bash
+# Terminal 1 — API
+AGENTIS_MOCK_RUNTIME=1 AGENTIS_MOCK_COMPOSIO=1 COMPOSIO_REDIRECT_BASE_URL=http://127.0.0.1:3001 pnpm --filter api dev
+
+# Terminal 2 — Web (E2E port or default)
+pnpm --filter web dev
+# or: pnpm --filter web dev:e2e  # port 5175
+```
+
+1. Open `/integrations` — confirm Slack, Gmail, Google Drive, GitHub, Airtable appear.
+2. Connect GitHub (mock completes via redirect callback).
+3. Start a thread, open **Tools**, grant GitHub, confirm chip.
+4. Ask “List my GitHub repositories” — confirm mock tool output in the thread.
+5. Ask “Send this to Slack” without connecting Slack — confirm remediation copy.
+
+### Issues
+
+**Blocker:** None
+
+**Important:** Live Composio OAuth not verified in CI; validate once with real `COMPOSIO_API_KEY`.
+
+**Minor:** MSW still fixtures some non-integration routes; web hook coverage for grants/picker is thin in unit coverage (E2E compensates).
+
+### Recommendation
+
+**Pending user sign-off** — safe to open/merge for mock-mode M03 delivery; optional manual live Composio smoke before production use.
