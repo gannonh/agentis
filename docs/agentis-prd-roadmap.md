@@ -86,7 +86,7 @@ Acceptance:
 - Lint, typecheck, tests, and build run from documented commands.
 - First contributor can clone, configure, and run the frontend using the README.
 
-### M02: Threads and Run Lifecycle
+### M02: Threads and Run Lifecycle ✅
 
 Goal: turn the new-thread shell into a functional session surface backed by a minimal local agent runtime.
 
