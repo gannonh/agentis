@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
+import { IntegrationService } from "../composio/integration-service.js"
+import type { ComposioClientAdapter } from "../composio/types.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -57,6 +59,110 @@ describe("integration routes", () => {
     const github = listBody.toolkits.find((t) => t.slug === "github")
     expect(github?.status).toBe("connected")
     expect(github?.connectedAccountCount).toBeGreaterThan(0)
+  })
+
+  it("accepts callbacks when Composio returns the provider slug for the requested toolkit", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    ctx.repos.integrationConnections.create({
+      toolkitSlug: "google-drive",
+      status: "pending",
+      composioConnectionRequestId: "req-google-drive",
+      composioConnectedAccountId: "acct-google-drive",
+    })
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit() {
+        throw new Error("unused")
+      },
+      async refreshConnectedAccount() {
+        return {
+          id: "acct-google-drive",
+          toolkitSlug: "googledrive",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return []
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config).toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const callback = await app.request(
+      "/api/integrations/callback?connectionRequestId=req-google-drive&toolkitSlug=google-drive",
+      { method: "GET" }
+    )
+
+    expect(callback.status).toBe(302)
+    expect(callback.headers.get("location")).toContain("connected=google-drive")
+
+    const list = await app.request("/api/integrations")
+    const listBody = (await list.json()) as {
+      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+    }
+    const googleDrive = listBody.toolkits.find((t) => t.slug === "google-drive")
+    expect(googleDrive?.status).toBe("connected")
+    expect(googleDrive?.connectedAccountCount).toBe(1)
+  })
+
+  it("rejects callbacks when Composio returns an account for a different toolkit", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    ctx.repos.integrationConnections.create({
+      toolkitSlug: "google-drive",
+      status: "pending",
+      composioConnectionRequestId: "req-google-drive",
+      composioConnectedAccountId: "acct-github",
+    })
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit() {
+        throw new Error("unused")
+      },
+      async refreshConnectedAccount() {
+        return {
+          id: "acct-github",
+          toolkitSlug: "github",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return []
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config).toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const callback = await app.request(
+      "/api/integrations/callback?connectionRequestId=req-google-drive&toolkitSlug=google-drive",
+      { method: "GET" }
+    )
+
+    expect(callback.status).toBe(302)
+    expect(callback.headers.get("location")).toContain(
+      "error=toolkit_connection_mismatch"
+    )
+
+    const list = await app.request("/api/integrations")
+    const listBody = (await list.json()) as {
+      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+    }
+    const googleDrive = listBody.toolkits.find((t) => t.slug === "google-drive")
+    expect(googleDrive?.status).toBe("error")
+    expect(googleDrive?.connectedAccountCount).toBe(0)
   })
 
   it("resets a pending connection so the toolkit shows not connected", async () => {

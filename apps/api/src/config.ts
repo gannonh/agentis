@@ -1,4 +1,5 @@
 import { DEFAULT_OPENAI_MODEL } from "@workspace/shared"
+import { toComposioToolkitSlug } from "./composio/toolkit-slugs.js"
 import { FEATURED_TOOLKIT_SLUGS } from "./repositories/integration-seeds.js"
 
 /** Composio toolkit versions for manual tool execution when env is unset. */
@@ -6,7 +7,7 @@ export const DEFAULT_COMPOSIO_TOOLKIT_VERSIONS: Record<string, string> = {
   github: "20260501_01",
   slack: "20260519_01",
   gmail: "20260515_00",
-  "google-drive": "20260519_01",
+  googledrive: "20260519_01",
   airtable: "20260506_00",
 }
 
@@ -55,7 +56,7 @@ function resolveComposioToolkitVersions(
     const envKey = `COMPOSIO_TOOLKIT_VERSION_${slug.replace(/-/g, "_").toUpperCase()}`
     const single = env[envKey]
     if (typeof single === "string" && single.trim()) {
-      merged[slug] = single.trim()
+      merged[toComposioToolkitSlug(slug)] = single.trim()
     }
   }
   return { ...merged, ...fromEnv }

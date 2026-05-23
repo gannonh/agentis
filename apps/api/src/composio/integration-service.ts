@@ -9,6 +9,7 @@ import type { Repositories } from "../repositories/index.js"
 import { FEATURED_TOOLKIT_SLUGS } from "../repositories/integration-seeds.js"
 import type { ComposioClientAdapter } from "./types.js"
 import { listAvailableToolsForToolkit } from "./tool-catalog.js"
+import { toAppToolkitSlug } from "./toolkit-slugs.js"
 
 function aggregateToolkitStatus(
   connections: IntegrationConnection[]
@@ -152,6 +153,16 @@ export class IntegrationService {
         errorMessage: message,
       })
       return failed!
+    }
+
+    const refreshedToolkitSlug = toAppToolkitSlug(refreshed.toolkitSlug)
+    if (refreshedToolkitSlug !== connection.toolkitSlug) {
+      this.repos.integrationConnections.update(connection.id, {
+        status: "error",
+        errorCode: "toolkit_connection_mismatch",
+        errorMessage: `Composio returned a ${refreshedToolkitSlug} account for ${connection.toolkitSlug}.`,
+      })
+      throw new Error("toolkit_connection_mismatch")
     }
 
     const updated = this.repos.integrationConnections.update(connection.id, {
