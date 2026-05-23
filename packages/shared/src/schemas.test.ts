@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest"
 import {
+  agentDetailResponseSchema,
+  agentListItemSchema,
+  agentToolGrantsResponseSchema,
   artifactSchema,
   artifactTypeSchema,
   connectIntegrationResponseSchema,
+  createAgentRequestSchema,
   createThreadRequestSchema,
   integrationToolkitSchema,
   integrationsListResponseSchema,
@@ -16,6 +20,7 @@ import {
   threadToolGrantsResponseSchema,
   threadSchema,
   toolAccessGrantSchema,
+  updateAgentRequestSchema,
 } from "./schemas.js"
 
 describe("shared schemas", () => {
@@ -60,6 +65,79 @@ describe("shared schemas", () => {
 
   it("rejects empty create thread prompts", () => {
     expect(() => createThreadRequestSchema.parse({ prompt: "" })).toThrow()
+  })
+
+  it("parses agent create, list, detail, update, and grant payloads", () => {
+    const now = new Date().toISOString()
+    const createInput = createAgentRequestSchema.parse({
+      name: "Research Agent",
+      description: "Finds source-backed answers",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+      toolGrants: [
+        { toolkitSlug: "github", connectionId: "conn-1" },
+        { toolkitSlug: "linear" },
+      ],
+    })
+    expect(createInput.toolGrants).toHaveLength(2)
+    expect(() =>
+      createAgentRequestSchema.parse({
+        name: "",
+        systemPrompt: "Answer with citations.",
+      })
+    ).toThrow()
+    expect(() =>
+      createAgentRequestSchema.parse({ name: "Research Agent", systemPrompt: "" })
+    ).toThrow()
+
+    const updated = updateAgentRequestSchema.parse({
+      description: null,
+      model: "gpt-4.1-mini",
+      toolGrants: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+    })
+    expect(updated.description).toBeNull()
+
+    const listItem = agentListItemSchema.parse({
+      id: "agent-1",
+      name: "Research Agent",
+      description: "Finds source-backed answers",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+      createdAt: now,
+      updatedAt: now,
+      currentConfigurationVersion: {
+        id: "agent-version-1",
+        agentId: "agent-1",
+        version: 1,
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+        createdAt: now,
+      },
+      toolGrantCount: 2,
+    })
+    expect(listItem.currentConfigurationVersion.version).toBe(1)
+
+    const grants = agentToolGrantsResponseSchema.parse({
+      grants: [
+        {
+          id: "grant-1",
+          scopeType: "agent",
+          scopeId: "agent-1",
+          toolkitSlug: "github",
+          connectionId: "conn-1",
+          createdAt: now,
+        },
+      ],
+      availableToolkits: [],
+    })
+    expect(grants.grants[0]?.scopeType).toBe("agent")
+
+    const detail = agentDetailResponseSchema.parse({
+      agent: listItem,
+      configurationVersions: [listItem.currentConfigurationVersion],
+      toolGrants: grants.grants,
+    })
+    expect(detail.agent.id).toBe("agent-1")
   })
 
   it("parses integration and grant payloads", () => {
