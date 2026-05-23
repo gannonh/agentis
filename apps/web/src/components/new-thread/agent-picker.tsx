@@ -143,7 +143,7 @@ export function AgentPicker({ value, onChange, defaultOpen }: AgentPickerProps) 
 
         <DropdownMenuItem
           className="min-h-9"
-          render={<Link to="/projects/new" />}
+          render={<Link to="/agents/new" />}
         >
           <PickerAgentIconMark icon="create" size="sm" />
           <span className="text-sm">Create from scratch</span>
