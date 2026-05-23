@@ -106,6 +106,17 @@ describe("AppSidebar", () => {
     })
   })
 
+  it("links to the new-agent screen from the agents heading", async () => {
+    renderSidebar()
+    expect(screen.getByRole("link", { name: "New agent" })).toHaveAttribute(
+      "href",
+      "/agents/new"
+    )
+    await waitFor(() => {
+      expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    })
+  })
+
   it("refreshes API agents after navigation to a created agent", async () => {
     renderSidebar("/agents/agent_api_research")
     await waitFor(() => {

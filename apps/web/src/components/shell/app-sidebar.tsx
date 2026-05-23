@@ -204,13 +204,18 @@ export function AppSidebar() {
 
         <Collapsible defaultOpen className="group/collapsible">
           <SidebarGroup>
-            <SidebarGroupLabel
-              render={
-                <CollapsibleTrigger className="flex w-full items-center">
-                  Agents
-                </CollapsibleTrigger>
-              }
-            />
+            <SidebarGroupLabel className="flex w-full items-center justify-between gap-1">
+              <CollapsibleTrigger className="flex flex-1 items-center gap-1">
+                <span>Agents</span>
+              </CollapsibleTrigger>
+              <Link
+                to="/agents/new"
+                aria-label="New agent"
+                className="text-muted-foreground hover:text-sidebar-foreground flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-sidebar-accent"
+              >
+                <HugeiconsIcon icon={Add01Icon} className="size-3.5" strokeWidth={2} />
+              </Link>
+            </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
