@@ -1,5 +1,6 @@
 import type { AppConfig } from "../config.js"
 import type { AppDatabase } from "../db/client.js"
+import { AgentRepository } from "./agent-repository.js"
 import { ArtifactRepository } from "./artifact-repository.js"
 import { IntegrationConnectionRepository } from "./integration-connection-repository.js"
 import { IntegrationToolkitRepository } from "./integration-toolkit-repository.js"
@@ -21,6 +22,7 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     projects: new ProjectRepository(db),
     projectMemories: new ProjectMemoryRepository(db),
     artifacts: new ArtifactRepository(db),
+    agents: new AgentRepository(db),
     integrationToolkits: new IntegrationToolkitRepository(db),
     integrationConnections: new IntegrationConnectionRepository(
       db,
