@@ -38,7 +38,8 @@ import {
 } from "@workspace/ui/components/sidebar"
 import { cn } from "@workspace/ui/lib/utils"
 import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
-import { getNavAgents, getWorkspace } from "@/fixtures"
+import { getWorkspace } from "@/fixtures"
+import { useAgents } from "@/hooks/use-agents"
 import { useProjects } from "@/hooks/use-projects"
 import { listThreads } from "@/lib/api/client"
 
@@ -133,7 +134,7 @@ function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
 
 export function AppSidebar() {
   const workspace = getWorkspace()
-  const agents = getNavAgents().filter((a) => a.id !== "command-center")
+  const { agents } = useAgents()
   const location = useLocation()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
   const { projects, refresh: refreshProjects } = useProjects()
@@ -218,7 +219,7 @@ export function AppSidebar() {
                   </SidebarNavItem>
                   {agents.map((agent) => (
                     <SidebarNavItem key={agent.id} to={`/agents/${agent.id}`}>
-                      {agentNavIcon(agent.icon)}
+                      {agentNavIcon()}
                       <span>{agent.name}</span>
                     </SidebarNavItem>
                   ))}

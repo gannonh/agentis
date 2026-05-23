@@ -37,6 +37,34 @@ vi.mock("@/hooks/use-projects", () => ({
   }),
 }))
 
+vi.mock("@/hooks/use-agents", () => ({
+  useAgents: () => ({
+    agents: [
+      {
+        id: "agent_api_research",
+        name: "API Research Agent",
+        description: "Created through the API",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        currentConfigurationVersion: {
+          id: "agent_version_api_research",
+          agentId: "agent_api_research",
+          version: 1,
+          systemPrompt: "Answer with citations.",
+          model: "gpt-4o-mini",
+          createdAt: new Date().toISOString(),
+        },
+        toolGrantCount: 1,
+      },
+    ],
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }),
+}))
+
 function renderSidebar(initialPath = "/threads/new") {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
@@ -50,28 +78,34 @@ function renderSidebar(initialPath = "/threads/new") {
 }
 
 describe("AppSidebar", () => {
-  it("renders primary navigation links", () => {
+  it("renders primary navigation links", async () => {
     renderSidebar()
     expect(screen.getByText("New thread")).toBeInTheDocument()
     expect(screen.getByText("Search")).toBeInTheDocument()
     expect(screen.getByText("Library")).toBeInTheDocument()
     expect(screen.getByText("Learning")).toBeInTheDocument()
     expect(screen.getByText("Integrations")).toBeInTheDocument()
-  })
-
-  it("renders seeded agents and API thread labels", async () => {
-    renderSidebar()
-    expect(screen.getByText("Command Center")).toBeInTheDocument()
-    expect(screen.getByText("Senior Reviewer")).toBeInTheDocument()
-    expect(screen.getByText("Editor & Quality Gate")).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByText("Creating Agent")).toBeInTheDocument()
     })
   })
 
-  it("does not show referral promo copy", () => {
+  it("renders API agents and API thread labels", async () => {
+    renderSidebar()
+    expect(screen.getByText("Command Center")).toBeInTheDocument()
+    expect(screen.getByText("API Research Agent")).toBeInTheDocument()
+    expect(screen.queryByText("Senior Reviewer")).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    })
+  })
+
+  it("does not show referral promo copy", async () => {
     renderSidebar()
     expect(screen.queryByText(/referral/i)).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    })
   })
 
   it("lists API projects and highlights the active project from the thread", async () => {

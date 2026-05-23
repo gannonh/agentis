@@ -1,4 +1,7 @@
-import { AgentRoster } from "@/components/command-center/agent-roster"
+import {
+  AgentRoster,
+  type RosterAgent,
+} from "@/components/command-center/agent-roster"
 import { FleetStats } from "@/components/command-center/fleet-stats"
 import { NeedsAttentionPanel } from "@/components/command-center/needs-attention-panel"
 import { RecentRunsPanel } from "@/components/command-center/recent-runs-panel"
@@ -9,12 +12,28 @@ import {
 } from "@/components/command-center/sidebar-panels"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
-import { getAgentsForRoster, getWorkspace } from "@/fixtures"
+import { getWorkspace } from "@/fixtures"
+import { useAgents } from "@/hooks/use-agents"
+
+function toRosterAgent(agent: ReturnType<typeof useAgents>["agents"][number]): RosterAgent {
+  return {
+    id: agent.id,
+    name: agent.name,
+    icon: "search",
+    rosterStatus: "idle",
+    qualityTrend: "flat",
+    runCount: 0,
+    qualityScore: null,
+    costPerRun: null,
+    totalCost: 0,
+  }
+}
 
 export function CommandCenterPage() {
   const workspace = getWorkspace()
   const metrics = workspace.commandCenter
-  const roster = getAgentsForRoster()
+  const { agents } = useAgents()
+  const roster = agents.map(toRosterAgent)
 
   return (
     <PageLayout>

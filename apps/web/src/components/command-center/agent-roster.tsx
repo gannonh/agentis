@@ -17,11 +17,26 @@ import {
 import { QualityScoreCell } from "@/components/command-center/quality-score-cell"
 import { QualityTrendCell } from "@/components/command-center/quality-trend-cell"
 import { formatRelativeTime } from "@/fixtures"
-import type { Agent } from "@/fixtures/schema"
 import { cn } from "@workspace/ui/lib/utils"
 
+type AgentRosterStatus = "active" | "idle" | "error"
+type QualityTrend = "up" | "down" | "flat"
+
+export type RosterAgent = {
+  id: string
+  name: string
+  icon?: "search" | "command"
+  rosterStatus?: AgentRosterStatus
+  qualityTrend?: QualityTrend
+  lastRunAt?: string
+  runCount: number
+  qualityScore?: number | null
+  costPerRun?: number | null
+  totalCost: number
+}
+
 type AgentRosterProps = {
-  agents: Agent[]
+  agents: RosterAgent[]
 }
 
 export function AgentRoster({ agents }: AgentRosterProps) {
