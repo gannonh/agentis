@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import type { Artifact, Project, ThreadListItem } from "@workspace/shared"
+import type { ArtifactPublic as Artifact, Project, ThreadListItem } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
   DropdownMenu,

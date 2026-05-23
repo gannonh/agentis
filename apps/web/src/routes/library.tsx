@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "react-router"
-import type { Artifact, ArtifactType, Project } from "@workspace/shared"
+import type { ArtifactPublic as Artifact, ArtifactType, Project } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,

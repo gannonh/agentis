@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import type { Artifact } from "@workspace/shared"
+import type { ArtifactPublic as Artifact } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { HugeiconsIcon } from "@hugeicons/react"

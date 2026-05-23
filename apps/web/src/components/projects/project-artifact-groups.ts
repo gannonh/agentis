@@ -1,4 +1,4 @@
-import type { Artifact, ArtifactType } from "@workspace/shared"
+import type { ArtifactPublic as Artifact, ArtifactType } from "@workspace/shared"
 
 export const PROJECT_DOCUMENT_TYPES: ArtifactType[] = [
   "document",

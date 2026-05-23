@@ -7,7 +7,7 @@ import {
   projectSchema,
   updateProjectMemoryRequestSchema,
   updateProjectRequestSchema,
-  type Artifact,
+  type ArtifactPublic as Artifact,
   type ArtifactType,
   type CreateProjectMemoryRequest,
   type CreateProjectRequest,
