@@ -4,6 +4,7 @@ import type { ComposioServices } from "./composio/index.js"
 import { createComposioServices } from "./composio/index.js"
 import type { AppConfig } from "./config.js"
 import type { Repositories } from "./repositories/index.js"
+import { createAgentRoutes } from "./routes/agents.js"
 import { createArtifactRoutes } from "./routes/artifacts.js"
 import { createIntegrationRoutes } from "./routes/integrations.js"
 import { createProjectRoutes } from "./routes/projects.js"
@@ -28,6 +29,7 @@ export function createApp(
   )
 
   app.route("/api/runtime", createRuntimeRoutes(config))
+  app.route("/api/agents", createAgentRoutes(repos, config))
   app.route("/api/projects", createProjectRoutes(repos, config))
   app.route("/api/artifacts", createArtifactRoutes(repos, config))
   app.route("/api/integrations", createIntegrationRoutes(services, config))
