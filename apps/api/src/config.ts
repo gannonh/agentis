@@ -63,8 +63,10 @@ function resolveComposioToolkitVersions(
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  const port = Number(env.AGENTIS_API_PORT ?? env.PORT ?? 3101)
+
   return {
-    port: Number(env.PORT ?? 3001),
+    port,
     databaseUrl: env.DATABASE_URL ?? "./data/agentis.db",
     openAiApiKey: env.OPENAI_API_KEY,
     defaultModel: DEFAULT_OPENAI_MODEL,
@@ -74,7 +76,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     composioUserId: env.COMPOSIO_USER_ID ?? "agentis-local-user",
     composioToolkitVersions: resolveComposioToolkitVersions(env),
     mockComposio: env.AGENTIS_MOCK_COMPOSIO === "1",
-    webAppOrigin: env.AGENTIS_WEB_ORIGIN ?? "http://localhost:5173",
+    webAppOrigin: env.AGENTIS_WEB_ORIGIN ?? "http://127.0.0.1:5177",
     storageRoot: env.AGENTIS_STORAGE_ROOT ?? "./data/storage",
     artifactMaxUploadBytes: Number(
       env.AGENTIS_ARTIFACT_MAX_UPLOAD_BYTES ?? 10_485_760

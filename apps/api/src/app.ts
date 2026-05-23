@@ -12,6 +12,23 @@ import { createRuntimeRoutes } from "./routes/runtime.js"
 import { createRunRoutes, createThreadRoutes } from "./routes/threads.js"
 import { createToolGrantRoutes } from "./routes/tool-grants.js"
 
+function getAllowedWebOrigins(webAppOrigin: string) {
+  const origins = new Set([webAppOrigin])
+  try {
+    const url = new URL(webAppOrigin)
+    if (url.hostname === "127.0.0.1") {
+      url.hostname = "localhost"
+      origins.add(url.toString().replace(/\/$/, ""))
+    } else if (url.hostname === "localhost") {
+      url.hostname = "127.0.0.1"
+      origins.add(url.toString().replace(/\/$/, ""))
+    }
+  } catch {
+    // Let CORS ignore malformed custom origins by keeping the configured value.
+  }
+  return [...origins]
+}
+
 export function createApp(
   repos: Repositories,
   config: AppConfig,
@@ -22,7 +39,7 @@ export function createApp(
   app.use(
     "*",
     cors({
-      origin: ["http://127.0.0.1:5173", "http://localhost:5173"],
+      origin: getAllowedWebOrigins(config.webAppOrigin),
       allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       allowHeaders: ["Content-Type"],
     })
