@@ -11,7 +11,8 @@ The project is currently in foundation work. Treat the architecture direction as
 - **Shared types:** `packages/shared` — Zod schemas for threads, messages, runs, and API DTOs.
 - **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared primitives. See [Component management](#component-management).
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
-- **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, Learning, Library (not thread sessions).
+- **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, and Learning (not thread sessions, projects, or Library).
+- **M04:** API-backed projects, project memories, project context on runs, local artifact storage (`AGENTIS_STORAGE_ROOT`), and Library upload/list/download.
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
 ## Routes
@@ -24,8 +25,9 @@ The project is currently in foundation work. Treat the architecture direction as
 | `/agents/:agentId` | Agent detail |
 | `/learning` | Learning dashboard |
 | `/integrations` | Integrations catalog |
-| `/projects/new` | Create project |
-| `/library` | Artifact library |
+| `/projects/new` | Create project (API-backed) |
+| `/projects/:projectId` | Edit project, memories, archive |
+| `/library` | Artifact library (API-backed) |
 | `/search` | Search placeholder |
 
 ## Commands

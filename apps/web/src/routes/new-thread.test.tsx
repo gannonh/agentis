@@ -29,6 +29,15 @@ vi.mock("@/lib/api/client", () => ({
   }),
 }))
 
+vi.mock("@/hooks/use-projects", () => ({
+  useProjects: () => ({
+    projects: [{ id: "project_test", name: "Launch", status: "active" }],
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }),
+}))
+
 describe("NewThreadPage", () => {
   beforeEach(() => {
     navigate.mockReset()

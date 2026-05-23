@@ -1,13 +1,27 @@
 import type {
+  Artifact,
   Message,
   MessagePart,
+  Project,
+  ProjectMemory,
   Run,
   RunStep,
   RunUsage,
   Thread,
 } from "@workspace/shared"
-import type { messages, runSteps, runs, threads } from "../db/schema.js"
+import type {
+  artifacts,
+  messages,
+  projectMemories,
+  projects,
+  runSteps,
+  runs,
+  threads,
+} from "../db/schema.js"
 
+type ProjectRow = typeof projects.$inferSelect
+type ProjectMemoryRow = typeof projectMemories.$inferSelect
+type ArtifactRow = typeof artifacts.$inferSelect
 type ThreadRow = typeof threads.$inferSelect
 type MessageRow = typeof messages.$inferSelect
 type RunRow = typeof runs.$inferSelect
@@ -50,6 +64,63 @@ export function mapRun(row: RunRow): Run {
       ? (JSON.parse(row.usageJson) as RunUsage)
       : undefined,
     cost: row.cost ?? undefined,
+  }
+}
+
+export function mapProject(row: ProjectRow): Project {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? undefined,
+    goals: row.goals ?? undefined,
+    status: row.status as Project["status"],
+    archivedAt: row.archivedAt ?? undefined,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export function mapProjectMemory(row: ProjectMemoryRow): ProjectMemory {
+  return {
+    id: row.id,
+    projectId: row.projectId,
+    content: row.content,
+    enabled: row.enabled,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+function parseArtifactMetadata(metadataJson: string) {
+  try {
+    return JSON.parse(metadataJson) as Record<string, unknown>
+  } catch {
+    return undefined
+  }
+}
+
+export function mapArtifact(row: ArtifactRow): Artifact {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description ?? undefined,
+    type: row.type as Artifact["type"],
+    mimeType: row.mimeType,
+    sizeBytes: row.sizeBytes,
+    storageKey: row.storageKey,
+    previewText: row.previewText ?? undefined,
+    metadata: row.metadataJson
+      ? parseArtifactMetadata(row.metadataJson)
+      : undefined,
+    projectId: row.projectId ?? undefined,
+    projectNameSnapshot: row.projectNameSnapshot ?? undefined,
+    threadId: row.threadId ?? undefined,
+    threadTitleSnapshot: row.threadTitleSnapshot ?? undefined,
+    runId: row.runId ?? undefined,
+    agentId: row.agentId ?? undefined,
+    agentNameSnapshot: row.agentNameSnapshot ?? undefined,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   }
 }
 

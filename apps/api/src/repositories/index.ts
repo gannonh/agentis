@@ -1,8 +1,11 @@
 import type { AppConfig } from "../config.js"
 import type { AppDatabase } from "../db/client.js"
+import { ArtifactRepository } from "./artifact-repository.js"
 import { IntegrationConnectionRepository } from "./integration-connection-repository.js"
 import { IntegrationToolkitRepository } from "./integration-toolkit-repository.js"
 import { MessageRepository } from "./message-repository.js"
+import { ProjectMemoryRepository } from "./project-memory-repository.js"
+import { ProjectRepository } from "./project-repository.js"
 import { RunRepository } from "./run-repository.js"
 import { RunStepRepository } from "./run-step-repository.js"
 import { ThreadRepository } from "./thread-repository.js"
@@ -15,6 +18,9 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     messages: new MessageRepository(db),
     runs: new RunRepository(db),
     steps: new RunStepRepository(db),
+    projects: new ProjectRepository(db),
+    projectMemories: new ProjectMemoryRepository(db),
+    artifacts: new ArtifactRepository(db),
     integrationToolkits: new IntegrationToolkitRepository(db),
     integrationConnections: new IntegrationConnectionRepository(
       db,

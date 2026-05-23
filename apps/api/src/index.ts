@@ -16,6 +16,7 @@ if (config.mockComposio) {
   )
 }
 mkdirSync(dirname(config.databaseUrl), { recursive: true })
+mkdirSync(config.storageRoot, { recursive: true })
 
 const { db } = createDatabase(config.databaseUrl)
 const migrationsFolder = join(

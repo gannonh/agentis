@@ -4,13 +4,25 @@ type PageHeaderProps = {
   title: string
   description?: string
   actions?: ReactNode
+  titleClassName?: string
 }
 
-export function PageHeader({ title, description, actions }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  titleClassName,
+}: PageHeaderProps) {
   return (
     <div className="flex flex-col gap-1 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex min-w-0 flex-col gap-1">
-        <h1 className="text-2xl font-medium tracking-tight">{title}</h1>
+        <h1
+          className={
+            titleClassName ?? "text-2xl font-medium tracking-tight"
+          }
+        >
+          {title}
+        </h1>
         {description ? (
           <p className="text-muted-foreground max-w-2xl text-sm">{description}</p>
         ) : null}

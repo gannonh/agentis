@@ -2,12 +2,17 @@ import { Hono } from "hono"
 import {
   createFollowUpRequestSchema,
   createThreadRequestSchema,
+  threadDetailSchema,
   threadListItemSchema,
+  threadSchema,
+  updateThreadRequestSchema,
 } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
+import { ProjectContextService } from "../projects/project-context-service.js"
 import { RunExecutor } from "../runtime/run-executor.js"
+import { ArtifactService } from "../artifacts/artifact-service.js"
 
 function summarizeTitle(prompt: string) {
   const trimmed = prompt.trim().replace(/\s+/g, " ")
@@ -15,20 +20,41 @@ function summarizeTitle(prompt: string) {
   return `${trimmed.slice(0, 57)}...`
 }
 
+function summarizeThreadPreview(prompt: string) {
+  const trimmed = prompt.trim().replace(/\s+/g, " ")
+  if (trimmed.length <= 160) return trimmed
+  return `${trimmed.slice(0, 157)}...`
+}
+
+function firstUserMessageText(
+  messages: { role: string; parts: { type: string; text?: string }[] }[]
+) {
+  const message = messages.find((item) => item.role === "user")
+  if (!message) return null
+  const textPart = message.parts.find(
+    (part) => part.type === "text" && typeof part.text === "string"
+  )
+  return textPart?.text?.trim() ? summarizeThreadPreview(textPart.text) : null
+}
+
 export function createThreadRoutes(
   repos: Repositories,
   config: AppConfig
 ) {
   const app = new Hono()
+  const contextService = new ProjectContextService(repos, config)
 
   app.get("/", (c) => {
     const threads = repos.threads.list().map((thread) => {
       const messages = repos.messages.listByThreadId(thread.id)
       const latestRun = repos.runs.getLatestByThreadId(thread.id)
+      const artifactCount = repos.artifacts.list({ threadId: thread.id }).length
       return threadListItemSchema.parse({
         ...thread,
         messageCount: messages.length,
         lastRunStatus: latestRun?.status,
+        summary: firstUserMessageText(messages),
+        artifactCount,
       })
     })
     return c.json(threads)
@@ -36,6 +62,19 @@ export function createThreadRoutes(
 
   app.post("/", async (c) => {
     const body = createThreadRequestSchema.parse(await c.req.json())
+    const projectValidation = contextService.validateProjectForNewThread(
+      body.projectId
+    )
+    if (!projectValidation.ok) {
+      return c.json(
+        {
+          error: projectValidation.message,
+          code: projectValidation.code,
+        },
+        400
+      )
+    }
+
     const model = body.model ?? config.defaultModel
     const mode = body.mode ?? "plan"
 
@@ -69,6 +108,37 @@ export function createThreadRoutes(
     return c.json({ thread, message, run }, 201)
   })
 
+  app.patch("/:id", async (c) => {
+    const thread = repos.threads.getById(c.req.param("id"))
+    if (!thread) {
+      return c.json({ error: "Thread not found" }, 404)
+    }
+
+    const body = updateThreadRequestSchema.parse(await c.req.json())
+    if (body.projectId !== undefined && body.projectId !== null) {
+      const projectValidation = contextService.validateProjectForNewThread(
+        body.projectId
+      )
+      if (!projectValidation.ok) {
+        return c.json(
+          {
+            error: projectValidation.message,
+            code: projectValidation.code,
+          },
+          400
+        )
+      }
+    }
+
+    const updated = repos.threads.touch(thread.id, {
+      projectId: body.projectId,
+    })
+    if (!updated) {
+      return c.json({ error: "Thread not found" }, 404)
+    }
+    return c.json(threadSchema.parse(updated))
+  })
+
   app.get("/:id", (c) => {
     const thread = repos.threads.getById(c.req.param("id"))
     if (!thread) {
@@ -79,7 +149,17 @@ export function createThreadRoutes(
     const runs = repos.runs.listByThreadId(thread.id)
     const steps = repos.steps.listByRunIds(runs.map((run) => run.id))
 
-    return c.json({ thread, messages, runs, steps })
+    const projectContext = contextService.assemble(thread.projectId)
+
+    return c.json(
+      threadDetailSchema.parse({
+        thread,
+        messages,
+        runs,
+        steps,
+        projectContext,
+      })
+    )
   })
 
   app.post("/:id/messages", async (c) => {
@@ -123,7 +203,8 @@ export function createRunRoutes(
   services: ComposioServices
 ) {
   const app = new Hono()
-  const executor = new RunExecutor(repos, config, services)
+  const artifactService = new ArtifactService(repos, config)
+  const executor = new RunExecutor(repos, config, services, artifactService)
 
   app.post("/:id/stream", async (c) => {
     try {

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -9,69 +9,81 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { Input } from "@workspace/ui/components/input"
-import { Textarea } from "@workspace/ui/components/textarea"
+import { PROJECT_DETAILS_DESCRIPTION } from "@/components/projects/project-details-description"
+import { ProjectDetailsFields } from "@/components/projects/project-details-fields"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
+import { createProject } from "@/lib/api/projects-client"
 
 export function ProjectCreatePage() {
+  const navigate = useNavigate()
   const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [goals, setGoals] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const project = await createProject({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        goals: goals.trim() || undefined,
+      })
+      navigate(`/threads/new?projectId=${encodeURIComponent(project.id)}`)
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to create project"
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
-    <PageLayout variant="narrow">
+    <PageLayout variant="focused" className="gap-6">
       <PageHeader
         title="New project"
+        titleClassName="text-3xl font-medium tracking-tight"
         description="Group threads with shared goals and context."
       />
+
       <Card>
         <CardHeader>
-          <CardTitle>Project details</CardTitle>
-          <CardDescription>
-            Goals are injected into every thread&apos;s context.
-          </CardDescription>
+          <CardTitle className="text-base">Details</CardTitle>
+          <CardDescription>{PROJECT_DETAILS_DESCRIPTION}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="project-name" className="text-sm font-medium">
-              Project name <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="project-name"
-              placeholder="e.g., Product Launch Q2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="project-description" className="text-sm font-medium">
-              Description
-            </label>
-            <Textarea
-              id="project-description"
-              placeholder="Brief description of what this project is about…"
-              rows={3}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="project-goals" className="text-sm font-medium">
-              Goals
-            </label>
-            <Textarea
-              id="project-goals"
-              placeholder="What are the objectives? These will be shown in every thread…"
-              rows={4}
-            />
-            <p className="text-muted-foreground text-xs">
-              Goals are injected into every thread&apos;s context, helping the
-              agent stay aligned with project objectives.
-            </p>
-          </div>
+          {error ? <p className="text-destructive text-sm">{error}</p> : null}
+          <ProjectDetailsFields
+            name={name}
+            onNameChange={setName}
+            description={description}
+            onDescriptionChange={setDescription}
+            goals={goals}
+            onGoalsChange={setGoals}
+            nameRequired
+            namePlaceholder="e.g., Product Launch Q2"
+            descriptionPlaceholder="Brief description of what this project is about…"
+            goalsPlaceholder="What are the objectives? These will be shown in every thread…"
+            showGoalsHint
+          />
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
+        <CardFooter className="flex justify-between gap-2">
           <Button variant="outline" render={<Link to="/threads/new" />}>
             Cancel
           </Button>
-          <Button disabled={name.trim().length === 0}>Create project</Button>
+          <Button
+            disabled={name.trim().length === 0 || submitting}
+            onClick={() => void handleSubmit()}
+          >
+            {submitting ? "Creating…" : "Create project"}
+          </Button>
         </CardFooter>
       </Card>
     </PageLayout>

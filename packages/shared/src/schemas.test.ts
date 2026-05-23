@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest"
 import {
+  artifactSchema,
+  artifactTypeSchema,
   connectIntegrationResponseSchema,
   createThreadRequestSchema,
   integrationToolkitSchema,
   integrationsListResponseSchema,
   messageSchema,
+  projectContextSummarySchema,
+  projectMemorySchema,
+  projectSchema,
+  projectStatusSchema,
   runSchema,
   threadDetailSchema,
   threadToolGrantsResponseSchema,
@@ -104,6 +110,68 @@ describe("shared schemas", () => {
       availableToolkits: [toolkit],
     })
     expect(grants.grants).toHaveLength(1)
+  })
+
+  it("parses project, memory, context, and artifact payloads", () => {
+    const now = new Date().toISOString()
+    const project = projectSchema.parse({
+      id: "project-1",
+      name: "Launch",
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    })
+    expect(project.name).toBe("Launch")
+    expect(() => projectStatusSchema.parse("deleted")).toThrow()
+
+    const memory = projectMemorySchema.parse({
+      id: "memory-1",
+      projectId: project.id,
+      content: "Remember pricing",
+      enabled: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    expect(memory.enabled).toBe(true)
+
+    const context = projectContextSummarySchema.parse({
+      project,
+      goals: "Ship",
+      memories: [memory],
+      enabledMemoryCount: 1,
+    })
+    expect(context.enabledMemoryCount).toBe(1)
+
+    const artifact = artifactSchema.parse({
+      id: "artifact-1",
+      title: "Brief",
+      type: "document",
+      mimeType: "text/plain",
+      sizeBytes: 10,
+      storageKey: "key",
+      createdAt: now,
+      updatedAt: now,
+    })
+    expect(artifact.type).toBe("document")
+    expect(() => artifactTypeSchema.parse("folder")).toThrow()
+
+    const detail = threadDetailSchema.parse({
+      thread: {
+        id: "thread-1",
+        title: "Test",
+        status: "active",
+        model: "gpt-4o-mini",
+        mode: "plan",
+        projectId: project.id,
+        createdAt: now,
+        updatedAt: now,
+      },
+      messages: [],
+      runs: [],
+      steps: [],
+      projectContext: context,
+    })
+    expect(detail.projectContext?.project.id).toBe("project-1")
   })
 
   it("accepts minimal entities", () => {

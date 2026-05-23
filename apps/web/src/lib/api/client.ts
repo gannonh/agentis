@@ -12,6 +12,7 @@ import {
   threadListItemSchema,
   threadToolGrantsResponseSchema,
   toolAccessGrantSchema,
+  updateThreadRequestSchema,
   type ConnectIntegrationResponse,
   type CreateFollowUpRequest,
   type CreateThreadRequest,
@@ -22,6 +23,7 @@ import {
   type ThreadListItem,
   type ThreadToolGrantsResponse,
   type ToolAccessGrant,
+  type UpdateThreadRequest,
 } from "@workspace/shared"
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ""
@@ -102,6 +104,19 @@ export async function createThread(body: CreateThreadRequest) {
 export async function getThread(threadId: string): Promise<ThreadDetail> {
   const response = await fetch(`${API_BASE}/api/threads/${threadId}`)
   return parseJson(response, threadDetailSchema)
+}
+
+export async function updateThread(
+  threadId: string,
+  body: UpdateThreadRequest
+) {
+  const payload = updateThreadRequestSchema.parse(body)
+  const response = await fetch(`${API_BASE}/api/threads/${threadId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, threadListItemSchema)
 }
 
 export async function sendFollowUp(

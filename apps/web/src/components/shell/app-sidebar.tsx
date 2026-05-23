@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react"
-import { NavLink, useMatch } from "react-router"
-import type { ThreadListItem } from "@workspace/shared"
+import { useEffect, useMemo, useState } from "react"
+import { Link, NavLink, useLocation, useMatch, useSearchParams } from "react-router"
+import type { Project, ThreadListItem } from "@workspace/shared"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
   BookOpen01Icon,
   CommandIcon,
+  Folder01Icon,
   HelpCircleIcon,
   Link01Icon,
   Search01Icon,
@@ -38,6 +39,7 @@ import {
 import { cn } from "@workspace/ui/lib/utils"
 import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
 import { getNavAgents, getWorkspace } from "@/fixtures"
+import { useProjects } from "@/hooks/use-projects"
 import { listThreads } from "@/lib/api/client"
 
 const agentIcons = {
@@ -53,6 +55,52 @@ function agentNavIcon(icon?: string) {
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(isActive && "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground")
+
+function useActiveProjectId(threads: ThreadListItem[]) {
+  const projectMatch = useMatch({ path: "/projects/:projectId", end: false })
+  const threadMatch = useMatch({ path: "/threads/:threadId", end: true })
+  const [searchParams] = useSearchParams()
+
+  return useMemo(() => {
+    const fromRoute = projectMatch?.params.projectId
+    if (fromRoute) return fromRoute
+
+    const fromQuery = searchParams.get("projectId")
+    if (fromQuery) return fromQuery
+
+    const threadId = threadMatch?.params.threadId
+    if (threadId) {
+      return threads.find((thread) => thread.id === threadId)?.projectId ?? null
+    }
+
+    return null
+  }, [projectMatch?.params.projectId, searchParams, threadMatch?.params.threadId, threads])
+}
+
+function ProjectSidebarItem({
+  project,
+  isActive,
+  threadCount,
+}: {
+  project: Project
+  isActive: boolean
+  threadCount: number
+}) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        isActive={isActive}
+        render={
+          <NavLink to={`/projects/${project.id}`} className={navLinkClass} />
+        }
+      >
+        <HugeiconsIcon icon={Folder01Icon} className="size-4 shrink-0" strokeWidth={2} />
+        <span className="truncate">{project.name}</span>
+      </SidebarMenuButton>
+      <SidebarMenuBadge>{threadCount}</SidebarMenuBadge>
+    </SidebarMenuItem>
+  )
+}
 
 function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
   const match = useMatch({ path: `/threads/${thread.id}`, end: true })
@@ -86,13 +134,26 @@ function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
 export function AppSidebar() {
   const workspace = getWorkspace()
   const agents = getNavAgents().filter((a) => a.id !== "command-center")
+  const location = useLocation()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
+  const { projects, refresh: refreshProjects } = useProjects()
+  const activeProjectId = useActiveProjectId(threads)
+
+  const threadCountByProject = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const thread of threads) {
+      if (!thread.projectId) continue
+      counts.set(thread.projectId, (counts.get(thread.projectId) ?? 0) + 1)
+    }
+    return counts
+  }, [threads])
 
   useEffect(() => {
     void listThreads()
       .then(setThreads)
       .catch(() => setThreads([]))
-  }, [])
+    void refreshProjects()
+  }, [location.pathname, location.search, refreshProjects])
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -169,20 +230,39 @@ export function AppSidebar() {
 
         <Collapsible defaultOpen className="group/collapsible">
           <SidebarGroup>
-            <SidebarGroupLabel
-              render={
-                <CollapsibleTrigger className="flex w-full items-center justify-between">
-                  <span>Projects</span>
-                  <HugeiconsIcon icon={Add01Icon} className="size-3.5" strokeWidth={2} />
-                </CollapsibleTrigger>
-              }
-            />
+            <SidebarGroupLabel className="flex w-full items-center justify-between gap-1">
+              <CollapsibleTrigger className="flex flex-1 items-center gap-1">
+                <span>Projects</span>
+              </CollapsibleTrigger>
+              <Link
+                to="/projects/new"
+                aria-label="New project"
+                className="text-muted-foreground hover:text-sidebar-foreground flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-sidebar-accent"
+              >
+                <HugeiconsIcon icon={Add01Icon} className="size-3.5" strokeWidth={2} />
+              </Link>
+            </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarNavItem to="/projects/new">
-                    <span className="text-muted-foreground text-xs">New project</span>
-                  </SidebarNavItem>
+                  {projects.map((project) => (
+                    <ProjectSidebarItem
+                      key={project.id}
+                      project={project}
+                      isActive={activeProjectId === project.id}
+                      threadCount={threadCountByProject.get(project.id) ?? 0}
+                    />
+                  ))}
+                  {projects.length === 0 ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="text-muted-foreground h-8"
+                        render={<NavLink to="/projects/new" />}
+                      >
+                        <span className="text-xs">Create your first project</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : null}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>

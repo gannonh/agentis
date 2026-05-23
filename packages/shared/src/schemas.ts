@@ -222,9 +222,107 @@ export const createFollowUpRequestSchema = z.object({
   prompt: z.string().min(1),
 })
 
+export const updateThreadRequestSchema = z.object({
+  projectId: z.string().nullable().optional(),
+})
+
 export const createFollowUpResponseSchema = z.object({
   message: messageSchema,
   run: runSchema,
+})
+
+export const projectStatusSchema = z.enum(["active", "archived"])
+
+export const projectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  goals: z.string().nullable().optional(),
+  status: projectStatusSchema,
+  archivedAt: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const projectMemorySchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  content: z.string(),
+  enabled: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const projectContextSummarySchema = z.object({
+  project: projectSchema,
+  goals: z.string().nullable().optional(),
+  memories: z.array(projectMemorySchema),
+  enabledMemoryCount: z.number(),
+  truncated: z.boolean().optional(),
+  empty: z.boolean().optional(),
+})
+
+export const createProjectRequestSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  goals: z.string().optional(),
+})
+
+export const updateProjectRequestSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  goals: z.string().nullable().optional(),
+})
+
+export const createProjectMemoryRequestSchema = z.object({
+  content: z.string().min(1),
+  enabled: z.boolean().optional(),
+})
+
+export const updateProjectMemoryRequestSchema = z.object({
+  content: z.string().min(1).optional(),
+  enabled: z.boolean().optional(),
+})
+
+export const artifactTypeSchema = z.enum([
+  "document",
+  "webpage",
+  "image",
+  "video",
+  "table",
+  "slides",
+  "other",
+])
+
+export const artifactSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  type: artifactTypeSchema,
+  mimeType: z.string(),
+  sizeBytes: z.number(),
+  storageKey: z.string(),
+  previewText: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).nullable().optional(),
+  projectId: z.string().nullable().optional(),
+  projectNameSnapshot: z.string().nullable().optional(),
+  threadId: z.string().nullable().optional(),
+  threadTitleSnapshot: z.string().nullable().optional(),
+  runId: z.string().nullable().optional(),
+  agentId: z.string().nullable().optional(),
+  agentNameSnapshot: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+/** API responses omit internal storage paths. */
+export const artifactPublicSchema = artifactSchema.omit({ storageKey: true })
+
+export const listArtifactsQuerySchema = z.object({
+  query: z.string().optional(),
+  type: artifactTypeSchema.optional(),
+  projectId: z.string().optional(),
+  threadId: z.string().optional(),
 })
 
 export const threadDetailSchema = z.object({
@@ -232,11 +330,14 @@ export const threadDetailSchema = z.object({
   messages: z.array(messageSchema),
   runs: z.array(runSchema),
   steps: z.array(runStepSchema),
+  projectContext: projectContextSummarySchema.nullable().optional(),
 })
 
 export const threadListItemSchema = threadSchema.extend({
   messageCount: z.number().optional(),
   lastRunStatus: runStatusSchema.optional(),
+  summary: z.string().nullable().optional(),
+  artifactCount: z.number().optional(),
 })
 
 export const abortRunResponseSchema = z.object({
@@ -285,7 +386,24 @@ export type RuntimeHealth = z.infer<typeof runtimeHealthSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>
 export type CreateFollowUpRequest = z.infer<typeof createFollowUpRequestSchema>
+export type UpdateThreadRequest = z.infer<typeof updateThreadRequestSchema>
 export type CreateFollowUpResponse = z.infer<typeof createFollowUpResponseSchema>
+export type ProjectStatus = z.infer<typeof projectStatusSchema>
+export type Project = z.infer<typeof projectSchema>
+export type ProjectMemory = z.infer<typeof projectMemorySchema>
+export type ProjectContextSummary = z.infer<typeof projectContextSummarySchema>
+export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>
+export type UpdateProjectRequest = z.infer<typeof updateProjectRequestSchema>
+export type CreateProjectMemoryRequest = z.infer<
+  typeof createProjectMemoryRequestSchema
+>
+export type UpdateProjectMemoryRequest = z.infer<
+  typeof updateProjectMemoryRequestSchema
+>
+export type ArtifactType = z.infer<typeof artifactTypeSchema>
+export type Artifact = z.infer<typeof artifactSchema>
+export type ArtifactPublic = z.infer<typeof artifactPublicSchema>
+export type ListArtifactsQuery = z.infer<typeof listArtifactsQuerySchema>
 export type ThreadDetail = z.infer<typeof threadDetailSchema>
 export type ThreadListItem = z.infer<typeof threadListItemSchema>
 export type AbortRunResponse = z.infer<typeof abortRunResponseSchema>

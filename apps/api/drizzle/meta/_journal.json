@@ -22,6 +22,13 @@
       "when": 1779500000000,
       "tag": "0002_tool_access_grants_scope_toolkit_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779475304151,
+      "tag": "0003_motionless_whiplash",
+      "breakpoints": true
     }
   ]
 }
