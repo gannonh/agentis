@@ -134,7 +134,7 @@ function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
 
 export function AppSidebar() {
   const workspace = getWorkspace()
-  const { agents } = useAgents()
+  const { agents, refresh: refreshAgents } = useAgents()
   const location = useLocation()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
   const { projects, refresh: refreshProjects } = useProjects()
@@ -154,7 +154,8 @@ export function AppSidebar() {
       .then(setThreads)
       .catch(() => setThreads([]))
     void refreshProjects()
-  }, [location.pathname, location.search, refreshProjects])
+    void refreshAgents()
+  }, [location.pathname, location.search, refreshAgents, refreshProjects])
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="border-b border-sidebar-border">

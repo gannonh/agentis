@@ -3,7 +3,9 @@ import { MemoryRouter } from "react-router"
 import { SidebarProvider } from "@workspace/ui/components/sidebar"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { AppSidebar } from "./app-sidebar"
-import { vi } from "vitest"
+import { beforeEach, vi } from "vitest"
+
+const refreshAgents = vi.fn()
 
 vi.mock("@/lib/api/client", () => ({
   listThreads: vi.fn().mockResolvedValue([
@@ -61,7 +63,7 @@ vi.mock("@/hooks/use-agents", () => ({
     ],
     loading: false,
     error: null,
-    refresh: vi.fn(),
+    refresh: refreshAgents,
   }),
 }))
 
@@ -78,6 +80,10 @@ function renderSidebar(initialPath = "/threads/new") {
 }
 
 describe("AppSidebar", () => {
+  beforeEach(() => {
+    refreshAgents.mockClear()
+  })
+
   it("renders primary navigation links", async () => {
     renderSidebar()
     expect(screen.getByText("New thread")).toBeInTheDocument()
@@ -97,6 +103,13 @@ describe("AppSidebar", () => {
     expect(screen.queryByText("Senior Reviewer")).not.toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    })
+  })
+
+  it("refreshes API agents after navigation to a created agent", async () => {
+    renderSidebar("/agents/agent_api_research")
+    await waitFor(() => {
+      expect(refreshAgents).toHaveBeenCalled()
     })
   })
 
