@@ -95,8 +95,13 @@ After install:
 ## M02 local runtime
 
 1. Set `OPENAI_API_KEY` in the repo root `.env` (see `.env.example`). The API loads that file on startup; `apps/api/.env` is optional for overrides.
-2. `pnpm dev` starts **api** (port 3001) and **web** (port 5173); Vite proxies `/api` to the API.
+2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API.
 3. For E2E/CI without OpenAI, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
+
+## Verification and UAT
+
+- Do not use mock services for UAT or verification unless the user explicitly asks for mock-backed evidence.
+- For real-service UAT, run with `AGENTIS_MOCK_RUNTIME=0` and `AGENTIS_MOCK_COMPOSIO=0`; report missing or invalid credentials as blockers instead of silently falling back to mocks.
 
 ## Design
 
