@@ -6,6 +6,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // Single worker in CI: all tests share one API process and SQLite file (DATABASE_URL).
   workers: process.env.CI ? 1 : undefined,
   reporter: "list",
   use: {
@@ -30,6 +31,7 @@ export default defineConfig({
         AGENTIS_E2E: "1",
         AGENTIS_MOCK_RUNTIME: "1",
         AGENTIS_MOCK_COMPOSIO: "1",
+        AGENTIS_WEB_ORIGIN: "http://127.0.0.1:5175",
         COMPOSIO_REDIRECT_BASE_URL: "http://127.0.0.1:3002",
         DATABASE_URL: "./data/e2e-agentis.db",
         PORT: "3002",

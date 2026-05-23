@@ -59,6 +59,7 @@ test.describe("M04 projects and artifacts", () => {
     })
 
     await page.goto(`/projects/${projectId}`)
+    await page.getByRole("button", { name: /edit project/i }).click()
     await page.getByRole("button", { name: /archive project/i }).click()
     await expect(page).toHaveURL("/threads/new")
 
