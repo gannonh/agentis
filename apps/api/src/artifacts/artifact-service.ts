@@ -99,21 +99,29 @@ export class ArtifactService {
       threadId: input.threadId,
     })
 
-    const artifact = this.repos.artifacts.create({
-      title: input.title,
-      description: input.description,
-      type: input.type,
-      mimeType,
-      sizeBytes: input.data.byteLength,
-      storageKey,
-      previewText,
-      projectId: input.projectId,
-      projectNameSnapshot: provenance.projectNameSnapshot,
-      threadId: input.threadId,
-      threadTitleSnapshot: provenance.threadTitleSnapshot,
-    })
-
-    return { ok: true, artifact }
+    try {
+      const artifact = this.repos.artifacts.create({
+        title: input.title,
+        description: input.description,
+        type: input.type,
+        mimeType,
+        sizeBytes: input.data.byteLength,
+        storageKey,
+        previewText,
+        projectId: input.projectId,
+        projectNameSnapshot: provenance.projectNameSnapshot,
+        threadId: input.threadId,
+        threadTitleSnapshot: provenance.threadTitleSnapshot,
+      })
+      return { ok: true, artifact }
+    } catch {
+      this.storage.delete(storageKey)
+      return {
+        ok: false,
+        code: "artifact_storage_failed",
+        message: "Failed to persist artifact metadata",
+      }
+    }
   }
 
   registerGenerated(input: {
@@ -130,6 +138,14 @@ export class ArtifactService {
     | { ok: true; artifact: Artifact }
     | { ok: false; code: string; message: string } {
     const data = Buffer.from(input.content, "utf8")
+    if (data.byteLength > this.config.artifactMaxUploadBytes) {
+      return {
+        ok: false,
+        code: "artifact_too_large",
+        message: "Artifact exceeds maximum upload size",
+      }
+    }
+
     const storageKey = this.storage.createStorageKey(input.filename)
     try {
       this.storage.write(storageKey, data)
@@ -147,25 +163,33 @@ export class ArtifactService {
       runId: input.runId,
     })
 
-    const artifact = this.repos.artifacts.create({
-      title: input.title,
-      description: input.description,
-      type: input.type,
-      mimeType: "text/plain",
-      sizeBytes: data.byteLength,
-      storageKey,
-      previewText:
-        input.previewText ??
-        buildPreviewText(input.content, this.config.artifactPreviewMaxChars),
-      projectId: input.projectId,
-      projectNameSnapshot: provenance.projectNameSnapshot,
-      threadId: input.threadId,
-      threadTitleSnapshot: provenance.threadTitleSnapshot,
-      runId: input.runId,
-      metadata: { source: "generated" },
-    })
-
-    return { ok: true, artifact }
+    try {
+      const artifact = this.repos.artifacts.create({
+        title: input.title,
+        description: input.description,
+        type: input.type,
+        mimeType: "text/plain",
+        sizeBytes: data.byteLength,
+        storageKey,
+        previewText:
+          input.previewText ??
+          buildPreviewText(input.content, this.config.artifactPreviewMaxChars),
+        projectId: input.projectId,
+        projectNameSnapshot: provenance.projectNameSnapshot,
+        threadId: input.threadId,
+        threadTitleSnapshot: provenance.threadTitleSnapshot,
+        runId: input.runId,
+        metadata: { source: "generated" },
+      })
+      return { ok: true, artifact }
+    } catch {
+      this.storage.delete(storageKey)
+      return {
+        ok: false,
+        code: "artifact_storage_failed",
+        message: "Failed to persist generated artifact metadata",
+      }
+    }
   }
 
   getDownload(artifactId: string):
@@ -184,7 +208,11 @@ export class ArtifactService {
         status: 404,
       }
     }
-    if (!this.storage.exists(artifact.storageKey)) {
+
+    let data: Buffer
+    try {
+      data = this.storage.read(artifact.storageKey)
+    } catch {
       return {
         ok: false,
         code: "artifact_blob_missing",
@@ -192,10 +220,11 @@ export class ArtifactService {
         status: 404,
       }
     }
+
     return {
       ok: true,
       artifact,
-      data: this.storage.read(artifact.storageKey),
+      data,
     }
   }
 }

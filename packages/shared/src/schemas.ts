@@ -315,6 +315,9 @@ export const artifactSchema = z.object({
   updatedAt: z.string(),
 })
 
+/** API responses omit internal storage paths. */
+export const artifactPublicSchema = artifactSchema.omit({ storageKey: true })
+
 export const listArtifactsQuerySchema = z.object({
   query: z.string().optional(),
   type: artifactTypeSchema.optional(),
@@ -399,6 +402,7 @@ export type UpdateProjectMemoryRequest = z.infer<
 >
 export type ArtifactType = z.infer<typeof artifactTypeSchema>
 export type Artifact = z.infer<typeof artifactSchema>
+export type ArtifactPublic = z.infer<typeof artifactPublicSchema>
 export type ListArtifactsQuery = z.infer<typeof listArtifactsQuerySchema>
 export type ThreadDetail = z.infer<typeof threadDetailSchema>
 export type ThreadListItem = z.infer<typeof threadListItemSchema>

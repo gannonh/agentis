@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "react-router"
 import type { Artifact, ArtifactType, Project } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -41,11 +42,15 @@ const ARTIFACT_TYPES: ArtifactType[] = [
 ]
 
 export function LibraryPage() {
+  const [searchParams] = useSearchParams()
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [query, setQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<ArtifactType | "">("")
-  const [projectFilter, setProjectFilter] = useState("")
+  const [projectFilter, setProjectFilter] = useState(
+    () => searchParams.get("projectId") ?? ""
+  )
+  const loadGeneration = useRef(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -58,7 +63,15 @@ export function LibraryPage() {
     {}
   )
 
+  useEffect(() => {
+    const projectId = searchParams.get("projectId")
+    if (projectId) {
+      setProjectFilter(projectId)
+    }
+  }, [searchParams])
+
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current
     setLoading(true)
     setError(null)
     try {
@@ -70,14 +83,18 @@ export function LibraryPage() {
         }),
         listProjects(true),
       ])
+      if (generation !== loadGeneration.current) return
       setArtifacts(artifactList)
       setProjects(projectList)
     } catch (loadError) {
+      if (generation !== loadGeneration.current) return
       setError(
         loadError instanceof Error ? loadError.message : "Failed to load library"
       )
     } finally {
-      setLoading(false)
+      if (generation === loadGeneration.current) {
+        setLoading(false)
+      }
     }
   }, [query, typeFilter, projectFilter])
 

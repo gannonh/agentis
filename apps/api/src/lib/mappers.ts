@@ -91,6 +91,14 @@ export function mapProjectMemory(row: ProjectMemoryRow): ProjectMemory {
   }
 }
 
+function parseArtifactMetadata(metadataJson: string) {
+  try {
+    return JSON.parse(metadataJson) as Record<string, unknown>
+  } catch {
+    return undefined
+  }
+}
+
 export function mapArtifact(row: ArtifactRow): Artifact {
   return {
     id: row.id,
@@ -102,7 +110,7 @@ export function mapArtifact(row: ArtifactRow): Artifact {
     storageKey: row.storageKey,
     previewText: row.previewText ?? undefined,
     metadata: row.metadataJson
-      ? (JSON.parse(row.metadataJson) as Record<string, unknown>)
+      ? parseArtifactMetadata(row.metadataJson)
       : undefined,
     projectId: row.projectId ?? undefined,
     projectNameSnapshot: row.projectNameSnapshot ?? undefined,

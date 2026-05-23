@@ -60,6 +60,7 @@ export function ProjectThreadsPanel({ threads }: ProjectThreadsPanelProps) {
             <Input
               className="h-8 pl-8"
               placeholder="Search threads…"
+              aria-label="Search threads"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -91,6 +92,7 @@ export function ProjectThreadsPanel({ threads }: ProjectThreadsPanelProps) {
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <HugeiconsIcon icon={SortingAZ02Icon} className="size-3.5" strokeWidth={2} />
             <select
+              aria-label="Sort threads"
               className="border-input bg-background h-8 rounded-md border px-2 text-sm text-foreground"
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}

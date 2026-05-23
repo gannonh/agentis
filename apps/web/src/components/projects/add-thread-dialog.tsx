@@ -112,7 +112,7 @@ export function AddThreadDialog({
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={linkingId === thread.id}
+                    disabled={linkingId !== null}
                     onClick={() => void handleLink(thread.id)}
                   >
                     {linkingId === thread.id ? "Linking…" : "Link"}

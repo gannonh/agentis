@@ -54,6 +54,8 @@ export function ProjectEditSheet({
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setProject(null)
+    setMemories([])
     try {
       const [loadedProject, loadedMemories] = await Promise.all([
         getProject(projectId),
@@ -80,6 +82,7 @@ export function ProjectEditSheet({
   }, [load, open])
 
   const handleSave = async () => {
+    if (loading || !project) return
     setSaving(true)
     setError(null)
     try {
@@ -100,6 +103,7 @@ export function ProjectEditSheet({
   }
 
   const handleArchive = async () => {
+    if (loading || !project) return
     setSaving(true)
     try {
       await archiveProject(projectId)
@@ -118,12 +122,20 @@ export function ProjectEditSheet({
 
   const handleAddMemory = async () => {
     if (!newMemory.trim()) return
-    const memory = await createProjectMemory(projectId, {
-      content: newMemory.trim(),
-      enabled: true,
-    })
-    setMemories((current) => [memory, ...current])
-    setNewMemory("")
+    try {
+      const memory = await createProjectMemory(projectId, {
+        content: newMemory.trim(),
+        enabled: true,
+      })
+      setMemories((current) => [memory, ...current])
+      setNewMemory("")
+    } catch (memoryError) {
+      setError(
+        memoryError instanceof Error
+          ? memoryError.message
+          : "Failed to add memory"
+      )
+    }
   }
 
   return (
@@ -197,13 +209,21 @@ export function ProjectEditSheet({
                         if (value && value !== memory.content) {
                           void updateProjectMemory(projectId, memory.id, {
                             content: value,
-                          }).then((updated) => {
-                            setMemories((current) =>
-                              current.map((item) =>
-                                item.id === memory.id ? updated : item
-                              )
-                            )
                           })
+                            .then((updated) => {
+                              setMemories((current) =>
+                                current.map((item) =>
+                                  item.id === memory.id ? updated : item
+                                )
+                              )
+                            })
+                            .catch((memoryError) => {
+                              setError(
+                                memoryError instanceof Error
+                                  ? memoryError.message
+                                  : "Failed to update memory"
+                              )
+                            })
                         }
                       }}
                     />
@@ -215,13 +235,21 @@ export function ProjectEditSheet({
                           onChange={(e) => {
                             void updateProjectMemory(projectId, memory.id, {
                               enabled: e.target.checked,
-                            }).then((updated) => {
-                              setMemories((current) =>
-                                current.map((item) =>
-                                  item.id === memory.id ? updated : item
-                                )
-                              )
                             })
+                              .then((updated) => {
+                                setMemories((current) =>
+                                  current.map((item) =>
+                                    item.id === memory.id ? updated : item
+                                  )
+                                )
+                              })
+                              .catch((memoryError) => {
+                                setError(
+                                  memoryError instanceof Error
+                                    ? memoryError.message
+                                    : "Failed to update memory"
+                                )
+                              })
                           }}
                         />
                         Enabled for context
@@ -230,13 +258,19 @@ export function ProjectEditSheet({
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          void deleteProjectMemory(projectId, memory.id).then(
-                            () => {
+                          void deleteProjectMemory(projectId, memory.id)
+                            .then(() => {
                               setMemories((current) =>
                                 current.filter((item) => item.id !== memory.id)
                               )
-                            }
-                          )
+                            })
+                            .catch((memoryError) => {
+                              setError(
+                                memoryError instanceof Error
+                                  ? memoryError.message
+                                  : "Failed to delete memory"
+                              )
+                            })
                         }}
                       >
                         Delete
@@ -252,7 +286,7 @@ export function ProjectEditSheet({
             {project?.status === "active" ? (
               <Button
                 variant="outline"
-                disabled={saving}
+                disabled={saving || loading || !project}
                 onClick={() => void handleArchive()}
               >
                 Archive project
@@ -260,7 +294,10 @@ export function ProjectEditSheet({
             ) : (
               <span />
             )}
-            <Button disabled={saving} onClick={() => void handleSave()}>
+            <Button
+              disabled={saving || loading || !project}
+              onClick={() => void handleSave()}
+            >
               {saving ? "Saving…" : "Save changes"}
             </Button>
           </div>

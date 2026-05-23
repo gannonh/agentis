@@ -1,12 +1,16 @@
 import { Hono } from "hono"
 import {
-  artifactSchema,
+  artifactPublicSchema,
   artifactTypeSchema,
   listArtifactsQuerySchema,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 import { ArtifactService } from "../artifacts/artifact-service.js"
+
+function toPublicArtifact(artifact: Parameters<typeof artifactPublicSchema.parse>[0]) {
+  return artifactPublicSchema.parse(artifact)
+}
 
 export function createArtifactRoutes(
   repos: Repositories,
@@ -16,14 +20,20 @@ export function createArtifactRoutes(
   const artifactService = new ArtifactService(repos, config)
 
   app.get("/", (c) => {
-    const query = listArtifactsQuerySchema.parse({
+    const parsed = listArtifactsQuerySchema.safeParse({
       query: c.req.query("query"),
       type: c.req.query("type"),
       projectId: c.req.query("projectId"),
       threadId: c.req.query("threadId"),
     })
-    const artifacts = repos.artifacts.list(query)
-    return c.json(artifacts.map((artifact) => artifactSchema.parse(artifact)))
+    if (!parsed.success) {
+      return c.json(
+        { error: "Invalid query parameters", code: "invalid_request" },
+        400
+      )
+    }
+    const artifacts = repos.artifacts.list(parsed.data)
+    return c.json(artifacts.map((artifact) => toPublicArtifact(artifact)))
   })
 
   app.post("/", async (c) => {
@@ -50,9 +60,21 @@ export function createArtifactRoutes(
     let data: Buffer
     let filename = "upload.bin"
     if (file instanceof File) {
+      if (file.size > config.artifactMaxUploadBytes) {
+        return c.json(
+          { error: "Artifact exceeds maximum upload size", code: "artifact_too_large" },
+          413
+        )
+      }
       data = Buffer.from(await file.arrayBuffer())
       filename = file.name || filename
     } else if (typeof file === "string") {
+      if (Buffer.byteLength(file, "utf8") > config.artifactMaxUploadBytes) {
+        return c.json(
+          { error: "Artifact exceeds maximum upload size", code: "artifact_too_large" },
+          413
+        )
+      }
       data = Buffer.from(file, "utf8")
       filename = "upload.txt"
     } else {
@@ -80,7 +102,7 @@ export function createArtifactRoutes(
       return c.json({ error: result.message, code: result.code }, 500)
     }
 
-    return c.json(artifactSchema.parse(result.artifact), 201)
+    return c.json(toPublicArtifact(result.artifact), 201)
   })
 
   app.get("/:artifactId", (c) => {
@@ -88,21 +110,17 @@ export function createArtifactRoutes(
     if (!artifact) {
       return c.json({ error: "Artifact not found", code: "artifact_not_found" }, 404)
     }
-    return c.json(artifactSchema.parse(artifact))
+    return c.json(toPublicArtifact(artifact))
   })
 
   app.get("/:artifactId/download", (c) => {
     const result = artifactService.getDownload(c.req.param("artifactId"))
     if (!result.ok) {
-      if (result.code === "artifact_blob_missing") {
-        return c.json(
-          { error: result.message, code: result.code },
-          404
-        )
-      }
+      const status =
+        result.status === 404 ? 404 : (500 as const)
       return c.json(
         { error: result.message, code: result.code },
-        404
+        status
       )
     }
     const filename = result.artifact.title.replace(/[^\w.-]+/g, "_") || "artifact"

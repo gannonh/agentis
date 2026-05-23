@@ -49,6 +49,9 @@ export function ProjectDetailPage() {
     if (!projectId) return
     setLoading(true)
     setError(null)
+    setProject(null)
+    setThreads([])
+    setArtifacts([])
     try {
       const [loadedProject, allThreads, projectArtifacts] = await Promise.all([
         getProject(projectId),

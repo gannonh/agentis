@@ -1,5 +1,5 @@
 import {
-  artifactSchema,
+  artifactPublicSchema,
   artifactTypeSchema,
   createProjectMemoryRequestSchema,
   createProjectRequestSchema,
@@ -23,7 +23,15 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ""
 async function parseJson<T>(response: Response, schema: {
   parse: (data: unknown) => T
 }): Promise<T> {
-  const data = await response.json()
+  let data: unknown
+  try {
+    data = await response.json()
+  } catch {
+    if (!response.ok) {
+      throw new ApiError(response.statusText || "Request failed", response.status)
+    }
+    throw new ApiError("Invalid response", 500)
+  }
   if (!response.ok) {
     const message =
       typeof data === "object" &&
@@ -195,7 +203,7 @@ export async function listArtifacts(
         : response.statusText
     throw new ApiError(message, response.status)
   }
-  return parseArray(artifactSchema, await response.json())
+  return parseArray(artifactPublicSchema, await response.json())
 }
 
 export async function uploadArtifact(input: {
@@ -219,7 +227,7 @@ export async function uploadArtifact(input: {
     method: "POST",
     body: form,
   })
-  return parseJson(response, artifactSchema)
+  return parseJson(response, artifactPublicSchema)
 }
 
 export function artifactDownloadUrl(artifactId: string) {

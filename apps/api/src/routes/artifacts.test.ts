@@ -49,6 +49,17 @@ describe("artifact routes", () => {
     expect(await download.text()).toContain("Brief")
   })
 
+  it("returns 400 for invalid list query parameters", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const response = await app.request("/api/artifacts?type=not-a-type")
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("invalid_request")
+  })
+
   it("returns artifact_blob_missing when file is absent", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)

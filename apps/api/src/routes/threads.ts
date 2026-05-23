@@ -4,6 +4,7 @@ import {
   createThreadRequestSchema,
   threadDetailSchema,
   threadListItemSchema,
+  threadSchema,
   updateThreadRequestSchema,
 } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
@@ -135,7 +136,7 @@ export function createThreadRoutes(
     if (!updated) {
       return c.json({ error: "Thread not found" }, 404)
     }
-    return c.json(updated)
+    return c.json(threadSchema.parse(updated))
   })
 
   app.get("/:id", (c) => {
