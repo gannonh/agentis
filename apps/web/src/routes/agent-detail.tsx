@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link, useParams } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -45,7 +45,7 @@ export function AgentDetailPage() {
   const [apiAgentNotFound, setApiAgentNotFound] = useState(false)
   const workspace = getWorkspace()
 
-  useEffect(() => {
+  const loadApiAgent = useCallback(async () => {
     if (!agentId || fixtureAgent || agentId === "command-center") {
       setApiAgent(null)
       setApiAgentNotFound(false)
@@ -53,26 +53,22 @@ export function AgentDetailPage() {
       return
     }
 
-    let canceled = false
     setApiAgent(null)
     setApiAgentNotFound(false)
     setLoadingApiAgent(true)
 
-    getApiAgent(agentId)
-      .then((detail) => {
-        if (!canceled) setApiAgent(mapApiAgentDetailToAgent(detail))
-      })
-      .catch(() => {
-        if (!canceled) setApiAgentNotFound(true)
-      })
-      .finally(() => {
-        if (!canceled) setLoadingApiAgent(false)
-      })
-
-    return () => {
-      canceled = true
+    try {
+      setApiAgent(mapApiAgentDetailToAgent(await getApiAgent(agentId)))
+    } catch {
+      setApiAgentNotFound(true)
+    } finally {
+      setLoadingApiAgent(false)
     }
   }, [agentId, fixtureAgent])
+
+  useEffect(() => {
+    void loadApiAgent()
+  }, [loadApiAgent])
 
   const agent = fixtureAgent ?? apiAgent
 
