@@ -95,8 +95,10 @@ describe("AgentCreatePage", () => {
       screen.getByLabelText(/^system prompt/i),
       "Answer with citations."
     )
-    await user.click(screen.getByRole("checkbox", { name: "GitHub" }))
-    expect(screen.queryByRole("checkbox", { name: "Linear" })).not.toBeInTheDocument()
+    expect(screen.getByText("Source control")).toBeInTheDocument()
+    expect(screen.getByText(/1 tool · 1 account/)).toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: /GitHub/ }))
+    expect(screen.queryByRole("checkbox", { name: /Linear/ })).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
     await waitFor(() => {
