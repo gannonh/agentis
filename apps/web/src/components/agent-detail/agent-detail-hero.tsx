@@ -31,10 +31,11 @@ export function AgentDetailHero({ agent }: AgentDetailHeroProps) {
       </nav>
 
       <div className="relative">
-        <div
-          className="bg-muted h-24 w-full rounded-lg border border-border"
-          aria-hidden
-        />
+        <div className="bg-muted flex h-24 w-full items-start justify-end rounded-lg border border-border px-4 py-3">
+          <span className="text-muted-foreground text-xs font-medium">
+            Agent identity
+          </span>
+        </div>
         <div className="absolute bottom-0 left-4 flex translate-y-1/2 items-end gap-4">
           <div className="flex size-14 shrink-0 items-center justify-center rounded-xl border-2 border-background bg-card shadow-sm">
             <AgentIcon icon={agent.icon} size="lg" className="text-foreground" />

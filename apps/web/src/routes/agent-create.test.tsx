@@ -5,6 +5,36 @@ import { MemoryRouter } from "react-router"
 import { AgentCreatePage } from "./agent-create"
 import { createAgent } from "@/lib/api/agents-client"
 
+vi.mock("@/hooks/use-integrations", () => ({
+  useIntegrations: () => ({
+    toolkits: [
+      {
+        slug: "github",
+        name: "GitHub",
+        description: "Source control",
+        category: "Developer tools",
+        featured: true,
+        status: "connected",
+        connectedAccountCount: 1,
+        availableTools: ["issues"],
+      },
+      {
+        slug: "linear",
+        name: "Linear",
+        description: "Issue tracking",
+        category: "Project management",
+        featured: true,
+        status: "not_connected",
+        connectedAccountCount: 0,
+        availableTools: ["issues"],
+      },
+    ],
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }),
+}))
+
 const navigate = vi.fn()
 
 vi.mock("react-router", async () => {
@@ -65,7 +95,8 @@ describe("AgentCreatePage", () => {
       screen.getByLabelText(/^system prompt/i),
       "Answer with citations."
     )
-    await user.type(screen.getByLabelText(/^tool grants/i), "github, linear")
+    await user.click(screen.getByRole("checkbox", { name: "GitHub" }))
+    expect(screen.queryByRole("checkbox", { name: "Linear" })).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
     await waitFor(() => {
@@ -74,7 +105,7 @@ describe("AgentCreatePage", () => {
         description: "Finds source-backed answers",
         model: "gpt-4o-mini",
         systemPrompt: "Answer with citations.",
-        toolGrants: [{ toolkitSlug: "github" }, { toolkitSlug: "linear" }],
+        toolGrants: [{ toolkitSlug: "github" }],
       })
     })
     expect(navigate).toHaveBeenCalledWith("/agents/agent_test")

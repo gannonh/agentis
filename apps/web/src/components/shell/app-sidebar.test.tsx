@@ -5,7 +5,31 @@ import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { AppSidebar } from "./app-sidebar"
 import { beforeEach, vi } from "vitest"
 
-const refreshAgents = vi.fn()
+const { refreshAgents, useAgentsMock } = vi.hoisted(() => ({
+  refreshAgents: vi.fn(),
+  useAgentsMock: vi.fn(),
+}))
+
+function apiAgent() {
+  return {
+    id: "agent_api_research",
+    name: "API Research Agent",
+    description: "Created through the API",
+    systemPrompt: "Answer with citations.",
+    model: "gpt-4o-mini",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    currentConfigurationVersion: {
+      id: "agent_version_api_research",
+      agentId: "agent_api_research",
+      version: 1,
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+      createdAt: new Date().toISOString(),
+    },
+    toolGrantCount: 1,
+  }
+}
 
 vi.mock("@/lib/api/client", () => ({
   listThreads: vi.fn().mockResolvedValue([
@@ -40,31 +64,7 @@ vi.mock("@/hooks/use-projects", () => ({
 }))
 
 vi.mock("@/hooks/use-agents", () => ({
-  useAgents: () => ({
-    agents: [
-      {
-        id: "agent_api_research",
-        name: "API Research Agent",
-        description: "Created through the API",
-        systemPrompt: "Answer with citations.",
-        model: "gpt-4o-mini",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        currentConfigurationVersion: {
-          id: "agent_version_api_research",
-          agentId: "agent_api_research",
-          version: 1,
-          systemPrompt: "Answer with citations.",
-          model: "gpt-4o-mini",
-          createdAt: new Date().toISOString(),
-        },
-        toolGrantCount: 1,
-      },
-    ],
-    loading: false,
-    error: null,
-    refresh: refreshAgents,
-  }),
+  useAgents: useAgentsMock,
 }))
 
 function renderSidebar(initialPath = "/threads/new") {
@@ -82,6 +82,12 @@ function renderSidebar(initialPath = "/threads/new") {
 describe("AppSidebar", () => {
   beforeEach(() => {
     refreshAgents.mockClear()
+    useAgentsMock.mockReturnValue({
+      agents: [apiAgent()],
+      loading: false,
+      error: null,
+      refresh: refreshAgents,
+    })
   })
 
   it("renders primary navigation links", async () => {
@@ -148,6 +154,29 @@ describe("AppSidebar", () => {
     renderSidebar("/threads/new?projectId=project_demo")
     await waitFor(() => {
       expect(screen.getByText("Product Launch Q4")).toBeInTheDocument()
+    })
+  })
+
+  it("shows loading and error states for API agents", async () => {
+    useAgentsMock.mockReturnValueOnce({
+      agents: [],
+      loading: true,
+      error: null,
+      refresh: refreshAgents,
+    })
+    renderSidebar()
+    expect(screen.getByText("Loading agents…")).toBeInTheDocument()
+
+    useAgentsMock.mockReturnValueOnce({
+      agents: [],
+      loading: false,
+      error: "Failed to load agents",
+      refresh: refreshAgents,
+    })
+    renderSidebar()
+    expect(screen.getByText("Agents unavailable")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getAllByText("Creating Agent").length).toBeGreaterThanOrEqual(1)
     })
   })
 })

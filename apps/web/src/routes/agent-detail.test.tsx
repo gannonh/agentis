@@ -92,6 +92,44 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("google-drive")).toBeInTheDocument()
   })
 
+  it("shows a useful empty description for API-backed agents", async () => {
+    vi.mocked(getAgent).mockResolvedValueOnce({
+      agent: {
+        id: "agent_blank",
+        name: "Blank Description Agent",
+        description: null,
+        systemPrompt: "Research carefully.",
+        model: "gpt-4o-mini",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        currentConfigurationVersion: {
+          id: "version_blank",
+          agentId: "agent_blank",
+          version: 1,
+          systemPrompt: "Research carefully.",
+          model: "gpt-4o-mini",
+          createdAt: new Date().toISOString(),
+        },
+        toolGrantCount: 0,
+      },
+      configurationVersions: [],
+      toolGrants: [],
+    })
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_blank"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByRole("heading", { name: "Blank Description Agent" })
+    ).toBeInTheDocument()
+    expect(screen.getAllByText("No description yet").length).toBeGreaterThanOrEqual(1)
+  })
+
   it("shows not found for unknown agent id", async () => {
     vi.mocked(getAgent).mockRejectedValueOnce(new Error("Agent not found"))
 

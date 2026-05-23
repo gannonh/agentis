@@ -21,7 +21,7 @@ function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
   return {
     id: detail.agent.id,
     name: detail.agent.name,
-    description: detail.agent.description ?? "",
+    description: detail.agent.description?.trim() || "No description yet",
     icon: "search",
     model: detail.agent.model,
     lastUpdatedAt: detail.agent.updatedAt,

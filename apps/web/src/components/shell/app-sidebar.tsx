@@ -134,7 +134,12 @@ function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
 
 export function AppSidebar() {
   const workspace = getWorkspace()
-  const { agents, refresh: refreshAgents } = useAgents()
+  const {
+    agents,
+    loading: loadingAgents,
+    error: agentsError,
+    refresh: refreshAgents,
+  } = useAgents()
   const location = useLocation()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
   const { projects, refresh: refreshProjects } = useProjects()
@@ -223,12 +228,26 @@ export function AppSidebar() {
                     <HugeiconsIcon icon={CommandIcon} strokeWidth={2} />
                     <span>Command Center</span>
                   </SidebarNavItem>
-                  {agents.map((agent) => (
-                    <SidebarNavItem key={agent.id} to={`/agents/${agent.id}`}>
-                      {agentNavIcon()}
-                      <span>{agent.name}</span>
-                    </SidebarNavItem>
-                  ))}
+                  {loadingAgents ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton disabled className="text-muted-foreground h-8">
+                        <span className="text-xs">Loading agents…</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : agentsError ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton disabled className="text-muted-foreground h-8">
+                        <span className="text-xs">Agents unavailable</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : (
+                    agents.map((agent) => (
+                      <SidebarNavItem key={agent.id} to={`/agents/${agent.id}`}>
+                        {agentNavIcon()}
+                        <span>{agent.name}</span>
+                      </SidebarNavItem>
+                    ))
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
