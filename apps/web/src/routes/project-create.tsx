@@ -9,10 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import {
-  ProjectDetailsFields,
-  projectDetailsDescription,
-} from "@/components/projects/project-details-fields"
+import { PROJECT_DETAILS_DESCRIPTION } from "@/components/projects/project-details-description"
+import { ProjectDetailsFields } from "@/components/projects/project-details-fields"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { createProject } from "@/lib/api/projects-client"
@@ -58,7 +56,7 @@ export function ProjectCreatePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Details</CardTitle>
-          <CardDescription>{projectDetailsDescription()}</CardDescription>
+          <CardDescription>{PROJECT_DETAILS_DESCRIPTION}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {error ? <p className="text-destructive text-sm">{error}</p> : null}

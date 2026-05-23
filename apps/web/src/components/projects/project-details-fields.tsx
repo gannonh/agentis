@@ -1,9 +1,6 @@
 import { Input } from "@workspace/ui/components/input"
 import { Textarea } from "@workspace/ui/components/textarea"
 
-const DETAILS_DESCRIPTION =
-  "Name, description, and goals used in thread context."
-
 type ProjectDetailsFieldsProps = {
   name: string
   onNameChange: (value: string) => void
@@ -16,10 +13,6 @@ type ProjectDetailsFieldsProps = {
   descriptionPlaceholder?: string
   goalsPlaceholder?: string
   showGoalsHint?: boolean
-}
-
-export function projectDetailsDescription() {
-  return DETAILS_DESCRIPTION
 }
 
 export function ProjectDetailsFields({
