@@ -39,4 +39,50 @@ describe("run executor composio bridge", () => {
       )
     ).toBe(true)
   })
+
+  it("loads the bound agent configuration version when streaming a test-thread run", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services)
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer as the research agent.",
+      model: "gpt-4o-mini",
+    })
+    const updated = ctx.repos.agents.update(agent.id, {
+      systemPrompt: "Answer with citations and source quality notes.",
+      model: "gpt-4.1-mini",
+    })!
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize this workspace" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+      status: "completed",
+      model: "gpt-4.1-mini",
+      agentConfigurationVersionId: updated.currentConfigurationVersion.id,
+    })
+    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Agent configuration loaded",
+          payload: expect.objectContaining({
+            agentId: agent.id,
+            agentConfigurationVersionId: updated.currentConfigurationVersion.id,
+            model: "gpt-4.1-mini",
+            systemPromptChars: "Answer with citations and source quality notes.".length,
+          }),
+        }),
+      ])
+    )
+  }, 10_000)
 })

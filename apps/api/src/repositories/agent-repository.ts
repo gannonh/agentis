@@ -188,6 +188,18 @@ export class AgentRepository {
       .map(mapVersion)
   }
 
+  getConfigurationVersionById(
+    versionId: string
+  ): AgentConfigurationVersionSummary | null {
+    const row = this.db
+      .select()
+      .from(agentConfigurationVersions)
+      .where(eq(agentConfigurationVersions.id, versionId))
+      .get()
+
+    return row ? mapVersion(row) : null
+  }
+
   update(agentId: string, input: AgentUpdateInput): AgentListItem | null {
     const existing = this.db
       .select()

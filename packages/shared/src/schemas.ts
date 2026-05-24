@@ -261,6 +261,10 @@ export const updateAgentRequestSchema = z
     message: "At least one agent edit field is required.",
   })
 
+export const createAgentTestThreadRequestSchema = z.object({
+  prompt: nonEmptyString,
+})
+
 export const agentDetailResponseSchema = z.object({
   agent: agentListItemSchema,
   configurationVersions: z.array(agentConfigurationVersionSummarySchema),
@@ -453,6 +457,9 @@ export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
 export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
+export type CreateAgentTestThreadRequest = z.infer<
+  typeof createAgentTestThreadRequestSchema
+>
 export type AgentDetailResponse = z.infer<typeof agentDetailResponseSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>

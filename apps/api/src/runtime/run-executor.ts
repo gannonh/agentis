@@ -142,12 +142,23 @@ export class RunExecutor {
       return this.failWithRemediation(runId, run.threadId, remediation)
     }
 
+    const agentConfiguration = run.agentConfigurationVersionId
+      ? this.repos.agents.getConfigurationVersionById(
+          run.agentConfigurationVersionId
+        )
+      : null
+    if (run.agentConfigurationVersionId && !agentConfiguration) {
+      throw new Error("Agent configuration version not found")
+    }
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
-    const systemPrompt = projectContextBlock
-      ? `${buildBaseSystemPrompt()}\n\n${projectContextBlock}`
+    const baseSystemPrompt = agentConfiguration
+      ? agentConfiguration.systemPrompt
       : buildBaseSystemPrompt()
+    const systemPrompt = projectContextBlock
+      ? `${baseSystemPrompt}\n\n${projectContextBlock}`
+      : baseSystemPrompt
 
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
@@ -202,6 +213,20 @@ export class RunExecutor {
       status: "running",
       title: "Running",
     })
+    if (agentConfiguration) {
+      this.repos.steps.create({
+        runId,
+        type: "reasoning",
+        status: "completed",
+        title: "Agent configuration loaded",
+        payload: {
+          agentId: agentConfiguration.agentId,
+          agentConfigurationVersionId: agentConfiguration.id,
+          model: agentConfiguration.model,
+          systemPromptChars: agentConfiguration.systemPrompt.length,
+        },
+      })
+    }
     if (projectContext) {
       this.repos.steps.create({
         runId,

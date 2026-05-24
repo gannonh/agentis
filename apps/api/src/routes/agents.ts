@@ -3,11 +3,19 @@ import {
   agentDetailResponseSchema,
   agentListItemSchema,
   createAgentRequestSchema,
+  createAgentTestThreadRequestSchema,
+  createThreadResponseSchema,
   updateAgentRequestSchema,
   type AgentToolGrantInput,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
+
+function summarizeTitle(prompt: string) {
+  const trimmed = prompt.trim().replace(/\s+/g, " ")
+  if (trimmed.length <= 60) return trimmed
+  return `${trimmed.slice(0, 57)}...`
+}
 
 export function createAgentRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
@@ -122,6 +130,78 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     )
 
     return c.json(agentDetail(created.id), 201)
+  })
+
+  app.post("/:agentId/test-thread", async (c) => {
+    const agentId = c.req.param("agentId")
+    const detail = agentDetail(agentId)
+    if (!detail) {
+      return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+    }
+
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(
+        {
+          error: "Invalid agent test thread payload",
+          code: "invalid_agent_test_thread",
+          issues: [],
+        },
+        400
+      )
+    }
+
+    const parsed = createAgentTestThreadRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: "Invalid agent test thread payload",
+          code: "invalid_agent_test_thread",
+          issues: parsed.error.issues,
+        },
+        400
+      )
+    }
+
+    const version = detail.agent.currentConfigurationVersion
+    const thread = repos.threads.create({
+      title: summarizeTitle(parsed.data.prompt),
+      model: version.model,
+      mode: "agent",
+      agentId: detail.agent.id,
+      agentNameSnapshot: detail.agent.name,
+    })
+    for (const grant of detail.toolGrants) {
+      repos.toolAccessGrants.create({
+        scopeType: "thread",
+        scopeId: thread.id,
+        toolkitSlug: grant.toolkitSlug,
+        connectionId: grant.connectionId,
+      })
+    }
+    const message = repos.messages.create({
+      threadId: thread.id,
+      role: "user",
+      parts: [{ type: "text", text: parsed.data.prompt }],
+      status: "completed",
+    })
+    const run = repos.runs.create({
+      threadId: thread.id,
+      model: version.model,
+      status: "queued",
+      agentId: detail.agent.id,
+      agentConfigurationVersionId: version.id,
+    })
+    repos.steps.create({
+      runId: run.id,
+      type: "queued",
+      status: "pending",
+      title: "Queued",
+    })
+
+    return c.json(createThreadResponseSchema.parse({ thread, message, run }), 201)
   })
 
   app.get("/:agentId", (c) => {

@@ -368,4 +368,89 @@ describe("agent routes", () => {
     expect(listBody[0]?.currentConfigurationVersion.version).toBe(1)
     expect(listBody[0]?.toolGrantCount).toBe(1)
   })
+
+  it("starts an agent test thread with current configuration version and copied tool grants", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const connection = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: connection.id }]
+    )
+    const updated = ctx.repos.agents.update(agent.id, {
+      systemPrompt: "Answer with citations and source quality notes.",
+      model: "gpt-4.1-mini",
+    })!
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      thread: { id: string; agentId?: string; agentNameSnapshot?: string; model: string }
+      message: { role: string }
+      run: { id: string; agentId?: string; agentConfigurationVersionId?: string; model: string }
+    }
+    expect(body.thread).toMatchObject({
+      agentId: agent.id,
+      agentNameSnapshot: "Research Agent",
+      model: "gpt-4.1-mini",
+    })
+    expect(body.message.role).toBe("user")
+    expect(body.run).toMatchObject({
+      agentId: agent.id,
+      agentConfigurationVersionId: updated.currentConfigurationVersion.id,
+      model: "gpt-4.1-mini",
+    })
+    expect(ctx.repos.toolAccessGrants.listByScope("thread", body.thread.id)).toMatchObject([
+      { toolkitSlug: "github", connectionId: connection.id },
+    ])
+  })
+
+  it("rejects invalid agent test-thread requests", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "" }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("invalid_agent_test_thread")
+  })
+
+  it("returns not found when starting a test thread for an unknown agent", async () => {
+    ctx = createTestContext()
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request("/api/agents/missing/test-thread", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+    })
+
+    expect(response.status).toBe(404)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("agent_not_found")
+  })
 })
