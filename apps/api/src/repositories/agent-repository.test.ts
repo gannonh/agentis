@@ -124,13 +124,14 @@ describe("agent repository", () => {
       toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
     })
 
-    expect(updated.currentConfigurationVersion).toMatchObject({
+    expect(updated).not.toBeNull()
+    expect(updated!.currentConfigurationVersion).toMatchObject({
       version: 2,
       systemPrompt: "Answer with citations and source quality notes.",
       model: "gpt-4.1-mini",
       maxCostPerRunUsd: 1.5,
     })
-    expect(updated.toolGrantCount).toBe(1)
+    expect(updated!.toolGrantCount).toBe(1)
     expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(2)
     expect(
       ctx.repos.toolAccessGrants
