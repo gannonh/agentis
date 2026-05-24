@@ -17,12 +17,16 @@ import {
 import type { Agent } from "@/fixtures/schema"
 import type { ReactNode } from "react"
 
+type AgentDetailTab = "invocations" | "tools" | "skills" | "knowledge"
+
 type InspectorSectionProps = {
   title: string
   count: number
   defaultOpen?: boolean
   children?: ReactNode
   emptyLabel?: string
+  configureTab?: AgentDetailTab
+  onConfigure?: (tab: AgentDetailTab) => void
 }
 
 function InspectorSection({
@@ -31,6 +35,8 @@ function InspectorSection({
   defaultOpen = false,
   children,
   emptyLabel = "None",
+  configureTab,
+  onConfigure,
 }: InspectorSectionProps) {
   return (
     <Collapsible
@@ -47,10 +53,14 @@ function InspectorSection({
           <span className="min-w-0 text-sm font-medium">{title} ({count})</span>
         </CollapsibleTrigger>
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           className="mr-2 shrink-0 text-muted-foreground"
-          disabled
+          disabled={!configureTab || !onConfigure}
+          onClick={() => {
+            if (configureTab) onConfigure?.(configureTab)
+          }}
           aria-label={`Configure ${title.toLowerCase()}`}
         >
           <HugeiconsIcon icon={Settings01Icon} className="size-4" strokeWidth={2} />
@@ -87,9 +97,10 @@ function ToolList({ tools }: { tools: string[] }) {
 
 type AgentDetailInspectorProps = {
   agent: Agent
+  onConfigure?: (tab: AgentDetailTab) => void
 }
 
-export function AgentDetailInspector({ agent }: AgentDetailInspectorProps) {
+export function AgentDetailInspector({ agent, onConfigure }: AgentDetailInspectorProps) {
   return (
     <aside
       className="flex w-full shrink-0 flex-col rounded-xl border border-border bg-card/50 xl:sticky xl:top-6 xl:w-84 xl:self-start"
@@ -108,6 +119,8 @@ export function AgentDetailInspector({ agent }: AgentDetailInspectorProps) {
         title="Invocations"
         count={Math.max(agent.invocations.length, 1)}
         defaultOpen
+        configureTab="invocations"
+        onConfigure={onConfigure}
       >
         <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
           {(agent.invocations.length > 0 ? agent.invocations : ["Thread"]).map((inv) => (
@@ -123,17 +136,43 @@ export function AgentDetailInspector({ agent }: AgentDetailInspectorProps) {
         title="Integrations"
         count={agent.integrationsCount}
         emptyLabel="None connected"
+        configureTab="tools"
+        onConfigure={onConfigure}
       />
 
-      <InspectorSection title="Tools" count={agent.tools.length} defaultOpen>
+      <InspectorSection
+        title="Tools"
+        count={agent.tools.length}
+        defaultOpen
+        configureTab="tools"
+        onConfigure={onConfigure}
+      >
         <ToolList tools={agent.tools} />
       </InspectorSection>
 
-      <InspectorSection title="Skills" count={agent.skillsCount} emptyLabel="None" />
+      <InspectorSection
+        title="Skills"
+        count={agent.skillsCount}
+        emptyLabel="None"
+        configureTab="skills"
+        onConfigure={onConfigure}
+      />
 
-      <InspectorSection title="Memory" count={agent.memoriesCount} emptyLabel="None" />
+      <InspectorSection
+        title="Memory"
+        count={agent.memoriesCount}
+        emptyLabel="None"
+        configureTab="knowledge"
+        onConfigure={onConfigure}
+      />
 
-      <InspectorSection title="Library" count={agent.libraryCount} emptyLabel="None" />
+      <InspectorSection
+        title="Library"
+        count={agent.libraryCount}
+        emptyLabel="None"
+        configureTab="knowledge"
+        onConfigure={onConfigure}
+      />
     </aside>
   )
 }

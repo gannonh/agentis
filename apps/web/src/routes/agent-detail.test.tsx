@@ -231,6 +231,8 @@ describe("AgentDetailPage", () => {
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
     expect(screen.getByText("Description")).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Overview" }).querySelector("svg")).not.toBeNull()
+    expect(screen.getByRole("tab", { name: "Knowledge" }).querySelector("svg")).not.toBeNull()
 
     await user.click(screen.getByRole("tab", { name: "Activity" }))
     expect(screen.getByRole("searchbox", { name: "Search threads" })).toBeInTheDocument()
@@ -256,6 +258,23 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Execution")).toBeInTheDocument()
     expect(screen.getByText("Research")).toBeInTheDocument()
     expect(screen.getByText("Full VM")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Knowledge" }))
+    expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
+    expect(screen.getByText("Knowledge access")).toBeInTheDocument()
+    expect(screen.getByText("See what Personal learns")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Context files" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Configure tools" }))
+    expect(screen.getByRole("tab", { name: "Tools" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByText("Integrations")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Configure skills" }))
+    expect(screen.getByRole("tab", { name: "Skills" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("heading", { name: "Skills" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Configure memory" }))
+    expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
   })
 
   it("shows API save errors on editable model fields", async () => {

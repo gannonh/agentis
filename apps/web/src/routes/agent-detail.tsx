@@ -18,13 +18,17 @@ import {
 import { Badge } from "@workspace/ui/components/badge"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  Activity01Icon,
   AiSearchIcon,
   ArrowDown01Icon,
+  BookOpen01Icon,
+  Brain01Icon,
   BrowserIcon,
   Calendar03Icon,
   ChatIcon,
   CheckmarkCircle02Icon,
   ComputerTerminal01Icon,
+  DashboardSquare01Icon,
   Database01Icon,
   File02Icon,
   Globe02Icon,
@@ -35,13 +39,17 @@ import {
   Mic01Icon,
   PlusSignIcon,
   Presentation01Icon,
+  PuzzleIcon,
   Search01Icon,
   ServerStack01Icon,
+  SlidersHorizontalIcon,
   SlackIcon,
+  SparklesIcon,
   TableIcon,
   TelegramIcon,
   Video01Icon,
   WebhookIcon,
+  Wrench02Icon,
   ZapIcon,
 } from "@hugeicons/core-free-icons"
 import { AgentDetailHero } from "@/components/agent-detail/agent-detail-hero"
@@ -511,6 +519,185 @@ function AgentInvocationsTab() {
   )
 }
 
+const KNOWLEDGE_ACCESS_OPTIONS = [
+  {
+    title: "Personal",
+    description: "Sees every memory and skill you've saved. Learns from conversations and keeps what's worth keeping.",
+    note: "Best for agents you use yourself.",
+    icon: BookOpen01Icon,
+    active: true,
+  },
+  {
+    title: "Curated",
+    description: "Sees only the memories and skills you link to it. Does not learn from conversations.",
+    note: "Best for agents you share with others.",
+    icon: CheckmarkCircle02Icon,
+    active: false,
+  },
+  {
+    title: "Team learning",
+    description: "Sees only linked knowledge. Learns from every conversation and grows over time.",
+    note: "Best for knowledge that grows with use.",
+    icon: Brain01Icon,
+    active: false,
+  },
+  {
+    title: "Custom",
+    description: "Tune memory access, edit permissions, and learning behavior on your own.",
+    note: null,
+    icon: ComputerTerminal01Icon,
+    active: false,
+  },
+] as const
+
+const KNOWLEDGE_PERMISSION_ROWS = [
+  ["Memory access", "All memories"],
+  ["Editing memories and skills", "Allowed"],
+  ["Self-improvement", "on"],
+  ["Memory suggestions", "on"],
+  ["Memory auto-save", "on"],
+  ["Skill suggestions", "on"],
+  ["Skill auto-save", "on"],
+  ["Prompt suggestions", "on"],
+  ["Prompt auto-save", "on"],
+  ["Agent configs auto-save", "on"],
+] as const
+
+function AgentSkillsTab() {
+  return (
+    <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="skills-heading">
+      <h2 id="skills-heading" className="text-sm font-medium">
+        Skills
+      </h2>
+      <p className="text-muted-foreground mt-1 text-sm">
+        Reusable instructions this agent can apply while working.
+      </p>
+      {/* TODO: replace this empty state with API-backed agent skills once skill attachments are exposed. */}
+      <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
+        <p className="text-muted-foreground text-sm">
+          No skills attached yet. Add skills to teach this agent repeatable workflows.
+        </p>
+        <Button type="button" variant="outline" size="sm" disabled>
+          <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
+          Add skills
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+function AgentKnowledgeTab() {
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-4" aria-labelledby="knowledge-discovery-heading">
+        <div className="min-w-0">
+          <h2 id="knowledge-discovery-heading" className="text-sm font-medium">
+            Knowledge discovery
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Allow the agent to search and apply existing memories and skills automatically.
+          </p>
+        </div>
+        <TogglePill checked />
+      </section>
+
+      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="knowledge-access-heading">
+        <h2 id="knowledge-access-heading" className="text-sm font-medium">
+          Knowledge access
+        </h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          How should this agent use and learn from your memories and skills?
+        </p>
+        {/* TODO: wire trust profiles and learning permissions to server-backed agent knowledge settings. */}
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {KNOWLEDGE_ACCESS_OPTIONS.map((option) => (
+            <article
+              key={option.title}
+              className={`rounded-xl border p-4 ${
+                option.active ? "border-foreground bg-background" : "border-border bg-background/40"
+              }`}
+            >
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <HugeiconsIcon icon={option.icon} className="size-4 text-muted-foreground" strokeWidth={2} />
+                {option.title}
+              </div>
+              <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+                {option.description}
+              </p>
+              {option.note ? (
+                <p className="text-muted-foreground mt-3 text-xs italic">{option.note}</p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-background/50">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm text-muted-foreground">
+            <span>See what Personal learns</span>
+            <span aria-hidden>⌃</span>
+          </div>
+          <dl className="divide-y divide-border/60 px-4 py-2">
+            {KNOWLEDGE_PERMISSION_ROWS.map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between gap-4 py-2 text-sm">
+                <dt className="flex min-w-0 items-center gap-2 text-foreground">
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-muted-foreground" strokeWidth={2} />
+                  {label}
+                </dt>
+                <dd className={value === "on" ? "text-emerald-400" : "text-foreground"}>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="px-4 pb-3 text-xs text-foreground">Switch to Custom to edit individually →</p>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="memories-heading">
+        <h2 id="memories-heading" className="text-sm font-medium">
+          Memories
+        </h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Information the agent can reference while working on a task.
+        </p>
+        {/* TODO: replace this empty state with API-backed agent memory references. */}
+        <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
+          <p className="text-muted-foreground text-sm">
+            No memories yet. Add one to give this agent persistent context.
+          </p>
+          <Button type="button" variant="outline" size="sm" disabled>
+            <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
+            Add memories
+          </Button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="context-files-heading">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="context-files-heading" className="text-sm font-medium">
+              Context files
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Documents and reference files attached to the agent for use during conversations.
+            </p>
+          </div>
+          <Button type="button" size="icon" variant="outline" disabled aria-label="Add context file">
+            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+          </Button>
+        </div>
+        {/* TODO: replace this sample file once agent-scoped library attachments are exposed. */}
+        <div className="mt-5 flex items-center gap-2 text-sm font-medium">
+          Added <Badge variant="secondary">1 active</Badge>
+        </div>
+        <article className="mt-4 w-full max-w-56 rounded-xl border border-border bg-background/50 p-4">
+          <HugeiconsIcon icon={Image02Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
+          <p className="mt-8 truncate text-sm font-medium">Screenshot 2026-05-20 at ...</p>
+          <p className="text-muted-foreground text-xs">image/png</p>
+        </article>
+      </section>
+    </div>
+  )
+}
+
 const TOOL_GROUPS = [
   {
     label: "Execution",
@@ -746,6 +933,7 @@ export function AgentDetailPage() {
   const [loadingApiAgent, setLoadingApiAgent] = useState(shouldLoadApiAgent)
   const [apiAgentNotFound, setApiAgentNotFound] = useState(false)
   const [apiAgentLoadFailed, setApiAgentLoadFailed] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview")
   const workspace = getWorkspace()
 
   const loadApiAgent = useCallback(async () => {
@@ -864,26 +1052,39 @@ export function AgentDetailPage() {
         <div className="flex min-w-0 flex-col gap-6">
           <AgentDetailHero agent={agent} />
 
-          <Tabs defaultValue="overview">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(String(value))}>
             <TabsList variant="line" className="w-full justify-start overflow-x-auto border-b border-border">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="overview">
+                <HugeiconsIcon icon={DashboardSquare01Icon} className="size-3.5" strokeWidth={2} />
+                Overview
+              </TabsTrigger>
               <TabsTrigger value="identity" disabled={!editable}>
+                <HugeiconsIcon icon={SparklesIcon} className="size-3.5" strokeWidth={2} />
                 Identity
               </TabsTrigger>
               <TabsTrigger value="activity" disabled={!editable}>
+                <HugeiconsIcon icon={Activity01Icon} className="size-3.5" strokeWidth={2} />
                 Activity
               </TabsTrigger>
               <TabsTrigger value="model" disabled={!editable}>
+                <HugeiconsIcon icon={SlidersHorizontalIcon} className="size-3.5" strokeWidth={2} />
                 Model
               </TabsTrigger>
               <TabsTrigger value="invocations" disabled={!editable}>
+                <HugeiconsIcon icon={ZapIcon} className="size-3.5" strokeWidth={2} />
                 Invocations
               </TabsTrigger>
               <TabsTrigger value="tools" disabled={!editable}>
+                <HugeiconsIcon icon={Wrench02Icon} className="size-3.5" strokeWidth={2} />
                 Tools
               </TabsTrigger>
-              <TabsTrigger value="skills" disabled>
+              <TabsTrigger value="skills" disabled={!editable}>
+                <HugeiconsIcon icon={PuzzleIcon} className="size-3.5" strokeWidth={2} />
                 Skills
+              </TabsTrigger>
+              <TabsTrigger value="knowledge" disabled={!editable}>
+                <HugeiconsIcon icon={BookOpen01Icon} className="size-3.5" strokeWidth={2} />
+                Knowledge
               </TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
@@ -906,12 +1107,18 @@ export function AgentDetailPage() {
                 <TabsContent value="tools" className="pt-4">
                   <AgentToolsTab detail={apiAgentDetail} onSave={saveApiAgent} />
                 </TabsContent>
+                <TabsContent value="skills" className="pt-4">
+                  <AgentSkillsTab />
+                </TabsContent>
+                <TabsContent value="knowledge" className="pt-4">
+                  <AgentKnowledgeTab />
+                </TabsContent>
               </>
             ) : null}
           </Tabs>
         </div>
 
-        <AgentDetailInspector agent={agent} />
+        <AgentDetailInspector agent={agent} onConfigure={editable ? setActiveTab : undefined} />
       </div>
     </PageLayout>
   )
