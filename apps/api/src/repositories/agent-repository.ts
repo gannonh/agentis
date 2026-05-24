@@ -19,11 +19,21 @@ type AgentCreateInput = {
   description?: string | null
   systemPrompt: string
   model: string
+  maxCostPerRunUsd?: number | null
 }
 
 type AgentToolGrantCreateInput = {
   toolkitSlug: string
   connectionId: string
+}
+
+type AgentUpdateInput = {
+  name?: string
+  description?: string | null
+  systemPrompt?: string
+  model?: string
+  maxCostPerRunUsd?: number | null
+  toolGrants?: AgentToolGrantCreateInput[]
 }
 
 function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
@@ -33,6 +43,7 @@ function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
     version: row.version,
     systemPrompt: row.systemPrompt,
     model: row.model,
+    maxCostPerRunUsd: row.maxCostPerRunUsd,
     createdAt: row.createdAt,
   }
 }
@@ -48,6 +59,7 @@ function mapAgent(
     description: row.description ?? undefined,
     systemPrompt: row.systemPrompt,
     model: row.model,
+    maxCostPerRunUsd: row.maxCostPerRunUsd,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     currentConfigurationVersion,
@@ -73,6 +85,7 @@ export class AgentRepository {
       description: input.description ?? null,
       systemPrompt: input.systemPrompt,
       model: input.model,
+      maxCostPerRunUsd: input.maxCostPerRunUsd ?? null,
       createdAt: now,
       updatedAt: now,
     }
@@ -82,6 +95,7 @@ export class AgentRepository {
       version: 1,
       systemPrompt: input.systemPrompt,
       model: input.model,
+      maxCostPerRunUsd: input.maxCostPerRunUsd ?? null,
       createdAt: now,
     }
     const grantRows = grants.map((grant) => ({
@@ -145,6 +159,107 @@ export class AgentRepository {
       .orderBy(asc(agentConfigurationVersions.version))
       .all()
       .map(mapVersion)
+  }
+
+  update(agentId: string, input: AgentUpdateInput): AgentListItem | null {
+    const existing = this.db
+      .select()
+      .from(agents)
+      .where(eq(agents.id, agentId))
+      .get()
+    if (!existing) return null
+
+    const currentVersion = this.getCurrentVersion(agentId)
+    const nextSystemPrompt = input.systemPrompt ?? existing.systemPrompt
+    const nextModel = input.model ?? existing.model
+    const nextMaxCostPerRunUsd =
+      "maxCostPerRunUsd" in input
+        ? input.maxCostPerRunUsd ?? null
+        : existing.maxCostPerRunUsd
+    const currentGrants = this.db
+      .select()
+      .from(toolAccessGrants)
+      .where(
+        and(
+          eq(toolAccessGrants.scopeType, "agent"),
+          eq(toolAccessGrants.scopeId, agentId)
+        )
+      )
+      .orderBy(asc(toolAccessGrants.toolkitSlug), asc(toolAccessGrants.id))
+      .all()
+    const nextGrants = input.toolGrants
+      ? [...input.toolGrants].sort((a, b) =>
+          a.toolkitSlug.localeCompare(b.toolkitSlug)
+        )
+      : undefined
+    const grantsChanged = nextGrants
+      ? JSON.stringify(
+          currentGrants.map((grant) => ({
+            toolkitSlug: grant.toolkitSlug,
+            connectionId: grant.connectionId,
+          }))
+        ) !== JSON.stringify(nextGrants)
+      : false
+    const configurationChanged =
+      nextSystemPrompt !== existing.systemPrompt ||
+      nextModel !== existing.model ||
+      nextMaxCostPerRunUsd !== existing.maxCostPerRunUsd ||
+      grantsChanged
+    const now = nowIso()
+
+    this.db.transaction((tx) => {
+      tx.update(agents)
+        .set({
+          name: input.name ?? existing.name,
+          description:
+            "description" in input ? input.description ?? null : existing.description,
+          systemPrompt: nextSystemPrompt,
+          model: nextModel,
+          maxCostPerRunUsd: nextMaxCostPerRunUsd,
+          updatedAt: now,
+        })
+        .where(eq(agents.id, agentId))
+        .run()
+
+      if (nextGrants) {
+        tx.delete(toolAccessGrants)
+          .where(
+            and(
+              eq(toolAccessGrants.scopeType, "agent"),
+              eq(toolAccessGrants.scopeId, agentId)
+            )
+          )
+          .run()
+        for (const grant of nextGrants) {
+          tx.insert(toolAccessGrants)
+            .values({
+              id: createId("grant"),
+              scopeType: "agent",
+              scopeId: agentId,
+              toolkitSlug: grant.toolkitSlug,
+              connectionId: grant.connectionId,
+              createdAt: now,
+            })
+            .run()
+        }
+      }
+
+      if (configurationChanged) {
+        tx.insert(agentConfigurationVersions)
+          .values({
+            id: createId("agent_version"),
+            agentId,
+            version: currentVersion.version + 1,
+            systemPrompt: nextSystemPrompt,
+            model: nextModel,
+            maxCostPerRunUsd: nextMaxCostPerRunUsd,
+            createdAt: now,
+          })
+          .run()
+      }
+    })
+
+    return this.getById(agentId)
   }
 
   private getCurrentVersion(agentId: string): AgentConfigurationVersionSummary {

@@ -48,6 +48,7 @@ export const agents = sqliteTable(
     description: text("description"),
     systemPrompt: text("system_prompt").notNull(),
     model: text("model").notNull(),
+    maxCostPerRunUsd: real("max_cost_per_run_usd"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -67,6 +68,7 @@ export const agentConfigurationVersions = sqliteTable(
     version: integer("version").notNull(),
     systemPrompt: text("system_prompt").notNull(),
     model: text("model").notNull(),
+    maxCostPerRunUsd: real("max_cost_per_run_usd"),
     createdAt: text("created_at").notNull(),
   },
   (table) => [

@@ -72,6 +72,106 @@ describe("agent repository", () => {
     ).toBe(2)
   })
 
+  it("updates identity fields without creating a configuration version", () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      description: "Finds sources",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+
+    const updated = ctx.repos.agents.update(agent.id, {
+      name: "Research Assistant",
+      description: null,
+    })
+
+    expect(updated).toMatchObject({
+      id: agent.id,
+      name: "Research Assistant",
+      description: undefined,
+    })
+    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(1)
+  })
+
+  it("creates a configuration version for prompt, model, cost limit, and tool grant edits", () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+        maxCostPerRunUsd: null,
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+
+    const updated = ctx.repos.agents.update(agent.id, {
+      systemPrompt: "Answer with citations and source quality notes.",
+      model: "gpt-4.1-mini",
+      maxCostPerRunUsd: 1.5,
+      toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+    })
+
+    expect(updated.currentConfigurationVersion).toMatchObject({
+      version: 2,
+      systemPrompt: "Answer with citations and source quality notes.",
+      model: "gpt-4.1-mini",
+      maxCostPerRunUsd: 1.5,
+    })
+    expect(updated.toolGrantCount).toBe(1)
+    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(2)
+    expect(
+      ctx.repos.toolAccessGrants
+        .listByScope("agent", agent.id)
+        .map((grant) => grant.toolkitSlug)
+    ).toEqual(["slack"])
+  })
+
+  it("reloads replaced agent tool grants in stable toolkit order", () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+
+    ctx.repos.agents.update(agent.id, {
+      toolGrants: [
+        { toolkitSlug: "slack", connectionId: slack.id },
+        { toolkitSlug: "github", connectionId: github.id },
+      ],
+    })
+
+    expect(
+      ctx.repos.toolAccessGrants
+        .listByScope("agent", agent.id)
+        .map((grant) => grant.toolkitSlug)
+    ).toEqual(["github", "slack"])
+  })
+
   it("creates agents and tool grants in one repository operation", () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
