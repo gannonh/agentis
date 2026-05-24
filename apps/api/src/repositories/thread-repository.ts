@@ -1,9 +1,91 @@
 import { desc, eq } from "drizzle-orm"
-import type { Thread, ThreadMode, ThreadStatus } from "@workspace/shared"
+import type {
+  Message,
+  Run,
+  Thread,
+  ThreadMode,
+  ThreadStatus,
+} from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
-import { threads } from "../db/schema.js"
+import {
+  messages,
+  runs,
+  runSteps,
+  threads,
+  toolAccessGrants,
+} from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
-import { mapThread } from "../lib/mappers.js"
+import { mapMessage, mapRun, mapThread } from "../lib/mappers.js"
+
+type ToolGrantSnapshot = {
+  toolkitSlug: string
+  connectionId: string
+}
+
+type InitialRunResult = {
+  thread: Thread
+  message: Message
+  run: Run
+}
+
+type FollowUpRunResult = {
+  message: Message
+  run: Run
+}
+
+type MessageRow = typeof messages.$inferSelect
+type RunRow = typeof runs.$inferSelect
+type StepRow = typeof runSteps.$inferSelect
+
+function createUserMessageRow(input: {
+  threadId: string
+  prompt: string
+  createdAt: string
+}): MessageRow {
+  return {
+    id: createId("msg"),
+    threadId: input.threadId,
+    role: "user",
+    partsJson: JSON.stringify([{ type: "text", text: input.prompt }]),
+    status: "completed",
+    createdAt: input.createdAt,
+  }
+}
+
+function createQueuedRunRow(input: {
+  threadId: string
+  model: string
+  startedAt: string
+  agentId?: string | null
+  agentConfigurationVersionId?: string | null
+}): RunRow {
+  return {
+    id: createId("run"),
+    threadId: input.threadId,
+    status: "queued",
+    model: input.model,
+    agentId: input.agentId ?? null,
+    agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
+    startedAt: input.startedAt,
+    finishedAt: null,
+    errorSummary: null,
+    usageJson: null,
+    cost: null,
+  }
+}
+
+function createQueuedStepRow(runId: string, createdAt: string): StepRow {
+  return {
+    id: createId("step"),
+    runId,
+    type: "queued",
+    status: "pending",
+    title: "Queued",
+    payloadJson: null,
+    createdAt,
+    updatedAt: createdAt,
+  }
+}
 
 export class ThreadRepository {
   constructor(private readonly db: AppDatabase) {}
@@ -26,11 +108,119 @@ export class ThreadRepository {
       projectId: input.projectId ?? null,
       agentId: input.agentId ?? null,
       agentNameSnapshot: input.agentNameSnapshot ?? null,
+      agentConfigurationVersionId: null,
       createdAt: now,
       updatedAt: now,
     }
     this.db.insert(threads).values(row).run()
     return mapThread(row)
+  }
+
+  createWithInitialRun(input: {
+    title: string
+    prompt: string
+    model: string
+    mode: ThreadMode
+    projectId?: string
+    agentId?: string
+    agentNameSnapshot?: string
+    agentConfigurationVersionId?: string
+    toolGrants?: ToolGrantSnapshot[]
+  }): InitialRunResult {
+    const now = nowIso()
+    const threadRow = {
+      id: createId("thread"),
+      title: input.title,
+      status: "active" as ThreadStatus,
+      model: input.model,
+      mode: input.mode,
+      projectId: input.projectId ?? null,
+      agentId: input.agentId ?? null,
+      agentNameSnapshot: input.agentNameSnapshot ?? null,
+      agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const messageRow = createUserMessageRow({
+      threadId: threadRow.id,
+      prompt: input.prompt,
+      createdAt: now,
+    })
+    const runRow = createQueuedRunRow({
+      threadId: threadRow.id,
+      model: input.model,
+      agentId: input.agentId,
+      agentConfigurationVersionId: input.agentConfigurationVersionId,
+      startedAt: now,
+    })
+    const stepRow = createQueuedStepRow(runRow.id, now)
+    const grantRows = (input.toolGrants ?? []).map((grant) => ({
+      id: createId("grant"),
+      scopeType: "thread",
+      scopeId: threadRow.id,
+      toolkitSlug: grant.toolkitSlug,
+      connectionId: grant.connectionId,
+      createdAt: now,
+    }))
+
+    return this.db.transaction((tx) => {
+      tx.insert(threads).values(threadRow).run()
+      for (const grantRow of grantRows) {
+        tx.insert(toolAccessGrants).values(grantRow).run()
+      }
+      tx.insert(messages).values(messageRow).run()
+      tx.insert(runs).values(runRow).run()
+      tx.insert(runSteps).values(stepRow).run()
+
+      return {
+        thread: mapThread(threadRow),
+        message: mapMessage(messageRow),
+        run: mapRun(runRow),
+      }
+    })
+  }
+
+  createFollowUpRun(input: {
+    threadId: string
+    prompt: string
+    title: string
+  }): FollowUpRunResult | null {
+    const threadRow = this.db
+      .select()
+      .from(threads)
+      .where(eq(threads.id, input.threadId))
+      .get()
+    if (!threadRow) return null
+
+    const now = nowIso()
+    const messageRow = createUserMessageRow({
+      threadId: threadRow.id,
+      prompt: input.prompt,
+      createdAt: now,
+    })
+    const runRow = createQueuedRunRow({
+      threadId: threadRow.id,
+      model: threadRow.model,
+      agentId: threadRow.agentId,
+      agentConfigurationVersionId: threadRow.agentConfigurationVersionId,
+      startedAt: now,
+    })
+    const stepRow = createQueuedStepRow(runRow.id, now)
+
+    return this.db.transaction((tx) => {
+      tx.insert(messages).values(messageRow).run()
+      tx.insert(runs).values(runRow).run()
+      tx.insert(runSteps).values(stepRow).run()
+      tx.update(threads)
+        .set({ title: input.title, updatedAt: now })
+        .where(eq(threads.id, threadRow.id))
+        .run()
+
+      return {
+        message: mapMessage(messageRow),
+        run: mapRun(runRow),
+      }
+    })
   }
 
   getById(id: string): Thread | null {

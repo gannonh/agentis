@@ -78,34 +78,15 @@ export function createThreadRoutes(
     const model = body.model ?? config.defaultModel
     const mode = body.mode ?? "plan"
 
-    const thread = repos.threads.create({
+    const created = repos.threads.createWithInitialRun({
       title: summarizeTitle(body.prompt),
+      prompt: body.prompt,
       model,
       mode,
       projectId: body.projectId,
     })
 
-    const message = repos.messages.create({
-      threadId: thread.id,
-      role: "user",
-      parts: [{ type: "text", text: body.prompt }],
-      status: "completed",
-    })
-
-    const run = repos.runs.create({
-      threadId: thread.id,
-      model,
-      status: "queued",
-    })
-
-    repos.steps.create({
-      runId: run.id,
-      type: "queued",
-      status: "pending",
-      title: "Queued",
-    })
-
-    return c.json({ thread, message, run }, 201)
+    return c.json(created, 201)
   })
 
   app.patch("/:id", async (c) => {
@@ -169,29 +150,16 @@ export function createThreadRoutes(
     }
 
     const body = createFollowUpRequestSchema.parse(await c.req.json())
-    const message = repos.messages.create({
+    const created = repos.threads.createFollowUpRun({
       threadId: thread.id,
-      role: "user",
-      parts: [{ type: "text", text: body.prompt }],
-      status: "completed",
+      prompt: body.prompt,
+      title: summarizeTitle(body.prompt),
     })
+    if (!created) {
+      return c.json({ error: "Thread not found" }, 404)
+    }
 
-    const run = repos.runs.create({
-      threadId: thread.id,
-      model: thread.model,
-      status: "queued",
-    })
-
-    repos.steps.create({
-      runId: run.id,
-      type: "queued",
-      status: "pending",
-      title: "Queued",
-    })
-
-    repos.threads.touch(thread.id, { title: summarizeTitle(body.prompt) })
-
-    return c.json({ message, run }, 201)
+    return c.json(created, 201)
   })
 
   return app

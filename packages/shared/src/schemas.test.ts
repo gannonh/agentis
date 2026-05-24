@@ -105,7 +105,6 @@ describe("shared schemas", () => {
           version: 2,
           systemPrompt: "Answer with citations.",
           model: "gpt-4.1-mini",
-          toolGrants: [{ toolkitSlug: "slack", connectionId: "conn-slack" }],
           createdAt: now,
         },
         toolGrantCount: 1,
@@ -117,9 +116,7 @@ describe("shared schemas", () => {
     expect(parsed.thread.agentId).toBe("agent-1")
     expect(parsed.thread.agentNameSnapshot).toBe("Research Agent")
     expect(parsed.runs[0]?.agentConfigurationVersionId).toBe("agent-version-2")
-    expect(version.toolGrants).toEqual([
-      { toolkitSlug: "slack", connectionId: "conn-slack" },
-    ])
+    expect(version).not.toHaveProperty("toolGrants")
 
     const plainThread = threadSchema.parse({
       id: "plain-thread",

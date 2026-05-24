@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
+import { agentConfigurationVersions } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -367,6 +369,55 @@ describe("agent routes", () => {
     expect(listBody.map((agent) => agent.id)).toEqual([createdBody.agent.id])
     expect(listBody[0]?.currentConfigurationVersion.version).toBe(1)
     expect(listBody[0]?.toolGrantCount).toBe(1)
+    expect(listBody[0]?.currentConfigurationVersion).not.toHaveProperty(
+      "toolGrants"
+    )
+    expect(createdBody.agent.currentConfigurationVersion).not.toHaveProperty(
+      "toolGrants"
+    )
+  })
+
+  it("does not persist a partial test thread when snapshot grant copy fails", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+    ctx.db
+      .update(agentConfigurationVersions)
+      .set({
+        toolGrantsJson: JSON.stringify([
+          { toolkitSlug: "github", connectionId: github.id },
+          { toolkitSlug: "github", connectionId: github.id },
+        ]),
+      })
+      .where(
+        eq(
+          agentConfigurationVersions.id,
+          agent.currentConfigurationVersion.id
+        )
+      )
+      .run()
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub updates" }),
+    })
+
+    expect(response.status).toBe(500)
+    expect(ctx.repos.threads.list()).toHaveLength(0)
   })
 
   it("starts an agent test thread from the selected configuration version grant snapshot", async () => {

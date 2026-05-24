@@ -209,11 +209,6 @@ export const runtimeHealthSchema = z.object({
     .optional(),
 })
 
-export const agentConfigurationVersionToolGrantSchema = z.object({
-  toolkitSlug: nonEmptyString,
-  connectionId: nonEmptyString,
-})
-
 export const agentConfigurationVersionSummarySchema = z.object({
   id: z.string(),
   agentId: z.string(),
@@ -221,7 +216,6 @@ export const agentConfigurationVersionSummarySchema = z.object({
   systemPrompt: z.string(),
   model: z.string(),
   maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
-  toolGrants: z.array(agentConfigurationVersionToolGrantSchema).default([]),
   createdAt: z.string(),
 })
 
@@ -455,9 +449,6 @@ export type ComposioRemediationCode = z.infer<
   typeof composioRemediationCodeSchema
 >
 export type RuntimeHealth = z.infer<typeof runtimeHealthSchema>
-export type AgentConfigurationVersionToolGrant = z.infer<
-  typeof agentConfigurationVersionToolGrantSchema
->
 export type AgentConfigurationVersionSummary = z.infer<
   typeof agentConfigurationVersionSummarySchema
 >

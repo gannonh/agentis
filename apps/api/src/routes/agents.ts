@@ -165,43 +165,32 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       )
     }
 
-    const version = detail.agent.currentConfigurationVersion
-    const thread = repos.threads.create({
-      title: summarizeTitle(parsed.data.prompt),
-      model: version.model,
-      mode: "agent",
-      agentId: detail.agent.id,
-      agentNameSnapshot: detail.agent.name,
-    })
-    for (const grant of version.toolGrants) {
-      repos.toolAccessGrants.create({
-        scopeType: "thread",
-        scopeId: thread.id,
-        toolkitSlug: grant.toolkitSlug,
-        connectionId: grant.connectionId,
+    const version = repos.agents.getCurrentConfigurationSnapshot(detail.agent.id)
+    try {
+      const created = repos.threads.createWithInitialRun({
+        title: summarizeTitle(parsed.data.prompt),
+        prompt: parsed.data.prompt,
+        model: version.model,
+        mode: "agent",
+        agentId: detail.agent.id,
+        agentNameSnapshot: detail.agent.name,
+        agentConfigurationVersionId: version.id,
+        toolGrants: version.toolGrants,
       })
-    }
-    const message = repos.messages.create({
-      threadId: thread.id,
-      role: "user",
-      parts: [{ type: "text", text: parsed.data.prompt }],
-      status: "completed",
-    })
-    const run = repos.runs.create({
-      threadId: thread.id,
-      model: version.model,
-      status: "queued",
-      agentId: detail.agent.id,
-      agentConfigurationVersionId: version.id,
-    })
-    repos.steps.create({
-      runId: run.id,
-      type: "queued",
-      status: "pending",
-      title: "Queued",
-    })
 
-    return c.json(createThreadResponseSchema.parse({ thread, message, run }), 201)
+      return c.json(createThreadResponseSchema.parse(created), 201)
+    } catch (error) {
+      return c.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unable to start agent test thread",
+          code: "agent_test_thread_failed",
+        },
+        500
+      )
+    }
   })
 
   app.get("/:agentId", (c) => {

@@ -231,17 +231,16 @@ describe("agent repository", () => {
 
     expect(updated.currentConfigurationVersion).toMatchObject({
       version: 2,
+    })
+    expect(
+      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id)
+    ).toMatchObject({
+      version: 2,
       toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
     })
     expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toMatchObject([
-      {
-        version: 1,
-        toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
-      },
-      {
-        version: 2,
-        toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
-      },
+      { version: 1 },
+      { version: 2 },
     ])
     expect(
       ctx.repos.toolAccessGrants

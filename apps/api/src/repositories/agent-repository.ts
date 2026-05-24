@@ -27,6 +27,10 @@ type AgentToolGrantCreateInput = {
   connectionId: string
 }
 
+type AgentConfigurationVersionSnapshot = AgentConfigurationVersionSummary & {
+  toolGrants: AgentToolGrantCreateInput[]
+}
+
 type AgentUpdateInput = {
   name?: string
   description?: string | null
@@ -101,8 +105,14 @@ function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
     systemPrompt: row.systemPrompt,
     model: row.model,
     maxCostPerRunUsd: row.maxCostPerRunUsd,
-    toolGrants: parseGrantSnapshot(row.toolGrantsJson),
     createdAt: row.createdAt,
+  }
+}
+
+function mapVersionSnapshot(row: VersionRow): AgentConfigurationVersionSnapshot {
+  return {
+    ...mapVersion(row),
+    toolGrants: parseGrantSnapshot(row.toolGrantsJson),
   }
 }
 
@@ -221,16 +231,22 @@ export class AgentRepository {
       .map(mapVersion)
   }
 
+  getCurrentConfigurationSnapshot(
+    agentId: string
+  ): AgentConfigurationVersionSnapshot {
+    return this.getCurrentVersionSnapshot(agentId)
+  }
+
   getConfigurationVersionById(
     versionId: string
-  ): AgentConfigurationVersionSummary | null {
+  ): AgentConfigurationVersionSnapshot | null {
     const row = this.db
       .select()
       .from(agentConfigurationVersions)
       .where(eq(agentConfigurationVersions.id, versionId))
       .get()
 
-    return row ? mapVersion(row) : null
+    return row ? mapVersionSnapshot(row) : null
   }
 
   update(agentId: string, input: AgentUpdateInput): AgentListItem | null {
@@ -340,6 +356,16 @@ export class AgentRepository {
   }
 
   private getCurrentVersion(agentId: string): AgentConfigurationVersionSummary {
+    return mapVersion(this.getCurrentVersionRow(agentId))
+  }
+
+  private getCurrentVersionSnapshot(
+    agentId: string
+  ): AgentConfigurationVersionSnapshot {
+    return mapVersionSnapshot(this.getCurrentVersionRow(agentId))
+  }
+
+  private getCurrentVersionRow(agentId: string): VersionRow {
     const version = this.db
       .select()
       .from(agentConfigurationVersions)
@@ -351,7 +377,7 @@ export class AgentRepository {
       throw new Error(`Agent ${agentId} has no configuration version`)
     }
 
-    return mapVersion(version)
+    return version
   }
 
   private getCurrentVersions(

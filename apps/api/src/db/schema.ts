@@ -90,6 +90,9 @@ export const threads = sqliteTable("threads", {
   projectId: text("project_id"),
   agentId: text("agent_id").references(() => agents.id),
   agentNameSnapshot: text("agent_name_snapshot"),
+  agentConfigurationVersionId: text("agent_configuration_version_id").references(
+    () => agentConfigurationVersions.id
+  ),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 })
