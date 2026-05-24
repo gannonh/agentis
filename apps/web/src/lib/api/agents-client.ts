@@ -2,9 +2,11 @@ import {
   agentDetailResponseSchema,
   agentListItemSchema,
   createAgentRequestSchema,
+  updateAgentRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
   type CreateAgentRequest,
+  type UpdateAgentRequest,
 } from "@workspace/shared"
 import { ApiError } from "@/lib/api/client"
 
@@ -73,5 +75,18 @@ export async function createAgent(
 
 export async function getAgent(agentId: string): Promise<AgentDetailResponse> {
   const response = await fetch(`${API_BASE}/api/agents/${agentId}`)
+  return parseJson(response, agentDetailResponseSchema)
+}
+
+export async function updateAgent(
+  agentId: string,
+  body: UpdateAgentRequest
+): Promise<AgentDetailResponse> {
+  const payload = updateAgentRequestSchema.parse(body)
+  const response = await fetch(`${API_BASE}/api/agents/${agentId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
   return parseJson(response, agentDetailResponseSchema)
 }
