@@ -13,6 +13,8 @@ export class ThreadRepository {
     model: string
     mode: ThreadMode
     projectId?: string
+    agentId?: string
+    agentNameSnapshot?: string
   }): Thread {
     const now = nowIso()
     const row = {
@@ -22,6 +24,8 @@ export class ThreadRepository {
       model: input.model,
       mode: input.mode,
       projectId: input.projectId ?? null,
+      agentId: input.agentId ?? null,
+      agentNameSnapshot: input.agentNameSnapshot ?? null,
       createdAt: now,
       updatedAt: now,
     }

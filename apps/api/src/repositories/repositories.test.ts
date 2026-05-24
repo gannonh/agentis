@@ -82,4 +82,55 @@ describe("repositories", () => {
     expect(completed?.usage?.totalTokens).toBe(12)
     ctx.cleanup()
   })
+
+  it("persists agent-bound thread metadata and run configuration version links", () => {
+    const ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4.1-mini",
+    })
+    const versionId = agent.currentConfigurationVersion.id
+
+    const thread = ctx.repos.threads.create({
+      title: "Test Research Agent",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+    })
+    const run = ctx.repos.runs.create({
+      threadId: thread.id,
+      model: agent.model,
+      status: "queued",
+      agentId: agent.id,
+      agentConfigurationVersionId: versionId,
+    })
+
+    expect(ctx.repos.threads.getById(thread.id)).toMatchObject({
+      agentId: agent.id,
+      agentNameSnapshot: "Research Agent",
+    })
+    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+      agentId: agent.id,
+      agentConfigurationVersionId: versionId,
+    })
+    expect(ctx.repos.runs.listByThreadId(thread.id)[0]).toMatchObject({
+      agentId: agent.id,
+      agentConfigurationVersionId: versionId,
+    })
+
+    const plainThread = ctx.repos.threads.create({
+      title: "Plain",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const plainRun = ctx.repos.runs.create({
+      threadId: plainThread.id,
+      model: plainThread.model,
+    })
+    expect(ctx.repos.threads.getById(plainThread.id)?.agentId).toBeUndefined()
+    expect(ctx.repos.runs.getById(plainRun.id)?.agentConfigurationVersionId).toBeUndefined()
+    ctx.cleanup()
+  })
 })

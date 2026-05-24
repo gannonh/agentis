@@ -87,6 +87,8 @@ export const threads = sqliteTable("threads", {
   model: text("model").notNull(),
   mode: text("mode").notNull(),
   projectId: text("project_id"),
+  agentId: text("agent_id").references(() => agents.id),
+  agentNameSnapshot: text("agent_name_snapshot"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 })
@@ -120,6 +122,10 @@ export const runs = sqliteTable(
       .references(() => threads.id, { onDelete: "cascade" }),
     status: text("status").notNull(),
     model: text("model").notNull(),
+    agentId: text("agent_id").references(() => agents.id),
+    agentConfigurationVersionId: text("agent_configuration_version_id").references(
+      () => agentConfigurationVersions.id
+    ),
     startedAt: text("started_at").notNull(),
     finishedAt: text("finished_at"),
     errorSummary: text("error_summary"),

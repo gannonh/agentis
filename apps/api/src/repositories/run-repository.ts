@@ -8,12 +8,20 @@ import { mapRun } from "../lib/mappers.js"
 export class RunRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  create(input: { threadId: string; model: string; status?: RunStatus }): Run {
+  create(input: {
+    threadId: string
+    model: string
+    status?: RunStatus
+    agentId?: string
+    agentConfigurationVersionId?: string
+  }): Run {
     const row = {
       id: createId("run"),
       threadId: input.threadId,
       status: input.status ?? "queued",
       model: input.model,
+      agentId: input.agentId ?? null,
+      agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
       startedAt: nowIso(),
       finishedAt: null,
       errorSummary: null,
