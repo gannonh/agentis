@@ -233,7 +233,6 @@ describe("AgentDetailPage", () => {
   })
 
   it("shows comp-aligned editable agent tabs for API-backed agents", async () => {
-    const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail({ toolGrantCount: 0 }, []))
 
     render(
@@ -249,27 +248,27 @@ describe("AgentDetailPage", () => {
     expect(screen.getByRole("tab", { name: "Overview" }).querySelector("svg")).not.toBeNull()
     expect(screen.getByRole("tab", { name: "Knowledge" }).querySelector("svg")).not.toBeNull()
 
-    await user.click(screen.getByRole("tab", { name: "Identity" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Identity" }))
     expect(screen.getByRole("button", { name: /Claymorphism/ })).toBeDisabled()
 
-    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Activity" }))
     expect(screen.getByRole("searchbox", { name: "Search threads" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Personal" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Shared" })).toBeInTheDocument()
 
-    await user.click(screen.getByRole("tab", { name: "Model" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Model" }))
     expect(screen.getByText("Model & Limits")).toBeInTheDocument()
     expect(screen.getByText("Extended thinking")).toBeInTheDocument()
     expect(screen.getByText("Budget limit per query")).toBeInTheDocument()
     expect(screen.getByText("Subagent model")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("tab", { name: "Invocations" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Invocations" }))
     for (const label of ["Live mode", "Thread", "Slack", "Telegram", "Scheduled", "Webhook", "Email"]) {
       expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(1)
     }
 
-    await user.click(screen.getByRole("tab", { name: "Tools" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Tools" }))
     expect(screen.getByText("Integrations")).toBeInTheDocument()
     expect(screen.getByText("0 active")).toBeInTheDocument()
     expect(screen.getByText(/No integrations added yet/)).toBeInTheDocument()
@@ -277,20 +276,20 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Research")).toBeInTheDocument()
     expect(screen.getByText("Full VM")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("tab", { name: "Knowledge" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Knowledge" }))
     expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
     expect(screen.getByText("Knowledge access")).toBeInTheDocument()
     expect(screen.getByText("See what Personal learns")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Context files" })).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "Configure tools" }))
+    fireEvent.click(screen.getByRole("button", { name: "Configure tools" }))
     expect(screen.getByRole("tab", { name: "Tools" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByText("Integrations")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Configure skills" }))
+    fireEvent.click(screen.getByRole("button", { name: "Configure skills" }))
     expect(screen.getByRole("tab", { name: "Skills" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByRole("heading", { name: "Skills" })).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Configure memory" }))
+    fireEvent.click(screen.getByRole("button", { name: "Configure memory" }))
     expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
   })
