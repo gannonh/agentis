@@ -3,12 +3,60 @@ import {
   agentDetailResponseSchema,
   agentListItemSchema,
   createAgentRequestSchema,
+  updateAgentRequestSchema,
+  type AgentToolGrantInput,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 
 export function createAgentRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
+
+  function resolveRequestedGrants(requestedGrants: AgentToolGrantInput[]) {
+    const resolvedGrants = []
+    const requestedToolkitSlugs = new Set<string>()
+
+    for (const requested of requestedGrants) {
+      if (requestedToolkitSlugs.has(requested.toolkitSlug)) {
+        return { error: "duplicate_toolkit_grant" as const }
+      }
+      requestedToolkitSlugs.add(requested.toolkitSlug)
+
+      const connection = requested.connectionId
+        ? repos.integrationConnections.getById(requested.connectionId)
+        : repos.integrationConnections.getByToolkitSlug(requested.toolkitSlug)
+
+      if (
+        connection &&
+        requested.connectionId &&
+        connection.toolkitSlug !== requested.toolkitSlug
+      ) {
+        return { error: "toolkit_connection_mismatch" as const }
+      }
+
+      if (!connection || connection.status !== "connected") {
+        return { error: "toolkit_not_connected" as const }
+      }
+
+      resolvedGrants.push({
+        toolkitSlug: requested.toolkitSlug,
+        connectionId: connection.id,
+      })
+    }
+
+    return { grants: resolvedGrants }
+  }
+
+  function agentDetail(agentId: string) {
+    const agent = repos.agents.getById(agentId)
+    if (!agent) return null
+
+    return agentDetailResponseSchema.parse({
+      agent,
+      configurationVersions: repos.agents.listConfigurationVersions(agentId),
+      toolGrants: repos.toolAccessGrants.listByScope("agent", agentId),
+    })
+  }
 
   app.get("/", (c) => {
     return c.json(
@@ -45,42 +93,18 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
 
     const body = parsed.data
     const requestedGrants = body.toolGrants ?? []
-    const resolvedGrants = []
-    const requestedToolkitSlugs = new Set<string>()
-
-    for (const requested of requestedGrants) {
-      if (requestedToolkitSlugs.has(requested.toolkitSlug)) {
-        return c.json({ error: "duplicate_toolkit_grant" }, 400)
-      }
-      requestedToolkitSlugs.add(requested.toolkitSlug)
-
-      const connection = requested.connectionId
-        ? repos.integrationConnections.getById(requested.connectionId)
-        : repos.integrationConnections.getByToolkitSlug(requested.toolkitSlug)
-
-      if (
-        connection &&
-        requested.connectionId &&
-        connection.toolkitSlug !== requested.toolkitSlug
-      ) {
-        return c.json({ error: "toolkit_connection_mismatch" }, 400)
-      }
-
-      if (!connection || connection.status !== "connected") {
-        return c.json(
-          {
-            error: "toolkit_not_connected",
-            remediation:
-              "Connect the toolkit from Integrations before granting it to an agent.",
-          },
-          400
-        )
-      }
-
-      resolvedGrants.push({
-        toolkitSlug: requested.toolkitSlug,
-        connectionId: connection.id,
-      })
+    const resolvedGrants = resolveRequestedGrants(requestedGrants)
+    if ("error" in resolvedGrants) {
+      return c.json(
+        {
+          error: resolvedGrants.error,
+          remediation:
+            resolvedGrants.error === "toolkit_not_connected"
+              ? "Connect the toolkit from Integrations before granting it to an agent."
+              : undefined,
+        },
+        400
+      )
     }
 
     const created = repos.agents.createWithGrants(
@@ -90,36 +114,67 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
         systemPrompt: body.systemPrompt,
         model: body.model ?? config.defaultModel,
       },
-      resolvedGrants
+      resolvedGrants.grants
     )
 
-    const agent = repos.agents.getById(created.id) ?? created
-    return c.json(
-      agentDetailResponseSchema.parse({
-        agent,
-        configurationVersions: repos.agents.listConfigurationVersions(
-          created.id
-        ),
-        toolGrants: repos.toolAccessGrants.listByScope("agent", created.id),
-      }),
-      201
-    )
+    return c.json(agentDetail(created.id), 201)
   })
 
   app.get("/:agentId", (c) => {
     const agentId = c.req.param("agentId")
-    const agent = repos.agents.getById(agentId)
-    if (!agent) {
+    const detail = agentDetail(agentId)
+    if (!detail) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
 
-    return c.json(
-      agentDetailResponseSchema.parse({
-        agent,
-        configurationVersions: repos.agents.listConfigurationVersions(agentId),
-        toolGrants: repos.toolAccessGrants.listByScope("agent", agentId),
-      })
-    )
+    return c.json(detail)
+  })
+
+  app.patch("/:agentId", async (c) => {
+    const agentId = c.req.param("agentId")
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(
+        {
+          error: "Invalid agent update payload",
+          code: "invalid_agent_update",
+          issues: [],
+        },
+        400
+      )
+    }
+
+    const parsed = updateAgentRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: "Invalid agent update payload",
+          code: "invalid_agent_update",
+          issues: parsed.error.issues,
+        },
+        400
+      )
+    }
+
+    const body = parsed.data
+    const requestedGrants = body.toolGrants
+      ? resolveRequestedGrants(body.toolGrants)
+      : undefined
+    if (requestedGrants && "error" in requestedGrants) {
+      return c.json({ error: requestedGrants.error }, 400)
+    }
+
+    const updated = repos.agents.update(agentId, {
+      ...body,
+      toolGrants: requestedGrants?.grants,
+    })
+    if (!updated) {
+      return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+    }
+
+    return c.json(agentDetail(agentId))
   })
 
   return app
