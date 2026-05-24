@@ -196,7 +196,10 @@ describe("agent repository", () => {
     })
 
     const after = ctx.repos.toolAccessGrants.listByScope("agent", agent.id)[0]
-    expect(after).toMatchObject({ id: before?.id, createdAt: before?.createdAt })
+    expect(after).toMatchObject({
+      id: before?.id,
+      createdAt: before?.createdAt,
+    })
     expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(1)
   })
 

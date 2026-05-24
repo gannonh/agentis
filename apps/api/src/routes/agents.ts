@@ -47,6 +47,13 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     return { grants: resolvedGrants }
   }
 
+  function toolkitGrantRemediation(
+    error: string | undefined
+  ): string | undefined {
+    if (error !== "toolkit_not_connected") return undefined
+    return "Connect the toolkit from Integrations before granting it to an agent."
+  }
+
   function agentDetail(agentId: string) {
     const agent = repos.agents.getById(agentId)
     if (!agent) return null
@@ -98,10 +105,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       return c.json(
         {
           error: resolvedGrants.error,
-          remediation:
-            resolvedGrants.error === "toolkit_not_connected"
-              ? "Connect the toolkit from Integrations before granting it to an agent."
-              : undefined,
+          remediation: toolkitGrantRemediation(resolvedGrants.error),
         },
         400
       )
@@ -159,16 +163,16 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     }
 
     const body = parsed.data
-    const requestedGrants = body.toolGrants
+    const resolvedGrants = body.toolGrants
       ? resolveRequestedGrants(body.toolGrants)
       : undefined
-    if (requestedGrants && "error" in requestedGrants) {
-      return c.json({ error: requestedGrants.error }, 400)
+    if (resolvedGrants && "error" in resolvedGrants) {
+      return c.json({ error: resolvedGrants.error }, 400)
     }
 
     const updated = repos.agents.update(agentId, {
       ...body,
-      toolGrants: requestedGrants?.grants,
+      toolGrants: resolvedGrants?.grants,
     })
     if (!updated) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)

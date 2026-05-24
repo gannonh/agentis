@@ -5,6 +5,14 @@ import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
 
+function createAgentTestApp(context: TestContext) {
+  return createApp(
+    context.repos,
+    context.config,
+    createComposioServices(context.repos, context.config)
+  )
+}
+
 afterEach(() => {
   ctx?.cleanup()
   ctx = undefined
@@ -13,11 +21,7 @@ afterEach(() => {
 describe("agent routes", () => {
   it("rejects malformed create JSON as an invalid payload", async () => {
     ctx = createTestContext()
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const response = await app.request("/api/agents", {
       method: "POST",
@@ -32,11 +36,7 @@ describe("agent routes", () => {
 
   it("rejects invalid create payloads", async () => {
     ctx = createTestContext()
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const response = await app.request("/api/agents", {
       method: "POST",
@@ -60,11 +60,7 @@ describe("agent routes", () => {
       status: "connected",
       composioConnectedAccountId: "acct-github",
     })
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const response = await app.request("/api/agents", {
       method: "POST",
@@ -93,11 +89,7 @@ describe("agent routes", () => {
       systemPrompt: "Answer with citations.",
       model: "gpt-4o-mini",
     })
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}`, {
       method: "PATCH",
@@ -118,11 +110,7 @@ describe("agent routes", () => {
       systemPrompt: "Answer with citations.",
       model: "gpt-4o-mini",
     })
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}`, {
       method: "PATCH",
@@ -153,11 +141,7 @@ describe("agent routes", () => {
       systemPrompt: "Answer with citations.",
       model: "gpt-4o-mini",
     })
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}`, {
       method: "PATCH",
@@ -176,7 +160,10 @@ describe("agent routes", () => {
         systemPrompt: string
         model: string
         maxCostPerRunUsd: number
-        currentConfigurationVersion: { version: number; maxCostPerRunUsd: number }
+        currentConfigurationVersion: {
+          version: number
+          maxCostPerRunUsd: number
+        }
         toolGrantCount: number
       }
       configurationVersions: { version: number }[]
@@ -219,11 +206,7 @@ describe("agent routes", () => {
       status: "connected",
       composioConnectedAccountId: "acct-slack",
     })
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const created = await app.request("/api/agents", {
       method: "POST",
@@ -248,7 +231,9 @@ describe("agent routes", () => {
       }),
     })
     expect(identityOnly.status).toBe(200)
-    expect(ctx.repos.agents.listConfigurationVersions(createdBody.agent.id)).toHaveLength(1)
+    expect(
+      ctx.repos.agents.listConfigurationVersions(createdBody.agent.id)
+    ).toHaveLength(1)
 
     const runAffecting = await app.request(agentPath, {
       method: "PATCH",
@@ -260,7 +245,9 @@ describe("agent routes", () => {
       }),
     })
     expect(runAffecting.status).toBe(200)
-    expect(ctx.repos.agents.listConfigurationVersions(createdBody.agent.id)).toHaveLength(2)
+    expect(
+      ctx.repos.agents.listConfigurationVersions(createdBody.agent.id)
+    ).toHaveLength(2)
 
     const toolGrantEdit = await app.request(agentPath, {
       method: "PATCH",
@@ -295,10 +282,9 @@ describe("agent routes", () => {
       toolGrantCount: 1,
     })
     expect(reloadedBody.agent.currentConfigurationVersion.version).toBe(2)
-    expect(reloadedBody.configurationVersions.map((version) => version.version)).toEqual([
-      1,
-      2,
-    ])
+    expect(
+      reloadedBody.configurationVersions.map((version) => version.version)
+    ).toEqual([1, 2])
     expect(reloadedBody.toolGrants).toMatchObject([{ toolkitSlug: "slack" }])
   })
 
@@ -310,11 +296,7 @@ describe("agent routes", () => {
       status: "connected",
       composioConnectedAccountId: "acct-github",
     })
-    const app = createApp(
-      ctx.repos,
-      ctx.config,
-      createComposioServices(ctx.repos, ctx.config)
-    )
+    const app = createAgentTestApp(ctx)
 
     const created = await app.request("/api/agents", {
       method: "POST",

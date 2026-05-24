@@ -40,6 +40,8 @@ import type {
 } from "@workspace/shared"
 import { useIntegrations } from "@/hooks/use-integrations"
 
+type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-2 text-sm font-medium">
@@ -51,7 +53,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function StatusText({ message }: { message: string | null }) {
   if (!message) return null
-  return <p className="text-muted-foreground text-sm">{message}</p>
+  return <p className="text-sm text-muted-foreground">{message}</p>
 }
 
 function getSaveError(error: unknown): string {
@@ -96,7 +98,9 @@ function SettingRow({
         ) : null}
         <div className="min-w-0">
           <p className="text-sm font-medium">{title}</p>
-          <p className="text-muted-foreground text-xs leading-relaxed">{description}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {description}
+          </p>
         </div>
       </div>
       <div className="shrink-0">{control}</div>
@@ -111,7 +115,11 @@ function NativeSelectLike({ children }: { children: ReactNode }) {
       className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
     >
       {children}
-      <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" strokeWidth={2} />
+      <HugeiconsIcon
+        icon={ArrowDown01Icon}
+        className="size-3"
+        strokeWidth={2}
+      />
     </button>
   )
 }
@@ -157,7 +165,11 @@ export function AgentIdentityTab({
     <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-4">
         <Field label="Name">
-          <Input value={name} onChange={(event) => setName(event.target.value)} required />
+          <Input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
         </Field>
         <Field label="Description">
           <Textarea
@@ -168,7 +180,10 @@ export function AgentIdentityTab({
         </Field>
       </div>
 
-      <section className="flex flex-col gap-2" aria-labelledby="trust-profile-heading">
+      <section
+        className="flex flex-col gap-2"
+        aria-labelledby="trust-profile-heading"
+      >
         <h2 id="trust-profile-heading" className="text-sm font-medium">
           Trust profile
         </h2>
@@ -177,21 +192,29 @@ export function AgentIdentityTab({
           className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-card/70 p-4 text-left hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
         >
           <span className="flex min-w-0 items-center gap-3">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              className="size-5 text-muted-foreground"
+              strokeWidth={2}
+            />
             <span className="min-w-0">
               <span className="block text-sm font-medium">Custom</span>
-              <span className="text-muted-foreground block text-xs">
-                Tune memory access, edit permissions, and learning behavior on your own.
+              <span className="block text-xs text-muted-foreground">
+                Tune memory access, edit permissions, and learning behavior on
+                your own.
               </span>
             </span>
           </span>
-          <span className="text-muted-foreground text-lg" aria-hidden>
+          <span className="text-lg text-muted-foreground" aria-hidden>
             ›
           </span>
         </button>
       </section>
 
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="agent-icon-heading">
+      <section
+        className="rounded-xl border border-border bg-card/70 p-4"
+        aria-labelledby="agent-icon-heading"
+      >
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 id="agent-icon-heading" className="text-sm font-medium">
             Icon
@@ -200,16 +223,26 @@ export function AgentIdentityTab({
         </div>
         {/* TODO: wire generated icon controls to the agent icon generation API. */}
         <div className="grid grid-cols-3 rounded-xl bg-muted p-1 text-center text-xs font-medium">
-          <span className="rounded-lg px-3 py-2 text-muted-foreground">Emoji</span>
+          <span className="rounded-lg px-3 py-2 text-muted-foreground">
+            Emoji
+          </span>
           <span className="rounded-lg bg-background px-3 py-2">Generated</span>
-          <span className="rounded-lg px-3 py-2 text-muted-foreground">URL</span>
+          <span className="rounded-lg px-3 py-2 text-muted-foreground">
+            URL
+          </span>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <NativeSelectLike>Claymorphism</NativeSelectLike>
           <NativeSelectLike>Default</NativeSelectLike>
           <NativeSelectLike>Fast</NativeSelectLike>
         </div>
-        <Button type="button" variant="outline" size="sm" className="mt-4 w-full" disabled>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-4 w-full"
+          disabled
+        >
           Regenerate icons
         </Button>
       </section>
@@ -219,7 +252,11 @@ export function AgentIdentityTab({
           <h2 id="theme-heading" className="text-sm font-medium">
             Theme
           </h2>
-          <button type="button" className="text-muted-foreground text-xs" disabled>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground"
+            disabled
+          >
             Regenerate
           </button>
         </div>
@@ -230,7 +267,9 @@ export function AgentIdentityTab({
             <span className="size-3 rounded-full bg-[oklch(0.68_0.15_55)]" />
             <span className="size-3 rounded-full bg-[oklch(0.7_0.15_73)]" />
           </div>
-          <p className="text-xs font-medium text-[oklch(0.98_0.005_40)]">{detail.agent.name}</p>
+          <p className="text-xs font-medium text-[oklch(0.98_0.005_40)]">
+            {detail.agent.name}
+          </p>
         </div>
       </section>
 
@@ -262,7 +301,7 @@ export function AgentActivityTab() {
           <span className="sr-only">Search threads</span>
           <HugeiconsIcon
             icon={Search01Icon}
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             strokeWidth={2}
           />
           <input
@@ -290,13 +329,20 @@ export function AgentActivityTab() {
       </div>
       {/* TODO: replace this example thread with API-backed agent activity once runs expose thread metadata. */}
       <article className="rounded-xl border border-border bg-card/70 p-4">
-        <p className="text-muted-foreground flex items-center gap-2 text-xs">
-          <HugeiconsIcon icon={Database01Icon} className="size-4" strokeWidth={2} />
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <HugeiconsIcon
+            icon={Database01Icon}
+            className="size-4"
+            strokeWidth={2}
+          />
           Product Launch Q4
         </p>
-        <h2 className="mt-2 text-lg font-medium">AI Automation Consulting Lead Strategy</h2>
-        <p className="text-muted-foreground mt-2 truncate text-sm">
-          Set up and executed the user's first prospecting run for their AI automation consulting practice.
+        <h2 className="mt-2 text-lg font-medium">
+          AI Automation Consulting Lead Strategy
+        </h2>
+        <p className="mt-2 truncate text-sm text-muted-foreground">
+          Set up and executed the user's first prospecting run for their AI
+          automation consulting practice.
         </p>
       </article>
     </div>
@@ -344,9 +390,12 @@ export function AgentModelTab({
       <h2 className="text-sm font-medium">Model & Limits</h2>
       <div className="rounded-xl border border-border bg-card/70 p-3">
         <Field label="Model">
-          <Input value={model} onChange={(event) => setModel(event.target.value)} />
+          <Input
+            value={model}
+            onChange={(event) => setModel(event.target.value)}
+          />
         </Field>
-        <p className="text-muted-foreground mt-2 text-xs">
+        <p className="mt-2 text-xs text-muted-foreground">
           Auto-updates to the latest available model for most users.
         </p>
       </div>
@@ -447,18 +496,28 @@ export function AgentInvocationsTab() {
         >
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={option.icon} className="size-4" strokeWidth={2} />
+              <HugeiconsIcon
+                icon={option.icon}
+                className="size-4"
+                strokeWidth={2}
+              />
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-medium">{option.title}</span>
-              <span className="text-muted-foreground block text-xs">{option.description}</span>
+              <span className="block text-xs text-muted-foreground">
+                {option.description}
+              </span>
             </span>
           </div>
           {"enabled" in option ? (
             <TogglePill checked />
           ) : (
             <Button type="button" variant="outline" size="sm" disabled>
-              <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
+              <HugeiconsIcon
+                icon={PlusSignIcon}
+                className="size-3"
+                strokeWidth={2}
+              />
               {option.action}
             </Button>
           )}
@@ -471,28 +530,32 @@ export function AgentInvocationsTab() {
 const KNOWLEDGE_ACCESS_OPTIONS = [
   {
     title: "Personal",
-    description: "Sees every memory and skill you've saved. Learns from conversations and keeps what's worth keeping.",
+    description:
+      "Sees every memory and skill you've saved. Learns from conversations and keeps what's worth keeping.",
     note: "Best for agents you use yourself.",
     icon: BookOpen01Icon,
     active: true,
   },
   {
     title: "Curated",
-    description: "Sees only the memories and skills you link to it. Does not learn from conversations.",
+    description:
+      "Sees only the memories and skills you link to it. Does not learn from conversations.",
     note: "Best for agents you share with others.",
     icon: CheckmarkCircle02Icon,
     active: false,
   },
   {
     title: "Team learning",
-    description: "Sees only linked knowledge. Learns from every conversation and grows over time.",
+    description:
+      "Sees only linked knowledge. Learns from every conversation and grows over time.",
     note: "Best for knowledge that grows with use.",
     icon: Brain01Icon,
     active: false,
   },
   {
     title: "Custom",
-    description: "Tune memory access, edit permissions, and learning behavior on your own.",
+    description:
+      "Tune memory access, edit permissions, and learning behavior on your own.",
     note: null,
     icon: ComputerTerminal01Icon,
     active: false,
@@ -514,20 +577,28 @@ const KNOWLEDGE_PERMISSION_ROWS = [
 
 export function AgentSkillsTab() {
   return (
-    <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="skills-heading">
+    <section
+      className="rounded-xl border border-border bg-card/70 p-4"
+      aria-labelledby="skills-heading"
+    >
       <h2 id="skills-heading" className="text-sm font-medium">
         Skills
       </h2>
-      <p className="text-muted-foreground mt-1 text-sm">
+      <p className="mt-1 text-sm text-muted-foreground">
         Reusable instructions this agent can apply while working.
       </p>
       {/* TODO: replace this empty state with API-backed agent skills once skill attachments are exposed. */}
       <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
-        <p className="text-muted-foreground text-sm">
-          No skills attached yet. Add skills to teach this agent repeatable workflows.
+        <p className="text-sm text-muted-foreground">
+          No skills attached yet. Add skills to teach this agent repeatable
+          workflows.
         </p>
         <Button type="button" variant="outline" size="sm" disabled>
-          <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
+          <HugeiconsIcon
+            icon={PlusSignIcon}
+            className="size-3"
+            strokeWidth={2}
+          />
           Add skills
         </Button>
       </div>
@@ -538,23 +609,30 @@ export function AgentSkillsTab() {
 export function AgentKnowledgeTab() {
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-4" aria-labelledby="knowledge-discovery-heading">
+      <section
+        className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-4"
+        aria-labelledby="knowledge-discovery-heading"
+      >
         <div className="min-w-0">
           <h2 id="knowledge-discovery-heading" className="text-sm font-medium">
             Knowledge discovery
           </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Allow the agent to search and apply existing memories and skills automatically.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Allow the agent to search and apply existing memories and skills
+            automatically.
           </p>
         </div>
         <TogglePill checked />
       </section>
 
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="knowledge-access-heading">
+      <section
+        className="rounded-xl border border-border bg-card/70 p-4"
+        aria-labelledby="knowledge-access-heading"
+      >
         <h2 id="knowledge-access-heading" className="text-sm font-medium">
           Knowledge access
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="mt-1 text-sm text-muted-foreground">
           How should this agent use and learn from your memories and skills?
         </p>
         {/* TODO: wire trust profiles and learning permissions to server-backed agent knowledge settings. */}
@@ -563,18 +641,26 @@ export function AgentKnowledgeTab() {
             <article
               key={option.title}
               className={`rounded-xl border p-4 ${
-                option.active ? "border-foreground bg-background" : "border-border bg-background/40"
+                option.active
+                  ? "border-foreground bg-background"
+                  : "border-border bg-background/40"
               }`}
             >
               <div className="flex items-center gap-2 text-sm font-medium">
-                <HugeiconsIcon icon={option.icon} className="size-4 text-muted-foreground" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={option.icon}
+                  className="size-4 text-muted-foreground"
+                  strokeWidth={2}
+                />
                 {option.title}
               </div>
-              <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 {option.description}
               </p>
               {option.note ? (
-                <p className="text-muted-foreground mt-3 text-xs italic">{option.note}</p>
+                <p className="mt-3 text-xs text-muted-foreground italic">
+                  {option.note}
+                </p>
               ) : null}
             </article>
           ))}
@@ -587,50 +673,86 @@ export function AgentKnowledgeTab() {
           </div>
           <dl className="divide-y divide-border/60 px-4 py-2">
             {KNOWLEDGE_PERMISSION_ROWS.map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between gap-4 py-2 text-sm">
+              <div
+                key={label}
+                className="flex items-center justify-between gap-4 py-2 text-sm"
+              >
                 <dt className="flex min-w-0 items-center gap-2 text-foreground">
-                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-muted-foreground" strokeWidth={2} />
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle02Icon}
+                    className="size-4 text-muted-foreground"
+                    strokeWidth={2}
+                  />
                   {label}
                 </dt>
-                <dd className={value === "on" ? "text-emerald-400" : "text-foreground"}>{value}</dd>
+                <dd
+                  className={
+                    value === "on" ? "text-emerald-400" : "text-foreground"
+                  }
+                >
+                  {value}
+                </dd>
               </div>
             ))}
           </dl>
-          <p className="px-4 pb-3 text-xs text-foreground">Switch to Custom to edit individually →</p>
+          <p className="px-4 pb-3 text-xs text-foreground">
+            Switch to Custom to edit individually →
+          </p>
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="memories-heading">
+      <section
+        className="rounded-xl border border-border bg-card/70 p-4"
+        aria-labelledby="memories-heading"
+      >
         <h2 id="memories-heading" className="text-sm font-medium">
           Memories
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="mt-1 text-sm text-muted-foreground">
           Information the agent can reference while working on a task.
         </p>
         {/* TODO: replace this empty state with API-backed agent memory references. */}
         <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             No memories yet. Add one to give this agent persistent context.
           </p>
           <Button type="button" variant="outline" size="sm" disabled>
-            <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-3"
+              strokeWidth={2}
+            />
             Add memories
           </Button>
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="context-files-heading">
+      <section
+        className="rounded-xl border border-border bg-card/70 p-4"
+        aria-labelledby="context-files-heading"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="context-files-heading" className="text-sm font-medium">
               Context files
             </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Documents and reference files attached to the agent for use during conversations.
+            <p className="mt-1 text-sm text-muted-foreground">
+              Documents and reference files attached to the agent for use during
+              conversations.
             </p>
           </div>
-          <Button type="button" size="icon" variant="outline" disabled aria-label="Add context file">
-            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            disabled
+            aria-label="Add context file"
+          >
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-4"
+              strokeWidth={2}
+            />
           </Button>
         </div>
         {/* TODO: replace this sample file once agent-scoped library attachments are exposed. */}
@@ -638,9 +760,15 @@ export function AgentKnowledgeTab() {
           Added <Badge variant="secondary">1 active</Badge>
         </div>
         <article className="mt-4 w-full max-w-56 rounded-xl border border-border bg-background/50 p-4">
-          <HugeiconsIcon icon={Image02Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
-          <p className="mt-8 truncate text-sm font-medium">Screenshot 2026-05-20 at ...</p>
-          <p className="text-muted-foreground text-xs">image/png</p>
+          <HugeiconsIcon
+            icon={Image02Icon}
+            className="size-5 text-muted-foreground"
+            strokeWidth={2}
+          />
+          <p className="mt-8 truncate text-sm font-medium">
+            Screenshot 2026-05-20 at ...
+          </p>
+          <p className="text-xs text-muted-foreground">image/png</p>
         </article>
       </section>
     </div>
@@ -651,33 +779,73 @@ const TOOL_GROUPS = [
   {
     label: "Execution",
     items: [
-      ["Script", "Run Python/JS code in an isolated container.", ComputerTerminal01Icon],
-      ["Full VM", "Persistent virtual machine. Install packages, save files, and run jobs.", ServerStack01Icon],
+      [
+        "Script",
+        "Run Python/JS code in an isolated container.",
+        ComputerTerminal01Icon,
+      ],
+      [
+        "Full VM",
+        "Persistent virtual machine. Install packages, save files, and run jobs.",
+        ServerStack01Icon,
+      ],
     ],
   },
   {
     label: "Research",
     items: [
       ["Exa", "Enable Exa.ai semantic search and related tools.", AiSearchIcon],
-      ["Search", "Search the web for information using SDK web search.", Search01Icon],
-      ["Browser", "Control a real browser with AI-powered automation.", BrowserIcon],
-      ["Find Similar", "Find pages semantically similar to a given URL.", Link03Icon],
-      ["Exa Answer", "Get direct answers to questions with source citations.", ChatIcon],
-      ["Exa Research", "Deep multi-source research with structured output.", Database01Icon],
+      [
+        "Search",
+        "Search the web for information using SDK web search.",
+        Search01Icon,
+      ],
+      [
+        "Browser",
+        "Control a real browser with AI-powered automation.",
+        BrowserIcon,
+      ],
+      [
+        "Find Similar",
+        "Find pages semantically similar to a given URL.",
+        Link03Icon,
+      ],
+      [
+        "Exa Answer",
+        "Get direct answers to questions with source citations.",
+        ChatIcon,
+      ],
+      [
+        "Exa Research",
+        "Deep multi-source research with structured output.",
+        Database01Icon,
+      ],
     ],
   },
   {
     label: "Data",
     items: [
-      ["Tables", "Create, update, and query structured data tables.", TableIcon],
+      [
+        "Tables",
+        "Create, update, and query structured data tables.",
+        TableIcon,
+      ],
       ["Documents", "Create and update persistent documents.", File02Icon],
     ],
   },
   {
     label: "Interactive",
     items: [
-      ["Webpages & Slides", "Generate styled webpages and slide presentations.", Globe02Icon],
-      ["Slides", "Create slide presentations for delivery.", Presentation01Icon],
+      [
+        "Webpages & Slides",
+        "Generate styled webpages and slide presentations.",
+        Globe02Icon,
+      ],
+      [
+        "Slides",
+        "Create slide presentations for delivery.",
+        Presentation01Icon,
+      ],
     ],
   },
   {
@@ -686,7 +854,11 @@ const TOOL_GROUPS = [
       ["Images", "Generate and edit images.", Image02Icon],
       ["Video", "Generate short video clips with native audio.", Video01Icon],
       ["Audio", "Generate speech or multi-speaker dialogue.", Mic01Icon],
-      ["Maps", "Geocoding, places search, directions, and distance calculations.", MapsIcon],
+      [
+        "Maps",
+        "Geocoding, places search, directions, and distance calculations.",
+        MapsIcon,
+      ],
     ],
   },
 ] as const
@@ -712,12 +884,53 @@ function ToolCard({
           {title}
           {checked ? <span aria-hidden>✓</span> : null}
         </span>
-        <span className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
+        <span className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {description}
         </span>
       </span>
     </div>
   )
+}
+
+function getToolOptions(
+  toolkits: IntegrationToolkit[],
+  grants: AgentToolGrant[]
+): IntegrationToolkit[] {
+  const options = toolkits.reduce<IntegrationToolkit[]>((unique, toolkit) => {
+    if (
+      toolkit.status === "connected" &&
+      !unique.some((option) => option.slug === toolkit.slug)
+    ) {
+      unique.push(toolkit)
+    }
+    return unique
+  }, [])
+
+  for (const grant of grants) {
+    if (options.some((toolkit) => toolkit.slug === grant.toolkitSlug)) continue
+    options.push({
+      slug: grant.toolkitSlug,
+      name: grant.toolkitSlug,
+      description: "Already granted to this agent.",
+      category: "connected",
+      featured: false,
+      status: "connected",
+      connectedAccountCount: grant.connectionId ? 1 : 0,
+      availableTools: [],
+    })
+  }
+
+  return options
+}
+
+function toToolGrantInput(
+  toolkitSlug: string,
+  grant: AgentToolGrant | undefined
+) {
+  if (grant?.connectionId) {
+    return { toolkitSlug, connectionId: grant.connectionId }
+  }
+  return { toolkitSlug }
 }
 
 export function AgentToolsTab({
@@ -728,33 +941,10 @@ export function AgentToolsTab({
   onSave: (payload: UpdateAgentRequest) => Promise<void>
 }) {
   const { toolkits } = useIntegrations()
-  const connectedToolkits = toolkits.filter(
-    (toolkit) => toolkit.status === "connected"
-  )
   const grantedBySlug = new Map(
     detail.toolGrants.map((grant) => [grant.toolkitSlug, grant])
   )
-  const toolOptions = connectedToolkits.reduce<IntegrationToolkit[]>((options, toolkit) => {
-    if (!options.some((option) => option.slug === toolkit.slug)) {
-      options.push(toolkit)
-    }
-    return options
-  }, [])
-
-  for (const grant of detail.toolGrants) {
-    if (!toolOptions.some((toolkit) => toolkit.slug === grant.toolkitSlug)) {
-      toolOptions.push({
-        slug: grant.toolkitSlug,
-        name: grant.toolkitSlug,
-        description: "Already granted to this agent.",
-        category: "connected",
-        featured: false,
-        status: "connected",
-        connectedAccountCount: grant.connectionId ? 1 : 0,
-        availableTools: [],
-      })
-    }
-  }
+  const toolOptions = getToolOptions(toolkits, detail.toolGrants)
 
   const [selectedToolkits, setSelectedToolkits] = useState(
     new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
@@ -763,8 +953,22 @@ export function AgentToolsTab({
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setSelectedToolkits(new Set(detail.toolGrants.map((grant) => grant.toolkitSlug)))
+    setSelectedToolkits(
+      new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
+    )
   }, [detail])
+
+  function setToolkitSelected(toolkitSlug: string, checked: boolean) {
+    setSelectedToolkits((current) => {
+      const next = new Set(current)
+      if (checked) {
+        next.add(toolkitSlug)
+      } else {
+        next.delete(toolkitSlug)
+      }
+      return next
+    })
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -774,12 +978,9 @@ export function AgentToolsTab({
       await onSave({
         toolGrants: toolOptions
           .filter((toolkit) => selectedToolkits.has(toolkit.slug))
-          .map((toolkit) => {
-            const grant = grantedBySlug.get(toolkit.slug)
-            return grant?.connectionId
-              ? { toolkitSlug: toolkit.slug, connectionId: grant.connectionId }
-              : { toolkitSlug: toolkit.slug }
-          }),
+          .map((toolkit) =>
+            toToolGrantInput(toolkit.slug, grantedBySlug.get(toolkit.slug))
+          ),
       })
       setStatus("Tools saved")
     } catch (error) {
@@ -791,7 +992,10 @@ export function AgentToolsTab({
 
   return (
     <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-      <section className="flex flex-col gap-3" aria-labelledby="integrations-heading">
+      <section
+        className="flex flex-col gap-3"
+        aria-labelledby="integrations-heading"
+      >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <h2 id="integrations-heading" className="text-sm font-medium">
@@ -799,13 +1003,24 @@ export function AgentToolsTab({
             </h2>
             <Badge variant="secondary">{detail.toolGrants.length} active</Badge>
           </div>
-          <Button type="button" size="icon" variant="outline" disabled aria-label="Add integration">
-            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            disabled
+            aria-label="Add integration"
+          >
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-4"
+              strokeWidth={2}
+            />
           </Button>
         </div>
         {toolOptions.length === 0 ? (
-          <p className="text-muted-foreground rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm">
-            No integrations added yet, connect tools like Airtable or Slack to extend this agent's capabilities.
+          <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+            No integrations added yet, connect tools like Airtable or Slack to
+            extend this agent's capabilities.
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -822,19 +1037,15 @@ export function AgentToolsTab({
                       : `${toolkit.name} (${toolkit.slug})`
                   }
                   checked={selectedToolkits.has(toolkit.slug)}
-                  onChange={(event) => {
-                    const next = new Set(selectedToolkits)
-                    if (event.target.checked) {
-                      next.add(toolkit.slug)
-                    } else {
-                      next.delete(toolkit.slug)
-                    }
-                    setSelectedToolkits(next)
-                  }}
+                  onChange={(event) =>
+                    setToolkitSelected(toolkit.slug, event.target.checked)
+                  }
                 />
                 <span className="flex min-w-0 flex-col">
                   <span className="font-medium">{toolkit.name}</span>
-                  <span className="text-muted-foreground text-xs">{toolkit.description}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {toolkit.description}
+                  </span>
                 </span>
               </label>
             ))}
@@ -852,10 +1063,17 @@ export function AgentToolsTab({
         {/* TODO: replace this static tool catalog with the server-backed native tool registry. */}
         {TOOL_GROUPS.map((group) => (
           <div key={group.label} className="flex flex-col gap-2">
-            <h3 className="text-muted-foreground text-xs font-medium">{group.label}</h3>
+            <h3 className="text-xs font-medium text-muted-foreground">
+              {group.label}
+            </h3>
             <div className="grid gap-2 sm:grid-cols-2">
               {group.items.map(([title, description, icon]) => (
-                <ToolCard key={title} title={title} description={description} icon={icon} />
+                <ToolCard
+                  key={title}
+                  title={title}
+                  description={description}
+                  icon={icon}
+                />
               ))}
             </div>
           </div>

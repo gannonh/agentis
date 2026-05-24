@@ -195,33 +195,22 @@ export class AgentRepository {
     const currentVersion = this.getCurrentVersion(agentId)
     const nextName = input.name ?? existing.name
     const nextDescription =
-      "description" in input ? input.description ?? null : existing.description
+      "description" in input
+        ? (input.description ?? null)
+        : existing.description
     const nextSystemPrompt = input.systemPrompt ?? existing.systemPrompt
     const nextModel = input.model ?? existing.model
     const nextMaxCostPerRunUsd =
       "maxCostPerRunUsd" in input
-        ? input.maxCostPerRunUsd ?? null
+        ? (input.maxCostPerRunUsd ?? null)
         : existing.maxCostPerRunUsd
-    const nextGrants = input.toolGrants
-      ? normalizeGrants(input.toolGrants)
-      : undefined
-    const currentGrants = nextGrants
-      ? normalizeGrants(
-          this.db
-            .select()
-            .from(toolAccessGrants)
-            .where(
-              and(
-                eq(toolAccessGrants.scopeType, "agent"),
-                eq(toolAccessGrants.scopeId, agentId)
-              )
-            )
-            .all()
-        )
+    const hasGrantEdit = input.toolGrants !== undefined
+    const nextGrants = input.toolGrants ? normalizeGrants(input.toolGrants) : []
+    const currentGrants = hasGrantEdit
+      ? this.listAgentToolGrantInputs(agentId)
       : []
-    const grantsChanged = nextGrants
-      ? !grantsMatch(currentGrants, nextGrants)
-      : false
+    const grantsChanged =
+      hasGrantEdit && !grantsMatch(currentGrants, nextGrants)
     const identityChanged =
       nextName !== existing.name || nextDescription !== existing.description
     const configurationChanged =
@@ -233,7 +222,7 @@ export class AgentRepository {
       return mapAgent(
         existing,
         currentVersion,
-        nextGrants ? currentGrants.length : this.countToolGrants(agentId)
+        hasGrantEdit ? currentGrants.length : this.countToolGrants(agentId)
       )
     }
 
@@ -252,7 +241,7 @@ export class AgentRepository {
         .where(eq(agents.id, agentId))
         .run()
 
-      if (nextGrants && grantsChanged) {
+      if (hasGrantEdit && grantsChanged) {
         tx.delete(toolAccessGrants)
           .where(
             and(
@@ -328,6 +317,26 @@ export class AgentRepository {
       }
     }
     return versions
+  }
+
+  private listAgentToolGrantInputs(
+    agentId: string
+  ): AgentToolGrantCreateInput[] {
+    return normalizeGrants(
+      this.db
+        .select({
+          toolkitSlug: toolAccessGrants.toolkitSlug,
+          connectionId: toolAccessGrants.connectionId,
+        })
+        .from(toolAccessGrants)
+        .where(
+          and(
+            eq(toolAccessGrants.scopeType, "agent"),
+            eq(toolAccessGrants.scopeId, agentId)
+          )
+        )
+        .all()
+    )
   }
 
   private countToolGrants(agentId: string): number {

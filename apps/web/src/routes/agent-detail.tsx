@@ -73,11 +73,10 @@ export function AgentDetailPage() {
   const fixtureAgent = agentId ? getFixtureAgent(agentId) : undefined
   const shouldLoadApiAgent =
     !!agentId && !fixtureAgent && agentId !== "command-center"
-  const [apiAgentState, setApiAgentState] = useState<ApiAgentState>(
-    shouldLoadApiAgent && agentId
-      ? { agentId, status: "loading" }
-      : { agentId: null, status: "idle" }
-  )
+  const [apiAgentState, setApiAgentState] = useState<ApiAgentState>(() => {
+    if (shouldLoadApiAgent && agentId) return { agentId, status: "loading" }
+    return { agentId: null, status: "idle" }
+  })
   const [activeTab, setActiveTab] = useState("overview")
   const workspace = getWorkspace()
 
@@ -93,11 +92,11 @@ export function AgentDetailPage() {
         const detail = await getApiAgent(agentId)
         setApiAgentState({ agentId, status: "ready", detail })
       } catch (error) {
-        setApiAgentState(
-          error instanceof ApiError && error.status === 404
-            ? { agentId, status: "not-found" }
-            : { agentId, status: "failed" }
-        )
+        if (error instanceof ApiError && error.status === 404) {
+          setApiAgentState({ agentId, status: "not-found" })
+          return
+        }
+        setApiAgentState({ agentId, status: "failed" })
       }
     },
     [agentId, shouldLoadApiAgent]
@@ -117,18 +116,21 @@ export function AgentDetailPage() {
     [agentId]
   )
 
-  const routeApiAgentState: ApiAgentState =
-    shouldLoadApiAgent && agentId
-      ? apiAgentState.agentId === agentId
+  let routeState: ApiAgentState = { agentId: null, status: "idle" }
+  if (shouldLoadApiAgent && agentId) {
+    routeState =
+      apiAgentState.agentId === agentId
         ? apiAgentState
         : { agentId, status: "loading" }
-      : { agentId: null, status: "idle" }
+  }
   const apiAgentDetail =
-    routeApiAgentState.status === "ready" ? routeApiAgentState.detail : null
-  const apiAgent = apiAgentDetail ? mapApiAgentDetailToAgent(apiAgentDetail) : null
+    routeState.status === "ready" ? routeState.detail : null
+  const apiAgent = apiAgentDetail
+    ? mapApiAgentDetailToAgent(apiAgentDetail)
+    : null
   const agent = fixtureAgent ?? apiAgent
 
-  if (routeApiAgentState.status === "loading") {
+  if (routeState.status === "loading") {
     return (
       <PageLayout variant="narrow">
         <PageHeader
@@ -139,7 +141,7 @@ export function AgentDetailPage() {
     )
   }
 
-  if (routeApiAgentState.status === "failed") {
+  if (routeState.status === "failed") {
     return (
       <PageLayout variant="narrow">
         <PageHeader
@@ -169,7 +171,11 @@ export function AgentDetailPage() {
     )
   }
 
-  if (!agent || agent.id === "command-center" || routeApiAgentState.status === "not-found") {
+  if (
+    !agent ||
+    agent.id === "command-center" ||
+    routeState.status === "not-found"
+  ) {
     return (
       <PageLayout variant="narrow">
         <PageHeader
@@ -197,38 +203,76 @@ export function AgentDetailPage() {
         <div className="flex min-w-0 flex-col gap-6">
           <AgentDetailHero agent={agent} />
 
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(String(value))}>
-            <TabsList variant="line" className="w-full justify-start overflow-x-auto border-b border-border">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(String(value))}
+          >
+            <TabsList
+              variant="line"
+              className="w-full justify-start overflow-x-auto border-b border-border"
+            >
               <TabsTrigger value="overview">
-                <HugeiconsIcon icon={DashboardSquare01Icon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={DashboardSquare01Icon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Overview
               </TabsTrigger>
               <TabsTrigger value="identity" disabled={!editable}>
-                <HugeiconsIcon icon={SparklesIcon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={SparklesIcon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Identity
               </TabsTrigger>
               <TabsTrigger value="activity" disabled={!editable}>
-                <HugeiconsIcon icon={Activity01Icon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={Activity01Icon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Activity
               </TabsTrigger>
               <TabsTrigger value="model" disabled={!editable}>
-                <HugeiconsIcon icon={SlidersHorizontalIcon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={SlidersHorizontalIcon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Model
               </TabsTrigger>
               <TabsTrigger value="invocations" disabled={!editable}>
-                <HugeiconsIcon icon={ZapIcon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={ZapIcon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Invocations
               </TabsTrigger>
               <TabsTrigger value="tools" disabled={!editable}>
-                <HugeiconsIcon icon={Wrench02Icon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={Wrench02Icon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Tools
               </TabsTrigger>
               <TabsTrigger value="skills" disabled={!editable}>
-                <HugeiconsIcon icon={PuzzleIcon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={PuzzleIcon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Skills
               </TabsTrigger>
               <TabsTrigger value="knowledge" disabled={!editable}>
-                <HugeiconsIcon icon={BookOpen01Icon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={BookOpen01Icon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
                 Knowledge
               </TabsTrigger>
             </TabsList>
@@ -238,19 +282,28 @@ export function AgentDetailPage() {
             {apiAgentDetail ? (
               <>
                 <TabsContent value="identity" className="pt-4">
-                  <AgentIdentityTab detail={apiAgentDetail} onSave={saveApiAgent} />
+                  <AgentIdentityTab
+                    detail={apiAgentDetail}
+                    onSave={saveApiAgent}
+                  />
                 </TabsContent>
                 <TabsContent value="activity" className="pt-4">
                   <AgentActivityTab />
                 </TabsContent>
                 <TabsContent value="model" className="pt-4">
-                  <AgentModelTab detail={apiAgentDetail} onSave={saveApiAgent} />
+                  <AgentModelTab
+                    detail={apiAgentDetail}
+                    onSave={saveApiAgent}
+                  />
                 </TabsContent>
                 <TabsContent value="invocations" className="pt-4">
                   <AgentInvocationsTab />
                 </TabsContent>
                 <TabsContent value="tools" className="pt-4">
-                  <AgentToolsTab detail={apiAgentDetail} onSave={saveApiAgent} />
+                  <AgentToolsTab
+                    detail={apiAgentDetail}
+                    onSave={saveApiAgent}
+                  />
                 </TabsContent>
                 <TabsContent value="skills" className="pt-4">
                   <AgentSkillsTab />
@@ -263,7 +316,10 @@ export function AgentDetailPage() {
           </Tabs>
         </div>
 
-        <AgentDetailInspector agent={agent} onConfigure={editable ? setActiveTab : undefined} />
+        <AgentDetailInspector
+          agent={agent}
+          onConfigure={editable ? setActiveTab : undefined}
+        />
       </div>
     </PageLayout>
   )
