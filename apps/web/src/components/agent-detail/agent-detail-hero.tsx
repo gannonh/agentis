@@ -8,9 +8,15 @@ import type { Agent } from "@/fixtures/schema"
 
 type AgentDetailHeroProps = {
   agent: Agent
+  onStartThread?: () => void
+  startingThread?: boolean
 }
 
-export function AgentDetailHero({ agent }: AgentDetailHeroProps) {
+export function AgentDetailHero({
+  agent,
+  onStartThread,
+  startingThread = false,
+}: AgentDetailHeroProps) {
   return (
     <header className="flex flex-col gap-0">
       <nav aria-label="Breadcrumb" className="text-muted-foreground px-1 pb-5 text-sm">
@@ -64,9 +70,16 @@ export function AgentDetailHero({ agent }: AgentDetailHeroProps) {
           </dl>
         </div>
         <div className="flex shrink-0 items-center gap-2 self-start">
-          <Button size="sm" className="gap-1.5" disabled>
+          <Button
+            type="button"
+            nativeButton
+            size="sm"
+            className="gap-1.5"
+            disabled={!onStartThread || startingThread}
+            onClick={onStartThread}
+          >
             <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
-            New thread
+            {startingThread ? "Starting..." : "New thread"}
           </Button>
           <Button size="icon" variant="outline" disabled aria-label="Agent actions">
             <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" strokeWidth={2} />

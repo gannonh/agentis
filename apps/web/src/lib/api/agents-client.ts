@@ -2,10 +2,14 @@ import {
   agentDetailResponseSchema,
   agentListItemSchema,
   createAgentRequestSchema,
+  createAgentTestThreadRequestSchema,
+  createThreadResponseSchema,
   updateAgentRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
   type CreateAgentRequest,
+  type CreateAgentTestThreadRequest,
+  type CreateThreadResponse,
   type UpdateAgentRequest,
 } from "@workspace/shared"
 import { ApiError } from "@/lib/api/client"
@@ -89,4 +93,17 @@ export async function updateAgent(
     body: JSON.stringify(payload),
   })
   return parseJson(response, agentDetailResponseSchema)
+}
+
+export async function startAgentTestThread(
+  agentId: string,
+  body: CreateAgentTestThreadRequest
+): Promise<CreateThreadResponse> {
+  const payload = createAgentTestThreadRequestSchema.parse(body)
+  const response = await fetch(`${API_BASE}/api/agents/${agentId}/test-thread`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, createThreadResponseSchema)
 }

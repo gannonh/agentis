@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { Link, useParams } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import {
   Tabs,
@@ -37,6 +37,7 @@ import { getAgent as getFixtureAgent, getWorkspace } from "@/fixtures"
 import type { Agent } from "@/fixtures/schema"
 import {
   getAgent as getApiAgent,
+  startAgentTestThread,
   updateAgent as updateApiAgent,
 } from "@/lib/api/agents-client"
 import { ApiError } from "@/lib/api/client"
@@ -70,6 +71,7 @@ type ApiAgentState =
 
 export function AgentDetailPage() {
   const { agentId } = useParams<{ agentId: string }>()
+  const navigate = useNavigate()
   const fixtureAgent = agentId ? getFixtureAgent(agentId) : undefined
   const shouldLoadApiAgent =
     !!agentId && !fixtureAgent && agentId !== "command-center"
@@ -81,6 +83,11 @@ export function AgentDetailPage() {
     agentId: string | null
     value: string
   }>(() => ({ agentId: agentId ?? null, value: "overview" }))
+  const [testThreadState, setTestThreadState] = useState<{
+    agentId: string | null
+    loading: boolean
+    error: string | null
+  }>(() => ({ agentId: null, loading: false, error: null }))
   const workspace = getWorkspace()
 
   const loadApiAgent = useCallback(
@@ -128,6 +135,23 @@ export function AgentDetailPage() {
   }
   const apiAgentDetail =
     routeState.status === "ready" ? routeState.detail : null
+
+  const launchTestThread = useCallback(async () => {
+    if (!agentId || !apiAgentDetail) return
+    setTestThreadState({ agentId, loading: true, error: null })
+    try {
+      const created = await startAgentTestThread(agentId, {
+        prompt: `Test ${apiAgentDetail.agent.name}`,
+      })
+      navigate(`/threads/${created.thread.id}`)
+    } catch (error) {
+      setTestThreadState({
+        agentId,
+        loading: false,
+        error: error instanceof Error ? error.message : "Unable to start thread",
+      })
+    }
+  }, [agentId, apiAgentDetail, navigate])
   const apiAgent = apiAgentDetail
     ? mapApiAgentDetailToAgent(apiAgentDetail)
     : null
@@ -208,7 +232,18 @@ export function AgentDetailPage() {
     <PageLayout className="dark -m-6 min-h-svh bg-background p-6 text-foreground">
       <div className="mx-auto grid w-full max-w-7xl gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
         <div className="flex min-w-0 flex-col gap-6">
-          <AgentDetailHero agent={agent} />
+          <AgentDetailHero
+            agent={agent}
+            onStartThread={apiAgentDetail ? launchTestThread : undefined}
+            startingThread={
+              testThreadState.agentId === agentId && testThreadState.loading
+            }
+          />
+          {testThreadState.agentId === agentId && testThreadState.error ? (
+            <p className="px-6 text-sm text-destructive" role="alert">
+              {testThreadState.error}
+            </p>
+          ) : null}
 
           <Tabs
             value={activeTab}
