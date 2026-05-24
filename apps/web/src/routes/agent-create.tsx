@@ -55,7 +55,7 @@ function ToolGrantOption({
       className={cn(
         "group relative flex min-h-24 cursor-pointer gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/40",
         selected
-          ? "border-status-success-border bg-status-success-muted/40"
+          ? "border-agent-blue/50 bg-agent-blue/10"
           : "border-border"
       )}
     >
@@ -79,7 +79,7 @@ function ToolGrantOption({
         className={cn(
           "absolute top-3 right-3 inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[0.625rem] font-medium transition-colors",
           selected
-            ? "border-status-success-border bg-status-success text-white"
+            ? "border-agent-blue bg-agent-blue text-white"
             : "border-border bg-background text-muted-foreground"
         )}
         aria-hidden
@@ -87,7 +87,7 @@ function ToolGrantOption({
         {selected ? (
           <HugeiconsIcon icon={Tick01Icon} className="size-3" strokeWidth={2} />
         ) : null}
-        {selected ? "Granted" : "Grant"}
+        {selected ? "Selected" : "Grant"}
       </span>
     </label>
   )
@@ -135,7 +135,7 @@ export function AgentCreatePage() {
       <PageHeader
         title="New agent"
         titleClassName="text-3xl font-medium tracking-tight"
-        description="Create a reusable agent with a prompt, model, and scoped tool access."
+        description="Create a reusable agent with an operating contract and scoped tool access."
       />
 
       <Card>
@@ -143,7 +143,7 @@ export function AgentCreatePage() {
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-base">Agent details</CardTitle>
             <CardDescription>
-              Define the identity, behavior, and tools this agent can use.
+              Define how the agent should operate, what it can use, and where its boundaries are.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-4">
@@ -185,20 +185,33 @@ export function AgentCreatePage() {
                   value={model}
                   onChange={(event) => setModel(event.target.value)}
                   placeholder="gpt-4o-mini"
+                  aria-describedby="agent-model-help"
                 />
+                <p id="agent-model-help" className="text-muted-foreground text-xs leading-relaxed">
+                  Default model for new runs. Change it only when this agent needs a specific capability.
+                </p>
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium" htmlFor="agent-system-prompt">
-                System prompt <span className="text-destructive" aria-hidden>*</span>
+                Agent contract <span className="text-destructive" aria-hidden>*</span>
               </label>
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Write the reusable operating rules. This is stored as the agent system prompt.
+              </p>
               <Textarea
                 id="agent-system-prompt"
                 value={systemPrompt}
                 onChange={(event) => setSystemPrompt(event.target.value)}
-                placeholder="How should this agent behave?"
-                rows={6}
+                placeholder={[
+                  "Role:",
+                  "Operating rules:",
+                  "Context scope:",
+                  "Tool boundaries:",
+                  "Output expectations:",
+                ].join("\n")}
+                rows={7}
                 required
               />
             </div>
@@ -208,7 +221,7 @@ export function AgentCreatePage() {
                 <div>
                   <legend className="text-sm font-medium">Tool grants</legend>
                   <p className="text-muted-foreground text-xs">
-                    Select connected integrations this agent can use during runs.
+                    Select connected integrations this agent may call during runs. Grants stay scoped to selected toolkits.
                   </p>
                 </div>
                 <Link

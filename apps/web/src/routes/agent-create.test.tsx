@@ -76,7 +76,7 @@ describe("AgentCreatePage", () => {
     vi.mocked(createAgent).mockClear()
   })
 
-  it("creates an agent with identity, prompt, model, and tool grants", async () => {
+  it("creates an agent with identity, contract, model, and tool grants", async () => {
     const user = userEvent.setup()
     render(
       <MemoryRouter>
@@ -91,13 +91,19 @@ describe("AgentCreatePage", () => {
     )
     await user.clear(screen.getByLabelText(/^model/i))
     await user.type(screen.getByLabelText(/^model/i), "gpt-4o-mini")
+    expect(
+      screen.getByText(/Define how the agent should operate/i)
+    ).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Role:/i)).toBeInTheDocument()
     await user.type(
-      screen.getByLabelText(/^system prompt/i),
+      screen.getByLabelText(/^agent contract/i),
       "Answer with citations."
     )
+    expect(screen.getByText(/Default model for new runs/i)).toBeInTheDocument()
     expect(screen.getByText("Source control")).toBeInTheDocument()
     expect(screen.getByText(/1 tool · 1 account/)).toBeInTheDocument()
     await user.click(screen.getByRole("checkbox", { name: /GitHub/ }))
+    expect(screen.getByText("Selected")).toBeInTheDocument()
     expect(screen.queryByRole("checkbox", { name: /Linear/ })).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
@@ -124,7 +130,7 @@ describe("AgentCreatePage", () => {
 
     await user.type(screen.getByLabelText(/^name/i), "Research Agent")
     await user.type(
-      screen.getByLabelText(/^system prompt/i),
+      screen.getByLabelText(/^agent contract/i),
       "Answer with citations."
     )
     await user.click(screen.getByRole("button", { name: /create agent/i }))
