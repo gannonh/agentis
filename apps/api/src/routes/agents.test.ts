@@ -403,9 +403,19 @@ describe("agent routes", () => {
 
     expect(response.status).toBe(201)
     const body = (await response.json()) as {
-      thread: { id: string; agentId?: string; agentNameSnapshot?: string; model: string }
+      thread: {
+        id: string
+        agentId?: string
+        agentNameSnapshot?: string
+        model: string
+      }
       message: { role: string }
-      run: { id: string; agentId?: string; agentConfigurationVersionId?: string; model: string }
+      run: {
+        id: string
+        agentId?: string
+        agentConfigurationVersionId?: string
+        model: string
+      }
     }
     expect(updated.currentConfigurationVersion.version).toBe(2)
     expect(body.thread).toMatchObject({
@@ -419,9 +429,9 @@ describe("agent routes", () => {
       agentConfigurationVersionId: updated.currentConfigurationVersion.id,
       model: "gpt-4o-mini",
     })
-    expect(ctx.repos.toolAccessGrants.listByScope("thread", body.thread.id)).toMatchObject([
-      { toolkitSlug: "slack", connectionId: slack.id },
-    ])
+    expect(
+      ctx.repos.toolAccessGrants.listByScope("thread", body.thread.id)
+    ).toMatchObject([{ toolkitSlug: "slack", connectionId: slack.id }])
   })
 
   it("rejects invalid agent test-thread requests", async () => {

@@ -4,7 +4,11 @@ import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router"
 import { AgentDetailPage } from "./agent-detail"
 import { ApiError } from "@/lib/api/client"
-import { getAgent, startAgentTestThread, updateAgent } from "@/lib/api/agents-client"
+import {
+  getAgent,
+  startAgentTestThread,
+  updateAgent,
+} from "@/lib/api/agents-client"
 import { useIntegrations } from "@/hooks/use-integrations"
 import type { AgentDetailResponse, IntegrationToolkit } from "@workspace/shared"
 
@@ -198,6 +202,7 @@ describe("AgentDetailPage", () => {
   it("starts an API-backed agent test thread and navigates to it", async () => {
     const user = userEvent.setup()
     const detail = apiAgentDetail()
+    const now = new Date().toISOString()
     vi.mocked(getAgent).mockResolvedValueOnce(detail)
     vi.mocked(startAgentTestThread).mockResolvedValueOnce({
       thread: {
@@ -208,8 +213,8 @@ describe("AgentDetailPage", () => {
         mode: "agent",
         agentId: detail.agent.id,
         agentNameSnapshot: detail.agent.name,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
       },
       message: {
         id: "msg_test",
@@ -217,7 +222,7 @@ describe("AgentDetailPage", () => {
         role: "user",
         parts: [{ type: "text", text: "Test Created Research Agent" }],
         status: "completed",
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       },
       run: {
         id: "run_test",
@@ -226,7 +231,7 @@ describe("AgentDetailPage", () => {
         model: "gpt-4o-mini",
         agentId: detail.agent.id,
         agentConfigurationVersionId: detail.agent.currentConfigurationVersion.id,
-        startedAt: new Date().toISOString(),
+        startedAt: now,
       },
     })
 

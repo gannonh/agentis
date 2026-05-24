@@ -392,15 +392,18 @@ export class RunExecutor {
           const curated = toolkitSlug
             ? CURATED_COMPOSIO_TOOLS[toolkitSlug]
             : undefined
+          let title = `Tool: ${chunk.toolName}`
+          if (toolkitSlug && curated) {
+            title = `Composio: ${toolkitSlug}`
+          } else if (chunk.toolName === "createArtifact") {
+            title = "Create artifact"
+          }
+
           const step = this.repos.steps.create({
             runId,
             type: "tool-call",
             status: "running",
-            title: curated
-              ? `Composio: ${toolkitSlug}`
-              : chunk.toolName === "createArtifact"
-                ? "Create artifact"
-                : `Tool: ${chunk.toolName}`,
+            title,
             payload: toolkitSlug && curated
               ? this.services.toolExecution.formatRunStepPayload({
                   toolkitSlug,

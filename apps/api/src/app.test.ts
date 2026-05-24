@@ -181,7 +181,11 @@ describe("api routes", () => {
     const detail = await app.request(`/api/threads/${launchedBody.thread.id}`)
     const detailBody = (await detail.json()) as {
       thread: { agentId?: string; agentNameSnapshot?: string }
-      runs: { status: string; agentConfigurationVersionId?: string; model: string }[]
+      runs: {
+        status: string
+        agentConfigurationVersionId?: string
+        model: string
+      }[]
       steps: { title: string; payload?: Record<string, unknown> }[]
     }
     expect(detailBody.thread).toMatchObject({

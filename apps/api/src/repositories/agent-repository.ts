@@ -254,7 +254,8 @@ export class AgentRepository {
         ? (input.maxCostPerRunUsd ?? null)
         : existing.maxCostPerRunUsd
     const hasGrantEdit = input.toolGrants !== undefined
-    const nextGrants = input.toolGrants ? normalizeGrants(input.toolGrants) : []
+    const nextGrants =
+      input.toolGrants === undefined ? [] : normalizeGrants(input.toolGrants)
     const currentGrants = hasGrantEdit
       ? this.listAgentToolGrantInputs(agentId)
       : []
@@ -276,6 +277,11 @@ export class AgentRepository {
       )
     }
 
+    const versionToolGrantsJson = versionChanged
+      ? serializeGrantSnapshot(
+          hasGrantEdit ? nextGrants : this.listAgentToolGrantInputs(agentId)
+        )
+      : null
     const now = nowIso()
 
     this.db.transaction((tx) => {
@@ -314,7 +320,7 @@ export class AgentRepository {
         }
       }
 
-      if (versionChanged) {
+      if (versionToolGrantsJson !== null) {
         tx.insert(agentConfigurationVersions)
           .values({
             id: createId("agent_version"),
@@ -323,9 +329,7 @@ export class AgentRepository {
             systemPrompt: nextSystemPrompt,
             model: nextModel,
             maxCostPerRunUsd: nextMaxCostPerRunUsd,
-            toolGrantsJson: serializeGrantSnapshot(
-              hasGrantEdit ? nextGrants : this.listAgentToolGrantInputs(agentId)
-            ),
+            toolGrantsJson: versionToolGrantsJson,
             createdAt: now,
           })
           .run()

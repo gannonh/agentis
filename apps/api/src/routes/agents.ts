@@ -11,7 +11,7 @@ import {
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 
-function summarizeTitle(prompt: string) {
+function summarizeTitle(prompt: string): string {
   const trimmed = prompt.trim().replace(/\s+/g, " ")
   if (trimmed.length <= 60) return trimmed
   return `${trimmed.slice(0, 57)}...`

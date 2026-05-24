@@ -173,7 +173,9 @@ describe("repositories", () => {
       model: plainThread.model,
     })
     expect(ctx.repos.threads.getById(plainThread.id)?.agentId).toBeUndefined()
-    expect(ctx.repos.runs.getById(plainRun.id)?.agentConfigurationVersionId).toBeUndefined()
+    expect(
+      ctx.repos.runs.getById(plainRun.id)?.agentConfigurationVersionId
+    ).toBeUndefined()
     ctx.cleanup()
   })
 })

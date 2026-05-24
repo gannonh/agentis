@@ -157,6 +157,10 @@ export function AgentDetailPage() {
     : null
   const agent = fixtureAgent ?? apiAgent
   const editable = !!apiAgentDetail
+  const isStartingTestThread =
+    testThreadState.agentId === agentId && testThreadState.loading
+  const testThreadError =
+    testThreadState.agentId === agentId ? testThreadState.error : null
   const activeTab =
     editable && activeTabState.agentId === (agentId ?? null)
       ? activeTabState.value
@@ -235,13 +239,11 @@ export function AgentDetailPage() {
           <AgentDetailHero
             agent={agent}
             onStartThread={apiAgentDetail ? launchTestThread : undefined}
-            startingThread={
-              testThreadState.agentId === agentId && testThreadState.loading
-            }
+            startingThread={isStartingTestThread}
           />
-          {testThreadState.agentId === agentId && testThreadState.error ? (
+          {testThreadError ? (
             <p className="px-6 text-sm text-destructive" role="alert">
-              {testThreadState.error}
+              {testThreadError}
             </p>
           ) : null}
 

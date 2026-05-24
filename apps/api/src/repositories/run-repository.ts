@@ -5,6 +5,10 @@ import { runs } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapRun } from "../lib/mappers.js"
 
+function serializeRunUsage(usage: RunUsage | null | undefined): string | null {
+  return usage ? JSON.stringify(usage) : null
+}
+
 export class RunRepository {
   constructor(private readonly db: AppDatabase) {}
 
@@ -70,6 +74,9 @@ export class RunRepository {
     const existing = this.getById(id)
     if (!existing) return null
 
+    const nextUsage =
+      patch?.usage !== undefined ? patch.usage : (existing.usage ?? null)
+
     this.db
       .update(runs)
       .set({
@@ -79,14 +86,7 @@ export class RunRepository {
           patch?.errorSummary !== undefined
             ? patch.errorSummary
             : existing.errorSummary ?? null,
-        usageJson:
-          patch?.usage !== undefined
-            ? patch.usage
-              ? JSON.stringify(patch.usage)
-              : null
-            : existing.usage
-              ? JSON.stringify(existing.usage)
-              : null,
+        usageJson: serializeRunUsage(nextUsage),
         cost: patch?.cost !== undefined ? patch.cost : (existing.cost ?? null),
       })
       .where(eq(runs.id, id))
