@@ -121,8 +121,9 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Claude Opus 4.6")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Access" })).toBeInTheDocument()
     expect(
-      screen.getByRole("button", { name: "Connect Slack" })
-    ).toBeInTheDocument()
+      screen.queryByRole("button", { name: "Connect Slack" })
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId("personal-access-icon")).toBeInTheDocument()
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
     expect(screen.getByText("Finished")).toBeInTheDocument()
     expect(

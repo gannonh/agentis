@@ -1,4 +1,3 @@
-import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
 import {
   Collapsible,
@@ -6,11 +5,9 @@ import {
   CollapsibleTrigger,
 } from "@workspace/ui/components/collapsible"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowDown01Icon } from "@hugeicons/core-free-icons"
+import { ArrowDown01Icon, UserIcon } from "@hugeicons/core-free-icons"
 import { formatRelativeTime } from "@/fixtures"
 import type { Thread } from "@/fixtures/schema"
-
-const SUGGESTED_INTEGRATIONS = ["Slack", "Email", "Webhook", "Telegram"] as const
 
 type AgentOverviewTabProps = {
   recentThreads: Thread[]
@@ -50,12 +47,16 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 px-4 py-4">
-          <Badge variant="secondary">Personal</Badge>
-          {SUGGESTED_INTEGRATIONS.map((name) => (
-            <Button key={name} variant="outline" size="sm" disabled>
-              Connect {name}
-            </Button>
-          ))}
+          <Badge variant="secondary" className="gap-1.5">
+            <HugeiconsIcon
+              icon={UserIcon}
+              className="size-2.5"
+              strokeWidth={2}
+              aria-hidden
+              data-testid="personal-access-icon"
+            />
+            Personal
+          </Badge>
         </div>
       </section>
 
