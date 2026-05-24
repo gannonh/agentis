@@ -173,7 +173,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       agentId: detail.agent.id,
       agentNameSnapshot: detail.agent.name,
     })
-    for (const grant of detail.toolGrants) {
+    for (const grant of version.toolGrants) {
       repos.toolAccessGrants.create({
         scopeType: "thread",
         scopeId: thread.id,

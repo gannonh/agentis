@@ -309,10 +309,10 @@ describe("agent routes", () => {
       maxCostPerRunUsd: 3,
       toolGrantCount: 1,
     })
-    expect(reloadedBody.agent.currentConfigurationVersion.version).toBe(2)
+    expect(reloadedBody.agent.currentConfigurationVersion.version).toBe(3)
     expect(
       reloadedBody.configurationVersions.map((version) => version.version)
-    ).toEqual([1, 2])
+    ).toEqual([1, 2, 3])
     expect(reloadedBody.toolGrants).toMatchObject([{ toolkitSlug: "slack" }])
   })
 
@@ -369,13 +369,18 @@ describe("agent routes", () => {
     expect(listBody[0]?.toolGrantCount).toBe(1)
   })
 
-  it("starts an agent test thread with current configuration version and copied tool grants", async () => {
+  it("starts an agent test thread from the selected configuration version grant snapshot", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
-    const connection = ctx.repos.integrationConnections.create({
+    const github = ctx.repos.integrationConnections.create({
       toolkitSlug: "github",
       status: "connected",
       composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
     })
     const agent = ctx.repos.agents.createWithGrants(
       {
@@ -383,18 +388,17 @@ describe("agent routes", () => {
         systemPrompt: "Answer with citations.",
         model: "gpt-4o-mini",
       },
-      [{ toolkitSlug: "github", connectionId: connection.id }]
+      [{ toolkitSlug: "github", connectionId: github.id }]
     )
     const updated = ctx.repos.agents.update(agent.id, {
-      systemPrompt: "Answer with citations and source quality notes.",
-      model: "gpt-4.1-mini",
+      toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
     })!
     const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+      body: JSON.stringify({ prompt: "Check Slack updates" }),
     })
 
     expect(response.status).toBe(201)
@@ -403,19 +407,20 @@ describe("agent routes", () => {
       message: { role: string }
       run: { id: string; agentId?: string; agentConfigurationVersionId?: string; model: string }
     }
+    expect(updated.currentConfigurationVersion.version).toBe(2)
     expect(body.thread).toMatchObject({
       agentId: agent.id,
       agentNameSnapshot: "Research Agent",
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
     })
     expect(body.message.role).toBe("user")
     expect(body.run).toMatchObject({
       agentId: agent.id,
       agentConfigurationVersionId: updated.currentConfigurationVersion.id,
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
     })
     expect(ctx.repos.toolAccessGrants.listByScope("thread", body.thread.id)).toMatchObject([
-      { toolkitSlug: "github", connectionId: connection.id },
+      { toolkitSlug: "slack", connectionId: slack.id },
     ])
   })
 

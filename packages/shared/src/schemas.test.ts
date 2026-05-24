@@ -91,9 +91,35 @@ describe("shared schemas", () => {
       steps: [],
     })
 
+    const version = agentDetailResponseSchema.parse({
+      agent: {
+        id: "agent-1",
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4.1-mini",
+        createdAt: now,
+        updatedAt: now,
+        currentConfigurationVersion: {
+          id: "agent-version-2",
+          agentId: "agent-1",
+          version: 2,
+          systemPrompt: "Answer with citations.",
+          model: "gpt-4.1-mini",
+          toolGrants: [{ toolkitSlug: "slack", connectionId: "conn-slack" }],
+          createdAt: now,
+        },
+        toolGrantCount: 1,
+      },
+      configurationVersions: [],
+      toolGrants: [],
+    }).agent.currentConfigurationVersion
+
     expect(parsed.thread.agentId).toBe("agent-1")
     expect(parsed.thread.agentNameSnapshot).toBe("Research Agent")
     expect(parsed.runs[0]?.agentConfigurationVersionId).toBe("agent-version-2")
+    expect(version.toolGrants).toEqual([
+      { toolkitSlug: "slack", connectionId: "conn-slack" },
+    ])
 
     const plainThread = threadSchema.parse({
       id: "plain-thread",

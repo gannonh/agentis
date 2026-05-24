@@ -83,6 +83,49 @@ describe("repositories", () => {
     ctx.cleanup()
   })
 
+  it("creates configuration versions for tool-grant snapshots", () => {
+    const ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+
+    const updated = ctx.repos.agents.update(agent.id, {
+      toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+    })!
+
+    expect(updated.currentConfigurationVersion.version).toBe(2)
+    expect(updated.currentConfigurationVersion.toolGrants).toEqual([
+      { toolkitSlug: "slack", connectionId: slack.id },
+    ])
+    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toMatchObject([
+      {
+        version: 1,
+        toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+      },
+      {
+        version: 2,
+        toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+      },
+    ])
+    ctx.cleanup()
+  })
+
   it("persists agent-bound thread metadata and run configuration version links", () => {
     const ctx = createTestContext()
     const agent = ctx.repos.agents.create({

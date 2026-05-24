@@ -114,6 +114,18 @@ describe("api routes", () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, { ...ctx.config, mockRuntime: true })
 
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+
     const createdAgent = await app.request("/api/agents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,6 +133,7 @@ describe("api routes", () => {
         name: "Research Agent",
         systemPrompt: "Answer with citations.",
         model: "gpt-4o-mini",
+        toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
       }),
     })
     const createdAgentBody = (await createdAgent.json()) as {
@@ -135,6 +148,7 @@ describe("api routes", () => {
         body: JSON.stringify({
           systemPrompt: "Answer with citations and source quality notes.",
           model: "gpt-4.1-mini",
+          toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
         }),
       }
     )
@@ -192,6 +206,9 @@ describe("api routes", () => {
         }),
       ])
     )
+    expect(
+      ctx.repos.toolAccessGrants.listByScope("thread", launchedBody.thread.id)
+    ).toMatchObject([{ toolkitSlug: "slack", connectionId: slack.id }])
 
     const plain = await app.request("/api/threads", {
       method: "POST",
