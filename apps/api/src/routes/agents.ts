@@ -13,7 +13,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
 
   function resolveRequestedGrants(requestedGrants: AgentToolGrantInput[]) {
-    const resolvedGrants = []
+    const resolvedGrants: { toolkitSlug: string; connectionId: string }[] = []
     const requestedToolkitSlugs = new Set<string>()
 
     for (const requested of requestedGrants) {

@@ -240,24 +240,6 @@ export const createAgentRequestSchema = z.object({
   toolGrants: z.array(agentToolGrantInputSchema).optional(),
 })
 
-export const updateAgentIdentityRequestSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().nullable().optional(),
-})
-
-export const updateAgentPromptRequestSchema = z.object({
-  systemPrompt: z.string().min(1),
-})
-
-export const updateAgentModelRequestSchema = z.object({
-  model: z.string().min(1),
-  maxCostPerRunUsd: z.number().nonnegative().nullable().optional(),
-})
-
-export const updateAgentToolGrantsRequestSchema = z.object({
-  toolGrants: z.array(agentToolGrantInputSchema),
-})
-
 export const updateAgentRequestSchema = z
   .object({
     name: z.string().min(1).optional(),
@@ -270,11 +252,6 @@ export const updateAgentRequestSchema = z
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one agent edit field is required.",
   })
-
-export const agentToolGrantsResponseSchema = z.object({
-  grants: z.array(toolAccessGrantSchema),
-  availableToolkits: z.array(integrationToolkitSchema),
-})
 
 export const agentDetailResponseSchema = z.object({
   agent: agentListItemSchema,
@@ -467,18 +444,7 @@ export type Agent = z.infer<typeof agentSchema>
 export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
 export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
-export type UpdateAgentIdentityRequest = z.infer<
-  typeof updateAgentIdentityRequestSchema
->
-export type UpdateAgentPromptRequest = z.infer<typeof updateAgentPromptRequestSchema>
-export type UpdateAgentModelRequest = z.infer<typeof updateAgentModelRequestSchema>
-export type UpdateAgentToolGrantsRequest = z.infer<
-  typeof updateAgentToolGrantsRequestSchema
->
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
-export type AgentToolGrantsResponse = z.infer<
-  typeof agentToolGrantsResponseSchema
->
 export type AgentDetailResponse = z.infer<typeof agentDetailResponseSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>

@@ -1,67 +1,38 @@
-import {
-  useCallback,
-  useEffect,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link, useParams } from "react-router"
 import { Button } from "@workspace/ui/components/button"
-import { Input } from "@workspace/ui/components/input"
-import { Textarea } from "@workspace/ui/components/textarea"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs"
-import { Badge } from "@workspace/ui/components/badge"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Activity01Icon,
-  AiSearchIcon,
-  ArrowDown01Icon,
   BookOpen01Icon,
-  Brain01Icon,
-  BrowserIcon,
-  Calendar03Icon,
-  ChatIcon,
-  CheckmarkCircle02Icon,
-  ComputerTerminal01Icon,
   DashboardSquare01Icon,
-  Database01Icon,
-  File02Icon,
-  Globe02Icon,
-  Image02Icon,
-  Link03Icon,
-  Mail01Icon,
-  MapsIcon,
-  Mic01Icon,
-  PlusSignIcon,
-  Presentation01Icon,
   PuzzleIcon,
-  Search01Icon,
-  ServerStack01Icon,
   SlidersHorizontalIcon,
-  SlackIcon,
   SparklesIcon,
-  TableIcon,
-  TelegramIcon,
-  Video01Icon,
-  WebhookIcon,
   Wrench02Icon,
   ZapIcon,
 } from "@hugeicons/core-free-icons"
+import {
+  AgentActivityTab,
+  AgentIdentityTab,
+  AgentInvocationsTab,
+  AgentKnowledgeTab,
+  AgentModelTab,
+  AgentSkillsTab,
+  AgentToolsTab,
+} from "@/components/agent-detail/agent-edit-tabs"
 import { AgentDetailHero } from "@/components/agent-detail/agent-detail-hero"
 import { AgentDetailInspector } from "@/components/agent-detail/agent-detail-inspector"
 import { AgentOverviewTab } from "@/components/agent-detail/agent-overview-tab"
 import { PageLayout } from "@/components/shell/page-layout"
 import { PageHeader } from "@/components/shell/page-header"
-import type {
-  AgentDetailResponse,
-  IntegrationToolkit,
-  UpdateAgentRequest,
-} from "@workspace/shared"
+import type { AgentDetailResponse, UpdateAgentRequest } from "@workspace/shared"
 import { getAgent as getFixtureAgent, getWorkspace } from "@/fixtures"
 import type { Agent } from "@/fixtures/schema"
 import {
@@ -69,7 +40,6 @@ import {
   updateAgent as updateApiAgent,
 } from "@/lib/api/agents-client"
 import { ApiError } from "@/lib/api/client"
-import { useIntegrations } from "@/hooks/use-integrations"
 
 function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
   return {
@@ -91,899 +61,74 @@ function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
   }
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="flex flex-col gap-2 text-sm font-medium">
-      {label}
-      {children}
-    </label>
-  )
-}
-
-function StatusText({ message }: { message: string | null }) {
-  if (!message) return null
-  return <p className="text-muted-foreground text-sm">{message}</p>
-}
-
-function getSaveError(error: unknown): string {
-  return error instanceof Error ? error.message : "Agent save failed"
-}
-
-function TogglePill({ checked }: { checked: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={`flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
-        checked ? "bg-agent-blue" : "bg-muted"
-      }`}
-    >
-      <span
-        className={`size-4 rounded-full bg-foreground transition-transform ${
-          checked ? "translate-x-4" : "translate-x-0 bg-muted-foreground"
-        }`}
-      />
-    </span>
-  )
-}
-
-function SettingRow({
-  title,
-  description,
-  control,
-  icon,
-}: {
-  title: string
-  description: string
-  control: ReactNode
-  icon?: ReactNode
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        {icon ? (
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            {icon}
-          </span>
-        ) : null}
-        <div className="min-w-0">
-          <p className="text-sm font-medium">{title}</p>
-          <p className="text-muted-foreground text-xs leading-relaxed">{description}</p>
-        </div>
-      </div>
-      <div className="shrink-0">{control}</div>
-    </div>
-  )
-}
-
-function NativeSelectLike({ children }: { children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
-    >
-      {children}
-      <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" strokeWidth={2} />
-    </button>
-  )
-}
-
-function AgentIdentityTab({
-  detail,
-  onSave,
-}: {
-  detail: AgentDetailResponse
-  onSave: (payload: UpdateAgentRequest) => Promise<void>
-}) {
-  const [name, setName] = useState(detail.agent.name)
-  const [description, setDescription] = useState(detail.agent.description ?? "")
-  const [systemPrompt, setSystemPrompt] = useState(detail.agent.systemPrompt)
-  const [status, setStatus] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    setName(detail.agent.name)
-    setDescription(detail.agent.description ?? "")
-    setSystemPrompt(detail.agent.systemPrompt)
-  }, [detail])
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSaving(true)
-    setStatus(null)
-    try {
-      await onSave({
-        name,
-        description: description.trim() ? description : null,
-        systemPrompt,
-      })
-      setStatus("Identity saved")
-    } catch (error) {
-      setStatus(getSaveError(error))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-      <div className="flex flex-col gap-4">
-        <Field label="Name">
-          <Input value={name} onChange={(event) => setName(event.target.value)} required />
-        </Field>
-        <Field label="Description">
-          <Textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            rows={3}
-          />
-        </Field>
-      </div>
-
-      <section className="flex flex-col gap-2" aria-labelledby="trust-profile-heading">
-        <h2 id="trust-profile-heading" className="text-sm font-medium">
-          Trust profile
-        </h2>
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-card/70 p-4 text-left hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
-        >
-          <span className="flex min-w-0 items-center gap-3">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
-            <span className="min-w-0">
-              <span className="block text-sm font-medium">Custom</span>
-              <span className="text-muted-foreground block text-xs">
-                Tune memory access, edit permissions, and learning behavior on your own.
-              </span>
-            </span>
-          </span>
-          <span className="text-muted-foreground text-lg" aria-hidden>
-            ›
-          </span>
-        </button>
-      </section>
-
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="agent-icon-heading">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id="agent-icon-heading" className="text-sm font-medium">
-            Icon
-          </h2>
-          <Badge variant="secondary">Generated</Badge>
-        </div>
-        {/* TODO: wire generated icon controls to the agent icon generation API. */}
-        <div className="grid grid-cols-3 rounded-xl bg-muted p-1 text-center text-xs font-medium">
-          <span className="rounded-lg px-3 py-2 text-muted-foreground">Emoji</span>
-          <span className="rounded-lg bg-background px-3 py-2">Generated</span>
-          <span className="rounded-lg px-3 py-2 text-muted-foreground">URL</span>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <NativeSelectLike>Claymorphism</NativeSelectLike>
-          <NativeSelectLike>Default</NativeSelectLike>
-          <NativeSelectLike>Fast</NativeSelectLike>
-        </div>
-        <Button type="button" variant="outline" size="sm" className="mt-4 w-full" disabled>
-          Regenerate icons
-        </Button>
-      </section>
-
-      <section className="flex flex-col gap-2" aria-labelledby="theme-heading">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="theme-heading" className="text-sm font-medium">
-            Theme
-          </h2>
-          <button type="button" className="text-muted-foreground text-xs" disabled>
-            Regenerate
-          </button>
-        </div>
-        {/* TODO: replace this static theme swatch when per-agent theme generation is backed by the API. */}
-        <div className="w-full max-w-64 rounded-xl border-2 border-foreground bg-[radial-gradient(circle_at_20%_25%,oklch(0.68_0.18_48),transparent_22%),linear-gradient(135deg,oklch(0.42_0.13_32),oklch(0.23_0.06_18))] p-4 shadow-sm">
-          <div className="mb-4 flex gap-1.5" aria-hidden>
-            <span className="size-3 rounded-full bg-[oklch(0.64_0.2_27)]" />
-            <span className="size-3 rounded-full bg-[oklch(0.68_0.15_55)]" />
-            <span className="size-3 rounded-full bg-[oklch(0.7_0.15_73)]" />
-          </div>
-          <p className="text-xs font-medium text-[oklch(0.98_0.005_40)]">{detail.agent.name}</p>
-        </div>
-      </section>
-
-      <Field label="System prompt">
-        <Textarea
-          value={systemPrompt}
-          onChange={(event) => setSystemPrompt(event.target.value)}
-          rows={10}
-          required
-          className="font-sans leading-relaxed"
-        />
-      </Field>
-
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={saving}>
-          Save identity
-        </Button>
-        <StatusText message={status} />
-      </div>
-    </form>
-  )
-}
-
-function AgentActivityTab() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="relative w-full sm:max-w-sm">
-          <span className="sr-only">Search threads</span>
-          <HugeiconsIcon
-            icon={Search01Icon}
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-            strokeWidth={2}
-          />
-          <input
-            type="search"
-            aria-label="Search threads"
-            placeholder="Search threads..."
-            className="h-9 w-full rounded-lg border border-border bg-muted/70 pr-3 pl-9 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
-          />
-        </label>
-        <div className="inline-flex rounded-lg bg-muted p-1 text-xs font-medium">
-          {[
-            ["All", true],
-            ["Personal", false],
-            ["Shared", false],
-          ].map(([label, active]) => (
-            <button
-              key={label as string}
-              type="button"
-              className={`rounded-md px-3 py-1.5 ${active ? "bg-background text-foreground" : "text-muted-foreground"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {/* TODO: replace this example thread with API-backed agent activity once runs expose thread metadata. */}
-      <article className="rounded-xl border border-border bg-card/70 p-4">
-        <p className="text-muted-foreground flex items-center gap-2 text-xs">
-          <HugeiconsIcon icon={Database01Icon} className="size-4" strokeWidth={2} />
-          Product Launch Q4
-        </p>
-        <h2 className="mt-2 text-lg font-medium">AI Automation Consulting Lead Strategy</h2>
-        <p className="text-muted-foreground mt-2 truncate text-sm">
-          Set up and executed the user's first prospecting run for their AI automation consulting practice.
-        </p>
-      </article>
-    </div>
-  )
-}
-
-function AgentModelTab({
-  detail,
-  onSave,
-}: {
-  detail: AgentDetailResponse
-  onSave: (payload: UpdateAgentRequest) => Promise<void>
-}) {
-  const [model, setModel] = useState(detail.agent.model)
-  const [maxCostPerRunUsd, setMaxCostPerRunUsd] = useState(
-    detail.agent.maxCostPerRunUsd?.toString() ?? ""
-  )
-  const [status, setStatus] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    setModel(detail.agent.model)
-    setMaxCostPerRunUsd(detail.agent.maxCostPerRunUsd?.toString() ?? "")
-  }, [detail])
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSaving(true)
-    setStatus(null)
-    try {
-      await onSave({
-        model,
-        maxCostPerRunUsd: maxCostPerRunUsd ? Number(maxCostPerRunUsd) : null,
-      })
-      setStatus("Model saved")
-    } catch (error) {
-      setStatus(getSaveError(error))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-      <h2 className="text-sm font-medium">Model & Limits</h2>
-      <div className="rounded-xl border border-border bg-card/70 p-3">
-        <Field label="Model">
-          <Input value={model} onChange={(event) => setModel(event.target.value)} />
-        </Field>
-        <p className="text-muted-foreground mt-2 text-xs">
-          Auto-updates to the latest available model for most users.
-        </p>
-      </div>
-      <SettingRow
-        title="Extended thinking"
-        description="Adaptive reasoning that auto-adjusts depth. Effort controls quality vs speed."
-        control={<TogglePill checked />}
-      />
-      <SettingRow
-        title="Effort level"
-        description="Reasoning effort for complex requests."
-        control={<NativeSelectLike>Max - Maximum capacity</NativeSelectLike>}
-      />
-      <SettingRow
-        title="Budget limit per query"
-        description="Cap the maximum spend per agent query."
-        control={
-          <Input
-            aria-label="Max cost per run USD"
-            type="number"
-            min="0"
-            step="0.01"
-            value={maxCostPerRunUsd}
-            onChange={(event) => setMaxCostPerRunUsd(event.target.value)}
-            placeholder="No limit"
-            className="h-8 w-28"
-          />
-        }
-      />
-      <SettingRow
-        title="Subagent model"
-        description="Model used for dispatched subagents. Default is Sonnet."
-        control={<NativeSelectLike>Default (Sonnet)</NativeSelectLike>}
-      />
-      <div className="flex items-center gap-3 pt-1">
-        <Button type="submit" size="sm" disabled={saving}>
-          Save model
-        </Button>
-        <StatusText message={status} />
-      </div>
-    </form>
-  )
-}
-
-const INVOCATION_OPTIONS = [
-  {
-    title: "Live mode",
-    description: "Always-on agent. Context stays in one continuous thread.",
-    action: "Set up",
-    icon: ZapIcon,
-  },
-  {
-    title: "Thread",
-    description: "Interact with this agent in threads",
-    enabled: true,
-    icon: ChatIcon,
-  },
-  {
-    title: "Slack",
-    description: "Use @Agentis in Slack to interact",
-    action: "Connect",
-    icon: SlackIcon,
-  },
-  {
-    title: "Telegram",
-    description: "Respond to messages via Telegram bot",
-    action: "Connect",
-    icon: TelegramIcon,
-  },
-  {
-    title: "Scheduled",
-    description: "Interact with this agent on a schedule",
-    action: "Create schedule",
-    icon: Calendar03Icon,
-  },
-  {
-    title: "Webhook",
-    description: "Trigger this agent via HTTP webhook",
-    action: "Create webhook",
-    icon: WebhookIcon,
-  },
-  {
-    title: "Email",
-    description: "Interact with this agent via email",
-    action: "Create email",
-    icon: Mail01Icon,
-  },
-] as const
-
-function AgentInvocationsTab() {
-  return (
-    <div className="flex flex-col gap-2">
-      {/* TODO: wire invocation rows to real invocation channels once the API exposes channel settings. */}
-      {INVOCATION_OPTIONS.map((option) => (
-        <div
-          key={option.title}
-          className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-3"
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={option.icon} className="size-4" strokeWidth={2} />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-medium">{option.title}</span>
-              <span className="text-muted-foreground block text-xs">{option.description}</span>
-            </span>
-          </div>
-          {"enabled" in option ? (
-            <TogglePill checked />
-          ) : (
-            <Button type="button" variant="outline" size="sm" disabled>
-              <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
-              {option.action}
-            </Button>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const KNOWLEDGE_ACCESS_OPTIONS = [
-  {
-    title: "Personal",
-    description: "Sees every memory and skill you've saved. Learns from conversations and keeps what's worth keeping.",
-    note: "Best for agents you use yourself.",
-    icon: BookOpen01Icon,
-    active: true,
-  },
-  {
-    title: "Curated",
-    description: "Sees only the memories and skills you link to it. Does not learn from conversations.",
-    note: "Best for agents you share with others.",
-    icon: CheckmarkCircle02Icon,
-    active: false,
-  },
-  {
-    title: "Team learning",
-    description: "Sees only linked knowledge. Learns from every conversation and grows over time.",
-    note: "Best for knowledge that grows with use.",
-    icon: Brain01Icon,
-    active: false,
-  },
-  {
-    title: "Custom",
-    description: "Tune memory access, edit permissions, and learning behavior on your own.",
-    note: null,
-    icon: ComputerTerminal01Icon,
-    active: false,
-  },
-] as const
-
-const KNOWLEDGE_PERMISSION_ROWS = [
-  ["Memory access", "All memories"],
-  ["Editing memories and skills", "Allowed"],
-  ["Self-improvement", "on"],
-  ["Memory suggestions", "on"],
-  ["Memory auto-save", "on"],
-  ["Skill suggestions", "on"],
-  ["Skill auto-save", "on"],
-  ["Prompt suggestions", "on"],
-  ["Prompt auto-save", "on"],
-  ["Agent configs auto-save", "on"],
-] as const
-
-function AgentSkillsTab() {
-  return (
-    <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="skills-heading">
-      <h2 id="skills-heading" className="text-sm font-medium">
-        Skills
-      </h2>
-      <p className="text-muted-foreground mt-1 text-sm">
-        Reusable instructions this agent can apply while working.
-      </p>
-      {/* TODO: replace this empty state with API-backed agent skills once skill attachments are exposed. */}
-      <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
-        <p className="text-muted-foreground text-sm">
-          No skills attached yet. Add skills to teach this agent repeatable workflows.
-        </p>
-        <Button type="button" variant="outline" size="sm" disabled>
-          <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
-          Add skills
-        </Button>
-      </div>
-    </section>
-  )
-}
-
-function AgentKnowledgeTab() {
-  return (
-    <div className="flex flex-col gap-6">
-      <section className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-4" aria-labelledby="knowledge-discovery-heading">
-        <div className="min-w-0">
-          <h2 id="knowledge-discovery-heading" className="text-sm font-medium">
-            Knowledge discovery
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Allow the agent to search and apply existing memories and skills automatically.
-          </p>
-        </div>
-        <TogglePill checked />
-      </section>
-
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="knowledge-access-heading">
-        <h2 id="knowledge-access-heading" className="text-sm font-medium">
-          Knowledge access
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          How should this agent use and learn from your memories and skills?
-        </p>
-        {/* TODO: wire trust profiles and learning permissions to server-backed agent knowledge settings. */}
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {KNOWLEDGE_ACCESS_OPTIONS.map((option) => (
-            <article
-              key={option.title}
-              className={`rounded-xl border p-4 ${
-                option.active ? "border-foreground bg-background" : "border-border bg-background/40"
-              }`}
-            >
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <HugeiconsIcon icon={option.icon} className="size-4 text-muted-foreground" strokeWidth={2} />
-                {option.title}
-              </div>
-              <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-                {option.description}
-              </p>
-              {option.note ? (
-                <p className="text-muted-foreground mt-3 text-xs italic">{option.note}</p>
-              ) : null}
-            </article>
-          ))}
-        </div>
-
-        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-background/50">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm text-muted-foreground">
-            <span>See what Personal learns</span>
-            <span aria-hidden>⌃</span>
-          </div>
-          <dl className="divide-y divide-border/60 px-4 py-2">
-            {KNOWLEDGE_PERMISSION_ROWS.map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between gap-4 py-2 text-sm">
-                <dt className="flex min-w-0 items-center gap-2 text-foreground">
-                  <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-muted-foreground" strokeWidth={2} />
-                  {label}
-                </dt>
-                <dd className={value === "on" ? "text-emerald-400" : "text-foreground"}>{value}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="px-4 pb-3 text-xs text-foreground">Switch to Custom to edit individually →</p>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="memories-heading">
-        <h2 id="memories-heading" className="text-sm font-medium">
-          Memories
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Information the agent can reference while working on a task.
-        </p>
-        {/* TODO: replace this empty state with API-backed agent memory references. */}
-        <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
-          <p className="text-muted-foreground text-sm">
-            No memories yet. Add one to give this agent persistent context.
-          </p>
-          <Button type="button" variant="outline" size="sm" disabled>
-            <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
-            Add memories
-          </Button>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border bg-card/70 p-4" aria-labelledby="context-files-heading">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 id="context-files-heading" className="text-sm font-medium">
-              Context files
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Documents and reference files attached to the agent for use during conversations.
-            </p>
-          </div>
-          <Button type="button" size="icon" variant="outline" disabled aria-label="Add context file">
-            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
-          </Button>
-        </div>
-        {/* TODO: replace this sample file once agent-scoped library attachments are exposed. */}
-        <div className="mt-5 flex items-center gap-2 text-sm font-medium">
-          Added <Badge variant="secondary">1 active</Badge>
-        </div>
-        <article className="mt-4 w-full max-w-56 rounded-xl border border-border bg-background/50 p-4">
-          <HugeiconsIcon icon={Image02Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
-          <p className="mt-8 truncate text-sm font-medium">Screenshot 2026-05-20 at ...</p>
-          <p className="text-muted-foreground text-xs">image/png</p>
-        </article>
-      </section>
-    </div>
-  )
-}
-
-const TOOL_GROUPS = [
-  {
-    label: "Execution",
-    items: [
-      ["Script", "Run Python/JS code in an isolated container.", ComputerTerminal01Icon],
-      ["Full VM", "Persistent virtual machine. Install packages, save files, and run jobs.", ServerStack01Icon],
-    ],
-  },
-  {
-    label: "Research",
-    items: [
-      ["Exa", "Enable Exa.ai semantic search and related tools.", AiSearchIcon],
-      ["Search", "Search the web for information using SDK web search.", Search01Icon],
-      ["Browser", "Control a real browser with AI-powered automation.", BrowserIcon],
-      ["Find Similar", "Find pages semantically similar to a given URL.", Link03Icon],
-      ["Exa Answer", "Get direct answers to questions with source citations.", ChatIcon],
-      ["Exa Research", "Deep multi-source research with structured output.", Database01Icon],
-    ],
-  },
-  {
-    label: "Data",
-    items: [
-      ["Tables", "Create, update, and query structured data tables.", TableIcon],
-      ["Documents", "Create and update persistent documents.", File02Icon],
-    ],
-  },
-  {
-    label: "Interactive",
-    items: [
-      ["Webpages & Slides", "Generate styled webpages and slide presentations.", Globe02Icon],
-      ["Slides", "Create slide presentations for delivery.", Presentation01Icon],
-    ],
-  },
-  {
-    label: "Media",
-    items: [
-      ["Images", "Generate and edit images.", Image02Icon],
-      ["Video", "Generate short video clips with native audio.", Video01Icon],
-      ["Audio", "Generate speech or multi-speaker dialogue.", Mic01Icon],
-      ["Maps", "Geocoding, places search, directions, and distance calculations.", MapsIcon],
-    ],
-  },
-] as const
-
-function ToolCard({
-  title,
-  description,
-  icon,
-  checked = true,
-}: {
-  title: string
-  description: string
-  icon: (typeof TOOL_GROUPS)[number]["items"][number][2]
-  checked?: boolean
-}) {
-  return (
-    <div className="flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <HugeiconsIcon icon={icon} className="size-4" strokeWidth={2} />
-      </span>
-      <span className="min-w-0">
-        <span className="flex items-center gap-1.5 text-sm font-medium">
-          {title}
-          {checked ? <span aria-hidden>✓</span> : null}
-        </span>
-        <span className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
-          {description}
-        </span>
-      </span>
-    </div>
-  )
-}
-
-function AgentToolsTab({
-  detail,
-  onSave,
-}: {
-  detail: AgentDetailResponse
-  onSave: (payload: UpdateAgentRequest) => Promise<void>
-}) {
-  const { toolkits } = useIntegrations()
-  const connectedToolkits = toolkits.filter(
-    (toolkit) => toolkit.status === "connected"
-  )
-  const grantedBySlug = new Map(
-    detail.toolGrants.map((grant) => [grant.toolkitSlug, grant])
-  )
-  const toolOptions = connectedToolkits.reduce<IntegrationToolkit[]>((options, toolkit) => {
-    if (!options.some((option) => option.slug === toolkit.slug)) {
-      options.push(toolkit)
-    }
-    return options
-  }, [])
-
-  for (const grant of detail.toolGrants) {
-    if (!toolOptions.some((toolkit) => toolkit.slug === grant.toolkitSlug)) {
-      toolOptions.push({
-        slug: grant.toolkitSlug,
-        name: grant.toolkitSlug,
-        description: "Already granted to this agent.",
-        category: "connected",
-        featured: false,
-        status: "connected",
-        connectedAccountCount: grant.connectionId ? 1 : 0,
-        availableTools: [],
-      })
-    }
-  }
-
-  const [selectedToolkits, setSelectedToolkits] = useState(
-    new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
-  )
-  const [status, setStatus] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    setSelectedToolkits(new Set(detail.toolGrants.map((grant) => grant.toolkitSlug)))
-  }, [detail])
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSaving(true)
-    setStatus(null)
-    try {
-      await onSave({
-        toolGrants: toolOptions
-          .filter((toolkit) => selectedToolkits.has(toolkit.slug))
-          .map((toolkit) => {
-            const grant = grantedBySlug.get(toolkit.slug)
-            return grant?.connectionId
-              ? { toolkitSlug: toolkit.slug, connectionId: grant.connectionId }
-              : { toolkitSlug: toolkit.slug }
-          }),
-      })
-      setStatus("Tools saved")
-    } catch (error) {
-      setStatus(getSaveError(error))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-      <section className="flex flex-col gap-3" aria-labelledby="integrations-heading">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <h2 id="integrations-heading" className="text-sm font-medium">
-              Integrations
-            </h2>
-            <Badge variant="secondary">{detail.toolGrants.length} active</Badge>
-          </div>
-          <Button type="button" size="icon" variant="outline" disabled aria-label="Add integration">
-            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
-          </Button>
-        </div>
-        {toolOptions.length === 0 ? (
-          <p className="text-muted-foreground rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm">
-            No integrations added yet, connect tools like Airtable or Slack to extend this agent's capabilities.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {toolOptions.map((toolkit) => (
-              <label
-                key={toolkit.slug}
-                className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-card/70 p-3 text-sm hover:bg-muted/40"
-              >
-                <input
-                  type="checkbox"
-                  aria-label={
-                    toolkit.name === toolkit.slug
-                      ? toolkit.slug
-                      : `${toolkit.name} (${toolkit.slug})`
-                  }
-                  checked={selectedToolkits.has(toolkit.slug)}
-                  onChange={(event) => {
-                    const next = new Set(selectedToolkits)
-                    if (event.target.checked) {
-                      next.add(toolkit.slug)
-                    } else {
-                      next.delete(toolkit.slug)
-                    }
-                    setSelectedToolkits(next)
-                  }}
-                />
-                <span className="flex min-w-0 flex-col">
-                  <span className="font-medium">{toolkit.name}</span>
-                  <span className="text-muted-foreground text-xs">{toolkit.description}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-4" aria-labelledby="tools-heading">
-        <div className="flex items-center gap-2">
-          <h2 id="tools-heading" className="text-sm font-medium">
-            Tools
-          </h2>
-          <Badge variant="secondary">19 active</Badge>
-        </div>
-        {/* TODO: replace this static tool catalog with the server-backed native tool registry. */}
-        {TOOL_GROUPS.map((group) => (
-          <div key={group.label} className="flex flex-col gap-2">
-            <h3 className="text-muted-foreground text-xs font-medium">{group.label}</h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {group.items.map(([title, description, icon]) => (
-                <ToolCard key={title} title={title} description={description} icon={icon} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </section>
-
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={saving}>
-          Save tools
-        </Button>
-        <StatusText message={status} />
-      </div>
-    </form>
-  )
-}
+type ApiAgentState =
+  | { agentId: null; status: "idle" }
+  | { agentId: string; status: "loading" }
+  | { agentId: string; status: "ready"; detail: AgentDetailResponse }
+  | { agentId: string; status: "not-found" }
+  | { agentId: string; status: "failed" }
 
 export function AgentDetailPage() {
   const { agentId } = useParams<{ agentId: string }>()
   const fixtureAgent = agentId ? getFixtureAgent(agentId) : undefined
   const shouldLoadApiAgent =
     !!agentId && !fixtureAgent && agentId !== "command-center"
-  const [apiAgentDetail, setApiAgentDetail] = useState<AgentDetailResponse | null>(null)
-  const [apiAgent, setApiAgent] = useState<Agent | null>(null)
-  const [loadingApiAgent, setLoadingApiAgent] = useState(shouldLoadApiAgent)
-  const [apiAgentNotFound, setApiAgentNotFound] = useState(false)
-  const [apiAgentLoadFailed, setApiAgentLoadFailed] = useState(false)
+  const [apiAgentState, setApiAgentState] = useState<ApiAgentState>(
+    shouldLoadApiAgent && agentId
+      ? { agentId, status: "loading" }
+      : { agentId: null, status: "idle" }
+  )
   const [activeTab, setActiveTab] = useState("overview")
   const workspace = getWorkspace()
 
-  const loadApiAgent = useCallback(async () => {
-    if (!shouldLoadApiAgent) {
-      setApiAgentDetail(null)
-      setApiAgent(null)
-      setApiAgentNotFound(false)
-      setApiAgentLoadFailed(false)
-      setLoadingApiAgent(false)
-      return
-    }
+  const loadApiAgent = useCallback(
+    async (showLoading = true) => {
+      if (!shouldLoadApiAgent || !agentId) return
 
-    setApiAgentDetail(null)
-    setApiAgent(null)
-    setApiAgentNotFound(false)
-    setApiAgentLoadFailed(false)
-    setLoadingApiAgent(true)
-
-    try {
-      const detail = await getApiAgent(agentId)
-      setApiAgentDetail(detail)
-      setApiAgent(mapApiAgentDetailToAgent(detail))
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
-        setApiAgentNotFound(true)
-      } else {
-        setApiAgentLoadFailed(true)
+      if (showLoading) {
+        setApiAgentState({ agentId, status: "loading" })
       }
-    } finally {
-      setLoadingApiAgent(false)
-    }
-  }, [agentId, shouldLoadApiAgent])
+
+      try {
+        const detail = await getApiAgent(agentId)
+        setApiAgentState({ agentId, status: "ready", detail })
+      } catch (error) {
+        setApiAgentState(
+          error instanceof ApiError && error.status === 404
+            ? { agentId, status: "not-found" }
+            : { agentId, status: "failed" }
+        )
+      }
+    },
+    [agentId, shouldLoadApiAgent]
+  )
 
   useEffect(() => {
-    void loadApiAgent()
-  }, [loadApiAgent])
+    if (!shouldLoadApiAgent) return
+    queueMicrotask(() => void loadApiAgent(false))
+  }, [loadApiAgent, shouldLoadApiAgent])
 
   const saveApiAgent = useCallback(
     async (payload: UpdateAgentRequest) => {
       if (!agentId) return
       const detail = await updateApiAgent(agentId, payload)
-      setApiAgentDetail(detail)
-      setApiAgent(mapApiAgentDetailToAgent(detail))
+      setApiAgentState({ agentId, status: "ready", detail })
     },
     [agentId]
   )
 
+  const routeApiAgentState: ApiAgentState =
+    shouldLoadApiAgent && agentId
+      ? apiAgentState.agentId === agentId
+        ? apiAgentState
+        : { agentId, status: "loading" }
+      : { agentId: null, status: "idle" }
+  const apiAgentDetail =
+    routeApiAgentState.status === "ready" ? routeApiAgentState.detail : null
+  const apiAgent = apiAgentDetail ? mapApiAgentDetailToAgent(apiAgentDetail) : null
   const agent = fixtureAgent ?? apiAgent
 
-  if (loadingApiAgent) {
+  if (routeApiAgentState.status === "loading") {
     return (
       <PageLayout variant="narrow">
         <PageHeader
@@ -994,7 +139,7 @@ export function AgentDetailPage() {
     )
   }
 
-  if (apiAgentLoadFailed) {
+  if (routeApiAgentState.status === "failed") {
     return (
       <PageLayout variant="narrow">
         <PageHeader
@@ -1024,7 +169,7 @@ export function AgentDetailPage() {
     )
   }
 
-  if (!agent || agent.id === "command-center" || apiAgentNotFound) {
+  if (!agent || agent.id === "command-center" || routeApiAgentState.status === "not-found") {
     return (
       <PageLayout variant="narrow">
         <PageHeader

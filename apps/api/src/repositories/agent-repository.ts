@@ -36,6 +36,29 @@ type AgentUpdateInput = {
   toolGrants?: AgentToolGrantCreateInput[]
 }
 
+function normalizeGrants(
+  grants: AgentToolGrantCreateInput[]
+): AgentToolGrantCreateInput[] {
+  return [...grants]
+    .map((grant) => ({
+      toolkitSlug: grant.toolkitSlug,
+      connectionId: grant.connectionId,
+    }))
+    .sort((a, b) => a.toolkitSlug.localeCompare(b.toolkitSlug))
+}
+
+function grantsMatch(
+  currentGrants: AgentToolGrantCreateInput[],
+  nextGrants: AgentToolGrantCreateInput[]
+): boolean {
+  if (currentGrants.length !== nextGrants.length) return false
+  return currentGrants.every(
+    (grant, index) =>
+      grant.toolkitSlug === nextGrants[index]?.toolkitSlug &&
+      grant.connectionId === nextGrants[index]?.connectionId
+  )
+}
+
 function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
   return {
     id: row.id,
@@ -170,49 +193,57 @@ export class AgentRepository {
     if (!existing) return null
 
     const currentVersion = this.getCurrentVersion(agentId)
+    const nextName = input.name ?? existing.name
+    const nextDescription =
+      "description" in input ? input.description ?? null : existing.description
     const nextSystemPrompt = input.systemPrompt ?? existing.systemPrompt
     const nextModel = input.model ?? existing.model
     const nextMaxCostPerRunUsd =
       "maxCostPerRunUsd" in input
         ? input.maxCostPerRunUsd ?? null
         : existing.maxCostPerRunUsd
-    const currentGrants = this.db
-      .select()
-      .from(toolAccessGrants)
-      .where(
-        and(
-          eq(toolAccessGrants.scopeType, "agent"),
-          eq(toolAccessGrants.scopeId, agentId)
-        )
-      )
-      .orderBy(asc(toolAccessGrants.toolkitSlug), asc(toolAccessGrants.id))
-      .all()
     const nextGrants = input.toolGrants
-      ? [...input.toolGrants].sort((a, b) =>
-          a.toolkitSlug.localeCompare(b.toolkitSlug)
-        )
+      ? normalizeGrants(input.toolGrants)
       : undefined
+    const currentGrants = nextGrants
+      ? normalizeGrants(
+          this.db
+            .select()
+            .from(toolAccessGrants)
+            .where(
+              and(
+                eq(toolAccessGrants.scopeType, "agent"),
+                eq(toolAccessGrants.scopeId, agentId)
+              )
+            )
+            .all()
+        )
+      : []
     const grantsChanged = nextGrants
-      ? JSON.stringify(
-          currentGrants.map((grant) => ({
-            toolkitSlug: grant.toolkitSlug,
-            connectionId: grant.connectionId,
-          }))
-        ) !== JSON.stringify(nextGrants)
+      ? !grantsMatch(currentGrants, nextGrants)
       : false
+    const identityChanged =
+      nextName !== existing.name || nextDescription !== existing.description
     const configurationChanged =
       nextSystemPrompt !== existing.systemPrompt ||
       nextModel !== existing.model ||
-      nextMaxCostPerRunUsd !== existing.maxCostPerRunUsd ||
-      grantsChanged
+      nextMaxCostPerRunUsd !== existing.maxCostPerRunUsd
+
+    if (!identityChanged && !configurationChanged && !grantsChanged) {
+      return mapAgent(
+        existing,
+        currentVersion,
+        nextGrants ? currentGrants.length : this.countToolGrants(agentId)
+      )
+    }
+
     const now = nowIso()
 
     this.db.transaction((tx) => {
       tx.update(agents)
         .set({
-          name: input.name ?? existing.name,
-          description:
-            "description" in input ? input.description ?? null : existing.description,
+          name: nextName,
+          description: nextDescription,
           systemPrompt: nextSystemPrompt,
           model: nextModel,
           maxCostPerRunUsd: nextMaxCostPerRunUsd,
@@ -221,7 +252,7 @@ export class AgentRepository {
         .where(eq(agents.id, agentId))
         .run()
 
-      if (nextGrants) {
+      if (nextGrants && grantsChanged) {
         tx.delete(toolAccessGrants)
           .where(
             and(

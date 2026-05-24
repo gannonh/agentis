@@ -94,7 +94,7 @@ describe("agent repository", () => {
     expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(1)
   })
 
-  it("creates a configuration version for prompt, model, cost limit, and tool grant edits", () => {
+  it("updates prompt, model, cost limit, and grants in one operation", () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
     const github = ctx.repos.integrationConnections.create({
@@ -171,6 +171,67 @@ describe("agent repository", () => {
         .listByScope("agent", agent.id)
         .map((grant) => grant.toolkitSlug)
     ).toEqual(["github", "slack"])
+  })
+
+  it("preserves existing tool grant rows when grant edits are unchanged", () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+    const before = ctx.repos.toolAccessGrants.listByScope("agent", agent.id)[0]
+
+    ctx.repos.agents.update(agent.id, {
+      toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+    })
+
+    const after = ctx.repos.toolAccessGrants.listByScope("agent", agent.id)[0]
+    expect(after).toMatchObject({ id: before?.id, createdAt: before?.createdAt })
+    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(1)
+  })
+
+  it("does not create configuration versions for tool grant-only edits", () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+
+    ctx.repos.agents.update(agent.id, {
+      toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+    })
+
+    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(1)
+    expect(
+      ctx.repos.toolAccessGrants
+        .listByScope("agent", agent.id)
+        .map((grant) => grant.toolkitSlug)
+    ).toEqual(["slack"])
   })
 
   it("creates agents and tool grants in one repository operation", () => {

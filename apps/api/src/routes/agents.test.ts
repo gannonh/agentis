@@ -294,11 +294,10 @@ describe("agent routes", () => {
       maxCostPerRunUsd: 3,
       toolGrantCount: 1,
     })
-    expect(reloadedBody.agent.currentConfigurationVersion.version).toBe(3)
+    expect(reloadedBody.agent.currentConfigurationVersion.version).toBe(2)
     expect(reloadedBody.configurationVersions.map((version) => version.version)).toEqual([
       1,
       2,
-      3,
     ])
     expect(reloadedBody.toolGrants).toMatchObject([{ toolkitSlug: "slack" }])
   })
