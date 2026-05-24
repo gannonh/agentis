@@ -124,6 +124,10 @@ describe("AgentDetailPage", () => {
       screen.queryByRole("button", { name: "Connect Slack" })
     ).not.toBeInTheDocument()
     expect(screen.getByTestId("personal-access-icon")).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Senior Reviewer" }).parentElement
+        ?.parentElement
+    ).not.toHaveClass("border-x")
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
     expect(screen.getByText("Finished")).toBeInTheDocument()
     expect(

@@ -42,7 +42,7 @@ export function AgentDetailHero({ agent }: AgentDetailHeroProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 border-x border-border px-6 pt-12 pb-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 px-6 pt-12 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-3">
           <h1 className="text-2xl font-medium tracking-tight">{agent.name}</h1>
           <p className="text-muted-foreground max-w-3xl text-base leading-relaxed sm:text-[0.95rem]">
