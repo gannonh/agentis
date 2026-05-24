@@ -5,14 +5,51 @@ import { MemoryRouter, Route, Routes } from "react-router"
 import { AgentDetailPage } from "./agent-detail"
 import { ApiError } from "@/lib/api/client"
 import { getAgent, updateAgent } from "@/lib/api/agents-client"
-import type { AgentDetailResponse } from "@workspace/shared"
+import { useIntegrations } from "@/hooks/use-integrations"
+import type { AgentDetailResponse, IntegrationToolkit } from "@workspace/shared"
 
 vi.mock("@/lib/api/agents-client", () => ({
   getAgent: vi.fn(),
   updateAgent: vi.fn(),
 }))
 
-function apiAgentDetail(overrides: Partial<AgentDetailResponse["agent"]> = {}): AgentDetailResponse {
+vi.mock("@/hooks/use-integrations", () => ({
+  useIntegrations: vi.fn(),
+}))
+
+function connectedToolkit(slug: string, name = slug): IntegrationToolkit {
+  return {
+    slug,
+    name,
+    description: `${name} integration`,
+    category: "developer",
+    featured: true,
+    status: "connected",
+    connectedAccountCount: 1,
+    availableTools: [`${slug.toUpperCase()}_TOOL`],
+  }
+}
+
+function mockIntegrations(toolkits: IntegrationToolkit[] = []) {
+  vi.mocked(useIntegrations).mockReturnValue({
+    toolkits,
+    composioConfigured: true,
+    composioMockEnabled: false,
+    loading: false,
+    error: null,
+    notice: null,
+    setNotice: vi.fn(),
+    refresh: vi.fn(),
+    connect: vi.fn(),
+    refreshStatuses: vi.fn(),
+    resetConnection: vi.fn(),
+  })
+}
+
+function apiAgentDetail(
+  overrides: Partial<AgentDetailResponse["agent"]> = {},
+  toolGrants?: AgentDetailResponse["toolGrants"]
+): AgentDetailResponse {
   const now = new Date().toISOString()
   const agent = {
     id: "agent_created",
@@ -32,14 +69,14 @@ function apiAgentDetail(overrides: Partial<AgentDetailResponse["agent"]> = {}): 
       maxCostPerRunUsd: null,
       createdAt: now,
     },
-    toolGrantCount: 1,
+    toolGrantCount: toolGrants?.length ?? 1,
     ...overrides,
   }
 
   return {
     agent,
     configurationVersions: [agent.currentConfigurationVersion],
-    toolGrants: [
+    toolGrants: toolGrants ?? [
       {
         id: "grant_created",
         scopeType: "agent",
@@ -56,6 +93,8 @@ describe("AgentDetailPage", () => {
   beforeEach(() => {
     vi.mocked(getAgent).mockReset()
     vi.mocked(updateAgent).mockReset()
+    vi.mocked(useIntegrations).mockReset()
+    mockIntegrations()
   })
 
   it("shows senior reviewer aligned with agent detail comp", () => {
@@ -198,7 +237,7 @@ describe("AgentDetailPage", () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
     vi.mocked(updateAgent).mockResolvedValueOnce(
-      apiAgentDetail({ toolGrantCount: 0 })
+      apiAgentDetail({ toolGrantCount: 0 }, [])
     )
 
     render(
@@ -215,6 +254,45 @@ describe("AgentDetailPage", () => {
     await user.click(screen.getByRole("button", { name: "Save tools" }))
 
     expect(updateAgent).toHaveBeenCalledWith("agent_created", { toolGrants: [] })
+  })
+
+  it("adds connected tools to an existing API-backed agent from the Tools tab", async () => {
+    const user = userEvent.setup()
+    mockIntegrations([connectedToolkit("slack", "Slack")])
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail({ toolGrantCount: 0 }, []))
+    vi.mocked(updateAgent).mockResolvedValueOnce(
+      apiAgentDetail(
+        { toolGrantCount: 1 },
+        [
+          {
+            id: "grant_slack",
+            scopeType: "agent",
+            scopeId: "agent_created",
+            toolkitSlug: "slack",
+            connectionId: "conn_slack",
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      )
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+    await user.click(screen.getByRole("checkbox", { name: /Slack/ }))
+    await user.click(screen.getByRole("button", { name: "Save tools" }))
+
+    expect(updateAgent).toHaveBeenCalledWith("agent_created", {
+      toolGrants: [{ toolkitSlug: "slack" }],
+    })
+    expect(await screen.findByText("Tools saved")).toBeInTheDocument()
   })
 
   it("shows a useful empty description for API-backed agents", async () => {

@@ -20,7 +20,11 @@ import { AgentDetailInspector } from "@/components/agent-detail/agent-detail-ins
 import { AgentOverviewTab } from "@/components/agent-detail/agent-overview-tab"
 import { PageLayout } from "@/components/shell/page-layout"
 import { PageHeader } from "@/components/shell/page-header"
-import type { AgentDetailResponse, UpdateAgentRequest } from "@workspace/shared"
+import type {
+  AgentDetailResponse,
+  IntegrationToolkit,
+  UpdateAgentRequest,
+} from "@workspace/shared"
 import { getAgent as getFixtureAgent, getWorkspace } from "@/fixtures"
 import type { Agent } from "@/fixtures/schema"
 import {
@@ -28,6 +32,7 @@ import {
   updateAgent as updateApiAgent,
 } from "@/lib/api/agents-client"
 import { ApiError } from "@/lib/api/client"
+import { useIntegrations } from "@/hooks/use-integrations"
 
 function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
   return {
@@ -202,6 +207,35 @@ function AgentToolsTab({
   detail: AgentDetailResponse
   onSave: (payload: UpdateAgentRequest) => Promise<void>
 }) {
+  const { toolkits } = useIntegrations()
+  const connectedToolkits = toolkits.filter(
+    (toolkit) => toolkit.status === "connected"
+  )
+  const grantedBySlug = new Map(
+    detail.toolGrants.map((grant) => [grant.toolkitSlug, grant])
+  )
+  const toolOptions = connectedToolkits.reduce<IntegrationToolkit[]>((options, toolkit) => {
+    if (!options.some((option) => option.slug === toolkit.slug)) {
+      options.push(toolkit)
+    }
+    return options
+  }, [])
+
+  for (const grant of detail.toolGrants) {
+    if (!toolOptions.some((toolkit) => toolkit.slug === grant.toolkitSlug)) {
+      toolOptions.push({
+        slug: grant.toolkitSlug,
+        name: grant.toolkitSlug,
+        description: "Already granted to this agent.",
+        category: "connected",
+        featured: false,
+        status: "connected",
+        connectedAccountCount: grant.connectionId ? 1 : 0,
+        availableTools: [],
+      })
+    }
+  }
+
   const [selectedToolkits, setSelectedToolkits] = useState(
     new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
   )
@@ -218,12 +252,14 @@ function AgentToolsTab({
     setStatus(null)
     try {
       await onSave({
-        toolGrants: detail.toolGrants
-          .filter((grant) => selectedToolkits.has(grant.toolkitSlug))
-          .map((grant) => ({
-            toolkitSlug: grant.toolkitSlug,
-            connectionId: grant.connectionId,
-          })),
+        toolGrants: toolOptions
+          .filter((toolkit) => selectedToolkits.has(toolkit.slug))
+          .map((toolkit) => {
+            const grant = grantedBySlug.get(toolkit.slug)
+            return grant?.connectionId
+              ? { toolkitSlug: toolkit.slug, connectionId: grant.connectionId }
+              : { toolkitSlug: toolkit.slug }
+          }),
       })
       setStatus("Tools saved")
     } catch (error) {
@@ -236,29 +272,39 @@ function AgentToolsTab({
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-3 sm:grid-cols-2">
-        {detail.toolGrants.map((grant) => (
+        {toolOptions.map((toolkit) => (
           <label
-            key={grant.id}
+            key={toolkit.slug}
             className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm"
           >
             <input
               type="checkbox"
-              checked={selectedToolkits.has(grant.toolkitSlug)}
+              aria-label={
+                toolkit.name === toolkit.slug
+                  ? toolkit.slug
+                  : `${toolkit.name} (${toolkit.slug})`
+              }
+              checked={selectedToolkits.has(toolkit.slug)}
               onChange={(event) => {
                 const next = new Set(selectedToolkits)
                 if (event.target.checked) {
-                  next.add(grant.toolkitSlug)
+                  next.add(toolkit.slug)
                 } else {
-                  next.delete(grant.toolkitSlug)
+                  next.delete(toolkit.slug)
                 }
                 setSelectedToolkits(next)
               }}
             />
-            {grant.toolkitSlug}
+            <span className="flex min-w-0 flex-col">
+              <span className="font-medium">{toolkit.name}</span>
+              <span className="text-muted-foreground text-xs">
+                {toolkit.slug}
+              </span>
+            </span>
           </label>
         ))}
       </div>
-      {detail.toolGrants.length === 0 ? (
+      {toolOptions.length === 0 ? (
         <p className="text-muted-foreground rounded-lg border border-dashed border-border p-4 text-sm">
           No connected tool grants yet.
         </p>
