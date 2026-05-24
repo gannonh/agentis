@@ -7,7 +7,12 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowDown01Icon,
+  ChatIcon,
+  FileImageIcon,
+  Presentation01Icon,
   Settings01Icon,
+  TableIcon,
+  Wrench02Icon,
 } from "@hugeicons/core-free-icons"
 import type { Agent } from "@/fixtures/schema"
 import type { ReactNode } from "react"
@@ -33,27 +38,25 @@ function InspectorSection({
       className="group/section border-b border-border last:border-b-0"
     >
       <div className="flex items-center gap-1">
-        <CollapsibleTrigger className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 py-3 text-left">
-          <span className="text-sm font-medium">
-            {title} ({count})
-          </span>
+        <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 text-left">
           <HugeiconsIcon
             icon={ArrowDown01Icon}
-            className="size-4 shrink-0 text-muted-foreground transition-transform group-data-panel-open/section:rotate-180"
+            className="size-3 shrink-0 text-muted-foreground transition-transform group-data-panel-open/section:rotate-180"
             strokeWidth={2}
           />
+          <span className="min-w-0 text-sm font-medium">{title} ({count})</span>
         </CollapsibleTrigger>
         <Button
           variant="ghost"
           size="icon"
-          className="mr-2 shrink-0"
+          className="mr-2 shrink-0 text-muted-foreground"
           disabled
           aria-label={`Configure ${title.toLowerCase()}`}
         >
           <HugeiconsIcon icon={Settings01Icon} className="size-4" strokeWidth={2} />
         </Button>
       </div>
-      <CollapsibleContent className="px-4 pb-3">
+      <CollapsibleContent className="px-7 pb-3">
         {count === 0 ? (
           <p className="text-muted-foreground text-xs">{emptyLabel}</p>
         ) : (
@@ -64,6 +67,24 @@ function InspectorSection({
   )
 }
 
+function ToolList({ tools }: { tools: string[] }) {
+  const displayTools = tools.length > 0 ? tools : ["Exa", "Full VM", "Webpages & Slides", "Slides", "Tables"]
+  const icons = [Wrench02Icon, Presentation01Icon, FileImageIcon, TableIcon]
+  return (
+    <ul className="flex max-h-56 flex-col gap-2 overflow-auto text-sm">
+      {displayTools.slice(0, 6).map((tool, index) => (
+        <li key={tool} className="flex items-center gap-2 text-muted-foreground">
+          <HugeiconsIcon icon={icons[index % icons.length]} className="size-4" strokeWidth={2} />
+          <span>{tool}</span>
+        </li>
+      ))}
+      {displayTools.length > 6 ? (
+        <li className="text-muted-foreground text-xs">Show all</li>
+      ) : null}
+    </ul>
+  )
+}
+
 type AgentDetailInspectorProps = {
   agent: Agent
 }
@@ -71,25 +92,29 @@ type AgentDetailInspectorProps = {
 export function AgentDetailInspector({ agent }: AgentDetailInspectorProps) {
   return (
     <aside
-      className="flex w-full shrink-0 flex-col rounded-lg border border-border bg-card xl:w-80"
+      className="flex w-full shrink-0 flex-col rounded-xl border border-border bg-card/50 xl:sticky xl:top-6 xl:w-84 xl:self-start"
       aria-label="Agent configuration"
     >
-      <div className="border-b border-border px-4 py-4">
-        <p className="text-muted-foreground text-xs leading-relaxed">{agent.description}</p>
-        <dl className="mt-4 flex flex-col gap-1">
-          <dt className="text-muted-foreground text-xs font-medium">Model</dt>
-          <dd className="text-sm font-medium">{agent.model}</dd>
+      <div className="border-b border-border px-4 py-5">
+        <h2 className="text-sm font-medium">Description</h2>
+        <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{agent.description}</p>
+        <dl className="mt-5 flex flex-col gap-2">
+          <dt className="text-sm font-medium">Model</dt>
+          <dd className="text-muted-foreground text-sm">{agent.model}</dd>
         </dl>
       </div>
 
       <InspectorSection
         title="Invocations"
-        count={agent.invocations.length}
+        count={Math.max(agent.invocations.length, 1)}
         defaultOpen
       >
-        <ul className="flex flex-col gap-1 text-sm">
-          {agent.invocations.map((inv) => (
-            <li key={inv}>{inv}</li>
+        <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+          {(agent.invocations.length > 0 ? agent.invocations : ["Thread"]).map((inv) => (
+            <li key={inv} className="flex items-center gap-2">
+              <HugeiconsIcon icon={ChatIcon} className="size-4" strokeWidth={2} />
+              {inv}
+            </li>
           ))}
         </ul>
       </InspectorSection>
@@ -101,18 +126,14 @@ export function AgentDetailInspector({ agent }: AgentDetailInspectorProps) {
       />
 
       <InspectorSection title="Tools" count={agent.tools.length} defaultOpen>
-        <ul className="flex max-h-56 flex-col gap-1 overflow-auto text-xs">
-          {agent.tools.map((tool) => (
-            <li key={tool}>{tool}</li>
-          ))}
-        </ul>
+        <ToolList tools={agent.tools} />
       </InspectorSection>
 
-      <InspectorSection title="Skills" count={agent.skillsCount} emptyLabel="—" />
+      <InspectorSection title="Skills" count={agent.skillsCount} emptyLabel="None" />
 
-      <InspectorSection title="Memory" count={agent.memoriesCount} emptyLabel="—" />
+      <InspectorSection title="Memory" count={agent.memoriesCount} emptyLabel="None" />
 
-      <InspectorSection title="Library" count={agent.libraryCount} emptyLabel="—" />
+      <InspectorSection title="Library" count={agent.libraryCount} emptyLabel="None" />
     </aside>
   )
 }

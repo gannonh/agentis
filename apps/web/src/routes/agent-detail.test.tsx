@@ -213,6 +213,47 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
   })
 
+  it("shows comp-aligned editable agent tabs for API-backed agents", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail({ toolGrantCount: 0 }, []))
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    expect(screen.getByText("Description")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    expect(screen.getByRole("searchbox", { name: "Search threads" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Personal" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Shared" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Model" }))
+    expect(screen.getByText("Model & Limits")).toBeInTheDocument()
+    expect(screen.getByText("Extended thinking")).toBeInTheDocument()
+    expect(screen.getByText("Budget limit per query")).toBeInTheDocument()
+    expect(screen.getByText("Subagent model")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Invocations" }))
+    for (const label of ["Live mode", "Thread", "Slack", "Telegram", "Scheduled", "Webhook", "Email"]) {
+      expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(1)
+    }
+
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+    expect(screen.getByText("Integrations")).toBeInTheDocument()
+    expect(screen.getByText("0 active")).toBeInTheDocument()
+    expect(screen.getByText(/No integrations added yet/)).toBeInTheDocument()
+    expect(screen.getByText("Execution")).toBeInTheDocument()
+    expect(screen.getByText("Research")).toBeInTheDocument()
+    expect(screen.getByText("Full VM")).toBeInTheDocument()
+  })
+
   it("shows API save errors on editable model fields", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
