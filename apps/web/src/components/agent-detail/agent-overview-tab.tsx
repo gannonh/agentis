@@ -1,16 +1,20 @@
-import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@workspace/ui/components/collapsible"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowDown01Icon } from "@hugeicons/core-free-icons"
+import {
+  ArrowDown01Icon,
+  ChartLineData01Icon,
+  DollarCircleIcon,
+  Folder01Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons"
 import { formatRelativeTime } from "@/fixtures"
 import type { Thread } from "@/fixtures/schema"
-
-const SUGGESTED_INTEGRATIONS = ["Slack", "Email", "Webhook", "Telegram"] as const
 
 type AgentOverviewTabProps = {
   recentThreads: Thread[]
@@ -34,74 +38,165 @@ function threadStatusBadge(status: Thread["status"]) {
   )
 }
 
+function UsageChart() {
+  const points = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0]
+  const max = Math.max(...points)
+  const width = 600
+  const height = 132
+  const step = width / (points.length - 1)
+  const path = points
+    .map((value, index) => {
+      const x = index * step
+      const y = height - (max ? value / max : 0) * 92 - 20
+      return `${index === 0 ? "M" : "L"}${x},${y}`
+    })
+    .join(" ")
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-36 w-full overflow-visible" role="img" aria-label="Usage cost trend">
+      {[20, 48, 76, 104].map((y) => (
+        <line key={y} x1="0" x2={width} y1={y} y2={y} className="stroke-border" strokeWidth="1" />
+      ))}
+      <path d={path} fill="none" className="stroke-status-success" strokeWidth="2" />
+      {points.map((value, index) => {
+        const x = index * step
+        const y = height - (max ? value / max : 0) * 92 - 20
+        return <circle key={index} cx={x} cy={y} r="2.5" className="fill-status-success" />
+      })}
+    </svg>
+  )
+}
+
 export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
+  const primaryThread = recentThreads[0]
+
   return (
     <div className="flex flex-col gap-6">
       <section
-        className="rounded-lg border border-border bg-card"
+        className="rounded-xl border border-border bg-card/70 p-4"
         aria-labelledby="access-heading"
       >
-        <div className="border-b border-border px-4 py-3">
-          <h2 id="access-heading" className="text-base font-medium">
-            Access
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Only you can run this agent. It has full knowledge access.
-          </p>
+        <h2 id="access-heading" className="flex items-center gap-2 text-sm font-medium">
+          <HugeiconsIcon icon={UserIcon} className="size-4 text-muted-foreground" strokeWidth={2} />
+          Access
+        </h2>
+        <div className="text-muted-foreground mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm">
+          Only you can run this agent. It has full knowledge access.
         </div>
-        <div className="flex flex-wrap items-center gap-2 px-4 py-4">
-          <Badge variant="secondary">Personal</Badge>
-          {SUGGESTED_INTEGRATIONS.map((name) => (
-            <Button key={name} variant="outline" size="sm" disabled>
-              Connect {name}
-            </Button>
-          ))}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="gap-1.5">
+            <HugeiconsIcon
+              icon={UserIcon}
+              className="size-2.5"
+              strokeWidth={2}
+              aria-hidden
+              data-testid="personal-access-icon"
+            />
+            Personal
+          </Badge>
         </div>
       </section>
 
-      <section
-        className="rounded-lg border border-border bg-card"
-        aria-labelledby="recent-threads-heading"
-      >
-        <div className="border-b border-border px-4 py-3">
-          <h2 id="recent-threads-heading" className="text-base font-medium">
+      <section aria-labelledby="recent-threads-heading" className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="recent-threads-heading" className="text-sm font-medium">
             Recent threads
           </h2>
+          <Button type="button" variant="ghost" size="sm" disabled>
+            Show all
+          </Button>
         </div>
-        {recentThreads.length === 0 ? (
-          <p className="text-muted-foreground px-4 py-4 text-sm">No threads yet.</p>
+        {primaryThread ? (
+          <article className="rounded-xl border border-border bg-card/70 p-4">
+            <p className="text-muted-foreground flex items-center gap-2 text-xs">
+              <HugeiconsIcon icon={Folder01Icon} className="size-4" strokeWidth={2} />
+              Product Launch Q4
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-lg font-medium">{primaryThread.title}</h3>
+              <div className="flex shrink-0 items-center gap-2">
+                {threadStatusBadge(primaryThread.status)}
+                <span className="text-muted-foreground text-xs">
+                  {formatRelativeTime(primaryThread.updatedAt)}
+                </span>
+              </div>
+            </div>
+            <p className="text-muted-foreground mt-3 truncate text-sm">
+              Set up and executed the user's first prospecting run. Review the work trail, handoff notes, and outputs.
+            </p>
+          </article>
         ) : (
-          <ul className="divide-y divide-border">
-            {recentThreads.map((thread) => (
-              <li key={thread.id}>
-                <div className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
-                  <span className="font-medium">{thread.title}</span>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {threadStatusBadge(thread.status)}
-                    <span className="text-muted-foreground text-xs">
-                      {formatRelativeTime(thread.updatedAt)}
-                    </span>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <p className="text-muted-foreground rounded-xl border border-border bg-card/70 px-4 py-5 text-sm">
+            No threads yet. Start a thread to test this agent with real work.
+          </p>
         )}
       </section>
 
-      <Collapsible className="group/collapsible rounded-lg border border-border bg-card">
-        <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left">
-          <h2 className="text-base font-medium">Observability</h2>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            className="size-4 shrink-0 text-muted-foreground transition-transform group-data-panel-open/collapsible:rotate-180"
-            strokeWidth={2}
-          />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-border px-4 py-4">
-          <p className="text-muted-foreground text-sm">
-            Usage, evaluations, and version history will appear here once the agent runs.
-          </p>
+      <Collapsible defaultOpen className="group/collapsible flex flex-col gap-3">
+        <h2 className="text-sm font-medium">
+          <CollapsibleTrigger className="flex w-full items-center gap-2 text-left">
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              className="size-4 shrink-0 text-muted-foreground transition-transform group-data-panel-open/collapsible:rotate-180"
+              strokeWidth={2}
+            />
+            Observability
+          </CollapsibleTrigger>
+        </h2>
+        <CollapsibleContent className="flex flex-col gap-6">
+          <section className="rounded-xl border border-border bg-card/70 p-5" aria-labelledby="usage-heading">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="usage-heading" className="flex items-center gap-2 text-base font-medium">
+                <HugeiconsIcon icon={DollarCircleIcon} className="size-5 text-status-success" strokeWidth={2} />
+                Usage
+              </h2>
+              <Button type="button" variant="outline" size="sm" disabled>
+                Optimize costs
+              </Button>
+            </div>
+            {/* TODO: replace static usage visualization with run cost timeseries from observability APIs. */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                <span>Total cost per day</span>
+                <span>Total</span>
+              </div>
+              <UsageChart />
+              <dl className="mt-2 flex items-center justify-between border-t border-border pt-4 text-sm">
+                <dt className="text-muted-foreground">Total usage</dt>
+                <dd className="font-medium">$5.95</dd>
+              </dl>
+              <div className="mt-4 rounded-xl bg-muted/40 p-3 text-xs">
+                <div className="flex items-center justify-between font-medium">
+                  <span>Claude</span>
+                  <span>$5.77</span>
+                </div>
+                <div className="mt-2 grid gap-1 text-muted-foreground">
+                  <span>Opus input tokens</span>
+                  <span>Opus output tokens</span>
+                  <span>Sonnet output tokens</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border bg-card/70 p-5" aria-labelledby="evaluations-heading">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="evaluations-heading" className="flex items-center gap-2 text-base font-medium">
+                <HugeiconsIcon icon={ChartLineData01Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
+                Evaluations
+              </h2>
+              <Button type="button" variant="ghost" size="icon" disabled aria-label="Evaluation actions">
+                ⋮
+              </Button>
+            </div>
+            <div className="flex min-h-48 flex-col items-center justify-center text-center">
+              <HugeiconsIcon icon={ChartLineData01Icon} className="size-8 text-muted-foreground" strokeWidth={2} />
+              <p className="mt-4 text-sm font-medium">No evaluations yet</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Evaluate agent responses using the eval system.
+              </p>
+            </div>
+          </section>
         </CollapsibleContent>
       </Collapsible>
     </div>

@@ -1,5 +1,9 @@
 import { z } from "zod"
 
+const nonEmptyString = z.string().min(1)
+const nonNegativeNumber = z.number().nonnegative()
+const nonNegativeInteger = z.number().int().nonnegative()
+
 export const runStatusSchema = z.enum([
   "queued",
   "running",
@@ -207,6 +211,7 @@ export const agentConfigurationVersionSummarySchema = z.object({
   version: z.number().int().positive(),
   systemPrompt: z.string(),
   model: z.string(),
+  maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
   createdAt: z.string(),
 })
 
@@ -216,40 +221,41 @@ export const agentSchema = z.object({
   description: z.string().nullable().optional(),
   systemPrompt: z.string(),
   model: z.string(),
+  maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
 
 export const agentListItemSchema = agentSchema.extend({
   currentConfigurationVersion: agentConfigurationVersionSummarySchema,
-  toolGrantCount: z.number().int().nonnegative(),
+  toolGrantCount: nonNegativeInteger,
 })
 
 export const agentToolGrantInputSchema = z.object({
-  toolkitSlug: z.string().min(1),
+  toolkitSlug: nonEmptyString,
   connectionId: z.string().optional(),
 })
 
 export const createAgentRequestSchema = z.object({
-  name: z.string().min(1),
+  name: nonEmptyString,
   description: z.string().optional(),
-  systemPrompt: z.string().min(1),
+  systemPrompt: nonEmptyString,
   model: z.string().optional(),
   toolGrants: z.array(agentToolGrantInputSchema).optional(),
 })
 
-export const updateAgentRequestSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().nullable().optional(),
-  systemPrompt: z.string().min(1).optional(),
-  model: z.string().optional(),
-  toolGrants: z.array(agentToolGrantInputSchema).optional(),
-})
-
-export const agentToolGrantsResponseSchema = z.object({
-  grants: z.array(toolAccessGrantSchema),
-  availableToolkits: z.array(integrationToolkitSchema),
-})
+export const updateAgentRequestSchema = z
+  .object({
+    name: nonEmptyString.optional(),
+    description: z.string().nullable().optional(),
+    systemPrompt: nonEmptyString.optional(),
+    model: nonEmptyString.optional(),
+    maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
+    toolGrants: z.array(agentToolGrantInputSchema).optional(),
+  })
+  .refine((payload) => Object.keys(payload).length > 0, {
+    message: "At least one agent edit field is required.",
+  })
 
 export const agentDetailResponseSchema = z.object({
   agent: agentListItemSchema,
@@ -258,7 +264,7 @@ export const agentDetailResponseSchema = z.object({
 })
 
 export const createThreadRequestSchema = z.object({
-  prompt: z.string().min(1),
+  prompt: nonEmptyString,
   model: z.string().optional(),
   mode: threadModeSchema.optional(),
   projectId: z.string().optional(),
@@ -271,7 +277,7 @@ export const createThreadResponseSchema = z.object({
 })
 
 export const createFollowUpRequestSchema = z.object({
-  prompt: z.string().min(1),
+  prompt: nonEmptyString,
 })
 
 export const updateThreadRequestSchema = z.object({
@@ -315,24 +321,24 @@ export const projectContextSummarySchema = z.object({
 })
 
 export const createProjectRequestSchema = z.object({
-  name: z.string().min(1),
+  name: nonEmptyString,
   description: z.string().optional(),
   goals: z.string().optional(),
 })
 
 export const updateProjectRequestSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: nonEmptyString.optional(),
   description: z.string().nullable().optional(),
   goals: z.string().nullable().optional(),
 })
 
 export const createProjectMemoryRequestSchema = z.object({
-  content: z.string().min(1),
+  content: nonEmptyString,
   enabled: z.boolean().optional(),
 })
 
 export const updateProjectMemoryRequestSchema = z.object({
-  content: z.string().min(1).optional(),
+  content: nonEmptyString.optional(),
   enabled: z.boolean().optional(),
 })
 
@@ -443,9 +449,6 @@ export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
 export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
-export type AgentToolGrantsResponse = z.infer<
-  typeof agentToolGrantsResponseSchema
->
 export type AgentDetailResponse = z.infer<typeof agentDetailResponseSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>

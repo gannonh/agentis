@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import {
   agentDetailResponseSchema,
   agentListItemSchema,
-  agentToolGrantsResponseSchema,
   artifactSchema,
   artifactTypeSchema,
   connectIntegrationResponseSchema,
@@ -126,25 +125,21 @@ describe("shared schemas", () => {
       agentListItemSchema.parse({ ...listItem, toolGrantCount: 1.5 })
     ).toThrow()
 
-    const grants = agentToolGrantsResponseSchema.parse({
-      grants: [
-        {
-          id: "grant-1",
-          scopeType: "agent",
-          scopeId: "agent-1",
-          toolkitSlug: "github",
-          connectionId: "conn-1",
-          createdAt: now,
-        },
-      ],
-      availableToolkits: [],
-    })
-    expect(grants.grants[0]?.scopeType).toBe("agent")
+    const grants = [
+      {
+        id: "grant-1",
+        scopeType: "agent",
+        scopeId: "agent-1",
+        toolkitSlug: "github",
+        connectionId: "conn-1",
+        createdAt: now,
+      },
+    ]
 
     const detail = agentDetailResponseSchema.parse({
       agent: listItem,
       configurationVersions: [listItem.currentConfigurationVersion],
-      toolGrants: grants.grants,
+      toolGrants: grants,
     })
     expect(detail.agent.id).toBe("agent-1")
   })

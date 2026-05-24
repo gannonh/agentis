@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
 import type { ToolAccessGrant, ToolAccessScopeType } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { toolAccessGrants } from "../db/schema.js"
@@ -57,6 +57,7 @@ export class ToolAccessGrantRepository {
           eq(toolAccessGrants.scopeId, scopeId)
         )
       )
+      .orderBy(asc(toolAccessGrants.toolkitSlug), asc(toolAccessGrants.createdAt), asc(toolAccessGrants.id))
       .all()
       .map(mapGrant)
   }
