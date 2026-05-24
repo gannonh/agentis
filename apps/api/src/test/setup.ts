@@ -11,10 +11,7 @@ import type { AppConfig } from "../config.js"
 export type TestContext = ReturnType<typeof createTestContext>
 
 export function createTestContext() {
-  const databaseUrl = join(
-    tmpdir(),
-    `agentis-test-${randomUUID()}.db`
-  )
+  const databaseUrl = join(tmpdir(), `agentis-test-${randomUUID()}.db`)
   mkdirSync(join(databaseUrl, ".."), { recursive: true })
 
   const { db, close } = createDatabase(databaseUrl)
@@ -48,6 +45,7 @@ export function createTestContext() {
   const repos = createRepositories(db, config)
 
   return {
+    db,
     repos,
     config,
     cleanup() {

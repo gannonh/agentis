@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest"
+import { agentConfigurationVersions } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -39,6 +40,38 @@ describe("agent repository", () => {
     expect(agents[0]?.toolGrantCount).toBe(0)
   })
 
+  it("uses the newest configuration version as the current version", () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+
+    ctx.db
+      .insert(agentConfigurationVersions)
+      .values({
+        id: "agent_version_latest",
+        agentId: agent.id,
+        version: 2,
+        systemPrompt: "Answer with citations and source quality notes.",
+        model: "gpt-4.1-mini",
+        createdAt: "2026-05-23T22:00:00.000Z",
+      })
+      .run()
+
+    expect(
+      ctx.repos.agents.getById(agent.id)?.currentConfigurationVersion
+    ).toMatchObject({
+      version: 2,
+      systemPrompt: "Answer with citations and source quality notes.",
+      model: "gpt-4.1-mini",
+    })
+    expect(
+      ctx.repos.agents.list()[0]?.currentConfigurationVersion.version
+    ).toBe(2)
+  })
+
   it("stores per-agent Composio tool grants", () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
@@ -55,6 +88,12 @@ describe("agent repository", () => {
 
     const grant = ctx.repos.toolAccessGrants.create({
       scopeType: "agent",
+      scopeId: agent.id,
+      toolkitSlug: "github",
+      connectionId: connection.id,
+    })
+    ctx.repos.toolAccessGrants.create({
+      scopeType: "thread",
       scopeId: agent.id,
       toolkitSlug: "github",
       connectionId: connection.id,

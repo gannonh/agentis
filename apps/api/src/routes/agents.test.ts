@@ -22,12 +22,49 @@ describe("agent routes", () => {
     const response = await app.request("/api/agents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "", systemPrompt: "Answer with citations." }),
+      body: JSON.stringify({
+        name: "",
+        systemPrompt: "Answer with citations.",
+      }),
     })
 
     expect(response.status).toBe(400)
     const body = (await response.json()) as { code: string }
     expect(body.code).toBe("invalid_agent")
+  })
+
+  it("rejects duplicate create grants without persisting a partial agent", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const connection = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const app = createApp(
+      ctx.repos,
+      ctx.config,
+      createComposioServices(ctx.repos, ctx.config)
+    )
+
+    const response = await app.request("/api/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+        toolGrants: [
+          { toolkitSlug: "github", connectionId: connection.id },
+          { toolkitSlug: "github", connectionId: connection.id },
+        ],
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as { error: string }
+    expect(body.error).toBe("duplicate_toolkit_grant")
+    expect(ctx.repos.agents.list()).toHaveLength(0)
   })
 
   it("creates and lists agents with initial versions and persisted tool grants", async () => {
@@ -52,9 +89,7 @@ describe("agent routes", () => {
         description: "Finds source-backed answers",
         systemPrompt: "Answer with citations.",
         model: "gpt-4o-mini",
-        toolGrants: [
-          { toolkitSlug: "github", connectionId: connection.id },
-        ],
+        toolGrants: [{ toolkitSlug: "github", connectionId: connection.id }],
       }),
     })
 

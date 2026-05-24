@@ -2,7 +2,7 @@ import type {
   AgentConfigurationVersionSummary,
   AgentListItem,
 } from "@workspace/shared"
-import { asc, count, eq } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import {
   agentConfigurationVersions,
@@ -82,18 +82,32 @@ export class AgentRepository {
   getById(id: string): AgentListItem | null {
     const row = this.db.select().from(agents).where(eq(agents.id, id)).get()
     if (!row) return null
-    return mapAgent(row, this.getCurrentVersion(row.id), this.countToolGrants(row.id))
+    return mapAgent(
+      row,
+      this.getCurrentVersion(row.id),
+      this.countToolGrants(row.id)
+    )
   }
 
   list(): AgentListItem[] {
-    return this.db
+    const rows = this.db
       .select()
       .from(agents)
       .orderBy(asc(agents.name), asc(agents.createdAt), asc(agents.id))
       .all()
-      .map((row) =>
-        mapAgent(row, this.getCurrentVersion(row.id), this.countToolGrants(row.id))
-      )
+    if (rows.length === 0) return []
+
+    const agentIds = rows.map((row) => row.id)
+    const currentVersions = this.getCurrentVersions(agentIds)
+    const toolGrantCounts = this.countToolGrantsByAgent(agentIds)
+
+    return rows.map((row) => {
+      const currentVersion = currentVersions.get(row.id)
+      if (!currentVersion) {
+        throw new Error(`Agent ${row.id} has no configuration version`)
+      }
+      return mapAgent(row, currentVersion, toolGrantCounts.get(row.id) ?? 0)
+    })
   }
 
   listConfigurationVersions(
@@ -113,7 +127,7 @@ export class AgentRepository {
       .select()
       .from(agentConfigurationVersions)
       .where(eq(agentConfigurationVersions.agentId, agentId))
-      .orderBy(asc(agentConfigurationVersions.version))
+      .orderBy(desc(agentConfigurationVersions.version))
       .get()
 
     if (!version) {
@@ -123,13 +137,56 @@ export class AgentRepository {
     return mapVersion(version)
   }
 
+  private getCurrentVersions(
+    agentIds: string[]
+  ): Map<string, AgentConfigurationVersionSummary> {
+    const rows = this.db
+      .select()
+      .from(agentConfigurationVersions)
+      .where(inArray(agentConfigurationVersions.agentId, agentIds))
+      .orderBy(
+        asc(agentConfigurationVersions.agentId),
+        desc(agentConfigurationVersions.version)
+      )
+      .all()
+
+    const versions = new Map<string, AgentConfigurationVersionSummary>()
+    for (const row of rows) {
+      if (!versions.has(row.agentId)) {
+        versions.set(row.agentId, mapVersion(row))
+      }
+    }
+    return versions
+  }
+
   private countToolGrants(agentId: string): number {
     const result = this.db
       .select({ value: count() })
       .from(toolAccessGrants)
-      .where(eq(toolAccessGrants.scopeId, agentId))
+      .where(
+        and(
+          eq(toolAccessGrants.scopeType, "agent"),
+          eq(toolAccessGrants.scopeId, agentId)
+        )
+      )
       .get()
 
     return result?.value ?? 0
+  }
+
+  private countToolGrantsByAgent(agentIds: string[]): Map<string, number> {
+    const rows = this.db
+      .select({ scopeId: toolAccessGrants.scopeId, value: count() })
+      .from(toolAccessGrants)
+      .where(
+        and(
+          eq(toolAccessGrants.scopeType, "agent"),
+          inArray(toolAccessGrants.scopeId, agentIds)
+        )
+      )
+      .groupBy(toolAccessGrants.scopeId)
+      .all()
+
+    return new Map(rows.map((row) => [row.scopeId, row.value]))
   }
 }

@@ -1,5 +1,4 @@
 import { DEFAULT_OPENAI_MODEL } from "@workspace/shared"
-import { toComposioToolkitSlug } from "./composio/toolkit-slugs.js"
 import { FEATURED_TOOLKIT_SLUGS } from "./repositories/integration-seeds.js"
 
 /** Composio toolkit versions for manual tool execution when env is unset. */
@@ -7,7 +6,7 @@ export const DEFAULT_COMPOSIO_TOOLKIT_VERSIONS: Record<string, string> = {
   github: "20260501_01",
   slack: "20260519_01",
   gmail: "20260515_00",
-  googledrive: "20260519_01",
+  "google-drive": "20260519_01",
   airtable: "20260506_00",
 }
 
@@ -34,7 +33,11 @@ function parseToolkitVersions(raw: string | undefined): Record<string, string> {
   if (!raw?.trim()) return {}
   try {
     const parsed = JSON.parse(raw) as unknown
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return {}
     }
     return Object.fromEntries(
@@ -51,12 +54,14 @@ function resolveComposioToolkitVersions(
   env: NodeJS.ProcessEnv
 ): Record<string, string> {
   const fromEnv = parseToolkitVersions(env.COMPOSIO_TOOLKIT_VERSIONS)
-  const merged: Record<string, string> = { ...DEFAULT_COMPOSIO_TOOLKIT_VERSIONS }
+  const merged: Record<string, string> = {
+    ...DEFAULT_COMPOSIO_TOOLKIT_VERSIONS,
+  }
   for (const slug of FEATURED_TOOLKIT_SLUGS) {
     const envKey = `COMPOSIO_TOOLKIT_VERSION_${slug.replace(/-/g, "_").toUpperCase()}`
     const single = env[envKey]
     if (typeof single === "string" && single.trim()) {
-      merged[toComposioToolkitSlug(slug)] = single.trim()
+      merged[slug] = single.trim()
     }
   }
   return { ...merged, ...fromEnv }
@@ -104,7 +109,11 @@ export function isComposioAvailable(config: AppConfig) {
 
 export function getComposioUnavailableReason(
   config: AppConfig
-): "missing_api_key" | "missing_redirect_base_url" | "mock_enabled" | undefined {
+):
+  | "missing_api_key"
+  | "missing_redirect_base_url"
+  | "mock_enabled"
+  | undefined {
   if (config.mockComposio) return "mock_enabled"
   if (!config.composioApiKey) return "missing_api_key"
   if (!config.composioRedirectBaseUrl) return "missing_redirect_base_url"

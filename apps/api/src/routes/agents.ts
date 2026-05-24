@@ -32,8 +32,14 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     const body = parsed.data
     const requestedGrants = body.toolGrants ?? []
     const resolvedGrants = []
+    const requestedToolkitSlugs = new Set<string>()
 
     for (const requested of requestedGrants) {
+      if (requestedToolkitSlugs.has(requested.toolkitSlug)) {
+        return c.json({ error: "duplicate_toolkit_grant" }, 400)
+      }
+      requestedToolkitSlugs.add(requested.toolkitSlug)
+
       const connection = requested.connectionId
         ? repos.integrationConnections.getById(requested.connectionId)
         : repos.integrationConnections.getByToolkitSlug(requested.toolkitSlug)
@@ -83,7 +89,9 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     return c.json(
       agentDetailResponseSchema.parse({
         agent,
-        configurationVersions: repos.agents.listConfigurationVersions(created.id),
+        configurationVersions: repos.agents.listConfigurationVersions(
+          created.id
+        ),
         toolGrants: repos.toolAccessGrants.listByScope("agent", created.id),
       }),
       201
