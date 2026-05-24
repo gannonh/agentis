@@ -6,21 +6,24 @@ p1_count: 3
 timestamp: 2026-05-24T00-19-16Z
 slug: 302-touched-screens-first-slice-product-prototype
 ---
+
+# PR #302 touched screens first-slice product prototype critique
+
 #### Design Health Score
 
-| # | Heuristic | Score | Key Issue |
-|---|-----------|-------|-----------|
-| 1 | Visibility of System Status | 3 | The prototype shows the intended monitoring categories, but Command Center mixes fleet totals, recent runs, attention, and zeroed quality/cost signals without a single first-slice thesis. |
-| 2 | Match System / Real World | 3 | Agents, projects, threads, integrations, and tool grants map well to the product model. “Full knowledge access” is too broad for the permissions model Agentis wants. |
-| 3 | User Control and Freedom | 2 | Agent detail shows many future controls, tabs, and gears before the page has a clear active workflow. This is acceptable as scaffolding, but it weakens the baseline IA. |
-| 4 | Consistency and Standards | 3 | The touched screens share a restrained workbench vocabulary. Sidebar density and selected/current states need stronger rules before more objects appear. |
-| 5 | Error Prevention | 3 | Required fields and scoped grants support the creation flow. The prompt/model section still starts from raw LLM configuration instead of an agent contract. |
-| 6 | Recognition Rather Than Recall | 3 | The main nouns are visible and learnable. Users and builders still have to infer how a reusable agent should be defined, invoked, and governed. |
-| 7 | Flexibility and Efficiency | 2 | The prototype sketches efficient surfaces, but roster search, agent launch from detail, and many detail actions are inactive. The issue is product-shaping priority, not production readiness. |
-| 8 | Aesthetic and Minimalist Design | 3 | The restrained baseline fits Agentis. Command Center and Agent detail carry extra prototype weight through repeated panels and future-state controls. |
-| 9 | Error Recovery | 3 | Current errors and retry states are reasonable for a first slice. The larger gap is communicating unavailable capability states as product intent. |
-| 10 | Help and Documentation | 3 | Helper copy exists, but the prototype needs sharper teaching around agent contracts, permissions, and what Command Center is meant to become. |
-| **Total** | | **28/40** | **Promising first-slice foundation. Strong visual direction, product model still needs sharper commitments.** |
+| #         | Heuristic                       | Score     | Key Issue                                                                                                                                                                                      |
+| --------- | ------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1         | Visibility of System Status     | 3         | The prototype shows the intended monitoring categories, but Command Center mixes fleet totals, recent runs, attention, and zeroed quality/cost signals without a single first-slice thesis.    |
+| 2         | Match System / Real World       | 3         | Agents, projects, threads, integrations, and tool grants map well to the product model. “Full knowledge access” is too broad for the permissions model Agentis wants.                          |
+| 3         | User Control and Freedom        | 2         | Agent detail shows many future controls, tabs, and gears before the page has a clear active workflow. This is acceptable as scaffolding, but it weakens the baseline IA.                       |
+| 4         | Consistency and Standards       | 3         | The touched screens share a restrained workbench vocabulary. Sidebar density and selected/current states need stronger rules before more objects appear.                                       |
+| 5         | Error Prevention                | 3         | Required fields and scoped grants support the creation flow. The prompt/model section still starts from raw LLM configuration instead of an agent contract.                                    |
+| 6         | Recognition Rather Than Recall  | 3         | The main nouns are visible and learnable. Users and builders still have to infer how a reusable agent should be defined, invoked, and governed.                                                |
+| 7         | Flexibility and Efficiency      | 2         | The prototype sketches efficient surfaces, but roster search, agent launch from detail, and many detail actions are inactive. The issue is product-shaping priority, not production readiness. |
+| 8         | Aesthetic and Minimalist Design | 3         | The restrained baseline fits Agentis. Command Center and Agent detail carry extra prototype weight through repeated panels and future-state controls.                                          |
+| 9         | Error Recovery                  | 3         | Current errors and retry states are reasonable for a first slice. The larger gap is communicating unavailable capability states as product intent.                                             |
+| 10        | Help and Documentation          | 3         | Helper copy exists, but the prototype needs sharper teaching around agent contracts, permissions, and what Command Center is meant to become.                                                  |
+| **Total** |                                 | **28/40** | **Promising first-slice foundation. Strong visual direction, product model still needs sharper commitments.**                                                                                  |
 
 #### Anti-Patterns Verdict
 

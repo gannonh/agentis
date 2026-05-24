@@ -6,21 +6,24 @@ p1_count: 2
 timestamp: 2026-05-23T22-35-46Z
 slug: pr-302-touched-screens
 ---
+
+# PR #302 touched screens critique
+
 #### Design Health Score
 
-| # | Heuristic | Score | Key Issue |
-|---|-----------|-------|-----------|
-| 1 | Visibility of System Status | 2 | Command Center reports active agents, runs, costs, pending items, and trends with limited proof of where values come from. |
-| 2 | Match System / Real World | 2 | “Command Center” and “full knowledge access” imply operational control and permission scope that the UI does not yet explain. |
-| 3 | User Control and Freedom | 2 | Agent detail exposes disabled tabs and actions; users can see future capabilities without a clear path or rationale. |
-| 4 | Consistency and Standards | 3 | The visual system is cohesive, but tool grant selection uses “Granted” before save and green success for a pending selection. |
-| 5 | Error Prevention | 2 | Required fields prevent empty submission, but prompt, model, and grant choices lack scaffolding that would prevent weak or risky agents. |
-| 6 | Recognition Rather Than Recall | 2 | Main actions are visible, but agent creation from the picker and permission boundaries require inference. |
-| 7 | Flexibility and Efficiency | 2 | Search, roster actions, detail actions, and agent-start flows are limited or disabled, which weakens expert flow. |
-| 8 | Aesthetic and Minimalist Design | 3 | Calm workbench restraint is working; inert dashboard density and repeated side data add mild noise. |
-| 9 | Error Recovery | 3 | Not Found and roster retry paths are clear; recovery is solid for the current slice. |
-| 10 | Help and Documentation | 1 | The touched screens have little contextual help for prompts, models, permissions, grants, or quality metrics. |
-| **Total** | | **22/40** | **Acceptable, significant improvements needed before users feel confident.** |
+| #         | Heuristic                       | Score     | Key Issue                                                                                                                                |
+| --------- | ------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1         | Visibility of System Status     | 2         | Command Center reports active agents, runs, costs, pending items, and trends with limited proof of where values come from.               |
+| 2         | Match System / Real World       | 2         | “Command Center” and “full knowledge access” imply operational control and permission scope that the UI does not yet explain.            |
+| 3         | User Control and Freedom        | 2         | Agent detail exposes disabled tabs and actions; users can see future capabilities without a clear path or rationale.                     |
+| 4         | Consistency and Standards       | 3         | The visual system is cohesive, but tool grant selection uses “Granted” before save and green success for a pending selection.            |
+| 5         | Error Prevention                | 2         | Required fields prevent empty submission, but prompt, model, and grant choices lack scaffolding that would prevent weak or risky agents. |
+| 6         | Recognition Rather Than Recall  | 2         | Main actions are visible, but agent creation from the picker and permission boundaries require inference.                                |
+| 7         | Flexibility and Efficiency      | 2         | Search, roster actions, detail actions, and agent-start flows are limited or disabled, which weakens expert flow.                        |
+| 8         | Aesthetic and Minimalist Design | 3         | Calm workbench restraint is working; inert dashboard density and repeated side data add mild noise.                                      |
+| 9         | Error Recovery                  | 3         | Not Found and roster retry paths are clear; recovery is solid for the current slice.                                                     |
+| 10        | Help and Documentation          | 1         | The touched screens have little contextual help for prompts, models, permissions, grants, or quality metrics.                            |
+| **Total** |                                 | **22/40** | **Acceptable, significant improvements needed before users feel confident.**                                                             |
 
 #### Anti-Patterns Verdict
 

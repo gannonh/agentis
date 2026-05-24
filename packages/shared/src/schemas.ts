@@ -195,11 +195,7 @@ export const runtimeHealthSchema = z.object({
     .object({
       available: z.boolean(),
       reason: z
-        .enum([
-          "missing_api_key",
-          "missing_redirect_base_url",
-          "mock_enabled",
-        ])
+        .enum(["missing_api_key", "missing_redirect_base_url", "mock_enabled"])
         .optional(),
     })
     .optional(),
@@ -226,7 +222,7 @@ export const agentSchema = z.object({
 
 export const agentListItemSchema = agentSchema.extend({
   currentConfigurationVersion: agentConfigurationVersionSummarySchema,
-  toolGrantCount: z.number(),
+  toolGrantCount: z.number().int().nonnegative(),
 })
 
 export const agentToolGrantInputSchema = z.object({
@@ -455,7 +451,9 @@ export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>
 export type CreateFollowUpRequest = z.infer<typeof createFollowUpRequestSchema>
 export type UpdateThreadRequest = z.infer<typeof updateThreadRequestSchema>
-export type CreateFollowUpResponse = z.infer<typeof createFollowUpResponseSchema>
+export type CreateFollowUpResponse = z.infer<
+  typeof createFollowUpResponseSchema
+>
 export type ProjectStatus = z.infer<typeof projectStatusSchema>
 export type Project = z.infer<typeof projectSchema>
 export type ProjectMemory = z.infer<typeof projectMemorySchema>

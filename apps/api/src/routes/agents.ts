@@ -17,7 +17,21 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
   })
 
   app.post("/", async (c) => {
-    const parsed = createAgentRequestSchema.safeParse(await c.req.json())
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(
+        {
+          error: "Invalid agent payload",
+          code: "invalid_agent",
+          issues: [],
+        },
+        400
+      )
+    }
+
+    const parsed = createAgentRequestSchema.safeParse(payload)
     if (!parsed.success) {
       return c.json(
         {

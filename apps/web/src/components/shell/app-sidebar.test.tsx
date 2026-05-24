@@ -144,10 +144,9 @@ describe("AppSidebar", () => {
       expect(screen.getByText("Product Launch Q4")).toBeInTheDocument()
     })
     expect(screen.queryByText("New project")).not.toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Product Launch Q4" })).toHaveAttribute(
-      "href",
-      "/projects/project_demo"
-    )
+    expect(
+      screen.getByRole("link", { name: "Product Launch Q4" })
+    ).toHaveAttribute("href", "/projects/project_demo")
   })
 
   it("highlights project from new-thread query param", async () => {
@@ -157,7 +156,7 @@ describe("AppSidebar", () => {
     })
   })
 
-  it("shows loading and error states for API agents", async () => {
+  it("shows loading state for API agents", async () => {
     useAgentsMock.mockReturnValueOnce({
       agents: [],
       loading: true,
@@ -166,7 +165,14 @@ describe("AppSidebar", () => {
     })
     renderSidebar()
     expect(screen.getByText("Loading agents…")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Creating Agent").length
+      ).toBeGreaterThanOrEqual(1)
+    })
+  })
 
+  it("shows error state for API agents", async () => {
     useAgentsMock.mockReturnValueOnce({
       agents: [],
       loading: false,
@@ -176,7 +182,9 @@ describe("AppSidebar", () => {
     renderSidebar()
     expect(screen.getByText("Agents unavailable")).toBeInTheDocument()
     await waitFor(() => {
-      expect(screen.getAllByText("Creating Agent").length).toBeGreaterThanOrEqual(1)
+      expect(
+        screen.getAllByText("Creating Agent").length
+      ).toBeGreaterThanOrEqual(1)
     })
   })
 })

@@ -13,9 +13,10 @@ import { createRunRoutes, createThreadRoutes } from "./routes/threads.js"
 import { createToolGrantRoutes } from "./routes/tool-grants.js"
 
 function getAllowedWebOrigins(webAppOrigin: string) {
-  const origins = new Set([webAppOrigin])
+  const normalizedOrigin = webAppOrigin.trim().replace(/\/$/, "")
+  const origins = new Set([normalizedOrigin])
   try {
-    const url = new URL(webAppOrigin)
+    const url = new URL(normalizedOrigin)
     if (url.hostname === "127.0.0.1") {
       url.hostname = "localhost"
       origins.add(url.toString().replace(/\/$/, ""))
@@ -51,10 +52,7 @@ export function createApp(
   app.route("/api/artifacts", createArtifactRoutes(repos, config))
   app.route("/api/integrations", createIntegrationRoutes(services, config))
   app.route("/api/threads", createThreadRoutes(repos, config))
-  app.route(
-    "/api/threads",
-    createToolGrantRoutes(repos, services, config)
-  )
+  app.route("/api/threads", createToolGrantRoutes(repos, services, config))
   app.route("/api/runs", createRunRoutes(repos, config, services))
 
   app.get("/api/health", (c) => c.json({ ok: true }))

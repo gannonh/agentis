@@ -87,7 +87,10 @@ describe("shared schemas", () => {
       })
     ).toThrow()
     expect(() =>
-      createAgentRequestSchema.parse({ name: "Research Agent", systemPrompt: "" })
+      createAgentRequestSchema.parse({
+        name: "Research Agent",
+        systemPrompt: "",
+      })
     ).toThrow()
 
     const updated = updateAgentRequestSchema.parse({
@@ -116,6 +119,12 @@ describe("shared schemas", () => {
       toolGrantCount: 2,
     })
     expect(listItem.currentConfigurationVersion.version).toBe(1)
+    expect(() =>
+      agentListItemSchema.parse({ ...listItem, toolGrantCount: -1 })
+    ).toThrow()
+    expect(() =>
+      agentListItemSchema.parse({ ...listItem, toolGrantCount: 1.5 })
+    ).toThrow()
 
     const grants = agentToolGrantsResponseSchema.parse({
       grants: [

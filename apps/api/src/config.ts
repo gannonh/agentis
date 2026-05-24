@@ -1,4 +1,5 @@
 import { DEFAULT_OPENAI_MODEL } from "@workspace/shared"
+import { toAppToolkitSlug } from "./composio/toolkit-slugs.js"
 import { FEATURED_TOOLKIT_SLUGS } from "./repositories/integration-seeds.js"
 
 /** Composio toolkit versions for manual tool execution when env is unset. */
@@ -64,7 +65,13 @@ function resolveComposioToolkitVersions(
       merged[slug] = single.trim()
     }
   }
-  return { ...merged, ...fromEnv }
+  const normalizedFromEnv = Object.fromEntries(
+    Object.entries(fromEnv).map(([slug, version]) => [
+      toAppToolkitSlug(slug),
+      version,
+    ])
+  )
+  return { ...merged, ...normalizedFromEnv }
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {

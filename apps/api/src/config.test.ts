@@ -15,4 +15,12 @@ describe("config", () => {
 
     expect(config.composioToolkitVersions["google-drive"]).toBe("20260601_00")
   })
+
+  it("normalizes JSON toolkit version override keys to Agentis slugs", () => {
+    const config = loadConfig({
+      COMPOSIO_TOOLKIT_VERSIONS: JSON.stringify({ googledrive: "20260602_00" }),
+    })
+
+    expect(config.composioToolkitVersions["google-drive"]).toBe("20260602_00")
+  })
 })

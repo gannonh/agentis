@@ -11,6 +11,25 @@ afterEach(() => {
 })
 
 describe("agent routes", () => {
+  it("rejects malformed create JSON as an invalid payload", async () => {
+    ctx = createTestContext()
+    const app = createApp(
+      ctx.repos,
+      ctx.config,
+      createComposioServices(ctx.repos, ctx.config)
+    )
+
+    const response = await app.request("/api/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{",
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("invalid_agent")
+  })
+
   it("rejects invalid create payloads", async () => {
     ctx = createTestContext()
     const app = createApp(

@@ -49,6 +49,26 @@ describe("api routes", () => {
     expect(body.run.status).toBe("queued")
   })
 
+  it("allows a configured web origin with a trailing slash", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      webAppOrigin: "http://127.0.0.1:5177/",
+    })
+
+    const response = await app.request("/api/health", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://127.0.0.1:5177",
+        "Access-Control-Request-Method": "GET",
+      },
+    })
+
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "http://127.0.0.1:5177"
+    )
+  })
+
   it("allows the configured web origin for browser requests", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, {
