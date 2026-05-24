@@ -71,6 +71,8 @@ export const threadSchema = z.object({
   model: z.string(),
   mode: threadModeSchema,
   projectId: z.string().nullable().optional(),
+  agentId: z.string().nullable().optional(),
+  agentNameSnapshot: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -95,6 +97,8 @@ export const runSchema = z.object({
   threadId: z.string(),
   status: runStatusSchema,
   model: z.string(),
+  agentId: z.string().nullable().optional(),
+  agentConfigurationVersionId: z.string().nullable().optional(),
   startedAt: z.string(),
   finishedAt: z.string().nullable().optional(),
   errorSummary: z.string().nullable().optional(),
