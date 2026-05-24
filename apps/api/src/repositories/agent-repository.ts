@@ -44,7 +44,11 @@ function normalizeGrants(
       toolkitSlug: grant.toolkitSlug,
       connectionId: grant.connectionId,
     }))
-    .sort((a, b) => a.toolkitSlug.localeCompare(b.toolkitSlug))
+    .sort(
+      (a, b) =>
+        a.toolkitSlug.localeCompare(b.toolkitSlug) ||
+        a.connectionId.localeCompare(b.connectionId)
+    )
 }
 
 function grantsMatch(

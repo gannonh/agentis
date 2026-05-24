@@ -102,6 +102,33 @@ describe("agent routes", () => {
     expect(body.code).toBe("invalid_agent_update")
   })
 
+  it("returns remediation when update grants reference a disconnected toolkit", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ toolGrants: [{ toolkitSlug: "github" }] }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as {
+      error: string
+      remediation?: string
+    }
+    expect(body.error).toBe("toolkit_not_connected")
+    expect(body.remediation).toBe(
+      "Connect the toolkit from Integrations before granting it to an agent."
+    )
+  })
+
   it("updates identity without creating a configuration version", async () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({
@@ -219,6 +246,7 @@ describe("agent routes", () => {
         toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
       }),
     })
+    expect(created.status).toBe(201)
     const createdBody = (await created.json()) as { agent: { id: string } }
     const agentPath = `/api/agents/${createdBody.agent.id}`
 

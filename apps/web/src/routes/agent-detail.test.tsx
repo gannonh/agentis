@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { MemoryRouter, Route, Routes } from "react-router"
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router"
 import { AgentDetailPage } from "./agent-detail"
 import { ApiError } from "@/lib/api/client"
 import { getAgent, updateAgent } from "@/lib/api/agents-client"
@@ -44,6 +44,21 @@ function mockIntegrations(toolkits: IntegrationToolkit[] = []) {
     refreshStatuses: vi.fn(),
     resetConnection: vi.fn(),
   })
+}
+
+function NavigableAgentDetailPage() {
+  const navigate = useNavigate()
+
+  return (
+    <>
+      <button type="button" onClick={() => navigate("/agents/senior-reviewer")}>
+        Go to fixture agent
+      </button>
+      <Routes>
+        <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+      </Routes>
+    </>
+  )
 }
 
 function apiAgentDetail(
@@ -234,6 +249,9 @@ describe("AgentDetailPage", () => {
     expect(screen.getByRole("tab", { name: "Overview" }).querySelector("svg")).not.toBeNull()
     expect(screen.getByRole("tab", { name: "Knowledge" }).querySelector("svg")).not.toBeNull()
 
+    await user.click(screen.getByRole("tab", { name: "Identity" }))
+    expect(screen.getByRole("button", { name: /Claymorphism/ })).toBeDisabled()
+
     await user.click(screen.getByRole("tab", { name: "Activity" }))
     expect(screen.getByRole("searchbox", { name: "Search threads" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument()
@@ -296,6 +314,61 @@ describe("AgentDetailPage", () => {
     await user.click(screen.getByRole("button", { name: "Save model" }))
 
     expect(await screen.findByText("Invalid model")).toBeInTheDocument()
+  })
+
+  it("sends null instead of non-finite model cost limits", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+    vi.mocked(updateAgent).mockResolvedValueOnce(apiAgentDetail())
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Model" }))
+    fireEvent.change(screen.getByLabelText("Max cost per run USD"), {
+      target: { value: "1e999" },
+    })
+    await user.click(screen.getByRole("button", { name: "Save model" }))
+
+    expect(updateAgent).toHaveBeenCalledWith("agent_created", {
+      model: "gpt-4o-mini",
+      maxCostPerRunUsd: null,
+    })
+  })
+
+  it("resets to overview when navigating to a non-editable agent", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <NavigableAgentDetailPage />
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Model" }))
+    expect(screen.getByRole("tab", { name: "Model" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
+
+    await user.click(screen.getByRole("button", { name: "Go to fixture agent" }))
+
+    expect(
+      await screen.findByRole("heading", { name: "Senior Reviewer" })
+    ).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
+    expect(screen.getByRole("heading", { name: "Access" })).toBeInTheDocument()
   })
 
   it("saves API-backed tool grants from the Tools tab", async () => {

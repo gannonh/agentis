@@ -167,7 +167,13 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       ? resolveRequestedGrants(body.toolGrants)
       : undefined
     if (resolvedGrants && "error" in resolvedGrants) {
-      return c.json({ error: resolvedGrants.error }, 400)
+      return c.json(
+        {
+          error: resolvedGrants.error,
+          remediation: toolkitGrantRemediation(resolvedGrants.error),
+        },
+        400
+      )
     }
 
     const updated = repos.agents.update(agentId, {
@@ -178,7 +184,12 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
 
-    return c.json(agentDetail(agentId))
+    const detail = agentDetail(agentId)
+    if (!detail) {
+      return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+    }
+
+    return c.json(detail)
   })
 
   return app

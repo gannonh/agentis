@@ -112,6 +112,8 @@ function NativeSelectLike({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
+      disabled
+      aria-disabled="true"
       className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
     >
       {children}
@@ -373,9 +375,14 @@ export function AgentModelTab({
     setSaving(true)
     setStatus(null)
     try {
+      const parsedMaxCost =
+        maxCostPerRunUsd.trim() === "" ? null : Number(maxCostPerRunUsd)
       await onSave({
         model,
-        maxCostPerRunUsd: maxCostPerRunUsd ? Number(maxCostPerRunUsd) : null,
+        maxCostPerRunUsd:
+          parsedMaxCost === null || Number.isFinite(parsedMaxCost)
+            ? parsedMaxCost
+            : null,
       })
       setStatus("Model saved")
     } catch (error) {

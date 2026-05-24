@@ -78,17 +78,16 @@ function InspectorSection({
 }
 
 function ToolList({ tools }: { tools: string[] }) {
-  const displayTools = tools.length > 0 ? tools : ["Exa", "Full VM", "Webpages & Slides", "Slides", "Tables"]
   const icons = [Wrench02Icon, Presentation01Icon, FileImageIcon, TableIcon]
   return (
     <ul className="flex max-h-56 flex-col gap-2 overflow-auto text-sm">
-      {displayTools.slice(0, 6).map((tool, index) => (
+      {tools.slice(0, 6).map((tool, index) => (
         <li key={tool} className="flex items-center gap-2 text-muted-foreground">
           <HugeiconsIcon icon={icons[index % icons.length]} className="size-4" strokeWidth={2} />
           <span>{tool}</span>
         </li>
       ))}
-      {displayTools.length > 6 ? (
+      {tools.length > 6 ? (
         <li className="text-muted-foreground text-xs">Show all</li>
       ) : null}
     </ul>

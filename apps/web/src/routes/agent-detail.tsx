@@ -77,7 +77,10 @@ export function AgentDetailPage() {
     if (shouldLoadApiAgent && agentId) return { agentId, status: "loading" }
     return { agentId: null, status: "idle" }
   })
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTabState, setActiveTabState] = useState<{
+    agentId: string | null
+    value: string
+  }>(() => ({ agentId: agentId ?? null, value: "overview" }))
   const workspace = getWorkspace()
 
   const loadApiAgent = useCallback(
@@ -129,6 +132,11 @@ export function AgentDetailPage() {
     ? mapApiAgentDetailToAgent(apiAgentDetail)
     : null
   const agent = fixtureAgent ?? apiAgent
+  const editable = !!apiAgentDetail
+  const activeTab =
+    editable && activeTabState.agentId === (agentId ?? null)
+      ? activeTabState.value
+      : "overview"
 
   if (routeState.status === "loading") {
     return (
@@ -195,7 +203,6 @@ export function AgentDetailPage() {
   }
 
   const recentThreads = workspace.threads.filter((t) => t.agentId === agent.id)
-  const editable = !!apiAgentDetail
 
   return (
     <PageLayout className="dark -m-6 min-h-svh bg-background p-6 text-foreground">
@@ -205,7 +212,9 @@ export function AgentDetailPage() {
 
           <Tabs
             value={activeTab}
-            onValueChange={(value) => setActiveTab(String(value))}
+            onValueChange={(value) =>
+              setActiveTabState({ agentId: agentId ?? null, value: String(value) })
+            }
           >
             <TabsList
               variant="line"
@@ -318,7 +327,12 @@ export function AgentDetailPage() {
 
         <AgentDetailInspector
           agent={agent}
-          onConfigure={editable ? setActiveTab : undefined}
+          onConfigure={
+            editable
+              ? (tab) =>
+                  setActiveTabState({ agentId: agentId ?? null, value: tab })
+              : undefined
+          }
         />
       </div>
     </PageLayout>

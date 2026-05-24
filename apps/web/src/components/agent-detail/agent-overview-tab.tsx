@@ -182,7 +182,7 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
           <section className="rounded-xl border border-border bg-card/70 p-5" aria-labelledby="evaluations-heading">
             <div className="flex items-center justify-between gap-3">
               <h2 id="evaluations-heading" className="flex items-center gap-2 text-base font-medium">
-                <HugeiconsIcon icon={ChartLineData01Icon} className="size-5 text-agent-blue" strokeWidth={2} />
+                <HugeiconsIcon icon={ChartLineData01Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
                 Evaluations
               </h2>
               <Button type="button" variant="ghost" size="icon" disabled aria-label="Evaluation actions">
