@@ -20,7 +20,11 @@ import {
   threadToolGrantsResponseSchema,
   threadSchema,
   toolAccessGrantSchema,
+  updateAgentIdentityRequestSchema,
+  updateAgentModelRequestSchema,
+  updateAgentPromptRequestSchema,
   updateAgentRequestSchema,
+  updateAgentToolGrantsRequestSchema,
 } from "./schemas.js"
 
 describe("shared schemas", () => {
@@ -147,6 +151,52 @@ describe("shared schemas", () => {
       toolGrants: grants.grants,
     })
     expect(detail.agent.id).toBe("agent-1")
+  })
+
+  it("validates focused agent edit payloads", () => {
+    expect(
+      updateAgentIdentityRequestSchema.parse({
+        name: "Research Agent",
+        description: null,
+      })
+    ).toEqual({ name: "Research Agent", description: null })
+    expect(() =>
+      updateAgentIdentityRequestSchema.parse({ name: "" })
+    ).toThrow()
+
+    expect(
+      updateAgentPromptRequestSchema.parse({
+        systemPrompt: "Answer with citations.",
+      }).systemPrompt
+    ).toBe("Answer with citations.")
+    expect(() =>
+      updateAgentPromptRequestSchema.parse({ systemPrompt: "" })
+    ).toThrow()
+
+    expect(
+      updateAgentModelRequestSchema.parse({
+        model: "gpt-4.1-mini",
+        maxCostPerRunUsd: 1.25,
+      })
+    ).toMatchObject({ model: "gpt-4.1-mini", maxCostPerRunUsd: 1.25 })
+    expect(
+      updateAgentModelRequestSchema.parse({
+        model: "gpt-4.1-mini",
+        maxCostPerRunUsd: null,
+      }).maxCostPerRunUsd
+    ).toBeNull()
+    expect(() =>
+      updateAgentModelRequestSchema.parse({
+        model: "gpt-4.1-mini",
+        maxCostPerRunUsd: -0.01,
+      })
+    ).toThrow()
+
+    expect(
+      updateAgentToolGrantsRequestSchema.parse({
+        toolGrants: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+      }).toolGrants
+    ).toHaveLength(1)
   })
 
   it("parses integration and grant payloads", () => {

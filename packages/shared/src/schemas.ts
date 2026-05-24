@@ -207,6 +207,7 @@ export const agentConfigurationVersionSummarySchema = z.object({
   version: z.number().int().positive(),
   systemPrompt: z.string(),
   model: z.string(),
+  maxCostPerRunUsd: z.number().nonnegative().nullable().optional(),
   createdAt: z.string(),
 })
 
@@ -216,6 +217,7 @@ export const agentSchema = z.object({
   description: z.string().nullable().optional(),
   systemPrompt: z.string(),
   model: z.string(),
+  maxCostPerRunUsd: z.number().nonnegative().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -238,13 +240,36 @@ export const createAgentRequestSchema = z.object({
   toolGrants: z.array(agentToolGrantInputSchema).optional(),
 })
 
-export const updateAgentRequestSchema = z.object({
-  name: z.string().min(1).optional(),
+export const updateAgentIdentityRequestSchema = z.object({
+  name: z.string().min(1),
   description: z.string().nullable().optional(),
-  systemPrompt: z.string().min(1).optional(),
-  model: z.string().optional(),
-  toolGrants: z.array(agentToolGrantInputSchema).optional(),
 })
+
+export const updateAgentPromptRequestSchema = z.object({
+  systemPrompt: z.string().min(1),
+})
+
+export const updateAgentModelRequestSchema = z.object({
+  model: z.string().min(1),
+  maxCostPerRunUsd: z.number().nonnegative().nullable().optional(),
+})
+
+export const updateAgentToolGrantsRequestSchema = z.object({
+  toolGrants: z.array(agentToolGrantInputSchema),
+})
+
+export const updateAgentRequestSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    systemPrompt: z.string().min(1).optional(),
+    model: z.string().min(1).optional(),
+    maxCostPerRunUsd: z.number().nonnegative().nullable().optional(),
+    toolGrants: z.array(agentToolGrantInputSchema).optional(),
+  })
+  .refine((payload) => Object.keys(payload).length > 0, {
+    message: "At least one agent edit field is required.",
+  })
 
 export const agentToolGrantsResponseSchema = z.object({
   grants: z.array(toolAccessGrantSchema),
@@ -442,6 +467,14 @@ export type Agent = z.infer<typeof agentSchema>
 export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
 export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
+export type UpdateAgentIdentityRequest = z.infer<
+  typeof updateAgentIdentityRequestSchema
+>
+export type UpdateAgentPromptRequest = z.infer<typeof updateAgentPromptRequestSchema>
+export type UpdateAgentModelRequest = z.infer<typeof updateAgentModelRequestSchema>
+export type UpdateAgentToolGrantsRequest = z.infer<
+  typeof updateAgentToolGrantsRequestSchema
+>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
 export type AgentToolGrantsResponse = z.infer<
   typeof agentToolGrantsResponseSchema
