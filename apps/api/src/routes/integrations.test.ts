@@ -28,6 +28,40 @@ describe("integration routes", () => {
     expect(body.composioMockEnabled).toBe(true)
   })
 
+  it("uses the API port when no Composio redirect base is configured", async () => {
+    ctx = createTestContext()
+    ctx.config.port = 3101
+    ctx.config.composioRedirectBaseUrl = undefined
+    ctx.repos.integrationToolkits.seedFeatured()
+    let callbackUrl = ""
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit(_userId, _toolkitSlug, requestedCallbackUrl) {
+        callbackUrl = requestedCallbackUrl
+        return {
+          connectionRequestId: "req-github",
+          redirectUrl: "http://composio.test/authorize",
+          connectedAccountId: "acct-github",
+        }
+      },
+      async refreshConnectedAccount() {
+        throw new Error("unused")
+      },
+      async listConnectedAccounts() {
+        return []
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const service = new IntegrationService(ctx.repos, ctx.config, composio)
+
+    await service.startConnection("github")
+
+    expect(callbackUrl).toContain(
+      "http://127.0.0.1:3101/api/integrations/callback"
+    )
+  })
+
   it("starts mock connection and completes callback", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
@@ -54,7 +88,11 @@ describe("integration routes", () => {
 
     const list = await app.request("/api/integrations")
     const listBody = (await list.json()) as {
-      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+      toolkits: {
+        slug: string
+        status: string
+        connectedAccountCount: number
+      }[]
     }
     const github = listBody.toolkits.find((t) => t.slug === "github")
     expect(github?.status).toBe("connected")
@@ -91,7 +129,8 @@ describe("integration routes", () => {
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
-      toolExecution: createComposioServices(ctx.repos, ctx.config).toolExecution,
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
     }
     const app = createApp(ctx.repos, ctx.config, services)
 
@@ -105,7 +144,11 @@ describe("integration routes", () => {
 
     const list = await app.request("/api/integrations")
     const listBody = (await list.json()) as {
-      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+      toolkits: {
+        slug: string
+        status: string
+        connectedAccountCount: number
+      }[]
     }
     const googleDrive = listBody.toolkits.find((t) => t.slug === "google-drive")
     expect(googleDrive?.status).toBe("connected")
@@ -142,7 +185,8 @@ describe("integration routes", () => {
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
-      toolExecution: createComposioServices(ctx.repos, ctx.config).toolExecution,
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
     }
     const app = createApp(ctx.repos, ctx.config, services)
 
@@ -158,7 +202,11 @@ describe("integration routes", () => {
 
     const list = await app.request("/api/integrations")
     const listBody = (await list.json()) as {
-      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+      toolkits: {
+        slug: string
+        status: string
+        connectedAccountCount: number
+      }[]
     }
     const googleDrive = listBody.toolkits.find((t) => t.slug === "google-drive")
     expect(googleDrive?.status).toBe("error")
@@ -209,7 +257,10 @@ describe("integration routes", () => {
     const grant = await app.request(`/api/threads/${thread.id}/tool-grants`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ toolkitSlug: "github", connectionId: connection.id }),
+      body: JSON.stringify({
+        toolkitSlug: "github",
+        connectionId: connection.id,
+      }),
     })
     expect(grant.status).toBe(201)
 

@@ -16,6 +16,7 @@ import type { AgentDetailResponse } from "@workspace/shared"
 import { getAgent as getFixtureAgent, getWorkspace } from "@/fixtures"
 import type { Agent } from "@/fixtures/schema"
 import { getAgent as getApiAgent } from "@/lib/api/agents-client"
+import { ApiError } from "@/lib/api/client"
 
 function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
   return {
@@ -40,31 +41,40 @@ function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
 export function AgentDetailPage() {
   const { agentId } = useParams<{ agentId: string }>()
   const fixtureAgent = agentId ? getFixtureAgent(agentId) : undefined
+  const shouldLoadApiAgent =
+    !!agentId && !fixtureAgent && agentId !== "command-center"
   const [apiAgent, setApiAgent] = useState<Agent | null>(null)
-  const [loadingApiAgent, setLoadingApiAgent] = useState(false)
+  const [loadingApiAgent, setLoadingApiAgent] = useState(shouldLoadApiAgent)
   const [apiAgentNotFound, setApiAgentNotFound] = useState(false)
+  const [apiAgentLoadFailed, setApiAgentLoadFailed] = useState(false)
   const workspace = getWorkspace()
 
   const loadApiAgent = useCallback(async () => {
-    if (!agentId || fixtureAgent || agentId === "command-center") {
+    if (!shouldLoadApiAgent) {
       setApiAgent(null)
       setApiAgentNotFound(false)
+      setApiAgentLoadFailed(false)
       setLoadingApiAgent(false)
       return
     }
 
     setApiAgent(null)
     setApiAgentNotFound(false)
+    setApiAgentLoadFailed(false)
     setLoadingApiAgent(true)
 
     try {
       setApiAgent(mapApiAgentDetailToAgent(await getApiAgent(agentId)))
-    } catch {
-      setApiAgentNotFound(true)
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setApiAgentNotFound(true)
+      } else {
+        setApiAgentLoadFailed(true)
+      }
     } finally {
       setLoadingApiAgent(false)
     }
-  }, [agentId, fixtureAgent])
+  }, [agentId, shouldLoadApiAgent])
 
   useEffect(() => {
     void loadApiAgent()
@@ -79,6 +89,36 @@ export function AgentDetailPage() {
           title="Loading agent"
           description="Loading the agent configuration from the API."
         />
+      </PageLayout>
+    )
+  }
+
+  if (apiAgentLoadFailed) {
+    return (
+      <PageLayout variant="narrow">
+        <PageHeader
+          title="Agent unavailable"
+          description="The agent API could not load this agent. Try again or return to Command Center."
+        />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            nativeButton
+            variant="outline"
+            size="sm"
+            onClick={() => void loadApiAgent()}
+          >
+            Try again
+          </Button>
+          <Button
+            render={<Link to="/command-center" />}
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+          >
+            Command Center
+          </Button>
+        </div>
       </PageLayout>
     )
   }

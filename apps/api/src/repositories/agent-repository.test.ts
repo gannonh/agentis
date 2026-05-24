@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest"
-import { agentConfigurationVersions } from "../db/schema.js"
+import { agentConfigurationVersions, toolAccessGrants } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -70,6 +70,59 @@ describe("agent repository", () => {
     expect(
       ctx.repos.agents.list()[0]?.currentConfigurationVersion.version
     ).toBe(2)
+  })
+
+  it("creates agents and tool grants in one repository operation", () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const connection = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: connection.id }]
+    )
+
+    expect(agent.toolGrantCount).toBe(1)
+    expect(
+      ctx.repos.toolAccessGrants.listByScope("agent", agent.id)
+    ).toHaveLength(1)
+  })
+
+  it("rolls back agent creation when a grant insert fails", () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const connection = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+
+    const agents = ctx.repos.agents
+
+    expect(() =>
+      agents.createWithGrants(
+        {
+          name: "Research Agent",
+          systemPrompt: "Answer with citations.",
+          model: "gpt-4o-mini",
+        },
+        [
+          { toolkitSlug: "github", connectionId: connection.id },
+          { toolkitSlug: "github", connectionId: connection.id },
+        ]
+      )
+    ).toThrow()
+
+    expect(ctx.repos.agents.list()).toHaveLength(0)
+    expect(ctx.db.select().from(toolAccessGrants).all()).toHaveLength(0)
   })
 
   it("stores per-agent Composio tool grants", () => {

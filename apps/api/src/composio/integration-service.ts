@@ -52,7 +52,11 @@ export class IntegrationService {
   }
 
   async startConnection(toolkitSlug: string) {
-    if (!FEATURED_TOOLKIT_SLUGS.includes(toolkitSlug as (typeof FEATURED_TOOLKIT_SLUGS)[number])) {
+    if (
+      !FEATURED_TOOLKIT_SLUGS.includes(
+        toolkitSlug as (typeof FEATURED_TOOLKIT_SLUGS)[number]
+      )
+    ) {
       throw new Error("Unsupported toolkit")
     }
     if (!isComposioAvailable(this.config)) {
@@ -60,9 +64,11 @@ export class IntegrationService {
     }
 
     const redirectBase =
-      this.config.composioRedirectBaseUrl ?? "http://127.0.0.1:3001"
+      this.config.composioRedirectBaseUrl ??
+      `http://127.0.0.1:${this.config.port}`
     const callbackUrl = `${redirectBase}/api/integrations/callback?toolkitSlug=${encodeURIComponent(toolkitSlug)}`
-    const existing = this.repos.integrationConnections.getByToolkitSlug(toolkitSlug)
+    const existing =
+      this.repos.integrationConnections.getByToolkitSlug(toolkitSlug)
     if (existing?.status === "connected") {
       throw new Error("toolkit_already_connected")
     }
@@ -104,12 +110,11 @@ export class IntegrationService {
     status?: string
     mock?: boolean
   }) {
-    let connection =
-      input.connectionRequestId
-        ? this.repos.integrationConnections.getByConnectionRequestId(
-            input.connectionRequestId
-          )
-        : null
+    let connection = input.connectionRequestId
+      ? this.repos.integrationConnections.getByConnectionRequestId(
+          input.connectionRequestId
+        )
+      : null
 
     if (!connection && input.toolkitSlug) {
       connection = this.repos.integrationConnections.getByToolkitSlug(
@@ -146,7 +151,9 @@ export class IntegrationService {
       refreshed = await this.composio.refreshConnectedAccount(accountId)
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to refresh connected account"
+        error instanceof Error
+          ? error.message
+          : "Failed to refresh connected account"
       const failed = this.repos.integrationConnections.update(connection.id, {
         status: "error",
         errorCode: "connection_error",
@@ -204,7 +211,9 @@ export class IntegrationService {
         })
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Failed to refresh connection"
+          error instanceof Error
+            ? error.message
+            : "Failed to refresh connection"
         this.repos.integrationConnections.update(connection.id, {
           status: "error",
           errorCode: "refresh_failed",

@@ -14,6 +14,18 @@ import { createId, nowIso } from "../lib/ids.js"
 type AgentRow = typeof agents.$inferSelect
 type VersionRow = typeof agentConfigurationVersions.$inferSelect
 
+type AgentCreateInput = {
+  name: string
+  description?: string | null
+  systemPrompt: string
+  model: string
+}
+
+type AgentToolGrantCreateInput = {
+  toolkitSlug: string
+  connectionId: string
+}
+
 function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
   return {
     id: row.id,
@@ -46,12 +58,14 @@ function mapAgent(
 export class AgentRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  create(input: {
-    name: string
-    description?: string | null
-    systemPrompt: string
-    model: string
-  }): AgentListItem {
+  create(input: AgentCreateInput): AgentListItem {
+    return this.createWithGrants(input, [])
+  }
+
+  createWithGrants(
+    input: AgentCreateInput,
+    grants: AgentToolGrantCreateInput[]
+  ): AgentListItem {
     const now = nowIso()
     const agentRow = {
       id: createId("agent"),
@@ -70,13 +84,24 @@ export class AgentRepository {
       model: input.model,
       createdAt: now,
     }
+    const grantRows = grants.map((grant) => ({
+      id: createId("grant"),
+      scopeType: "agent",
+      scopeId: agentRow.id,
+      toolkitSlug: grant.toolkitSlug,
+      connectionId: grant.connectionId,
+      createdAt: now,
+    }))
 
     this.db.transaction((tx) => {
       tx.insert(agents).values(agentRow).run()
       tx.insert(agentConfigurationVersions).values(versionRow).run()
+      for (const grantRow of grantRows) {
+        tx.insert(toolAccessGrants).values(grantRow).run()
+      }
     })
 
-    return mapAgent(agentRow, mapVersion(versionRow), 0)
+    return mapAgent(agentRow, mapVersion(versionRow), grantRows.length)
   }
 
   getById(id: string): AgentListItem | null {

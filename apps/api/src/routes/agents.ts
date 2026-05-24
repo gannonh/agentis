@@ -69,21 +69,15 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       })
     }
 
-    const created = repos.agents.create({
-      name: body.name,
-      description: body.description,
-      systemPrompt: body.systemPrompt,
-      model: body.model ?? config.defaultModel,
-    })
-
-    for (const grant of resolvedGrants) {
-      repos.toolAccessGrants.create({
-        scopeType: "agent",
-        scopeId: created.id,
-        toolkitSlug: grant.toolkitSlug,
-        connectionId: grant.connectionId,
-      })
-    }
+    const created = repos.agents.createWithGrants(
+      {
+        name: body.name,
+        description: body.description,
+        systemPrompt: body.systemPrompt,
+        model: body.model ?? config.defaultModel,
+      },
+      resolvedGrants
+    )
 
     const agent = repos.agents.getById(created.id) ?? created
     return c.json(
