@@ -17,6 +17,6 @@ describe("AgentPicker", () => {
     expect(screen.getByText("Daily Briefing")).toBeInTheDocument()
     expect(
       screen.getByRole("menuitem", { name: /Create from scratch/i })
-    ).toHaveAttribute("href", "/projects/new")
+    ).toHaveAttribute("href", "/agents/new")
   })
 })

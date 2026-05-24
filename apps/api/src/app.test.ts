@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "./app.js"
 import { createTestContext, type TestContext } from "./test/setup.js"
-import { isRuntimeAvailable } from "./config.js"
+import { isRuntimeAvailable, loadConfig } from "./config.js"
 
 let ctx: TestContext | undefined
 
@@ -47,6 +47,46 @@ describe("api routes", () => {
     expect(body.thread.id).toBeTruthy()
     expect(body.message.role).toBe("user")
     expect(body.run.status).toBe("queued")
+  })
+
+  it("allows a configured web origin with a trailing slash", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      webAppOrigin: "http://127.0.0.1:5177/",
+    })
+
+    const response = await app.request("/api/health", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://127.0.0.1:5177",
+        "Access-Control-Request-Method": "GET",
+      },
+    })
+
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "http://127.0.0.1:5177"
+    )
+  })
+
+  it("allows the configured web origin for browser requests", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      webAppOrigin: "http://127.0.0.1:5177",
+    })
+
+    const response = await app.request("/api/health", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://localhost:5177",
+        "Access-Control-Request-Method": "GET",
+      },
+    })
+
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "http://localhost:5177"
+    )
   })
 
   it("returns thread detail for resume", async () => {
@@ -102,6 +142,24 @@ describe("api routes", () => {
 })
 
 describe("config", () => {
+  it("uses Agentis-specific dev ports before generic PORT", () => {
+    const config = loadConfig({
+      AGENTIS_API_PORT: "3101",
+      PORT: "3001",
+      AGENTIS_WEB_ORIGIN: "http://127.0.0.1:5177",
+    })
+
+    expect(config.port).toBe(3101)
+    expect(config.webAppOrigin).toBe("http://127.0.0.1:5177")
+  })
+
+  it("defaults to the reserved Agentis dev ports", () => {
+    const config = loadConfig({})
+
+    expect(config.port).toBe(3101)
+    expect(config.webAppOrigin).toBe("http://127.0.0.1:5177")
+  })
+
   it("detects runtime availability from api key or mock mode", () => {
     expect(
       isRuntimeAvailable({ openAiApiKey: "x", mockRuntime: false } as never)

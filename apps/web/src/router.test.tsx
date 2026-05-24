@@ -1,9 +1,9 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { RouterProvider, createMemoryRouter } from "react-router"
 import { router } from "@/router"
 
 describe("router", () => {
-  it("redirects / to new thread home inside the shell", () => {
+  it("redirects / to new thread home inside the shell", async () => {
     const memoryRouter = createMemoryRouter(router.routes, {
       initialEntries: ["/"],
     })
@@ -15,8 +15,11 @@ describe("router", () => {
       "#main-content"
     )
     expect(
-      screen.getByRole("heading", { name: "Let's get to work." })
+      await screen.findByRole("heading", { name: "Let's get to work." })
     ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByText("Loading…")).not.toBeInTheDocument()
+    })
   })
 
   it("renders not found for unknown paths", async () => {

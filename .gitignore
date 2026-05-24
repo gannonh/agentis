@@ -32,3 +32,4 @@ npm-debug.log*
 test-results/
 .obsidian/
 uat-evidence/
+tmp.md

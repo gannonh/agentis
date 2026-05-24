@@ -9,26 +9,59 @@ import type {
   ComposioToolExecuteResult,
 } from "./types.js"
 import { mapComposioAccountStatus } from "./mock-composio-client.js"
+import { toAppToolkitSlug, toComposioToolkitSlug } from "./toolkit-slugs.js"
 
 function mapConnectionStatus(status: string): ConnectionStatus {
   return mapComposioAccountStatus(status)
 }
 
-async function resolveAuthConfigId(
-  composio: Composio,
+type AuthConfigLookupClient = {
+  authConfigs: {
+    list(query: { toolkit: string }): Promise<{ items: unknown[] }>
+    create(
+      toolkit: string,
+      input: { type: "use_composio_managed_auth"; name: string }
+    ): Promise<{ id: string }>
+  }
+  toolkits: {
+    get(toolkit: string): Promise<{
+      name: string
+      authConfigDetails?: unknown[]
+    }>
+  }
+}
+
+type ListedAuthConfig = {
+  id: string
+  toolkit?: { slug?: string } | string
+  toolkitSlug?: string
+}
+
+function getAuthConfigToolkitSlug(authConfig: ListedAuthConfig) {
+  if (typeof authConfig.toolkit === "string") return authConfig.toolkit
+  return authConfig.toolkit?.slug ?? authConfig.toolkitSlug
+}
+
+export async function resolveAuthConfigId(
+  composio: AuthConfigLookupClient,
   toolkitSlug: string
 ): Promise<string> {
-  const listed = await composio.authConfigs.list({ toolkit: toolkitSlug })
-  let authConfigId = listed.items[0]?.id
+  const composioToolkitSlug = toComposioToolkitSlug(toolkitSlug)
+  const listed = await composio.authConfigs.list({ toolkit: composioToolkitSlug })
+  const authConfigId = (listed.items as ListedAuthConfig[]).find(
+    (authConfig) =>
+      toComposioToolkitSlug(getAuthConfigToolkitSlug(authConfig) ?? "") ===
+      composioToolkitSlug
+  )?.id
 
   if (authConfigId) return authConfigId
 
-  const toolkit = await composio.toolkits.get(toolkitSlug)
+  const toolkit = await composio.toolkits.get(composioToolkitSlug)
   if (!toolkit.authConfigDetails?.length) {
     throw new Error(`No auth configs found for toolkit ${toolkitSlug}`)
   }
 
-  const created = await composio.authConfigs.create(toolkitSlug, {
+  const created = await composio.authConfigs.create(composioToolkitSlug, {
     type: "use_composio_managed_auth",
     name: `${toolkit.name} Auth Config`,
   })
@@ -84,7 +117,7 @@ export class LiveComposioClient implements ComposioClientAdapter {
     connectedAccountId: string
   ): Promise<ComposioConnectedAccount> {
     const account = await this.composio.connectedAccounts.get(connectedAccountId)
-    const toolkitSlug = account.toolkit?.slug ?? "unknown"
+    const toolkitSlug = toAppToolkitSlug(account.toolkit?.slug ?? "unknown")
     const accountRecord = account as {
       member?: { email?: string; name?: string }
       scopes?: string[]
@@ -108,7 +141,7 @@ export class LiveComposioClient implements ComposioClientAdapter {
       }
       return {
         id: account.id,
-        toolkitSlug: account.toolkit?.slug ?? "unknown",
+        toolkitSlug: toAppToolkitSlug(account.toolkit?.slug ?? "unknown"),
         status: mapConnectionStatus(account.status),
         accountLabel:
           accountRecord.member?.email ??

@@ -1,4 +1,5 @@
 import { DEFAULT_OPENAI_MODEL } from "@workspace/shared"
+import { toAppToolkitSlug } from "./composio/toolkit-slugs.js"
 import { FEATURED_TOOLKIT_SLUGS } from "./repositories/integration-seeds.js"
 
 /** Composio toolkit versions for manual tool execution when env is unset. */
@@ -33,7 +34,11 @@ function parseToolkitVersions(raw: string | undefined): Record<string, string> {
   if (!raw?.trim()) return {}
   try {
     const parsed = JSON.parse(raw) as unknown
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return {}
     }
     return Object.fromEntries(
@@ -50,7 +55,9 @@ function resolveComposioToolkitVersions(
   env: NodeJS.ProcessEnv
 ): Record<string, string> {
   const fromEnv = parseToolkitVersions(env.COMPOSIO_TOOLKIT_VERSIONS)
-  const merged: Record<string, string> = { ...DEFAULT_COMPOSIO_TOOLKIT_VERSIONS }
+  const merged: Record<string, string> = {
+    ...DEFAULT_COMPOSIO_TOOLKIT_VERSIONS,
+  }
   for (const slug of FEATURED_TOOLKIT_SLUGS) {
     const envKey = `COMPOSIO_TOOLKIT_VERSION_${slug.replace(/-/g, "_").toUpperCase()}`
     const single = env[envKey]
@@ -58,12 +65,20 @@ function resolveComposioToolkitVersions(
       merged[slug] = single.trim()
     }
   }
-  return { ...merged, ...fromEnv }
+  const normalizedFromEnv = Object.fromEntries(
+    Object.entries(fromEnv).map(([slug, version]) => [
+      toAppToolkitSlug(slug),
+      version,
+    ])
+  )
+  return { ...merged, ...normalizedFromEnv }
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  const port = Number(env.AGENTIS_API_PORT ?? env.PORT ?? 3101)
+
   return {
-    port: Number(env.PORT ?? 3001),
+    port,
     databaseUrl: env.DATABASE_URL ?? "./data/agentis.db",
     openAiApiKey: env.OPENAI_API_KEY,
     defaultModel: DEFAULT_OPENAI_MODEL,
@@ -73,7 +88,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     composioUserId: env.COMPOSIO_USER_ID ?? "agentis-local-user",
     composioToolkitVersions: resolveComposioToolkitVersions(env),
     mockComposio: env.AGENTIS_MOCK_COMPOSIO === "1",
-    webAppOrigin: env.AGENTIS_WEB_ORIGIN ?? "http://localhost:5173",
+    webAppOrigin: env.AGENTIS_WEB_ORIGIN ?? "http://127.0.0.1:5177",
     storageRoot: env.AGENTIS_STORAGE_ROOT ?? "./data/storage",
     artifactMaxUploadBytes: Number(
       env.AGENTIS_ARTIFACT_MAX_UPLOAD_BYTES ?? 10_485_760
@@ -101,7 +116,11 @@ export function isComposioAvailable(config: AppConfig) {
 
 export function getComposioUnavailableReason(
   config: AppConfig
-): "missing_api_key" | "missing_redirect_base_url" | "mock_enabled" | undefined {
+):
+  | "missing_api_key"
+  | "missing_redirect_base_url"
+  | "mock_enabled"
+  | undefined {
   if (config.mockComposio) return "mock_enabled"
   if (!config.composioApiKey) return "missing_api_key"
   if (!config.composioRedirectBaseUrl) return "missing_redirect_base_url"

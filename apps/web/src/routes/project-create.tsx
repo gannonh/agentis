@@ -75,7 +75,11 @@ export function ProjectCreatePage() {
           />
         </CardContent>
         <CardFooter className="flex justify-between gap-2">
-          <Button variant="outline" render={<Link to="/threads/new" />}>
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link to="/threads/new" />}
+          >
             Cancel
           </Button>
           <Button

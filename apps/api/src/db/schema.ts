@@ -40,6 +40,44 @@ export const projectMemories = sqliteTable(
   (table) => [index("project_memories_project_id_idx").on(table.projectId)]
 )
 
+export const agents = sqliteTable(
+  "agents",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    systemPrompt: text("system_prompt").notNull(),
+    model: text("model").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("agents_name_idx").on(table.name),
+    index("agents_updated_at_idx").on(table.updatedAt),
+  ]
+)
+
+export const agentConfigurationVersions = sqliteTable(
+  "agent_configuration_versions",
+  {
+    id: text("id").primaryKey(),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    systemPrompt: text("system_prompt").notNull(),
+    model: text("model").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("agent_configuration_versions_agent_id_idx").on(table.agentId),
+    uniqueIndex("agent_configuration_versions_agent_version_unique").on(
+      table.agentId,
+      table.version
+    ),
+  ]
+)
+
 export const threads = sqliteTable("threads", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),

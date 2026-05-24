@@ -38,7 +38,8 @@ import {
 } from "@workspace/ui/components/sidebar"
 import { cn } from "@workspace/ui/lib/utils"
 import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
-import { getNavAgents, getWorkspace } from "@/fixtures"
+import { getWorkspace } from "@/fixtures"
+import { useAgents } from "@/hooks/use-agents"
 import { useProjects } from "@/hooks/use-projects"
 import { listThreads } from "@/lib/api/client"
 
@@ -133,7 +134,12 @@ function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
 
 export function AppSidebar() {
   const workspace = getWorkspace()
-  const agents = getNavAgents().filter((a) => a.id !== "command-center")
+  const {
+    agents,
+    loading: loadingAgents,
+    error: agentsError,
+    refresh: refreshAgents,
+  } = useAgents()
   const location = useLocation()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
   const { projects, refresh: refreshProjects } = useProjects()
@@ -153,7 +159,8 @@ export function AppSidebar() {
       .then(setThreads)
       .catch(() => setThreads([]))
     void refreshProjects()
-  }, [location.pathname, location.search, refreshProjects])
+    void refreshAgents()
+  }, [location.pathname, location.search, refreshAgents, refreshProjects])
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -202,13 +209,18 @@ export function AppSidebar() {
 
         <Collapsible defaultOpen className="group/collapsible">
           <SidebarGroup>
-            <SidebarGroupLabel
-              render={
-                <CollapsibleTrigger className="flex w-full items-center">
-                  Agents
-                </CollapsibleTrigger>
-              }
-            />
+            <SidebarGroupLabel className="flex w-full items-center justify-between gap-1">
+              <CollapsibleTrigger className="flex flex-1 items-center gap-1">
+                <span>Agents</span>
+              </CollapsibleTrigger>
+              <Link
+                to="/agents/new"
+                aria-label="New agent"
+                className="text-muted-foreground hover:text-sidebar-foreground flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-sidebar-accent"
+              >
+                <HugeiconsIcon icon={Add01Icon} className="size-3.5" strokeWidth={2} />
+              </Link>
+            </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -216,12 +228,26 @@ export function AppSidebar() {
                     <HugeiconsIcon icon={CommandIcon} strokeWidth={2} />
                     <span>Command Center</span>
                   </SidebarNavItem>
-                  {agents.map((agent) => (
-                    <SidebarNavItem key={agent.id} to={`/agents/${agent.id}`}>
-                      {agentNavIcon(agent.icon)}
-                      <span>{agent.name}</span>
-                    </SidebarNavItem>
-                  ))}
+                  {loadingAgents ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton disabled className="text-muted-foreground h-8">
+                        <span className="text-xs">Loading agents…</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : agentsError ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton disabled className="text-muted-foreground h-8">
+                        <span className="text-xs">Agents unavailable</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : (
+                    agents.map((agent) => (
+                      <SidebarNavItem key={agent.id} to={`/agents/${agent.id}`}>
+                        {agentNavIcon()}
+                        <span>{agent.name}</span>
+                      </SidebarNavItem>
+                    ))
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>

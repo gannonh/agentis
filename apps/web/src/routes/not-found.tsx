@@ -10,7 +10,12 @@ export function NotFoundPage() {
         title="Page not found"
         description="That URL is not part of this workspace yet. Use the sidebar or return home."
       />
-      <Button render={<Link to="/threads/new" />} variant="outline" size="sm">
+      <Button
+        render={<Link to="/threads/new" />}
+        nativeButton={false}
+        variant="outline"
+        size="sm"
+      >
         New thread
       </Button>
     </PageLayout>

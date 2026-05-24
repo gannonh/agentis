@@ -195,14 +195,66 @@ export const runtimeHealthSchema = z.object({
     .object({
       available: z.boolean(),
       reason: z
-        .enum([
-          "missing_api_key",
-          "missing_redirect_base_url",
-          "mock_enabled",
-        ])
+        .enum(["missing_api_key", "missing_redirect_base_url", "mock_enabled"])
         .optional(),
     })
     .optional(),
+})
+
+export const agentConfigurationVersionSummarySchema = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  version: z.number().int().positive(),
+  systemPrompt: z.string(),
+  model: z.string(),
+  createdAt: z.string(),
+})
+
+export const agentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  systemPrompt: z.string(),
+  model: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const agentListItemSchema = agentSchema.extend({
+  currentConfigurationVersion: agentConfigurationVersionSummarySchema,
+  toolGrantCount: z.number().int().nonnegative(),
+})
+
+export const agentToolGrantInputSchema = z.object({
+  toolkitSlug: z.string().min(1),
+  connectionId: z.string().optional(),
+})
+
+export const createAgentRequestSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  systemPrompt: z.string().min(1),
+  model: z.string().optional(),
+  toolGrants: z.array(agentToolGrantInputSchema).optional(),
+})
+
+export const updateAgentRequestSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  systemPrompt: z.string().min(1).optional(),
+  model: z.string().optional(),
+  toolGrants: z.array(agentToolGrantInputSchema).optional(),
+})
+
+export const agentToolGrantsResponseSchema = z.object({
+  grants: z.array(toolAccessGrantSchema),
+  availableToolkits: z.array(integrationToolkitSchema),
+})
+
+export const agentDetailResponseSchema = z.object({
+  agent: agentListItemSchema,
+  configurationVersions: z.array(agentConfigurationVersionSummarySchema),
+  toolGrants: z.array(toolAccessGrantSchema),
 })
 
 export const createThreadRequestSchema = z.object({
@@ -383,11 +435,25 @@ export type ComposioRemediationCode = z.infer<
   typeof composioRemediationCodeSchema
 >
 export type RuntimeHealth = z.infer<typeof runtimeHealthSchema>
+export type AgentConfigurationVersionSummary = z.infer<
+  typeof agentConfigurationVersionSummarySchema
+>
+export type Agent = z.infer<typeof agentSchema>
+export type AgentListItem = z.infer<typeof agentListItemSchema>
+export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
+export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
+export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
+export type AgentToolGrantsResponse = z.infer<
+  typeof agentToolGrantsResponseSchema
+>
+export type AgentDetailResponse = z.infer<typeof agentDetailResponseSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>
 export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>
 export type CreateFollowUpRequest = z.infer<typeof createFollowUpRequestSchema>
 export type UpdateThreadRequest = z.infer<typeof updateThreadRequestSchema>
-export type CreateFollowUpResponse = z.infer<typeof createFollowUpResponseSchema>
+export type CreateFollowUpResponse = z.infer<
+  typeof createFollowUpResponseSchema
+>
 export type ProjectStatus = z.infer<typeof projectStatusSchema>
 export type Project = z.infer<typeof projectSchema>
 export type ProjectMemory = z.infer<typeof projectMemorySchema>
