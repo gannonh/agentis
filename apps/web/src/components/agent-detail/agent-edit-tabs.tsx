@@ -465,42 +465,49 @@ const INVOCATION_OPTIONS = [
   {
     title: "Live mode",
     description: "Keep this agent ready for ongoing work.",
+    status: "Planned for a later milestone",
     action: "Set up",
     icon: ZapIcon,
   },
   {
     title: "Thread",
     description: "Start a test thread from this agent detail page.",
-    enabled: true,
+    status: "Available now",
+    action: null,
     icon: ChatIcon,
   },
   {
     title: "Slack",
     description: "Let this agent respond from Slack.",
+    status: "Planned for a later milestone",
     action: "Connect",
     icon: SlackIcon,
   },
   {
     title: "Telegram",
     description: "Let this agent respond from Telegram.",
+    status: "Planned for a later milestone",
     action: "Connect",
     icon: TelegramIcon,
   },
   {
     title: "Scheduled",
     description: "Run this agent on a schedule.",
+    status: "Planned for a later milestone",
     action: "Create schedule",
     icon: Calendar03Icon,
   },
   {
     title: "Webhook",
     description: "Trigger this agent from an HTTP request.",
+    status: "Planned for a later milestone",
     action: "Create webhook",
     icon: WebhookIcon,
   },
   {
     title: "Email",
     description: "Let this agent respond from email.",
+    status: "Planned for a later milestone",
     action: "Create email",
     icon: Mail01Icon,
   },
@@ -526,20 +533,14 @@ export function AgentInvocationsTab() {
             <span className="min-w-0">
               <span className="flex items-center gap-2 text-sm font-medium">
                 {option.title}
-                <Badge variant="secondary">
-                  {"enabled" in option
-                    ? "Available now"
-                    : "Planned for a later milestone"}
-                </Badge>
+                <Badge variant="secondary">{option.status}</Badge>
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
                 {option.description}
               </span>
             </span>
           </div>
-          {"enabled" in option ? (
-            <TogglePill checked />
-          ) : (
+          {option.action ? (
             <Button type="button" variant="outline" size="sm" disabled>
               <HugeiconsIcon
                 icon={PlusSignIcon}
@@ -548,6 +549,8 @@ export function AgentInvocationsTab() {
               />
               {option.action}
             </Button>
+          ) : (
+            <TogglePill checked />
           )}
         </article>
       ))}
@@ -685,10 +688,10 @@ const KNOWLEDGE_PRESETS = [
 ] as const
 
 const SELF_IMPROVEMENT_ROWS = [
-  ["Memory suggestions", true, true],
-  ["Skill suggestions", true, true],
-  ["Prompt suggestions", true, false],
-  ["Agent configs", false, false],
+  { label: "Memory suggestions", enabled: true, reviewMode: "Auto-save" },
+  { label: "Skill suggestions", enabled: true, reviewMode: "Auto-save" },
+  { label: "Prompt suggestions", enabled: true, reviewMode: "Manual review" },
+  { label: "Agent configs", enabled: false, reviewMode: "Manual review" },
 ] as const
 
 export function AgentKnowledgeTab({
@@ -724,7 +727,7 @@ export function AgentKnowledgeTab({
                 {preset.description}
               </p>
               {preset.note ? (
-                <p className="mt-auto pt-3 text-xs italic text-muted-foreground">
+                <p className="mt-auto pt-3 text-xs text-muted-foreground italic">
                   {preset.note}
                 </p>
               ) : null}
@@ -749,15 +752,15 @@ export function AgentKnowledgeTab({
               <TogglePill checked />
             </div>
             <div className="grid gap-2 border-t border-border pt-3">
-              {SELF_IMPROVEMENT_ROWS.map(([label, enabled, autosave]) => (
+              {SELF_IMPROVEMENT_ROWS.map((row) => (
                 <div
-                  key={label}
+                  key={row.label}
                   className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm"
                 >
-                  <span>{label}</span>
+                  <span>{row.label}</span>
                   <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {autosave ? "Auto-save" : "Manual review"}
-                    <TogglePill checked={enabled} />
+                    {row.reviewMode}
+                    <TogglePill checked={row.enabled} />
                   </span>
                 </div>
               ))}
@@ -797,12 +800,15 @@ export function AgentKnowledgeTab({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 id="agent-context-files-heading" className="text-sm font-medium">
+            <h2
+              id="agent-context-files-heading"
+              className="text-sm font-medium"
+            >
               Context files
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Documents and reference files attached to this agent for use during
-              conversations.
+              Documents and reference files attached to this agent for use
+              during conversations.
             </p>
           </div>
           <Button
@@ -820,22 +826,14 @@ export function AgentKnowledgeTab({
           </Button>
         </div>
         <p className="mt-5 rounded-xl bg-muted/40 px-4 py-8 text-center text-sm text-muted-foreground">
-          No context files added yet. Attach reference files when this capability
-          is available.
+          No context files added yet. Attach reference files when this
+          capability is available.
         </p>
       </section>
 
       <AgentLibrarySummary information={information} />
     </div>
   )
-}
-
-export function AgentLibraryTab({
-  information,
-}: {
-  information: AgentDetailInformation
-}) {
-  return <AgentLibrarySummary information={information} />
 }
 
 const TOOL_GROUPS = [

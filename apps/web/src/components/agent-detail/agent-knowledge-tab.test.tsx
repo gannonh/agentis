@@ -14,28 +14,39 @@ describe("AgentKnowledgeTab", () => {
   it("renders honest Knowledge placeholder copy for AGT-06 surfaces", () => {
     render(<AgentKnowledgeTab information={emptyInformation()} />)
 
-    expect(screen.getByRole("heading", { name: "Knowledge discovery" })).toBeInTheDocument()
-    expect(screen.getByText("Allow this agent to find and use existing knowledge while it works.")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Knowledge access" })).toBeInTheDocument()
-
-    for (const label of ["Personal", "Curated", "Team learning", "Custom"]) {
-      expect(screen.getByRole("heading", { name: label })).toBeInTheDocument()
+    for (const heading of [
+      "Knowledge discovery",
+      "Knowledge access",
+      "Personal",
+      "Curated",
+      "Team learning",
+      "Custom",
+      "Memories",
+      "Context files",
+      "Library",
+    ]) {
+      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument()
     }
 
-    expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
-    expect(screen.getByText("No memories yet. Add one to give this agent persistent context.")).toBeInTheDocument()
+    for (const text of [
+      "Allow this agent to find and use existing knowledge while it works.",
+      "No memories yet. Add one to give this agent persistent context.",
+      "No context files added yet. Attach reference files when this capability is available.",
+      "0 items",
+      "No library artifacts yet",
+    ]) {
+      expect(screen.getByText(text)).toBeInTheDocument()
+    }
+
     expect(screen.getByRole("button", { name: "Add memories" })).toBeDisabled()
-
-    expect(screen.getByRole("heading", { name: "Context files" })).toBeInTheDocument()
-    expect(screen.getByText("No context files added yet. Attach reference files when this capability is available.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Add context file" })).toBeDisabled()
-
-    expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
-    expect(screen.getByText("0 items")).toBeInTheDocument()
-    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Add context file" })
+    ).toBeDisabled()
 
     const knowledgeSurface = screen.getByTestId("agent-knowledge-tab")
-    expect(knowledgeSurface).not.toHaveTextContent(/mock|fixture|runtime|integration/i)
+    expect(knowledgeSurface).not.toHaveTextContent(
+      /mock|fixture|runtime|integration/i
+    )
   })
 
   it("preserves API-backed library summaries inside Knowledge", () => {
@@ -73,10 +84,14 @@ describe("AgentKnowledgeTab", () => {
       />
     )
 
-    const library = screen.getByRole("region", { name: "Library" })
-    expect(within(library).getByText("1 item")).toBeInTheDocument()
-    expect(within(library).getByText("Research notes")).toBeInTheDocument()
-    expect(within(library).getByText("document · text/markdown")).toBeInTheDocument()
-    expect(within(library).getByText("From Test Created Research Agent")).toBeInTheDocument()
+    const library = within(screen.getByRole("region", { name: "Library" }))
+    for (const text of [
+      "1 item",
+      "Research notes",
+      "document · text/markdown",
+      "From Test Created Research Agent",
+    ]) {
+      expect(library.getByText(text)).toBeInTheDocument()
+    }
   })
 })

@@ -11,6 +11,16 @@ afterEach(() => {
   ctx = undefined
 })
 
+function createMockRuntimeApp(setup?: (context: TestContext) => void) {
+  ctx = createTestContext()
+  setup?.(ctx)
+  const services = createComposioServices(ctx.repos, ctx.config)
+  return {
+    app: createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services),
+    context: ctx,
+  }
+}
+
 describe("run executor composio bridge", () => {
   it("keeps the createArtifact step title when finalizing tool calls", () => {
     expect(
@@ -30,10 +40,9 @@ describe("run executor composio bridge", () => {
   })
 
   it("returns remediation when Slack is requested without grant", async () => {
-    ctx = createTestContext()
-    ctx.repos.integrationToolkits.seedFeatured()
-    const services = createComposioServices(ctx.repos, ctx.config)
-    const app = createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services)
+    const { app, context } = createMockRuntimeApp((testContext) => {
+      testContext.repos.integrationToolkits.seedFeatured()
+    })
 
     const created = await app.request("/api/threads", {
       method: "POST",
@@ -46,28 +55,26 @@ describe("run executor composio bridge", () => {
       method: "POST",
     })
     expect(stream.status).toBe(400)
-    const failedRun = ctx.repos.runs.getById(run.id)
-    expect(failedRun?.status).toBe("failed")
-    const steps = ctx.repos.steps.listByRunId(run.id)
+    expect(context.repos.runs.getById(run.id)?.status).toBe("failed")
     expect(
-      steps.some(
-        (step) =>
-          step.title === "Integration required" ||
-          step.payload?.remediation === "toolkit_not_connected"
-      )
+      context.repos.steps
+        .listByRunId(run.id)
+        .some(
+          (step) =>
+            step.title === "Integration required" ||
+            step.payload?.remediation === "toolkit_not_connected"
+        )
     ).toBe(true)
   })
 
   it("loads the bound agent configuration version when streaming a test-thread run", async () => {
-    ctx = createTestContext()
-    const services = createComposioServices(ctx.repos, ctx.config)
-    const app = createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services)
-    const agent = ctx.repos.agents.create({
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
       name: "Research Agent",
       systemPrompt: "Answer as the research agent.",
       model: "gpt-4o-mini",
     })
-    const updated = ctx.repos.agents.update(agent.id, {
+    const updated = context.repos.agents.update(agent.id, {
       systemPrompt: "Answer with citations and source quality notes.",
       model: "gpt-4.1-mini",
     })!
@@ -84,12 +91,12 @@ describe("run executor composio bridge", () => {
     expect(stream.status).toBe(200)
     await stream.text()
 
-    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+    expect(context.repos.runs.getById(run.id)).toMatchObject({
       status: "completed",
       model: "gpt-4.1-mini",
       agentConfigurationVersionId: updated.currentConfigurationVersion.id,
     })
-    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           title: "Agent configuration loaded",
@@ -104,10 +111,8 @@ describe("run executor composio bridge", () => {
   }, 10_000)
 
   it("fails the run and thread when the bound agent configuration is missing", async () => {
-    ctx = createTestContext()
-    const services = createComposioServices(ctx.repos, ctx.config)
-    const app = createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services)
-    const agent = ctx.repos.agents.create({
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
       name: "Research Agent",
       systemPrompt: "Answer as the research agent.",
       model: "gpt-4o-mini",
@@ -121,9 +126,10 @@ describe("run executor composio bridge", () => {
       thread: { id: string }
       run: { id: string; agentConfigurationVersionId: string }
     }
-    vi.spyOn(ctx.repos.agents, "getConfigurationVersionById").mockReturnValue(
-      null
-    )
+    vi.spyOn(
+      context.repos.agents,
+      "getConfigurationVersionById"
+    ).mockReturnValue(null)
 
     const stream = await app.request(`/api/runs/${run.id}/stream`, {
       method: "POST",
@@ -131,12 +137,12 @@ describe("run executor composio bridge", () => {
 
     expect(stream.status).toBe(404)
     const message = `Agent configuration version not found: ${run.agentConfigurationVersionId}`
-    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+    expect(context.repos.runs.getById(run.id)).toMatchObject({
       status: "failed",
       errorSummary: message,
     })
-    expect(ctx.repos.threads.getById(thread.id)?.status).toBe("failed")
-    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
+    expect(context.repos.threads.getById(thread.id)?.status).toBe("failed")
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: "error",
@@ -149,15 +155,13 @@ describe("run executor composio bridge", () => {
   })
 
   it("keeps the agent configuration binding on follow-up runs", async () => {
-    ctx = createTestContext()
-    const services = createComposioServices(ctx.repos, ctx.config)
-    const app = createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services)
-    const agent = ctx.repos.agents.create({
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
       name: "Research Agent",
       systemPrompt: "Answer as the research agent.",
       model: "gpt-4o-mini",
     })
-    const updated = ctx.repos.agents.update(agent.id, {
+    const updated = context.repos.agents.update(agent.id, {
       systemPrompt: "Answer with citations and source quality notes.",
       model: "gpt-4.1-mini",
     })!
@@ -187,7 +191,7 @@ describe("run executor composio bridge", () => {
     expect(stream.status).toBe(200)
     await stream.text()
 
-    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           title: "Agent configuration loaded",
