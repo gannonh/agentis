@@ -22,7 +22,7 @@ import {
   AgentActivityTab,
   AgentIdentityTab,
   AgentInvocationsTab,
-  AgentKnowledgeTab,
+  AgentLibraryTab,
   AgentModelTab,
   AgentSkillsTab,
   AgentToolsTab,
@@ -57,7 +57,7 @@ function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
     invocations: ["Thread"],
     skillsCount: 0,
     memoriesCount: 0,
-    libraryCount: 0,
+    libraryCount: detail.information.library.totalCount,
     integrationsCount: detail.toolGrants.length,
   }
 }
@@ -313,13 +313,13 @@ export function AgentDetailPage() {
                 />
                 Skills
               </TabsTrigger>
-              <TabsTrigger value="knowledge" disabled={!editable}>
+              <TabsTrigger value="library" disabled={!editable}>
                 <HugeiconsIcon
                   icon={BookOpen01Icon}
                   className="size-3.5"
                   strokeWidth={2}
                 />
-                Knowledge
+                Library
               </TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
@@ -357,8 +357,8 @@ export function AgentDetailPage() {
                 <TabsContent value="skills" className="pt-4">
                   <AgentSkillsTab />
                 </TabsContent>
-                <TabsContent value="knowledge" className="pt-4">
-                  <AgentKnowledgeTab />
+                <TabsContent value="library" className="pt-4">
+                  <AgentLibraryTab information={apiAgentDetail.information} />
                 </TabsContent>
               </>
             ) : null}

@@ -295,6 +295,57 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText(/No activity yet/)).toBeInTheDocument()
   })
 
+  it("renders API-backed library artifacts", async () => {
+    const user = userEvent.setup()
+    const now = new Date().toISOString()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({}, undefined, {
+        configuredTools: [],
+        recentThreads: [],
+        library: {
+          totalCount: 1,
+          items: [
+            {
+              id: "artifact_notes",
+              title: "Research notes",
+              description: null,
+              type: "document",
+              mimeType: "text/markdown",
+              sizeBytes: 42,
+              previewText: "Summary",
+              metadata: null,
+              projectId: null,
+              projectNameSnapshot: null,
+              threadId: "thread_recent",
+              threadTitleSnapshot: "Test Created Research Agent",
+              runId: "run_recent",
+              agentId: "agent_created",
+              agentNameSnapshot: "Created Research Agent",
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Library" }))
+
+    expect(screen.getByText("1 item")).toBeInTheDocument()
+    expect(screen.getByText("Research notes")).toBeInTheDocument()
+    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
+    expect(screen.getByText("From Test Created Research Agent")).toBeInTheDocument()
+  })
+
   it("starts an API-backed agent test thread and navigates to it", async () => {
     const user = userEvent.setup()
     const detail = apiAgentDetail()
@@ -423,7 +474,7 @@ describe("AgentDetailPage", () => {
     await screen.findByRole("heading", { name: "Created Research Agent" })
     expect(screen.getByText("Description")).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Overview" }).querySelector("svg")).not.toBeNull()
-    expect(screen.getByRole("tab", { name: "Knowledge" }).querySelector("svg")).not.toBeNull()
+    expect(screen.getByRole("tab", { name: "Library" }).querySelector("svg")).not.toBeNull()
 
     fireEvent.click(screen.getByRole("tab", { name: "Identity" }))
     expect(screen.getByRole("button", { name: /Claymorphism/ })).toBeDisabled()
@@ -453,12 +504,10 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Research")).toBeInTheDocument()
     expect(screen.getByText("Full VM")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("tab", { name: "Knowledge" }))
-    expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
-    expect(screen.getByText("Knowledge access")).toBeInTheDocument()
-    expect(screen.getByText("See what Personal learns")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Context files" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("tab", { name: "Library" }))
+    expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
+    expect(screen.getByText("0 items")).toBeInTheDocument()
+    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Configure tools" }))
     expect(screen.getByRole("tab", { name: "Tools" })).toHaveAttribute("aria-selected", "true")
@@ -467,8 +516,8 @@ describe("AgentDetailPage", () => {
     expect(screen.getByRole("tab", { name: "Skills" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByRole("heading", { name: "Skills" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Configure memory" }))
-    expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Library" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
   }, 10_000)
 
   it("shows API save errors on editable model fields", async () => {
@@ -610,28 +659,25 @@ describe("AgentDetailPage", () => {
   })
 
   it("shows a useful empty description for API-backed agents", async () => {
-    vi.mocked(getAgent).mockResolvedValueOnce({
-      agent: {
-        id: "agent_blank",
-        name: "Blank Description Agent",
-        description: null,
-        systemPrompt: "Research carefully.",
-        model: "gpt-4o-mini",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        currentConfigurationVersion: {
-          id: "version_blank",
-          agentId: "agent_blank",
-          version: 1,
-          systemPrompt: "Research carefully.",
-          model: "gpt-4o-mini",
-          createdAt: new Date().toISOString(),
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail(
+        {
+          id: "agent_blank",
+          name: "Blank Description Agent",
+          description: null,
+          currentConfigurationVersion: {
+            id: "version_blank",
+            agentId: "agent_blank",
+            version: 1,
+            systemPrompt: "Research carefully.",
+            model: "gpt-4o-mini",
+            createdAt: new Date().toISOString(),
+          },
+          toolGrantCount: 0,
         },
-        toolGrantCount: 0,
-      },
-      configurationVersions: [],
-      toolGrants: [],
-    })
+        []
+      )
+    )
 
     render(
       <MemoryRouter initialEntries={["/agents/agent_blank"]}>
