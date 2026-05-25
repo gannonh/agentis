@@ -579,7 +579,7 @@ export function AgentSkillsTab() {
   )
 }
 
-export function AgentLibraryTab({
+function AgentLibrarySummary({
   information,
 }: {
   information: AgentDetailInformation
@@ -588,6 +588,7 @@ export function AgentLibraryTab({
 
   return (
     <section
+      role="region"
       className="rounded-xl border border-border bg-card/70 p-4"
       aria-labelledby="agent-library-heading"
     >
@@ -642,6 +643,187 @@ export function AgentLibraryTab({
       )}
     </section>
   )
+}
+
+const KNOWLEDGE_PRESETS = [
+  {
+    title: "Personal",
+    description:
+      "Sees every memory and skill you've saved. Learns from conversations and keeps what's worth keeping.",
+    note: "Best for agents you use yourself.",
+  },
+  {
+    title: "Curated",
+    description:
+      "Sees only the memories and skills you link to it. You decide what it knows.",
+    note: "Best for agents you share with others.",
+  },
+  {
+    title: "Team learning",
+    description:
+      "Sees only linked memories and skills. Learns from every conversation and grows over time.",
+    note: "Best for knowledge that grows with use.",
+  },
+  {
+    title: "Custom",
+    description:
+      "Tune memory access, edit permissions, and learning behavior on your own.",
+    note: null,
+  },
+] as const
+
+const SELF_IMPROVEMENT_ROWS = [
+  ["Memory suggestions", true, true],
+  ["Skill suggestions", true, true],
+  ["Prompt suggestions", true, false],
+  ["Agent configs", false, false],
+] as const
+
+export function AgentKnowledgeTab({
+  information,
+}: {
+  information: AgentDetailInformation
+}) {
+  return (
+    <div data-testid="agent-knowledge-tab" className="flex flex-col gap-6">
+      <section className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 p-4">
+        <div>
+          <h2 className="text-sm font-medium">Knowledge discovery</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Allow this agent to find and use existing knowledge while it works.
+          </p>
+        </div>
+        <TogglePill checked />
+      </section>
+
+      <section className="rounded-xl border border-border bg-card/70 p-4">
+        <h2 className="text-sm font-medium">Knowledge access</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Choose what this agent can use and learn from.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {KNOWLEDGE_PRESETS.map((preset) => (
+            <article
+              key={preset.title}
+              className="flex min-h-36 flex-col rounded-xl border border-border bg-background/50 p-4"
+            >
+              <h3 className="text-sm font-medium">{preset.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {preset.description}
+              </p>
+              {preset.note ? (
+                <p className="mt-auto pt-3 text-xs italic text-muted-foreground">
+                  {preset.note}
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+        <div className="mt-4 rounded-xl border border-border bg-background/50">
+          <div className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
+            Configure each setting
+          </div>
+          <div className="grid gap-3 p-4">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="font-medium">Memory access</span>
+              <span className="text-muted-foreground">Linked memories</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="font-medium">Editing memories and skills</span>
+              <span className="text-muted-foreground">View only</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="font-medium">Self-improvement</span>
+              <TogglePill checked />
+            </div>
+            <div className="grid gap-2 border-t border-border pt-3">
+              {SELF_IMPROVEMENT_ROWS.map(([label, enabled, autosave]) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm"
+                >
+                  <span>{label}</span>
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {autosave ? "Auto-save" : "Manual review"}
+                    <TogglePill checked={enabled} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="rounded-xl border border-border bg-card/70 p-4"
+        aria-labelledby="agent-memories-heading"
+      >
+        <h2 id="agent-memories-heading" className="text-sm font-medium">
+          Memories
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Information the agent can reference while working on a task.
+        </p>
+        <div className="mt-5 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No memories yet. Add one to give this agent persistent context.
+          </p>
+          <Button type="button" variant="outline" size="sm" disabled>
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-3"
+              strokeWidth={2}
+            />
+            Add memories
+          </Button>
+        </div>
+      </section>
+
+      <section
+        className="rounded-xl border border-border bg-card/70 p-4"
+        aria-labelledby="agent-context-files-heading"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="agent-context-files-heading" className="text-sm font-medium">
+              Context files
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Documents and reference files attached to this agent for use during
+              conversations.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            disabled
+            aria-label="Add context file"
+          >
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-4"
+              strokeWidth={2}
+            />
+          </Button>
+        </div>
+        <p className="mt-5 rounded-xl bg-muted/40 px-4 py-8 text-center text-sm text-muted-foreground">
+          No context files added yet. Attach reference files when this capability
+          is available.
+        </p>
+      </section>
+
+      <AgentLibrarySummary information={information} />
+    </div>
+  )
+}
+
+export function AgentLibraryTab({
+  information,
+}: {
+  information: AgentDetailInformation
+}) {
+  return <AgentLibrarySummary information={information} />
 }
 
 const TOOL_GROUPS = [
