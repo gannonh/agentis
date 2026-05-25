@@ -68,7 +68,8 @@ function NavigableAgentDetailPage() {
 
 function apiAgentDetail(
   overrides: Partial<AgentDetailResponse["agent"]> = {},
-  toolGrants?: AgentDetailResponse["toolGrants"]
+  toolGrants?: AgentDetailResponse["toolGrants"],
+  information?: AgentDetailResponse["information"]
 ): AgentDetailResponse {
   const now = new Date().toISOString()
   const agent = {
@@ -106,6 +107,25 @@ function apiAgentDetail(
         createdAt: now,
       },
     ],
+    information: information ?? {
+      configuredTools: (toolGrants ?? [
+        {
+          id: "grant_created",
+          scopeType: "agent",
+          scopeId: agent.id,
+          toolkitSlug: "google-drive",
+          connectionId: "conn_google_drive",
+          createdAt: now,
+        },
+      ]).map((grant) => ({
+        id: grant.id,
+        toolkitSlug: grant.toolkitSlug,
+        connectionId: grant.connectionId,
+        createdAt: grant.createdAt,
+      })),
+      recentThreads: [],
+      library: { items: [], totalCount: 0 },
+    },
   }
 }
 
@@ -196,7 +216,83 @@ describe("AgentDetailPage", () => {
       screen.queryByRole("heading", { name: "Agent not found" })
     ).not.toBeInTheDocument()
     expect(screen.getByText("gpt-4o-mini")).toBeInTheDocument()
-    expect(screen.getByText("google-drive")).toBeInTheDocument()
+    expect(screen.getAllByText("google-drive").length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("renders API-backed overview and activity information", async () => {
+    const user = userEvent.setup()
+    const now = new Date().toISOString()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({}, undefined, {
+        configuredTools: [
+          {
+            id: "grant_created",
+            toolkitSlug: "google-drive",
+            connectionId: "conn_google_drive",
+            createdAt: now,
+          },
+        ],
+        recentThreads: [
+          {
+            id: "thread_recent",
+            title: "Test Created Research Agent",
+            status: "active",
+            model: "gpt-4o-mini",
+            agentConfigurationVersionId: "version_created",
+            createdAt: now,
+            updatedAt: now,
+            lastRunStatus: "completed",
+            artifactCount: 1,
+          },
+        ],
+        library: { items: [], totalCount: 0 },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByRole("heading", { name: "Configured tools" })
+    ).toBeInTheDocument()
+    expect(screen.getByText("Test Created Research Agent")).toBeInTheDocument()
+    expect(screen.getByText(/Latest run: completed/)).toBeInTheDocument()
+    expect(screen.getByText(/1 artifact available/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    expect(screen.getByRole("searchbox", { name: "Search threads" })).toBeInTheDocument()
+    expect(screen.getByText("Test Created Research Agent")).toBeInTheDocument()
+    expect(screen.getByText("1 artifact available from this thread.")).toBeInTheDocument()
+  })
+
+  it("renders API-backed overview and activity empty states", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({ toolGrantCount: 0 }, [], {
+        configuredTools: [],
+        recentThreads: [],
+        library: { items: [], totalCount: 0 },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText(/No tools configured yet/)).toBeInTheDocument()
+    expect(screen.getByText(/No threads yet/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    expect(screen.getByText(/No activity yet/)).toBeInTheDocument()
   })
 
   it("starts an API-backed agent test thread and navigates to it", async () => {

@@ -34,6 +34,7 @@ import {
   ZapIcon,
 } from "@hugeicons/core-free-icons"
 import type {
+  AgentDetailInformation,
   AgentDetailResponse,
   IntegrationToolkit,
   UpdateAgentRequest,
@@ -295,7 +296,11 @@ export function AgentIdentityTab({
   )
 }
 
-export function AgentActivityTab() {
+export function AgentActivityTab({
+  information,
+}: {
+  information: AgentDetailInformation
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -329,24 +334,35 @@ export function AgentActivityTab() {
           ))}
         </div>
       </div>
-      {/* TODO: replace this example thread with API-backed agent activity once runs expose thread metadata. */}
-      <article className="rounded-xl border border-border bg-card/70 p-4">
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <HugeiconsIcon
-            icon={Database01Icon}
-            className="size-4"
-            strokeWidth={2}
-          />
-          Product Launch Q4
+      {information.recentThreads.length > 0 ? (
+        information.recentThreads.map((thread) => (
+          <article
+            key={thread.id}
+            className="rounded-xl border border-border bg-card/70 p-4"
+          >
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <HugeiconsIcon
+                icon={Database01Icon}
+                className="size-4"
+                strokeWidth={2}
+              />
+              {thread.lastRunStatus
+                ? `Latest run: ${thread.lastRunStatus}`
+                : "Agent test thread"}
+            </p>
+            <h2 className="mt-2 text-lg font-medium">{thread.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {thread.artifactCount
+                ? `${thread.artifactCount} artifact${thread.artifactCount === 1 ? "" : "s"} available from this thread.`
+                : "No artifacts captured for this thread yet."}
+            </p>
+          </article>
+        ))
+      ) : (
+        <p className="rounded-xl border border-border bg-card/70 px-4 py-5 text-sm text-muted-foreground">
+          No activity yet. Start a test thread to see this agent's recent work.
         </p>
-        <h2 className="mt-2 text-lg font-medium">
-          AI Automation Consulting Lead Strategy
-        </h2>
-        <p className="mt-2 truncate text-sm text-muted-foreground">
-          Set up and executed the user's first prospecting run for their AI
-          automation consulting practice.
-        </p>
-      </article>
+      )}
     </div>
   )
 }

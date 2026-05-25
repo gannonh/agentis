@@ -12,15 +12,27 @@ import {
   DollarCircleIcon,
   Folder01Icon,
   UserIcon,
+  Wrench02Icon,
 } from "@hugeicons/core-free-icons"
+import type { AgentDetailInformation } from "@workspace/shared"
 import { formatRelativeTime } from "@/fixtures"
 import type { Thread } from "@/fixtures/schema"
 
 type AgentOverviewTabProps = {
   recentThreads: Thread[]
+  information?: AgentDetailInformation
 }
 
-function threadStatusBadge(status: Thread["status"]) {
+type OverviewThread = {
+  id: string
+  title: string
+  status: Thread["status"]
+  updatedAt: string
+  artifactCount?: number
+  lastRunStatus?: string
+}
+
+function threadStatusBadge(status: Thread["status"] | string) {
   if (status === "finished") {
     return (
       <Badge
@@ -53,22 +65,75 @@ function UsageChart() {
     .join(" ")
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-36 w-full overflow-visible" role="img" aria-label="Usage cost trend">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-36 w-full overflow-visible"
+      role="img"
+      aria-label="Usage cost trend"
+    >
       {[20, 48, 76, 104].map((y) => (
-        <line key={y} x1="0" x2={width} y1={y} y2={y} className="stroke-border" strokeWidth="1" />
+        <line
+          key={y}
+          x1="0"
+          x2={width}
+          y1={y}
+          y2={y}
+          className="stroke-border"
+          strokeWidth="1"
+        />
       ))}
-      <path d={path} fill="none" className="stroke-status-success" strokeWidth="2" />
+      <path
+        d={path}
+        fill="none"
+        className="stroke-status-success"
+        strokeWidth="2"
+      />
       {points.map((value, index) => {
         const x = index * step
         const y = height - (max ? value / max : 0) * 92 - 20
-        return <circle key={index} cx={x} cy={y} r="2.5" className="fill-status-success" />
+        return (
+          <circle
+            key={index}
+            cx={x}
+            cy={y}
+            r="2.5"
+            className="fill-status-success"
+          />
+        )
       })}
     </svg>
   )
 }
 
-export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
-  const primaryThread = recentThreads[0]
+function getOverviewThreads(
+  recentThreads: Thread[],
+  information?: AgentDetailInformation
+): OverviewThread[] {
+  if (information) {
+    return information.recentThreads.map((thread) => ({
+      id: thread.id,
+      title: thread.title,
+      status: thread.status,
+      updatedAt: thread.updatedAt,
+      artifactCount: thread.artifactCount,
+      lastRunStatus: thread.lastRunStatus,
+    }))
+  }
+
+  return recentThreads.map((thread) => ({
+    id: thread.id,
+    title: thread.title,
+    status: thread.status,
+    updatedAt: thread.updatedAt,
+  }))
+}
+
+export function AgentOverviewTab({
+  recentThreads,
+  information,
+}: AgentOverviewTabProps) {
+  const overviewThreads = getOverviewThreads(recentThreads, information)
+  const primaryThread = overviewThreads[0]
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,8 +141,15 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
         className="rounded-xl border border-border bg-card/70 p-4"
         aria-labelledby="access-heading"
       >
-        <h2 id="access-heading" className="flex items-center gap-2 text-sm font-medium">
-          <HugeiconsIcon icon={UserIcon} className="size-4 text-muted-foreground" strokeWidth={2} />
+        <h2
+          id="access-heading"
+          className="flex items-center gap-2 text-sm font-medium"
+        >
+          <HugeiconsIcon
+            icon={UserIcon}
+            className="size-4 text-muted-foreground"
+            strokeWidth={2}
+          />
           Access
         </h2>
         <div className="text-muted-foreground mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm">
@@ -97,7 +169,42 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
         </div>
       </section>
 
-      <section aria-labelledby="recent-threads-heading" className="flex flex-col gap-3">
+      {information ? (
+        <section
+          className="rounded-xl border border-border bg-card/70 p-4"
+          aria-labelledby="configured-tools-heading"
+        >
+          <h2
+            id="configured-tools-heading"
+            className="flex items-center gap-2 text-sm font-medium"
+          >
+            <HugeiconsIcon
+              icon={Wrench02Icon}
+              className="size-4 text-muted-foreground"
+              strokeWidth={2}
+            />
+            Configured tools
+          </h2>
+          {information.configuredTools.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {information.configuredTools.map((tool) => (
+                <Badge key={tool.id} variant="secondary">
+                  {tool.toolkitSlug}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+              No tools configured yet. Add integrations from the Tools tab.
+            </p>
+          )}
+        </section>
+      ) : null}
+
+      <section
+        aria-labelledby="recent-threads-heading"
+        className="flex flex-col gap-3"
+      >
         <div className="flex items-center justify-between gap-3">
           <h2 id="recent-threads-heading" className="text-sm font-medium">
             Recent threads
@@ -110,7 +217,7 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
           <article className="rounded-xl border border-border bg-card/70 p-4">
             <p className="text-muted-foreground flex items-center gap-2 text-xs">
               <HugeiconsIcon icon={Folder01Icon} className="size-4" strokeWidth={2} />
-              Product Launch Q4
+              Agent test thread
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-lg font-medium">{primaryThread.title}</h3>
@@ -121,8 +228,15 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
                 </span>
               </div>
             </div>
-            <p className="text-muted-foreground mt-3 truncate text-sm">
-              Set up and executed the user's first prospecting run. Review the work trail, handoff notes, and outputs.
+            <p className="text-muted-foreground mt-3 text-sm">
+              {primaryThread.lastRunStatus
+                ? `Latest run: ${primaryThread.lastRunStatus}`
+                : "Open this thread to review the latest work trail."}
+              {primaryThread.artifactCount
+                ? ` ${primaryThread.artifactCount} artifact${
+                    primaryThread.artifactCount === 1 ? "" : "s"
+                  } available.`
+                : ""}
             </p>
           </article>
         ) : (
@@ -144,10 +258,20 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
           </CollapsibleTrigger>
         </h2>
         <CollapsibleContent className="flex flex-col gap-6">
-          <section className="rounded-xl border border-border bg-card/70 p-5" aria-labelledby="usage-heading">
+          <section
+            className="rounded-xl border border-border bg-card/70 p-5"
+            aria-labelledby="usage-heading"
+          >
             <div className="flex items-center justify-between gap-3">
-              <h2 id="usage-heading" className="flex items-center gap-2 text-base font-medium">
-                <HugeiconsIcon icon={DollarCircleIcon} className="size-5 text-status-success" strokeWidth={2} />
+              <h2
+                id="usage-heading"
+                className="flex items-center gap-2 text-base font-medium"
+              >
+                <HugeiconsIcon
+                  icon={DollarCircleIcon}
+                  className="size-5 text-status-success"
+                  strokeWidth={2}
+                />
                 Usage
               </h2>
               <Button type="button" variant="outline" size="sm" disabled>
@@ -179,18 +303,38 @@ export function AgentOverviewTab({ recentThreads }: AgentOverviewTabProps) {
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card/70 p-5" aria-labelledby="evaluations-heading">
+          <section
+            className="rounded-xl border border-border bg-card/70 p-5"
+            aria-labelledby="evaluations-heading"
+          >
             <div className="flex items-center justify-between gap-3">
-              <h2 id="evaluations-heading" className="flex items-center gap-2 text-base font-medium">
-                <HugeiconsIcon icon={ChartLineData01Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
+              <h2
+                id="evaluations-heading"
+                className="flex items-center gap-2 text-base font-medium"
+              >
+                <HugeiconsIcon
+                  icon={ChartLineData01Icon}
+                  className="size-5 text-muted-foreground"
+                  strokeWidth={2}
+                />
                 Evaluations
               </h2>
-              <Button type="button" variant="ghost" size="icon" disabled aria-label="Evaluation actions">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled
+                aria-label="Evaluation actions"
+              >
                 ⋮
               </Button>
             </div>
             <div className="flex min-h-48 flex-col items-center justify-center text-center">
-              <HugeiconsIcon icon={ChartLineData01Icon} className="size-8 text-muted-foreground" strokeWidth={2} />
+              <HugeiconsIcon
+                icon={ChartLineData01Icon}
+                className="size-8 text-muted-foreground"
+                strokeWidth={2}
+              />
               <p className="mt-4 text-sm font-medium">No evaluations yet</p>
               <p className="text-muted-foreground mt-1 text-sm">
                 Evaluate agent responses using the eval system.

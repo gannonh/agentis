@@ -323,7 +323,10 @@ export function AgentDetailPage() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
-              <AgentOverviewTab recentThreads={recentThreads} />
+              <AgentOverviewTab
+                recentThreads={recentThreads}
+                information={apiAgentDetail?.information}
+              />
             </TabsContent>
             {apiAgentDetail ? (
               <>
@@ -334,7 +337,7 @@ export function AgentDetailPage() {
                   />
                 </TabsContent>
                 <TabsContent value="activity" className="pt-4">
-                  <AgentActivityTab />
+                  <AgentActivityTab information={apiAgentDetail.information} />
                 </TabsContent>
                 <TabsContent value="model" className="pt-4">
                   <AgentModelTab
