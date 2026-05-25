@@ -4,18 +4,12 @@ import {
   agentListItemSchema,
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
-  createThreadResponseSchema,
   updateAgentRequestSchema,
   type AgentToolGrantInput,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
+import { summarizeTitle } from "../lib/title-summary.js"
 import type { Repositories } from "../repositories/index.js"
-
-function summarizeTitle(prompt: string): string {
-  const trimmed = prompt.trim().replace(/\s+/g, " ")
-  if (trimmed.length <= 60) return trimmed
-  return `${trimmed.slice(0, 57)}...`
-}
 
 export function createAgentRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
@@ -166,6 +160,17 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     }
 
     const version = repos.agents.getCurrentConfigurationSnapshot(detail.agent.id)
+    const resolvedGrants = resolveRequestedGrants(version.toolGrants)
+    if ("error" in resolvedGrants) {
+      return c.json(
+        {
+          error: resolvedGrants.error,
+          remediation: toolkitGrantRemediation(resolvedGrants.error),
+        },
+        400
+      )
+    }
+
     const created = repos.threads.createWithInitialRun({
       title: summarizeTitle(parsed.data.prompt),
       prompt: parsed.data.prompt,
@@ -174,10 +179,10 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       agentId: detail.agent.id,
       agentNameSnapshot: detail.agent.name,
       agentConfigurationVersionId: version.id,
-      toolGrants: version.toolGrants,
+      toolGrants: resolvedGrants.grants,
     })
 
-    return c.json(createThreadResponseSchema.parse(created), 201)
+    return c.json(created, 201)
   })
 
   app.get("/:agentId", (c) => {

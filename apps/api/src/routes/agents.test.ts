@@ -440,6 +440,43 @@ describe("agent routes", () => {
     ).toMatchObject([{ toolkitSlug: "slack", connectionId: slack.id }])
   })
 
+  it("rejects agent test threads when the saved grant snapshot is disconnected", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+    ctx.repos.integrationConnections.deleteByToolkitSlug("github")
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as {
+      error: string
+      remediation?: string
+    }
+    expect(body.error).toBe("toolkit_not_connected")
+    expect(body.remediation).toBe(
+      "Connect the toolkit from Integrations before granting it to an agent."
+    )
+    expect(ctx.repos.threads.list()).toHaveLength(0)
+  })
+
   it("rejects invalid agent test-thread requests", async () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({

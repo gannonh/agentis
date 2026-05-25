@@ -10,15 +10,10 @@ import {
 import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
+import { ArtifactService } from "../artifacts/artifact-service.js"
+import { summarizeTitle } from "../lib/title-summary.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import { RunExecutor } from "../runtime/run-executor.js"
-import { ArtifactService } from "../artifacts/artifact-service.js"
-
-function summarizeTitle(prompt: string) {
-  const trimmed = prompt.trim().replace(/\s+/g, " ")
-  if (trimmed.length <= 60) return trimmed
-  return `${trimmed.slice(0, 57)}...`
-}
 
 function summarizeThreadPreview(prompt: string) {
   const trimmed = prompt.trim().replace(/\s+/g, " ")
