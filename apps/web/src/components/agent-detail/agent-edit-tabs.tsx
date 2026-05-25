@@ -7,8 +7,6 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   AiSearchIcon,
   ArrowDown01Icon,
-  BookOpen01Icon,
-  Brain01Icon,
   BrowserIcon,
   Calendar03Icon,
   ChatIcon,
@@ -34,6 +32,7 @@ import {
   ZapIcon,
 } from "@hugeicons/core-free-icons"
 import type {
+  AgentDetailInformation,
   AgentDetailResponse,
   IntegrationToolkit,
   UpdateAgentRequest,
@@ -295,7 +294,11 @@ export function AgentIdentityTab({
   )
 }
 
-export function AgentActivityTab() {
+export function AgentActivityTab({
+  information,
+}: {
+  information: AgentDetailInformation
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -329,24 +332,35 @@ export function AgentActivityTab() {
           ))}
         </div>
       </div>
-      {/* TODO: replace this example thread with API-backed agent activity once runs expose thread metadata. */}
-      <article className="rounded-xl border border-border bg-card/70 p-4">
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <HugeiconsIcon
-            icon={Database01Icon}
-            className="size-4"
-            strokeWidth={2}
-          />
-          Product Launch Q4
+      {information.recentThreads.length > 0 ? (
+        information.recentThreads.map((thread) => (
+          <article
+            key={thread.id}
+            className="rounded-xl border border-border bg-card/70 p-4"
+          >
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <HugeiconsIcon
+                icon={Database01Icon}
+                className="size-4"
+                strokeWidth={2}
+              />
+              {thread.lastRunStatus
+                ? `Latest run: ${thread.lastRunStatus}`
+                : "Agent test thread"}
+            </p>
+            <h2 className="mt-2 text-lg font-medium">{thread.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {thread.artifactCount
+                ? `${thread.artifactCount} artifact${thread.artifactCount === 1 ? "" : "s"} available from this thread.`
+                : "No artifacts captured for this thread yet."}
+            </p>
+          </article>
+        ))
+      ) : (
+        <p className="rounded-xl border border-border bg-card/70 px-4 py-5 text-sm text-muted-foreground">
+          No activity yet. Start a test thread to see this agent's recent work.
         </p>
-        <h2 className="mt-2 text-lg font-medium">
-          AI Automation Consulting Lead Strategy
-        </h2>
-        <p className="mt-2 truncate text-sm text-muted-foreground">
-          Set up and executed the user's first prospecting run for their AI
-          automation consulting practice.
-        </p>
-      </article>
+      )}
     </div>
   )
 }
@@ -534,54 +548,6 @@ export function AgentInvocationsTab() {
   )
 }
 
-const KNOWLEDGE_ACCESS_OPTIONS = [
-  {
-    title: "Personal",
-    description:
-      "Sees every memory and skill you've saved. Learns from conversations and keeps what's worth keeping.",
-    note: "Best for agents you use yourself.",
-    icon: BookOpen01Icon,
-    active: true,
-  },
-  {
-    title: "Curated",
-    description:
-      "Sees only the memories and skills you link to it. Does not learn from conversations.",
-    note: "Best for agents you share with others.",
-    icon: CheckmarkCircle02Icon,
-    active: false,
-  },
-  {
-    title: "Team learning",
-    description:
-      "Sees only linked knowledge. Learns from every conversation and grows over time.",
-    note: "Best for knowledge that grows with use.",
-    icon: Brain01Icon,
-    active: false,
-  },
-  {
-    title: "Custom",
-    description:
-      "Tune memory access, edit permissions, and learning behavior on your own.",
-    note: null,
-    icon: ComputerTerminal01Icon,
-    active: false,
-  },
-] as const
-
-const KNOWLEDGE_PERMISSION_ROWS = [
-  ["Memory access", "All memories"],
-  ["Editing memories and skills", "Allowed"],
-  ["Self-improvement", "on"],
-  ["Memory suggestions", "on"],
-  ["Memory auto-save", "on"],
-  ["Skill suggestions", "on"],
-  ["Skill auto-save", "on"],
-  ["Prompt suggestions", "on"],
-  ["Prompt auto-save", "on"],
-  ["Agent configs auto-save", "on"],
-] as const
-
 export function AgentSkillsTab() {
   return (
     <section
@@ -613,172 +579,68 @@ export function AgentSkillsTab() {
   )
 }
 
-export function AgentKnowledgeTab() {
+export function AgentLibraryTab({
+  information,
+}: {
+  information: AgentDetailInformation
+}) {
+  const items = information.library.items
+
   return (
-    <div className="flex flex-col gap-6">
-      <section
-        className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-4"
-        aria-labelledby="knowledge-discovery-heading"
-      >
-        <div className="min-w-0">
-          <h2 id="knowledge-discovery-heading" className="text-sm font-medium">
-            Knowledge discovery
+    <section
+      className="rounded-xl border border-border bg-card/70 p-4"
+      aria-labelledby="agent-library-heading"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 id="agent-library-heading" className="text-sm font-medium">
+            Library
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Allow the agent to search and apply existing memories and skills
-            automatically.
+            Artifacts linked to this agent and its test-thread work.
           </p>
         </div>
-        <TogglePill checked />
-      </section>
-
-      <section
-        className="rounded-xl border border-border bg-card/70 p-4"
-        aria-labelledby="knowledge-access-heading"
-      >
-        <h2 id="knowledge-access-heading" className="text-sm font-medium">
-          Knowledge access
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          How should this agent use and learn from your memories and skills?
-        </p>
-        {/* TODO: wire trust profiles and learning permissions to server-backed agent knowledge settings. */}
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {KNOWLEDGE_ACCESS_OPTIONS.map((option) => (
+        <Badge variant="secondary">
+          {information.library.totalCount} item
+          {information.library.totalCount === 1 ? "" : "s"}
+        </Badge>
+      </div>
+      {items.length > 0 ? (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((item) => (
             <article
-              key={option.title}
-              className={`rounded-xl border p-4 ${
-                option.active
-                  ? "border-foreground bg-background"
-                  : "border-border bg-background/40"
-              }`}
+              key={item.id}
+              className="rounded-xl border border-border bg-background/50 p-4"
             >
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <HugeiconsIcon
-                  icon={option.icon}
-                  className="size-4 text-muted-foreground"
-                  strokeWidth={2}
-                />
-                {option.title}
-              </div>
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                {option.description}
+              <HugeiconsIcon
+                icon={File02Icon}
+                className="size-5 text-muted-foreground"
+                strokeWidth={2}
+              />
+              <h3 className="mt-6 truncate text-sm font-medium">
+                {item.title}
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {item.type} · {item.mimeType}
               </p>
-              {option.note ? (
-                <p className="mt-3 text-xs text-muted-foreground italic">
-                  {option.note}
+              {item.threadTitleSnapshot ? (
+                <p className="mt-3 truncate text-xs text-muted-foreground">
+                  From {item.threadTitleSnapshot}
                 </p>
               ) : null}
             </article>
           ))}
         </div>
-
-        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-background/50">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm text-muted-foreground">
-            <span>See what Personal learns</span>
-            <span aria-hidden>⌃</span>
-          </div>
-          <dl className="divide-y divide-border/60 px-4 py-2">
-            {KNOWLEDGE_PERMISSION_ROWS.map(([label, value]) => (
-              <div
-                key={label}
-                className="flex items-center justify-between gap-4 py-2 text-sm"
-              >
-                <dt className="flex min-w-0 items-center gap-2 text-foreground">
-                  <HugeiconsIcon
-                    icon={CheckmarkCircle02Icon}
-                    className="size-4 text-muted-foreground"
-                    strokeWidth={2}
-                  />
-                  {label}
-                </dt>
-                <dd
-                  className={
-                    value === "on" ? "text-emerald-400" : "text-foreground"
-                  }
-                >
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <p className="px-4 pb-3 text-xs text-foreground">
-            Switch to Custom to edit individually →
+      ) : (
+        <div className="mt-5 flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl bg-muted/40 px-4 py-8 text-center">
+          <p className="text-sm font-medium">No library artifacts yet</p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Artifacts created by this agent's test threads will appear here when
+            they are available.
           </p>
         </div>
-      </section>
-
-      <section
-        className="rounded-xl border border-border bg-card/70 p-4"
-        aria-labelledby="memories-heading"
-      >
-        <h2 id="memories-heading" className="text-sm font-medium">
-          Memories
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Information the agent can reference while working on a task.
-        </p>
-        {/* TODO: replace this empty state with API-backed agent memory references. */}
-        <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No memories yet. Add one to give this agent persistent context.
-          </p>
-          <Button type="button" variant="outline" size="sm" disabled>
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              className="size-3"
-              strokeWidth={2}
-            />
-            Add memories
-          </Button>
-        </div>
-      </section>
-
-      <section
-        className="rounded-xl border border-border bg-card/70 p-4"
-        aria-labelledby="context-files-heading"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 id="context-files-heading" className="text-sm font-medium">
-              Context files
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Documents and reference files attached to the agent for use during
-              conversations.
-            </p>
-          </div>
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            disabled
-            aria-label="Add context file"
-          >
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              className="size-4"
-              strokeWidth={2}
-            />
-          </Button>
-        </div>
-        {/* TODO: replace this sample file once agent-scoped library attachments are exposed. */}
-        <div className="mt-5 flex items-center gap-2 text-sm font-medium">
-          Added <Badge variant="secondary">1 active</Badge>
-        </div>
-        <article className="mt-4 w-full max-w-56 rounded-xl border border-border bg-background/50 p-4">
-          <HugeiconsIcon
-            icon={Image02Icon}
-            className="size-5 text-muted-foreground"
-            strokeWidth={2}
-          />
-          <p className="mt-8 truncate text-sm font-medium">
-            Screenshot 2026-05-20 at ...
-          </p>
-          <p className="text-xs text-muted-foreground">image/png</p>
-        </article>
-      </section>
-    </div>
+      )}
+    </section>
   )
 }
 

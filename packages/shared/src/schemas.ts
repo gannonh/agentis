@@ -266,12 +266,6 @@ export const createAgentTestThreadRequestSchema = z.object({
   prompt: nonEmptyString,
 })
 
-export const agentDetailResponseSchema = z.object({
-  agent: agentListItemSchema,
-  configurationVersions: z.array(agentConfigurationVersionSummarySchema),
-  toolGrants: z.array(toolAccessGrantSchema),
-})
-
 export const createThreadRequestSchema = z.object({
   prompt: nonEmptyString,
   model: z.string().optional(),
@@ -407,6 +401,37 @@ export const threadListItemSchema = threadSchema.extend({
   artifactCount: z.number().optional(),
 })
 
+export const agentRecentThreadSummarySchema = threadListItemSchema
+  .pick({
+    id: true,
+    title: true,
+    status: true,
+    model: true,
+    agentConfigurationVersionId: true,
+    createdAt: true,
+    updatedAt: true,
+    lastRunStatus: true,
+    summary: true,
+  })
+  .extend({ artifactCount: nonNegativeInteger })
+
+export const agentLibrarySummarySchema = z.object({
+  items: z.array(artifactPublicSchema),
+  totalCount: nonNegativeInteger,
+})
+
+export const agentDetailInformationSchema = z.object({
+  recentThreads: z.array(agentRecentThreadSummarySchema),
+  library: agentLibrarySummarySchema,
+})
+
+export const agentDetailResponseSchema = z.object({
+  agent: agentListItemSchema,
+  configurationVersions: z.array(agentConfigurationVersionSummarySchema),
+  toolGrants: z.array(toolAccessGrantSchema),
+  information: agentDetailInformationSchema,
+})
+
 export const abortRunResponseSchema = z.object({
   run: runSchema,
 })
@@ -460,6 +485,13 @@ export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
 export type CreateAgentTestThreadRequest = z.infer<
   typeof createAgentTestThreadRequestSchema
+>
+export type AgentRecentThreadSummary = z.infer<
+  typeof agentRecentThreadSummarySchema
+>
+export type AgentLibrarySummary = z.infer<typeof agentLibrarySummarySchema>
+export type AgentDetailInformation = z.infer<
+  typeof agentDetailInformationSchema
 >
 export type AgentDetailResponse = z.infer<typeof agentDetailResponseSchema>
 export type CreateThreadRequest = z.infer<typeof createThreadRequestSchema>

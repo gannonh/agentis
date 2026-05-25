@@ -66,10 +66,66 @@ function NavigableAgentDetailPage() {
   )
 }
 
-function apiAgentDetail(
-  overrides: Partial<AgentDetailResponse["agent"]> = {},
+type AgentRecentThreadSummary =
+  AgentDetailResponse["information"]["recentThreads"][number]
+type AgentLibraryItemSummary =
+  AgentDetailResponse["information"]["library"]["items"][number]
+
+type ApiAgentDetailOptions = {
+  agent?: Partial<AgentDetailResponse["agent"]>
   toolGrants?: AgentDetailResponse["toolGrants"]
-): AgentDetailResponse {
+  information?: AgentDetailResponse["information"]
+}
+
+function apiThreadSummary(
+  overrides: Partial<AgentRecentThreadSummary> = {}
+): AgentRecentThreadSummary {
+  const now = new Date().toISOString()
+  return {
+    id: "thread_recent",
+    title: "Test Created Research Agent",
+    status: "active",
+    model: "gpt-4o-mini",
+    agentConfigurationVersionId: "version_created",
+    createdAt: now,
+    updatedAt: now,
+    lastRunStatus: "completed",
+    artifactCount: 1,
+    ...overrides,
+  }
+}
+
+function apiArtifactSummary(
+  overrides: Partial<AgentLibraryItemSummary> = {}
+): AgentLibraryItemSummary {
+  const now = new Date().toISOString()
+  return {
+    id: "artifact_notes",
+    title: "Research notes",
+    description: null,
+    type: "document",
+    mimeType: "text/markdown",
+    sizeBytes: 42,
+    previewText: "Summary",
+    metadata: null,
+    projectId: null,
+    projectNameSnapshot: null,
+    threadId: "thread_recent",
+    threadTitleSnapshot: "Test Created Research Agent",
+    runId: "run_recent",
+    agentId: "agent_created",
+    agentNameSnapshot: "Created Research Agent",
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  }
+}
+
+function apiAgentDetail({
+  agent: overrides = {},
+  toolGrants,
+  information,
+}: ApiAgentDetailOptions = {}): AgentDetailResponse {
   const now = new Date().toISOString()
   const agent = {
     id: "agent_created",
@@ -106,6 +162,10 @@ function apiAgentDetail(
         createdAt: now,
       },
     ],
+    information: information ?? {
+      recentThreads: [],
+      library: { items: [], totalCount: 0 },
+    },
   }
 }
 
@@ -196,8 +256,111 @@ describe("AgentDetailPage", () => {
       screen.queryByRole("heading", { name: "Agent not found" })
     ).not.toBeInTheDocument()
     expect(screen.getByText("gpt-4o-mini")).toBeInTheDocument()
-    expect(screen.getByText("google-drive")).toBeInTheDocument()
+    expect(screen.getAllByText("google-drive").length).toBeGreaterThanOrEqual(1)
   })
+
+  it("renders API-backed overview and activity information", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        information: {
+          recentThreads: [apiThreadSummary()],
+          library: { items: [], totalCount: 0 },
+        },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByRole("heading", { name: "Configured tools" })
+    ).toBeInTheDocument()
+    expect(screen.getByText("Test Created Research Agent")).toBeInTheDocument()
+    expect(screen.getByText(/Latest run: completed/)).toBeInTheDocument()
+    expect(screen.getByText(/1 artifact available/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    expect(
+      screen.getByRole("searchbox", { name: "Search threads" })
+    ).toBeInTheDocument()
+    expect(screen.getByText("Test Created Research Agent")).toBeInTheDocument()
+    expect(
+      screen.getByText("1 artifact available from this thread.")
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("AI Automation Consulting Lead Strategy")
+    ).not.toBeInTheDocument()
+  })
+
+  it("renders API-backed overview and activity empty states", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        agent: { toolGrantCount: 0 },
+        toolGrants: [],
+        information: {
+          recentThreads: [],
+          library: { items: [], totalCount: 0 },
+        },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByText(/No tools configured yet/)
+    ).toBeInTheDocument()
+    expect(screen.getByText(/No threads yet/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    expect(screen.getByText(/No activity yet/)).toBeInTheDocument()
+  })
+
+  it("renders API-backed library artifacts", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        information: {
+          recentThreads: [],
+          library: {
+            totalCount: 1,
+            items: [apiArtifactSummary()],
+          },
+        },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Library" }))
+
+    expect(screen.getByText("1 item")).toBeInTheDocument()
+    expect(screen.getByText("Research notes")).toBeInTheDocument()
+    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
+    expect(
+      screen.getByText("From Test Created Research Agent")
+    ).toBeInTheDocument()
+  })
+
 
   it("starts an API-backed agent test thread and navigates to it", async () => {
     const user = userEvent.setup()
@@ -230,7 +393,8 @@ describe("AgentDetailPage", () => {
         status: "queued",
         model: "gpt-4o-mini",
         agentId: detail.agent.id,
-        agentConfigurationVersionId: detail.agent.currentConfigurationVersion.id,
+        agentConfigurationVersionId:
+          detail.agent.currentConfigurationVersion.id,
         startedAt: now,
       },
     })
@@ -271,7 +435,9 @@ describe("AgentDetailPage", () => {
     await screen.findByRole("heading", { name: "Created Research Agent" })
     await user.click(screen.getByRole("button", { name: "New thread" }))
 
-    expect(await screen.findByText("Unable to start thread")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Unable to start thread")
+    ).toBeInTheDocument()
   })
 
   it("saves API-backed identity and prompt edits from the detail tabs", async () => {
@@ -279,9 +445,11 @@ describe("AgentDetailPage", () => {
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
     vi.mocked(updateAgent).mockResolvedValueOnce(
       apiAgentDetail({
-        name: "Updated Research Agent",
-        description: "Updated description",
-        systemPrompt: "Updated prompt",
+        agent: {
+          name: "Updated Research Agent",
+          description: "Updated description",
+          systemPrompt: "Updated prompt",
+        },
       })
     )
 
@@ -314,7 +482,9 @@ describe("AgentDetailPage", () => {
   })
 
   it("shows comp-aligned editable agent tabs for API-backed agents", async () => {
-    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail({ toolGrantCount: 0 }, []))
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
+    )
 
     render(
       <MemoryRouter initialEntries={["/agents/agent_created"]}>
@@ -326,14 +496,20 @@ describe("AgentDetailPage", () => {
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
     expect(screen.getByText("Description")).toBeInTheDocument()
-    expect(screen.getByRole("tab", { name: "Overview" }).querySelector("svg")).not.toBeNull()
-    expect(screen.getByRole("tab", { name: "Knowledge" }).querySelector("svg")).not.toBeNull()
+    expect(
+      screen.getByRole("tab", { name: "Overview" }).querySelector("svg")
+    ).not.toBeNull()
+    expect(
+      screen.getByRole("tab", { name: "Library" }).querySelector("svg")
+    ).not.toBeNull()
 
     fireEvent.click(screen.getByRole("tab", { name: "Identity" }))
     expect(screen.getByRole("button", { name: /Claymorphism/ })).toBeDisabled()
 
     fireEvent.click(screen.getByRole("tab", { name: "Activity" }))
-    expect(screen.getByRole("searchbox", { name: "Search threads" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("searchbox", { name: "Search threads" })
+    ).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Personal" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Shared" })).toBeInTheDocument()
@@ -345,7 +521,15 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Subagent model")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("tab", { name: "Invocations" }))
-    for (const label of ["Live mode", "Thread", "Slack", "Telegram", "Scheduled", "Webhook", "Email"]) {
+    for (const label of [
+      "Live mode",
+      "Thread",
+      "Slack",
+      "Telegram",
+      "Scheduled",
+      "Webhook",
+      "Email",
+    ]) {
       expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(1)
     }
 
@@ -357,28 +541,37 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Research")).toBeInTheDocument()
     expect(screen.getByText("Full VM")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("tab", { name: "Knowledge" }))
-    expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
-    expect(screen.getByText("Knowledge access")).toBeInTheDocument()
-    expect(screen.getByText("See what Personal learns")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Context files" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("tab", { name: "Library" }))
+    expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
+    expect(screen.getByText("0 items")).toBeInTheDocument()
+    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Configure tools" }))
-    expect(screen.getByRole("tab", { name: "Tools" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("tab", { name: "Tools" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
     expect(screen.getByText("Integrations")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Configure skills" }))
-    expect(screen.getByRole("tab", { name: "Skills" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByRole("tab", { name: "Skills" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
     expect(screen.getByRole("heading", { name: "Skills" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Configure memory" }))
-    expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Library" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
+    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
   }, 10_000)
 
   it("shows API save errors on editable model fields", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
-    vi.mocked(updateAgent).mockRejectedValueOnce(new ApiError("Invalid model", 400))
+    vi.mocked(updateAgent).mockRejectedValueOnce(
+      new ApiError("Invalid model", 400)
+    )
 
     render(
       <MemoryRouter initialEntries={["/agents/agent_created"]}>
@@ -439,7 +632,9 @@ describe("AgentDetailPage", () => {
       "true"
     )
 
-    await user.click(screen.getByRole("button", { name: "Go to fixture agent" }))
+    await user.click(
+      screen.getByRole("button", { name: "Go to fixture agent" })
+    )
 
     expect(
       await screen.findByRole("heading", { name: "Senior Reviewer" })
@@ -455,7 +650,7 @@ describe("AgentDetailPage", () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
     vi.mocked(updateAgent).mockResolvedValueOnce(
-      apiAgentDetail({ toolGrantCount: 0 }, [])
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
     )
 
     render(
@@ -471,17 +666,21 @@ describe("AgentDetailPage", () => {
     await user.click(screen.getByRole("checkbox", { name: "google-drive" }))
     await user.click(screen.getByRole("button", { name: "Save tools" }))
 
-    expect(updateAgent).toHaveBeenCalledWith("agent_created", { toolGrants: [] })
+    expect(updateAgent).toHaveBeenCalledWith("agent_created", {
+      toolGrants: [],
+    })
   })
 
   it("adds connected tools to an existing API-backed agent from the Tools tab", async () => {
     const user = userEvent.setup()
     mockIntegrations([connectedToolkit("slack", "Slack")])
-    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail({ toolGrantCount: 0 }, []))
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
+    )
     vi.mocked(updateAgent).mockResolvedValueOnce(
-      apiAgentDetail(
-        { toolGrantCount: 1 },
-        [
+      apiAgentDetail({
+        agent: { toolGrantCount: 1 },
+        toolGrants: [
           {
             id: "grant_slack",
             scopeType: "agent",
@@ -490,8 +689,8 @@ describe("AgentDetailPage", () => {
             connectionId: "conn_slack",
             createdAt: new Date().toISOString(),
           },
-        ]
-      )
+        ],
+      })
     )
 
     render(
@@ -514,28 +713,25 @@ describe("AgentDetailPage", () => {
   })
 
   it("shows a useful empty description for API-backed agents", async () => {
-    vi.mocked(getAgent).mockResolvedValueOnce({
-      agent: {
-        id: "agent_blank",
-        name: "Blank Description Agent",
-        description: null,
-        systemPrompt: "Research carefully.",
-        model: "gpt-4o-mini",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        currentConfigurationVersion: {
-          id: "version_blank",
-          agentId: "agent_blank",
-          version: 1,
-          systemPrompt: "Research carefully.",
-          model: "gpt-4o-mini",
-          createdAt: new Date().toISOString(),
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        agent: {
+          id: "agent_blank",
+          name: "Blank Description Agent",
+          description: null,
+          currentConfigurationVersion: {
+            id: "version_blank",
+            agentId: "agent_blank",
+            version: 1,
+            systemPrompt: "Research carefully.",
+            model: "gpt-4o-mini",
+            createdAt: new Date().toISOString(),
+          },
+          toolGrantCount: 0,
         },
-        toolGrantCount: 0,
-      },
-      configurationVersions: [],
-      toolGrants: [],
-    })
+        toolGrants: [],
+      })
+    )
 
     render(
       <MemoryRouter initialEntries={["/agents/agent_blank"]}>

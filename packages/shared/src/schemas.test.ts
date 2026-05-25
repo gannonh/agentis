@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  agentDetailInformationSchema,
   agentDetailResponseSchema,
   agentListItemSchema,
   artifactSchema,
@@ -112,6 +113,10 @@ describe("shared schemas", () => {
       },
       configurationVersions: [],
       toolGrants: [],
+      information: {
+        recentThreads: [],
+        library: { items: [], totalCount: 0 },
+      },
     }).agent.currentConfigurationVersion
 
     expect(parsed.thread.agentId).toBe("agent-1")
@@ -220,8 +225,94 @@ describe("shared schemas", () => {
       agent: listItem,
       configurationVersions: [listItem.currentConfigurationVersion],
       toolGrants: grants,
+      information: {
+        recentThreads: [],
+        library: { items: [], totalCount: 0 },
+      },
     })
     expect(detail.agent.id).toBe("agent-1")
+  })
+
+  it("parses populated and empty agent detail information", () => {
+    const now = new Date().toISOString()
+    const empty = agentDetailInformationSchema.parse({
+      recentThreads: [],
+      library: { items: [], totalCount: 0 },
+    })
+    expect(empty.library.items).toHaveLength(0)
+
+    const populated = agentDetailInformationSchema.parse({
+      recentThreads: [
+        {
+          id: "thread-1",
+          title: "Test Research Agent",
+          status: "active",
+          model: "gpt-4o-mini",
+          agentConfigurationVersionId: "agent-version-1",
+          createdAt: now,
+          updatedAt: now,
+          lastRunStatus: "completed",
+          summary: "Checked the repository",
+          artifactCount: 1,
+        },
+      ],
+      library: {
+        totalCount: 1,
+        items: [
+          {
+            id: "artifact-1",
+            title: "Research notes",
+            description: null,
+            type: "document",
+            mimeType: "text/markdown",
+            sizeBytes: 42,
+            previewText: "Notes",
+            metadata: null,
+            projectId: null,
+            projectNameSnapshot: null,
+            threadId: "thread-1",
+            threadTitleSnapshot: "Test Research Agent",
+            runId: "run-1",
+            agentId: "agent-1",
+            agentNameSnapshot: "Research Agent",
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      },
+    })
+    expect(populated.recentThreads[0]?.agentConfigurationVersionId).toBe(
+      "agent-version-1"
+    )
+    expect(populated.library.totalCount).toBe(1)
+    expect(() =>
+      agentDetailInformationSchema.parse({
+        recentThreads: [{ ...populated.recentThreads[0], artifactCount: -1 }],
+        library: { items: [], totalCount: 0 },
+      })
+    ).toThrow()
+    expect(() =>
+      agentDetailInformationSchema.parse({
+        recentThreads: [{ ...populated.recentThreads[0], artifactCount: 1.5 }],
+        library: { items: [], totalCount: 0 },
+      })
+    ).toThrow()
+    expect(() =>
+      agentDetailInformationSchema.parse({
+        recentThreads: [
+          {
+            id: "thread-1",
+            title: "Test Research Agent",
+            status: "active",
+            model: "gpt-4o-mini",
+            agentConfigurationVersionId: "agent-version-1",
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+        library: { items: [], totalCount: 0 },
+      })
+    ).toThrow()
   })
 
   it("parses integration and grant payloads", () => {

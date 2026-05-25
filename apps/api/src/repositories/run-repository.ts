@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm"
+import { desc, eq, inArray, sql } from "drizzle-orm"
 import type { Run, RunStatus, RunUsage } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { runs } from "../db/schema.js"
@@ -61,6 +61,51 @@ export class RunRepository {
     return row ? mapRun(row) : null
   }
 
+  listLatestByThreadIds(threadIds: string[]): Map<string, Run> {
+    if (threadIds.length === 0) return new Map()
+
+    const rankedRuns = this.db
+      .select({
+        id: runs.id,
+        threadId: runs.threadId,
+        status: runs.status,
+        model: runs.model,
+        agentId: runs.agentId,
+        agentConfigurationVersionId: runs.agentConfigurationVersionId,
+        startedAt: runs.startedAt,
+        finishedAt: runs.finishedAt,
+        errorSummary: runs.errorSummary,
+        usageJson: runs.usageJson,
+        cost: runs.cost,
+        rank: sql<number>`row_number() over (partition by ${runs.threadId} order by ${runs.startedAt} desc, ${runs.id} desc)`.as(
+          "rank"
+        ),
+      })
+      .from(runs)
+      .where(inArray(runs.threadId, threadIds))
+      .as("ranked_runs")
+
+    const rows = this.db
+      .select({
+        id: rankedRuns.id,
+        threadId: rankedRuns.threadId,
+        status: rankedRuns.status,
+        model: rankedRuns.model,
+        agentId: rankedRuns.agentId,
+        agentConfigurationVersionId: rankedRuns.agentConfigurationVersionId,
+        startedAt: rankedRuns.startedAt,
+        finishedAt: rankedRuns.finishedAt,
+        errorSummary: rankedRuns.errorSummary,
+        usageJson: rankedRuns.usageJson,
+        cost: rankedRuns.cost,
+      })
+      .from(rankedRuns)
+      .where(eq(rankedRuns.rank, 1))
+      .all()
+
+    return new Map(rows.map((row) => [row.threadId, mapRun(row)]))
+  }
+
   updateStatus(
     id: string,
     status: RunStatus,
@@ -85,7 +130,7 @@ export class RunRepository {
         errorSummary:
           patch?.errorSummary !== undefined
             ? patch.errorSummary
-            : existing.errorSummary ?? null,
+            : (existing.errorSummary ?? null),
         usageJson: serializeRunUsage(nextUsage),
         cost: patch?.cost !== undefined ? patch.cost : (existing.cost ?? null),
       })

@@ -237,6 +237,21 @@ export class ThreadRepository {
       .map(mapThread)
   }
 
+  listByAgentId(agentId: string, options: { limit?: number } = {}): Thread[] {
+    const query = this.db
+      .select()
+      .from(threads)
+      .where(eq(threads.agentId, agentId))
+      .orderBy(desc(threads.updatedAt), desc(threads.createdAt))
+
+    const rows =
+      options.limit === undefined
+        ? query.all()
+        : query.limit(options.limit).all()
+
+    return rows.map(mapThread)
+  }
+
   touch(
     id: string,
     patch?: {

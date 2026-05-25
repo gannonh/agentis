@@ -375,6 +375,156 @@ describe("agent routes", () => {
     )
   })
 
+  it("returns API-backed detail information for tools, activity, and library", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Test Research Agent",
+      prompt: "Check GitHub updates",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    ctx.repos.runs.updateStatus(createdThread.run.id, "completed", {
+      finishedAt: new Date().toISOString(),
+    })
+    ctx.repos.artifacts.create({
+      title: "Research notes",
+      type: "document",
+      mimeType: "text/markdown",
+      sizeBytes: 42,
+      storageKey: "research-notes.md",
+      previewText: "Summary",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      threadId: createdThread.thread.id,
+      threadTitleSnapshot: createdThread.thread.title,
+      runId: createdThread.run.id,
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}`)
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      toolGrants: { toolkitSlug: string; connectionId?: string }[]
+      information: {
+        recentThreads: {
+          id: string
+          title: string
+          lastRunStatus?: string
+          artifactCount?: number
+        }[]
+        library: {
+          totalCount: number
+          items: { title: string; storageKey?: string }[]
+        }
+      }
+    }
+    expect(body.toolGrants).toMatchObject([
+      { toolkitSlug: "github", connectionId: github.id },
+    ])
+    expect(body.information.recentThreads).toMatchObject([
+      {
+        id: createdThread.thread.id,
+        title: "Test Research Agent",
+        lastRunStatus: "completed",
+        artifactCount: 1,
+      },
+    ])
+    expect(body.information.library.totalCount).toBe(1)
+    expect(body.information.library.items).toMatchObject([
+      { title: "Research notes" },
+    ])
+    expect(body.information.library.items[0]).not.toHaveProperty("storageKey")
+  })
+
+  it("uses the newest run status in agent detail recent activity", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Test Research Agent",
+      prompt: "Check GitHub updates",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    ctx.repos.runs.updateStatus(createdThread.run.id, "completed", {
+      finishedAt: new Date().toISOString(),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 2))
+    ctx.repos.runs.create({
+      threadId: createdThread.thread.id,
+      model: agent.model,
+      status: "failed",
+      agentId: agent.id,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}`)
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      information: { recentThreads: { lastRunStatus?: string }[] }
+    }
+    expect(body.information.recentThreads[0]?.lastRunStatus).toBe("failed")
+  })
+
+  it("returns empty detail information for a fresh agent", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Fresh Agent",
+      systemPrompt: "Help with fresh work.",
+      model: "gpt-4o-mini",
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}`)
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      information: {
+        recentThreads: unknown[]
+        library: { totalCount: number; items: unknown[] }
+      }
+    }
+    expect(body.information.recentThreads).toEqual([])
+    expect(body.information.library).toEqual({ totalCount: 0, items: [] })
+  })
+
+  it("returns not found when loading detail for an unknown agent", async () => {
+    ctx = createTestContext()
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request("/api/agents/missing")
+
+    expect(response.status).toBe(404)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("agent_not_found")
+  })
+
   it("starts an agent test thread from the selected configuration version grant snapshot", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
@@ -486,11 +636,12 @@ describe("agent routes", () => {
       systemPrompt: "Answer with citations.",
       model: "gpt-4o-mini",
     })
-    vi.spyOn(ctx.repos.agents, "getCurrentConfigurationSnapshot").mockImplementation(
-      () => {
-        throw new Error("Snapshot load failed")
-      }
-    )
+    vi.spyOn(
+      ctx.repos.agents,
+      "getCurrentConfigurationSnapshot"
+    ).mockImplementation(() => {
+      throw new Error("Snapshot load failed")
+    })
     const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}/test-thread`, {

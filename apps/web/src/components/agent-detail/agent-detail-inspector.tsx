@@ -17,7 +17,7 @@ import {
 import type { Agent } from "@/fixtures/schema"
 import type { ReactNode } from "react"
 
-type AgentDetailTab = "invocations" | "tools" | "skills" | "knowledge"
+type AgentDetailTab = "invocations" | "tools" | "skills" | "library"
 
 type InspectorSectionProps = {
   title: string
@@ -161,7 +161,7 @@ export function AgentDetailInspector({ agent, onConfigure }: AgentDetailInspecto
         title="Memory"
         count={agent.memoriesCount}
         emptyLabel="None"
-        configureTab="knowledge"
+        configureTab="library"
         onConfigure={onConfigure}
       />
 
@@ -169,7 +169,7 @@ export function AgentDetailInspector({ agent, onConfigure }: AgentDetailInspecto
         title="Library"
         count={agent.libraryCount}
         emptyLabel="None"
-        configureTab="knowledge"
+        configureTab="library"
         onConfigure={onConfigure}
       />
     </aside>
