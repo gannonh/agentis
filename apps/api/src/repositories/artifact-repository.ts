@@ -1,4 +1,4 @@
-import { and, desc, eq, like, or, sql } from "drizzle-orm"
+import { and, count, desc, eq, inArray, like, or, sql } from "drizzle-orm"
 import type { Artifact, ArtifactType } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { artifacts } from "../db/schema.js"
@@ -103,7 +103,10 @@ export class ArtifactRepository {
       return query.all().map(mapArtifact)
     }
 
-    return query.where(and(...conditions)).all().map(mapArtifact)
+    return query
+      .where(and(...conditions))
+      .all()
+      .map(mapArtifact)
   }
 
   count(): number {
@@ -112,5 +115,22 @@ export class ArtifactRepository {
       .from(artifacts)
       .get()
     return Number(row?.count ?? 0)
+  }
+
+  countByThreadIds(threadIds: string[]): Map<string, number> {
+    if (threadIds.length === 0) return new Map()
+
+    const rows = this.db
+      .select({ threadId: artifacts.threadId, value: count() })
+      .from(artifacts)
+      .where(inArray(artifacts.threadId, threadIds))
+      .groupBy(artifacts.threadId)
+      .all()
+
+    return new Map(
+      rows.flatMap((row) =>
+        row.threadId ? [[row.threadId, row.value] as const] : []
+      )
+    )
   }
 }

@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm"
+import { asc, desc, eq, inArray } from "drizzle-orm"
 import type { Run, RunStatus, RunUsage } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { runs } from "../db/schema.js"
@@ -61,6 +61,25 @@ export class RunRepository {
     return row ? mapRun(row) : null
   }
 
+  listLatestByThreadIds(threadIds: string[]): Map<string, Run> {
+    if (threadIds.length === 0) return new Map()
+
+    const rows = this.db
+      .select()
+      .from(runs)
+      .where(inArray(runs.threadId, threadIds))
+      .orderBy(asc(runs.threadId), desc(runs.startedAt))
+      .all()
+
+    const latestRuns = new Map<string, Run>()
+    for (const row of rows) {
+      if (!latestRuns.has(row.threadId)) {
+        latestRuns.set(row.threadId, mapRun(row))
+      }
+    }
+    return latestRuns
+  }
+
   updateStatus(
     id: string,
     status: RunStatus,
@@ -85,7 +104,7 @@ export class RunRepository {
         errorSummary:
           patch?.errorSummary !== undefined
             ? patch.errorSummary
-            : existing.errorSummary ?? null,
+            : (existing.errorSummary ?? null),
         usageJson: serializeRunUsage(nextUsage),
         cost: patch?.cost !== undefined ? patch.cost : (existing.cost ?? null),
       })

@@ -422,8 +422,8 @@ describe("agent routes", () => {
 
     expect(response.status).toBe(200)
     const body = (await response.json()) as {
+      toolGrants: { toolkitSlug: string; connectionId?: string }[]
       information: {
-        configuredTools: { toolkitSlug: string; connectionId?: string }[]
         recentThreads: {
           id: string
           title: string
@@ -436,7 +436,7 @@ describe("agent routes", () => {
         }
       }
     }
-    expect(body.information.configuredTools).toMatchObject([
+    expect(body.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: github.id },
     ])
     expect(body.information.recentThreads).toMatchObject([
@@ -468,12 +468,10 @@ describe("agent routes", () => {
     expect(response.status).toBe(200)
     const body = (await response.json()) as {
       information: {
-        configuredTools: unknown[]
         recentThreads: unknown[]
         library: { totalCount: number; items: unknown[] }
       }
     }
-    expect(body.information.configuredTools).toEqual([])
     expect(body.information.recentThreads).toEqual([])
     expect(body.information.library).toEqual({ totalCount: 0, items: [] })
   })
@@ -600,11 +598,12 @@ describe("agent routes", () => {
       systemPrompt: "Answer with citations.",
       model: "gpt-4o-mini",
     })
-    vi.spyOn(ctx.repos.agents, "getCurrentConfigurationSnapshot").mockImplementation(
-      () => {
-        throw new Error("Snapshot load failed")
-      }
-    )
+    vi.spyOn(
+      ctx.repos.agents,
+      "getCurrentConfigurationSnapshot"
+    ).mockImplementation(() => {
+      throw new Error("Snapshot load failed")
+    })
     const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}/test-thread`, {

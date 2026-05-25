@@ -14,16 +14,29 @@ import {
   UserIcon,
   Wrench02Icon,
 } from "@hugeicons/core-free-icons"
-import type { AgentDetailInformation } from "@workspace/shared"
+import type { AgentDetailResponse } from "@workspace/shared"
 import { formatRelativeTime } from "@/fixtures"
 import type { Thread } from "@/fixtures/schema"
 
-type AgentOverviewTabProps = {
-  recentThreads: Thread[]
-  information?: AgentDetailInformation
+type AgentOverviewThread = Pick<
+  Thread,
+  "id" | "title" | "status" | "updatedAt"
+> & {
+  artifactCount?: number
+  lastRunStatus?: string
 }
 
-function threadStatusBadge(status: Thread["status"] | string) {
+type AgentOverviewToolGrant = Pick<
+  AgentDetailResponse["toolGrants"][number],
+  "id" | "toolkitSlug"
+>
+
+type AgentOverviewTabProps = {
+  recentThreads: AgentOverviewThread[]
+  toolGrants?: AgentOverviewToolGrant[]
+}
+
+function threadStatusBadge(status: AgentOverviewThread["status"]) {
   if (status === "finished") {
     return (
       <Badge
@@ -98,9 +111,9 @@ function UsageChart() {
 
 export function AgentOverviewTab({
   recentThreads,
-  information,
+  toolGrants,
 }: AgentOverviewTabProps) {
-  const primaryThread = (information?.recentThreads ?? recentThreads)[0]
+  const primaryThread = recentThreads[0]
 
   return (
     <div className="flex flex-col gap-6">
@@ -136,7 +149,7 @@ export function AgentOverviewTab({
         </div>
       </section>
 
-      {information ? (
+      {toolGrants ? (
         <section
           className="rounded-xl border border-border bg-card/70 p-4"
           aria-labelledby="configured-tools-heading"
@@ -152,9 +165,9 @@ export function AgentOverviewTab({
             />
             Configured tools
           </h2>
-          {information.configuredTools.length > 0 ? (
+          {toolGrants.length > 0 ? (
             <div className="mt-4 flex flex-wrap gap-2">
-              {information.configuredTools.map((tool) => (
+              {toolGrants.map((tool) => (
                 <Badge key={tool.id} variant="secondary">
                   {tool.toolkitSlug}
                 </Badge>

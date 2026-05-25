@@ -53,6 +53,7 @@ export class ArtifactService {
     const agentId = thread?.agentId ?? run?.agentId
     const agent = agentId ? this.repos.agents.getById(agentId) : null
     return {
+      threadId,
       projectNameSnapshot: project?.name,
       threadTitleSnapshot: thread?.title,
       agentId: agentId ?? undefined,
@@ -115,7 +116,6 @@ export class ArtifactService {
         storageKey,
         previewText,
         projectId: input.projectId,
-        threadId: input.threadId,
         ...provenance,
       })
       return { ok: true, artifact }
@@ -180,7 +180,6 @@ export class ArtifactService {
           input.previewText ??
           buildPreviewText(input.content, this.config.artifactPreviewMaxChars),
         projectId: input.projectId,
-        threadId: input.threadId,
         runId: input.runId,
         ...provenance,
         metadata: { source: "generated" },

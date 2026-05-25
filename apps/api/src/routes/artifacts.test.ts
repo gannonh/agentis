@@ -42,9 +42,7 @@ describe("artifact routes", () => {
     const listBody = (await listed.json()) as { id: string }[]
     expect(listBody).toHaveLength(1)
 
-    const download = await app.request(
-      `/api/artifacts/${artifact.id}/download`
-    )
+    const download = await app.request(`/api/artifacts/${artifact.id}/download`)
     expect(download.status).toBe(200)
     expect(download.headers.get("content-type")).toContain("text")
     expect(await download.text()).toContain("Brief")
@@ -86,13 +84,13 @@ describe("artifact routes", () => {
       type: "document",
       filename: "research-notes.md",
       content: "# Research notes",
-      threadId: createdThread.thread.id,
       runId: createdThread.run.id,
     })
 
     expect(generated.ok).toBe(true)
     if (!generated.ok) return
     expect(generated.artifact).toMatchObject({
+      threadId: createdThread.thread.id,
       agentId: agent.id,
       agentNameSnapshot: "Research Agent",
     })
@@ -100,7 +98,9 @@ describe("artifact routes", () => {
     const detail = await app.request(`/api/agents/${agent.id}`)
     expect(detail.status).toBe(200)
     const body = (await detail.json()) as {
-      information: { library: { totalCount: number; items: { title: string }[] } }
+      information: {
+        library: { totalCount: number; items: { title: string }[] }
+      }
     }
     expect(body.information.library.totalCount).toBe(1)
     expect(body.information.library.items).toMatchObject([
@@ -121,9 +121,7 @@ describe("artifact routes", () => {
       storageKey: "artifacts/missing.txt",
     })
 
-    const response = await app.request(
-      `/api/artifacts/${artifact.id}/download`
-    )
+    const response = await app.request(`/api/artifacts/${artifact.id}/download`)
     expect(response.status).toBe(404)
     const body = (await response.json()) as { code: string }
     expect(body.code).toBe("artifact_blob_missing")

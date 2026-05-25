@@ -148,7 +148,8 @@ export function AgentDetailPage() {
       setTestThreadState({
         agentId,
         loading: false,
-        error: error instanceof Error ? error.message : "Unable to start thread",
+        error:
+          error instanceof Error ? error.message : "Unable to start thread",
       })
     }
   }, [agentId, apiAgentDetail, navigate])
@@ -231,6 +232,8 @@ export function AgentDetailPage() {
   }
 
   const recentThreads = workspace.threads.filter((t) => t.agentId === agent.id)
+  const overviewThreads =
+    apiAgentDetail?.information.recentThreads ?? recentThreads
 
   return (
     <PageLayout className="dark -m-6 min-h-svh bg-background p-6 text-foreground">
@@ -250,7 +253,10 @@ export function AgentDetailPage() {
           <Tabs
             value={activeTab}
             onValueChange={(value) =>
-              setActiveTabState({ agentId: agentId ?? null, value: String(value) })
+              setActiveTabState({
+                agentId: agentId ?? null,
+                value: String(value),
+              })
             }
           >
             <TabsList
@@ -324,8 +330,8 @@ export function AgentDetailPage() {
             </TabsList>
             <TabsContent value="overview" className="pt-4">
               <AgentOverviewTab
-                recentThreads={recentThreads}
-                information={apiAgentDetail?.information}
+                recentThreads={overviewThreads}
+                toolGrants={apiAgentDetail?.toolGrants}
               />
             </TabsContent>
             {apiAgentDetail ? (

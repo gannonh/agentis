@@ -114,7 +114,6 @@ describe("shared schemas", () => {
       configurationVersions: [],
       toolGrants: [],
       information: {
-        configuredTools: [],
         recentThreads: [],
         library: { items: [], totalCount: 0 },
       },
@@ -227,14 +226,6 @@ describe("shared schemas", () => {
       configurationVersions: [listItem.currentConfigurationVersion],
       toolGrants: grants,
       information: {
-        configuredTools: [
-          {
-            id: "grant-1",
-            toolkitSlug: "github",
-            connectionId: "conn-1",
-            createdAt: now,
-          },
-        ],
         recentThreads: [],
         library: { items: [], totalCount: 0 },
       },
@@ -245,21 +236,12 @@ describe("shared schemas", () => {
   it("parses populated and empty agent detail information", () => {
     const now = new Date().toISOString()
     const empty = agentDetailInformationSchema.parse({
-      configuredTools: [],
       recentThreads: [],
       library: { items: [], totalCount: 0 },
     })
     expect(empty.library.items).toHaveLength(0)
 
     const populated = agentDetailInformationSchema.parse({
-      configuredTools: [
-        {
-          id: "grant-1",
-          toolkitSlug: "github",
-          connectionId: "conn-1",
-          createdAt: now,
-        },
-      ],
       recentThreads: [
         {
           id: "thread-1",
@@ -299,7 +281,6 @@ describe("shared schemas", () => {
         ],
       },
     })
-    expect(populated.configuredTools[0]?.toolkitSlug).toBe("github")
     expect(populated.recentThreads[0]?.agentConfigurationVersionId).toBe(
       "agent-version-1"
     )

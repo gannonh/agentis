@@ -1,12 +1,12 @@
 import { Hono } from "hono"
 import {
-  agentDetailResponseSchema,
   agentListItemSchema,
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
   updateAgentRequestSchema,
   type AgentToolGrantInput,
 } from "@workspace/shared"
+import { buildAgentDetail } from "../agents/agent-detail-service.js"
 import type { AppConfig } from "../config.js"
 import { summarizeTitle } from "../lib/title-summary.js"
 import type { Repositories } from "../repositories/index.js"
@@ -54,46 +54,6 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
   ): string | undefined {
     if (error !== "toolkit_not_connected") return undefined
     return "Connect the toolkit from Integrations before granting it to an agent."
-  }
-
-  function agentDetail(agentId: string) {
-    const agent = repos.agents.getById(agentId)
-    if (!agent) return null
-
-    const toolGrants = repos.toolAccessGrants.listByScope("agent", agentId)
-    const libraryItems = repos.artifacts.list({ agentId })
-    const recentThreads = repos.threads
-      .listByAgentId(agentId, { limit: 10 })
-      .map((thread) => {
-        const latestRun = repos.runs.getLatestByThreadId(thread.id)
-        return {
-          id: thread.id,
-          title: thread.title,
-          status: thread.status,
-          model: thread.model,
-          agentConfigurationVersionId: thread.agentConfigurationVersionId,
-          createdAt: thread.createdAt,
-          updatedAt: thread.updatedAt,
-          lastRunStatus: latestRun?.status,
-          artifactCount: repos.artifacts.list({ threadId: thread.id }).length,
-        }
-      })
-
-    return agentDetailResponseSchema.parse({
-      agent,
-      configurationVersions: repos.agents.listConfigurationVersions(agentId),
-      toolGrants,
-      information: {
-        configuredTools: toolGrants.map((grant) => ({
-          id: grant.id,
-          toolkitSlug: grant.toolkitSlug,
-          connectionId: grant.connectionId,
-          createdAt: grant.createdAt,
-        })),
-        recentThreads,
-        library: { items: libraryItems, totalCount: libraryItems.length },
-      },
-    })
   }
 
   app.get("/", (c) => {
@@ -152,13 +112,13 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       resolvedGrants.grants
     )
 
-    return c.json(agentDetail(created.id), 201)
+    return c.json(buildAgentDetail(repos, created.id), 201)
   })
 
   app.post("/:agentId/test-thread", async (c) => {
     const agentId = c.req.param("agentId")
-    const detail = agentDetail(agentId)
-    if (!detail) {
+    const agent = repos.agents.getById(agentId)
+    if (!agent) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
 
@@ -189,9 +149,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     }
 
     try {
-      const version = repos.agents.getCurrentConfigurationSnapshot(
-        detail.agent.id
-      )
+      const version = repos.agents.getCurrentConfigurationSnapshot(agent.id)
       const resolvedGrants = resolveRequestedGrants(version.toolGrants)
       if ("error" in resolvedGrants) {
         return c.json(
@@ -208,8 +166,8 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
         prompt: parsed.data.prompt,
         model: version.model,
         mode: "agent",
-        agentId: detail.agent.id,
-        agentNameSnapshot: detail.agent.name,
+        agentId: agent.id,
+        agentNameSnapshot: agent.name,
         agentConfigurationVersionId: version.id,
         toolGrants: resolvedGrants.grants,
       })
@@ -229,7 +187,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
 
   app.get("/:agentId", (c) => {
     const agentId = c.req.param("agentId")
-    const detail = agentDetail(agentId)
+    const detail = buildAgentDetail(repos, agentId)
     if (!detail) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
@@ -287,7 +245,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
 
-    const detail = agentDetail(agentId)
+    const detail = buildAgentDetail(repos, agentId)
     if (!detail) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }

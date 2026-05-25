@@ -401,13 +401,6 @@ export const threadListItemSchema = threadSchema.extend({
   artifactCount: z.number().optional(),
 })
 
-export const agentConfiguredToolSummarySchema = z.object({
-  id: z.string(),
-  toolkitSlug: z.string(),
-  connectionId: z.string().nullable().optional(),
-  createdAt: z.string(),
-})
-
 export const agentRecentThreadSummarySchema = threadListItemSchema.pick({
   id: true,
   title: true,
@@ -427,7 +420,6 @@ export const agentLibrarySummarySchema = z.object({
 })
 
 export const agentDetailInformationSchema = z.object({
-  configuredTools: z.array(agentConfiguredToolSummarySchema),
   recentThreads: z.array(agentRecentThreadSummarySchema),
   library: agentLibrarySummarySchema,
 })
@@ -492,9 +484,6 @@ export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
 export type CreateAgentTestThreadRequest = z.infer<
   typeof createAgentTestThreadRequestSchema
->
-export type AgentConfiguredToolSummary = z.infer<
-  typeof agentConfiguredToolSummarySchema
 >
 export type AgentRecentThreadSummary = z.infer<
   typeof agentRecentThreadSummarySchema
