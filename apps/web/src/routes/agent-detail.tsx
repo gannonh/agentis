@@ -22,7 +22,7 @@ import {
   AgentActivityTab,
   AgentIdentityTab,
   AgentInvocationsTab,
-  AgentLibraryTab,
+  AgentKnowledgeTab,
   AgentModelTab,
   AgentSkillsTab,
   AgentToolsTab,
@@ -319,13 +319,13 @@ export function AgentDetailPage() {
                 />
                 Skills
               </TabsTrigger>
-              <TabsTrigger value="library" disabled={!editable}>
+              <TabsTrigger value="knowledge" disabled={!editable}>
                 <HugeiconsIcon
                   icon={BookOpen01Icon}
                   className="size-3.5"
                   strokeWidth={2}
                 />
-                Library
+                Knowledge
               </TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
@@ -363,8 +363,8 @@ export function AgentDetailPage() {
                 <TabsContent value="skills" className="pt-4">
                   <AgentSkillsTab />
                 </TabsContent>
-                <TabsContent value="library" className="pt-4">
-                  <AgentLibraryTab information={apiAgentDetail.information} />
+                <TabsContent value="knowledge" className="pt-4">
+                  <AgentKnowledgeTab information={apiAgentDetail.information} />
                 </TabsContent>
               </>
             ) : null}
