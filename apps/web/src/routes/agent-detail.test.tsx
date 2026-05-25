@@ -346,6 +346,81 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("From Test Created Research Agent")).toBeInTheDocument()
   })
 
+  it("covers the API-backed agent detail information vertical", async () => {
+    const user = userEvent.setup()
+    const now = new Date().toISOString()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({}, undefined, {
+        configuredTools: [
+          {
+            id: "grant_slack",
+            toolkitSlug: "slack",
+            connectionId: "conn_slack",
+            createdAt: now,
+          },
+        ],
+        recentThreads: [
+          {
+            id: "thread_api_vertical",
+            title: "API vertical thread",
+            status: "active",
+            model: "gpt-4o-mini",
+            agentConfigurationVersionId: "version_created",
+            createdAt: now,
+            updatedAt: now,
+            lastRunStatus: "completed",
+            artifactCount: 1,
+          },
+        ],
+        library: {
+          totalCount: 1,
+          items: [
+            {
+              id: "artifact_api_vertical",
+              title: "API vertical artifact",
+              description: null,
+              type: "document",
+              mimeType: "text/markdown",
+              sizeBytes: 64,
+              previewText: null,
+              metadata: null,
+              projectId: null,
+              projectNameSnapshot: null,
+              threadId: "thread_api_vertical",
+              threadTitleSnapshot: "API vertical thread",
+              runId: "run_api_vertical",
+              agentId: "agent_created",
+              agentNameSnapshot: "Created Research Agent",
+              createdAt: now,
+              updatedAt: now,
+            },
+          ],
+        },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    expect(screen.getByText("slack")).toBeInTheDocument()
+    expect(screen.getByText("API vertical thread")).toBeInTheDocument()
+    expect(screen.getByText(/Latest run: completed/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    expect(screen.getByText("API vertical thread")).toBeInTheDocument()
+    expect(screen.queryByText("AI Automation Consulting Lead Strategy")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Library" }))
+    expect(screen.getByText("API vertical artifact")).toBeInTheDocument()
+    expect(screen.getByText("From API vertical thread")).toBeInTheDocument()
+  })
+
   it("starts an API-backed agent test thread and navigates to it", async () => {
     const user = userEvent.setup()
     const detail = apiAgentDetail()
