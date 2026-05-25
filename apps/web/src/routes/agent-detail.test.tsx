@@ -231,8 +231,9 @@ describe("AgentDetailPage", () => {
     )
 
     expect(
-      screen.getByRole("heading", { name: "Loading agent" })
+      screen.getByRole("heading", { name: "Loading agent details" })
     ).toBeInTheDocument()
+    expect(screen.getByText("Getting this agent ready.")).toBeInTheDocument()
     expect(
       screen.queryByRole("heading", { name: "Agent not found" })
     ).not.toBeInTheDocument()
@@ -418,7 +419,7 @@ describe("AgentDetailPage", () => {
     )
   })
 
-  it("starts an API-backed agent test thread and navigates to it", async () => {
+  it("opens a plain-language test chat and navigates to it", async () => {
     const user = userEvent.setup()
     const detail = apiAgentDetail()
     const now = new Date().toISOString()
@@ -465,15 +466,15 @@ describe("AgentDetailPage", () => {
     )
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
-    await user.click(screen.getByRole("button", { name: "New thread" }))
+    await user.click(screen.getByRole("button", { name: "Try this agent" }))
 
     expect(startAgentTestThread).toHaveBeenCalledWith("agent_created", {
-      prompt: "Test Created Research Agent",
+      prompt: "Try Created Research Agent",
     })
     expect(await screen.findByText("Thread opened")).toBeInTheDocument()
   })
 
-  it("shows test-thread launch errors for API-backed agents", async () => {
+  it("shows plain-language test chat errors", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
     vi.mocked(startAgentTestThread).mockRejectedValueOnce(
@@ -489,11 +490,12 @@ describe("AgentDetailPage", () => {
     )
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
-    await user.click(screen.getByRole("button", { name: "New thread" }))
+    await user.click(screen.getByRole("button", { name: "Try this agent" }))
 
     expect(
-      await screen.findByText("Unable to start thread")
+      await screen.findByText("We couldn't open a test chat. Try again.")
     ).toBeInTheDocument()
+    expect(screen.queryByText("Unable to start thread")).not.toBeInTheDocument()
   })
 
   it("saves API-backed identity and prompt edits from the detail tabs", async () => {
@@ -863,6 +865,11 @@ describe("AgentDetailPage", () => {
 
     expect(
       await screen.findByRole("heading", { name: "Agent unavailable" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "We couldn't load this agent. Try again or return to Command Center."
+      )
     ).toBeInTheDocument()
     expect(
       screen.queryByRole("heading", { name: "Agent not found" })
