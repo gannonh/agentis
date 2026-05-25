@@ -328,7 +328,7 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText(/No activity yet/)).toBeInTheDocument()
   })
 
-  it("renders API-backed library artifacts", async () => {
+  it("renders API-backed library artifacts inside Knowledge", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(
       apiAgentDetail({
@@ -351,8 +351,17 @@ describe("AgentDetailPage", () => {
     )
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
-    await user.click(screen.getByRole("tab", { name: "Library" }))
+    expect(
+      screen.queryByRole("tab", { name: "Library" })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: "Knowledge" }))
 
+    expect(
+      screen.getByRole("heading", { name: "Memories" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Context files" })
+    ).toBeInTheDocument()
     expect(screen.getByText("1 item")).toBeInTheDocument()
     expect(screen.getByText("Research notes")).toBeInTheDocument()
     expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
@@ -361,6 +370,53 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
   })
 
+  it("opens the Knowledge placeholder from inspector actions", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        information: {
+          recentThreads: [],
+          library: {
+            totalCount: 1,
+            items: [apiArtifactSummary()],
+          },
+        },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+
+    await user.click(screen.getByRole("button", { name: "Configure memory" }))
+    expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
+    expect(
+      screen.getByText(
+        "No memories yet. Add one to give this agent persistent context."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "No context files added yet. Attach reference files when this capability is available."
+      )
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Configure library" }))
+    expect(screen.getByText("Research notes")).toBeInTheDocument()
+    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(
+      /AI Automation Consulting Lead Strategy|fixture|mock/i
+    )
+  })
 
   it("starts an API-backed agent test thread and navigates to it", async () => {
     const user = userEvent.setup()
@@ -500,8 +556,11 @@ describe("AgentDetailPage", () => {
       screen.getByRole("tab", { name: "Overview" }).querySelector("svg")
     ).not.toBeNull()
     expect(
-      screen.getByRole("tab", { name: "Library" }).querySelector("svg")
+      screen.getByRole("tab", { name: "Knowledge" }).querySelector("svg")
     ).not.toBeNull()
+    expect(
+      screen.queryByRole("tab", { name: "Library" })
+    ).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("tab", { name: "Identity" }))
     expect(screen.getByRole("button", { name: /Claymorphism/ })).toBeDisabled()
@@ -541,7 +600,16 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Research")).toBeInTheDocument()
     expect(screen.getByText("Full VM")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("tab", { name: "Library" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Knowledge" }))
+    expect(
+      screen.getByRole("heading", { name: "Knowledge discovery" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Memories" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Context files" })
+    ).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
     expect(screen.getByText("0 items")).toBeInTheDocument()
     expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
@@ -559,7 +627,17 @@ describe("AgentDetailPage", () => {
     )
     expect(screen.getByRole("heading", { name: "Skills" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Configure memory" }))
-    expect(screen.getByRole("tab", { name: "Library" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
+    expect(
+      screen.getByText(
+        "No memories yet. Add one to give this agent persistent context."
+      )
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Configure library" }))
+    expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute(
       "aria-selected",
       "true"
     )

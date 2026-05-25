@@ -22,11 +22,15 @@ import {
   AgentActivityTab,
   AgentIdentityTab,
   AgentInvocationsTab,
-  AgentLibraryTab,
   AgentModelTab,
   AgentSkillsTab,
   AgentToolsTab,
 } from "@/components/agent-detail/agent-edit-tabs"
+import { AgentKnowledgeTab } from "@/components/agent-detail/agent-knowledge-tab"
+import {
+  isAgentDetailTab,
+  type AgentDetailTab,
+} from "@/components/agent-detail/agent-detail-tabs"
 import { AgentDetailHero } from "@/components/agent-detail/agent-detail-hero"
 import { AgentDetailInspector } from "@/components/agent-detail/agent-detail-inspector"
 import { AgentOverviewTab } from "@/components/agent-detail/agent-overview-tab"
@@ -81,7 +85,7 @@ export function AgentDetailPage() {
   })
   const [activeTabState, setActiveTabState] = useState<{
     agentId: string | null
-    value: string
+    value: AgentDetailTab
   }>(() => ({ agentId: agentId ?? null, value: "overview" }))
   const [testThreadState, setTestThreadState] = useState<{
     agentId: string | null
@@ -252,12 +256,14 @@ export function AgentDetailPage() {
 
           <Tabs
             value={activeTab}
-            onValueChange={(value) =>
+            onValueChange={(value) => {
+              const nextTab = String(value)
+              if (!isAgentDetailTab(nextTab)) return
               setActiveTabState({
                 agentId: agentId ?? null,
-                value: String(value),
+                value: nextTab,
               })
-            }
+            }}
           >
             <TabsList
               variant="line"
@@ -319,13 +325,13 @@ export function AgentDetailPage() {
                 />
                 Skills
               </TabsTrigger>
-              <TabsTrigger value="library" disabled={!editable}>
+              <TabsTrigger value="knowledge" disabled={!editable}>
                 <HugeiconsIcon
                   icon={BookOpen01Icon}
                   className="size-3.5"
                   strokeWidth={2}
                 />
-                Library
+                Knowledge
               </TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
@@ -363,8 +369,8 @@ export function AgentDetailPage() {
                 <TabsContent value="skills" className="pt-4">
                   <AgentSkillsTab />
                 </TabsContent>
-                <TabsContent value="library" className="pt-4">
-                  <AgentLibraryTab information={apiAgentDetail.information} />
+                <TabsContent value="knowledge" className="pt-4">
+                  <AgentKnowledgeTab information={apiAgentDetail.information} />
                 </TabsContent>
               </>
             ) : null}

@@ -464,43 +464,50 @@ export function AgentModelTab({
 const INVOCATION_OPTIONS = [
   {
     title: "Live mode",
-    description: "Always-on agent. Context stays in one continuous thread.",
+    description: "Keep this agent ready for ongoing work.",
+    status: "Planned for a later milestone",
     action: "Set up",
     icon: ZapIcon,
   },
   {
     title: "Thread",
-    description: "Interact with this agent in threads",
-    enabled: true,
+    description: "Start a test thread from this agent detail page.",
+    status: "Available now",
+    action: null,
     icon: ChatIcon,
   },
   {
     title: "Slack",
-    description: "Use @Agentis in Slack to interact",
+    description: "Let this agent respond from Slack.",
+    status: "Planned for a later milestone",
     action: "Connect",
     icon: SlackIcon,
   },
   {
     title: "Telegram",
-    description: "Respond to messages via Telegram bot",
+    description: "Let this agent respond from Telegram.",
+    status: "Planned for a later milestone",
     action: "Connect",
     icon: TelegramIcon,
   },
   {
     title: "Scheduled",
-    description: "Interact with this agent on a schedule",
+    description: "Run this agent on a schedule.",
+    status: "Planned for a later milestone",
     action: "Create schedule",
     icon: Calendar03Icon,
   },
   {
     title: "Webhook",
-    description: "Trigger this agent via HTTP webhook",
+    description: "Trigger this agent from an HTTP request.",
+    status: "Planned for a later milestone",
     action: "Create webhook",
     icon: WebhookIcon,
   },
   {
     title: "Email",
-    description: "Interact with this agent via email",
+    description: "Let this agent respond from email.",
+    status: "Planned for a later milestone",
     action: "Create email",
     icon: Mail01Icon,
   },
@@ -508,11 +515,11 @@ const INVOCATION_OPTIONS = [
 
 export function AgentInvocationsTab() {
   return (
-    <div className="flex flex-col gap-2">
-      {/* TODO: wire invocation rows to real invocation channels once the API exposes channel settings. */}
+    <div data-testid="agent-invocations-tab" className="flex flex-col gap-2">
       {INVOCATION_OPTIONS.map((option) => (
-        <div
+        <article
           key={option.title}
+          aria-label={option.title}
           className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-3"
         >
           <div className="flex min-w-0 items-center gap-3">
@@ -524,15 +531,16 @@ export function AgentInvocationsTab() {
               />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-medium">{option.title}</span>
-              <span className="block text-xs text-muted-foreground">
+              <span className="flex items-center gap-2 text-sm font-medium">
+                {option.title}
+                <Badge variant="secondary">{option.status}</Badge>
+              </span>
+              <span className="mt-1 block text-xs text-muted-foreground">
                 {option.description}
               </span>
             </span>
           </div>
-          {"enabled" in option ? (
-            <TogglePill checked />
-          ) : (
+          {option.action ? (
             <Button type="button" variant="outline" size="sm" disabled>
               <HugeiconsIcon
                 icon={PlusSignIcon}
@@ -541,8 +549,10 @@ export function AgentInvocationsTab() {
               />
               {option.action}
             </Button>
+          ) : (
+            <TogglePill checked />
           )}
-        </div>
+        </article>
       ))}
     </div>
   )
@@ -551,20 +561,25 @@ export function AgentInvocationsTab() {
 export function AgentSkillsTab() {
   return (
     <section
+      data-testid="agent-skills-tab"
       className="rounded-xl border border-border bg-card/70 p-4"
       aria-labelledby="skills-heading"
     >
-      <h2 id="skills-heading" className="text-sm font-medium">
-        Skills
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Reusable instructions this agent can apply while working.
-      </p>
-      {/* TODO: replace this empty state with API-backed agent skills once skill attachments are exposed. */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 id="skills-heading" className="text-sm font-medium">
+            Skills
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Reusable instructions this agent can apply while working.
+          </p>
+        </div>
+        <Badge variant="secondary">Planned for a later milestone</Badge>
+      </div>
       <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
-        <p className="text-sm text-muted-foreground">
-          No skills attached yet. Add skills to teach this agent repeatable
-          workflows.
+        <p className="max-w-md text-sm text-muted-foreground">
+          Skill attachments will let this agent apply reusable workflows when
+          that capability is available.
         </p>
         <Button type="button" variant="outline" size="sm" disabled>
           <HugeiconsIcon
@@ -575,71 +590,6 @@ export function AgentSkillsTab() {
           Add skills
         </Button>
       </div>
-    </section>
-  )
-}
-
-export function AgentLibraryTab({
-  information,
-}: {
-  information: AgentDetailInformation
-}) {
-  const items = information.library.items
-
-  return (
-    <section
-      className="rounded-xl border border-border bg-card/70 p-4"
-      aria-labelledby="agent-library-heading"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 id="agent-library-heading" className="text-sm font-medium">
-            Library
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Artifacts linked to this agent and its test-thread work.
-          </p>
-        </div>
-        <Badge variant="secondary">
-          {information.library.totalCount} item
-          {information.library.totalCount === 1 ? "" : "s"}
-        </Badge>
-      </div>
-      {items.length > 0 ? (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => (
-            <article
-              key={item.id}
-              className="rounded-xl border border-border bg-background/50 p-4"
-            >
-              <HugeiconsIcon
-                icon={File02Icon}
-                className="size-5 text-muted-foreground"
-                strokeWidth={2}
-              />
-              <h3 className="mt-6 truncate text-sm font-medium">
-                {item.title}
-              </h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {item.type} · {item.mimeType}
-              </p>
-              {item.threadTitleSnapshot ? (
-                <p className="mt-3 truncate text-xs text-muted-foreground">
-                  From {item.threadTitleSnapshot}
-                </p>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-5 flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl bg-muted/40 px-4 py-8 text-center">
-          <p className="text-sm font-medium">No library artifacts yet</p>
-          <p className="max-w-md text-sm text-muted-foreground">
-            Artifacts created by this agent's test threads will appear here when
-            they are available.
-          </p>
-        </div>
-      )}
     </section>
   )
 }

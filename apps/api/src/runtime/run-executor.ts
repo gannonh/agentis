@@ -9,9 +9,7 @@ import {
 import { MockLanguageModelV2 } from "ai/test"
 import type { Message, MessagePart, Run } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
-import {
-  ComposioRemediationError,
-} from "../composio/tool-execution-service.js"
+import { ComposioRemediationError } from "../composio/tool-execution-service.js"
 import {
   CURATED_COMPOSIO_TOOLS,
   SUPPORTED_TOOLKIT_NAMES,
@@ -32,9 +30,29 @@ import { getWorkspaceSummaryTool } from "./get-workspace-summary.js"
 import { nowIso } from "../lib/ids.js"
 
 const ARTIFACT_PROMPT_PATTERN = /artifact|brief|document|report/i
+const PLATFORM_SYSTEM_PROMPT =
+  "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createArtifact when the user asks for a durable artifact, document, brief, report, or library item. If the request has enough context to create useful content, choose a concise title, filename, and content instead of asking for schema fields."
 
-function buildBaseSystemPrompt() {
-  return "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createArtifact when the user asks for a document, brief, or report to save in the Library."
+function formatSystemPromptSection(title: string, body?: string | null) {
+  const trimmed = body?.trim()
+  return trimmed ? `## ${title}\n${trimmed}` : null
+}
+
+export function buildRunSystemPrompt(input: {
+  agentPrompt?: string | null
+  projectContextBlock?: string
+}): string {
+  if (!input.agentPrompt?.trim() && !input.projectContextBlock?.trim()) {
+    return PLATFORM_SYSTEM_PROMPT
+  }
+
+  return [
+    formatSystemPromptSection("Agent instructions", input.agentPrompt),
+    formatSystemPromptSection("Platform requirements", PLATFORM_SYSTEM_PROMPT),
+    formatSystemPromptSection("Project context", input.projectContextBlock),
+  ]
+    .filter((section): section is string => Boolean(section))
+    .join("\n\n")
 }
 
 function wantsGeneratedArtifact(prompt: string) {
@@ -87,7 +105,9 @@ function formatToolResultFallback(parts: MessagePart[]): string | null {
 
 function toModelMessages(messages: Message[]): ModelMessage[] {
   return messages
-    .filter((message) => message.role === "user" || message.role === "assistant")
+    .filter(
+      (message) => message.role === "user" || message.role === "assistant"
+    )
     .map((message) => ({
       role: message.role,
       content: getTextFromParts(message.parts),
@@ -180,12 +200,10 @@ export class RunExecutor {
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
-    const baseSystemPrompt = agentConfiguration
-      ? agentConfiguration.systemPrompt
-      : buildBaseSystemPrompt()
-    const systemPrompt = projectContextBlock
-      ? `${baseSystemPrompt}\n\n${projectContextBlock}`
-      : baseSystemPrompt
+    const systemPrompt = buildRunSystemPrompt({
+      agentPrompt: agentConfiguration?.systemPrompt,
+      projectContextBlock,
+    })
 
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
@@ -363,7 +381,7 @@ export class RunExecutor {
                   "runtime.",
                 ]
                 const suffixChunks = mockArtifactSuffix
-                  ? mockArtifactSuffix.match(/.{1,24}/g) ?? []
+                  ? (mockArtifactSuffix.match(/.{1,24}/g) ?? [])
                   : []
                 const chunks = [...baseChunks, ...suffixChunks]
                 let index = 0
@@ -431,17 +449,18 @@ export class RunExecutor {
             type: "tool-call",
             status: "running",
             title,
-            payload: toolkitSlug && curated
-              ? this.services.toolExecution.formatRunStepPayload({
-                  toolkitSlug,
-                  toolSlug: curated.toolSlug,
-                  toolInput: chunk.input,
-                })
-              : {
-                  toolCallId: chunk.toolCallId,
-                  toolName: chunk.toolName,
-                  input: chunk.input,
-                },
+            payload:
+              toolkitSlug && curated
+                ? this.services.toolExecution.formatRunStepPayload({
+                    toolkitSlug,
+                    toolSlug: curated.toolSlug,
+                    toolInput: chunk.input,
+                  })
+                : {
+                    toolCallId: chunk.toolCallId,
+                    toolName: chunk.toolName,
+                    input: chunk.input,
+                  },
           })
           toolStepIds.set(chunk.toolCallId, step.id)
           assistantParts = [
