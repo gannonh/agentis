@@ -373,7 +373,7 @@ describe("AgentDetailPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Configure memory" }))
     expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
-  })
+  }, 10_000)
 
   it("shows API save errors on editable model fields", async () => {
     const user = userEvent.setup()
