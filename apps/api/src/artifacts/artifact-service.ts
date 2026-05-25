@@ -93,7 +93,9 @@ export class ArtifactService {
     }
 
     const mimeType = inferMimeType(input.filename, input.mimeType)
-    const textContent = mimeType.startsWith("text/") ? input.data.toString("utf8") : ""
+    const textContent = mimeType.startsWith("text/")
+      ? input.data.toString("utf8")
+      : ""
     const previewText =
       input.previewText ??
       buildPreviewText(textContent, this.config.artifactPreviewMaxChars)
@@ -113,11 +115,8 @@ export class ArtifactService {
         storageKey,
         previewText,
         projectId: input.projectId,
-        projectNameSnapshot: provenance.projectNameSnapshot,
         threadId: input.threadId,
-        threadTitleSnapshot: provenance.threadTitleSnapshot,
-        agentId: provenance.agentId,
-        agentNameSnapshot: provenance.agentNameSnapshot,
+        ...provenance,
       })
       return { ok: true, artifact }
     } catch {
@@ -181,12 +180,9 @@ export class ArtifactService {
           input.previewText ??
           buildPreviewText(input.content, this.config.artifactPreviewMaxChars),
         projectId: input.projectId,
-        projectNameSnapshot: provenance.projectNameSnapshot,
         threadId: input.threadId,
-        threadTitleSnapshot: provenance.threadTitleSnapshot,
         runId: input.runId,
-        agentId: provenance.agentId,
-        agentNameSnapshot: provenance.agentNameSnapshot,
+        ...provenance,
         metadata: { source: "generated" },
       })
       return { ok: true, artifact }

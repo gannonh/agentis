@@ -244,11 +244,12 @@ export class ThreadRepository {
       .where(eq(threads.agentId, agentId))
       .orderBy(desc(threads.updatedAt), desc(threads.createdAt))
 
-    if (options.limit !== undefined) {
-      return query.limit(options.limit).all().map(mapThread)
-    }
+    const rows =
+      options.limit === undefined
+        ? query.all()
+        : query.limit(options.limit).all()
 
-    return query.all().map(mapThread)
+    return rows.map(mapThread)
   }
 
   touch(

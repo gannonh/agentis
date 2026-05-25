@@ -23,15 +23,6 @@ type AgentOverviewTabProps = {
   information?: AgentDetailInformation
 }
 
-type OverviewThread = {
-  id: string
-  title: string
-  status: Thread["status"]
-  updatedAt: string
-  artifactCount?: number
-  lastRunStatus?: string
-}
-
 function threadStatusBadge(status: Thread["status"] | string) {
   if (status === "finished") {
     return (
@@ -105,35 +96,11 @@ function UsageChart() {
   )
 }
 
-function getOverviewThreads(
-  recentThreads: Thread[],
-  information?: AgentDetailInformation
-): OverviewThread[] {
-  if (information) {
-    return information.recentThreads.map((thread) => ({
-      id: thread.id,
-      title: thread.title,
-      status: thread.status,
-      updatedAt: thread.updatedAt,
-      artifactCount: thread.artifactCount,
-      lastRunStatus: thread.lastRunStatus,
-    }))
-  }
-
-  return recentThreads.map((thread) => ({
-    id: thread.id,
-    title: thread.title,
-    status: thread.status,
-    updatedAt: thread.updatedAt,
-  }))
-}
-
 export function AgentOverviewTab({
   recentThreads,
   information,
 }: AgentOverviewTabProps) {
-  const overviewThreads = getOverviewThreads(recentThreads, information)
-  const primaryThread = overviewThreads[0]
+  const primaryThread = (information?.recentThreads ?? recentThreads)[0]
 
   return (
     <div className="flex flex-col gap-6">
@@ -152,7 +119,7 @@ export function AgentOverviewTab({
           />
           Access
         </h2>
-        <div className="text-muted-foreground mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm">
+        <div className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
           Only you can run this agent. It has full knowledge access.
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -215,20 +182,24 @@ export function AgentOverviewTab({
         </div>
         {primaryThread ? (
           <article className="rounded-xl border border-border bg-card/70 p-4">
-            <p className="text-muted-foreground flex items-center gap-2 text-xs">
-              <HugeiconsIcon icon={Folder01Icon} className="size-4" strokeWidth={2} />
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <HugeiconsIcon
+                icon={Folder01Icon}
+                className="size-4"
+                strokeWidth={2}
+              />
               Agent test thread
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-lg font-medium">{primaryThread.title}</h3>
               <div className="flex shrink-0 items-center gap-2">
                 {threadStatusBadge(primaryThread.status)}
-                <span className="text-muted-foreground text-xs">
+                <span className="text-xs text-muted-foreground">
                   {formatRelativeTime(primaryThread.updatedAt)}
                 </span>
               </div>
             </div>
-            <p className="text-muted-foreground mt-3 text-sm">
+            <p className="mt-3 text-sm text-muted-foreground">
               {primaryThread.lastRunStatus
                 ? `Latest run: ${primaryThread.lastRunStatus}`
                 : "Open this thread to review the latest work trail."}
@@ -240,13 +211,16 @@ export function AgentOverviewTab({
             </p>
           </article>
         ) : (
-          <p className="text-muted-foreground rounded-xl border border-border bg-card/70 px-4 py-5 text-sm">
+          <p className="rounded-xl border border-border bg-card/70 px-4 py-5 text-sm text-muted-foreground">
             No threads yet. Start a thread to test this agent with real work.
           </p>
         )}
       </section>
 
-      <Collapsible defaultOpen className="group/collapsible flex flex-col gap-3">
+      <Collapsible
+        defaultOpen
+        className="group/collapsible flex flex-col gap-3"
+      >
         <h2 className="text-sm font-medium">
           <CollapsibleTrigger className="flex w-full items-center gap-2 text-left">
             <HugeiconsIcon
@@ -336,7 +310,7 @@ export function AgentOverviewTab({
                 strokeWidth={2}
               />
               <p className="mt-4 text-sm font-medium">No evaluations yet</p>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Evaluate agent responses using the eval system.
               </p>
             </div>
