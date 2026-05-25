@@ -77,6 +77,13 @@ export class ArtifactService {
 
     const threadId = run?.threadId ?? input.threadId
     const thread = threadId ? this.repos.threads.getById(threadId) : null
+    if (threadId && !thread) {
+      return {
+        ok: false,
+        code: "invalid_artifact_provenance",
+        message: "Thread not found for artifact provenance",
+      }
+    }
     const agentId = run?.agentId ?? thread?.agentId
     const agent = agentId ? this.repos.agents.getById(agentId) : null
     return {

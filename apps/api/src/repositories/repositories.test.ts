@@ -84,6 +84,50 @@ describe("repositories", () => {
     ctx.cleanup()
   })
 
+  it("returns only the latest run for each requested thread", async () => {
+    const ctx = createTestContext()
+    const firstThread = ctx.repos.threads.create({
+      title: "First run group",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const secondThread = ctx.repos.threads.create({
+      title: "Second run group",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const firstOld = ctx.repos.runs.create({
+      threadId: firstThread.id,
+      model: firstThread.model,
+      status: "completed",
+    })
+    await new Promise((resolve) => setTimeout(resolve, 2))
+    const firstLatest = ctx.repos.runs.create({
+      threadId: firstThread.id,
+      model: firstThread.model,
+      status: "running",
+    })
+    const secondLatest = ctx.repos.runs.create({
+      threadId: secondThread.id,
+      model: secondThread.model,
+      status: "queued",
+    })
+
+    const latestRuns = ctx.repos.runs.listLatestByThreadIds([
+      firstThread.id,
+      secondThread.id,
+      "missing-thread",
+    ])
+
+    expect([...latestRuns.keys()].sort()).toEqual(
+      [firstThread.id, secondThread.id].sort()
+    )
+    expect(latestRuns.get(firstThread.id)?.id).toBe(firstLatest.id)
+    expect(latestRuns.get(secondThread.id)?.id).toBe(secondLatest.id)
+    expect(latestRuns.get(firstThread.id)?.id).not.toBe(firstOld.id)
+    ctx.cleanup()
+  })
+
   it("persists agent-bound thread metadata and run configuration version links", () => {
     const ctx = createTestContext()
     const agent = ctx.repos.agents.create({

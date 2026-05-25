@@ -108,6 +108,25 @@ describe("artifact routes", () => {
     ])
   })
 
+  it("rejects uploads when thread provenance is missing", () => {
+    ctx = createTestContext()
+    const artifactService = new ArtifactService(ctx.repos, ctx.config)
+
+    const uploaded = artifactService.upload({
+      title: "Orphan notes",
+      type: "document",
+      filename: "orphan-notes.md",
+      data: Buffer.from("# Orphan"),
+      threadId: "missing-thread",
+    })
+
+    expect(uploaded).toMatchObject({
+      ok: false,
+      code: "invalid_artifact_provenance",
+    })
+    expect(ctx.repos.artifacts.count()).toBe(0)
+  })
+
   it("rejects generated artifacts when run and thread provenance disagree", () => {
     ctx = createTestContext()
     const firstAgent = ctx.repos.agents.create({
