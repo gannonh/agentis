@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
@@ -413,6 +413,7 @@ describe("agent routes", () => {
         id: string
         agentId?: string
         agentNameSnapshot?: string
+        agentConfigurationVersionId?: string
         model: string
       }
       message: { role: string }
@@ -427,6 +428,7 @@ describe("agent routes", () => {
     expect(body.thread).toMatchObject({
       agentId: agent.id,
       agentNameSnapshot: "Research Agent",
+      agentConfigurationVersionId: updated.currentConfigurationVersion.id,
       model: "gpt-4o-mini",
     })
     expect(body.message.role).toBe("user")
@@ -475,6 +477,32 @@ describe("agent routes", () => {
       "Connect the toolkit from Integrations before granting it to an agent."
     )
     expect(ctx.repos.threads.list()).toHaveLength(0)
+  })
+
+  it("returns a structured error when agent test-thread creation fails", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    vi.spyOn(ctx.repos.agents, "getCurrentConfigurationSnapshot").mockImplementation(
+      () => {
+        throw new Error("Snapshot load failed")
+      }
+    )
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+    })
+
+    expect(response.status).toBe(500)
+    const body = (await response.json()) as { code: string; error: string }
+    expect(body.code).toBe("agent_test_thread_creation_failed")
+    expect(body.error).toBe("Snapshot load failed")
   })
 
   it("rejects invalid agent test-thread requests", async () => {

@@ -73,6 +73,7 @@ export const threadSchema = z.object({
   projectId: z.string().nullable().optional(),
   agentId: z.string().nullable().optional(),
   agentNameSnapshot: z.string().nullable().optional(),
+  agentConfigurationVersionId: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

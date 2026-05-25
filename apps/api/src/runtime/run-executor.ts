@@ -46,6 +46,18 @@ function composioToolNameToToolkit(toolName: string): string | undefined {
   return toolName.replace(/^composio_/, "").replace(/_/g, "-")
 }
 
+export function formatToolStepTitle(input: {
+  toolName: string
+  toolkitSlug?: string
+  curated: boolean
+}): string {
+  if (input.toolName === "createArtifact") return "Create artifact"
+  if (input.toolkitSlug && input.curated) {
+    return `Composio: ${input.toolkitSlug}`
+  }
+  return `Tool: ${input.toolName}`
+}
+
 function getTextFromParts(parts: MessagePart[]) {
   return parts
     .filter((part) => part.type === "text")
@@ -148,7 +160,22 @@ export class RunExecutor {
         )
       : null
     if (run.agentConfigurationVersionId && !agentConfiguration) {
-      throw new Error("Agent configuration version not found")
+      const message =
+        "Agent configuration version not found: " +
+        run.agentConfigurationVersionId
+      this.repos.runs.updateStatus(runId, "failed", {
+        finishedAt: nowIso(),
+        errorSummary: message,
+      })
+      this.repos.steps.create({
+        runId,
+        type: "error",
+        status: "failed",
+        title: "Run failed",
+        payload: { message },
+      })
+      this.repos.threads.touch(run.threadId, { status: "failed" })
+      throw new Error(message)
     }
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
@@ -270,9 +297,11 @@ export class RunExecutor {
       const status = input.error ? "failed" : "completed"
       this.repos.steps.update(stepId, {
         status,
-        title: curated
-          ? `Composio: ${toolkitSlug}`
-          : `Tool: ${toolName}`,
+        title: formatToolStepTitle({
+          toolName,
+          toolkitSlug,
+          curated: Boolean(curated),
+        }),
         payload:
           toolkitSlug && curated
             ? this.services.toolExecution.formatRunStepPayload({
@@ -391,12 +420,11 @@ export class RunExecutor {
           const curated = toolkitSlug
             ? CURATED_COMPOSIO_TOOLS[toolkitSlug]
             : undefined
-          let title = `Tool: ${chunk.toolName}`
-          if (toolkitSlug && curated) {
-            title = `Composio: ${toolkitSlug}`
-          } else if (chunk.toolName === "createArtifact") {
-            title = "Create artifact"
-          }
+          const title = formatToolStepTitle({
+            toolName: chunk.toolName,
+            toolkitSlug,
+            curated: Boolean(curated),
+          })
 
           const step = this.repos.steps.create({
             runId,

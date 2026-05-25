@@ -73,6 +73,7 @@ describe("shared schemas", () => {
         mode: "agent",
         agentId: "agent-1",
         agentNameSnapshot: "Research Agent",
+        agentConfigurationVersionId: "agent-version-2",
         createdAt: now,
         updatedAt: now,
       },
@@ -115,6 +116,7 @@ describe("shared schemas", () => {
 
     expect(parsed.thread.agentId).toBe("agent-1")
     expect(parsed.thread.agentNameSnapshot).toBe("Research Agent")
+    expect(parsed.thread.agentConfigurationVersionId).toBe("agent-version-2")
     expect(parsed.runs[0]?.agentConfigurationVersionId).toBe("agent-version-2")
     expect(version).not.toHaveProperty("toolGrants")
 
@@ -136,6 +138,7 @@ describe("shared schemas", () => {
     })
 
     expect(plainThread.agentId).toBeUndefined()
+    expect(plainThread.agentConfigurationVersionId).toBeUndefined()
     expect(plainRun.agentConfigurationVersionId).toBeUndefined()
   })
 

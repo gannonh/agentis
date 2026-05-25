@@ -49,6 +49,10 @@ function parseArray<T>(
   return data.map((item) => schema.parse(item))
 }
 
+function agentPath(agentId: string): string {
+  return `${API_BASE}/api/agents/${encodeURIComponent(agentId)}`
+}
+
 export async function listAgents(): Promise<AgentListItem[]> {
   const response = await fetch(`${API_BASE}/api/agents`)
   if (!response.ok) {
@@ -78,7 +82,7 @@ export async function createAgent(
 }
 
 export async function getAgent(agentId: string): Promise<AgentDetailResponse> {
-  const response = await fetch(`${API_BASE}/api/agents/${agentId}`)
+  const response = await fetch(agentPath(agentId))
   return parseJson(response, agentDetailResponseSchema)
 }
 
@@ -87,7 +91,7 @@ export async function updateAgent(
   body: UpdateAgentRequest
 ): Promise<AgentDetailResponse> {
   const payload = updateAgentRequestSchema.parse(body)
-  const response = await fetch(`${API_BASE}/api/agents/${agentId}`, {
+  const response = await fetch(agentPath(agentId), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -100,7 +104,7 @@ export async function startAgentTestThread(
   body: CreateAgentTestThreadRequest
 ): Promise<CreateThreadResponse> {
   const payload = createAgentTestThreadRequestSchema.parse(body)
-  const response = await fetch(`${API_BASE}/api/agents/${agentId}/test-thread`, {
+  const response = await fetch(`${agentPath(agentId)}/test-thread`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

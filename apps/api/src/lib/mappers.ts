@@ -37,6 +37,8 @@ export function mapThread(row: ThreadRow): Thread {
     projectId: row.projectId ?? undefined,
     agentId: row.agentId ?? undefined,
     agentNameSnapshot: row.agentNameSnapshot ?? undefined,
+    agentConfigurationVersionId:
+      row.agentConfigurationVersionId ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

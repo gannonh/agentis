@@ -159,30 +159,43 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       )
     }
 
-    const version = repos.agents.getCurrentConfigurationSnapshot(detail.agent.id)
-    const resolvedGrants = resolveRequestedGrants(version.toolGrants)
-    if ("error" in resolvedGrants) {
+    try {
+      const version = repos.agents.getCurrentConfigurationSnapshot(
+        detail.agent.id
+      )
+      const resolvedGrants = resolveRequestedGrants(version.toolGrants)
+      if ("error" in resolvedGrants) {
+        return c.json(
+          {
+            error: resolvedGrants.error,
+            remediation: toolkitGrantRemediation(resolvedGrants.error),
+          },
+          400
+        )
+      }
+
+      const created = repos.threads.createWithInitialRun({
+        title: summarizeTitle(parsed.data.prompt),
+        prompt: parsed.data.prompt,
+        model: version.model,
+        mode: "agent",
+        agentId: detail.agent.id,
+        agentNameSnapshot: detail.agent.name,
+        agentConfigurationVersionId: version.id,
+        toolGrants: resolvedGrants.grants,
+      })
+
+      return c.json(created, 201)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to create agent test thread"
       return c.json(
-        {
-          error: resolvedGrants.error,
-          remediation: toolkitGrantRemediation(resolvedGrants.error),
-        },
-        400
+        { error: message, code: "agent_test_thread_creation_failed" },
+        500
       )
     }
-
-    const created = repos.threads.createWithInitialRun({
-      title: summarizeTitle(parsed.data.prompt),
-      prompt: parsed.data.prompt,
-      model: version.model,
-      mode: "agent",
-      agentId: detail.agent.id,
-      agentNameSnapshot: detail.agent.name,
-      agentConfigurationVersionId: version.id,
-      toolGrants: resolvedGrants.grants,
-    })
-
-    return c.json(created, 201)
   })
 
   app.get("/:agentId", (c) => {

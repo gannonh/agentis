@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
+import { formatToolStepTitle } from "./run-executor.js"
 
 let ctx: TestContext | undefined
 
@@ -11,6 +12,12 @@ afterEach(() => {
 })
 
 describe("run executor composio bridge", () => {
+  it("keeps the createArtifact step title when finalizing tool calls", () => {
+    expect(
+      formatToolStepTitle({ toolName: "createArtifact", curated: false })
+    ).toBe("Create artifact")
+  })
+
   it("returns remediation when Slack is requested without grant", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
@@ -84,6 +91,51 @@ describe("run executor composio bridge", () => {
       ])
     )
   }, 10_000)
+
+  it("fails the run and thread when the bound agent configuration is missing", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services)
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer as the research agent.",
+      model: "gpt-4o-mini",
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize this workspace" }),
+    })
+    const { thread, run } = (await created.json()) as {
+      thread: { id: string }
+      run: { id: string; agentConfigurationVersionId: string }
+    }
+    vi.spyOn(ctx.repos.agents, "getConfigurationVersionById").mockReturnValue(
+      null
+    )
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+
+    expect(stream.status).toBe(404)
+    const message = `Agent configuration version not found: ${run.agentConfigurationVersionId}`
+    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+      status: "failed",
+      errorSummary: message,
+    })
+    expect(ctx.repos.threads.getById(thread.id)?.status).toBe("failed")
+    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "error",
+          status: "failed",
+          title: "Run failed",
+          payload: expect.objectContaining({ message }),
+        }),
+      ])
+    )
+  })
 
   it("keeps the agent configuration binding on follow-up runs", async () => {
     ctx = createTestContext()

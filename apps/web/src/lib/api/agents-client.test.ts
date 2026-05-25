@@ -74,11 +74,11 @@ describe("agents client", () => {
     )
     vi.stubGlobal("fetch", fetchMock)
 
-    const created = await startAgentTestThread("agent_1", {
+    const created = await startAgentTestThread("agent/1", {
       prompt: "Test Research Agent",
     })
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/agents/agent_1/test-thread", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/agents/agent%2F1/test-thread", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt: "Test Research Agent" }),
