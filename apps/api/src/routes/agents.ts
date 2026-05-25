@@ -60,10 +60,22 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     const agent = repos.agents.getById(agentId)
     if (!agent) return null
 
+    const toolGrants = repos.toolAccessGrants.listByScope("agent", agentId)
+
     return agentDetailResponseSchema.parse({
       agent,
       configurationVersions: repos.agents.listConfigurationVersions(agentId),
-      toolGrants: repos.toolAccessGrants.listByScope("agent", agentId),
+      toolGrants,
+      information: {
+        configuredTools: toolGrants.map((grant) => ({
+          id: grant.id,
+          toolkitSlug: grant.toolkitSlug,
+          connectionId: grant.connectionId,
+          createdAt: grant.createdAt,
+        })),
+        recentThreads: [],
+        library: { items: [], totalCount: 0 },
+      },
     })
   }
 
