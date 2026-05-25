@@ -166,31 +166,18 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     }
 
     const version = repos.agents.getCurrentConfigurationSnapshot(detail.agent.id)
-    try {
-      const created = repos.threads.createWithInitialRun({
-        title: summarizeTitle(parsed.data.prompt),
-        prompt: parsed.data.prompt,
-        model: version.model,
-        mode: "agent",
-        agentId: detail.agent.id,
-        agentNameSnapshot: detail.agent.name,
-        agentConfigurationVersionId: version.id,
-        toolGrants: version.toolGrants,
-      })
+    const created = repos.threads.createWithInitialRun({
+      title: summarizeTitle(parsed.data.prompt),
+      prompt: parsed.data.prompt,
+      model: version.model,
+      mode: "agent",
+      agentId: detail.agent.id,
+      agentNameSnapshot: detail.agent.name,
+      agentConfigurationVersionId: version.id,
+      toolGrants: version.toolGrants,
+    })
 
-      return c.json(createThreadResponseSchema.parse(created), 201)
-    } catch (error) {
-      return c.json(
-        {
-          error:
-            error instanceof Error
-              ? error.message
-              : "Unable to start agent test thread",
-          code: "agent_test_thread_failed",
-        },
-        500
-      )
-    }
+    return c.json(createThreadResponseSchema.parse(created), 201)
   })
 
   app.get("/:agentId", (c) => {

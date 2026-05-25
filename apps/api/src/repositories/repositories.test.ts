@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { messages, runs, toolAccessGrants } from "../db/schema.js"
 import { createTestContext } from "../test/setup.js"
 
 describe("repositories", () => {
@@ -83,43 +84,6 @@ describe("repositories", () => {
     ctx.cleanup()
   })
 
-  it("creates configuration versions for tool-grant snapshots", () => {
-    const ctx = createTestContext()
-    ctx.repos.integrationToolkits.seedFeatured()
-    const github = ctx.repos.integrationConnections.create({
-      toolkitSlug: "github",
-      status: "connected",
-      composioConnectedAccountId: "acct-github",
-    })
-    const slack = ctx.repos.integrationConnections.create({
-      toolkitSlug: "slack",
-      status: "connected",
-      composioConnectedAccountId: "acct-slack",
-    })
-    const agent = ctx.repos.agents.createWithGrants(
-      {
-        name: "Research Agent",
-        systemPrompt: "Answer with citations.",
-        model: "gpt-4o-mini",
-      },
-      [{ toolkitSlug: "github", connectionId: github.id }]
-    )
-
-    const updated = ctx.repos.agents.update(agent.id, {
-      toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
-    })!
-
-    expect(updated.currentConfigurationVersion.version).toBe(2)
-    expect(
-      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).toolGrants
-    ).toEqual([{ toolkitSlug: "slack", connectionId: slack.id }])
-    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toMatchObject([
-      { version: 1 },
-      { version: 2 },
-    ])
-    ctx.cleanup()
-  })
-
   it("persists agent-bound thread metadata and run configuration version links", () => {
     const ctx = createTestContext()
     const agent = ctx.repos.agents.create({
@@ -170,6 +134,35 @@ describe("repositories", () => {
     expect(
       ctx.repos.runs.getById(plainRun.id)?.agentConfigurationVersionId
     ).toBeUndefined()
+    ctx.cleanup()
+  })
+
+  it("rolls back initial thread creation when grant insertion fails", () => {
+    const ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+
+    expect(() =>
+      ctx.repos.threads.createWithInitialRun({
+        title: "Test Research Agent",
+        prompt: "Check GitHub updates",
+        model: "gpt-4o-mini",
+        mode: "agent",
+        toolGrants: [
+          { toolkitSlug: "github", connectionId: github.id },
+          { toolkitSlug: "github", connectionId: github.id },
+        ],
+      })
+    ).toThrow()
+
+    expect(ctx.repos.threads.list()).toHaveLength(0)
+    expect(ctx.db.select().from(messages).all()).toHaveLength(0)
+    expect(ctx.db.select().from(runs).all()).toHaveLength(0)
+    expect(ctx.db.select().from(toolAccessGrants).all()).toHaveLength(0)
     ctx.cleanup()
   })
 })

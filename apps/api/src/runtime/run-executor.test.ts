@@ -79,7 +79,6 @@ describe("run executor composio bridge", () => {
             agentId: agent.id,
             agentConfigurationVersionId: updated.currentConfigurationVersion.id,
             model: "gpt-4.1-mini",
-            systemPromptChars: "Answer with citations and source quality notes.".length,
           }),
         }),
       ])

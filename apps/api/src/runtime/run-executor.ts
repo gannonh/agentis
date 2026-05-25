@@ -223,7 +223,6 @@ export class RunExecutor {
           agentId: agentConfiguration.agentId,
           agentConfigurationVersionId: agentConfiguration.id,
           model: agentConfiguration.model,
-          systemPromptChars: agentConfiguration.systemPrompt.length,
         },
       })
     }
