@@ -464,43 +464,43 @@ export function AgentModelTab({
 const INVOCATION_OPTIONS = [
   {
     title: "Live mode",
-    description: "Always-on agent. Context stays in one continuous thread.",
+    description: "Keep this agent ready for ongoing work.",
     action: "Set up",
     icon: ZapIcon,
   },
   {
     title: "Thread",
-    description: "Interact with this agent in threads",
+    description: "Start a test thread from this agent detail page.",
     enabled: true,
     icon: ChatIcon,
   },
   {
     title: "Slack",
-    description: "Use @Agentis in Slack to interact",
+    description: "Let this agent respond from Slack.",
     action: "Connect",
     icon: SlackIcon,
   },
   {
     title: "Telegram",
-    description: "Respond to messages via Telegram bot",
+    description: "Let this agent respond from Telegram.",
     action: "Connect",
     icon: TelegramIcon,
   },
   {
     title: "Scheduled",
-    description: "Interact with this agent on a schedule",
+    description: "Run this agent on a schedule.",
     action: "Create schedule",
     icon: Calendar03Icon,
   },
   {
     title: "Webhook",
-    description: "Trigger this agent via HTTP webhook",
+    description: "Trigger this agent from an HTTP request.",
     action: "Create webhook",
     icon: WebhookIcon,
   },
   {
     title: "Email",
-    description: "Interact with this agent via email",
+    description: "Let this agent respond from email.",
     action: "Create email",
     icon: Mail01Icon,
   },
@@ -508,11 +508,11 @@ const INVOCATION_OPTIONS = [
 
 export function AgentInvocationsTab() {
   return (
-    <div className="flex flex-col gap-2">
-      {/* TODO: wire invocation rows to real invocation channels once the API exposes channel settings. */}
+    <div data-testid="agent-invocations-tab" className="flex flex-col gap-2">
       {INVOCATION_OPTIONS.map((option) => (
-        <div
+        <article
           key={option.title}
+          aria-label={option.title}
           className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/70 px-4 py-3"
         >
           <div className="flex min-w-0 items-center gap-3">
@@ -524,8 +524,15 @@ export function AgentInvocationsTab() {
               />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-medium">{option.title}</span>
-              <span className="block text-xs text-muted-foreground">
+              <span className="flex items-center gap-2 text-sm font-medium">
+                {option.title}
+                <Badge variant="secondary">
+                  {"enabled" in option
+                    ? "Available now"
+                    : "Planned for a later milestone"}
+                </Badge>
+              </span>
+              <span className="mt-1 block text-xs text-muted-foreground">
                 {option.description}
               </span>
             </span>
@@ -542,7 +549,7 @@ export function AgentInvocationsTab() {
               {option.action}
             </Button>
           )}
-        </div>
+        </article>
       ))}
     </div>
   )
@@ -551,20 +558,25 @@ export function AgentInvocationsTab() {
 export function AgentSkillsTab() {
   return (
     <section
+      data-testid="agent-skills-tab"
       className="rounded-xl border border-border bg-card/70 p-4"
       aria-labelledby="skills-heading"
     >
-      <h2 id="skills-heading" className="text-sm font-medium">
-        Skills
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Reusable instructions this agent can apply while working.
-      </p>
-      {/* TODO: replace this empty state with API-backed agent skills once skill attachments are exposed. */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 id="skills-heading" className="text-sm font-medium">
+            Skills
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Reusable instructions this agent can apply while working.
+          </p>
+        </div>
+        <Badge variant="secondary">Planned for a later milestone</Badge>
+      </div>
       <div className="mt-4 flex min-h-32 flex-col items-center justify-center gap-4 rounded-xl bg-muted/40 px-4 py-8 text-center">
-        <p className="text-sm text-muted-foreground">
-          No skills attached yet. Add skills to teach this agent repeatable
-          workflows.
+        <p className="max-w-md text-sm text-muted-foreground">
+          Skill attachments will let this agent apply reusable workflows when
+          that capability is available.
         </p>
         <Button type="button" variant="outline" size="sm" disabled>
           <HugeiconsIcon
