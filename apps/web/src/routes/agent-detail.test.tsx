@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router"
 import { AgentDetailPage } from "./agent-detail"
@@ -364,6 +364,57 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
   })
 
+
+  it("verifies the Knowledge placeholder vertical for API-backed agents", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        information: {
+          recentThreads: [],
+          library: {
+            totalCount: 1,
+            items: [apiArtifactSummary()],
+          },
+        },
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+
+    await user.click(screen.getByRole("button", { name: "Configure memory" }))
+    expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
+    expect(screen.getByText("No memories yet. Add one to give this agent persistent context.")).toBeInTheDocument()
+    expect(screen.getByText("No context files added yet. Attach reference files when this capability is available.")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Configure library" }))
+    expect(screen.getByText("Research notes")).toBeInTheDocument()
+    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Invocations" }))
+    const thread = screen.getByRole("article", { name: "Thread" })
+    expect(within(thread).getByText("Available now")).toBeInTheDocument()
+    for (const label of ["Live mode", "Slack", "Telegram", "Scheduled", "Webhook", "Email"]) {
+      const option = screen.getByRole("article", { name: label })
+      expect(within(option).getByText("Planned for a later milestone")).toBeInTheDocument()
+      expect(within(option).getByRole("button")).toBeDisabled()
+    }
+
+    await user.click(screen.getByRole("tab", { name: "Skills" }))
+    expect(screen.getByText("Skill attachments will let this agent apply reusable workflows when that capability is available.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Add skills" })).toBeDisabled()
+    expect(document.body).not.toHaveTextContent(/AI Automation Consulting Lead Strategy|fixture|mock/i)
+  })
 
   it("starts an API-backed agent test thread and navigates to it", async () => {
     const user = userEvent.setup()
