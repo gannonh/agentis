@@ -285,6 +285,34 @@ describe("shared schemas", () => {
       "agent-version-1"
     )
     expect(populated.library.totalCount).toBe(1)
+    expect(() =>
+      agentDetailInformationSchema.parse({
+        recentThreads: [{ ...populated.recentThreads[0], artifactCount: -1 }],
+        library: { items: [], totalCount: 0 },
+      })
+    ).toThrow()
+    expect(() =>
+      agentDetailInformationSchema.parse({
+        recentThreads: [{ ...populated.recentThreads[0], artifactCount: 1.5 }],
+        library: { items: [], totalCount: 0 },
+      })
+    ).toThrow()
+    expect(() =>
+      agentDetailInformationSchema.parse({
+        recentThreads: [
+          {
+            id: "thread-1",
+            title: "Test Research Agent",
+            status: "active",
+            model: "gpt-4o-mini",
+            agentConfigurationVersionId: "agent-version-1",
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+        library: { items: [], totalCount: 0 },
+      })
+    ).toThrow()
   })
 
   it("parses integration and grant payloads", () => {

@@ -401,18 +401,19 @@ export const threadListItemSchema = threadSchema.extend({
   artifactCount: z.number().optional(),
 })
 
-export const agentRecentThreadSummarySchema = threadListItemSchema.pick({
-  id: true,
-  title: true,
-  status: true,
-  model: true,
-  agentConfigurationVersionId: true,
-  createdAt: true,
-  updatedAt: true,
-  lastRunStatus: true,
-  summary: true,
-  artifactCount: true,
-})
+export const agentRecentThreadSummarySchema = threadListItemSchema
+  .pick({
+    id: true,
+    title: true,
+    status: true,
+    model: true,
+    agentConfigurationVersionId: true,
+    createdAt: true,
+    updatedAt: true,
+    lastRunStatus: true,
+    summary: true,
+  })
+  .extend({ artifactCount: nonNegativeInteger })
 
 export const agentLibrarySummarySchema = z.object({
   items: z.array(artifactPublicSchema),

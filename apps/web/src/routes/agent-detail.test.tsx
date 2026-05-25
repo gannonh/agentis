@@ -66,11 +66,66 @@ function NavigableAgentDetailPage() {
   )
 }
 
-function apiAgentDetail(
-  overrides: Partial<AgentDetailResponse["agent"]> = {},
-  toolGrants?: AgentDetailResponse["toolGrants"],
+type AgentRecentThreadSummary =
+  AgentDetailResponse["information"]["recentThreads"][number]
+type AgentLibraryItemSummary =
+  AgentDetailResponse["information"]["library"]["items"][number]
+
+type ApiAgentDetailOptions = {
+  agent?: Partial<AgentDetailResponse["agent"]>
+  toolGrants?: AgentDetailResponse["toolGrants"]
   information?: AgentDetailResponse["information"]
-): AgentDetailResponse {
+}
+
+function apiThreadSummary(
+  overrides: Partial<AgentRecentThreadSummary> = {}
+): AgentRecentThreadSummary {
+  const now = new Date().toISOString()
+  return {
+    id: "thread_recent",
+    title: "Test Created Research Agent",
+    status: "active",
+    model: "gpt-4o-mini",
+    agentConfigurationVersionId: "version_created",
+    createdAt: now,
+    updatedAt: now,
+    lastRunStatus: "completed",
+    artifactCount: 1,
+    ...overrides,
+  }
+}
+
+function apiArtifactSummary(
+  overrides: Partial<AgentLibraryItemSummary> = {}
+): AgentLibraryItemSummary {
+  const now = new Date().toISOString()
+  return {
+    id: "artifact_notes",
+    title: "Research notes",
+    description: null,
+    type: "document",
+    mimeType: "text/markdown",
+    sizeBytes: 42,
+    previewText: "Summary",
+    metadata: null,
+    projectId: null,
+    projectNameSnapshot: null,
+    threadId: "thread_recent",
+    threadTitleSnapshot: "Test Created Research Agent",
+    runId: "run_recent",
+    agentId: "agent_created",
+    agentNameSnapshot: "Created Research Agent",
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  }
+}
+
+function apiAgentDetail({
+  agent: overrides = {},
+  toolGrants,
+  information,
+}: ApiAgentDetailOptions = {}): AgentDetailResponse {
   const now = new Date().toISOString()
   const agent = {
     id: "agent_created",
@@ -206,23 +261,12 @@ describe("AgentDetailPage", () => {
 
   it("renders API-backed overview and activity information", async () => {
     const user = userEvent.setup()
-    const now = new Date().toISOString()
     vi.mocked(getAgent).mockResolvedValueOnce(
-      apiAgentDetail({}, undefined, {
-        recentThreads: [
-          {
-            id: "thread_recent",
-            title: "Test Created Research Agent",
-            status: "active",
-            model: "gpt-4o-mini",
-            agentConfigurationVersionId: "version_created",
-            createdAt: now,
-            updatedAt: now,
-            lastRunStatus: "completed",
-            artifactCount: 1,
-          },
-        ],
-        library: { items: [], totalCount: 0 },
+      apiAgentDetail({
+        information: {
+          recentThreads: [apiThreadSummary()],
+          library: { items: [], totalCount: 0 },
+        },
       })
     )
 
@@ -249,14 +293,21 @@ describe("AgentDetailPage", () => {
     expect(
       screen.getByText("1 artifact available from this thread.")
     ).toBeInTheDocument()
+    expect(
+      screen.queryByText("AI Automation Consulting Lead Strategy")
+    ).not.toBeInTheDocument()
   })
 
   it("renders API-backed overview and activity empty states", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(
-      apiAgentDetail({ toolGrantCount: 0 }, [], {
-        recentThreads: [],
-        library: { items: [], totalCount: 0 },
+      apiAgentDetail({
+        agent: { toolGrantCount: 0 },
+        toolGrants: [],
+        information: {
+          recentThreads: [],
+          library: { items: [], totalCount: 0 },
+        },
       })
     )
 
@@ -279,33 +330,14 @@ describe("AgentDetailPage", () => {
 
   it("renders API-backed library artifacts", async () => {
     const user = userEvent.setup()
-    const now = new Date().toISOString()
     vi.mocked(getAgent).mockResolvedValueOnce(
-      apiAgentDetail({}, undefined, {
-        recentThreads: [],
-        library: {
-          totalCount: 1,
-          items: [
-            {
-              id: "artifact_notes",
-              title: "Research notes",
-              description: null,
-              type: "document",
-              mimeType: "text/markdown",
-              sizeBytes: 42,
-              previewText: "Summary",
-              metadata: null,
-              projectId: null,
-              projectNameSnapshot: null,
-              threadId: "thread_recent",
-              threadTitleSnapshot: "Test Created Research Agent",
-              runId: "run_recent",
-              agentId: "agent_created",
-              agentNameSnapshot: "Created Research Agent",
-              createdAt: now,
-              updatedAt: now,
-            },
-          ],
+      apiAgentDetail({
+        information: {
+          recentThreads: [],
+          library: {
+            totalCount: 1,
+            items: [apiArtifactSummary()],
+          },
         },
       })
     )
@@ -329,87 +361,6 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
   })
 
-  it("covers the API-backed agent detail information vertical", async () => {
-    const user = userEvent.setup()
-    const now = new Date().toISOString()
-    vi.mocked(getAgent).mockResolvedValueOnce(
-      apiAgentDetail(
-        { toolGrantCount: 1 },
-        [
-          {
-            id: "grant_slack",
-            scopeType: "agent",
-            scopeId: "agent_created",
-            toolkitSlug: "slack",
-            connectionId: "conn_slack",
-            createdAt: now,
-          },
-        ],
-        {
-          recentThreads: [
-            {
-              id: "thread_api_vertical",
-              title: "API vertical thread",
-              status: "active",
-              model: "gpt-4o-mini",
-              agentConfigurationVersionId: "version_created",
-              createdAt: now,
-              updatedAt: now,
-              lastRunStatus: "completed",
-              artifactCount: 1,
-            },
-          ],
-          library: {
-            totalCount: 1,
-            items: [
-              {
-                id: "artifact_api_vertical",
-                title: "API vertical artifact",
-                description: null,
-                type: "document",
-                mimeType: "text/markdown",
-                sizeBytes: 64,
-                previewText: null,
-                metadata: null,
-                projectId: null,
-                projectNameSnapshot: null,
-                threadId: "thread_api_vertical",
-                threadTitleSnapshot: "API vertical thread",
-                runId: "run_api_vertical",
-                agentId: "agent_created",
-                agentNameSnapshot: "Created Research Agent",
-                createdAt: now,
-                updatedAt: now,
-              },
-            ],
-          },
-        }
-      )
-    )
-
-    render(
-      <MemoryRouter initialEntries={["/agents/agent_created"]}>
-        <Routes>
-          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
-        </Routes>
-      </MemoryRouter>
-    )
-
-    await screen.findByRole("heading", { name: "Created Research Agent" })
-    expect(screen.getAllByText("slack").length).toBeGreaterThan(0)
-    expect(screen.getByText("API vertical thread")).toBeInTheDocument()
-    expect(screen.getByText(/Latest run: completed/)).toBeInTheDocument()
-
-    await user.click(screen.getByRole("tab", { name: "Activity" }))
-    expect(screen.getByText("API vertical thread")).toBeInTheDocument()
-    expect(
-      screen.queryByText("AI Automation Consulting Lead Strategy")
-    ).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole("tab", { name: "Library" }))
-    expect(screen.getByText("API vertical artifact")).toBeInTheDocument()
-    expect(screen.getByText("From API vertical thread")).toBeInTheDocument()
-  })
 
   it("starts an API-backed agent test thread and navigates to it", async () => {
     const user = userEvent.setup()
@@ -494,9 +445,11 @@ describe("AgentDetailPage", () => {
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
     vi.mocked(updateAgent).mockResolvedValueOnce(
       apiAgentDetail({
-        name: "Updated Research Agent",
-        description: "Updated description",
-        systemPrompt: "Updated prompt",
+        agent: {
+          name: "Updated Research Agent",
+          description: "Updated description",
+          systemPrompt: "Updated prompt",
+        },
       })
     )
 
@@ -530,7 +483,7 @@ describe("AgentDetailPage", () => {
 
   it("shows comp-aligned editable agent tabs for API-backed agents", async () => {
     vi.mocked(getAgent).mockResolvedValueOnce(
-      apiAgentDetail({ toolGrantCount: 0 }, [])
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
     )
 
     render(
@@ -697,7 +650,7 @@ describe("AgentDetailPage", () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
     vi.mocked(updateAgent).mockResolvedValueOnce(
-      apiAgentDetail({ toolGrantCount: 0 }, [])
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
     )
 
     render(
@@ -722,19 +675,22 @@ describe("AgentDetailPage", () => {
     const user = userEvent.setup()
     mockIntegrations([connectedToolkit("slack", "Slack")])
     vi.mocked(getAgent).mockResolvedValueOnce(
-      apiAgentDetail({ toolGrantCount: 0 }, [])
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
     )
     vi.mocked(updateAgent).mockResolvedValueOnce(
-      apiAgentDetail({ toolGrantCount: 1 }, [
-        {
-          id: "grant_slack",
-          scopeType: "agent",
-          scopeId: "agent_created",
-          toolkitSlug: "slack",
-          connectionId: "conn_slack",
-          createdAt: new Date().toISOString(),
-        },
-      ])
+      apiAgentDetail({
+        agent: { toolGrantCount: 1 },
+        toolGrants: [
+          {
+            id: "grant_slack",
+            scopeType: "agent",
+            scopeId: "agent_created",
+            toolkitSlug: "slack",
+            connectionId: "conn_slack",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      })
     )
 
     render(
@@ -758,8 +714,8 @@ describe("AgentDetailPage", () => {
 
   it("shows a useful empty description for API-backed agents", async () => {
     vi.mocked(getAgent).mockResolvedValueOnce(
-      apiAgentDetail(
-        {
+      apiAgentDetail({
+        agent: {
           id: "agent_blank",
           name: "Blank Description Agent",
           description: null,
@@ -773,8 +729,8 @@ describe("AgentDetailPage", () => {
           },
           toolGrantCount: 0,
         },
-        []
-      )
+        toolGrants: [],
+      })
     )
 
     render(

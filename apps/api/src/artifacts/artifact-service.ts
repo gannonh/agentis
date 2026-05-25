@@ -29,6 +29,18 @@ function buildPreviewText(content: string, maxChars: number) {
   return `${trimmed.slice(0, maxChars)}…`
 }
 
+type ArtifactProvenance = {
+  threadId?: string
+  projectNameSnapshot?: string
+  threadTitleSnapshot?: string
+  agentId?: string
+  agentNameSnapshot?: string
+}
+
+type ArtifactProvenanceResult =
+  | { ok: true; provenance: ArtifactProvenance }
+  | { ok: false; code: string; message: string }
+
 export class ArtifactService {
   private readonly storage: LocalArtifactStorage
 
@@ -43,21 +55,39 @@ export class ArtifactService {
     projectId?: string
     threadId?: string
     runId?: string
-  }) {
+  }): ArtifactProvenanceResult {
     const project = input.projectId
       ? this.repos.projects.getById(input.projectId)
       : null
     const run = input.runId ? this.repos.runs.getById(input.runId) : null
-    const threadId = input.threadId ?? run?.threadId
+    if (input.runId && !run) {
+      return {
+        ok: false,
+        code: "invalid_artifact_provenance",
+        message: "Run not found for artifact provenance",
+      }
+    }
+    if (run && input.threadId && run.threadId !== input.threadId) {
+      return {
+        ok: false,
+        code: "invalid_artifact_provenance",
+        message: "Artifact run and thread do not match",
+      }
+    }
+
+    const threadId = run?.threadId ?? input.threadId
     const thread = threadId ? this.repos.threads.getById(threadId) : null
-    const agentId = thread?.agentId ?? run?.agentId
+    const agentId = run?.agentId ?? thread?.agentId
     const agent = agentId ? this.repos.agents.getById(agentId) : null
     return {
-      threadId,
-      projectNameSnapshot: project?.name,
-      threadTitleSnapshot: thread?.title,
-      agentId: agentId ?? undefined,
-      agentNameSnapshot: thread?.agentNameSnapshot ?? agent?.name ?? undefined,
+      ok: true,
+      provenance: {
+        threadId,
+        projectNameSnapshot: project?.name,
+        threadTitleSnapshot: thread?.title,
+        agentId: agentId ?? undefined,
+        agentNameSnapshot: thread?.agentNameSnapshot ?? agent?.name ?? undefined,
+      },
     }
   }
 
@@ -82,6 +112,12 @@ export class ArtifactService {
       }
     }
 
+    const provenanceResult = this.captureProvenance({
+      projectId: input.projectId,
+      threadId: input.threadId,
+    })
+    if (!provenanceResult.ok) return provenanceResult
+
     const storageKey = this.storage.createStorageKey(input.filename)
     try {
       this.storage.write(storageKey, input.data)
@@ -101,11 +137,6 @@ export class ArtifactService {
       input.previewText ??
       buildPreviewText(textContent, this.config.artifactPreviewMaxChars)
 
-    const provenance = this.captureProvenance({
-      projectId: input.projectId,
-      threadId: input.threadId,
-    })
-
     try {
       const artifact = this.repos.artifacts.create({
         title: input.title,
@@ -116,7 +147,7 @@ export class ArtifactService {
         storageKey,
         previewText,
         projectId: input.projectId,
-        ...provenance,
+        ...provenanceResult.provenance,
       })
       return { ok: true, artifact }
     } catch {
@@ -151,6 +182,13 @@ export class ArtifactService {
       }
     }
 
+    const provenanceResult = this.captureProvenance({
+      projectId: input.projectId,
+      threadId: input.threadId,
+      runId: input.runId,
+    })
+    if (!provenanceResult.ok) return provenanceResult
+
     const storageKey = this.storage.createStorageKey(input.filename)
     try {
       this.storage.write(storageKey, data)
@@ -161,12 +199,6 @@ export class ArtifactService {
         message: "Failed to store generated artifact",
       }
     }
-
-    const provenance = this.captureProvenance({
-      projectId: input.projectId,
-      threadId: input.threadId,
-      runId: input.runId,
-    })
 
     try {
       const artifact = this.repos.artifacts.create({
@@ -181,7 +213,7 @@ export class ArtifactService {
           buildPreviewText(input.content, this.config.artifactPreviewMaxChars),
         projectId: input.projectId,
         runId: input.runId,
-        ...provenance,
+        ...provenanceResult.provenance,
         metadata: { source: "generated" },
       })
       return { ok: true, artifact }

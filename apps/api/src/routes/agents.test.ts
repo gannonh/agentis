@@ -454,6 +454,44 @@ describe("agent routes", () => {
     expect(body.information.library.items[0]).not.toHaveProperty("storageKey")
   })
 
+  it("uses the newest run status in agent detail recent activity", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Test Research Agent",
+      prompt: "Check GitHub updates",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    ctx.repos.runs.updateStatus(createdThread.run.id, "completed", {
+      finishedAt: new Date().toISOString(),
+    })
+    await new Promise((resolve) => setTimeout(resolve, 2))
+    ctx.repos.runs.create({
+      threadId: createdThread.thread.id,
+      model: agent.model,
+      status: "failed",
+      agentId: agent.id,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}`)
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      information: { recentThreads: { lastRunStatus?: string }[] }
+    }
+    expect(body.information.recentThreads[0]?.lastRunStatus).toBe("failed")
+  })
+
   it("returns empty detail information for a fresh agent", async () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({
