@@ -28,15 +28,26 @@ describe("run executor composio bridge", () => {
     ).toBe("Create artifact")
   })
 
-  it("keeps platform artifact instructions with custom agent prompts", () => {
+  it("keeps platform artifact instructions with explicit prompt sections", () => {
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: "Answer as the configured research agent.",
+      projectContextBlock: "Workspace: Research",
     })
 
-    expect(systemPrompt).toContain("Answer as the configured research agent.")
+    expect(systemPrompt).toContain(
+      "## Agent instructions\nAnswer as the configured research agent."
+    )
+    expect(systemPrompt).toContain("## Platform requirements")
     expect(systemPrompt).toContain("createArtifact")
     expect(systemPrompt).toContain("durable artifact")
     expect(systemPrompt).toContain("instead of asking for schema fields")
+    expect(systemPrompt).toContain("## Project context\nWorkspace: Research")
+    expect(systemPrompt.indexOf("## Agent instructions")).toBeLessThan(
+      systemPrompt.indexOf("## Platform requirements")
+    )
+    expect(systemPrompt.indexOf("## Platform requirements")).toBeLessThan(
+      systemPrompt.indexOf("## Project context")
+    )
   })
 
   it("returns remediation when Slack is requested without grant", async () => {

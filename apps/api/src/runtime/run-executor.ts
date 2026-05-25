@@ -33,17 +33,22 @@ const ARTIFACT_PROMPT_PATTERN = /artifact|brief|document|report/i
 const PLATFORM_SYSTEM_PROMPT =
   "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createArtifact when the user asks for a durable artifact, document, brief, report, or library item. If the request has enough context to create useful content, choose a concise title, filename, and content instead of asking for schema fields."
 
+function formatSystemPromptSection(title: string, body?: string | null) {
+  const trimmed = body?.trim()
+  return trimmed ? `## ${title}\n${trimmed}` : null
+}
+
 export function buildRunSystemPrompt(input: {
   agentPrompt?: string | null
   projectContextBlock?: string
 }): string {
-  const prompts = [PLATFORM_SYSTEM_PROMPT]
-  const configuredPrompt = input.agentPrompt?.trim()
-
-  if (configuredPrompt) prompts.unshift(configuredPrompt)
-  if (input.projectContextBlock) prompts.push(input.projectContextBlock)
-
-  return prompts.join("\n\n")
+  return [
+    formatSystemPromptSection("Agent instructions", input.agentPrompt),
+    formatSystemPromptSection("Platform requirements", PLATFORM_SYSTEM_PROMPT),
+    formatSystemPromptSection("Project context", input.projectContextBlock),
+  ]
+    .filter((section): section is string => Boolean(section))
+    .join("\n\n")
 }
 
 function wantsGeneratedArtifact(prompt: string) {

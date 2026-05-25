@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { AgentKnowledgeTab } from "./agent-edit-tabs"
+import { AgentKnowledgeTab } from "./agent-knowledge-tab"
 import type { AgentDetailInformation } from "@workspace/shared"
 
 function emptyInformation(): AgentDetailInformation {
@@ -17,10 +17,6 @@ describe("AgentKnowledgeTab", () => {
     for (const heading of [
       "Knowledge discovery",
       "Knowledge access",
-      "Personal",
-      "Curated",
-      "Team learning",
-      "Custom",
       "Memories",
       "Context files",
       "Library",
@@ -30,6 +26,8 @@ describe("AgentKnowledgeTab", () => {
 
     for (const text of [
       "Allow this agent to find and use existing knowledge while it works.",
+      "Knowledge discovery controls will be available when this capability is backed by the agent configuration API.",
+      "Access presets and per-agent knowledge permissions will appear here when those settings are available.",
       "No memories yet. Add one to give this agent persistent context.",
       "No context files added yet. Attach reference files when this capability is available.",
       "0 items",

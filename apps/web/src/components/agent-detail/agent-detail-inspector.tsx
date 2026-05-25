@@ -15,9 +15,8 @@ import {
   Wrench02Icon,
 } from "@hugeicons/core-free-icons"
 import type { Agent } from "@/fixtures/schema"
+import type { AgentDetailConfigureTab } from "./agent-detail-tabs"
 import type { ReactNode } from "react"
-
-type AgentDetailTab = "invocations" | "tools" | "skills" | "knowledge"
 
 type InspectorSectionProps = {
   title: string
@@ -25,8 +24,8 @@ type InspectorSectionProps = {
   defaultOpen?: boolean
   children?: ReactNode
   emptyLabel?: string
-  configureTab?: AgentDetailTab
-  onConfigure?: (tab: AgentDetailTab) => void
+  configureTab?: AgentDetailConfigureTab
+  onConfigure?: (tab: AgentDetailConfigureTab) => void
 }
 
 function InspectorSection({
@@ -109,7 +108,7 @@ function ToolList({ tools }: { tools: string[] }) {
 
 type AgentDetailInspectorProps = {
   agent: Agent
-  onConfigure?: (tab: AgentDetailTab) => void
+  onConfigure?: (tab: AgentDetailConfigureTab) => void
 }
 
 export function AgentDetailInspector({
