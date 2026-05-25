@@ -47,12 +47,16 @@ export class ArtifactService {
     const project = input.projectId
       ? this.repos.projects.getById(input.projectId)
       : null
-    const thread = input.threadId
-      ? this.repos.threads.getById(input.threadId)
-      : null
+    const run = input.runId ? this.repos.runs.getById(input.runId) : null
+    const threadId = input.threadId ?? run?.threadId
+    const thread = threadId ? this.repos.threads.getById(threadId) : null
+    const agentId = thread?.agentId ?? run?.agentId
+    const agent = agentId ? this.repos.agents.getById(agentId) : null
     return {
       projectNameSnapshot: project?.name,
       threadTitleSnapshot: thread?.title,
+      agentId: agentId ?? undefined,
+      agentNameSnapshot: thread?.agentNameSnapshot ?? agent?.name ?? undefined,
     }
   }
 
@@ -112,6 +116,8 @@ export class ArtifactService {
         projectNameSnapshot: provenance.projectNameSnapshot,
         threadId: input.threadId,
         threadTitleSnapshot: provenance.threadTitleSnapshot,
+        agentId: provenance.agentId,
+        agentNameSnapshot: provenance.agentNameSnapshot,
       })
       return { ok: true, artifact }
     } catch {
@@ -179,6 +185,8 @@ export class ArtifactService {
         threadId: input.threadId,
         threadTitleSnapshot: provenance.threadTitleSnapshot,
         runId: input.runId,
+        agentId: provenance.agentId,
+        agentNameSnapshot: provenance.agentNameSnapshot,
         metadata: { source: "generated" },
       })
       return { ok: true, artifact }

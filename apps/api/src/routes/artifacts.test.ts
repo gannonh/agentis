@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "../app.js"
+import { ArtifactService } from "../artifacts/artifact-service.js"
 import { createComposioServices } from "../composio/index.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
@@ -58,6 +59,53 @@ describe("artifact routes", () => {
     expect(response.status).toBe(400)
     const body = (await response.json()) as { code: string }
     expect(body.code).toBe("invalid_request")
+  })
+
+  it("links generated test-thread artifacts to the owning agent detail library", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Test Research Agent",
+      prompt: "Create notes",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    const artifactService = new ArtifactService(ctx.repos, ctx.config)
+
+    const generated = artifactService.registerGenerated({
+      title: "Research notes",
+      type: "document",
+      filename: "research-notes.md",
+      content: "# Research notes",
+      threadId: createdThread.thread.id,
+      runId: createdThread.run.id,
+    })
+
+    expect(generated.ok).toBe(true)
+    if (!generated.ok) return
+    expect(generated.artifact).toMatchObject({
+      agentId: agent.id,
+      agentNameSnapshot: "Research Agent",
+    })
+
+    const detail = await app.request(`/api/agents/${agent.id}`)
+    expect(detail.status).toBe(200)
+    const body = (await detail.json()) as {
+      information: { library: { totalCount: number; items: { title: string }[] } }
+    }
+    expect(body.information.library.totalCount).toBe(1)
+    expect(body.information.library.items).toMatchObject([
+      { title: "Research notes" },
+    ])
   })
 
   it("returns artifact_blob_missing when file is absent", async () => {
