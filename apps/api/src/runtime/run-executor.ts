@@ -42,6 +42,10 @@ export function buildRunSystemPrompt(input: {
   agentPrompt?: string | null
   projectContextBlock?: string
 }): string {
+  if (!input.agentPrompt?.trim() && !input.projectContextBlock?.trim()) {
+    return PLATFORM_SYSTEM_PROMPT
+  }
+
   return [
     formatSystemPromptSection("Agent instructions", input.agentPrompt),
     formatSystemPromptSection("Platform requirements", PLATFORM_SYSTEM_PROMPT),

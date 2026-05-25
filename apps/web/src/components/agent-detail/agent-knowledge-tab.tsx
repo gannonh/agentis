@@ -3,6 +3,7 @@ import { Button } from "@workspace/ui/components/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { File02Icon, PlusSignIcon } from "@hugeicons/core-free-icons"
 import type { AgentDetailInformation } from "@workspace/shared"
+import { useId } from "react"
 
 type FuturePlaceholderSectionProps = {
   title: string
@@ -17,7 +18,7 @@ function FuturePlaceholderSection({
   emptyCopy,
   actionLabel,
 }: FuturePlaceholderSectionProps) {
-  const headingId = `agent-${title.toLowerCase().replace(/\s+/g, "-")}-heading`
+  const headingId = useId()
 
   return (
     <section

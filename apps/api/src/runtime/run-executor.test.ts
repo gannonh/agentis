@@ -28,6 +28,15 @@ describe("run executor composio bridge", () => {
     ).toBe("Create artifact")
   })
 
+  it("keeps default runs on the raw platform prompt", () => {
+    const systemPrompt = buildRunSystemPrompt({})
+
+    expect(systemPrompt).toContain("You are Agentis")
+    expect(systemPrompt).toContain("createArtifact")
+    expect(systemPrompt).toContain("durable artifact")
+    expect(systemPrompt).not.toContain("## Platform requirements")
+  })
+
   it("keeps platform artifact instructions with explicit prompt sections", () => {
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: "Answer as the configured research agent.",
