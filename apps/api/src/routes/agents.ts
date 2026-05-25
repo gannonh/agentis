@@ -3,10 +3,12 @@ import {
   agentDetailResponseSchema,
   agentListItemSchema,
   createAgentRequestSchema,
+  createAgentTestThreadRequestSchema,
   updateAgentRequestSchema,
   type AgentToolGrantInput,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
+import { summarizeTitle } from "../lib/title-summary.js"
 import type { Repositories } from "../repositories/index.js"
 
 export function createAgentRoutes(repos: Repositories, config: AppConfig) {
@@ -122,6 +124,78 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     )
 
     return c.json(agentDetail(created.id), 201)
+  })
+
+  app.post("/:agentId/test-thread", async (c) => {
+    const agentId = c.req.param("agentId")
+    const detail = agentDetail(agentId)
+    if (!detail) {
+      return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+    }
+
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(
+        {
+          error: "Invalid agent test thread payload",
+          code: "invalid_agent_test_thread",
+          issues: [],
+        },
+        400
+      )
+    }
+
+    const parsed = createAgentTestThreadRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: "Invalid agent test thread payload",
+          code: "invalid_agent_test_thread",
+          issues: parsed.error.issues,
+        },
+        400
+      )
+    }
+
+    try {
+      const version = repos.agents.getCurrentConfigurationSnapshot(
+        detail.agent.id
+      )
+      const resolvedGrants = resolveRequestedGrants(version.toolGrants)
+      if ("error" in resolvedGrants) {
+        return c.json(
+          {
+            error: resolvedGrants.error,
+            remediation: toolkitGrantRemediation(resolvedGrants.error),
+          },
+          400
+        )
+      }
+
+      const created = repos.threads.createWithInitialRun({
+        title: summarizeTitle(parsed.data.prompt),
+        prompt: parsed.data.prompt,
+        model: version.model,
+        mode: "agent",
+        agentId: detail.agent.id,
+        agentNameSnapshot: detail.agent.name,
+        agentConfigurationVersionId: version.id,
+        toolGrants: resolvedGrants.grants,
+      })
+
+      return c.json(created, 201)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to create agent test thread"
+      return c.json(
+        { error: message, code: "agent_test_thread_creation_failed" },
+        500
+      )
+    }
   })
 
   app.get("/:agentId", (c) => {

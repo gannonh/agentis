@@ -62,6 +62,86 @@ describe("shared schemas", () => {
     expect(parsed.messages).toHaveLength(1)
   })
 
+  it("parses agent-bound thread and run metadata without affecting plain threads", () => {
+    const now = new Date().toISOString()
+    const parsed = threadDetailSchema.parse({
+      thread: {
+        id: "thread-1",
+        title: "Test Research Agent",
+        status: "active",
+        model: "gpt-4.1-mini",
+        mode: "agent",
+        agentId: "agent-1",
+        agentNameSnapshot: "Research Agent",
+        agentConfigurationVersionId: "agent-version-2",
+        createdAt: now,
+        updatedAt: now,
+      },
+      messages: [],
+      runs: [
+        {
+          id: "run-1",
+          threadId: "thread-1",
+          status: "queued",
+          model: "gpt-4.1-mini",
+          agentId: "agent-1",
+          agentConfigurationVersionId: "agent-version-2",
+          startedAt: now,
+        },
+      ],
+      steps: [],
+    })
+
+    const version = agentDetailResponseSchema.parse({
+      agent: {
+        id: "agent-1",
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4.1-mini",
+        createdAt: now,
+        updatedAt: now,
+        currentConfigurationVersion: {
+          id: "agent-version-2",
+          agentId: "agent-1",
+          version: 2,
+          systemPrompt: "Answer with citations.",
+          model: "gpt-4.1-mini",
+          createdAt: now,
+        },
+        toolGrantCount: 1,
+      },
+      configurationVersions: [],
+      toolGrants: [],
+    }).agent.currentConfigurationVersion
+
+    expect(parsed.thread.agentId).toBe("agent-1")
+    expect(parsed.thread.agentNameSnapshot).toBe("Research Agent")
+    expect(parsed.thread.agentConfigurationVersionId).toBe("agent-version-2")
+    expect(parsed.runs[0]?.agentConfigurationVersionId).toBe("agent-version-2")
+    expect(version).not.toHaveProperty("toolGrants")
+
+    const plainThread = threadSchema.parse({
+      id: "plain-thread",
+      title: "Plain thread",
+      status: "active",
+      model: "gpt-4o-mini",
+      mode: "plan",
+      createdAt: now,
+      updatedAt: now,
+    })
+    const plainRun = runSchema.parse({
+      id: "plain-run",
+      threadId: plainThread.id,
+      status: "queued",
+      model: "gpt-4o-mini",
+      startedAt: now,
+    })
+
+    expect(plainThread.agentId).toBeUndefined()
+    expect(plainThread.agentConfigurationVersionId).toBeUndefined()
+    expect(plainRun.agentConfigurationVersionId).toBeUndefined()
+  })
+
   it("rejects empty create thread prompts", () => {
     expect(() => createThreadRequestSchema.parse({ prompt: "" })).toThrow()
   })

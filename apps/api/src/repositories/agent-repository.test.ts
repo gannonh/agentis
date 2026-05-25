@@ -203,7 +203,7 @@ describe("agent repository", () => {
     expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(1)
   })
 
-  it("does not create configuration versions for tool grant-only edits", () => {
+  it("creates configuration versions for tool grant-only edits", () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
     const github = ctx.repos.integrationConnections.create({
@@ -225,11 +225,23 @@ describe("agent repository", () => {
       [{ toolkitSlug: "github", connectionId: github.id }]
     )
 
-    ctx.repos.agents.update(agent.id, {
+    const updated = ctx.repos.agents.update(agent.id, {
+      toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+    })!
+
+    expect(updated.currentConfigurationVersion).toMatchObject({
+      version: 2,
+    })
+    expect(
+      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id)
+    ).toMatchObject({
+      version: 2,
       toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
     })
-
-    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toHaveLength(1)
+    expect(ctx.repos.agents.listConfigurationVersions(agent.id)).toMatchObject([
+      { version: 1 },
+      { version: 2 },
+    ])
     expect(
       ctx.repos.toolAccessGrants
         .listByScope("agent", agent.id)

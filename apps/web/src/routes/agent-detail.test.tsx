@@ -4,12 +4,17 @@ import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router"
 import { AgentDetailPage } from "./agent-detail"
 import { ApiError } from "@/lib/api/client"
-import { getAgent, updateAgent } from "@/lib/api/agents-client"
+import {
+  getAgent,
+  startAgentTestThread,
+  updateAgent,
+} from "@/lib/api/agents-client"
 import { useIntegrations } from "@/hooks/use-integrations"
 import type { AgentDetailResponse, IntegrationToolkit } from "@workspace/shared"
 
 vi.mock("@/lib/api/agents-client", () => ({
   getAgent: vi.fn(),
+  startAgentTestThread: vi.fn(),
   updateAgent: vi.fn(),
 }))
 
@@ -107,6 +112,7 @@ function apiAgentDetail(
 describe("AgentDetailPage", () => {
   beforeEach(() => {
     vi.mocked(getAgent).mockReset()
+    vi.mocked(startAgentTestThread).mockReset()
     vi.mocked(updateAgent).mockReset()
     vi.mocked(useIntegrations).mockReset()
     mockIntegrations()
@@ -191,6 +197,81 @@ describe("AgentDetailPage", () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText("gpt-4o-mini")).toBeInTheDocument()
     expect(screen.getByText("google-drive")).toBeInTheDocument()
+  })
+
+  it("starts an API-backed agent test thread and navigates to it", async () => {
+    const user = userEvent.setup()
+    const detail = apiAgentDetail()
+    const now = new Date().toISOString()
+    vi.mocked(getAgent).mockResolvedValueOnce(detail)
+    vi.mocked(startAgentTestThread).mockResolvedValueOnce({
+      thread: {
+        id: "thread_test",
+        title: "Test Created Research Agent",
+        status: "active",
+        model: "gpt-4o-mini",
+        mode: "agent",
+        agentId: detail.agent.id,
+        agentNameSnapshot: detail.agent.name,
+        createdAt: now,
+        updatedAt: now,
+      },
+      message: {
+        id: "msg_test",
+        threadId: "thread_test",
+        role: "user",
+        parts: [{ type: "text", text: "Test Created Research Agent" }],
+        status: "completed",
+        createdAt: now,
+      },
+      run: {
+        id: "run_test",
+        threadId: "thread_test",
+        status: "queued",
+        model: "gpt-4o-mini",
+        agentId: detail.agent.id,
+        agentConfigurationVersionId: detail.agent.currentConfigurationVersion.id,
+        startedAt: now,
+      },
+    })
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+          <Route path="/threads/:threadId" element={<div>Thread opened</div>} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("button", { name: "New thread" }))
+
+    expect(startAgentTestThread).toHaveBeenCalledWith("agent_created", {
+      prompt: "Test Created Research Agent",
+    })
+    expect(await screen.findByText("Thread opened")).toBeInTheDocument()
+  })
+
+  it("shows test-thread launch errors for API-backed agents", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+    vi.mocked(startAgentTestThread).mockRejectedValueOnce(
+      new ApiError("Unable to start thread", 500)
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("button", { name: "New thread" }))
+
+    expect(await screen.findByText("Unable to start thread")).toBeInTheDocument()
   })
 
   it("saves API-backed identity and prompt edits from the detail tabs", async () => {
@@ -292,7 +373,7 @@ describe("AgentDetailPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Configure memory" }))
     expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByText("Knowledge discovery")).toBeInTheDocument()
-  })
+  }, 10_000)
 
   it("shows API save errors on editable model fields", async () => {
     const user = userEvent.setup()

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
@@ -309,10 +309,10 @@ describe("agent routes", () => {
       maxCostPerRunUsd: 3,
       toolGrantCount: 1,
     })
-    expect(reloadedBody.agent.currentConfigurationVersion.version).toBe(2)
+    expect(reloadedBody.agent.currentConfigurationVersion.version).toBe(3)
     expect(
       reloadedBody.configurationVersions.map((version) => version.version)
-    ).toEqual([1, 2])
+    ).toEqual([1, 2, 3])
     expect(reloadedBody.toolGrants).toMatchObject([{ toolkitSlug: "slack" }])
   })
 
@@ -367,5 +367,176 @@ describe("agent routes", () => {
     expect(listBody.map((agent) => agent.id)).toEqual([createdBody.agent.id])
     expect(listBody[0]?.currentConfigurationVersion.version).toBe(1)
     expect(listBody[0]?.toolGrantCount).toBe(1)
+    expect(listBody[0]?.currentConfigurationVersion).not.toHaveProperty(
+      "toolGrants"
+    )
+    expect(createdBody.agent.currentConfigurationVersion).not.toHaveProperty(
+      "toolGrants"
+    )
+  })
+
+  it("starts an agent test thread from the selected configuration version grant snapshot", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+    const updated = ctx.repos.agents.update(agent.id, {
+      toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+    })!
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check Slack updates" }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      thread: {
+        id: string
+        agentId?: string
+        agentNameSnapshot?: string
+        agentConfigurationVersionId?: string
+        model: string
+      }
+      message: { role: string }
+      run: {
+        id: string
+        agentId?: string
+        agentConfigurationVersionId?: string
+        model: string
+      }
+    }
+    expect(updated.currentConfigurationVersion.version).toBe(2)
+    expect(body.thread).toMatchObject({
+      agentId: agent.id,
+      agentNameSnapshot: "Research Agent",
+      agentConfigurationVersionId: updated.currentConfigurationVersion.id,
+      model: "gpt-4o-mini",
+    })
+    expect(body.message.role).toBe("user")
+    expect(body.run).toMatchObject({
+      agentId: agent.id,
+      agentConfigurationVersionId: updated.currentConfigurationVersion.id,
+      model: "gpt-4o-mini",
+    })
+    expect(
+      ctx.repos.toolAccessGrants.listByScope("thread", body.thread.id)
+    ).toMatchObject([{ toolkitSlug: "slack", connectionId: slack.id }])
+  })
+
+  it("rejects agent test threads when the saved grant snapshot is disconnected", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      },
+      [{ toolkitSlug: "github", connectionId: github.id }]
+    )
+    ctx.repos.integrationConnections.deleteByToolkitSlug("github")
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as {
+      error: string
+      remediation?: string
+    }
+    expect(body.error).toBe("toolkit_not_connected")
+    expect(body.remediation).toBe(
+      "Connect the toolkit from Integrations before granting it to an agent."
+    )
+    expect(ctx.repos.threads.list()).toHaveLength(0)
+  })
+
+  it("returns a structured error when agent test-thread creation fails", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    vi.spyOn(ctx.repos.agents, "getCurrentConfigurationSnapshot").mockImplementation(
+      () => {
+        throw new Error("Snapshot load failed")
+      }
+    )
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+    })
+
+    expect(response.status).toBe(500)
+    const body = (await response.json()) as { code: string; error: string }
+    expect(body.code).toBe("agent_test_thread_creation_failed")
+    expect(body.error).toBe("Snapshot load failed")
+  })
+
+  it("rejects invalid agent test-thread requests", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "" }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("invalid_agent_test_thread")
+  })
+
+  it("returns not found when starting a test thread for an unknown agent", async () => {
+    ctx = createTestContext()
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request("/api/agents/missing/test-thread", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Check GitHub repositories" }),
+    })
+
+    expect(response.status).toBe(404)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("agent_not_found")
   })
 })

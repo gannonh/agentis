@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { messages, runs, toolAccessGrants } from "../db/schema.js"
 import { createTestContext } from "../test/setup.js"
 
 describe("repositories", () => {
@@ -80,6 +81,88 @@ describe("repositories", () => {
 
     expect(completed?.status).toBe("completed")
     expect(completed?.usage?.totalTokens).toBe(12)
+    ctx.cleanup()
+  })
+
+  it("persists agent-bound thread metadata and run configuration version links", () => {
+    const ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4.1-mini",
+    })
+    const versionId = agent.currentConfigurationVersion.id
+
+    const thread = ctx.repos.threads.create({
+      title: "Test Research Agent",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+    })
+    const run = ctx.repos.runs.create({
+      threadId: thread.id,
+      model: agent.model,
+      status: "queued",
+      agentId: agent.id,
+      agentConfigurationVersionId: versionId,
+    })
+
+    expect(ctx.repos.threads.getById(thread.id)).toMatchObject({
+      agentId: agent.id,
+      agentNameSnapshot: "Research Agent",
+    })
+    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+      agentId: agent.id,
+      agentConfigurationVersionId: versionId,
+    })
+    expect(ctx.repos.runs.listByThreadId(thread.id)[0]).toMatchObject({
+      agentId: agent.id,
+      agentConfigurationVersionId: versionId,
+    })
+
+    const plainThread = ctx.repos.threads.create({
+      title: "Plain",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const plainRun = ctx.repos.runs.create({
+      threadId: plainThread.id,
+      model: plainThread.model,
+    })
+    expect(ctx.repos.threads.getById(plainThread.id)?.agentId).toBeUndefined()
+    expect(
+      ctx.repos.runs.getById(plainRun.id)?.agentConfigurationVersionId
+    ).toBeUndefined()
+    ctx.cleanup()
+  })
+
+  it("rolls back initial thread creation when grant insertion fails", () => {
+    const ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+
+    expect(() =>
+      ctx.repos.threads.createWithInitialRun({
+        title: "Test Research Agent",
+        prompt: "Check GitHub updates",
+        model: "gpt-4o-mini",
+        mode: "agent",
+        toolGrants: [
+          { toolkitSlug: "github", connectionId: github.id },
+          { toolkitSlug: "github", connectionId: github.id },
+        ],
+      })
+    ).toThrow()
+
+    expect(ctx.repos.threads.list()).toHaveLength(0)
+    expect(ctx.db.select().from(messages).all()).toHaveLength(0)
+    expect(ctx.db.select().from(runs).all()).toHaveLength(0)
+    expect(ctx.db.select().from(toolAccessGrants).all()).toHaveLength(0)
     ctx.cleanup()
   })
 })

@@ -35,6 +35,10 @@ export function mapThread(row: ThreadRow): Thread {
     model: row.model,
     mode: row.mode as Thread["mode"],
     projectId: row.projectId ?? undefined,
+    agentId: row.agentId ?? undefined,
+    agentNameSnapshot: row.agentNameSnapshot ?? undefined,
+    agentConfigurationVersionId:
+      row.agentConfigurationVersionId ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
@@ -57,6 +61,8 @@ export function mapRun(row: RunRow): Run {
     threadId: row.threadId,
     status: row.status as Run["status"],
     model: row.model,
+    agentId: row.agentId ?? undefined,
+    agentConfigurationVersionId: row.agentConfigurationVersionId ?? undefined,
     startedAt: row.startedAt,
     finishedAt: row.finishedAt ?? undefined,
     errorSummary: row.errorSummary ?? undefined,

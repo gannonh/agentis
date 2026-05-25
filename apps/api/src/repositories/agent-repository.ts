@@ -27,6 +27,10 @@ type AgentToolGrantCreateInput = {
   connectionId: string
 }
 
+type AgentConfigurationVersionSnapshot = AgentConfigurationVersionSummary & {
+  toolGrants: AgentToolGrantCreateInput[]
+}
+
 type AgentUpdateInput = {
   name?: string
   description?: string | null
@@ -63,6 +67,36 @@ function grantsMatch(
   )
 }
 
+function serializeGrantSnapshot(grants: AgentToolGrantCreateInput[]): string {
+  return JSON.stringify(normalizeGrants(grants))
+}
+
+function parseGrantSnapshot(raw: string): AgentToolGrantCreateInput[] {
+  const parsed = JSON.parse(raw) as unknown
+  if (!Array.isArray(parsed)) {
+    throw new Error("Invalid agent configuration tool grant snapshot")
+  }
+
+  return normalizeGrants(
+    parsed.map((grant) => {
+      if (
+        typeof grant !== "object" ||
+        grant === null ||
+        !("toolkitSlug" in grant) ||
+        typeof grant.toolkitSlug !== "string" ||
+        !("connectionId" in grant) ||
+        typeof grant.connectionId !== "string"
+      ) {
+        throw new Error("Invalid agent configuration tool grant snapshot")
+      }
+      return {
+        toolkitSlug: grant.toolkitSlug,
+        connectionId: grant.connectionId,
+      }
+    })
+  )
+}
+
 function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
   return {
     id: row.id,
@@ -72,6 +106,13 @@ function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
     model: row.model,
     maxCostPerRunUsd: row.maxCostPerRunUsd,
     createdAt: row.createdAt,
+  }
+}
+
+function mapVersionSnapshot(row: VersionRow): AgentConfigurationVersionSnapshot {
+  return {
+    ...mapVersion(row),
+    toolGrants: parseGrantSnapshot(row.toolGrantsJson),
   }
 }
 
@@ -116,6 +157,7 @@ export class AgentRepository {
       createdAt: now,
       updatedAt: now,
     }
+    const normalizedGrants = normalizeGrants(grants)
     const versionRow = {
       id: createId("agent_version"),
       agentId: agentRow.id,
@@ -123,9 +165,10 @@ export class AgentRepository {
       systemPrompt: input.systemPrompt,
       model: input.model,
       maxCostPerRunUsd: input.maxCostPerRunUsd ?? null,
+      toolGrantsJson: serializeGrantSnapshot(normalizedGrants),
       createdAt: now,
     }
-    const grantRows = grants.map((grant) => ({
+    const grantRows = normalizedGrants.map((grant) => ({
       id: createId("grant"),
       scopeType: "agent",
       scopeId: agentRow.id,
@@ -188,6 +231,24 @@ export class AgentRepository {
       .map(mapVersion)
   }
 
+  getCurrentConfigurationSnapshot(
+    agentId: string
+  ): AgentConfigurationVersionSnapshot {
+    return this.getCurrentVersionSnapshot(agentId)
+  }
+
+  getConfigurationVersionById(
+    versionId: string
+  ): AgentConfigurationVersionSnapshot | null {
+    const row = this.db
+      .select()
+      .from(agentConfigurationVersions)
+      .where(eq(agentConfigurationVersions.id, versionId))
+      .get()
+
+    return row ? mapVersionSnapshot(row) : null
+  }
+
   update(agentId: string, input: AgentUpdateInput): AgentListItem | null {
     const existing = this.db
       .select()
@@ -209,7 +270,8 @@ export class AgentRepository {
         ? (input.maxCostPerRunUsd ?? null)
         : existing.maxCostPerRunUsd
     const hasGrantEdit = input.toolGrants !== undefined
-    const nextGrants = input.toolGrants ? normalizeGrants(input.toolGrants) : []
+    const nextGrants =
+      input.toolGrants === undefined ? [] : normalizeGrants(input.toolGrants)
     const currentGrants = hasGrantEdit
       ? this.listAgentToolGrantInputs(agentId)
       : []
@@ -221,8 +283,9 @@ export class AgentRepository {
       nextSystemPrompt !== existing.systemPrompt ||
       nextModel !== existing.model ||
       nextMaxCostPerRunUsd !== existing.maxCostPerRunUsd
+    const versionChanged = configurationChanged || grantsChanged
 
-    if (!identityChanged && !configurationChanged && !grantsChanged) {
+    if (!identityChanged && !versionChanged) {
       return mapAgent(
         existing,
         currentVersion,
@@ -230,6 +293,11 @@ export class AgentRepository {
       )
     }
 
+    const versionToolGrantsJson = versionChanged
+      ? serializeGrantSnapshot(
+          hasGrantEdit ? nextGrants : this.listAgentToolGrantInputs(agentId)
+        )
+      : null
     const now = nowIso()
 
     this.db.transaction((tx) => {
@@ -268,7 +336,7 @@ export class AgentRepository {
         }
       }
 
-      if (configurationChanged) {
+      if (versionToolGrantsJson !== null) {
         tx.insert(agentConfigurationVersions)
           .values({
             id: createId("agent_version"),
@@ -277,6 +345,7 @@ export class AgentRepository {
             systemPrompt: nextSystemPrompt,
             model: nextModel,
             maxCostPerRunUsd: nextMaxCostPerRunUsd,
+            toolGrantsJson: versionToolGrantsJson,
             createdAt: now,
           })
           .run()
@@ -287,6 +356,16 @@ export class AgentRepository {
   }
 
   private getCurrentVersion(agentId: string): AgentConfigurationVersionSummary {
+    return mapVersion(this.getCurrentVersionRow(agentId))
+  }
+
+  private getCurrentVersionSnapshot(
+    agentId: string
+  ): AgentConfigurationVersionSnapshot {
+    return mapVersionSnapshot(this.getCurrentVersionRow(agentId))
+  }
+
+  private getCurrentVersionRow(agentId: string): VersionRow {
     const version = this.db
       .select()
       .from(agentConfigurationVersions)
@@ -298,7 +377,7 @@ export class AgentRepository {
       throw new Error(`Agent ${agentId} has no configuration version`)
     }
 
-    return mapVersion(version)
+    return version
   }
 
   private getCurrentVersions(

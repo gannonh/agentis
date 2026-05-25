@@ -46,6 +46,18 @@ function composioToolNameToToolkit(toolName: string): string | undefined {
   return toolName.replace(/^composio_/, "").replace(/_/g, "-")
 }
 
+export function formatToolStepTitle(input: {
+  toolName: string
+  toolkitSlug?: string
+  curated: boolean
+}): string {
+  if (input.toolName === "createArtifact") return "Create artifact"
+  if (input.toolkitSlug && input.curated) {
+    return `Composio: ${input.toolkitSlug}`
+  }
+  return `Tool: ${input.toolName}`
+}
+
 function getTextFromParts(parts: MessagePart[]) {
   return parts
     .filter((part) => part.type === "text")
@@ -142,12 +154,38 @@ export class RunExecutor {
       return this.failWithRemediation(runId, run.threadId, remediation)
     }
 
+    const agentConfiguration = run.agentConfigurationVersionId
+      ? this.repos.agents.getConfigurationVersionById(
+          run.agentConfigurationVersionId
+        )
+      : null
+    if (run.agentConfigurationVersionId && !agentConfiguration) {
+      const message =
+        "Agent configuration version not found: " +
+        run.agentConfigurationVersionId
+      this.repos.runs.updateStatus(runId, "failed", {
+        finishedAt: nowIso(),
+        errorSummary: message,
+      })
+      this.repos.steps.create({
+        runId,
+        type: "error",
+        status: "failed",
+        title: "Run failed",
+        payload: { message },
+      })
+      this.repos.threads.touch(run.threadId, { status: "failed" })
+      throw new Error(message)
+    }
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
-    const systemPrompt = projectContextBlock
-      ? `${buildBaseSystemPrompt()}\n\n${projectContextBlock}`
+    const baseSystemPrompt = agentConfiguration
+      ? agentConfiguration.systemPrompt
       : buildBaseSystemPrompt()
+    const systemPrompt = projectContextBlock
+      ? `${baseSystemPrompt}\n\n${projectContextBlock}`
+      : baseSystemPrompt
 
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
@@ -202,6 +240,19 @@ export class RunExecutor {
       status: "running",
       title: "Running",
     })
+    if (agentConfiguration) {
+      this.repos.steps.create({
+        runId,
+        type: "reasoning",
+        status: "completed",
+        title: "Agent configuration loaded",
+        payload: {
+          agentId: agentConfiguration.agentId,
+          agentConfigurationVersionId: agentConfiguration.id,
+          model: agentConfiguration.model,
+        },
+      })
+    }
     if (projectContext) {
       this.repos.steps.create({
         runId,
@@ -246,9 +297,11 @@ export class RunExecutor {
       const status = input.error ? "failed" : "completed"
       this.repos.steps.update(stepId, {
         status,
-        title: curated
-          ? `Composio: ${toolkitSlug}`
-          : `Tool: ${toolName}`,
+        title: formatToolStepTitle({
+          toolName,
+          toolkitSlug,
+          curated: Boolean(curated),
+        }),
         payload:
           toolkitSlug && curated
             ? this.services.toolExecution.formatRunStepPayload({
@@ -367,15 +420,17 @@ export class RunExecutor {
           const curated = toolkitSlug
             ? CURATED_COMPOSIO_TOOLS[toolkitSlug]
             : undefined
+          const title = formatToolStepTitle({
+            toolName: chunk.toolName,
+            toolkitSlug,
+            curated: Boolean(curated),
+          })
+
           const step = this.repos.steps.create({
             runId,
             type: "tool-call",
             status: "running",
-            title: curated
-              ? `Composio: ${toolkitSlug}`
-              : chunk.toolName === "createArtifact"
-                ? "Create artifact"
-                : `Tool: ${chunk.toolName}`,
+            title,
             payload: toolkitSlug && curated
               ? this.services.toolExecution.formatRunStepPayload({
                   toolkitSlug,
