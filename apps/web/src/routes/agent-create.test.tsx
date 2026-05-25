@@ -76,35 +76,49 @@ describe("AgentCreatePage", () => {
     vi.mocked(createAgent).mockClear()
   })
 
-  it("creates an agent with identity, contract, model, and tool grants", async () => {
+  it("creates an agent with plain-language setup copy", async () => {
     const user = userEvent.setup()
-    render(
+    const { container } = render(
       <MemoryRouter>
         <AgentCreatePage />
       </MemoryRouter>
     )
+
+    expect(
+      screen.getByText(/Set up a reusable agent by naming it/i)
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Tell the agent how to help, what to focus on, and which connected apps it can use."
+      )
+    ).toBeInTheDocument()
 
     await user.type(screen.getByLabelText(/^name/i), "Research Agent")
     await user.type(
       screen.getByLabelText(/^description/i),
       "Finds source-backed answers"
     )
-    await user.clear(screen.getByLabelText(/^model/i))
-    await user.type(screen.getByLabelText(/^model/i), "gpt-4o-mini")
-    expect(
-      screen.getByText(/Define how the agent should operate/i)
-    ).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/Role:/i)).toBeInTheDocument()
+    await user.clear(screen.getByLabelText(/^answer engine/i))
+    await user.type(screen.getByLabelText(/^answer engine/i), "gpt-4o-mini")
+    expect(screen.getByPlaceholderText(/Main job:/i)).toBeInTheDocument()
     await user.type(
-      screen.getByLabelText(/^agent contract/i),
+      screen.getByLabelText(/^instructions/i),
       "Answer with citations."
     )
-    expect(screen.getByText(/Default model for new runs/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Default choice for this agent's answers/i)
+    ).toBeInTheDocument()
     expect(screen.getByText("Source control")).toBeInTheDocument()
-    expect(screen.getByText(/1 tool · 1 account/)).toBeInTheDocument()
+    expect(screen.getByText(/1 action · 1 account/)).toBeInTheDocument()
     await user.click(screen.getByRole("checkbox", { name: /GitHub/ }))
     expect(screen.getByText("Selected")).toBeInTheDocument()
     expect(screen.queryByRole("checkbox", { name: /Linear/ })).not.toBeInTheDocument()
+
+    const primaryText = container.textContent ?? ""
+    expect(primaryText).not.toMatch(
+      /\b(integration|integrations|contract|system prompt|runs|grants|toolkits|scoped|payload)\b/i
+    )
+
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
     await waitFor(() => {
@@ -119,8 +133,12 @@ describe("AgentCreatePage", () => {
     expect(navigate).toHaveBeenCalledWith("/agents/agent_test")
   })
 
-  it("shows API errors when creation fails", async () => {
-    vi.mocked(createAgent).mockRejectedValueOnce(new Error("Invalid agent payload"))
+  it("shows creation errors without implementation jargon", async () => {
+    vi.mocked(createAgent).mockRejectedValueOnce(
+      new Error(
+        "We couldn't create this agent. Check the details and try again."
+      )
+    )
     const user = userEvent.setup()
     render(
       <MemoryRouter>
@@ -130,12 +148,16 @@ describe("AgentCreatePage", () => {
 
     await user.type(screen.getByLabelText(/^name/i), "Research Agent")
     await user.type(
-      screen.getByLabelText(/^agent contract/i),
+      screen.getByLabelText(/^instructions/i),
       "Answer with citations."
     )
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
-    expect(await screen.findByText("Invalid agent payload")).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        "We couldn't create this agent. Check the details and try again."
+      )
+    ).toBeInTheDocument()
     expect(navigate).not.toHaveBeenCalled()
   })
 })

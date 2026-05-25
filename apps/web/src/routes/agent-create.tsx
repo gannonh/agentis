@@ -34,7 +34,7 @@ function toolkitDetail(toolkit: IntegrationToolkit) {
   const accountCount = toolkit.connectedAccountCount
   return [
     formatCategory(toolkit.category),
-    toolCount === 1 ? "1 tool" : `${toolCount} tools`,
+    toolCount === 1 ? "1 action" : `${toolCount} actions`,
     accountCount === 1 ? "1 account" : `${accountCount} accounts`,
   ].join(" · ")
 }
@@ -87,7 +87,7 @@ function ToolGrantOption({
         {selected ? (
           <HugeiconsIcon icon={Tick01Icon} className="size-3" strokeWidth={2} />
         ) : null}
-        {selected ? "Selected" : "Grant"}
+        {selected ? "Selected" : "Choose"}
       </span>
     </label>
   )
@@ -123,7 +123,7 @@ export function AgentCreatePage() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "Failed to create agent"
+          : "We couldn't create this agent. Check the details and try again."
       )
     } finally {
       setSubmitting(false)
@@ -135,7 +135,7 @@ export function AgentCreatePage() {
       <PageHeader
         title="New agent"
         titleClassName="text-3xl font-medium tracking-tight"
-        description="Create a reusable agent with an operating contract and scoped tool access."
+        description="Set up a reusable agent by naming it, giving instructions, and choosing connected apps it can use."
       />
 
       <Card>
@@ -143,7 +143,7 @@ export function AgentCreatePage() {
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-base">Agent details</CardTitle>
             <CardDescription>
-              Define how the agent should operate, what it can use, and where its boundaries are.
+              Tell the agent how to help, what to focus on, and which connected apps it can use.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-4">
@@ -178,7 +178,7 @@ export function AgentCreatePage() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium" htmlFor="agent-model">
-                  Model
+                  Answer engine
                 </label>
                 <Input
                   id="agent-model"
@@ -188,28 +188,29 @@ export function AgentCreatePage() {
                   aria-describedby="agent-model-help"
                 />
                 <p id="agent-model-help" className="text-muted-foreground text-xs leading-relaxed">
-                  Default model for new runs. Change it only when this agent needs a specific capability.
+                  Default choice for this agent&apos;s answers. Change it only when
+                  this agent needs a specific capability.
                 </p>
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium" htmlFor="agent-system-prompt">
-                Agent contract <span className="text-destructive" aria-hidden>*</span>
+                Instructions <span className="text-destructive" aria-hidden>*</span>
               </label>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Write the reusable operating rules. This is stored as the agent system prompt.
+                Tell the agent how to help, what to consider, and how to respond.
               </p>
               <Textarea
                 id="agent-system-prompt"
                 value={systemPrompt}
                 onChange={(event) => setSystemPrompt(event.target.value)}
                 placeholder={[
-                  "Role:",
-                  "Operating rules:",
-                  "Context scope:",
-                  "Tool boundaries:",
-                  "Output expectations:",
+                  "Main job:",
+                  "How to help:",
+                  "What to consider:",
+                  "Apps it can use:",
+                  "Response style:",
                 ].join("\n")}
                 rows={7}
                 required
@@ -219,35 +220,35 @@ export function AgentCreatePage() {
             <fieldset className="flex flex-col gap-3">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <legend className="text-sm font-medium">Tool grants</legend>
+                  <legend className="text-sm font-medium">Connected apps</legend>
                   <p className="text-muted-foreground text-xs">
-                    Select connected integrations this agent may call during runs. Grants stay scoped to selected toolkits.
+                    Choose connected apps this agent can use while helping. Access
+                    stays limited to the apps you choose.
                   </p>
                 </div>
                 <Link
                   to="/integrations"
                   className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs underline-offset-4 hover:underline"
                 >
-                  Manage integrations
+                  Manage connected apps
                   <HugeiconsIcon icon={LinkSquare01Icon} className="size-3" strokeWidth={2} />
                 </Link>
               </div>
 
               {loadingIntegrations ? (
                 <p className="text-muted-foreground rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm">
-                  Loading connected toolkits…
+                  Loading connected apps…
                 </p>
               ) : integrationsError ? (
                 <p className="text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
-                  Tool grants unavailable. You can create this agent and add tools after
-                  integrations recover.
+                  Connected apps are unavailable. You can create this agent and choose
+                  apps later.
                 </p>
               ) : connectedToolkits.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
-                  <p className="text-sm font-medium">No connected toolkits yet</p>
+                  <p className="text-sm font-medium">No connected apps yet</p>
                   <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed">
-                    Connect services from Integrations, then return here to grant
-                    agent-level access.
+                    Connect apps, then return here to choose what this agent can use.
                   </p>
                 </div>
               ) : (
