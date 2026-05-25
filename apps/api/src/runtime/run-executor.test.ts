@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
-import { formatToolStepTitle } from "./run-executor.js"
+import { buildRunSystemPrompt, formatToolStepTitle } from "./run-executor.js"
 
 let ctx: TestContext | undefined
 
@@ -16,6 +16,17 @@ describe("run executor composio bridge", () => {
     expect(
       formatToolStepTitle({ toolName: "createArtifact", curated: false })
     ).toBe("Create artifact")
+  })
+
+  it("keeps platform artifact instructions with custom agent prompts", () => {
+    const systemPrompt = buildRunSystemPrompt({
+      agentPrompt: "Answer as the configured research agent.",
+    })
+
+    expect(systemPrompt).toContain("Answer as the configured research agent.")
+    expect(systemPrompt).toContain("createArtifact")
+    expect(systemPrompt).toContain("durable artifact")
+    expect(systemPrompt).toContain("instead of asking for schema fields")
   })
 
   it("returns remediation when Slack is requested without grant", async () => {

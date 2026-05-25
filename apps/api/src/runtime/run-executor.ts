@@ -33,8 +33,21 @@ import { nowIso } from "../lib/ids.js"
 
 const ARTIFACT_PROMPT_PATTERN = /artifact|brief|document|report/i
 
-function buildBaseSystemPrompt() {
-  return "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createArtifact when the user asks for a document, brief, or report to save in the Library."
+function buildPlatformSystemPrompt() {
+  return "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createArtifact when the user asks for a durable artifact, document, brief, report, or library item. If the request has enough context to create useful content, choose a concise title, filename, and content instead of asking for schema fields."
+}
+
+export function buildRunSystemPrompt(input: {
+  agentPrompt?: string | null
+  projectContextBlock?: string
+}) {
+  const configuredPrompt = input.agentPrompt?.trim()
+  const basePrompt = configuredPrompt
+    ? `${configuredPrompt}\n\n${buildPlatformSystemPrompt()}`
+    : buildPlatformSystemPrompt()
+  return input.projectContextBlock
+    ? `${basePrompt}\n\n${input.projectContextBlock}`
+    : basePrompt
 }
 
 function wantsGeneratedArtifact(prompt: string) {
@@ -180,12 +193,10 @@ export class RunExecutor {
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
-    const baseSystemPrompt = agentConfiguration
-      ? agentConfiguration.systemPrompt
-      : buildBaseSystemPrompt()
-    const systemPrompt = projectContextBlock
-      ? `${baseSystemPrompt}\n\n${projectContextBlock}`
-      : baseSystemPrompt
+    const systemPrompt = buildRunSystemPrompt({
+      agentPrompt: agentConfiguration?.systemPrompt,
+      projectContextBlock,
+    })
 
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
