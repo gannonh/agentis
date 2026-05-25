@@ -2,6 +2,7 @@ import { Hono } from "hono"
 import {
   agentDetailResponseSchema,
   agentListItemSchema,
+  artifactPublicSchema,
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
   updateAgentRequestSchema,
@@ -61,6 +62,25 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     if (!agent) return null
 
     const toolGrants = repos.toolAccessGrants.listByScope("agent", agentId)
+    const libraryItems = repos.artifacts
+      .list({ agentId })
+      .map((artifact) => artifactPublicSchema.parse(artifact))
+    const recentThreads = repos.threads
+      .listByAgentId(agentId, { limit: 10 })
+      .map((thread) => {
+        const latestRun = repos.runs.getLatestByThreadId(thread.id)
+        return {
+          id: thread.id,
+          title: thread.title,
+          status: thread.status,
+          model: thread.model,
+          agentConfigurationVersionId: thread.agentConfigurationVersionId,
+          createdAt: thread.createdAt,
+          updatedAt: thread.updatedAt,
+          lastRunStatus: latestRun?.status,
+          artifactCount: repos.artifacts.list({ threadId: thread.id }).length,
+        }
+      })
 
     return agentDetailResponseSchema.parse({
       agent,
@@ -73,8 +93,8 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
           connectionId: grant.connectionId,
           createdAt: grant.createdAt,
         })),
-        recentThreads: [],
-        library: { items: [], totalCount: 0 },
+        recentThreads,
+        library: { items: libraryItems, totalCount: libraryItems.length },
       },
     })
   }

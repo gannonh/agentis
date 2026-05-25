@@ -137,6 +137,78 @@ describe("repositories", () => {
     ctx.cleanup()
   })
 
+  it("lists agent activity and library data in stable API order", async () => {
+    const ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const otherAgent = ctx.repos.agents.create({
+      name: "Other Agent",
+      systemPrompt: "Answer briefly.",
+      model: "gpt-4o-mini",
+    })
+    const older = ctx.repos.threads.createWithInitialRun({
+      title: "Older activity",
+      prompt: "First check",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    }).thread
+    await new Promise((resolve) => setTimeout(resolve, 2))
+    const newer = ctx.repos.threads.createWithInitialRun({
+      title: "Newer activity",
+      prompt: "Second check",
+      model: agent.model,
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    }).thread
+    ctx.repos.threads.createWithInitialRun({
+      title: "Other activity",
+      prompt: "Other check",
+      model: otherAgent.model,
+      mode: "agent",
+      agentId: otherAgent.id,
+      agentNameSnapshot: otherAgent.name,
+      agentConfigurationVersionId: otherAgent.currentConfigurationVersion.id,
+    })
+    ctx.repos.artifacts.create({
+      title: "Agent notes",
+      type: "document",
+      mimeType: "text/markdown",
+      sizeBytes: 12,
+      storageKey: "agent-notes.md",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      threadId: newer.id,
+      threadTitleSnapshot: newer.title,
+    })
+    ctx.repos.artifacts.create({
+      title: "Other notes",
+      type: "document",
+      mimeType: "text/markdown",
+      sizeBytes: 12,
+      storageKey: "other-notes.md",
+      agentId: otherAgent.id,
+      agentNameSnapshot: otherAgent.name,
+    })
+
+    expect(
+      ctx.repos.threads.listByAgentId(agent.id).map((thread) => thread.id)
+    ).toEqual([newer.id, older.id])
+    expect(ctx.repos.threads.listByAgentId("missing-agent")).toEqual([])
+    expect(ctx.repos.artifacts.list({ agentId: agent.id })).toMatchObject([
+      { title: "Agent notes", agentId: agent.id },
+    ])
+    expect(ctx.repos.artifacts.list({ agentId: "missing-agent" })).toEqual([])
+    ctx.cleanup()
+  })
+
   it("rolls back initial thread creation when grant insertion fails", () => {
     const ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

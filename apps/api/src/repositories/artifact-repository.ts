@@ -10,6 +10,7 @@ export type ArtifactListFilters = {
   type?: ArtifactType
   projectId?: string
   threadId?: string
+  agentId?: string
 }
 
 export class ArtifactRepository {
@@ -76,6 +77,9 @@ export class ArtifactRepository {
     }
     if (filters.threadId) {
       conditions.push(eq(artifacts.threadId, filters.threadId))
+    }
+    if (filters.agentId) {
+      conditions.push(eq(artifacts.agentId, filters.agentId))
     }
     if (filters.query?.trim()) {
       const pattern = `%${filters.query.trim()}%`
