@@ -8,6 +8,10 @@ import { createAgentRoutes } from "./routes/agents.js"
 import { createArtifactRoutes } from "./routes/artifacts.js"
 import { createIntegrationRoutes } from "./routes/integrations.js"
 import { createProjectRoutes } from "./routes/projects.js"
+import {
+  createPromotionDraftRoutes,
+  createThreadPromotionRoutes,
+} from "./routes/promotion-drafts.js"
 import { createRuntimeRoutes } from "./routes/runtime.js"
 import { createRunRoutes, createThreadRoutes } from "./routes/threads.js"
 import { createToolGrantRoutes } from "./routes/tool-grants.js"
@@ -52,7 +56,9 @@ export function createApp(
   app.route("/api/artifacts", createArtifactRoutes(repos, config))
   app.route("/api/integrations", createIntegrationRoutes(services, config))
   app.route("/api/threads", createThreadRoutes(repos, config))
+  app.route("/api/threads", createThreadPromotionRoutes(repos))
   app.route("/api/threads", createToolGrantRoutes(repos, services, config))
+  app.route("/api/agent-promotion-drafts", createPromotionDraftRoutes(repos))
   app.route("/api/runs", createRunRoutes(repos, config, services))
 
   app.get("/api/health", (c) => c.json({ ok: true }))

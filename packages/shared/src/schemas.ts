@@ -266,6 +266,23 @@ export const createAgentTestThreadRequestSchema = z.object({
   prompt: nonEmptyString,
 })
 
+export const agentPromotionDraftSchema = z.object({
+  id: z.string(),
+  threadId: z.string(),
+  sourceThreadTitle: z.string(),
+  name: nonEmptyString,
+  description: z.string().optional(),
+  systemPrompt: nonEmptyString,
+  model: nonEmptyString,
+  toolGrants: z.array(agentToolGrantInputSchema),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const createAgentPromotionDraftResponseSchema = z.object({
+  draft: agentPromotionDraftSchema,
+})
+
 export const createThreadRequestSchema = z.object({
   prompt: nonEmptyString,
   model: z.string().optional(),
@@ -485,6 +502,10 @@ export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
 export type CreateAgentTestThreadRequest = z.infer<
   typeof createAgentTestThreadRequestSchema
+>
+export type AgentPromotionDraft = z.infer<typeof agentPromotionDraftSchema>
+export type CreateAgentPromotionDraftResponse = z.infer<
+  typeof createAgentPromotionDraftResponseSchema
 >
 export type AgentRecentThreadSummary = z.infer<
   typeof agentRecentThreadSummarySchema

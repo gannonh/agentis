@@ -176,6 +176,28 @@ export const integrationConnections = sqliteTable(
   ]
 )
 
+export const agentPromotionDrafts = sqliteTable(
+  "agent_promotion_drafts",
+  {
+    id: text("id").primaryKey(),
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => threads.id, { onDelete: "cascade" }),
+    sourceThreadTitle: text("source_thread_title").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    systemPrompt: text("system_prompt").notNull(),
+    model: text("model").notNull(),
+    toolGrantsJson: text("tool_grants_json").notNull().default("[]"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("agent_promotion_drafts_thread_id_idx").on(table.threadId),
+    index("agent_promotion_drafts_updated_at_idx").on(table.updatedAt),
+  ]
+)
+
 export const toolAccessGrants = sqliteTable(
   "tool_access_grants",
   {
