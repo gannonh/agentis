@@ -11,7 +11,11 @@ import {
 } from "@workspace/ui/components/card"
 import { Input } from "@workspace/ui/components/input"
 import { Textarea } from "@workspace/ui/components/textarea"
-import type { AgentPromotionDraft, AgentToolGrantInput } from "@workspace/shared"
+import type {
+  AgentPromotionDraft,
+  AgentToolGrantInput,
+  UpdateAgentPromotionDraftRequest,
+} from "@workspace/shared"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import {
@@ -36,6 +40,30 @@ function draftToForm(draft: AgentPromotionDraft): DraftFormState {
     systemPrompt: draft.systemPrompt,
     toolGrants: draft.toolGrants,
   }
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
+
+function sourceThreadLabel(draft: AgentPromotionDraft | null): string {
+  if (!draft) return "Loading draft details…"
+  return `Source thread: ${draft.sourceThreadTitle || draft.threadId}`
+}
+
+function buildDraftPayload(form: DraftFormState): UpdateAgentPromotionDraftRequest {
+  return {
+    name: form.name.trim(),
+    description: form.description.trim() || undefined,
+    model: form.model.trim() || undefined,
+    systemPrompt: form.systemPrompt.trim(),
+    toolGrants: form.toolGrants,
+  }
+}
+
+function canSubmit(form: DraftFormState | null, submitting: boolean): boolean {
+  if (!form || submitting) return false
+  return form.name.trim().length > 0 && form.systemPrompt.trim().length > 0
 }
 
 export function AgentPromotionDraftPage() {
@@ -64,11 +92,7 @@ export function AgentPromotionDraftPage() {
       })
       .catch((loadError) => {
         if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Could not load this draft."
-          )
+          setError(errorMessage(loadError, "Could not load this draft."))
         }
       })
       .finally(() => {
@@ -86,13 +110,12 @@ export function AgentPromotionDraftPage() {
 
   const toggleToolGrant = (grant: AgentToolGrantInput, selected: boolean) => {
     if (!form) return
-    updateForm({
-      toolGrants: selected
-        ? [...form.toolGrants, grant]
-        : form.toolGrants.filter(
-            (item) => item.toolkitSlug !== grant.toolkitSlug
-          ),
-    })
+
+    const toolGrants = selected
+      ? [...form.toolGrants, grant]
+      : form.toolGrants.filter((item) => item.toolkitSlug !== grant.toolkitSlug)
+
+    updateForm({ toolGrants })
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -101,13 +124,7 @@ export function AgentPromotionDraftPage() {
 
     setSubmitting(true)
     setError(null)
-    const payload = {
-      name: form.name.trim(),
-      description: form.description.trim() || undefined,
-      model: form.model.trim() || undefined,
-      systemPrompt: form.systemPrompt.trim(),
-      toolGrants: form.toolGrants,
-    }
+    const payload = buildDraftPayload(form)
 
     try {
       const { draft: savedDraft } = await updateAgentPromotionDraft(
@@ -124,9 +141,10 @@ export function AgentPromotionDraftPage() {
       navigate(`/agents/${encodeURIComponent(created.agent.id)}`)
     } catch (submitError) {
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "We couldn't create this agent. Check the details and try again."
+        errorMessage(
+          submitError,
+          "We couldn't create this agent. Check the details and try again."
+        )
       )
     } finally {
       setSubmitting(false)
@@ -145,11 +163,7 @@ export function AgentPromotionDraftPage() {
         <form onSubmit={(event) => void handleSubmit(event)}>
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-base">Agent draft</CardTitle>
-            <CardDescription>
-              {draft
-                ? `Source thread: ${draft.sourceThreadTitle || draft.threadId}`
-                : "Loading draft details…"}
-            </CardDescription>
+            <CardDescription>{sourceThreadLabel(draft)}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-4">
             {loading ? (
@@ -263,12 +277,7 @@ export function AgentPromotionDraftPage() {
             </Button>
             <Button
               type="submit"
-              disabled={
-                !form ||
-                form.name.trim().length === 0 ||
-                form.systemPrompt.trim().length === 0 ||
-                submitting
-              }
+              disabled={!canSubmit(form, submitting)}
               className="min-h-11 sm:min-h-7"
             >
               {submitting ? "Creating…" : "Create agent"}

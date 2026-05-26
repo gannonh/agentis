@@ -12,25 +12,36 @@ import { createId, nowIso } from "../lib/ids.js"
 
 type DraftRow = typeof agentPromotionDrafts.$inferSelect
 
+type DraftDefaults = {
+  name: string
+  description: string
+  systemPrompt: string
+}
+
 function parseToolGrants(raw: string): AgentToolGrantInput[] {
   const parsed = JSON.parse(raw) as unknown
   if (!Array.isArray(parsed)) {
     throw new Error("Invalid promotion draft tool grants")
   }
+
   return parsed.map((grant) => {
-    if (
-      typeof grant !== "object" ||
-      grant === null ||
-      !("toolkitSlug" in grant) ||
-      typeof grant.toolkitSlug !== "string"
-    ) {
+    if (typeof grant !== "object" || grant === null) {
       throw new Error("Invalid promotion draft tool grants")
     }
+
+    const candidate = grant as {
+      toolkitSlug?: unknown
+      connectionId?: unknown
+    }
+    if (typeof candidate.toolkitSlug !== "string") {
+      throw new Error("Invalid promotion draft tool grants")
+    }
+
     return {
-      toolkitSlug: grant.toolkitSlug,
+      toolkitSlug: candidate.toolkitSlug,
       connectionId:
-        "connectionId" in grant && typeof grant.connectionId === "string"
-          ? grant.connectionId
+        typeof candidate.connectionId === "string"
+          ? candidate.connectionId
           : undefined,
     }
   })
@@ -66,18 +77,41 @@ function cleanTitle(title: string): string | null {
   return cleaned || null
 }
 
-function buildDraftDefaults(thread: Thread, messages: Message[]) {
+function buildDraftDefaults(thread: Thread, messages: Message[]): DraftDefaults {
   const title = cleanTitle(thread.title)
   const sourceText = firstUserText(messages)
+
   return {
     name: title ? `${title} Agent` : "New Agent",
-    description: title
-      ? `Promoted from thread: ${title}`
-      : "Promoted from a completed thread.",
-    systemPrompt: sourceText
-      ? `Use the approach from this completed thread: ${sourceText}`
-      : "Use the approach from this completed thread.",
+    description: buildDescription(title),
+    systemPrompt: buildSystemPrompt(sourceText),
   }
+}
+
+function buildDescription(title: string | null): string {
+  if (!title) return "Promoted from a completed thread."
+  return `Promoted from thread: ${title}`
+}
+
+function buildSystemPrompt(sourceText: string | null): string {
+  if (!sourceText) return "Use the approach from this completed thread."
+  return `Use the approach from this completed thread: ${sourceText}`
+}
+
+function nextDescription(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): string | null {
+  if ("description" in input) return input.description ?? null
+  return existing.description ?? null
+}
+
+function nextToolGrantsJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): string {
+  const grants = input.toolGrants ?? existing.toolGrants
+  return JSON.stringify(grants)
 }
 
 export class AgentPromotionDraftRepository {
@@ -139,15 +173,10 @@ export class AgentPromotionDraftRepository {
       .update(agentPromotionDrafts)
       .set({
         name: input.name ?? existing.name,
-        description:
-          "description" in input
-            ? (input.description ?? null)
-            : (existing.description ?? null),
+        description: nextDescription(input, existing),
         systemPrompt: input.systemPrompt ?? existing.systemPrompt,
         model: input.model ?? existing.model,
-        toolGrantsJson: input.toolGrants
-          ? JSON.stringify(input.toolGrants)
-          : JSON.stringify(existing.toolGrants),
+        toolGrantsJson: nextToolGrantsJson(input, existing),
         updatedAt: nowIso(),
       })
       .where(eq(agentPromotionDrafts.id, id))

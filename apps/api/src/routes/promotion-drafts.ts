@@ -12,6 +12,21 @@ function promotionUnavailable() {
   }
 }
 
+function promotionDraftNotFound() {
+  return {
+    error: "Promotion draft not found",
+    code: "promotion_draft_not_found",
+  }
+}
+
+function invalidPromotionDraftPayload(issues: unknown[] = []) {
+  return {
+    error: "Invalid promotion draft payload",
+    code: "invalid_promotion_draft",
+    issues,
+  }
+}
+
 export function createThreadPromotionRoutes(repos: Repositories) {
   const app = new Hono()
 
@@ -45,10 +60,7 @@ export function createPromotionDraftRoutes(repos: Repositories) {
   app.get("/:id", (c) => {
     const draft = repos.agentPromotionDrafts.getById(c.req.param("id"))
     if (!draft) {
-      return c.json(
-        { error: "Promotion draft not found", code: "promotion_draft_not_found" },
-        404
-      )
+      return c.json(promotionDraftNotFound(), 404)
     }
 
     return c.json(createAgentPromotionDraftResponseSchema.parse({ draft }))
@@ -59,34 +71,17 @@ export function createPromotionDraftRoutes(repos: Repositories) {
     try {
       payload = await c.req.json()
     } catch {
-      return c.json(
-        {
-          error: "Invalid promotion draft payload",
-          code: "invalid_promotion_draft",
-          issues: [],
-        },
-        400
-      )
+      return c.json(invalidPromotionDraftPayload(), 400)
     }
 
     const parsed = updateAgentPromotionDraftRequestSchema.safeParse(payload)
     if (!parsed.success) {
-      return c.json(
-        {
-          error: "Invalid promotion draft payload",
-          code: "invalid_promotion_draft",
-          issues: parsed.error.issues,
-        },
-        400
-      )
+      return c.json(invalidPromotionDraftPayload(parsed.error.issues), 400)
     }
 
     const draft = repos.agentPromotionDrafts.update(c.req.param("id"), parsed.data)
     if (!draft) {
-      return c.json(
-        { error: "Promotion draft not found", code: "promotion_draft_not_found" },
-        404
-      )
+      return c.json(promotionDraftNotFound(), 404)
     }
 
     return c.json(createAgentPromotionDraftResponseSchema.parse({ draft }))
