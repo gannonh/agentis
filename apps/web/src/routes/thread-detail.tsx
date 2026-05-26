@@ -123,7 +123,7 @@ export function ThreadDetailPage() {
                 onClick={() => void handleCreateAgentFromThread()}
               >
                 {creatingAgentDraft
-                  ? "Creating agent draft…"
+                  ? "Preparing agent setup…"
                   : "Create agent from thread"}
               </Button>
             ) : null}

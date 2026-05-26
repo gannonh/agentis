@@ -57,6 +57,15 @@ describe("AgentPromotionDraftPage", () => {
     )
 
     expect(await screen.findByText("Create agent from thread")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Start with this thread's context, review the setup, then create a reusable agent."
+      )
+    ).toBeInTheDocument()
+    expect(await screen.findByText("Review agent setup")).toBeInTheDocument()
+    expect(
+      screen.getByText("Started from thread: Investigate support backlog")
+    ).toBeInTheDocument()
     expect(await screen.findByDisplayValue("Support Backlog Agent")).toBeInTheDocument()
     await user.clear(screen.getByLabelText(/^name/i))
     await user.type(screen.getByLabelText(/^name/i), "Support Triage Agent")

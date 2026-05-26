@@ -42,7 +42,7 @@ function errorMessage(error: unknown, fallback: string): string {
 
 function sourceThreadLabel(draft: AgentPromotionDraft | null): string {
   if (!draft) return "Loading draft details…"
-  return `Source thread: ${draft.sourceThreadTitle || draft.threadId}`
+  return `Started from thread: ${draft.sourceThreadTitle || draft.threadId}`
 }
 
 function canSubmit(form: DraftFormState | null, submitting: boolean): boolean {
@@ -134,13 +134,13 @@ export function AgentPromotionDraftPage() {
       <PageHeader
         title="Create agent from thread"
         titleClassName="text-3xl font-medium tracking-tight"
-        description="Review the draft seeded from this thread, edit what the agent should do, then create it."
+        description="Start with this thread's context, review the setup, then create a reusable agent."
       />
 
       <Card>
         <form onSubmit={(event) => void handleSubmit(event)}>
           <CardHeader className="border-b border-border pb-4">
-            <CardTitle className="text-base">Agent draft</CardTitle>
+            <CardTitle className="text-base">Review agent setup</CardTitle>
             <CardDescription>{sourceThreadLabel(draft)}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-4">

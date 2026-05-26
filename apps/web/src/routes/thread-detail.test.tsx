@@ -96,6 +96,34 @@ describe("ThreadDetailPage create-agent action", () => {
     })
   })
 
+  it("shows seed-and-review loading copy while preparing the agent setup", async () => {
+    let resolveDraft: (value: { draft: { id: string } }) => void = () => {}
+    vi.mocked(createAgentPromotionDraft).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveDraft = resolve
+      }) as ReturnType<typeof createAgentPromotionDraft>
+    )
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: /create agent from thread/i })
+    )
+
+    expect(
+      screen.getByRole("button", { name: /preparing agent setup/i })
+    ).toBeInTheDocument()
+
+    resolveDraft({ draft: { id: "draft_test" } })
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith("/agents/new/from-thread/draft_test")
+    })
+  })
+
   it("keeps the create-agent action available for finished threads", () => {
     threadStatus = "finished"
 
