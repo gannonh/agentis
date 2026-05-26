@@ -1,6 +1,8 @@
 import type {
   AgentConfigurationVersionSummary,
   AgentListItem,
+  AgentSourceThread,
+  AgentSourceWorkflow,
 } from "@workspace/shared"
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
@@ -20,6 +22,8 @@ type AgentCreateInput = {
   systemPrompt: string
   model: string
   maxCostPerRunUsd?: number | null
+  sourceThread?: AgentSourceThread
+  sourceWorkflow?: AgentSourceWorkflow
 }
 
 type AgentToolGrantCreateInput = {
@@ -109,11 +113,20 @@ function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
   }
 }
 
-function mapVersionSnapshot(row: VersionRow): AgentConfigurationVersionSnapshot {
+function mapVersionSnapshot(
+  row: VersionRow
+): AgentConfigurationVersionSnapshot {
   return {
     ...mapVersion(row),
     toolGrants: parseGrantSnapshot(row.toolGrantsJson),
   }
+}
+
+function parseSourceWorkflow(
+  raw: string | null
+): AgentSourceWorkflow | undefined {
+  if (!raw) return undefined
+  return JSON.parse(raw) as AgentSourceWorkflow
 }
 
 function mapAgent(
@@ -121,6 +134,13 @@ function mapAgent(
   currentConfigurationVersion: AgentConfigurationVersionSummary,
   toolGrantCount: number
 ): AgentListItem {
+  const sourceThread = row.sourceThreadId
+    ? {
+        id: row.sourceThreadId,
+        title: row.sourceThreadTitle ?? row.sourceThreadId,
+      }
+    : undefined
+
   return {
     id: row.id,
     name: row.name,
@@ -128,6 +148,8 @@ function mapAgent(
     systemPrompt: row.systemPrompt,
     model: row.model,
     maxCostPerRunUsd: row.maxCostPerRunUsd,
+    sourceThread,
+    sourceWorkflow: parseSourceWorkflow(row.sourceWorkflowJson),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     currentConfigurationVersion,
@@ -154,6 +176,11 @@ export class AgentRepository {
       systemPrompt: input.systemPrompt,
       model: input.model,
       maxCostPerRunUsd: input.maxCostPerRunUsd ?? null,
+      sourceThreadId: input.sourceThread?.id ?? null,
+      sourceThreadTitle: input.sourceThread?.title ?? null,
+      sourceWorkflowJson: input.sourceWorkflow
+        ? JSON.stringify(input.sourceWorkflow)
+        : null,
       createdAt: now,
       updatedAt: now,
     }

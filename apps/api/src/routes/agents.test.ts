@@ -505,11 +505,17 @@ describe("agent routes", () => {
 
     expect(response.status).toBe(200)
     const body = (await response.json()) as {
+      agent: {
+        sourceThread?: unknown
+        sourceWorkflow?: unknown
+      }
       information: {
         recentThreads: unknown[]
         library: { totalCount: number; items: unknown[] }
       }
     }
+    expect(body.agent.sourceThread).toBeUndefined()
+    expect(body.agent.sourceWorkflow).toBeUndefined()
     expect(body.information.recentThreads).toEqual([])
     expect(body.information.library).toEqual({ totalCount: 0, items: [] })
   })

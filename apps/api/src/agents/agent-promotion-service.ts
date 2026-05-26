@@ -22,7 +22,9 @@ type ServiceError = {
   }
 }
 
-type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: ServiceError }
+type ServiceResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: ServiceError }
 
 function threadNotFound(): ServiceError {
   return {
@@ -45,7 +47,8 @@ function threadAlreadyHasAgent(): ServiceError {
   return {
     status: 400,
     body: {
-      error: "Threads already associated with an agent cannot create another agent.",
+      error:
+        "Threads already associated with an agent cannot create another agent.",
       code: "thread_already_has_agent",
     },
   }
@@ -97,6 +100,16 @@ function buildSystemPrompt(sourceText: string | null): string {
   return `Use the context from this thread: ${sourceText}`
 }
 
+function buildSourceWorkflow(thread: Thread, messages: Message[]) {
+  const title = cleanTitle(thread.title)
+  const sourceText = firstUserText(messages)
+
+  return {
+    summary: title ?? sourceText ?? "Created from thread.",
+    firstUserPrompt: sourceText ?? undefined,
+  }
+}
+
 function buildDraftDefaults(thread: Thread, messages: Message[]) {
   const title = cleanTitle(thread.title)
   const sourceText = firstUserText(messages)
@@ -121,7 +134,9 @@ export class AgentPromotionService {
     if (!thread) return { ok: false, error: threadNotFound() }
     if (thread.agentId) return { ok: false, error: threadAlreadyHasAgent() }
 
-    const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(thread.id)
+    const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(
+      thread.id
+    )
     if (existing) return { ok: true, data: { draft: existing, created: false } }
 
     const messages = this.repos.messages.listByThreadId(thread.id)
@@ -135,7 +150,10 @@ export class AgentPromotionService {
       model: thread.model,
       toolGrants: this.repos.toolAccessGrants
         .listByScope("thread", thread.id)
-        .map(({ toolkitSlug, connectionId }) => ({ toolkitSlug, connectionId })),
+        .map(({ toolkitSlug, connectionId }) => ({
+          toolkitSlug,
+          connectionId,
+        })),
     })
     return { ok: true, data: { draft, created: true } }
   }
@@ -156,12 +174,30 @@ export class AgentPromotionService {
       return { ok: false, error: grantResolutionFailed(resolvedGrants.error) }
     }
 
+    const sourceThread = this.repos.threads.getById(draft.threadId)
+    const sourceMessages = this.repos.messages.listByThreadId(draft.threadId)
     const created = this.repos.agents.createWithGrants(
       {
         name: input.name,
         description: input.description,
         systemPrompt: input.systemPrompt,
         model: input.model ?? draft.model ?? this.config.defaultModel,
+        sourceThread: {
+          id: draft.threadId,
+          title: sourceThread?.title ?? draft.sourceThreadTitle,
+        },
+        sourceWorkflow: buildSourceWorkflow(
+          sourceThread ?? {
+            id: draft.threadId,
+            title: draft.sourceThreadTitle,
+            status: "active",
+            model: draft.model,
+            mode: "plan",
+            createdAt: draft.createdAt,
+            updatedAt: draft.updatedAt,
+          },
+          sourceMessages
+        ),
       },
       resolvedGrants.grants
     )

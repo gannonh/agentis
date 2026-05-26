@@ -46,7 +46,9 @@ describe("promotion draft routes", () => {
     })
     expect(body.draft.systemPrompt).toContain("Review support backlog patterns")
 
-    const read = await app.request(`/api/agent-promotion-drafts/${body.draft.id}`)
+    const read = await app.request(
+      `/api/agent-promotion-drafts/${body.draft.id}`
+    )
 
     expect(read.status).toBe(200)
     const readBody = (await read.json()) as { draft: { id: string } }
@@ -83,16 +85,19 @@ describe("promotion draft routes", () => {
       { toolkitSlug: "github", connectionId: github.id },
     ])
 
-    const updated = await app.request(`/api/agent-promotion-drafts/${body.draft.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Support Triage Agent",
-        description: "Reviews and routes support backlog patterns.",
-        systemPrompt: "Route support issues with clear severity labels.",
-        model: "gpt-4.1-mini",
-      }),
-    })
+    const updated = await app.request(
+      `/api/agent-promotion-drafts/${body.draft.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Reviews and routes support backlog patterns.",
+          systemPrompt: "Route support issues with clear severity labels.",
+          model: "gpt-4.1-mini",
+        }),
+      }
+    )
 
     expect(updated.status).toBe(200)
     const updatedBody = (await updated.json()) as {
@@ -114,7 +119,9 @@ describe("promotion draft routes", () => {
       { toolkitSlug: "github", connectionId: github.id },
     ])
 
-    const read = await app.request(`/api/agent-promotion-drafts/${body.draft.id}`)
+    const read = await app.request(
+      `/api/agent-promotion-drafts/${body.draft.id}`
+    )
     const readBody = (await read.json()) as { draft: { name: string } }
     expect(readBody.draft.name).toBe("Support Triage Agent")
   })
@@ -128,17 +135,28 @@ describe("promotion draft routes", () => {
     })
     const app = createApp(ctx.repos, ctx.config)
 
-    const first = await app.request(`/api/threads/${thread.id}/promotion-drafts`, {
-      method: "POST",
-    })
-    const second = await app.request(`/api/threads/${thread.id}/promotion-drafts`, {
-      method: "POST",
-    })
+    const first = await app.request(
+      `/api/threads/${thread.id}/promotion-drafts`,
+      {
+        method: "POST",
+      }
+    )
+    const second = await app.request(
+      `/api/threads/${thread.id}/promotion-drafts`,
+      {
+        method: "POST",
+      }
+    )
 
     expect(first.status).toBe(201)
     expect(second.status).toBe(200)
     const firstBody = (await first.json()) as {
-      draft: { id: string; name: string; description: string; systemPrompt: string }
+      draft: {
+        id: string
+        name: string
+        description: string
+        systemPrompt: string
+      }
     }
     const secondBody = (await second.json()) as { draft: { id: string } }
     expect(secondBody.draft.id).toBe(firstBody.draft.id)
@@ -197,6 +215,8 @@ describe("promotion draft routes", () => {
         systemPrompt: string
         model: string
         toolGrantCount: number
+        sourceThread?: { id: string; title: string }
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
       }
       toolGrants: { toolkitSlug: string; connectionId?: string }[]
     }
@@ -206,10 +226,34 @@ describe("promotion draft routes", () => {
       systemPrompt: "Assign severity and next steps.",
       model: "gpt-4.1-mini",
       toolGrantCount: 1,
+      sourceThread: {
+        id: created.thread.id,
+        title: "Investigate support backlog",
+      },
+      sourceWorkflow: {
+        summary: "Investigate support backlog",
+        firstUserPrompt: "Review support backlog patterns",
+      },
     })
     expect(body.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: github.id },
     ])
+    const reloaded = await app.request(`/api/agents/${body.agent.id}`)
+    expect(reloaded.status).toBe(200)
+    const reloadedBody = (await reloaded.json()) as {
+      agent: {
+        sourceThread?: { id: string; title: string }
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+      }
+    }
+    expect(reloadedBody.agent.sourceThread).toMatchObject({
+      id: created.thread.id,
+      title: "Investigate support backlog",
+    })
+    expect(reloadedBody.agent.sourceWorkflow).toMatchObject({
+      summary: "Investigate support backlog",
+      firstUserPrompt: "Review support backlog patterns",
+    })
     expect(ctx.repos.agentPromotionDrafts.getById(draft.id)?.name).toBe(
       "Investigate support backlog Agent"
     )

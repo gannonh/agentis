@@ -220,6 +220,16 @@ export const agentConfigurationVersionSummarySchema = z.object({
   createdAt: z.string(),
 })
 
+export const agentSourceThreadSchema = z.object({
+  id: nonEmptyString,
+  title: z.string(),
+})
+
+export const agentSourceWorkflowSchema = z.object({
+  summary: nonEmptyString,
+  firstUserPrompt: z.string().optional(),
+})
+
 export const agentSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -227,6 +237,8 @@ export const agentSchema = z.object({
   systemPrompt: z.string(),
   model: z.string(),
   maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
+  sourceThread: agentSourceThreadSchema.optional(),
+  sourceWorkflow: agentSourceWorkflowSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -285,7 +297,8 @@ export const createAgentPromotionDraftResponseSchema = z.object({
   draft: agentPromotionDraftSchema,
 })
 
-export const createAgentFromPromotionDraftRequestSchema = createAgentRequestSchema
+export const createAgentFromPromotionDraftRequestSchema =
+  createAgentRequestSchema
 
 export const updateAgentPromotionDraftRequestSchema = z
   .object({
@@ -511,10 +524,14 @@ export type RuntimeHealth = z.infer<typeof runtimeHealthSchema>
 export type AgentConfigurationVersionSummary = z.infer<
   typeof agentConfigurationVersionSummarySchema
 >
+export type AgentSourceThread = z.infer<typeof agentSourceThreadSchema>
+export type AgentSourceWorkflow = z.infer<typeof agentSourceWorkflowSchema>
 export type Agent = z.infer<typeof agentSchema>
 export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
-export type AgentToolGrantInputList = z.infer<typeof agentToolGrantInputListSchema>
+export type AgentToolGrantInputList = z.infer<
+  typeof agentToolGrantInputListSchema
+>
 export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
 export type CreateAgentTestThreadRequest = z.infer<

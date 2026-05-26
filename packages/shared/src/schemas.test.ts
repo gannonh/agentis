@@ -234,6 +234,14 @@ describe("shared schemas", () => {
       description: "Finds source-backed answers",
       systemPrompt: "Answer with citations.",
       model: "gpt-4o-mini",
+      sourceThread: {
+        id: "thread-1",
+        title: "Investigate support backlog",
+      },
+      sourceWorkflow: {
+        summary: "Review support backlog patterns",
+        firstUserPrompt: "Review support backlog patterns",
+      },
       createdAt: now,
       updatedAt: now,
       currentConfigurationVersion: {
@@ -247,12 +255,30 @@ describe("shared schemas", () => {
       toolGrantCount: 2,
     })
     expect(listItem.currentConfigurationVersion.version).toBe(1)
+    expect(listItem.sourceThread?.id).toBe("thread-1")
+    expect(listItem.sourceWorkflow?.summary).toBe(
+      "Review support backlog patterns"
+    )
     expect(() =>
       agentListItemSchema.parse({ ...listItem, toolGrantCount: -1 })
     ).toThrow()
     expect(() =>
       agentListItemSchema.parse({ ...listItem, toolGrantCount: 1.5 })
     ).toThrow()
+    expect(() =>
+      agentListItemSchema.parse({
+        ...listItem,
+        sourceWorkflow: { summary: "" },
+      })
+    ).toThrow()
+
+    const unlinkedAgent = agentListItemSchema.parse({
+      ...listItem,
+      id: "agent-2",
+      sourceThread: undefined,
+      sourceWorkflow: undefined,
+    })
+    expect(unlinkedAgent.sourceThread).toBeUndefined()
 
     const grants = [
       {
