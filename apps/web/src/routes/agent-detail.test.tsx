@@ -240,7 +240,16 @@ describe("AgentDetailPage", () => {
   })
 
   it("shows an API-backed agent detail for created agents", async () => {
-    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        agent: {
+          sourceThread: {
+            id: "thread_source",
+            title: "Investigate support backlog",
+          },
+        },
+      })
+    )
 
     render(
       <MemoryRouter initialEntries={["/agents/agent_created"]}>
@@ -258,6 +267,10 @@ describe("AgentDetailPage", () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText("gpt-4o-mini")).toBeInTheDocument()
     expect(screen.getAllByText("google-drive").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText("Source thread")).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "Investigate support backlog" })
+    ).toHaveAttribute("href", "/threads/thread_source")
   })
 
   it("renders API-backed overview and activity information", async () => {
@@ -323,6 +336,7 @@ describe("AgentDetailPage", () => {
     expect(
       await screen.findByText(/No tools configured yet/)
     ).toBeInTheDocument()
+    expect(screen.queryByText("Source thread")).not.toBeInTheDocument()
     expect(screen.getByText(/No threads yet/)).toBeInTheDocument()
 
     await user.click(screen.getByRole("tab", { name: "Activity" }))
@@ -498,7 +512,9 @@ describe("AgentDetailPage", () => {
       expect(
         await screen.findByText("We couldn't open a test chat. Try again.")
       ).toBeInTheDocument()
-      expect(screen.queryByText("Unable to start thread")).not.toBeInTheDocument()
+      expect(
+        screen.queryByText("Unable to start thread")
+      ).not.toBeInTheDocument()
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "[agentis] Failed to start agent test thread",
         startThreadError
