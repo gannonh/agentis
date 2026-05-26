@@ -11,15 +11,33 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { Input } from "@workspace/ui/components/input"
-import { Textarea } from "@workspace/ui/components/textarea"
 import type { IntegrationToolkit } from "@workspace/shared"
+import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
+import {
+  canSubmitAgentSetup,
+  type AgentSetupFormState,
+} from "@/components/agents/agent-setup-form"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { useIntegrations } from "@/hooks/use-integrations"
 import { createAgent } from "@/lib/api/agents-client"
 import { IntegrationMark } from "@/lib/integration-mark"
 import { cn } from "@workspace/ui/lib/utils"
+
+const INITIAL_FORM: AgentSetupFormState = {
+  name: "",
+  description: "",
+  model: "gpt-4o-mini",
+  systemPrompt: "",
+}
+
+const SYSTEM_PROMPT_PLACEHOLDER = [
+  "Main job:",
+  "How to help:",
+  "What to consider:",
+  "Apps it can use:",
+  "Response style:",
+].join("\n")
 
 function formatCategory(value: string) {
   return value
@@ -95,27 +113,29 @@ function ToolGrantOption({
 
 export function AgentCreatePage() {
   const navigate = useNavigate()
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [model, setModel] = useState("gpt-4o-mini")
-  const [systemPrompt, setSystemPrompt] = useState("")
+  const [form, setForm] = useState<AgentSetupFormState>(INITIAL_FORM)
   const [selectedToolGrantSlugs, setSelectedToolGrantSlugs] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toolkits, loading: loadingIntegrations, error: integrationsError } = useIntegrations()
   const connectedToolkits = toolkits.filter((toolkit) => toolkit.status === "connected")
 
+  const updateForm = (patch: Partial<AgentSetupFormState>) => {
+    setForm((current) => ({ ...current, ...patch }))
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!name.trim() || !systemPrompt.trim()) return
+    if (!canSubmitAgentSetup(form, submitting)) return
+
     setSubmitting(true)
     setError(null)
     try {
       const detail = await createAgent({
-        name: name.trim(),
-        description: description.trim() || undefined,
-        model: model.trim() || undefined,
-        systemPrompt: systemPrompt.trim(),
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+        model: form.model.trim() || undefined,
+        systemPrompt: form.systemPrompt.trim(),
         toolGrants: selectedToolGrantSlugs.map((toolkitSlug) => ({ toolkitSlug })),
       })
       navigate(`/agents/${encodeURIComponent(detail.agent.id)}`)
@@ -149,73 +169,14 @@ export function AgentCreatePage() {
           <CardContent className="flex flex-col gap-6 pt-4">
             {error ? <p className="text-destructive text-sm">{error}</p> : null}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2 sm:col-span-2">
-                <label className="text-sm font-medium" htmlFor="agent-name">
-                  Name <span className="text-destructive" aria-hidden>*</span>
-                </label>
-                <Input
-                  id="agent-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g., Research Agent"
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 sm:col-span-2">
-                <label className="text-sm font-medium" htmlFor="agent-description">
-                  Description
-                </label>
-                <Textarea
-                  id="agent-description"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="What does this agent help with?"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium" htmlFor="agent-model">
-                  Answer engine
-                </label>
-                <Input
-                  id="agent-model"
-                  value={model}
-                  onChange={(event) => setModel(event.target.value)}
-                  placeholder="gpt-4o-mini"
-                  aria-describedby="agent-model-help"
-                />
-                <p id="agent-model-help" className="text-muted-foreground text-xs leading-relaxed">
-                  Default choice for this agent&apos;s answers. Change it only when
-                  this agent needs a specific capability.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium" htmlFor="agent-system-prompt">
-                Instructions <span className="text-destructive" aria-hidden>*</span>
-              </label>
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                Tell the agent how to help, what to consider, and how to respond.
-              </p>
-              <Textarea
-                id="agent-system-prompt"
-                value={systemPrompt}
-                onChange={(event) => setSystemPrompt(event.target.value)}
-                placeholder={[
-                  "Main job:",
-                  "How to help:",
-                  "What to consider:",
-                  "Apps it can use:",
-                  "Response style:",
-                ].join("\n")}
-                rows={7}
-                required
-              />
-            </div>
+            <AgentSetupFields
+              idPrefix="agent"
+              value={form}
+              onChange={updateForm}
+              modelHelp="Default choice for this agent's answers. Change it only when this agent needs a specific capability."
+              systemPromptHelp="Tell the agent how to help, what to consider, and how to respond."
+              systemPromptPlaceholder={SYSTEM_PROMPT_PLACEHOLDER}
+            />
 
             <fieldset className="flex flex-col gap-3">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -282,11 +243,7 @@ export function AgentCreatePage() {
             </Button>
             <Button
               type="submit"
-              disabled={
-                name.trim().length === 0 ||
-                systemPrompt.trim().length === 0 ||
-                submitting
-              }
+              disabled={!canSubmitAgentSetup(form, submitting)}
               className="min-h-11 sm:min-h-7"
             >
               {submitting ? "Creating…" : "Create agent"}

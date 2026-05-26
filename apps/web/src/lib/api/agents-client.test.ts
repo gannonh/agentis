@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ApiError } from "@/lib/api/client"
-import { createAgent, getAgent, startAgentTestThread } from "@/lib/api/agents-client"
+import {
+  createAgent,
+  createAgentFromPromotionDraft,
+  getAgent,
+  startAgentTestThread,
+} from "@/lib/api/agents-client"
 
 describe("agents client", () => {
   afterEach(() => {
@@ -35,7 +40,7 @@ describe("agents client", () => {
     } satisfies Partial<ApiError>)
   })
 
-  it("notifies mounted agent surfaces after creating an agent", async () => {
+  it("keeps agent creation free of implicit UI invalidation events", async () => {
     const now = new Date().toISOString()
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json(
@@ -76,8 +81,62 @@ describe("agents client", () => {
       systemPrompt: "Assign severity.",
     })
 
-    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).not.toHaveBeenCalled()
     window.removeEventListener("agentis:agents-changed", listener)
+  })
+
+  it("creates agents from promotion drafts through the draft command API", async () => {
+    const now = new Date().toISOString()
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json(
+        {
+          agent: {
+            id: "agent_promoted",
+            name: "Promoted Support Agent",
+            systemPrompt: "Assign severity.",
+            model: "gpt-4o-mini",
+            createdAt: now,
+            updatedAt: now,
+            currentConfigurationVersion: {
+              id: "agent_version_promoted",
+              agentId: "agent_promoted",
+              version: 1,
+              systemPrompt: "Assign severity.",
+              model: "gpt-4o-mini",
+              createdAt: now,
+            },
+            toolGrantCount: 0,
+          },
+          configurationVersions: [],
+          toolGrants: [],
+          information: {
+            recentThreads: [],
+            library: { items: [], totalCount: 0 },
+          },
+        },
+        { status: 201 }
+      )
+    )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await createAgentFromPromotionDraft("draft/1", {
+      name: "Promoted Support Agent",
+      systemPrompt: "Assign severity.",
+      toolGrants: [],
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/agent-promotion-drafts/draft%2F1/create-agent",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Promoted Support Agent",
+          systemPrompt: "Assign severity.",
+          toolGrants: [],
+        }),
+      }
+    )
   })
 
   it("starts agent test threads through the agent-scoped API route", async () => {

@@ -1,6 +1,7 @@
 import {
   agentDetailResponseSchema,
   agentListItemSchema,
+  createAgentFromPromotionDraftRequestSchema,
   createAgentPromotionDraftResponseSchema,
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
@@ -9,6 +10,7 @@ import {
   updateAgentRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
+  type CreateAgentFromPromotionDraftRequest,
   type CreateAgentPromotionDraftResponse,
   type CreateAgentRequest,
   type CreateAgentTestThreadRequest,
@@ -82,9 +84,7 @@ export async function createAgent(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
-  const detail = await parseJson(response, agentDetailResponseSchema)
-  window.dispatchEvent(new CustomEvent("agentis:agents-changed"))
-  return detail
+  return parseJson(response, agentDetailResponseSchema)
 }
 
 export async function getAgent(agentId: string): Promise<AgentDetailResponse> {
@@ -125,6 +125,24 @@ export async function updateAgentPromotionDraft(
     }
   )
   return parseJson(response, createAgentPromotionDraftResponseSchema)
+}
+
+export async function createAgentFromPromotionDraft(
+  draftId: string,
+  body: CreateAgentFromPromotionDraftRequest
+): Promise<AgentDetailResponse> {
+  const payload = createAgentFromPromotionDraftRequestSchema.parse(body)
+  const response = await fetch(
+    `${API_BASE}/api/agent-promotion-drafts/${encodeURIComponent(
+      draftId
+    )}/create-agent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, agentDetailResponseSchema)
 }
 
 export async function updateAgent(

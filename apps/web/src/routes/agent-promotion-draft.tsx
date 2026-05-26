@@ -9,26 +9,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { Input } from "@workspace/ui/components/input"
-import { Textarea } from "@workspace/ui/components/textarea"
-import type {
-  AgentPromotionDraft,
-  AgentToolGrantInput,
-  UpdateAgentPromotionDraftRequest,
-} from "@workspace/shared"
+import type { AgentPromotionDraft, AgentToolGrantInput } from "@workspace/shared"
+import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
+import {
+  canSubmitAgentSetup,
+  type AgentSetupFormState,
+} from "@/components/agents/agent-setup-form"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import {
-  createAgent,
+  createAgentFromPromotionDraft,
   getAgentPromotionDraft,
-  updateAgentPromotionDraft,
 } from "@/lib/api/agents-client"
 
-type DraftFormState = {
-  name: string
-  description: string
-  model: string
-  systemPrompt: string
+type DraftFormState = AgentSetupFormState & {
   toolGrants: AgentToolGrantInput[]
 }
 
@@ -51,19 +45,8 @@ function sourceThreadLabel(draft: AgentPromotionDraft | null): string {
   return `Source thread: ${draft.sourceThreadTitle || draft.threadId}`
 }
 
-function buildDraftPayload(form: DraftFormState): UpdateAgentPromotionDraftRequest {
-  return {
-    name: form.name.trim(),
-    description: form.description.trim() || undefined,
-    model: form.model.trim() || undefined,
-    systemPrompt: form.systemPrompt.trim(),
-    toolGrants: form.toolGrants,
-  }
-}
-
 function canSubmit(form: DraftFormState | null, submitting: boolean): boolean {
-  if (!form || submitting) return false
-  return form.name.trim().length > 0 && form.systemPrompt.trim().length > 0
+  return canSubmitAgentSetup(form, submitting)
 }
 
 export function AgentPromotionDraftPage() {
@@ -120,23 +103,18 @@ export function AgentPromotionDraftPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!draftId || !form || !form.name.trim() || !form.systemPrompt.trim()) return
+    if (!draftId || !form || !canSubmit(form, submitting)) return
 
     setSubmitting(true)
     setError(null)
-    const payload = buildDraftPayload(form)
 
     try {
-      const { draft: savedDraft } = await updateAgentPromotionDraft(
-        draftId,
-        payload
-      )
-      const created = await createAgent({
-        name: savedDraft.name,
-        description: savedDraft.description,
-        model: savedDraft.model,
-        systemPrompt: savedDraft.systemPrompt,
-        toolGrants: savedDraft.toolGrants,
+      const created = await createAgentFromPromotionDraft(draftId, {
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+        model: form.model.trim() || undefined,
+        systemPrompt: form.systemPrompt.trim(),
+        toolGrants: form.toolGrants,
       })
       navigate(`/agents/${encodeURIComponent(created.agent.id)}`)
     } catch (submitError) {
@@ -172,65 +150,11 @@ export function AgentPromotionDraftPage() {
             {error ? <p className="text-destructive text-sm">{error}</p> : null}
             {form ? (
               <>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col gap-2 sm:col-span-2">
-                    <label className="text-sm font-medium" htmlFor="draft-name">
-                      Name <span className="text-destructive" aria-hidden>*</span>
-                    </label>
-                    <Input
-                      id="draft-name"
-                      value={form.name}
-                      onChange={(event) => updateForm({ name: event.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2 sm:col-span-2">
-                    <label
-                      className="text-sm font-medium"
-                      htmlFor="draft-description"
-                    >
-                      Description
-                    </label>
-                    <Textarea
-                      id="draft-description"
-                      value={form.description}
-                      onChange={(event) =>
-                        updateForm({ description: event.target.value })
-                      }
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium" htmlFor="draft-model">
-                      Answer engine
-                    </label>
-                    <Input
-                      id="draft-model"
-                      value={form.model}
-                      onChange={(event) => updateForm({ model: event.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium"
-                    htmlFor="draft-system-prompt"
-                  >
-                    Instructions <span className="text-destructive" aria-hidden>*</span>
-                  </label>
-                  <Textarea
-                    id="draft-system-prompt"
-                    value={form.systemPrompt}
-                    onChange={(event) =>
-                      updateForm({ systemPrompt: event.target.value })
-                    }
-                    rows={7}
-                    required
-                  />
-                </div>
+                <AgentSetupFields
+                  idPrefix="draft"
+                  value={form}
+                  onChange={updateForm}
+                />
 
                 <fieldset className="flex flex-col gap-3">
                   <legend className="text-sm font-medium">Connected apps</legend>

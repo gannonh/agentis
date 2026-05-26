@@ -1,16 +1,12 @@
 import { Hono } from "hono"
 import {
+  createAgentFromPromotionDraftRequestSchema,
   createAgentPromotionDraftResponseSchema,
   updateAgentPromotionDraftRequestSchema,
 } from "@workspace/shared"
+import { AgentPromotionService } from "../agents/agent-promotion-service.js"
+import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
-
-function promotionUnavailable() {
-  return {
-    error: "Only finished threads can be promoted.",
-    code: "thread_not_promotable",
-  }
-}
 
 function promotionDraftNotFound() {
   return {
@@ -27,35 +23,36 @@ function invalidPromotionDraftPayload(issues: unknown[] = []) {
   }
 }
 
-export function createThreadPromotionRoutes(repos: Repositories) {
+export function createThreadPromotionRoutes(
+  repos: Repositories,
+  config: AppConfig
+) {
   const app = new Hono()
+  const service = new AgentPromotionService(repos, config)
 
   app.post("/:id/promotion-drafts", (c) => {
-    const thread = repos.threads.getById(c.req.param("id"))
-    if (!thread) {
-      return c.json({ error: "Thread not found", code: "thread_not_found" }, 404)
-    }
-    if (thread.status !== "finished") {
-      return c.json(promotionUnavailable(), 400)
+    const result = service.createDraftFromThread(c.req.param("id"))
+    if (!result.ok) {
+      return c.json(result.error.body, result.error.status)
     }
 
-    const existing = repos.agentPromotionDrafts.getLatestByThreadId(thread.id)
-    const draft =
-      existing ??
-      repos.agentPromotionDrafts.createFromThread({
-        thread,
-        messages: repos.messages.listByThreadId(thread.id),
-        toolGrants: repos.toolAccessGrants.listByScope("thread", thread.id),
-      })
-
-    return c.json(createAgentPromotionDraftResponseSchema.parse({ draft }), 201)
+    return c.json(
+      createAgentPromotionDraftResponseSchema.parse({
+        draft: result.data.draft,
+      }),
+      201
+    )
   })
 
   return app
 }
 
-export function createPromotionDraftRoutes(repos: Repositories) {
+export function createPromotionDraftRoutes(
+  repos: Repositories,
+  config: AppConfig
+) {
   const app = new Hono()
+  const service = new AgentPromotionService(repos, config)
 
   app.get("/:id", (c) => {
     const draft = repos.agentPromotionDrafts.getById(c.req.param("id"))
@@ -85,6 +82,27 @@ export function createPromotionDraftRoutes(repos: Repositories) {
     }
 
     return c.json(createAgentPromotionDraftResponseSchema.parse({ draft }))
+  })
+
+  app.post("/:id/create-agent", async (c) => {
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(invalidPromotionDraftPayload(), 400)
+    }
+
+    const parsed = createAgentFromPromotionDraftRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      return c.json(invalidPromotionDraftPayload(parsed.error.issues), 400)
+    }
+
+    const result = service.createAgentFromDraft(c.req.param("id"), parsed.data)
+    if (!result.ok) {
+      return c.json(result.error.body, result.error.status)
+    }
+
+    return c.json(result.data, 201)
   })
 
   return app

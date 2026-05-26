@@ -26,15 +26,5 @@ export function useAgents() {
     void refresh()
   }, [refresh])
 
-  useEffect(() => {
-    const handleAgentsChanged = () => {
-      void refresh()
-    }
-    window.addEventListener("agentis:agents-changed", handleAgentsChanged)
-    return () => {
-      window.removeEventListener("agentis:agents-changed", handleAgentsChanged)
-    }
-  }, [refresh])
-
   return { agents, loading, error, refresh }
 }

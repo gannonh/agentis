@@ -34,7 +34,7 @@ describe("useAgents", () => {
     vi.mocked(listAgents).mockReset()
   })
 
-  it("refreshes mounted agent surfaces after agent creation events", async () => {
+  it("exposes explicit refresh for mounted agent surfaces", async () => {
     vi.mocked(listAgents)
       .mockResolvedValueOnce([agent("agent_old", "Existing Agent")])
       .mockResolvedValueOnce([agent("agent_new", "Promoted Support Agent")])
@@ -47,8 +47,8 @@ describe("useAgents", () => {
       ])
     })
 
-    act(() => {
-      window.dispatchEvent(new CustomEvent("agentis:agents-changed"))
+    await act(async () => {
+      await result.current.refresh()
     })
 
     await waitFor(() => {

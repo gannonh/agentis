@@ -4,9 +4,8 @@ import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { AgentPromotionDraftPage } from "./agent-promotion-draft"
 import {
-  createAgent,
+  createAgentFromPromotionDraft,
   getAgentPromotionDraft,
-  updateAgentPromotionDraft,
 } from "@/lib/api/agents-client"
 
 const navigate = vi.fn()
@@ -35,23 +34,7 @@ vi.mock("@/lib/api/agents-client", () => ({
       updatedAt: new Date().toISOString(),
     },
   }),
-  updateAgentPromotionDraft: vi.fn().mockImplementation((_draftId, body) =>
-    Promise.resolve({
-      draft: {
-        id: "draft_test",
-        threadId: "thread_test",
-        sourceThreadTitle: "Investigate support backlog",
-        name: body.name,
-        description: body.description,
-        systemPrompt: body.systemPrompt,
-        model: body.model,
-        toolGrants: body.toolGrants,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    })
-  ),
-  createAgent: vi.fn().mockResolvedValue({
+  createAgentFromPromotionDraft: vi.fn().mockResolvedValue({
     agent: { id: "agent_test" },
     configurationVersions: [],
     toolGrants: [],
@@ -62,8 +45,7 @@ describe("AgentPromotionDraftPage", () => {
   beforeEach(() => {
     navigate.mockReset()
     vi.mocked(getAgentPromotionDraft).mockClear()
-    vi.mocked(updateAgentPromotionDraft).mockClear()
-    vi.mocked(createAgent).mockClear()
+    vi.mocked(createAgentFromPromotionDraft).mockClear()
   })
 
   it("loads a draft, submits edits, creates an agent, and navigates", async () => {
@@ -92,14 +74,7 @@ describe("AgentPromotionDraftPage", () => {
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
     await waitFor(() => {
-      expect(updateAgentPromotionDraft).toHaveBeenCalledWith("draft_test", {
-        name: "Support Triage Agent",
-        description: "Routes support backlog patterns.",
-        model: "gpt-4.1-mini",
-        systemPrompt: "Assign severity and next steps.",
-        toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
-      })
-      expect(createAgent).toHaveBeenCalledWith({
+      expect(createAgentFromPromotionDraft).toHaveBeenCalledWith("draft_test", {
         name: "Support Triage Agent",
         description: "Routes support backlog patterns.",
         model: "gpt-4.1-mini",
@@ -111,7 +86,7 @@ describe("AgentPromotionDraftPage", () => {
   })
 
   it("keeps validation errors visible without creating an agent", async () => {
-    vi.mocked(createAgent).mockRejectedValueOnce(
+    vi.mocked(createAgentFromPromotionDraft).mockRejectedValueOnce(
       new Error("Name is required to create this agent.")
     )
     const user = userEvent.setup()

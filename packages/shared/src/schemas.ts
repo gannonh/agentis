@@ -241,12 +241,14 @@ export const agentToolGrantInputSchema = z.object({
   connectionId: z.string().optional(),
 })
 
+export const agentToolGrantInputListSchema = z.array(agentToolGrantInputSchema)
+
 export const createAgentRequestSchema = z.object({
   name: nonEmptyString,
   description: z.string().optional(),
   systemPrompt: nonEmptyString,
   model: z.string().optional(),
-  toolGrants: z.array(agentToolGrantInputSchema).optional(),
+  toolGrants: agentToolGrantInputListSchema.optional(),
 })
 
 export const updateAgentRequestSchema = z
@@ -282,6 +284,8 @@ export const agentPromotionDraftSchema = z.object({
 export const createAgentPromotionDraftResponseSchema = z.object({
   draft: agentPromotionDraftSchema,
 })
+
+export const createAgentFromPromotionDraftRequestSchema = createAgentRequestSchema
 
 export const updateAgentPromotionDraftRequestSchema = z
   .object({
@@ -510,6 +514,7 @@ export type AgentConfigurationVersionSummary = z.infer<
 export type Agent = z.infer<typeof agentSchema>
 export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
+export type AgentToolGrantInputList = z.infer<typeof agentToolGrantInputListSchema>
 export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
 export type CreateAgentTestThreadRequest = z.infer<
@@ -518,6 +523,9 @@ export type CreateAgentTestThreadRequest = z.infer<
 export type AgentPromotionDraft = z.infer<typeof agentPromotionDraftSchema>
 export type CreateAgentPromotionDraftResponse = z.infer<
   typeof createAgentPromotionDraftResponseSchema
+>
+export type CreateAgentFromPromotionDraftRequest = z.infer<
+  typeof createAgentFromPromotionDraftRequestSchema
 >
 export type UpdateAgentPromotionDraftRequest = z.infer<
   typeof updateAgentPromotionDraftRequestSchema

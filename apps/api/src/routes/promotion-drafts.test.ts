@@ -142,6 +142,73 @@ describe("promotion draft routes", () => {
     })
   })
 
+  it("creates an agent from draft edits in a single promotion command", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+      toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+    })
+    ctx.repos.threads.touch(created.thread.id, { status: "finished" })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as {
+      draft: { id: string; name: string }
+    }
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+          model: "gpt-4.1-mini",
+          toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      agent: {
+        id: string
+        name: string
+        description?: string
+        systemPrompt: string
+        model: string
+        toolGrantCount: number
+      }
+      toolGrants: { toolkitSlug: string; connectionId?: string }[]
+    }
+    expect(body.agent).toMatchObject({
+      name: "Support Triage Agent",
+      description: "Routes support backlog patterns.",
+      systemPrompt: "Assign severity and next steps.",
+      model: "gpt-4.1-mini",
+      toolGrantCount: 1,
+    })
+    expect(body.toolGrants).toMatchObject([
+      { toolkitSlug: "github", connectionId: github.id },
+    ])
+    expect(ctx.repos.agentPromotionDrafts.getById(draft.id)?.name).toBe(
+      "Investigate support backlog Agent"
+    )
+  })
+
   it("rejects promotion for missing and unfinished source threads", async () => {
     ctx = createTestContext()
     const created = ctx.repos.threads.createWithInitialRun({

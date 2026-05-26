@@ -1,9 +1,8 @@
-import type {
-  AgentPromotionDraft,
-  AgentToolGrantInput,
-  Message,
-  Thread,
-  UpdateAgentPromotionDraftRequest,
+import {
+  agentToolGrantInputListSchema,
+  type AgentPromotionDraft,
+  type AgentToolGrantInput,
+  type UpdateAgentPromotionDraftRequest,
 } from "@workspace/shared"
 import { desc, eq } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
@@ -12,39 +11,18 @@ import { createId, nowIso } from "../lib/ids.js"
 
 type DraftRow = typeof agentPromotionDrafts.$inferSelect
 
-type DraftDefaults = {
+type CreateAgentPromotionDraftInput = {
+  threadId: string
+  sourceThreadTitle: string
   name: string
-  description: string
+  description?: string | null
   systemPrompt: string
+  model: string
+  toolGrants: AgentToolGrantInput[]
 }
 
 function parseToolGrants(raw: string): AgentToolGrantInput[] {
-  const parsed = JSON.parse(raw) as unknown
-  if (!Array.isArray(parsed)) {
-    throw new Error("Invalid promotion draft tool grants")
-  }
-
-  return parsed.map((grant) => {
-    if (typeof grant !== "object" || grant === null) {
-      throw new Error("Invalid promotion draft tool grants")
-    }
-
-    const candidate = grant as {
-      toolkitSlug?: unknown
-      connectionId?: unknown
-    }
-    if (typeof candidate.toolkitSlug !== "string") {
-      throw new Error("Invalid promotion draft tool grants")
-    }
-
-    return {
-      toolkitSlug: candidate.toolkitSlug,
-      connectionId:
-        typeof candidate.connectionId === "string"
-          ? candidate.connectionId
-          : undefined,
-    }
-  })
+  return agentToolGrantInputListSchema.parse(JSON.parse(raw))
 }
 
 function mapDraft(row: DraftRow): AgentPromotionDraft {
@@ -60,42 +38,6 @@ function mapDraft(row: DraftRow): AgentPromotionDraft {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
-}
-
-function firstUserText(messages: Message[]): string | null {
-  const user = messages.find((message) => message.role === "user")
-  const text = user?.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join(" ")
-    .trim()
-  return text || null
-}
-
-function cleanTitle(title: string): string | null {
-  const cleaned = title.trim().replace(/\s+/g, " ")
-  return cleaned || null
-}
-
-function buildDraftDefaults(thread: Thread, messages: Message[]): DraftDefaults {
-  const title = cleanTitle(thread.title)
-  const sourceText = firstUserText(messages)
-
-  return {
-    name: title ? `${title} Agent` : "New Agent",
-    description: buildDescription(title),
-    systemPrompt: buildSystemPrompt(sourceText),
-  }
-}
-
-function buildDescription(title: string | null): string {
-  if (!title) return "Promoted from a completed thread."
-  return `Promoted from thread: ${title}`
-}
-
-function buildSystemPrompt(sourceText: string | null): string {
-  if (!sourceText) return "Use the approach from this completed thread."
-  return `Use the approach from this completed thread: ${sourceText}`
 }
 
 function nextDescription(
@@ -117,21 +59,16 @@ function nextToolGrantsJson(
 export class AgentPromotionDraftRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  createFromThread(input: {
-    thread: Thread
-    messages: Message[]
-    toolGrants: AgentToolGrantInput[]
-  }): AgentPromotionDraft {
+  create(input: CreateAgentPromotionDraftInput): AgentPromotionDraft {
     const now = nowIso()
-    const defaults = buildDraftDefaults(input.thread, input.messages)
     const row: DraftRow = {
       id: createId("agent_draft"),
-      threadId: input.thread.id,
-      sourceThreadTitle: input.thread.title,
-      name: defaults.name,
-      description: defaults.description,
-      systemPrompt: defaults.systemPrompt,
-      model: input.thread.model,
+      threadId: input.threadId,
+      sourceThreadTitle: input.sourceThreadTitle,
+      name: input.name,
+      description: input.description ?? null,
+      systemPrompt: input.systemPrompt,
+      model: input.model,
       toolGrantsJson: JSON.stringify(input.toolGrants),
       createdAt: now,
       updatedAt: now,
