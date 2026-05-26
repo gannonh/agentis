@@ -72,13 +72,17 @@ function grantResolutionFailed(error: string): ServiceError {
   }
 }
 
-function firstUserText(messages: Message[]): string | null {
-  const user = messages.find((message) => message.role === "user")
-  const text = user?.parts
+function messageText(message: Message): string {
+  return message.parts
     .filter((part) => part.type === "text")
     .map((part) => part.text)
     .join(" ")
     .trim()
+}
+
+function firstUserText(messages: Message[]): string | null {
+  const user = messages.find((message) => message.role === "user")
+  const text = user ? messageText(user) : ""
   return text || null
 }
 
@@ -95,6 +99,52 @@ function buildDescription(title: string | null): string {
 function buildSystemPrompt(sourceText: string | null): string {
   if (!sourceText) return "Use the context from this thread."
   return `Use the context from this thread: ${sourceText}`
+}
+
+function stripTerminalPunctuation(text: string): string {
+  return text.replace(/[.!?]+$/u, "").trim()
+}
+
+function lowerFirst(text: string): string {
+  return text ? text[0].toLowerCase() + text.slice(1) : text
+}
+
+function splitRepeatedSteps(sourceText: string | null): string[] {
+  if (!sourceText) return []
+  return stripTerminalPunctuation(sourceText)
+    .split(/,|\band\b/iu)
+    .map((step) => stripTerminalPunctuation(step.trim()))
+    .filter(Boolean)
+}
+
+function buildDraftIntelligence(
+  thread: Thread,
+  messages: Message[],
+  toolGrants: AgentPromotionDraft["toolGrants"]
+): AgentPromotionDraft["intelligence"] {
+  const sourceText = firstUserText(messages)
+  const purpose = sourceText ?? "Use the source thread context."
+  const promptPurpose = sourceText
+    ? stripTerminalPunctuation(sourceText)
+    : "use the source thread context"
+
+  return {
+    suggestedPurpose: purpose,
+    repeatedSteps: splitRepeatedSteps(sourceText),
+    requiredTools: toolGrants,
+    suggestedPrompt: sourceText
+      ? `Use the source thread context to ${lowerFirst(promptPurpose)}.`
+      : "Use the source thread context.",
+    modelRecommendation: {
+      model: thread.model,
+      reason: "Uses the model from the source thread.",
+    },
+    rubricCriteria: [
+      "Uses the source thread context",
+      "Completes the repeated steps consistently",
+      "Explains tool usage and assumptions",
+    ],
+  }
 }
 
 function buildDraftDefaults(thread: Thread, messages: Message[]) {
@@ -126,6 +176,9 @@ export class AgentPromotionService {
 
     const messages = this.repos.messages.listByThreadId(thread.id)
     const defaults = buildDraftDefaults(thread, messages)
+    const toolGrants = this.repos.toolAccessGrants
+      .listByScope("thread", thread.id)
+      .map(({ toolkitSlug, connectionId }) => ({ toolkitSlug, connectionId }))
     const draft = this.repos.agentPromotionDrafts.create({
       threadId: thread.id,
       sourceThreadTitle: thread.title,
@@ -133,9 +186,8 @@ export class AgentPromotionService {
       description: defaults.description,
       systemPrompt: defaults.systemPrompt,
       model: thread.model,
-      toolGrants: this.repos.toolAccessGrants
-        .listByScope("thread", thread.id)
-        .map(({ toolkitSlug, connectionId }) => ({ toolkitSlug, connectionId })),
+      toolGrants,
+      intelligence: buildDraftIntelligence(thread, messages, toolGrants),
     })
     return { ok: true, data: { draft, created: true } }
   }

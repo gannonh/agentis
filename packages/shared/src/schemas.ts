@@ -268,6 +268,34 @@ export const createAgentTestThreadRequestSchema = z.object({
   prompt: nonEmptyString,
 })
 
+export const agentPromotionDraftIntelligenceSchema = z.object({
+  suggestedPurpose: z.string().optional(),
+  repeatedSteps: z.array(nonEmptyString),
+  requiredTools: z.array(agentToolGrantInputSchema),
+  suggestedPrompt: nonEmptyString.optional(),
+  modelRecommendation: z
+    .object({
+      model: nonEmptyString,
+      reason: z.string().optional(),
+    })
+    .optional(),
+  rubricCriteria: z.array(nonEmptyString),
+})
+
+export const agentPromotionDraftEditedFieldSchema = z.enum([
+  "name",
+  "description",
+  "systemPrompt",
+  "model",
+  "toolGrants",
+  "suggestedPurpose",
+  "repeatedSteps",
+  "requiredTools",
+  "suggestedPrompt",
+  "modelRecommendation",
+  "rubricCriteria",
+])
+
 export const agentPromotionDraftSchema = z.object({
   id: z.string(),
   threadId: z.string(),
@@ -277,6 +305,8 @@ export const agentPromotionDraftSchema = z.object({
   systemPrompt: nonEmptyString,
   model: nonEmptyString,
   toolGrants: z.array(agentToolGrantInputSchema),
+  intelligence: agentPromotionDraftIntelligenceSchema,
+  editedFields: z.array(agentPromotionDraftEditedFieldSchema),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -294,6 +324,7 @@ export const updateAgentPromotionDraftRequestSchema = z
     systemPrompt: nonEmptyString.optional(),
     model: nonEmptyString.optional(),
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
+    intelligence: agentPromotionDraftIntelligenceSchema.optional(),
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one promotion draft field is required.",

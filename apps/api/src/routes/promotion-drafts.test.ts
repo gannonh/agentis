@@ -53,6 +53,93 @@ describe("promotion draft routes", () => {
     expect(readBody.draft.id).toBe(body.draft.id)
   })
 
+  it("persists generated intelligence and edited-field markers", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns, label severity, and draft replies.",
+      model: "gpt-4o-mini",
+      mode: "plan",
+      toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      draft: {
+        id: string
+        intelligence: {
+          suggestedPurpose: string
+          repeatedSteps: string[]
+          requiredTools: { toolkitSlug: string; connectionId?: string }[]
+          suggestedPrompt: string
+          modelRecommendation: { model: string; reason?: string }
+          rubricCriteria: string[]
+        }
+        editedFields: string[]
+      }
+    }
+    expect(body.draft.intelligence).toMatchObject({
+      suggestedPurpose: "Review support backlog patterns, label severity, and draft replies.",
+      repeatedSteps: [
+        "Review support backlog patterns",
+        "label severity",
+        "draft replies",
+      ],
+      requiredTools: [{ toolkitSlug: "github", connectionId: github.id }],
+      suggestedPrompt:
+        "Use the source thread context to review support backlog patterns, label severity, and draft replies.",
+      modelRecommendation: {
+        model: "gpt-4o-mini",
+        reason: "Uses the model from the source thread.",
+      },
+      rubricCriteria: [
+        "Uses the source thread context",
+        "Completes the repeated steps consistently",
+        "Explains tool usage and assumptions",
+      ],
+    })
+    expect(body.draft.editedFields).toEqual([])
+
+    const updated = await app.request(`/api/agent-promotion-drafts/${body.draft.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: "Routes support backlog patterns.",
+        intelligence: {
+          ...body.draft.intelligence,
+          rubricCriteria: ["Assigns the right severity"],
+        },
+      }),
+    })
+
+    expect(updated.status).toBe(200)
+    const updatedBody = (await updated.json()) as {
+      draft: {
+        intelligence: { rubricCriteria: string[] }
+        editedFields: string[]
+      }
+    }
+    expect(updatedBody.draft.intelligence.rubricCriteria).toEqual([
+      "Assigns the right severity",
+    ])
+    expect(updatedBody.draft.editedFields).toEqual([
+      "description",
+      "rubricCriteria",
+    ])
+  })
+
   it("persists editable draft fields and keeps source-derived grants", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

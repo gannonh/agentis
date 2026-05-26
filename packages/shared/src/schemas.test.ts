@@ -165,6 +165,18 @@ describe("shared schemas", () => {
       systemPrompt: "Help triage support backlog patterns.",
       model: "gpt-4o-mini",
       toolGrants: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+      intelligence: {
+        suggestedPurpose: "Triage support backlog patterns.",
+        repeatedSteps: ["Review incoming issues", "Assign severity"],
+        requiredTools: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+        suggestedPrompt: "Review support backlog patterns and propose next steps.",
+        modelRecommendation: {
+          model: "gpt-4o-mini",
+          reason: "Matches the source thread model.",
+        },
+        rubricCriteria: ["Finds the right issue", "Explains the severity"],
+      },
+      editedFields: ["name", "rubricCriteria"],
       createdAt: now,
       updatedAt: now,
     })
@@ -175,6 +187,18 @@ describe("shared schemas", () => {
     expect(response.draft.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: "conn-1" },
     ])
+    expect(response.draft.intelligence).toMatchObject({
+      suggestedPurpose: "Triage support backlog patterns.",
+      repeatedSteps: ["Review incoming issues", "Assign severity"],
+      requiredTools: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+      suggestedPrompt: "Review support backlog patterns and propose next steps.",
+      modelRecommendation: {
+        model: "gpt-4o-mini",
+        reason: "Matches the source thread model.",
+      },
+      rubricCriteria: ["Finds the right issue", "Explains the severity"],
+    })
+    expect(response.draft.editedFields).toEqual(["name", "rubricCriteria"])
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, name: "" })
     ).toThrow()
