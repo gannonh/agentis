@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import {
   Conversation,
@@ -14,6 +14,7 @@ import { RunTimeline } from "@/components/thread/run-timeline"
 import { ThreadProjectContext } from "@/components/thread/thread-project-context"
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { PageLayout } from "@/components/shell/page-layout"
+import { createAgentPromotionDraft } from "@/lib/api/agents-client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
 import { useThreadSession } from "@/hooks/use-thread-session"
 import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
@@ -21,6 +22,7 @@ import type { ThreadMode } from "@workspace/shared"
 
 export function ThreadDetailPage() {
   const { threadId } = useParams()
+  const navigate = useNavigate()
   const { health } = useRuntimeHealth()
   const {
     detail,
@@ -43,6 +45,8 @@ export function ThreadDetailPage() {
 
   const [mode, setMode] = useState<ThreadMode>("plan")
   const [submitting, setSubmitting] = useState(false)
+  const [promoting, setPromoting] = useState(false)
+  const [promotionError, setPromotionError] = useState<string | null>(null)
 
   useEffect(() => {
     if (detail?.thread.mode) {
@@ -51,6 +55,7 @@ export function ThreadDetailPage() {
   }, [detail?.thread.mode])
 
   const composerDisabled = !health.available
+  const canPromote = detail?.thread.status === "finished"
 
   const handleSubmit = async (prompt: string) => {
     if (!prompt.trim() || composerDisabled) return
@@ -59,6 +64,24 @@ export function ThreadDetailPage() {
       await submitFollowUp(prompt.trim())
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handlePromote = async () => {
+    if (!threadId || !canPromote) return
+    setPromoting(true)
+    setPromotionError(null)
+    try {
+      const { draft } = await createAgentPromotionDraft(threadId)
+      navigate(`/agents/promote/${draft.id}`)
+    } catch (error) {
+      setPromotionError(
+        error instanceof Error
+          ? error.message
+          : "Could not start promotion. Try again."
+      )
+    } finally {
+      setPromoting(false)
     }
   }
 
@@ -91,10 +114,26 @@ export function ThreadDetailPage() {
                 Abort
               </Button>
             ) : null}
+            {canPromote ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={promoting}
+                onClick={() => void handlePromote()}
+              >
+                {promoting ? "Promoting…" : "Promote to agent"}
+              </Button>
+            ) : detail?.thread.status === "active" ? (
+              <p className="text-muted-foreground text-xs">
+                Finish this thread before promoting it to an agent.
+              </p>
+            ) : null}
             <Button
               type="button"
               variant="ghost"
               size="sm"
+              nativeButton={false}
               render={<Link to="/threads/new">New thread</Link>}
             />
           </div>
@@ -109,6 +148,9 @@ export function ThreadDetailPage() {
                 ) : null}
                 {error ? (
                   <p className="text-destructive text-sm">{error}</p>
+                ) : null}
+                {promotionError ? (
+                  <p className="text-destructive text-sm">{promotionError}</p>
                 ) : null}
                 {detail?.messages.map((message) => (
                   <Message key={message.id} from={message.role}>

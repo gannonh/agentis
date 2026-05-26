@@ -1,12 +1,14 @@
 import {
   agentDetailResponseSchema,
   agentListItemSchema,
+  createAgentPromotionDraftResponseSchema,
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
   createThreadResponseSchema,
   updateAgentRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
+  type CreateAgentPromotionDraftResponse,
   type CreateAgentRequest,
   type CreateAgentTestThreadRequest,
   type CreateThreadResponse,
@@ -84,6 +86,16 @@ export async function createAgent(
 export async function getAgent(agentId: string): Promise<AgentDetailResponse> {
   const response = await fetch(agentPath(agentId))
   return parseJson(response, agentDetailResponseSchema)
+}
+
+export async function createAgentPromotionDraft(
+  threadId: string
+): Promise<CreateAgentPromotionDraftResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/threads/${encodeURIComponent(threadId)}/promotion-drafts`,
+    { method: "POST" }
+  )
+  return parseJson(response, createAgentPromotionDraftResponseSchema)
 }
 
 export async function updateAgent(
