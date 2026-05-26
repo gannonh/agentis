@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
 import { createApp } from "../app.js"
+import { agentPromotionDrafts } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -72,6 +74,14 @@ describe("promotion draft routes", () => {
       { method: "POST" }
     )
     const body = (await response.json()) as { draft: { id: string } }
+    const draftRow = ctx.db
+      .select({ toolGrantsJson: agentPromotionDrafts.toolGrantsJson })
+      .from(agentPromotionDrafts)
+      .where(eq(agentPromotionDrafts.id, body.draft.id))
+      .get()
+    expect(JSON.parse(draftRow?.toolGrantsJson ?? "[]")).toEqual([
+      { toolkitSlug: "github", connectionId: github.id },
+    ])
 
     const updated = await app.request(`/api/agent-promotion-drafts/${body.draft.id}`, {
       method: "PATCH",
@@ -126,7 +136,7 @@ describe("promotion draft routes", () => {
     })
 
     expect(first.status).toBe(201)
-    expect(second.status).toBe(201)
+    expect(second.status).toBe(200)
     const firstBody = (await first.json()) as {
       draft: { id: string; name: string; description: string; systemPrompt: string }
     }

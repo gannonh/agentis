@@ -116,13 +116,13 @@ export class AgentPromotionService {
 
   createDraftFromThread(
     threadId: string
-  ): ServiceResult<{ draft: AgentPromotionDraft }> {
+  ): ServiceResult<{ draft: AgentPromotionDraft; created: boolean }> {
     const thread = this.repos.threads.getById(threadId)
     if (!thread) return { ok: false, error: threadNotFound() }
     if (thread.agentId) return { ok: false, error: threadAlreadyHasAgent() }
 
     const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(thread.id)
-    if (existing) return { ok: true, data: { draft: existing } }
+    if (existing) return { ok: true, data: { draft: existing, created: false } }
 
     const messages = this.repos.messages.listByThreadId(thread.id)
     const defaults = buildDraftDefaults(thread, messages)
@@ -133,9 +133,11 @@ export class AgentPromotionService {
       description: defaults.description,
       systemPrompt: defaults.systemPrompt,
       model: thread.model,
-      toolGrants: this.repos.toolAccessGrants.listByScope("thread", thread.id),
+      toolGrants: this.repos.toolAccessGrants
+        .listByScope("thread", thread.id)
+        .map(({ toolkitSlug, connectionId }) => ({ toolkitSlug, connectionId })),
     })
-    return { ok: true, data: { draft } }
+    return { ok: true, data: { draft, created: true } }
   }
 
   createAgentFromDraft(

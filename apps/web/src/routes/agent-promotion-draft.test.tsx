@@ -86,6 +86,18 @@ describe("AgentPromotionDraftPage", () => {
     })
   })
 
+  it("routes cancel back to the source thread after loading the draft", async () => {
+    render(
+      <MemoryRouter>
+        <AgentPromotionDraftPage />
+      </MemoryRouter>
+    )
+
+    const cancel = await screen.findByText("Cancel")
+
+    expect(cancel.closest("a")).toHaveAttribute("href", "/threads/thread_test")
+  })
+
   it("keeps validation errors visible without creating an agent", async () => {
     vi.mocked(createAgentFromPromotionDraft).mockRejectedValueOnce(
       new Error("Name is required to create this agent.")

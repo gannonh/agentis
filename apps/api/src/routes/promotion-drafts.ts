@@ -40,7 +40,7 @@ export function createThreadPromotionRoutes(
       createAgentPromotionDraftResponseSchema.parse({
         draft: result.data.draft,
       }),
-      201
+      result.data.created ? 201 : 200
     )
   })
 

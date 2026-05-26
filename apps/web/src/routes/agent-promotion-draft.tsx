@@ -194,7 +194,15 @@ export function AgentPromotionDraftPage() {
             <Button
               variant="outline"
               nativeButton={false}
-              render={<Link to="/threads/new" />}
+              render={
+                <Link
+                  to={
+                    draft
+                      ? `/threads/${encodeURIComponent(draft.threadId)}`
+                      : "/threads/new"
+                  }
+                />
+              }
               className="min-h-11 sm:min-h-7"
             >
               Cancel
