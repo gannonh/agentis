@@ -5,6 +5,7 @@ import {
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
   createThreadResponseSchema,
+  updateAgentPromotionDraftRequestSchema,
   updateAgentRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
@@ -12,6 +13,7 @@ import {
   type CreateAgentRequest,
   type CreateAgentTestThreadRequest,
   type CreateThreadResponse,
+  type UpdateAgentPromotionDraftRequest,
   type UpdateAgentRequest,
 } from "@workspace/shared"
 import { ApiError } from "@/lib/api/client"
@@ -94,6 +96,31 @@ export async function createAgentPromotionDraft(
   const response = await fetch(
     `${API_BASE}/api/threads/${encodeURIComponent(threadId)}/promotion-drafts`,
     { method: "POST" }
+  )
+  return parseJson(response, createAgentPromotionDraftResponseSchema)
+}
+
+export async function getAgentPromotionDraft(
+  draftId: string
+): Promise<CreateAgentPromotionDraftResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/agent-promotion-drafts/${encodeURIComponent(draftId)}`
+  )
+  return parseJson(response, createAgentPromotionDraftResponseSchema)
+}
+
+export async function updateAgentPromotionDraft(
+  draftId: string,
+  body: UpdateAgentPromotionDraftRequest
+): Promise<CreateAgentPromotionDraftResponse> {
+  const payload = updateAgentPromotionDraftRequestSchema.parse(body)
+  const response = await fetch(
+    `${API_BASE}/api/agent-promotion-drafts/${encodeURIComponent(draftId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
   )
   return parseJson(response, createAgentPromotionDraftResponseSchema)
 }
