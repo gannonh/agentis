@@ -283,6 +283,18 @@ export const createAgentPromotionDraftResponseSchema = z.object({
   draft: agentPromotionDraftSchema,
 })
 
+export const updateAgentPromotionDraftRequestSchema = z
+  .object({
+    name: nonEmptyString.optional(),
+    description: z.string().nullable().optional(),
+    systemPrompt: nonEmptyString.optional(),
+    model: nonEmptyString.optional(),
+    toolGrants: z.array(agentToolGrantInputSchema).optional(),
+  })
+  .refine((payload) => Object.keys(payload).length > 0, {
+    message: "At least one promotion draft field is required.",
+  })
+
 export const createThreadRequestSchema = z.object({
   prompt: nonEmptyString,
   model: z.string().optional(),
@@ -506,6 +518,9 @@ export type CreateAgentTestThreadRequest = z.infer<
 export type AgentPromotionDraft = z.infer<typeof agentPromotionDraftSchema>
 export type CreateAgentPromotionDraftResponse = z.infer<
   typeof createAgentPromotionDraftResponseSchema
+>
+export type UpdateAgentPromotionDraftRequest = z.infer<
+  typeof updateAgentPromotionDraftRequestSchema
 >
 export type AgentRecentThreadSummary = z.infer<
   typeof agentRecentThreadSummarySchema

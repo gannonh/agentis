@@ -23,6 +23,7 @@ import {
   updateAgentRequestSchema,
   agentPromotionDraftSchema,
   createAgentPromotionDraftResponseSchema,
+  updateAgentPromotionDraftRequestSchema,
 } from "./schemas.js"
 
 describe("shared schemas", () => {
@@ -179,6 +180,18 @@ describe("shared schemas", () => {
     ).toThrow()
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, systemPrompt: "" })
+    ).toThrow()
+
+    const update = updateAgentPromotionDraftRequestSchema.parse({
+      name: "Support Triage Agent",
+      description: null,
+      systemPrompt: "Route support issues with severity labels.",
+      model: "gpt-4.1-mini",
+    })
+    expect(update.description).toBeNull()
+    expect(() => updateAgentPromotionDraftRequestSchema.parse({})).toThrow()
+    expect(() =>
+      updateAgentPromotionDraftRequestSchema.parse({ name: "" })
     ).toThrow()
   })
 

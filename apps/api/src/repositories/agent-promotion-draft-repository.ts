@@ -1,4 +1,10 @@
-import type { AgentPromotionDraft, AgentToolGrantInput, Message, Thread } from "@workspace/shared"
+import type {
+  AgentPromotionDraft,
+  AgentToolGrantInput,
+  Message,
+  Thread,
+  UpdateAgentPromotionDraftRequest,
+} from "@workspace/shared"
 import { desc, eq } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import { agentPromotionDrafts } from "../db/schema.js"
@@ -55,6 +61,25 @@ function firstUserText(messages: Message[]): string | null {
   return text || null
 }
 
+function cleanTitle(title: string): string | null {
+  const cleaned = title.trim().replace(/\s+/g, " ")
+  return cleaned || null
+}
+
+function buildDraftDefaults(thread: Thread, messages: Message[]) {
+  const title = cleanTitle(thread.title)
+  const sourceText = firstUserText(messages)
+  return {
+    name: title ? `${title} Agent` : "New Agent",
+    description: title
+      ? `Promoted from thread: ${title}`
+      : "Promoted from a completed thread.",
+    systemPrompt: sourceText
+      ? `Use the approach from this completed thread: ${sourceText}`
+      : "Use the approach from this completed thread.",
+  }
+}
+
 export class AgentPromotionDraftRepository {
   constructor(private readonly db: AppDatabase) {}
 
@@ -64,16 +89,14 @@ export class AgentPromotionDraftRepository {
     toolGrants: AgentToolGrantInput[]
   }): AgentPromotionDraft {
     const now = nowIso()
-    const sourceText = firstUserText(input.messages)
+    const defaults = buildDraftDefaults(input.thread, input.messages)
     const row: DraftRow = {
       id: createId("agent_draft"),
       threadId: input.thread.id,
       sourceThreadTitle: input.thread.title,
-      name: `${input.thread.title} Agent`,
-      description: `Promoted from thread: ${input.thread.title}`,
-      systemPrompt: sourceText
-        ? `Use the approach from this completed thread: ${sourceText}`
-        : `Use the approach from the completed thread "${input.thread.title}".`,
+      name: defaults.name,
+      description: defaults.description,
+      systemPrompt: defaults.systemPrompt,
       model: input.thread.model,
       toolGrantsJson: JSON.stringify(input.toolGrants),
       createdAt: now,
@@ -97,8 +120,39 @@ export class AgentPromotionDraftRepository {
       .select()
       .from(agentPromotionDrafts)
       .where(eq(agentPromotionDrafts.threadId, threadId))
-      .orderBy(desc(agentPromotionDrafts.updatedAt), desc(agentPromotionDrafts.createdAt))
+      .orderBy(
+        desc(agentPromotionDrafts.updatedAt),
+        desc(agentPromotionDrafts.createdAt)
+      )
       .get()
     return row ? mapDraft(row) : null
+  }
+
+  update(
+    id: string,
+    input: UpdateAgentPromotionDraftRequest
+  ): AgentPromotionDraft | null {
+    const existing = this.getById(id)
+    if (!existing) return null
+
+    this.db
+      .update(agentPromotionDrafts)
+      .set({
+        name: input.name ?? existing.name,
+        description:
+          "description" in input
+            ? (input.description ?? null)
+            : (existing.description ?? null),
+        systemPrompt: input.systemPrompt ?? existing.systemPrompt,
+        model: input.model ?? existing.model,
+        toolGrantsJson: input.toolGrants
+          ? JSON.stringify(input.toolGrants)
+          : JSON.stringify(existing.toolGrants),
+        updatedAt: nowIso(),
+      })
+      .where(eq(agentPromotionDrafts.id, id))
+      .run()
+
+    return this.getById(id)
   }
 }
