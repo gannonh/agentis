@@ -140,6 +140,53 @@ describe("promotion draft routes", () => {
     ])
   })
 
+  it("derives repeated steps from rich source thread messages", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Support follow-up workflow",
+      prompt: "Help me triage support requests.",
+      model: "gpt-4.1-mini",
+      mode: "plan",
+    })
+    ctx.repos.messages.create({
+      threadId: created.thread.id,
+      role: "assistant",
+      parts: [
+        {
+          type: "text",
+          text: "Inspect GitHub issues. Then draft a reply. Then post the response.",
+        },
+      ],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      draft: {
+        intelligence: {
+          repeatedSteps: string[]
+          suggestedPrompt: string
+          modelRecommendation: { model: string }
+        }
+      }
+    }
+    expect(body.draft.intelligence.repeatedSteps).toEqual([
+      "Help me triage support requests",
+      "Inspect GitHub issues",
+      "draft a reply",
+      "post the response",
+    ])
+    expect(body.draft.intelligence.suggestedPrompt).toBe(
+      "Use the source thread context to help me triage support requests."
+    )
+    expect(body.draft.intelligence.modelRecommendation.model).toBe("gpt-4.1-mini")
+  })
+
   it("persists editable draft fields and keeps source-derived grants", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
