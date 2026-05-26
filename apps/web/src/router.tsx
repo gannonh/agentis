@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router"
 import { AppShell } from "@/layouts/app-shell"
 import { AgentCreatePage } from "@/routes/agent-create"
 import { AgentDetailPage } from "@/routes/agent-detail"
+import { AgentPromotionDraftPage } from "@/routes/agent-promotion-draft"
 import { CommandCenterPage } from "@/routes/command-center"
 import { IntegrationsPage } from "@/routes/integrations"
 import { LearningPage } from "@/routes/learning"
@@ -25,6 +26,11 @@ export const router = createBrowserRouter([
       { path: "threads/:threadId", element: <ThreadDetailPage /> },
       { path: "command-center", element: <CommandCenterPage /> },
       { path: "agents/new", element: <AgentCreatePage /> },
+      {
+        path: "agents/new/from-thread/:draftId",
+        element: <AgentPromotionDraftPage />,
+      },
+      { path: "agents/promote/:draftId", element: <AgentPromotionDraftPage /> },
       { path: "agents/:agentId", element: <AgentDetailPage /> },
       { path: "learning", element: <LearningPage /> },
       { path: "integrations", element: <IntegrationsPage /> },

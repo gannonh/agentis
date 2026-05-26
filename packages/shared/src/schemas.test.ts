@@ -21,6 +21,9 @@ import {
   threadSchema,
   toolAccessGrantSchema,
   updateAgentRequestSchema,
+  agentPromotionDraftSchema,
+  createAgentPromotionDraftResponseSchema,
+  updateAgentPromotionDraftRequestSchema,
 } from "./schemas.js"
 
 describe("shared schemas", () => {
@@ -149,6 +152,47 @@ describe("shared schemas", () => {
 
   it("rejects empty create thread prompts", () => {
     expect(() => createThreadRequestSchema.parse({ prompt: "" })).toThrow()
+  })
+
+  it("parses thread-seeded agent draft contracts", () => {
+    const now = new Date().toISOString()
+    const draft = agentPromotionDraftSchema.parse({
+      id: "draft-1",
+      threadId: "thread-1",
+      sourceThreadTitle: "Investigate support backlog",
+      name: "Support Backlog Agent",
+      description: "Helps triage support backlog patterns.",
+      systemPrompt: "Help triage support backlog patterns.",
+      model: "gpt-4o-mini",
+      toolGrants: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    const response = createAgentPromotionDraftResponseSchema.parse({ draft })
+
+    expect(response.draft.threadId).toBe("thread-1")
+    expect(response.draft.toolGrants).toMatchObject([
+      { toolkitSlug: "github", connectionId: "conn-1" },
+    ])
+    expect(() =>
+      agentPromotionDraftSchema.parse({ ...draft, name: "" })
+    ).toThrow()
+    expect(() =>
+      agentPromotionDraftSchema.parse({ ...draft, systemPrompt: "" })
+    ).toThrow()
+
+    const update = updateAgentPromotionDraftRequestSchema.parse({
+      name: "Support Triage Agent",
+      description: null,
+      systemPrompt: "Route support issues with severity labels.",
+      model: "gpt-4.1-mini",
+    })
+    expect(update.description).toBeNull()
+    expect(() => updateAgentPromotionDraftRequestSchema.parse({})).toThrow()
+    expect(() =>
+      updateAgentPromotionDraftRequestSchema.parse({ name: "" })
+    ).toThrow()
   })
 
   it("parses agent create, list, detail, update, and grant payloads", () => {

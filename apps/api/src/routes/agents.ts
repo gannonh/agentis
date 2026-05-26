@@ -4,57 +4,18 @@ import {
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
   updateAgentRequestSchema,
-  type AgentToolGrantInput,
 } from "@workspace/shared"
 import { buildAgentDetail } from "../agents/agent-detail-service.js"
+import {
+  resolveRequestedAgentGrants,
+  toolkitGrantRemediation,
+} from "../agents/tool-grant-resolution.js"
 import type { AppConfig } from "../config.js"
 import { summarizeTitle } from "../lib/title-summary.js"
 import type { Repositories } from "../repositories/index.js"
 
 export function createAgentRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
-
-  function resolveRequestedGrants(requestedGrants: AgentToolGrantInput[]) {
-    const resolvedGrants: { toolkitSlug: string; connectionId: string }[] = []
-    const requestedToolkitSlugs = new Set<string>()
-
-    for (const requested of requestedGrants) {
-      if (requestedToolkitSlugs.has(requested.toolkitSlug)) {
-        return { error: "duplicate_toolkit_grant" as const }
-      }
-      requestedToolkitSlugs.add(requested.toolkitSlug)
-
-      const connection = requested.connectionId
-        ? repos.integrationConnections.getById(requested.connectionId)
-        : repos.integrationConnections.getByToolkitSlug(requested.toolkitSlug)
-
-      if (
-        connection &&
-        requested.connectionId &&
-        connection.toolkitSlug !== requested.toolkitSlug
-      ) {
-        return { error: "toolkit_connection_mismatch" as const }
-      }
-
-      if (!connection || connection.status !== "connected") {
-        return { error: "toolkit_not_connected" as const }
-      }
-
-      resolvedGrants.push({
-        toolkitSlug: requested.toolkitSlug,
-        connectionId: connection.id,
-      })
-    }
-
-    return { grants: resolvedGrants }
-  }
-
-  function toolkitGrantRemediation(
-    error: string | undefined
-  ): string | undefined {
-    if (error !== "toolkit_not_connected") return undefined
-    return "Connect the toolkit from Integrations before granting it to an agent."
-  }
 
   app.get("/", (c) => {
     return c.json(
@@ -91,7 +52,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
 
     const body = parsed.data
     const requestedGrants = body.toolGrants ?? []
-    const resolvedGrants = resolveRequestedGrants(requestedGrants)
+    const resolvedGrants = resolveRequestedAgentGrants(repos, requestedGrants)
     if ("error" in resolvedGrants) {
       return c.json(
         {
@@ -150,7 +111,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
 
     try {
       const version = repos.agents.getCurrentConfigurationSnapshot(agent.id)
-      const resolvedGrants = resolveRequestedGrants(version.toolGrants)
+      const resolvedGrants = resolveRequestedAgentGrants(repos, version.toolGrants)
       if ("error" in resolvedGrants) {
         return c.json(
           {
@@ -225,7 +186,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
 
     const body = parsed.data
     const resolvedGrants = body.toolGrants
-      ? resolveRequestedGrants(body.toolGrants)
+      ? resolveRequestedAgentGrants(repos, body.toolGrants)
       : undefined
     if (resolvedGrants && "error" in resolvedGrants) {
       return c.json(

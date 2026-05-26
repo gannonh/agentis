@@ -57,6 +57,13 @@
       "when": 1779665040000,
       "tag": "0007_agent_version_tool_grant_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1779793800000,
+      "tag": "0008_agent_promotion_drafts",
+      "breakpoints": true
     }
   ]
 }
