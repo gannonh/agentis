@@ -82,7 +82,9 @@ export async function createAgent(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
-  return parseJson(response, agentDetailResponseSchema)
+  const detail = await parseJson(response, agentDetailResponseSchema)
+  window.dispatchEvent(new CustomEvent("agentis:agents-changed"))
+  return detail
 }
 
 export async function getAgent(agentId: string): Promise<AgentDetailResponse> {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ApiError } from "@/lib/api/client"
-import { getAgent, startAgentTestThread } from "@/lib/api/agents-client"
+import { createAgent, getAgent, startAgentTestThread } from "@/lib/api/agents-client"
 
 describe("agents client", () => {
   afterEach(() => {
@@ -33,6 +33,51 @@ describe("agents client", () => {
       message: "Invalid JSON response",
       status: 500,
     } satisfies Partial<ApiError>)
+  })
+
+  it("notifies mounted agent surfaces after creating an agent", async () => {
+    const now = new Date().toISOString()
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json(
+        {
+          agent: {
+            id: "agent_promoted",
+            name: "Promoted Support Agent",
+            systemPrompt: "Assign severity.",
+            model: "gpt-4o-mini",
+            createdAt: now,
+            updatedAt: now,
+            currentConfigurationVersion: {
+              id: "agent_version_promoted",
+              agentId: "agent_promoted",
+              version: 1,
+              systemPrompt: "Assign severity.",
+              model: "gpt-4o-mini",
+              createdAt: now,
+            },
+            toolGrantCount: 0,
+          },
+          configurationVersions: [],
+          toolGrants: [],
+          information: {
+            recentThreads: [],
+            library: { items: [], totalCount: 0 },
+          },
+        },
+        { status: 201 }
+      )
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const listener = vi.fn()
+    window.addEventListener("agentis:agents-changed", listener)
+
+    await createAgent({
+      name: "Promoted Support Agent",
+      systemPrompt: "Assign severity.",
+    })
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    window.removeEventListener("agentis:agents-changed", listener)
   })
 
   it("starts agent test threads through the agent-scoped API route", async () => {
