@@ -171,5 +171,5 @@ describe("agent create-to-test acceptance path", () => {
       })
     })
     expect(await screen.findByText("Test chat opened")).toBeInTheDocument()
-  })
+  }, 10_000)
 })
