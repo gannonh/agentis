@@ -116,12 +116,14 @@ export function AgentPromotionDraftPage() {
         systemPrompt: form.systemPrompt.trim(),
         toolGrants: form.toolGrants,
       })
-      navigate(`/agents/${encodeURIComponent(created.agent.id)}`)
+      navigate(`/agents/${encodeURIComponent(created.agent.id)}`, {
+        state: { createdFromThread: true },
+      })
     } catch (submitError) {
       setError(
         errorMessage(
           submitError,
-          "We couldn't create this agent. Check the details and try again."
+          "Check the required setup fields and try again."
         )
       )
     } finally {

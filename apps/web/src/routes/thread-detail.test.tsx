@@ -138,7 +138,7 @@ describe("ThreadDetailPage create-agent action", () => {
     ).toBeInTheDocument()
   })
 
-  it("does not offer create-agent action for agent-owned threads", () => {
+  it("explains why agent-owned threads cannot create another agent", () => {
     threadAgentId = "agent_existing"
 
     render(
@@ -150,5 +150,13 @@ describe("ThreadDetailPage create-agent action", () => {
     expect(
       screen.queryByRole("button", { name: /create agent from thread/i })
     ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Agent already set" })
+    ).toBeDisabled()
+    expect(
+      screen.getByText(
+        "This thread already uses an agent. Open that agent to adjust future runs."
+      )
+    ).toBeInTheDocument()
   })
 })

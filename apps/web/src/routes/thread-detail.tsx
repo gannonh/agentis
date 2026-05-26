@@ -55,7 +55,8 @@ export function ThreadDetailPage() {
   }, [detail?.thread.mode])
 
   const composerDisabled = !health.available
-  const canCreateAgentFromThread = Boolean(detail?.thread && !detail.thread.agentId)
+  const agentOwnedThread = Boolean(detail?.thread?.agentId)
+  const canCreateAgentFromThread = Boolean(detail?.thread && !agentOwnedThread)
 
   const handleSubmit = async (prompt: string) => {
     if (!prompt.trim() || composerDisabled) return
@@ -126,6 +127,16 @@ export function ThreadDetailPage() {
                   ? "Preparing agent setup…"
                   : "Create agent from thread"}
               </Button>
+            ) : null}
+            {agentOwnedThread ? (
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" disabled>
+                  Agent already set
+                </Button>
+                <p className="text-muted-foreground max-w-48 text-xs leading-snug">
+                  This thread already uses an agent. Open that agent to adjust future runs.
+                </p>
+              </div>
             ) : null}
             <Button
               type="button"

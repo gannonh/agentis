@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router"
+import { Link, useLocation, useNavigate, useParams } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import {
   Tabs,
@@ -75,6 +75,7 @@ type ApiAgentState =
 
 export function AgentDetailPage() {
   const { agentId } = useParams<{ agentId: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const fixtureAgent = agentId ? getFixtureAgent(agentId) : undefined
   const shouldLoadApiAgent =
@@ -153,7 +154,7 @@ export function AgentDetailPage() {
       setTestThreadState({
         agentId,
         loading: false,
-        error: "We couldn't open a test chat. Try again.",
+        error: "We couldn't open a test thread. Try again.",
       })
     }
   }, [agentId, apiAgentDetail, navigate])
@@ -166,6 +167,8 @@ export function AgentDetailPage() {
     testThreadState.agentId === agentId && testThreadState.loading
   const testThreadError =
     testThreadState.agentId === agentId ? testThreadState.error : null
+  const createdFromThread =
+    (location.state as { createdFromThread?: boolean } | null)?.createdFromThread === true
   const activeTab =
     editable && activeTabState.agentId === (agentId ?? null)
       ? activeTabState.value
@@ -248,6 +251,11 @@ export function AgentDetailPage() {
             onStartThread={apiAgentDetail ? launchTestThread : undefined}
             startingThread={isStartingTestThread}
           />
+          {createdFromThread ? (
+            <p className="px-6 text-sm text-muted-foreground" role="status">
+              Agent created from thread. Review settings or start a test thread.
+            </p>
+          ) : null}
           {testThreadError ? (
             <p className="px-6 text-sm text-destructive" role="alert">
               {testThreadError}

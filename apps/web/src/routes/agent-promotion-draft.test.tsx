@@ -91,7 +91,9 @@ describe("AgentPromotionDraftPage", () => {
         systemPrompt: "Assign severity and next steps.",
         toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
       })
-      expect(navigate).toHaveBeenCalledWith("/agents/agent_test")
+      expect(navigate).toHaveBeenCalledWith("/agents/agent_test", {
+        state: { createdFromThread: true },
+      })
     })
   })
 
@@ -123,6 +125,24 @@ describe("AgentPromotionDraftPage", () => {
 
     expect(
       await screen.findByText("Name is required to create this agent.")
+    ).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it("shows direct validation guidance when creation fails without a message", async () => {
+    vi.mocked(createAgentFromPromotionDraft).mockRejectedValueOnce(null)
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <AgentPromotionDraftPage />
+      </MemoryRouter>
+    )
+
+    await screen.findByDisplayValue("Support Backlog Agent")
+    await user.click(screen.getByRole("button", { name: /create agent/i }))
+
+    expect(
+      await screen.findByText("Check the required setup fields and try again.")
     ).toBeInTheDocument()
     expect(navigate).not.toHaveBeenCalled()
   })

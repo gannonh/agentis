@@ -419,7 +419,33 @@ describe("AgentDetailPage", () => {
     )
   })
 
-  it("opens a plain-language test chat and navigates to it", async () => {
+  it("shows post-create guidance when opened after creating from a thread", async () => {
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/agents/agent_created",
+            state: { createdFromThread: true },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    expect(
+      screen.getByText(
+        "Agent created from thread. Review settings or start a test thread."
+      )
+    ).toBeInTheDocument()
+  })
+
+  it("opens a plain-language test thread and navigates to it", async () => {
     const user = userEvent.setup()
     const detail = apiAgentDetail()
     const now = new Date().toISOString()
@@ -466,7 +492,7 @@ describe("AgentDetailPage", () => {
     )
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
-    await user.click(screen.getByRole("button", { name: "Try this agent" }))
+    await user.click(screen.getByRole("button", { name: "Start test thread" }))
 
     expect(startAgentTestThread).toHaveBeenCalledWith("agent_created", {
       prompt: "Try Created Research Agent",
@@ -474,7 +500,7 @@ describe("AgentDetailPage", () => {
     expect(await screen.findByText("Thread opened")).toBeInTheDocument()
   })
 
-  it("shows plain-language test chat errors", async () => {
+  it("shows plain-language test thread errors", async () => {
     const user = userEvent.setup()
     const startThreadError = new ApiError("Unable to start thread", 500)
     const consoleErrorSpy = vi
@@ -493,10 +519,10 @@ describe("AgentDetailPage", () => {
       )
 
       await screen.findByRole("heading", { name: "Created Research Agent" })
-      await user.click(screen.getByRole("button", { name: "Try this agent" }))
+      await user.click(screen.getByRole("button", { name: "Start test thread" }))
 
       expect(
-        await screen.findByText("We couldn't open a test chat. Try again.")
+        await screen.findByText("We couldn't open a test thread. Try again.")
       ).toBeInTheDocument()
       expect(screen.queryByText("Unable to start thread")).not.toBeInTheDocument()
       expect(consoleErrorSpy).toHaveBeenCalledWith(

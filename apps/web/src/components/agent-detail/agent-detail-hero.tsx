@@ -79,7 +79,7 @@ export function AgentDetailHero({
             onClick={onStartThread}
           >
             <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
-            {startingThread ? "Opening…" : "Try this agent"}
+            {startingThread ? "Opening test thread…" : "Start test thread"}
           </Button>
           <Button size="icon" variant="outline" disabled aria-label="Agent actions">
             <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" strokeWidth={2} />

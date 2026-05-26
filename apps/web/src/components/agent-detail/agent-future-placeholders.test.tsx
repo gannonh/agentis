@@ -10,7 +10,7 @@ describe("agent future-surface placeholders", () => {
     expect(within(thread).getByText("Available now")).toBeInTheDocument()
     expect(
       within(thread).getByText(
-        "Start a test thread from this agent detail page."
+        "Start a test thread to check this agent with real work."
       )
     ).toBeInTheDocument()
 
