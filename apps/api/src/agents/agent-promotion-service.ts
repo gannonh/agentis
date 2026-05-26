@@ -31,16 +31,6 @@ function threadNotFound(): ServiceError {
   }
 }
 
-function promotionUnavailable(): ServiceError {
-  return {
-    status: 400,
-    body: {
-      error: "Only finished threads can be promoted.",
-      code: "thread_not_promotable",
-    },
-  }
-}
-
 function promotionDraftNotFound(): ServiceError {
   return {
     status: 404,
@@ -72,10 +62,6 @@ function grantResolutionFailed(error: string): ServiceError {
   }
 }
 
-function isPromotable(thread: Thread): boolean {
-  return thread.status === "finished"
-}
-
 function firstUserText(messages: Message[]): string | null {
   const user = messages.find((message) => message.role === "user")
   const text = user?.parts
@@ -92,13 +78,13 @@ function cleanTitle(title: string): string | null {
 }
 
 function buildDescription(title: string | null): string {
-  if (!title) return "Promoted from a completed thread."
-  return `Promoted from thread: ${title}`
+  if (!title) return "Created from a thread."
+  return `Created from thread: ${title}`
 }
 
 function buildSystemPrompt(sourceText: string | null): string {
-  if (!sourceText) return "Use the approach from this completed thread."
-  return `Use the approach from this completed thread: ${sourceText}`
+  if (!sourceText) return "Use the context from this thread."
+  return `Use the context from this thread: ${sourceText}`
 }
 
 function buildDraftDefaults(thread: Thread, messages: Message[]) {
@@ -123,9 +109,6 @@ export class AgentPromotionService {
   ): ServiceResult<{ draft: AgentPromotionDraft }> {
     const thread = this.repos.threads.getById(threadId)
     if (!thread) return { ok: false, error: threadNotFound() }
-    if (!isPromotable(thread)) {
-      return { ok: false, error: promotionUnavailable() }
-    }
 
     const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(thread.id)
     if (existing) return { ok: true, data: { draft: existing } }

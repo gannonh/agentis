@@ -56,6 +56,7 @@ describe("AgentPromotionDraftPage", () => {
       </MemoryRouter>
     )
 
+    expect(await screen.findByText("Create agent from thread")).toBeInTheDocument()
     expect(await screen.findByDisplayValue("Support Backlog Agent")).toBeInTheDocument()
     await user.clear(screen.getByLabelText(/^name/i))
     await user.type(screen.getByLabelText(/^name/i), "Support Triage Agent")

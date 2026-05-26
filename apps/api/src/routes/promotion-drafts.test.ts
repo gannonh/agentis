@@ -10,7 +10,7 @@ afterEach(() => {
 })
 
 describe("promotion draft routes", () => {
-  it("creates and reads a draft from a finished source thread", async () => {
+  it("creates and reads a draft from an active source thread", async () => {
     ctx = createTestContext()
     const created = ctx.repos.threads.createWithInitialRun({
       title: "Investigate support backlog",
@@ -18,7 +18,6 @@ describe("promotion draft routes", () => {
       model: "gpt-4o-mini",
       mode: "plan",
     })
-    ctx.repos.threads.touch(created.thread.id, { status: "finished" })
     const app = createApp(ctx.repos, ctx.config)
 
     const response = await app.request(
@@ -67,7 +66,6 @@ describe("promotion draft routes", () => {
       mode: "plan",
       toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
     })
-    ctx.repos.threads.touch(created.thread.id, { status: "finished" })
     const app = createApp(ctx.repos, ctx.config)
     const response = await app.request(
       `/api/threads/${created.thread.id}/promotion-drafts`,
@@ -118,7 +116,6 @@ describe("promotion draft routes", () => {
       model: "gpt-4o-mini",
       mode: "plan",
     })
-    ctx.repos.threads.touch(thread.id, { status: "finished" })
     const app = createApp(ctx.repos, ctx.config)
 
     const first = await app.request(`/api/threads/${thread.id}/promotion-drafts`, {
@@ -137,8 +134,8 @@ describe("promotion draft routes", () => {
     expect(secondBody.draft.id).toBe(firstBody.draft.id)
     expect(firstBody.draft).toMatchObject({
       name: "New Agent",
-      description: "Promoted from a completed thread.",
-      systemPrompt: "Use the approach from this completed thread.",
+      description: "Created from a thread.",
+      systemPrompt: "Use the context from this thread.",
     })
   })
 
@@ -157,7 +154,6 @@ describe("promotion draft routes", () => {
       mode: "plan",
       toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
     })
-    ctx.repos.threads.touch(created.thread.id, { status: "finished" })
     const app = createApp(ctx.repos, ctx.config)
     const draftResponse = await app.request(
       `/api/threads/${created.thread.id}/promotion-drafts`,
@@ -209,31 +205,17 @@ describe("promotion draft routes", () => {
     )
   })
 
-  it("rejects promotion for missing and unfinished source threads", async () => {
+  it("rejects draft creation only for missing source threads", async () => {
     ctx = createTestContext()
-    const created = ctx.repos.threads.createWithInitialRun({
-      title: "Active work",
-      prompt: "Keep researching",
-      model: "gpt-4o-mini",
-      mode: "plan",
-    })
     const app = createApp(ctx.repos, ctx.config)
 
     const missing = await app.request("/api/threads/missing/promotion-drafts", {
       method: "POST",
     })
+
     expect(missing.status).toBe(404)
     expect((await missing.json()) as { code: string }).toMatchObject({
       code: "thread_not_found",
-    })
-
-    const active = await app.request(
-      `/api/threads/${created.thread.id}/promotion-drafts`,
-      { method: "POST" }
-    )
-    expect(active.status).toBe(400)
-    expect((await active.json()) as { code: string }).toMatchObject({
-      code: "thread_not_promotable",
     })
   })
 })

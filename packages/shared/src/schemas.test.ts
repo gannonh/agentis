@@ -154,7 +154,7 @@ describe("shared schemas", () => {
     expect(() => createThreadRequestSchema.parse({ prompt: "" })).toThrow()
   })
 
-  it("parses promotion draft contracts for completed thread review", () => {
+  it("parses thread-seeded agent draft contracts", () => {
     const now = new Date().toISOString()
     const draft = agentPromotionDraftSchema.parse({
       id: "draft-1",

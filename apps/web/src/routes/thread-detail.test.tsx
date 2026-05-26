@@ -6,7 +6,7 @@ import { ThreadDetailPage } from "./thread-detail"
 import { createAgentPromotionDraft } from "@/lib/api/agents-client"
 
 const navigate = vi.fn()
-let threadStatus: "active" | "finished" | "failed" = "finished"
+let threadStatus: "active" | "finished" | "failed" = "active"
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router")
@@ -68,14 +68,14 @@ vi.mock("@/lib/api/agents-client", () => ({
   }),
 }))
 
-describe("ThreadDetailPage promotion action", () => {
+describe("ThreadDetailPage create-agent action", () => {
   beforeEach(() => {
     navigate.mockReset()
-    threadStatus = "finished"
+    threadStatus = "active"
     vi.mocked(createAgentPromotionDraft).mockClear()
   })
 
-  it("creates a promotion draft and navigates from a finished thread", async () => {
+  it("creates an agent draft and navigates from an active thread", async () => {
     const user = userEvent.setup()
     render(
       <MemoryRouter>
@@ -83,16 +83,18 @@ describe("ThreadDetailPage promotion action", () => {
       </MemoryRouter>
     )
 
-    await user.click(screen.getByRole("button", { name: /promote to agent/i }))
+    await user.click(
+      screen.getByRole("button", { name: /create agent from thread/i })
+    )
 
     await waitFor(() => {
       expect(createAgentPromotionDraft).toHaveBeenCalledWith("thread_test")
-      expect(navigate).toHaveBeenCalledWith("/agents/promote/draft_test")
+      expect(navigate).toHaveBeenCalledWith("/agents/new/from-thread/draft_test")
     })
   })
 
-  it("explains why active threads cannot be promoted", () => {
-    threadStatus = "active"
+  it("keeps the create-agent action available for finished threads", () => {
+    threadStatus = "finished"
 
     render(
       <MemoryRouter>
@@ -101,10 +103,7 @@ describe("ThreadDetailPage promotion action", () => {
     )
 
     expect(
-      screen.getByText("Finish this thread before promoting it to an agent.")
+      screen.getByRole("button", { name: /create agent from thread/i })
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole("button", { name: /promote to agent/i })
-    ).not.toBeInTheDocument()
   })
 })

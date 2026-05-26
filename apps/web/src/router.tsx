@@ -26,6 +26,10 @@ export const router = createBrowserRouter([
       { path: "threads/:threadId", element: <ThreadDetailPage /> },
       { path: "command-center", element: <CommandCenterPage /> },
       { path: "agents/new", element: <AgentCreatePage /> },
+      {
+        path: "agents/new/from-thread/:draftId",
+        element: <AgentPromotionDraftPage />,
+      },
       { path: "agents/promote/:draftId", element: <AgentPromotionDraftPage /> },
       { path: "agents/:agentId", element: <AgentDetailPage /> },
       { path: "learning", element: <LearningPage /> },

@@ -132,9 +132,9 @@ export function AgentPromotionDraftPage() {
   return (
     <PageLayout variant="focused" className="gap-6">
       <PageHeader
-        title="Review promoted agent"
+        title="Create agent from thread"
         titleClassName="text-3xl font-medium tracking-tight"
-        description="Review the draft from this completed thread, edit what the agent should do, then create it."
+        description="Review the draft seeded from this thread, edit what the agent should do, then create it."
       />
 
       <Card>

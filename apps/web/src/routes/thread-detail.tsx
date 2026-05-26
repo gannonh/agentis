@@ -45,8 +45,8 @@ export function ThreadDetailPage() {
 
   const [mode, setMode] = useState<ThreadMode>("plan")
   const [submitting, setSubmitting] = useState(false)
-  const [promoting, setPromoting] = useState(false)
-  const [promotionError, setPromotionError] = useState<string | null>(null)
+  const [creatingAgentDraft, setCreatingAgentDraft] = useState(false)
+  const [createAgentError, setCreateAgentError] = useState<string | null>(null)
 
   useEffect(() => {
     if (detail?.thread.mode) {
@@ -55,7 +55,7 @@ export function ThreadDetailPage() {
   }, [detail?.thread.mode])
 
   const composerDisabled = !health.available
-  const canPromote = detail?.thread.status === "finished"
+  const canCreateAgentFromThread = Boolean(detail?.thread)
 
   const handleSubmit = async (prompt: string) => {
     if (!prompt.trim() || composerDisabled) return
@@ -67,21 +67,21 @@ export function ThreadDetailPage() {
     }
   }
 
-  const handlePromote = async () => {
-    if (!threadId || !canPromote) return
-    setPromoting(true)
-    setPromotionError(null)
+  const handleCreateAgentFromThread = async () => {
+    if (!threadId || !canCreateAgentFromThread) return
+    setCreatingAgentDraft(true)
+    setCreateAgentError(null)
     try {
       const { draft } = await createAgentPromotionDraft(threadId)
-      navigate(`/agents/promote/${draft.id}`)
+      navigate(`/agents/new/from-thread/${draft.id}`)
     } catch (error) {
-      setPromotionError(
+      setCreateAgentError(
         error instanceof Error
           ? error.message
-          : "Could not start promotion. Try again."
+          : "Could not start agent creation. Try again."
       )
     } finally {
-      setPromoting(false)
+      setCreatingAgentDraft(false)
     }
   }
 
@@ -114,20 +114,18 @@ export function ThreadDetailPage() {
                 Abort
               </Button>
             ) : null}
-            {canPromote ? (
+            {canCreateAgentFromThread ? (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={promoting}
-                onClick={() => void handlePromote()}
+                disabled={creatingAgentDraft}
+                onClick={() => void handleCreateAgentFromThread()}
               >
-                {promoting ? "Promoting…" : "Promote to agent"}
+                {creatingAgentDraft
+                  ? "Creating agent draft…"
+                  : "Create agent from thread"}
               </Button>
-            ) : detail?.thread.status === "active" ? (
-              <p className="text-muted-foreground text-xs">
-                Finish this thread before promoting it to an agent.
-              </p>
             ) : null}
             <Button
               type="button"
@@ -149,8 +147,8 @@ export function ThreadDetailPage() {
                 {error ? (
                   <p className="text-destructive text-sm">{error}</p>
                 ) : null}
-                {promotionError ? (
-                  <p className="text-destructive text-sm">{promotionError}</p>
+                {createAgentError ? (
+                  <p className="text-destructive text-sm">{createAgentError}</p>
                 ) : null}
                 {detail?.messages.map((message) => (
                   <Message key={message.id} from={message.role}>
