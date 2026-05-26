@@ -145,15 +145,15 @@ export function AgentDetailPage() {
     setTestThreadState({ agentId, loading: true, error: null })
     try {
       const created = await startAgentTestThread(agentId, {
-        prompt: `Test ${apiAgentDetail.agent.name}`,
+        prompt: `Try ${apiAgentDetail.agent.name}`,
       })
       navigate(`/threads/${created.thread.id}`)
     } catch (error) {
+      console.error("[agentis] Failed to start agent test thread", error)
       setTestThreadState({
         agentId,
         loading: false,
-        error:
-          error instanceof Error ? error.message : "Unable to start thread",
+        error: "We couldn't open a test chat. Try again.",
       })
     }
   }, [agentId, apiAgentDetail, navigate])
@@ -175,8 +175,8 @@ export function AgentDetailPage() {
     return (
       <PageLayout variant="narrow">
         <PageHeader
-          title="Loading agent"
-          description="Loading the agent configuration from the API."
+          title="Loading agent details"
+          description="Getting this agent ready."
         />
       </PageLayout>
     )
@@ -187,7 +187,7 @@ export function AgentDetailPage() {
       <PageLayout variant="narrow">
         <PageHeader
           title="Agent unavailable"
-          description="The agent API could not load this agent. Try again or return to Command Center."
+          description="We couldn't load this agent. Try again or return to Command Center."
         />
         <div className="flex gap-2">
           <Button
