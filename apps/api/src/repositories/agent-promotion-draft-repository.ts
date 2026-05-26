@@ -1,10 +1,15 @@
 import {
   agentToolGrantInputListSchema,
+  proposedToolGrantSchema,
+  unsupportedSourceStepSchema,
   type AgentPromotionDraft,
   type AgentToolGrantInput,
+  type ProposedToolGrant,
+  type UnsupportedSourceStep,
   type UpdateAgentPromotionDraftRequest,
 } from "@workspace/shared"
 import { desc, eq } from "drizzle-orm"
+import { z } from "zod"
 import type { AppDatabase } from "../db/client.js"
 import { agentPromotionDrafts } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
@@ -19,10 +24,20 @@ type CreateAgentPromotionDraftInput = {
   systemPrompt: string
   model: string
   toolGrants: AgentToolGrantInput[]
+  proposedToolGrants?: ProposedToolGrant[]
+  unsupportedSourceSteps?: UnsupportedSourceStep[]
 }
 
 function parseToolGrants(raw: string): AgentToolGrantInput[] {
   return agentToolGrantInputListSchema.parse(JSON.parse(raw))
+}
+
+function parseProposedToolGrants(raw: string): ProposedToolGrant[] {
+  return z.array(proposedToolGrantSchema).parse(JSON.parse(raw))
+}
+
+function parseUnsupportedSourceSteps(raw: string): UnsupportedSourceStep[] {
+  return z.array(unsupportedSourceStepSchema).parse(JSON.parse(raw))
 }
 
 function mapDraft(row: DraftRow): AgentPromotionDraft {
@@ -35,6 +50,10 @@ function mapDraft(row: DraftRow): AgentPromotionDraft {
     systemPrompt: row.systemPrompt,
     model: row.model,
     toolGrants: parseToolGrants(row.toolGrantsJson),
+    proposedToolGrants: parseProposedToolGrants(row.proposedToolGrantsJson),
+    unsupportedSourceSteps: parseUnsupportedSourceSteps(
+      row.unsupportedSourceStepsJson
+    ),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
@@ -56,6 +75,22 @@ function nextToolGrantsJson(
   return JSON.stringify(grants)
 }
 
+function nextProposedToolGrantsJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): string {
+  const grants = input.proposedToolGrants ?? existing.proposedToolGrants
+  return JSON.stringify(grants)
+}
+
+function nextUnsupportedSourceStepsJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): string {
+  const steps = input.unsupportedSourceSteps ?? existing.unsupportedSourceSteps
+  return JSON.stringify(steps)
+}
+
 export class AgentPromotionDraftRepository {
   constructor(private readonly db: AppDatabase) {}
 
@@ -70,6 +105,10 @@ export class AgentPromotionDraftRepository {
       systemPrompt: input.systemPrompt,
       model: input.model,
       toolGrantsJson: JSON.stringify(input.toolGrants),
+      proposedToolGrantsJson: JSON.stringify(input.proposedToolGrants ?? []),
+      unsupportedSourceStepsJson: JSON.stringify(
+        input.unsupportedSourceSteps ?? []
+      ),
       createdAt: now,
       updatedAt: now,
     }
@@ -114,6 +153,11 @@ export class AgentPromotionDraftRepository {
         systemPrompt: input.systemPrompt ?? existing.systemPrompt,
         model: input.model ?? existing.model,
         toolGrantsJson: nextToolGrantsJson(input, existing),
+        proposedToolGrantsJson: nextProposedToolGrantsJson(input, existing),
+        unsupportedSourceStepsJson: nextUnsupportedSourceStepsJson(
+          input,
+          existing
+        ),
         updatedAt: nowIso(),
       })
       .where(eq(agentPromotionDrafts.id, id))

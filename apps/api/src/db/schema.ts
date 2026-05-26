@@ -189,6 +189,12 @@ export const agentPromotionDrafts = sqliteTable(
     systemPrompt: text("system_prompt").notNull(),
     model: text("model").notNull(),
     toolGrantsJson: text("tool_grants_json").notNull().default("[]"),
+    proposedToolGrantsJson: text("proposed_tool_grants_json")
+      .notNull()
+      .default("[]"),
+    unsupportedSourceStepsJson: text("unsupported_source_steps_json")
+      .notNull()
+      .default("[]"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },

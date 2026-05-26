@@ -175,6 +175,43 @@ describe("shared schemas", () => {
     expect(response.draft.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: "conn-1" },
     ])
+
+    const draftWithValidation = agentPromotionDraftSchema.parse({
+      ...draft,
+      proposedToolGrants: [
+        {
+          toolkitSlug: "github",
+          toolName: "GITHUB_CREATE_ISSUE",
+          displayName: "Create issue",
+          required: true,
+          validationStatus: "missing_access",
+          remediation: {
+            code: "toolkit_not_connected",
+            message: "Connect GitHub before creating this agent.",
+          },
+        },
+      ],
+      unsupportedSourceSteps: [
+        {
+          id: "step-1",
+          title: "Call unsupported CRM tool",
+          reason: "unsupported_tool",
+          toolName: "CRM_LOOKUP",
+          details: "No matching integration is available.",
+        },
+      ],
+    })
+    expect(draftWithValidation.proposedToolGrants).toHaveLength(1)
+    expect(draftWithValidation.unsupportedSourceSteps).toHaveLength(1)
+    expect(() =>
+      agentPromotionDraftSchema.parse({
+        ...draft,
+        proposedToolGrants: [
+          { toolkitSlug: "github", required: true, validationStatus: "unknown" },
+        ],
+      })
+    ).toThrow()
+
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, name: "" })
     ).toThrow()

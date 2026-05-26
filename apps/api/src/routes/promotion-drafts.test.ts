@@ -53,7 +53,7 @@ describe("promotion draft routes", () => {
     expect(readBody.draft.id).toBe(body.draft.id)
   })
 
-  it("persists editable draft fields and keeps source-derived grants", async () => {
+  it("persists editable draft fields and keeps source-derived validation metadata", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
     const github = ctx.repos.integrationConnections.create({
@@ -91,6 +91,25 @@ describe("promotion draft routes", () => {
         description: "Reviews and routes support backlog patterns.",
         systemPrompt: "Route support issues with clear severity labels.",
         model: "gpt-4.1-mini",
+        proposedToolGrants: [
+          {
+            toolkitSlug: "github",
+            toolName: "GITHUB_CREATE_ISSUE",
+            displayName: "Create issue",
+            required: true,
+            validationStatus: "valid",
+            connectionId: github.id,
+          },
+        ],
+        unsupportedSourceSteps: [
+          {
+            id: "source-step-1",
+            title: "Call unsupported CRM tool",
+            reason: "unsupported_tool",
+            toolName: "CRM_LOOKUP",
+            details: "No matching integration is available.",
+          },
+        ],
       }),
     })
 
@@ -102,6 +121,8 @@ describe("promotion draft routes", () => {
         systemPrompt: string
         model: string
         toolGrants: { toolkitSlug: string; connectionId?: string }[]
+        proposedToolGrants: { toolkitSlug: string; validationStatus: string }[]
+        unsupportedSourceSteps: { reason: string; title: string }[]
       }
     }
     expect(updatedBody.draft).toMatchObject({
@@ -113,10 +134,24 @@ describe("promotion draft routes", () => {
     expect(updatedBody.draft.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: github.id },
     ])
+    expect(updatedBody.draft.proposedToolGrants).toMatchObject([
+      { toolkitSlug: "github", validationStatus: "valid" },
+    ])
+    expect(updatedBody.draft.unsupportedSourceSteps).toMatchObject([
+      { reason: "unsupported_tool", title: "Call unsupported CRM tool" },
+    ])
 
     const read = await app.request(`/api/agent-promotion-drafts/${body.draft.id}`)
-    const readBody = (await read.json()) as { draft: { name: string } }
+    const readBody = (await read.json()) as {
+      draft: {
+        name: string
+        proposedToolGrants: { toolkitSlug: string }[]
+        unsupportedSourceSteps: { reason: string }[]
+      }
+    }
     expect(readBody.draft.name).toBe("Support Triage Agent")
+    expect(readBody.draft.proposedToolGrants).toHaveLength(1)
+    expect(readBody.draft.unsupportedSourceSteps).toHaveLength(1)
   })
 
   it("creates deterministic defaults for thin source threads", async () => {
