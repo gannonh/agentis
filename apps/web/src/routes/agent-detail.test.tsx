@@ -476,26 +476,36 @@ describe("AgentDetailPage", () => {
 
   it("shows plain-language test chat errors", async () => {
     const user = userEvent.setup()
+    const startThreadError = new ApiError("Unable to start thread", 500)
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {})
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
-    vi.mocked(startAgentTestThread).mockRejectedValueOnce(
-      new ApiError("Unable to start thread", 500)
-    )
+    vi.mocked(startAgentTestThread).mockRejectedValueOnce(startThreadError)
 
-    render(
-      <MemoryRouter initialEntries={["/agents/agent_created"]}>
-        <Routes>
-          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
-        </Routes>
-      </MemoryRouter>
-    )
+    try {
+      render(
+        <MemoryRouter initialEntries={["/agents/agent_created"]}>
+          <Routes>
+            <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      )
 
-    await screen.findByRole("heading", { name: "Created Research Agent" })
-    await user.click(screen.getByRole("button", { name: "Try this agent" }))
+      await screen.findByRole("heading", { name: "Created Research Agent" })
+      await user.click(screen.getByRole("button", { name: "Try this agent" }))
 
-    expect(
-      await screen.findByText("We couldn't open a test chat. Try again.")
-    ).toBeInTheDocument()
-    expect(screen.queryByText("Unable to start thread")).not.toBeInTheDocument()
+      expect(
+        await screen.findByText("We couldn't open a test chat. Try again.")
+      ).toBeInTheDocument()
+      expect(screen.queryByText("Unable to start thread")).not.toBeInTheDocument()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[agentis] Failed to start agent test thread",
+        startThreadError
+      )
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
   })
 
   it("saves API-backed identity and prompt edits from the detail tabs", async () => {

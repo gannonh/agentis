@@ -148,7 +148,8 @@ export function AgentDetailPage() {
         prompt: `Try ${apiAgentDetail.agent.name}`,
       })
       navigate(`/threads/${created.thread.id}`)
-    } catch {
+    } catch (error) {
+      console.error("[agentis] Failed to start agent test thread", error)
       setTestThreadState({
         agentId,
         loading: false,

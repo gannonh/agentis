@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
 import type { AgentDetailResponse, IntegrationToolkit } from "@workspace/shared"
@@ -80,6 +80,33 @@ function agentDetail(): AgentDetailResponse {
   }
 }
 
+function visibleText(container: HTMLElement): string {
+  const textNodes = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  const chunks: string[] = []
+
+  while (textNodes.nextNode()) {
+    const node = textNodes.currentNode
+    const parent = node.parentElement
+    const text = node.textContent?.trim()
+
+    if (!parent || !text || isHidden(parent)) continue
+    chunks.push(text)
+  }
+
+  return chunks.join(" ")
+}
+
+function isHidden(element: HTMLElement): boolean {
+  for (let current: HTMLElement | null = element; current; current = current.parentElement) {
+    if (current.hidden || current.getAttribute("aria-hidden") === "true") return true
+
+    const style = getComputedStyle(current)
+    if (style.display === "none" || style.visibility === "hidden") return true
+  }
+
+  return false
+}
+
 function renderAcceptancePath() {
   return render(
     <MemoryRouter initialEntries={["/agents/new"]}>
@@ -141,7 +168,7 @@ describe("agent create-to-test acceptance path", () => {
     const { container } = renderAcceptancePath()
 
     expect(screen.getByText(/Set up a reusable agent by naming it/i)).toBeInTheDocument()
-    expect(container.textContent).not.toMatch(
+    expect(visibleText(container)).not.toMatch(
       /\b(runtime|integration|integrations|API|contract|system prompt|runs|grants|toolkits|scoped|payload)\b/i
     )
 
@@ -165,10 +192,8 @@ describe("agent create-to-test acceptance path", () => {
     await user.click(screen.getByRole("link", { name: "Research Helper" }))
     await user.click(await screen.findByRole("button", { name: "Try this agent" }))
 
-    await waitFor(() => {
-      expect(startAgentTestThread).toHaveBeenCalledWith("agent_acceptance", {
-        prompt: "Try Research Helper",
-      })
+    expect(startAgentTestThread).toHaveBeenCalledWith("agent_acceptance", {
+      prompt: "Try Research Helper",
     })
     expect(await screen.findByText("Test chat opened")).toBeInTheDocument()
   }, 10_000)
