@@ -7,6 +7,7 @@ import { createAgentPromotionDraft } from "@/lib/api/agents-client"
 
 const navigate = vi.fn()
 let threadStatus: "active" | "finished" | "failed" = "active"
+let threadAgentId: string | undefined
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router")
@@ -43,6 +44,7 @@ vi.mock("@/hooks/use-thread-session", () => ({
         status: threadStatus,
         mode: "plan",
         model: "gpt-4o-mini",
+        agentId: threadAgentId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -72,6 +74,7 @@ describe("ThreadDetailPage create-agent action", () => {
   beforeEach(() => {
     navigate.mockReset()
     threadStatus = "active"
+    threadAgentId = undefined
     vi.mocked(createAgentPromotionDraft).mockClear()
   })
 
@@ -105,5 +108,19 @@ describe("ThreadDetailPage create-agent action", () => {
     expect(
       screen.getByRole("button", { name: /create agent from thread/i })
     ).toBeInTheDocument()
+  })
+
+  it("does not offer create-agent action for agent-owned threads", () => {
+    threadAgentId = "agent_existing"
+
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    expect(
+      screen.queryByRole("button", { name: /create agent from thread/i })
+    ).not.toBeInTheDocument()
   })
 })

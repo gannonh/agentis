@@ -55,7 +55,7 @@ export function ThreadDetailPage() {
   }, [detail?.thread.mode])
 
   const composerDisabled = !health.available
-  const canCreateAgentFromThread = Boolean(detail?.thread)
+  const canCreateAgentFromThread = Boolean(detail?.thread && !detail.thread.agentId)
 
   const handleSubmit = async (prompt: string) => {
     if (!prompt.trim() || composerDisabled) return

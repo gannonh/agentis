@@ -41,6 +41,16 @@ function promotionDraftNotFound(): ServiceError {
   }
 }
 
+function threadAlreadyHasAgent(): ServiceError {
+  return {
+    status: 400,
+    body: {
+      error: "Threads already associated with an agent cannot create another agent.",
+      code: "thread_already_has_agent",
+    },
+  }
+}
+
 function agentCreationFailed(): ServiceError {
   return {
     status: 500,
@@ -109,6 +119,7 @@ export class AgentPromotionService {
   ): ServiceResult<{ draft: AgentPromotionDraft }> {
     const thread = this.repos.threads.getById(threadId)
     if (!thread) return { ok: false, error: threadNotFound() }
+    if (thread.agentId) return { ok: false, error: threadAlreadyHasAgent() }
 
     const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(thread.id)
     if (existing) return { ok: true, data: { draft: existing } }

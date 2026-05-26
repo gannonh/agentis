@@ -205,17 +205,38 @@ describe("promotion draft routes", () => {
     )
   })
 
-  it("rejects draft creation only for missing source threads", async () => {
+  it("rejects draft creation for missing and agent-owned source threads", async () => {
     ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Support Triage Agent",
+      systemPrompt: "Handle support triage.",
+      model: "gpt-4o-mini",
+    })
+    const agentThread = ctx.repos.threads.createWithInitialRun({
+      title: "Test Support Triage Agent",
+      prompt: "Test this agent",
+      model: "gpt-4o-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+    })
     const app = createApp(ctx.repos, ctx.config)
 
     const missing = await app.request("/api/threads/missing/promotion-drafts", {
       method: "POST",
     })
+    const agentOwned = await app.request(
+      `/api/threads/${agentThread.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
 
     expect(missing.status).toBe(404)
     expect((await missing.json()) as { code: string }).toMatchObject({
       code: "thread_not_found",
+    })
+    expect(agentOwned.status).toBe(400)
+    expect((await agentOwned.json()) as { code: string }).toMatchObject({
+      code: "thread_already_has_agent",
     })
   })
 })
