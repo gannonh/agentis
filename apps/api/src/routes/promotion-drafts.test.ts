@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import { createApp } from "../app.js"
 import { agentPromotionDrafts } from "../db/schema.js"
@@ -51,6 +51,184 @@ describe("promotion draft routes", () => {
     expect(read.status).toBe(200)
     const readBody = (await read.json()) as { draft: { id: string } }
     expect(readBody.draft.id).toBe(body.draft.id)
+  })
+
+  it("persists generated intelligence and edited-field markers", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns, label severity, and draft replies.",
+      model: "gpt-4o-mini",
+      mode: "plan",
+      toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      draft: {
+        id: string
+        intelligence: {
+          suggestedPurpose: string
+          repeatedSteps: string[]
+          requiredTools: { toolkitSlug: string; connectionId?: string }[]
+          suggestedPrompt: string
+          modelRecommendation: { model: string; reason?: string }
+          rubricCriteria: string[]
+        }
+        editedFields: string[]
+      }
+    }
+    expect(body.draft.intelligence).toMatchObject({
+      suggestedPurpose: "Review support backlog patterns, label severity, and draft replies.",
+      repeatedSteps: [
+        "Review support backlog patterns",
+        "label severity",
+        "draft replies",
+      ],
+      requiredTools: [{ toolkitSlug: "github", connectionId: github.id }],
+      suggestedPrompt:
+        "Use the source thread context to review support backlog patterns, label severity, and draft replies.",
+      modelRecommendation: {
+        model: "gpt-4o-mini",
+        reason: "Uses the model from the source thread.",
+      },
+      rubricCriteria: [
+        "Uses the source thread context",
+        "Completes the repeated steps consistently",
+        "Explains tool usage and assumptions",
+      ],
+    })
+    expect(body.draft.editedFields).toEqual([])
+
+    const updated = await app.request(`/api/agent-promotion-drafts/${body.draft.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: "Routes support backlog patterns.",
+        intelligence: {
+          rubricCriteria: ["Assigns the right severity"],
+        },
+      }),
+    })
+
+    expect(updated.status).toBe(200)
+    const updatedBody = (await updated.json()) as {
+      draft: {
+        intelligence: { suggestedPrompt: string; rubricCriteria: string[] }
+        editedFields: string[]
+      }
+    }
+    expect(updatedBody.draft.intelligence).toMatchObject({
+      suggestedPrompt:
+        "Use the source thread context to review support backlog patterns, label severity, and draft replies.",
+      rubricCriteria: ["Assigns the right severity"],
+    })
+    expect(updatedBody.draft.editedFields).toEqual([
+      "description",
+      "rubricCriteria",
+    ])
+  })
+
+  it("does not mark unchanged draft fields as edited", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const response = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await response.json()) as {
+      draft: {
+        id: string
+        name: string
+        description: string
+        systemPrompt: string
+        model: string
+        toolGrants: { toolkitSlug: string; connectionId?: string }[]
+      }
+    }
+
+    const updated = await app.request(`/api/agent-promotion-drafts/${draft.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: draft.name,
+        description: draft.description,
+        systemPrompt: draft.systemPrompt,
+        model: draft.model,
+        toolGrants: draft.toolGrants,
+      }),
+    })
+
+    expect(updated.status).toBe(200)
+    const updatedBody = (await updated.json()) as {
+      draft: { editedFields: string[] }
+    }
+    expect(updatedBody.draft.editedFields).toEqual([])
+  })
+
+  it("derives repeated steps from rich source thread messages", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Support follow-up workflow",
+      prompt: "Help me triage support requests.",
+      model: "gpt-4.1-mini",
+      mode: "plan",
+    })
+    ctx.repos.messages.create({
+      threadId: created.thread.id,
+      role: "assistant",
+      parts: [
+        {
+          type: "text",
+          text: "Inspect GitHub issues. Then draft a reply. Then post the response.",
+        },
+      ],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      draft: {
+        intelligence: {
+          repeatedSteps: string[]
+          suggestedPrompt: string
+          modelRecommendation: { model: string }
+        }
+      }
+    }
+    expect(body.draft.intelligence.repeatedSteps).toEqual([
+      "Help me triage support requests",
+      "Inspect GitHub issues",
+      "draft a reply",
+      "post the response",
+    ])
+    expect(body.draft.intelligence.suggestedPrompt).toBe(
+      "Use the source thread context to help me triage support requests."
+    )
+    expect(body.draft.intelligence.modelRecommendation.model).toBe("gpt-4.1-mini")
   })
 
   it("persists editable draft fields and keeps source-derived grants", async () => {
@@ -147,6 +325,163 @@ describe("promotion draft routes", () => {
       description: "Created from a thread.",
       systemPrompt: "Use the context from this thread.",
     })
+  })
+
+  it("applies draft edits while creating an agent in a single command", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as {
+      draft: { id: string }
+    }
+    const rubricCriteria = ["Assigns the right severity", "Explains the handoff"]
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+          model: "gpt-4.1-mini",
+          draftUpdates: {
+            intelligence: { rubricCriteria },
+          },
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    expect(ctx.repos.agentPromotionDrafts.getById(draft.id)).toMatchObject({
+      intelligence: { rubricCriteria },
+      editedFields: ["rubricCriteria"],
+    })
+  })
+
+  it("keeps draft edits unchanged when agent creation cannot be loaded", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as {
+      draft: { id: string; intelligence: { rubricCriteria: string[] } }
+    }
+    vi.spyOn(ctx.repos.agents, "createWithGrants").mockReturnValueOnce({
+      id: "agent_missing",
+      name: "Support Triage Agent",
+      description: "Routes support backlog patterns.",
+      systemPrompt: "Assign severity and next steps.",
+      model: "gpt-4.1-mini",
+      maxCostPerRunUsd: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      currentConfigurationVersion: {
+        id: "agent_version_missing",
+        agentId: "agent_missing",
+        version: 1,
+        systemPrompt: "Assign severity and next steps.",
+        model: "gpt-4.1-mini",
+        maxCostPerRunUsd: null,
+        createdAt: new Date().toISOString(),
+      },
+      toolGrantCount: 0,
+    })
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+          model: "gpt-4.1-mini",
+          draftUpdates: {
+            intelligence: { rubricCriteria: ["Assigns severity"] },
+          },
+        }),
+      }
+    )
+
+    expect(response.status).toBe(500)
+    expect(ctx.repos.agentPromotionDrafts.getById(draft.id)).toMatchObject({
+      intelligence: { rubricCriteria: draft.intelligence.rubricCriteria },
+      editedFields: [],
+    })
+  })
+
+  it("rejects conflicting tool grant sources in a promotion command", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+      toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as { draft: { id: string } }
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+          model: "gpt-4.1-mini",
+          toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+          draftUpdates: {
+            toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+          },
+        }),
+      }
+    )
+
+    expect(response.status).toBe(400)
+    expect((await response.json()) as { code: string }).toMatchObject({
+      code: "conflicting_tool_grants",
+    })
+    expect(ctx.repos.agentPromotionDrafts.getById(draft.id)?.toolGrants).toEqual([
+      { toolkitSlug: "github", connectionId: github.id },
+    ])
   })
 
   it("creates an agent from draft edits in a single promotion command", async () => {

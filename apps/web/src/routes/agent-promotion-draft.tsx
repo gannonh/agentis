@@ -21,9 +21,21 @@ import {
   createAgentFromPromotionDraft,
   getAgentPromotionDraft,
 } from "@/lib/api/agents-client"
+import { GeneratedSuggestions } from "./agent-promotion-draft-suggestions"
 
 type DraftFormState = AgentSetupFormState & {
   toolGrants: AgentToolGrantInput[]
+}
+
+type DraftEditedField = AgentPromotionDraft["editedFields"][number]
+type DraftFormField = keyof DraftFormState
+
+const formFieldEditedFields: Record<DraftFormField, DraftEditedField> = {
+  name: "name",
+  description: "description",
+  model: "model",
+  systemPrompt: "systemPrompt",
+  toolGrants: "toolGrants",
 }
 
 function draftToForm(draft: AgentPromotionDraft): DraftFormState {
@@ -49,11 +61,46 @@ function canSubmit(form: DraftFormState | null, submitting: boolean): boolean {
   return canSubmitAgentSetup(form, submitting)
 }
 
+function uniqueEditedFields(fields: DraftEditedField[]): DraftEditedField[] {
+  return Array.from(new Set(fields))
+}
+
+function rubricCriteriaFromText(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function rubricCriteriaToText(criteria: string[]): string {
+  return criteria.join("\n")
+}
+
+function editedFieldsForPatch(patch: Partial<DraftFormState>): DraftEditedField[] {
+  return Object.entries(formFieldEditedFields)
+    .filter(([field]) => field in patch)
+    .map(([, editedField]) => editedField)
+}
+
+function rubricCriteriaChanged(
+  draft: AgentPromotionDraft,
+  rubricCriteria: string[]
+): boolean {
+  return (
+    JSON.stringify(rubricCriteria) !==
+    JSON.stringify(draft.intelligence.rubricCriteria)
+  )
+}
+
 export function AgentPromotionDraftPage() {
   const { draftId } = useParams()
   const navigate = useNavigate()
   const [draft, setDraft] = useState<AgentPromotionDraft | null>(null)
   const [form, setForm] = useState<DraftFormState | null>(null)
+  const [rubricText, setRubricText] = useState("")
+  const [locallyEditedFields, setLocallyEditedFields] = useState<
+    DraftEditedField[]
+  >([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -72,6 +119,8 @@ export function AgentPromotionDraftPage() {
         if (cancelled) return
         setDraft(loadedDraft)
         setForm(draftToForm(loadedDraft))
+        setRubricText(rubricCriteriaToText(loadedDraft.intelligence.rubricCriteria))
+        setLocallyEditedFields([])
       })
       .catch((loadError) => {
         if (!cancelled) {
@@ -89,6 +138,21 @@ export function AgentPromotionDraftPage() {
 
   const updateForm = (patch: Partial<DraftFormState>) => {
     setForm((current) => (current ? { ...current, ...patch } : current))
+    setLocallyEditedFields((current) =>
+      uniqueEditedFields([...current, ...editedFieldsForPatch(patch)])
+    )
+  }
+
+  const updateRubricText = (value: string) => {
+    const rubricCriteria = rubricCriteriaFromText(value)
+    setRubricText(value)
+    setLocallyEditedFields((current) => {
+      const next = current.filter((field) => field !== "rubricCriteria")
+      if (draft && rubricCriteriaChanged(draft, rubricCriteria)) {
+        return uniqueEditedFields([...next, "rubricCriteria"])
+      }
+      return next
+    })
   }
 
   const toggleToolGrant = (grant: AgentToolGrantInput, selected: boolean) => {
@@ -109,13 +173,23 @@ export function AgentPromotionDraftPage() {
     setError(null)
 
     try {
-      const created = await createAgentFromPromotionDraft(draftId, {
+      const rubricCriteria = rubricCriteriaFromText(rubricText)
+      const payload = {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
         model: form.model.trim() || undefined,
         systemPrompt: form.systemPrompt.trim(),
         toolGrants: form.toolGrants,
-      })
+      }
+      const created = await createAgentFromPromotionDraft(
+        draftId,
+        draft && rubricCriteriaChanged(draft, rubricCriteria)
+          ? {
+              ...payload,
+              draftUpdates: { intelligence: { rubricCriteria } },
+            }
+          : payload
+      )
       navigate(`/agents/${encodeURIComponent(created.agent.id)}`)
     } catch (submitError) {
       setError(
@@ -155,6 +229,18 @@ export function AgentPromotionDraftPage() {
                   value={form}
                   onChange={updateForm}
                 />
+
+                {draft ? (
+                  <GeneratedSuggestions
+                    draft={draft}
+                    editedFields={uniqueEditedFields([
+                      ...draft.editedFields,
+                      ...locallyEditedFields,
+                    ])}
+                    rubricText={rubricText}
+                    onRubricChange={updateRubricText}
+                  />
+                ) : null}
 
                 <fieldset className="flex flex-col gap-3">
                   <legend className="text-sm font-medium">Connected apps</legend>

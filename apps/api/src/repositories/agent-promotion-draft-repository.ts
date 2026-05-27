@@ -1,4 +1,6 @@
 import {
+  agentPromotionDraftEditedFieldSchema,
+  agentPromotionDraftIntelligenceSchema,
   agentToolGrantInputListSchema,
   type AgentPromotionDraft,
   type AgentToolGrantInput,
@@ -11,6 +13,26 @@ import { createId, nowIso } from "../lib/ids.js"
 
 type DraftRow = typeof agentPromotionDrafts.$inferSelect
 
+type DraftIntelligence = AgentPromotionDraft["intelligence"]
+type DraftEditedField = AgentPromotionDraft["editedFields"][number]
+
+const editedFieldListSchema = agentPromotionDraftEditedFieldSchema.array()
+const editableDraftFields = [
+  "name",
+  "description",
+  "systemPrompt",
+  "model",
+  "toolGrants",
+] as const satisfies readonly DraftEditedField[]
+const editableIntelligenceFields = [
+  "suggestedPurpose",
+  "repeatedSteps",
+  "requiredTools",
+  "suggestedPrompt",
+  "modelRecommendation",
+  "rubricCriteria",
+] as const satisfies readonly DraftEditedField[]
+
 type CreateAgentPromotionDraftInput = {
   threadId: string
   sourceThreadTitle: string
@@ -19,10 +41,31 @@ type CreateAgentPromotionDraftInput = {
   systemPrompt: string
   model: string
   toolGrants: AgentToolGrantInput[]
+  intelligence?: DraftIntelligence
+  editedFields?: DraftEditedField[]
+}
+
+function emptyIntelligence(): DraftIntelligence {
+  return {
+    repeatedSteps: [],
+    requiredTools: [],
+    rubricCriteria: [],
+  }
 }
 
 function parseToolGrants(raw: string): AgentToolGrantInput[] {
   return agentToolGrantInputListSchema.parse(JSON.parse(raw))
+}
+
+function parseIntelligence(raw: string): DraftIntelligence {
+  return agentPromotionDraftIntelligenceSchema.parse({
+    ...emptyIntelligence(),
+    ...JSON.parse(raw),
+  })
+}
+
+function parseEditedFields(raw: string): DraftEditedField[] {
+  return editedFieldListSchema.parse(JSON.parse(raw))
 }
 
 function mapDraft(row: DraftRow): AgentPromotionDraft {
@@ -35,6 +78,8 @@ function mapDraft(row: DraftRow): AgentPromotionDraft {
     systemPrompt: row.systemPrompt,
     model: row.model,
     toolGrants: parseToolGrants(row.toolGrantsJson),
+    intelligence: parseIntelligence(row.intelligenceJson),
+    editedFields: parseEditedFields(row.editedFieldsJson),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
@@ -56,6 +101,62 @@ function nextToolGrantsJson(
   return JSON.stringify(grants)
 }
 
+function nextIntelligenceJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): string {
+  return JSON.stringify({
+    ...existing.intelligence,
+    ...input.intelligence,
+  })
+}
+
+function changedIntelligenceFields(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): DraftEditedField[] {
+  const intelligence = input.intelligence
+  if (!intelligence) return []
+
+  return editableIntelligenceFields.filter(
+    (field) =>
+      field in intelligence &&
+      JSON.stringify(intelligence[field]) !==
+        JSON.stringify(existing.intelligence[field])
+  )
+}
+
+function draftFieldChanged(
+  field: (typeof editableDraftFields)[number],
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): boolean {
+  if (!(field in input)) return false
+  if (field === "description") {
+    return (input.description ?? null) !== (existing.description ?? null)
+  }
+  if (field === "toolGrants") {
+    return JSON.stringify(input.toolGrants) !== JSON.stringify(existing.toolGrants)
+  }
+  return input[field] !== existing[field]
+}
+
+function nextEditedFieldsJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): string {
+  const fields = new Set<DraftEditedField>(existing.editedFields)
+
+  for (const field of editableDraftFields) {
+    if (draftFieldChanged(field, input, existing)) fields.add(field)
+  }
+  for (const field of changedIntelligenceFields(input, existing)) {
+    fields.add(field)
+  }
+
+  return JSON.stringify(Array.from(fields))
+}
+
 export class AgentPromotionDraftRepository {
   constructor(private readonly db: AppDatabase) {}
 
@@ -70,6 +171,8 @@ export class AgentPromotionDraftRepository {
       systemPrompt: input.systemPrompt,
       model: input.model,
       toolGrantsJson: JSON.stringify(input.toolGrants),
+      intelligenceJson: JSON.stringify(input.intelligence ?? emptyIntelligence()),
+      editedFieldsJson: JSON.stringify(input.editedFields ?? []),
       createdAt: now,
       updatedAt: now,
     }
@@ -114,6 +217,8 @@ export class AgentPromotionDraftRepository {
         systemPrompt: input.systemPrompt ?? existing.systemPrompt,
         model: input.model ?? existing.model,
         toolGrantsJson: nextToolGrantsJson(input, existing),
+        intelligenceJson: nextIntelligenceJson(input, existing),
+        editedFieldsJson: nextEditedFieldsJson(input, existing),
         updatedAt: nowIso(),
       })
       .where(eq(agentPromotionDrafts.id, id))
