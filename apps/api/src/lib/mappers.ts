@@ -1,4 +1,6 @@
 import type {
+  AgentSourceThread,
+  AgentSourceWorkflow,
   Artifact,
   Message,
   MessagePart,
@@ -27,6 +29,21 @@ type MessageRow = typeof messages.$inferSelect
 type RunRow = typeof runs.$inferSelect
 type RunStepRow = typeof runSteps.$inferSelect
 
+function parseSourceWorkflow(
+  raw: string | null
+): AgentSourceWorkflow | undefined {
+  if (!raw) return undefined
+  return JSON.parse(raw) as AgentSourceWorkflow
+}
+
+function mapSourceThread(row: ThreadRow): AgentSourceThread | undefined {
+  if (!row.sourceThreadId) return undefined
+  return {
+    id: row.sourceThreadId,
+    title: row.sourceThreadTitle ?? row.sourceThreadId,
+  }
+}
+
 export function mapThread(row: ThreadRow): Thread {
   return {
     id: row.id,
@@ -37,8 +54,9 @@ export function mapThread(row: ThreadRow): Thread {
     projectId: row.projectId ?? undefined,
     agentId: row.agentId ?? undefined,
     agentNameSnapshot: row.agentNameSnapshot ?? undefined,
-    agentConfigurationVersionId:
-      row.agentConfigurationVersionId ?? undefined,
+    agentConfigurationVersionId: row.agentConfigurationVersionId ?? undefined,
+    sourceThread: mapSourceThread(row),
+    sourceWorkflow: parseSourceWorkflow(row.sourceWorkflowJson),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
@@ -66,9 +84,7 @@ export function mapRun(row: RunRow): Run {
     startedAt: row.startedAt,
     finishedAt: row.finishedAt ?? undefined,
     errorSummary: row.errorSummary ?? undefined,
-    usage: row.usageJson
-      ? (JSON.parse(row.usageJson) as RunUsage)
-      : undefined,
+    usage: row.usageJson ? (JSON.parse(row.usageJson) as RunUsage) : undefined,
     cost: row.cost ?? undefined,
   }
 }

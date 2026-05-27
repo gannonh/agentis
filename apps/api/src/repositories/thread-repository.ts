@@ -1,5 +1,7 @@
 import { desc, eq } from "drizzle-orm"
 import type {
+  AgentSourceThread,
+  AgentSourceWorkflow,
   Message,
   Run,
   Thread,
@@ -20,6 +22,11 @@ import { mapMessage, mapRun, mapThread } from "../lib/mappers.js"
 type ToolGrantSnapshot = {
   toolkitSlug: string
   connectionId: string
+}
+
+type SourceWorkflowSnapshot = {
+  sourceThread?: AgentSourceThread
+  sourceWorkflow?: AgentSourceWorkflow
 }
 
 type InitialRunResult = {
@@ -90,14 +97,16 @@ function createQueuedStepRow(runId: string, createdAt: string): StepRow {
 export class ThreadRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  create(input: {
-    title: string
-    model: string
-    mode: ThreadMode
-    projectId?: string
-    agentId?: string
-    agentNameSnapshot?: string
-  }): Thread {
+  create(
+    input: {
+      title: string
+      model: string
+      mode: ThreadMode
+      projectId?: string
+      agentId?: string
+      agentNameSnapshot?: string
+    } & SourceWorkflowSnapshot
+  ): Thread {
     const now = nowIso()
     const row = {
       id: createId("thread"),
@@ -109,6 +118,11 @@ export class ThreadRepository {
       agentId: input.agentId ?? null,
       agentNameSnapshot: input.agentNameSnapshot ?? null,
       agentConfigurationVersionId: null,
+      sourceThreadId: input.sourceThread?.id ?? null,
+      sourceThreadTitle: input.sourceThread?.title ?? null,
+      sourceWorkflowJson: input.sourceWorkflow
+        ? JSON.stringify(input.sourceWorkflow)
+        : null,
       createdAt: now,
       updatedAt: now,
     }
@@ -116,17 +130,19 @@ export class ThreadRepository {
     return mapThread(row)
   }
 
-  createWithInitialRun(input: {
-    title: string
-    prompt: string
-    model: string
-    mode: ThreadMode
-    projectId?: string
-    agentId?: string
-    agentNameSnapshot?: string
-    agentConfigurationVersionId?: string
-    toolGrants?: ToolGrantSnapshot[]
-  }): InitialRunResult {
+  createWithInitialRun(
+    input: {
+      title: string
+      prompt: string
+      model: string
+      mode: ThreadMode
+      projectId?: string
+      agentId?: string
+      agentNameSnapshot?: string
+      agentConfigurationVersionId?: string
+      toolGrants?: ToolGrantSnapshot[]
+    } & SourceWorkflowSnapshot
+  ): InitialRunResult {
     const now = nowIso()
     const threadRow = {
       id: createId("thread"),
@@ -138,6 +154,11 @@ export class ThreadRepository {
       agentId: input.agentId ?? null,
       agentNameSnapshot: input.agentNameSnapshot ?? null,
       agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
+      sourceThreadId: input.sourceThread?.id ?? null,
+      sourceThreadTitle: input.sourceThread?.title ?? null,
+      sourceWorkflowJson: input.sourceWorkflow
+        ? JSON.stringify(input.sourceWorkflow)
+        : null,
       createdAt: now,
       updatedAt: now,
     }

@@ -111,7 +111,10 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
 
     try {
       const version = repos.agents.getCurrentConfigurationSnapshot(agent.id)
-      const resolvedGrants = resolveRequestedAgentGrants(repos, version.toolGrants)
+      const resolvedGrants = resolveRequestedAgentGrants(
+        repos,
+        version.toolGrants
+      )
       if ("error" in resolvedGrants) {
         return c.json(
           {
@@ -130,6 +133,8 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
         agentId: agent.id,
         agentNameSnapshot: agent.name,
         agentConfigurationVersionId: version.id,
+        sourceThread: agent.sourceThread,
+        sourceWorkflow: agent.sourceWorkflow,
         toolGrants: resolvedGrants.grants,
       })
 

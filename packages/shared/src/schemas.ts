@@ -74,6 +74,8 @@ export const threadSchema = z.object({
   agentId: z.string().nullable().optional(),
   agentNameSnapshot: z.string().nullable().optional(),
   agentConfigurationVersionId: z.string().nullable().optional(),
+  sourceThread: z.lazy(() => agentSourceThreadSchema).optional(),
+  sourceWorkflow: z.lazy(() => agentSourceWorkflowSchema).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

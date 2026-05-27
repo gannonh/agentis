@@ -78,6 +78,14 @@ describe("shared schemas", () => {
         agentId: "agent-1",
         agentNameSnapshot: "Research Agent",
         agentConfigurationVersionId: "agent-version-2",
+        sourceThread: {
+          id: "source-thread-1",
+          title: "Investigate support backlog",
+        },
+        sourceWorkflow: {
+          summary: "Investigate support backlog",
+          firstUserPrompt: "Review support backlog patterns",
+        },
         createdAt: now,
         updatedAt: now,
       },
@@ -125,6 +133,10 @@ describe("shared schemas", () => {
     expect(parsed.thread.agentId).toBe("agent-1")
     expect(parsed.thread.agentNameSnapshot).toBe("Research Agent")
     expect(parsed.thread.agentConfigurationVersionId).toBe("agent-version-2")
+    expect(parsed.thread.sourceThread?.id).toBe("source-thread-1")
+    expect(parsed.thread.sourceWorkflow?.summary).toBe(
+      "Investigate support backlog"
+    )
     expect(parsed.runs[0]?.agentConfigurationVersionId).toBe("agent-version-2")
     expect(version).not.toHaveProperty("toolGrants")
 
