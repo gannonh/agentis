@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -10,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { Textarea } from "@workspace/ui/components/textarea"
 import type { AgentPromotionDraft, AgentToolGrantInput } from "@workspace/shared"
 import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
 import {
@@ -22,22 +20,22 @@ import { PageLayout } from "@/components/shell/page-layout"
 import {
   createAgentFromPromotionDraft,
   getAgentPromotionDraft,
-  updateAgentPromotionDraft,
 } from "@/lib/api/agents-client"
+import { GeneratedSuggestions } from "./agent-promotion-draft-suggestions"
 
 type DraftFormState = AgentSetupFormState & {
   toolGrants: AgentToolGrantInput[]
 }
 
 type DraftEditedField = AgentPromotionDraft["editedFields"][number]
+type DraftFormField = keyof DraftFormState
 
-const editableFieldLabels: Partial<Record<DraftEditedField, string>> = {
-  name: "Name",
-  description: "Description",
-  systemPrompt: "Instructions",
-  model: "Answer engine",
-  toolGrants: "Connected apps",
-  rubricCriteria: "Rubric criteria",
+const formFieldEditedFields: Record<DraftFormField, DraftEditedField> = {
+  name: "name",
+  description: "description",
+  model: "model",
+  systemPrompt: "systemPrompt",
+  toolGrants: "toolGrants",
 }
 
 function draftToForm(draft: AgentPromotionDraft): DraftFormState {
@@ -67,12 +65,6 @@ function uniqueEditedFields(fields: DraftEditedField[]): DraftEditedField[] {
   return Array.from(new Set(fields))
 }
 
-function editedFieldLabels(fields: DraftEditedField[]): string[] {
-  return fields
-    .map((field) => editableFieldLabels[field])
-    .filter((label): label is string => Boolean(label))
-}
-
 function rubricCriteriaFromText(text: string): string[] {
   return text
     .split("\n")
@@ -84,113 +76,19 @@ function rubricCriteriaToText(criteria: string[]): string {
   return criteria.join("\n")
 }
 
-function GeneratedSuggestions({
-  draft,
-  editedFields,
-  rubricText,
-  onRubricChange,
-}: {
-  draft: AgentPromotionDraft
-  editedFields: DraftEditedField[]
-  rubricText: string
-  onRubricChange: (value: string) => void
-}) {
-  const intelligence = draft.intelligence
-  const labels = editedFieldLabels(editedFields)
+function editedFieldsForPatch(patch: Partial<DraftFormState>): DraftEditedField[] {
+  return Object.entries(formFieldEditedFields)
+    .filter(([field]) => field in patch)
+    .map(([, editedField]) => editedField)
+}
 
+function rubricCriteriaChanged(
+  draft: AgentPromotionDraft,
+  rubricCriteria: string[]
+): boolean {
   return (
-    <section className="rounded-lg border border-border bg-muted/20 p-4">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Generated suggestions</h2>
-        {labels.length ? (
-          <div className="flex flex-wrap gap-2" aria-label="Edited fields">
-            {labels.map((label) => (
-              <Badge key={label} variant="outline">
-                {label} edited
-              </Badge>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-        {intelligence.suggestedPurpose ? (
-          <div className="flex flex-col gap-1 sm:col-span-2">
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              Purpose
-            </p>
-            <p>{intelligence.suggestedPurpose}</p>
-          </div>
-        ) : null}
-
-        {intelligence.repeatedSteps.length ? (
-          <div className="flex flex-col gap-1">
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              Repeated steps
-            </p>
-            <ul className="list-disc space-y-1 pl-4">
-              {intelligence.repeatedSteps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        <div className="flex flex-col gap-1">
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-            Required tools
-          </p>
-          {intelligence.requiredTools.length ? (
-            <ul className="list-disc space-y-1 pl-4">
-              {intelligence.requiredTools.map((tool) => (
-                <li key={`${tool.toolkitSlug}-${tool.connectionId ?? "none"}`}>
-                  {tool.toolkitSlug}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground">No required tools detected.</p>
-          )}
-        </div>
-
-        {intelligence.suggestedPrompt ? (
-          <div className="flex flex-col gap-1 sm:col-span-2">
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              Suggested prompt
-            </p>
-            <p>{intelligence.suggestedPrompt}</p>
-          </div>
-        ) : null}
-
-        {intelligence.modelRecommendation ? (
-          <div className="flex flex-col gap-1 sm:col-span-2">
-            <p>
-              Recommended answer engine: {intelligence.modelRecommendation.model}
-            </p>
-            {intelligence.modelRecommendation.reason ? (
-              <p className="text-muted-foreground">
-                {intelligence.modelRecommendation.reason}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
-        <div className="flex flex-col gap-2 sm:col-span-2">
-          <label className="text-sm font-medium" htmlFor="draft-rubric-criteria">
-            Rubric criteria
-          </label>
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            One criterion per line. These criteria stay with the draft for later evaluation.
-          </p>
-          <Textarea
-            id="draft-rubric-criteria"
-            value={rubricText}
-            onChange={(event) => onRubricChange(event.target.value)}
-            rows={4}
-          />
-        </div>
-      </div>
-    </section>
+    JSON.stringify(rubricCriteria) !==
+    JSON.stringify(draft.intelligence.rubricCriteria)
   )
 }
 
@@ -241,7 +139,7 @@ export function AgentPromotionDraftPage() {
   const updateForm = (patch: Partial<DraftFormState>) => {
     setForm((current) => (current ? { ...current, ...patch } : current))
     setLocallyEditedFields((current) =>
-      uniqueEditedFields([...current, ...(Object.keys(patch) as DraftEditedField[])])
+      uniqueEditedFields([...current, ...editedFieldsForPatch(patch)])
     )
   }
 
@@ -262,25 +160,6 @@ export function AgentPromotionDraftPage() {
     updateForm({ toolGrants })
   }
 
-  const persistRubricCriteria = async () => {
-    if (!draftId || !draft) return
-
-    const rubricCriteria = rubricCriteriaFromText(rubricText)
-    if (
-      JSON.stringify(rubricCriteria) ===
-      JSON.stringify(draft.intelligence.rubricCriteria)
-    ) {
-      return
-    }
-
-    await updateAgentPromotionDraft(draftId, {
-      intelligence: {
-        ...draft.intelligence,
-        rubricCriteria,
-      },
-    })
-  }
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!draftId || !form || !canSubmit(form, submitting)) return
@@ -289,14 +168,23 @@ export function AgentPromotionDraftPage() {
     setError(null)
 
     try {
-      await persistRubricCriteria()
-      const created = await createAgentFromPromotionDraft(draftId, {
+      const rubricCriteria = rubricCriteriaFromText(rubricText)
+      const payload = {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
         model: form.model.trim() || undefined,
         systemPrompt: form.systemPrompt.trim(),
         toolGrants: form.toolGrants,
-      })
+      }
+      const created = await createAgentFromPromotionDraft(
+        draftId,
+        draft && rubricCriteriaChanged(draft, rubricCriteria)
+          ? {
+              ...payload,
+              draftUpdates: { intelligence: { rubricCriteria } },
+            }
+          : payload
+      )
       navigate(`/agents/${encodeURIComponent(created.agent.id)}`)
     } catch (submitError) {
       setError(

@@ -282,6 +282,14 @@ export const agentPromotionDraftIntelligenceSchema = z.object({
   rubricCriteria: z.array(nonEmptyString),
 })
 
+export const updateAgentPromotionDraftIntelligenceSchema =
+  agentPromotionDraftIntelligenceSchema.partial().refine(
+    (payload) => Object.keys(payload).length > 0,
+    {
+      message: "At least one promotion draft intelligence field is required.",
+    }
+  )
+
 export const agentPromotionDraftEditedFieldSchema = z.enum([
   "name",
   "description",
@@ -315,8 +323,6 @@ export const createAgentPromotionDraftResponseSchema = z.object({
   draft: agentPromotionDraftSchema,
 })
 
-export const createAgentFromPromotionDraftRequestSchema = createAgentRequestSchema
-
 export const updateAgentPromotionDraftRequestSchema = z
   .object({
     name: nonEmptyString.optional(),
@@ -324,10 +330,15 @@ export const updateAgentPromotionDraftRequestSchema = z
     systemPrompt: nonEmptyString.optional(),
     model: nonEmptyString.optional(),
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
-    intelligence: agentPromotionDraftIntelligenceSchema.optional(),
+    intelligence: updateAgentPromotionDraftIntelligenceSchema.optional(),
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one promotion draft field is required.",
+  })
+
+export const createAgentFromPromotionDraftRequestSchema =
+  createAgentRequestSchema.extend({
+    draftUpdates: updateAgentPromotionDraftRequestSchema.optional(),
   })
 
 export const createThreadRequestSchema = z.object({

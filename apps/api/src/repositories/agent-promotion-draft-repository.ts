@@ -105,7 +105,10 @@ function nextIntelligenceJson(
   input: UpdateAgentPromotionDraftRequest,
   existing: AgentPromotionDraft
 ): string {
-  return JSON.stringify(input.intelligence ?? existing.intelligence)
+  return JSON.stringify({
+    ...existing.intelligence,
+    ...input.intelligence,
+  })
 }
 
 function changedIntelligenceFields(
@@ -117,8 +120,9 @@ function changedIntelligenceFields(
 
   return editableIntelligenceFields.filter(
     (field) =>
+      field in intelligence &&
       JSON.stringify(intelligence[field]) !==
-      JSON.stringify(existing.intelligence[field])
+        JSON.stringify(existing.intelligence[field])
   )
 }
 

@@ -1,12 +1,16 @@
 import type {
   AgentDetailResponse,
   AgentPromotionDraft,
-  CreateAgentRequest,
+  CreateAgentFromPromotionDraftRequest,
   Message,
   Thread,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { buildAgentDetail } from "./agent-detail-service.js"
+import {
+  buildDraftIntelligence,
+  firstUserText,
+} from "./agent-promotion-intelligence.js"
 import {
   resolveRequestedAgentGrants,
   toolkitGrantRemediation,
@@ -72,20 +76,6 @@ function grantResolutionFailed(error: string): ServiceError {
   }
 }
 
-function messageText(message: Message): string {
-  return message.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join(" ")
-    .trim()
-}
-
-function firstUserText(messages: Message[]): string | null {
-  const user = messages.find((message) => message.role === "user")
-  const text = user ? messageText(user) : ""
-  return text || null
-}
-
 function cleanTitle(title: string): string | null {
   const cleaned = title.trim().replace(/\s+/g, " ")
   return cleaned || null
@@ -99,55 +89,6 @@ function buildDescription(title: string | null): string {
 function buildSystemPrompt(sourceText: string | null): string {
   if (!sourceText) return "Use the context from this thread."
   return `Use the context from this thread: ${sourceText}`
-}
-
-function stripTerminalPunctuation(text: string): string {
-  return text.replace(/[.!?]+$/u, "").trim()
-}
-
-function lowerFirst(text: string): string {
-  return text ? text[0].toLowerCase() + text.slice(1) : text
-}
-
-function splitStepsFromText(text: string): string[] {
-  return stripTerminalPunctuation(text)
-    .split(/\bthen\b|[.\n,]|\band\b/iu)
-    .map((step) => stripTerminalPunctuation(step.trim()))
-    .filter(Boolean)
-}
-
-function splitRepeatedSteps(messages: Message[]): string[] {
-  return messages.flatMap((message) => splitStepsFromText(messageText(message)))
-}
-
-function buildDraftIntelligence(
-  thread: Thread,
-  messages: Message[],
-  toolGrants: AgentPromotionDraft["toolGrants"]
-): AgentPromotionDraft["intelligence"] {
-  const sourceText = firstUserText(messages)
-  const purpose = sourceText ?? "Use the source thread context."
-  const promptPurpose = sourceText
-    ? stripTerminalPunctuation(sourceText)
-    : "use the source thread context"
-
-  return {
-    suggestedPurpose: purpose,
-    repeatedSteps: splitRepeatedSteps(messages),
-    requiredTools: toolGrants,
-    suggestedPrompt: sourceText
-      ? `Use the source thread context to ${lowerFirst(promptPurpose)}.`
-      : "Use the source thread context.",
-    modelRecommendation: {
-      model: thread.model,
-      reason: "Uses the model from the source thread.",
-    },
-    rubricCriteria: [
-      "Uses the source thread context",
-      "Completes the repeated steps consistently",
-      "Explains tool usage and assumptions",
-    ],
-  }
 }
 
 function buildDraftDefaults(thread: Thread, messages: Message[]) {
@@ -197,12 +138,13 @@ export class AgentPromotionService {
 
   createAgentFromDraft(
     draftId: string,
-    input: CreateAgentRequest
+    input: CreateAgentFromPromotionDraftRequest
   ): ServiceResult<AgentDetailResponse> {
     const draft = this.repos.agentPromotionDrafts.getById(draftId)
     if (!draft) return { ok: false, error: promotionDraftNotFound() }
 
-    const requestedGrants = input.toolGrants ?? draft.toolGrants
+    const requestedGrants =
+      input.toolGrants ?? input.draftUpdates?.toolGrants ?? draft.toolGrants
     const resolvedGrants = resolveRequestedAgentGrants(
       this.repos,
       requestedGrants
@@ -211,12 +153,17 @@ export class AgentPromotionService {
       return { ok: false, error: grantResolutionFailed(resolvedGrants.error) }
     }
 
+    const updatedDraft = input.draftUpdates
+      ? this.repos.agentPromotionDrafts.update(draft.id, input.draftUpdates)
+      : draft
+    if (!updatedDraft) return { ok: false, error: promotionDraftNotFound() }
+
     const created = this.repos.agents.createWithGrants(
       {
         name: input.name,
         description: input.description,
         systemPrompt: input.systemPrompt,
-        model: input.model ?? draft.model ?? this.config.defaultModel,
+        model: input.model ?? updatedDraft.model ?? this.config.defaultModel,
       },
       resolvedGrants.grants
     )

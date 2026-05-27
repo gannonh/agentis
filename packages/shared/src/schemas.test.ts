@@ -211,8 +211,15 @@ describe("shared schemas", () => {
       description: null,
       systemPrompt: "Route support issues with severity labels.",
       model: "gpt-4.1-mini",
+      intelligence: {
+        rubricCriteria: ["Assigns severity", "Explains handoff"],
+      },
     })
     expect(update.description).toBeNull()
+    expect(update.intelligence?.rubricCriteria).toEqual([
+      "Assigns severity",
+      "Explains handoff",
+    ])
     expect(() => updateAgentPromotionDraftRequestSchema.parse({})).toThrow()
     expect(() =>
       updateAgentPromotionDraftRequestSchema.parse({ name: "" })

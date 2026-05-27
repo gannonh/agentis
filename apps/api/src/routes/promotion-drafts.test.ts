@@ -118,7 +118,6 @@ describe("promotion draft routes", () => {
       body: JSON.stringify({
         description: "Routes support backlog patterns.",
         intelligence: {
-          ...body.draft.intelligence,
           rubricCriteria: ["Assigns the right severity"],
         },
       }),
@@ -127,13 +126,15 @@ describe("promotion draft routes", () => {
     expect(updated.status).toBe(200)
     const updatedBody = (await updated.json()) as {
       draft: {
-        intelligence: { rubricCriteria: string[] }
+        intelligence: { suggestedPrompt: string; rubricCriteria: string[] }
         editedFields: string[]
       }
     }
-    expect(updatedBody.draft.intelligence.rubricCriteria).toEqual([
-      "Assigns the right severity",
-    ])
+    expect(updatedBody.draft.intelligence).toMatchObject({
+      suggestedPrompt:
+        "Use the source thread context to review support backlog patterns, label severity, and draft replies.",
+      rubricCriteria: ["Assigns the right severity"],
+    })
     expect(updatedBody.draft.editedFields).toEqual([
       "description",
       "rubricCriteria",
@@ -283,7 +284,7 @@ describe("promotion draft routes", () => {
     })
   })
 
-  it("preserves edited rubric criteria when creating an agent", async () => {
+  it("applies draft edits while creating an agent in a single command", async () => {
     ctx = createTestContext()
     const created = ctx.repos.threads.createWithInitialRun({
       title: "Investigate support backlog",
@@ -297,18 +298,9 @@ describe("promotion draft routes", () => {
       { method: "POST" }
     )
     const { draft } = (await draftResponse.json()) as {
-      draft: { id: string; intelligence: { rubricCriteria: string[] } }
+      draft: { id: string }
     }
     const rubricCriteria = ["Assigns the right severity", "Explains the handoff"]
-
-    const updated = await app.request(`/api/agent-promotion-drafts/${draft.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        intelligence: { ...draft.intelligence, rubricCriteria },
-      }),
-    })
-    expect(updated.status).toBe(200)
 
     const response = await app.request(
       `/api/agent-promotion-drafts/${draft.id}/create-agent`,
@@ -320,6 +312,9 @@ describe("promotion draft routes", () => {
           description: "Routes support backlog patterns.",
           systemPrompt: "Assign severity and next steps.",
           model: "gpt-4.1-mini",
+          draftUpdates: {
+            intelligence: { rubricCriteria },
+          },
         }),
       }
     )

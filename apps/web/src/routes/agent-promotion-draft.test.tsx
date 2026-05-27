@@ -148,7 +148,7 @@ describe("AgentPromotionDraftPage", () => {
     expect(screen.getByDisplayValue("Support Triage Agent")).toBeInTheDocument()
   })
 
-  it("lets users edit rubric criteria before creating the agent", async () => {
+  it("submits rubric criteria edits with the create-agent command", async () => {
     const user = userEvent.setup()
     render(
       <MemoryRouter>
@@ -164,12 +164,17 @@ describe("AgentPromotionDraftPage", () => {
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
     await waitFor(() => {
-      expect(updateAgentPromotionDraft).toHaveBeenCalledWith("draft_test", {
-        intelligence: expect.objectContaining({
-          rubricCriteria: ["Assigns severity", "Explains handoff"],
-        }),
-      })
-      expect(createAgentFromPromotionDraft).toHaveBeenCalled()
+      expect(updateAgentPromotionDraft).not.toHaveBeenCalled()
+      expect(createAgentFromPromotionDraft).toHaveBeenCalledWith(
+        "draft_test",
+        expect.objectContaining({
+          draftUpdates: {
+            intelligence: {
+              rubricCriteria: ["Assigns severity", "Explains handoff"],
+            },
+          },
+        })
+      )
     })
   })
 
