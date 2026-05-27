@@ -1,3 +1,4 @@
+import type { ReactElement } from "react"
 import { useEffect, useState } from "react"
 import type {
   MemoriesListResponse,
@@ -32,7 +33,7 @@ type MemoryCardProps = {
   categoryName: string
 }
 
-function MemoryCard({ memory, categoryName }: MemoryCardProps): JSX.Element {
+function MemoryCard({ memory, categoryName }: MemoryCardProps): ReactElement {
   return (
     <Card>
       <CardHeader>
@@ -87,7 +88,7 @@ function CategorySummary({
   categories,
   selectedCategory,
   onSelectCategory,
-}: CategorySummaryProps): JSX.Element {
+}: CategorySummaryProps): ReactElement {
   const totalSaved = categories.reduce((total, category) => total + category.count, 0)
 
   return (
@@ -139,7 +140,7 @@ function getSelectedCategoryName(
   return category?.name ?? null
 }
 
-export function MemoriesPage(): JSX.Element {
+export function MemoriesPage(): ReactElement {
   const [data, setData] = useState<MemoriesListResponse | null>(null)
   const [selectedCategory, setSelectedCategory] =
     useState<SavedMemoryCategoryKey | null>(null)
@@ -148,9 +149,6 @@ export function MemoriesPage(): JSX.Element {
 
   useEffect(() => {
     let active = true
-
-    setLoading(true)
-    setError(null)
 
     listMemories(selectedCategory ?? undefined)
       .then((response) => {
@@ -181,6 +179,12 @@ export function MemoriesPage(): JSX.Element {
   const memories = data?.memories ?? []
   const selectedCategoryName = getSelectedCategoryName(categories, selectedCategory)
 
+  function handleSelectCategory(category: SavedMemoryCategoryKey | null): void {
+    setSelectedCategory(category)
+    setLoading(true)
+    setError(null)
+  }
+
   return (
     <PageLayout className="gap-6">
       <PageHeader
@@ -194,7 +198,7 @@ export function MemoriesPage(): JSX.Element {
         <CategorySummary
           categories={categories}
           selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
+          onSelectCategory={handleSelectCategory}
         />
       ) : null}
 
