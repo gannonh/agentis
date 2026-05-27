@@ -102,13 +102,21 @@ export function mapProjectMemory(row: ProjectMemoryRow): ProjectMemory {
   }
 }
 
+function parseSavedMemoryTags(tagsJson: string): string[] {
+  try {
+    return JSON.parse(tagsJson) as string[]
+  } catch {
+    return []
+  }
+}
+
 export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
   return {
     id: row.id,
     content: row.content,
     category: row.category as SavedMemory["category"],
     usageGuidance: row.usageGuidance,
-    tags: JSON.parse(row.tagsJson) as string[],
+    tags: parseSavedMemoryTags(row.tagsJson),
     importance: row.importance as SavedMemory["importance"],
     date: row.date,
     scope: row.scope as SavedMemory["scope"],

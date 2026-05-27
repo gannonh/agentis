@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "./app.js"
 import { createTestContext, type TestContext } from "./test/setup.js"
 import { isRuntimeAvailable, loadConfig } from "./config.js"
+import { savedMemories } from "./db/schema.js"
 
 let ctx: TestContext | undefined
 
@@ -132,6 +133,33 @@ describe("api routes", () => {
       source: "seeded",
       provenance: expect.stringContaining("mocked"),
     })
+  })
+
+  it("returns saved memories when stored tags JSON is malformed", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    ctx.db.insert(savedMemories).values({
+      id: "memory_bad_tags",
+      content: "Memory with bad tags",
+      category: "memory_category_project_context",
+      usageGuidance: "Use to verify malformed tags do not break listing.",
+      tagsJson: "not-json",
+      importance: "medium",
+      date: "2026-05-27",
+      scope: "project",
+      associatedAgent: null,
+      source: "seeded",
+      provenance: "test malformed tags row",
+      createdAt: "2026-05-27T00:00:00.000Z",
+      updatedAt: "2026-05-27T00:00:00.000Z",
+    }).run()
+
+    const response = await app.request("/api/memories")
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { memories: { id: string; tags: string[] }[] }
+    expect(body.memories.find((memory) => memory.id === "memory_bad_tags")?.tags).toEqual([])
   })
 
   it("returns thread detail for resume", async () => {

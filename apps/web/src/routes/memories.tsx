@@ -21,11 +21,16 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { listMemories } from "@/lib/api/memories-client"
 
 function formatMemoryDate(date: string): string {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
+  const value = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(date)
+
   return new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(date))
+  }).format(value)
 }
 
 type MemoryCardProps = {
@@ -181,6 +186,7 @@ export function MemoriesPage(): ReactElement {
 
   function handleSelectCategory(category: SavedMemoryCategoryKey | null): void {
     setSelectedCategory(category)
+    setData((current) => current ? { ...current, memories: [] } : null)
     setLoading(true)
     setError(null)
   }
