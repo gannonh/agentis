@@ -4,7 +4,7 @@ import {
   type AgentDetailResponse,
   type AgentPromotionDraft,
   type AgentToolGrantInput,
-  type CreateAgentRequest,
+  type CreateAgentFromPromotionDraftRequest,
   type IntegrationConnection,
   type Message,
   type ProposedToolGrant,
@@ -13,14 +13,18 @@ import {
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { buildAgentDetail } from "./agent-detail-service.js"
+import {
+  buildDraftIntelligence,
+  firstUserText,
+} from "./agent-promotion-intelligence.js"
 import { analyzeThreadToolUsage } from "./agent-promotion-tool-analysis.js"
 import {
   resolveRequestedAgentGrants,
   toolkitGrantRemediation,
 } from "./tool-grant-resolution.js"
+import { SUPPORTED_TOOLKIT_NAMES } from "../composio/tool-catalog.js"
 import type { Repositories } from "../repositories/index.js"
 import type { StoredAgentPromotionDraft } from "../repositories/agent-promotion-draft-repository.js"
-import { SUPPORTED_TOOLKIT_NAMES } from "../composio/tool-catalog.js"
 
 type ServiceError = {
   status: 400 | 404 | 500
@@ -31,7 +35,9 @@ type ServiceError = {
   }
 }
 
-type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: ServiceError }
+type ServiceResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: ServiceError }
 
 function threadNotFound(): ServiceError {
   return {
@@ -54,7 +60,8 @@ function threadAlreadyHasAgent(): ServiceError {
   return {
     status: 400,
     body: {
-      error: "Threads already associated with an agent cannot create another agent.",
+      error:
+        "Threads already associated with an agent cannot create another agent.",
       code: "thread_already_has_agent",
     },
   }
@@ -107,14 +114,43 @@ function validationAnalysisPending(): ServiceError {
   }
 }
 
-function firstUserText(messages: Message[]): string | null {
-  const user = messages.find((message) => message.role === "user")
-  const text = user?.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join(" ")
-    .trim()
-  return text || null
+function conflictingToolGrants(): ServiceError {
+  return {
+    status: 400,
+    body: {
+      error:
+        "toolGrants and draftUpdates.toolGrants must match when both are provided.",
+      code: "conflicting_tool_grants",
+    },
+  }
+}
+
+function grantKey(grant: {
+  toolkitSlug: string
+  connectionId?: string | null
+}) {
+  return `${grant.toolkitSlug}:${grant.connectionId ?? ""}`
+}
+
+function normalizeGrantInputs(
+  grants: CreateAgentFromPromotionDraftRequest["toolGrants"] = []
+) {
+  return grants
+    .map((grant) => ({
+      toolkitSlug: grant.toolkitSlug,
+      connectionId: grant.connectionId ?? null,
+    }))
+    .sort((a, b) => grantKey(a).localeCompare(grantKey(b)))
+}
+
+function grantInputsMatch(
+  left: CreateAgentFromPromotionDraftRequest["toolGrants"],
+  right: CreateAgentFromPromotionDraftRequest["toolGrants"]
+): boolean {
+  return (
+    JSON.stringify(normalizeGrantInputs(left)) ===
+    JSON.stringify(normalizeGrantInputs(right))
+  )
 }
 
 function cleanTitle(title: string): string | null {
@@ -186,7 +222,9 @@ function hasPendingValidationAnalysis(
 function connectedByToolkit(
   connections: IntegrationConnection[]
 ): Map<string, IntegrationConnection> {
-  return new Map(connections.map((connection) => [connection.toolkitSlug, connection]))
+  return new Map(
+    connections.map((connection) => [connection.toolkitSlug, connection])
+  )
 }
 
 function validateProposedToolGrant(
@@ -259,7 +297,9 @@ export class AgentPromotionService {
     if (!thread) return { ok: false, error: threadNotFound() }
     if (thread.agentId) return { ok: false, error: threadAlreadyHasAgent() }
 
-    const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(thread.id)
+    const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(
+      thread.id
+    )
     if (existing) {
       return {
         ok: true,
@@ -269,6 +309,9 @@ export class AgentPromotionService {
 
     const messages = this.repos.messages.listByThreadId(thread.id)
     const defaults = buildDraftDefaults(thread, messages)
+    const toolGrants = this.repos.toolAccessGrants
+      .listByScope("thread", thread.id)
+      .map(({ toolkitSlug, connectionId }) => ({ toolkitSlug, connectionId }))
     const runs = this.repos.runs.listByThreadId(thread.id)
     const toolAnalysis = analyzeThreadToolUsage({
       steps: this.repos.steps.listByRunIds(runs.map((run) => run.id)),
@@ -280,9 +323,8 @@ export class AgentPromotionService {
       description: defaults.description,
       systemPrompt: defaults.systemPrompt,
       model: thread.model,
-      toolGrants: this.repos.toolAccessGrants
-        .listByScope("thread", thread.id)
-        .map(({ toolkitSlug, connectionId }) => ({ toolkitSlug, connectionId })),
+      toolGrants,
+      intelligence: buildDraftIntelligence(thread, messages, toolGrants),
       proposedToolGrants: toolAnalysis.proposedToolGrants,
       unsupportedSourceSteps: toolAnalysis.unsupportedSourceSteps,
     })
@@ -291,7 +333,7 @@ export class AgentPromotionService {
 
   createAgentFromDraft(
     draftId: string,
-    input: CreateAgentRequest
+    input: CreateAgentFromPromotionDraftRequest
   ): ServiceResult<AgentDetailResponse> {
     const storedDraft = this.repos.agentPromotionDrafts.getById(draftId)
     if (!storedDraft) return { ok: false, error: promotionDraftNotFound() }
@@ -308,12 +350,25 @@ export class AgentPromotionService {
       }
     }
 
+    if (
+      input.toolGrants &&
+      input.draftUpdates?.toolGrants &&
+      !grantInputsMatch(input.toolGrants, input.draftUpdates.toolGrants)
+    ) {
+      return { ok: false, error: conflictingToolGrants() }
+    }
+
     const requestedGrants = input.toolGrants
       ? mergeRequiredGrants(
           input.toolGrants,
           proposedToolGrantsToInputs(draft.proposedToolGrants)
         )
-      : defaultRequestedGrants(draft)
+      : input.draftUpdates?.toolGrants
+        ? mergeRequiredGrants(
+            input.draftUpdates.toolGrants,
+            proposedToolGrantsToInputs(draft.proposedToolGrants)
+          )
+        : defaultRequestedGrants(draft)
     const resolvedGrants = resolveRequestedAgentGrants(
       this.repos,
       requestedGrants
@@ -327,12 +382,24 @@ export class AgentPromotionService {
         name: input.name,
         description: input.description,
         systemPrompt: input.systemPrompt,
-        model: input.model ?? draft.model ?? this.config.defaultModel,
+        model:
+          input.model ??
+          input.draftUpdates?.model ??
+          draft.model ??
+          this.config.defaultModel,
       },
       resolvedGrants.grants
     )
     const detail = buildAgentDetail(this.repos, created.id)
     if (!detail) return { ok: false, error: agentCreationFailed() }
+
+    if (input.draftUpdates) {
+      const updatedDraft = this.repos.agentPromotionDrafts.update(
+        draft.id,
+        input.draftUpdates
+      )
+      if (!updatedDraft) return { ok: false, error: promotionDraftNotFound() }
+    }
 
     return { ok: true, data: detail }
   }

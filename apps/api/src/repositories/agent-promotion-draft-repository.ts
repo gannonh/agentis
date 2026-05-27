@@ -1,4 +1,6 @@
 import {
+  agentPromotionDraftEditedFieldSchema,
+  agentPromotionDraftIntelligenceSchema,
   agentPromotionDraftToolGrantProposalSchema,
   agentToolGrantInputListSchema,
   unsupportedSourceStepSchema,
@@ -9,17 +11,34 @@ import {
   type UpdateAgentPromotionDraftRequest,
 } from "@workspace/shared"
 import { desc, eq } from "drizzle-orm"
-import { z } from "zod"
 import type { AppDatabase } from "../db/client.js"
 import { agentPromotionDrafts } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 
 type DraftRow = typeof agentPromotionDrafts.$inferSelect
 
-const proposedToolGrantListSchema = z.array(
-  agentPromotionDraftToolGrantProposalSchema
-)
-const unsupportedSourceStepListSchema = z.array(unsupportedSourceStepSchema)
+type DraftIntelligence = AgentPromotionDraft["intelligence"]
+type DraftEditedField = AgentPromotionDraft["editedFields"][number]
+
+const editedFieldListSchema = agentPromotionDraftEditedFieldSchema.array()
+const proposedToolGrantListSchema =
+  agentPromotionDraftToolGrantProposalSchema.array()
+const unsupportedSourceStepListSchema = unsupportedSourceStepSchema.array()
+const editableDraftFields = [
+  "name",
+  "description",
+  "systemPrompt",
+  "model",
+  "toolGrants",
+] as const satisfies readonly DraftEditedField[]
+const editableIntelligenceFields = [
+  "suggestedPurpose",
+  "repeatedSteps",
+  "requiredTools",
+  "suggestedPrompt",
+  "modelRecommendation",
+  "rubricCriteria",
+] as const satisfies readonly DraftEditedField[]
 
 export type StoredAgentPromotionDraft = Omit<
   AgentPromotionDraft,
@@ -37,12 +56,33 @@ type CreateAgentPromotionDraftInput = {
   systemPrompt: string
   model: string
   toolGrants: AgentToolGrantInput[]
+  intelligence?: DraftIntelligence
+  editedFields?: DraftEditedField[]
   proposedToolGrants?: AgentPromotionDraftToolGrantProposal[]
   unsupportedSourceSteps?: UnsupportedSourceStep[]
 }
 
+function emptyIntelligence(): DraftIntelligence {
+  return {
+    repeatedSteps: [],
+    requiredTools: [],
+    rubricCriteria: [],
+  }
+}
+
 function parseToolGrants(raw: string): AgentToolGrantInput[] {
   return agentToolGrantInputListSchema.parse(JSON.parse(raw))
+}
+
+function parseIntelligence(raw: string): DraftIntelligence {
+  return agentPromotionDraftIntelligenceSchema.parse({
+    ...emptyIntelligence(),
+    ...JSON.parse(raw),
+  })
+}
+
+function parseEditedFields(raw: string): DraftEditedField[] {
+  return editedFieldListSchema.parse(JSON.parse(raw))
 }
 
 function parseProposedToolGrants(
@@ -69,6 +109,8 @@ function mapDraft(row: DraftRow): StoredAgentPromotionDraft {
     systemPrompt: row.systemPrompt,
     model: row.model,
     toolGrants: parseToolGrants(row.toolGrantsJson),
+    intelligence: parseIntelligence(row.intelligenceJson),
+    editedFields: parseEditedFields(row.editedFieldsJson),
     proposedToolGrants: parseProposedToolGrants(row.proposedToolGrantsJson),
     unsupportedSourceSteps: parseUnsupportedSourceSteps(
       row.unsupportedSourceStepsJson
@@ -86,8 +128,70 @@ function nextDescription(
   return existing.description ?? null
 }
 
-function nextJson<T>(inputValue: T[] | undefined, existingValue: T[]): string {
-  return JSON.stringify(inputValue ?? existingValue)
+function nextToolGrantsJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: StoredAgentPromotionDraft
+): string {
+  const grants = input.toolGrants ?? existing.toolGrants
+  return JSON.stringify(grants)
+}
+
+function nextIntelligenceJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: StoredAgentPromotionDraft
+): string {
+  return JSON.stringify({
+    ...existing.intelligence,
+    ...input.intelligence,
+  })
+}
+
+function changedIntelligenceFields(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: StoredAgentPromotionDraft
+): DraftEditedField[] {
+  const intelligence = input.intelligence
+  if (!intelligence) return []
+
+  return editableIntelligenceFields.filter(
+    (field) =>
+      field in intelligence &&
+      JSON.stringify(intelligence[field]) !==
+        JSON.stringify(existing.intelligence[field])
+  )
+}
+
+function draftFieldChanged(
+  field: (typeof editableDraftFields)[number],
+  input: UpdateAgentPromotionDraftRequest,
+  existing: StoredAgentPromotionDraft
+): boolean {
+  if (!(field in input)) return false
+  if (field === "description") {
+    return (input.description ?? null) !== (existing.description ?? null)
+  }
+  if (field === "toolGrants") {
+    return (
+      JSON.stringify(input.toolGrants) !== JSON.stringify(existing.toolGrants)
+    )
+  }
+  return input[field] !== existing[field]
+}
+
+function nextEditedFieldsJson(
+  input: UpdateAgentPromotionDraftRequest,
+  existing: StoredAgentPromotionDraft
+): string {
+  const fields = new Set<DraftEditedField>(existing.editedFields)
+
+  for (const field of editableDraftFields) {
+    if (draftFieldChanged(field, input, existing)) fields.add(field)
+  }
+  for (const field of changedIntelligenceFields(input, existing)) {
+    fields.add(field)
+  }
+
+  return JSON.stringify(Array.from(fields))
 }
 
 export class AgentPromotionDraftRepository {
@@ -104,6 +208,10 @@ export class AgentPromotionDraftRepository {
       systemPrompt: input.systemPrompt,
       model: input.model,
       toolGrantsJson: JSON.stringify(input.toolGrants),
+      intelligenceJson: JSON.stringify(
+        input.intelligence ?? emptyIntelligence()
+      ),
+      editedFieldsJson: JSON.stringify(input.editedFields ?? []),
       proposedToolGrantsJson: JSON.stringify(input.proposedToolGrants ?? []),
       unsupportedSourceStepsJson: JSON.stringify(
         input.unsupportedSourceSteps ?? []
@@ -151,7 +259,9 @@ export class AgentPromotionDraftRepository {
         description: nextDescription(input, existing),
         systemPrompt: input.systemPrompt ?? existing.systemPrompt,
         model: input.model ?? existing.model,
-        toolGrantsJson: nextJson(input.toolGrants, existing.toolGrants),
+        toolGrantsJson: nextToolGrantsJson(input, existing),
+        intelligenceJson: nextIntelligenceJson(input, existing),
+        editedFieldsJson: nextEditedFieldsJson(input, existing),
         updatedAt: nowIso(),
       })
       .where(eq(agentPromotionDrafts.id, id))

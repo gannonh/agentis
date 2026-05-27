@@ -90,9 +90,9 @@ export const threads = sqliteTable("threads", {
   projectId: text("project_id"),
   agentId: text("agent_id").references(() => agents.id),
   agentNameSnapshot: text("agent_name_snapshot"),
-  agentConfigurationVersionId: text("agent_configuration_version_id").references(
-    () => agentConfigurationVersions.id
-  ),
+  agentConfigurationVersionId: text(
+    "agent_configuration_version_id"
+  ).references(() => agentConfigurationVersions.id),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 })
@@ -127,9 +127,9 @@ export const runs = sqliteTable(
     status: text("status").notNull(),
     model: text("model").notNull(),
     agentId: text("agent_id").references(() => agents.id),
-    agentConfigurationVersionId: text("agent_configuration_version_id").references(
-      () => agentConfigurationVersions.id
-    ),
+    agentConfigurationVersionId: text(
+      "agent_configuration_version_id"
+    ).references(() => agentConfigurationVersions.id),
     startedAt: text("started_at").notNull(),
     finishedAt: text("finished_at"),
     errorSummary: text("error_summary"),
@@ -189,6 +189,8 @@ export const agentPromotionDrafts = sqliteTable(
     systemPrompt: text("system_prompt").notNull(),
     model: text("model").notNull(),
     toolGrantsJson: text("tool_grants_json").notNull().default("[]"),
+    intelligenceJson: text("intelligence_json").notNull().default("{}"),
+    editedFieldsJson: text("edited_fields_json").notNull().default("[]"),
     proposedToolGrantsJson: text("proposed_tool_grants_json"),
     unsupportedSourceStepsJson: text("unsupported_source_steps_json"),
     createdAt: text("created_at").notNull(),

@@ -309,6 +309,41 @@ export const createAgentTestThreadRequestSchema = z.object({
   prompt: nonEmptyString,
 })
 
+export const agentPromotionDraftIntelligenceSchema = z.object({
+  suggestedPurpose: z.string().optional(),
+  repeatedSteps: z.array(nonEmptyString),
+  requiredTools: z.array(agentToolGrantInputSchema),
+  suggestedPrompt: nonEmptyString.optional(),
+  modelRecommendation: z
+    .object({
+      model: nonEmptyString,
+      reason: z.string().optional(),
+    })
+    .optional(),
+  rubricCriteria: z.array(nonEmptyString),
+})
+
+export const updateAgentPromotionDraftIntelligenceSchema =
+  agentPromotionDraftIntelligenceSchema
+    .partial()
+    .refine((payload) => Object.keys(payload).length > 0, {
+      message: "At least one promotion draft intelligence field is required.",
+    })
+
+export const agentPromotionDraftEditedFieldSchema = z.enum([
+  "name",
+  "description",
+  "systemPrompt",
+  "model",
+  "toolGrants",
+  "suggestedPurpose",
+  "repeatedSteps",
+  "requiredTools",
+  "suggestedPrompt",
+  "modelRecommendation",
+  "rubricCriteria",
+])
+
 export const agentPromotionDraftSchema = z.object({
   id: z.string(),
   threadId: z.string(),
@@ -318,6 +353,8 @@ export const agentPromotionDraftSchema = z.object({
   systemPrompt: nonEmptyString,
   model: nonEmptyString,
   toolGrants: z.array(agentToolGrantInputSchema),
+  intelligence: agentPromotionDraftIntelligenceSchema,
+  editedFields: z.array(agentPromotionDraftEditedFieldSchema),
   proposedToolGrants: z.array(proposedToolGrantSchema).default([]),
   unsupportedSourceSteps: z.array(unsupportedSourceStepSchema).default([]),
   createdAt: z.string(),
@@ -328,8 +365,6 @@ export const createAgentPromotionDraftResponseSchema = z.object({
   draft: agentPromotionDraftSchema,
 })
 
-export const createAgentFromPromotionDraftRequestSchema = createAgentRequestSchema
-
 export const updateAgentPromotionDraftRequestSchema = z
   .object({
     name: nonEmptyString.optional(),
@@ -337,10 +372,16 @@ export const updateAgentPromotionDraftRequestSchema = z
     systemPrompt: nonEmptyString.optional(),
     model: nonEmptyString.optional(),
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
+    intelligence: updateAgentPromotionDraftIntelligenceSchema.optional(),
   })
   .strict()
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one promotion draft field is required.",
+  })
+
+export const createAgentFromPromotionDraftRequestSchema =
+  createAgentRequestSchema.extend({
+    draftUpdates: updateAgentPromotionDraftRequestSchema.optional(),
   })
 
 export const createThreadRequestSchema = z.object({
@@ -558,7 +599,9 @@ export type AgentConfigurationVersionSummary = z.infer<
 export type Agent = z.infer<typeof agentSchema>
 export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
-export type AgentToolGrantInputList = z.infer<typeof agentToolGrantInputListSchema>
+export type AgentToolGrantInputList = z.infer<
+  typeof agentToolGrantInputListSchema
+>
 export type ToolGrantValidationStatus = z.infer<
   typeof toolGrantValidationStatusSchema
 >
