@@ -7,6 +7,7 @@ import type {
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { buildAgentDetail } from "./agent-detail-service.js"
+import { analyzeThreadToolUsage } from "./agent-promotion-tool-analysis.js"
 import {
   resolveRequestedAgentGrants,
   toolkitGrantRemediation,
@@ -126,6 +127,21 @@ export class AgentPromotionService {
 
     const messages = this.repos.messages.listByThreadId(thread.id)
     const defaults = buildDraftDefaults(thread, messages)
+    const runs = this.repos.runs.listByThreadId(thread.id)
+    const connectedToolkits = this.repos.integrationConnections.listConnectedByUserId()
+    const toolAnalysis = analyzeThreadToolUsage({
+      runs,
+      steps: this.repos.steps.listByRunIds(runs.map((run) => run.id)),
+      connectedToolkitSlugs: connectedToolkits.map(
+        (connection) => connection.toolkitSlug
+      ),
+      connectedToolkitConnectionIds: Object.fromEntries(
+        connectedToolkits.map((connection) => [
+          connection.toolkitSlug,
+          connection.id,
+        ])
+      ),
+    })
     const draft = this.repos.agentPromotionDrafts.create({
       threadId: thread.id,
       sourceThreadTitle: thread.title,
@@ -136,6 +152,8 @@ export class AgentPromotionService {
       toolGrants: this.repos.toolAccessGrants
         .listByScope("thread", thread.id)
         .map(({ toolkitSlug, connectionId }) => ({ toolkitSlug, connectionId })),
+      proposedToolGrants: toolAnalysis.proposedToolGrants,
+      unsupportedSourceSteps: toolAnalysis.unsupportedSourceSteps,
     })
     return { ok: true, data: { draft, created: true } }
   }

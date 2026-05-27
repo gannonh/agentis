@@ -154,6 +154,64 @@ describe("promotion draft routes", () => {
     expect(readBody.draft.unsupportedSourceSteps).toHaveLength(1)
   })
 
+  it("creates draft validation metadata from source thread tool usage", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Open a GitHub issue and update the CRM account",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    ctx.repos.steps.create({
+      runId: created.run.id,
+      type: "tool-call",
+      status: "completed",
+      title: "Create GitHub issue",
+      payload: { toolName: "GITHUB_CREATE_ISSUE" },
+    })
+    ctx.repos.steps.create({
+      runId: created.run.id,
+      type: "tool-call",
+      status: "completed",
+      title: "Lookup CRM account",
+      payload: { toolName: "CRM_LOOKUP" },
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      draft: {
+        proposedToolGrants: {
+          toolkitSlug: string
+          connectionId?: string
+          validationStatus: string
+        }[]
+        unsupportedSourceSteps: { title: string; reason: string }[]
+      }
+    }
+    expect(body.draft.proposedToolGrants).toMatchObject([
+      {
+        toolkitSlug: "github",
+        connectionId: github.id,
+        validationStatus: "valid",
+      },
+    ])
+    expect(body.draft.unsupportedSourceSteps).toMatchObject([
+      { title: "Lookup CRM account", reason: "unsupported_tool" },
+    ])
+  })
+
   it("creates deterministic defaults for thin source threads", async () => {
     ctx = createTestContext()
     const thread = ctx.repos.threads.create({
