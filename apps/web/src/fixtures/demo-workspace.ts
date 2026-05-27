@@ -193,6 +193,32 @@ export const demoWorkspace = workspaceSchema.parse({
     },
   ],
   rubrics: [],
+  learningCandidates: [
+    {
+      id: "learning-candidate-mocked-memory-1",
+      title: "Capture review preference",
+      content:
+        "Senior Reviewer should call out overcomplication and missing edge cases before style feedback.",
+      suggestionType: "memory",
+      status: "suggested",
+      confidence: 0.82,
+      source: {
+        threadId: "thread-creating-agent",
+        threadTitle: "Creating Agent",
+        agentId: "senior-reviewer",
+        agentName: "Senior Reviewer",
+      },
+      provenance: {
+        kind: "mocked-llm-derived",
+        label: "Mocked LLM-derived seed",
+      },
+      createdBy: "seed",
+      actions: [
+        { id: "save-memory", label: "Save memory", tone: "primary", icon: "sparkles" },
+        { id: "dismiss", label: "Dismiss", tone: "secondary" },
+      ],
+    },
+  ],
   learningConversations: [
     {
       id: "thread-creating-agent",
