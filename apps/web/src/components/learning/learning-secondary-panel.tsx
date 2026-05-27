@@ -9,16 +9,25 @@ type LearningSecondaryPanelProps = {
   memories: Memory[]
 }
 
-function getCategorySummaries(memories: Memory[]) {
-  return memories.reduce<Array<{ category: Memory["category"]; count: number }>>((summaries, memory) => {
+type MemoryCategorySummary = {
+  category: Memory["category"]
+  count: number
+}
+
+function getCategorySummaries(memories: Memory[]): MemoryCategorySummary[] {
+  const summaries: MemoryCategorySummary[] = []
+
+  for (const memory of memories) {
     const summary = summaries.find((item) => item.category === memory.category)
+
     if (summary) {
       summary.count += 1
-      return summaries
+    } else {
+      summaries.push({ category: memory.category, count: 1 })
     }
-    summaries.push({ category: memory.category, count: 1 })
-    return summaries
-  }, [])
+  }
+
+  return summaries
 }
 
 export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps) {
@@ -49,7 +58,8 @@ export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps
             </Badge>
           </div>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Memories are created when agents learn facts, preferences, and active work from conversations.
+            Memories are created when agents learn facts, preferences, and active work from
+            conversations.
           </p>
           <div className="flex flex-wrap gap-2">
             {categorySummaries.map((summary) => (
