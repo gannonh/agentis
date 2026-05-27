@@ -40,19 +40,47 @@ function formatSystemPromptSection(title: string, body?: string | null) {
 
 export function buildRunSystemPrompt(input: {
   agentPrompt?: string | null
+  sourceWorkflowBlock?: string
   projectContextBlock?: string
 }): string {
-  if (!input.agentPrompt?.trim() && !input.projectContextBlock?.trim()) {
+  if (
+    !input.agentPrompt?.trim() &&
+    !input.sourceWorkflowBlock?.trim() &&
+    !input.projectContextBlock?.trim()
+  ) {
     return PLATFORM_SYSTEM_PROMPT
   }
 
   return [
     formatSystemPromptSection("Agent instructions", input.agentPrompt),
     formatSystemPromptSection("Platform requirements", PLATFORM_SYSTEM_PROMPT),
+    formatSystemPromptSection(
+      "Source workflow context",
+      input.sourceWorkflowBlock
+    ),
     formatSystemPromptSection("Project context", input.projectContextBlock),
   ]
     .filter((section): section is string => Boolean(section))
     .join("\n\n")
+}
+
+function formatSourceWorkflowBlock(thread: {
+  sourceThread?: { id: string; title: string }
+  sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+}): string | undefined {
+  if (!thread.sourceWorkflow) return undefined
+
+  return [
+    thread.sourceThread
+      ? `Source thread: ${thread.sourceThread.title} (${thread.sourceThread.id})`
+      : null,
+    `Workflow summary: ${thread.sourceWorkflow.summary}`,
+    thread.sourceWorkflow.firstUserPrompt
+      ? `First user prompt: ${thread.sourceWorkflow.firstUserPrompt}`
+      : null,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n")
 }
 
 function wantsGeneratedArtifact(prompt: string) {
@@ -200,8 +228,10 @@ export class RunExecutor {
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
+    const sourceWorkflowBlock = formatSourceWorkflowBlock(thread)
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: agentConfiguration?.systemPrompt,
+      sourceWorkflowBlock,
       projectContextBlock,
     })
 
@@ -268,6 +298,20 @@ export class RunExecutor {
           agentId: agentConfiguration.agentId,
           agentConfigurationVersionId: agentConfiguration.id,
           model: agentConfiguration.model,
+        },
+      })
+    }
+    if (sourceWorkflowBlock && thread.sourceWorkflow) {
+      this.repos.steps.create({
+        runId,
+        type: "reasoning",
+        status: "completed",
+        title: "Source workflow context loaded",
+        payload: {
+          sourceThreadId: thread.sourceThread?.id,
+          sourceThreadTitle: thread.sourceThread?.title,
+          summary: thread.sourceWorkflow.summary,
+          firstUserPrompt: thread.sourceWorkflow.firstUserPrompt,
         },
       })
     }

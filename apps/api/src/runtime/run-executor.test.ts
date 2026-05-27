@@ -211,12 +211,66 @@ describe("run executor composio bridge", () => {
     expect(stream.status).toBe(200)
     await stream.text()
 
-    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+    const steps = context.repos.steps.listByRunId(run.id)
+    expect(steps).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           title: "Agent configuration loaded",
           payload: expect.objectContaining({
             agentConfigurationVersionId: updated.currentConfigurationVersion.id,
+          }),
+        }),
+      ])
+    )
+    expect(
+      steps.some((step) => step.title === "Source workflow context loaded")
+    ).toBe(false)
+  }, 10_000)
+
+  it("loads source workflow context on linked agent follow-up runs", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Promoted Research Agent",
+      systemPrompt: "Answer as the promoted research agent.",
+      model: "gpt-4o-mini",
+      sourceThread: {
+        id: "thread_source",
+        title: "Investigate support backlog",
+      },
+      sourceWorkflow: {
+        summary: "Investigate support backlog",
+        firstUserPrompt: "Review support backlog patterns",
+      },
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Try the promoted workflow" }),
+    })
+    const { thread } = (await created.json()) as { thread: { id: string } }
+
+    const followUp = await app.request(`/api/threads/${thread.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Continue the source workflow" }),
+    })
+    const { run } = (await followUp.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Source workflow context loaded",
+          payload: expect.objectContaining({
+            sourceThreadId: "thread_source",
+            sourceThreadTitle: "Investigate support backlog",
+            summary: "Investigate support backlog",
+            firstUserPrompt: "Review support backlog patterns",
           }),
         }),
       ])
