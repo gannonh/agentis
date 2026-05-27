@@ -33,7 +33,9 @@ export function AppShell() {
           </div>
         </SidebarInset>
       </SidebarProvider>
-      {import.meta.env.DEV ? <Agentation /> : null}
+      {import.meta.env.DEV && import.meta.env.MODE !== "test" ? (
+        <Agentation />
+      ) : null}
     </TooltipProvider>
   )
 }
