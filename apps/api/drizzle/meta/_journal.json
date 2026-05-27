@@ -71,6 +71,13 @@
       "when": 1779797400000,
       "tag": "0009_agent_promotion_draft_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1779811200000,
+      "tag": "0010_agent_promotion_validation",
+      "breakpoints": true
     }
   ]
 }

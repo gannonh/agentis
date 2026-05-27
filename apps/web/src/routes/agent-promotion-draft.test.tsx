@@ -12,8 +12,42 @@ import {
 
 const navigate = vi.fn()
 
+const { baseDraft } = vi.hoisted(() => {
+  const now = new Date().toISOString()
+  return {
+    baseDraft: {
+      id: "draft_test",
+      threadId: "thread_test",
+      sourceThreadTitle: "Investigate support backlog",
+      name: "Support Backlog Agent",
+      description: "Reviews backlog patterns.",
+      systemPrompt: "Review support backlog patterns.",
+      model: "gpt-4o-mini",
+      toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+      intelligence: {
+        suggestedPurpose: "Review support backlog patterns.",
+        repeatedSteps: ["Review incoming issues", "Assign severity"],
+        requiredTools: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+        suggestedPrompt:
+          "Use the source thread context to review support backlog patterns.",
+        modelRecommendation: {
+          model: "gpt-4.1-mini",
+          reason: "Best fit for careful triage.",
+        },
+        rubricCriteria: ["Finds the right issue", "Explains the severity"],
+      },
+      editedFields: ["systemPrompt"],
+      proposedToolGrants: [],
+      unsupportedSourceSteps: [],
+      createdAt: now,
+      updatedAt: now,
+    },
+  }
+})
+
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router")
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router")
   return {
     ...actual,
     useNavigate: () => navigate,
@@ -21,56 +55,30 @@ vi.mock("react-router", async () => {
   }
 })
 
-vi.mock("@/lib/api/agents-client", () => {
-  const draft = {
-    id: "draft_test",
-    threadId: "thread_test",
-    sourceThreadTitle: "Investigate support backlog",
-    name: "Support Backlog Agent",
-    description: "Reviews backlog patterns.",
-    systemPrompt: "Review support backlog patterns.",
-    model: "gpt-4o-mini",
-    toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
-    intelligence: {
-      suggestedPurpose: "Review support backlog patterns.",
-      repeatedSteps: ["Review incoming issues", "Assign severity"],
-      requiredTools: [{ toolkitSlug: "github", connectionId: "conn_github" }],
-      suggestedPrompt: "Use the source thread context to review support backlog patterns.",
-      modelRecommendation: {
-        model: "gpt-4.1-mini",
-        reason: "Best fit for careful triage.",
+vi.mock("@/lib/api/agents-client", () => ({
+  getAgentPromotionDraft: vi.fn().mockResolvedValue({ draft: baseDraft }),
+  createAgentFromPromotionDraft: vi.fn().mockResolvedValue({
+    agent: { id: "agent_test" },
+    configurationVersions: [],
+    toolGrants: [],
+  }),
+  updateAgentPromotionDraft: vi.fn().mockResolvedValue({
+    draft: {
+      ...baseDraft,
+      intelligence: {
+        ...baseDraft.intelligence,
+        rubricCriteria: ["Assigns severity", "Explains handoff"],
       },
-      rubricCriteria: ["Finds the right issue", "Explains the severity"],
+      editedFields: ["rubricCriteria"],
     },
-    editedFields: ["systemPrompt"],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-
-  return {
-    getAgentPromotionDraft: vi.fn().mockResolvedValue({ draft }),
-    createAgentFromPromotionDraft: vi.fn().mockResolvedValue({
-      agent: { id: "agent_test" },
-      configurationVersions: [],
-      toolGrants: [],
-    }),
-    updateAgentPromotionDraft: vi.fn().mockResolvedValue({
-      draft: {
-        ...draft,
-        intelligence: {
-          ...draft.intelligence,
-          rubricCriteria: ["Assigns severity", "Explains handoff"],
-        },
-        editedFields: ["rubricCriteria"],
-      },
-    }),
-  }
-})
+  }),
+}))
 
 describe("AgentPromotionDraftPage", () => {
   beforeEach(() => {
     navigate.mockReset()
     vi.mocked(getAgentPromotionDraft).mockClear()
+    vi.mocked(getAgentPromotionDraft).mockResolvedValue({ draft: baseDraft })
     vi.mocked(createAgentFromPromotionDraft).mockClear()
     vi.mocked(updateAgentPromotionDraft).mockClear()
   })
@@ -81,13 +89,7 @@ describe("AgentPromotionDraftPage", () => {
     render(
       <GeneratedSuggestions
         draft={{
-          id: "draft_test",
-          threadId: "thread_test",
-          sourceThreadTitle: "Investigate support backlog",
-          name: "Support Backlog Agent",
-          description: "Reviews backlog patterns.",
-          systemPrompt: "Review support backlog patterns.",
-          model: "gpt-4o-mini",
+          ...baseDraft,
           toolGrants: [],
           intelligence: {
             repeatedSteps: ["Assign severity", "Assign severity"],
@@ -95,8 +97,6 @@ describe("AgentPromotionDraftPage", () => {
             rubricCriteria: [],
           },
           editedFields: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         }}
         editedFields={[]}
         rubricText=""
@@ -119,8 +119,12 @@ describe("AgentPromotionDraftPage", () => {
       </MemoryRouter>
     )
 
-    expect(await screen.findByText("Create agent from thread")).toBeInTheDocument()
-    expect(await screen.findByDisplayValue("Support Backlog Agent")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Create agent from thread")
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByDisplayValue("Support Backlog Agent")
+    ).toBeInTheDocument()
     await user.clear(screen.getByLabelText(/^name/i))
     await user.type(screen.getByLabelText(/^name/i), "Support Triage Agent")
     await user.clear(screen.getByLabelText(/^description/i))
@@ -149,6 +153,50 @@ describe("AgentPromotionDraftPage", () => {
     })
   })
 
+  it("renders proposed grants and validation checklist", async () => {
+    vi.mocked(getAgentPromotionDraft).mockResolvedValueOnce({
+      draft: {
+        ...baseDraft,
+        toolGrants: [],
+        proposedToolGrants: [
+          {
+            toolkitSlug: "slack",
+            toolName: "SLACK_SEND_MESSAGE",
+            displayName: "Slack send message",
+            required: true,
+            validationStatus: "missing_access",
+            remediation: {
+              code: "toolkit_not_connected",
+              message: "Connect Slack before creating this agent.",
+            },
+          },
+        ],
+        unsupportedSourceSteps: [
+          {
+            id: "step-crm",
+            title: "Lookup CRM account",
+            reason: "unsupported_tool",
+            toolName: "CRM_LOOKUP",
+            details: "No matching integration is available.",
+          },
+        ],
+      },
+    })
+    render(
+      <MemoryRouter>
+        <AgentPromotionDraftPage />
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText("First-run validation")).toBeInTheDocument()
+    expect(screen.getByText("Slack send message")).toBeInTheDocument()
+    expect(
+      screen.getByText("Connect Slack before creating this agent.")
+    ).toBeInTheDocument()
+    expect(screen.getByText("Lookup CRM account")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /create agent/i })).toBeDisabled()
+  })
+
   it("shows generated suggestions and edited-field markers", async () => {
     const user = userEvent.setup()
     render(
@@ -157,15 +205,17 @@ describe("AgentPromotionDraftPage", () => {
       </MemoryRouter>
     )
 
-    const suggestions = (await screen.findByText("Generated suggestions")).closest(
-      "section"
-    )
+    const suggestions = (
+      await screen.findByText("Generated suggestions")
+    ).closest("section")
     expect(suggestions).not.toBeNull()
     const suggestionContent = within(suggestions as HTMLElement)
     expect(
       suggestionContent.getByText("Review support backlog patterns.")
     ).toBeInTheDocument()
-    expect(suggestionContent.getByText("Review incoming issues")).toBeInTheDocument()
+    expect(
+      suggestionContent.getByText("Review incoming issues")
+    ).toBeInTheDocument()
     expect(suggestionContent.getByText("Assign severity")).toBeInTheDocument()
     expect(suggestionContent.getByText("github")).toBeInTheDocument()
     expect(
@@ -176,7 +226,9 @@ describe("AgentPromotionDraftPage", () => {
     expect(
       suggestionContent.getByText("Recommended answer engine: gpt-4.1-mini")
     ).toBeInTheDocument()
-    expect(suggestionContent.getByText("Instructions edited")).toBeInTheDocument()
+    expect(
+      suggestionContent.getByText("Instructions edited")
+    ).toBeInTheDocument()
 
     await user.clear(screen.getByLabelText(/^name/i))
     await user.type(screen.getByLabelText(/^name/i), "Support Triage Agent")

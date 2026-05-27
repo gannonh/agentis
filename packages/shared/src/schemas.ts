@@ -243,6 +243,47 @@ export const agentToolGrantInputSchema = z.object({
 
 export const agentToolGrantInputListSchema = z.array(agentToolGrantInputSchema)
 
+export const toolGrantValidationStatusSchema = z.enum([
+  "valid",
+  "missing_access",
+  "pending_connection",
+  "unsupported",
+])
+
+export const unsupportedSourceStepReasonSchema = z.enum([
+  "unsupported_tool",
+  "incomplete_tool_call",
+  "missing_metadata",
+])
+
+export const toolGrantRemediationSchema = z.object({
+  code: composioRemediationCodeSchema,
+  message: nonEmptyString,
+  href: z.string().optional(),
+})
+
+export const agentPromotionDraftToolGrantProposalSchema = z.object({
+  toolkitSlug: nonEmptyString,
+  toolName: z.string().optional(),
+  displayName: z.string().optional(),
+  required: z.boolean(),
+})
+
+export const proposedToolGrantSchema =
+  agentPromotionDraftToolGrantProposalSchema.extend({
+    validationStatus: toolGrantValidationStatusSchema,
+    connectionId: z.string().optional(),
+    remediation: toolGrantRemediationSchema.optional(),
+  })
+
+export const unsupportedSourceStepSchema = z.object({
+  id: nonEmptyString,
+  title: nonEmptyString,
+  reason: unsupportedSourceStepReasonSchema,
+  toolName: z.string().optional(),
+  details: z.string().optional(),
+})
+
 export const createAgentRequestSchema = z.object({
   name: nonEmptyString,
   description: z.string().optional(),
@@ -283,12 +324,11 @@ export const agentPromotionDraftIntelligenceSchema = z.object({
 })
 
 export const updateAgentPromotionDraftIntelligenceSchema =
-  agentPromotionDraftIntelligenceSchema.partial().refine(
-    (payload) => Object.keys(payload).length > 0,
-    {
+  agentPromotionDraftIntelligenceSchema
+    .partial()
+    .refine((payload) => Object.keys(payload).length > 0, {
       message: "At least one promotion draft intelligence field is required.",
-    }
-  )
+    })
 
 export const agentPromotionDraftEditedFieldSchema = z.enum([
   "name",
@@ -315,6 +355,8 @@ export const agentPromotionDraftSchema = z.object({
   toolGrants: z.array(agentToolGrantInputSchema),
   intelligence: agentPromotionDraftIntelligenceSchema,
   editedFields: z.array(agentPromotionDraftEditedFieldSchema),
+  proposedToolGrants: z.array(proposedToolGrantSchema).default([]),
+  unsupportedSourceSteps: z.array(unsupportedSourceStepSchema).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -332,6 +374,7 @@ export const updateAgentPromotionDraftRequestSchema = z
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
     intelligence: updateAgentPromotionDraftIntelligenceSchema.optional(),
   })
+  .strict()
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one promotion draft field is required.",
   })
@@ -556,7 +599,39 @@ export type AgentConfigurationVersionSummary = z.infer<
 export type Agent = z.infer<typeof agentSchema>
 export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>
-export type AgentToolGrantInputList = z.infer<typeof agentToolGrantInputListSchema>
+export type AgentToolGrantInputList = z.infer<
+  typeof agentToolGrantInputListSchema
+>
+export type ToolGrantValidationStatus = z.infer<
+  typeof toolGrantValidationStatusSchema
+>
+export type UnsupportedSourceStepReason = z.infer<
+  typeof unsupportedSourceStepReasonSchema
+>
+export type AgentPromotionDraftToolGrantProposal = z.infer<
+  typeof agentPromotionDraftToolGrantProposalSchema
+>
+export type ProposedToolGrant = z.infer<typeof proposedToolGrantSchema>
+export type UnsupportedSourceStep = z.infer<typeof unsupportedSourceStepSchema>
+
+export function hasBlockingProposedToolGrants(
+  grants: ProposedToolGrant[]
+): boolean {
+  return grants.some(
+    (grant) => grant.required && grant.validationStatus !== "valid"
+  )
+}
+
+export function proposedToolGrantsToInputs(
+  grants: ProposedToolGrant[]
+): AgentToolGrantInput[] {
+  return grants
+    .filter((grant) => grant.required && grant.validationStatus === "valid")
+    .map((grant) => ({
+      toolkitSlug: grant.toolkitSlug,
+      connectionId: grant.connectionId,
+    }))
+}
 export type CreateAgentRequest = z.infer<typeof createAgentRequestSchema>
 export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
 export type CreateAgentTestThreadRequest = z.infer<
