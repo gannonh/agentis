@@ -242,6 +242,131 @@ describe("promotion draft routes", () => {
     })
   })
 
+  it("validates proposed required grants before creating an agent", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Notify support channel",
+      prompt: "Send a Slack message",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    ctx.repos.steps.create({
+      runId: created.run.id,
+      type: "tool-call",
+      status: "completed",
+      title: "Send Slack message",
+      payload: { toolName: "SLACK_SEND_MESSAGE" },
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as { draft: { id: string } }
+
+    const blocked = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Notifier",
+          systemPrompt: "Send support updates.",
+        }),
+      }
+    )
+
+    expect(blocked.status).toBe(400)
+    expect((await blocked.json()) as { code: string; remediation?: string }).toMatchObject({
+      code: "toolkit_not_connected",
+      remediation: "Connect Slack before creating this agent.",
+    })
+  })
+
+  it("creates an agent from proposed grants when access is present", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Open a GitHub issue",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    ctx.repos.steps.create({
+      runId: created.run.id,
+      type: "tool-call",
+      status: "completed",
+      title: "Create GitHub issue",
+      payload: { toolName: "GITHUB_CREATE_ISSUE" },
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as { draft: { id: string } }
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Issue Creator",
+          systemPrompt: "Open GitHub issues from requests.",
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      agent: { toolGrantCount: number }
+      toolGrants: { toolkitSlug: string; connectionId: string }[]
+    }
+    expect(body.agent.toolGrantCount).toBe(1)
+    expect(body.toolGrants).toMatchObject([
+      { toolkitSlug: "github", connectionId: github.id },
+    ])
+  })
+
+  it("creates an agent from no-tool drafts without grant validation noise", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Summarize backlog",
+      prompt: "Summarize support patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as { draft: { id: string } }
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Backlog Summarizer",
+          systemPrompt: "Summarize support backlog patterns.",
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as { agent: { toolGrantCount: number } }
+    expect(body.agent.toolGrantCount).toBe(0)
+  })
+
   it("creates an agent from draft edits in a single promotion command", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

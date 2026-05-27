@@ -1,8 +1,10 @@
 import type {
   AgentDetailResponse,
   AgentPromotionDraft,
+  AgentToolGrantInput,
   CreateAgentRequest,
   Message,
+  ProposedToolGrant,
   Thread,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
@@ -73,6 +75,19 @@ function grantResolutionFailed(error: string): ServiceError {
   }
 }
 
+function proposedGrantValidationFailed(grant: ProposedToolGrant): ServiceError {
+  return {
+    status: 400,
+    body: {
+      error: `${grant.toolkitSlug} access is required before creating this agent.`,
+      code: grant.remediation?.code ?? "toolkit_not_connected",
+      remediation:
+        grant.remediation?.message ??
+        `Connect ${grant.toolkitSlug} before creating this agent.`,
+    },
+  }
+}
+
 function firstUserText(messages: Message[]): string | null {
   const user = messages.find((message) => message.role === "user")
   const text = user?.parts
@@ -107,6 +122,24 @@ function buildDraftDefaults(thread: Thread, messages: Message[]) {
     description: buildDescription(title),
     systemPrompt: buildSystemPrompt(sourceText),
   }
+}
+
+function firstInvalidRequiredGrant(
+  draft: AgentPromotionDraft
+): ProposedToolGrant | undefined {
+  return draft.proposedToolGrants.find(
+    (grant) => grant.required && grant.validationStatus !== "valid"
+  )
+}
+
+function defaultRequestedGrants(draft: AgentPromotionDraft): AgentToolGrantInput[] {
+  if (draft.toolGrants.length > 0) return draft.toolGrants
+  return draft.proposedToolGrants
+    .filter((grant) => grant.required && grant.validationStatus === "valid")
+    .map((grant) => ({
+      toolkitSlug: grant.toolkitSlug,
+      connectionId: grant.connectionId,
+    }))
 }
 
 export class AgentPromotionService {
@@ -165,7 +198,15 @@ export class AgentPromotionService {
     const draft = this.repos.agentPromotionDrafts.getById(draftId)
     if (!draft) return { ok: false, error: promotionDraftNotFound() }
 
-    const requestedGrants = input.toolGrants ?? draft.toolGrants
+    const invalidRequiredGrant = firstInvalidRequiredGrant(draft)
+    if (invalidRequiredGrant) {
+      return {
+        ok: false,
+        error: proposedGrantValidationFailed(invalidRequiredGrant),
+      }
+    }
+
+    const requestedGrants = input.toolGrants ?? defaultRequestedGrants(draft)
     const resolvedGrants = resolveRequestedAgentGrants(
       this.repos,
       requestedGrants
