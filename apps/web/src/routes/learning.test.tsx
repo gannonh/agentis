@@ -1,10 +1,16 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
+import { afterEach, vi } from "vitest"
+import type { MemoriesListResponse } from "@workspace/shared"
 import { LearningCandidatesSection } from "@/components/learning/learning-candidates-section"
 import { LearningSecondaryPanel } from "@/components/learning/learning-secondary-panel"
 import { LearningPage } from "./learning"
 import { MemoriesPage } from "./memories"
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe("LearningPage", () => {
   it("renders learning dashboard aligned with comp", () => {
@@ -74,6 +80,18 @@ describe("LearningPage", () => {
 
   it("navigates from Learning to Memories", async () => {
     const user = userEvent.setup()
+    const memoriesResponse: MemoriesListResponse = {
+      categories: [],
+      memories: [],
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => memoriesResponse,
+      })
+    )
+
     render(
       <MemoryRouter initialEntries={["/learning"]}>
         <Routes>
@@ -86,7 +104,8 @@ describe("LearningPage", () => {
     await user.click(screen.getByRole("link", { name: "Browse Memories" }))
 
     expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
-    expect(screen.getByText("Detailed memory browsing is coming soon.")).toBeInTheDocument()
+    expect(screen.getByText(/Browse saved context/)).toBeInTheDocument()
+    expect(await screen.findByText("No saved memories")).toBeInTheDocument()
   })
 
   it("filters conversations by agent", async () => {

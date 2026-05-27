@@ -40,6 +40,33 @@ export const projectMemories = sqliteTable(
   (table) => [index("project_memories_project_id_idx").on(table.projectId)]
 )
 
+export const savedMemoryCategories = sqliteTable("saved_memory_categories", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+})
+
+export const savedMemories = sqliteTable(
+  "saved_memories",
+  {
+    id: text("id").primaryKey(),
+    content: text("content").notNull(),
+    category: text("category").notNull(),
+    usageGuidance: text("usage_guidance").notNull(),
+    tagsJson: text("tags_json").notNull(),
+    importance: text("importance").notNull(),
+    date: text("date").notNull(),
+    scope: text("scope").notNull(),
+    associatedAgent: text("associated_agent"),
+    source: text("source").notNull(),
+    provenance: text("provenance").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("saved_memories_category_idx").on(table.category)]
+)
+
 export const agents = sqliteTable(
   "agents",
   {

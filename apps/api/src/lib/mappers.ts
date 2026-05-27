@@ -4,6 +4,8 @@ import type {
   MessagePart,
   Project,
   ProjectMemory,
+  SavedMemory,
+  SavedMemoryCategory,
   Run,
   RunStep,
   RunUsage,
@@ -14,6 +16,8 @@ import type {
   messages,
   projectMemories,
   projects,
+  savedMemories,
+  savedMemoryCategories,
   runSteps,
   runs,
   threads,
@@ -22,6 +26,8 @@ import { mapSourceWorkflowSnapshot } from "./source-workflow-snapshot.js"
 
 type ProjectRow = typeof projects.$inferSelect
 type ProjectMemoryRow = typeof projectMemories.$inferSelect
+type SavedMemoryRow = typeof savedMemories.$inferSelect
+type SavedMemoryCategoryRow = typeof savedMemoryCategories.$inferSelect
 type ArtifactRow = typeof artifacts.$inferSelect
 type ThreadRow = typeof threads.$inferSelect
 type MessageRow = typeof messages.$inferSelect
@@ -93,6 +99,44 @@ export function mapProjectMemory(row: ProjectMemoryRow): ProjectMemory {
     enabled: row.enabled,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+  }
+}
+
+function parseSavedMemoryTags(tagsJson: string): string[] {
+  try {
+    return JSON.parse(tagsJson) as string[]
+  } catch {
+    return []
+  }
+}
+
+export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
+  return {
+    id: row.id,
+    content: row.content,
+    category: row.category as SavedMemory["category"],
+    usageGuidance: row.usageGuidance,
+    tags: parseSavedMemoryTags(row.tagsJson),
+    importance: row.importance as SavedMemory["importance"],
+    date: row.date,
+    scope: row.scope as SavedMemory["scope"],
+    associatedAgent: row.associatedAgent ?? undefined,
+    source: row.source,
+    provenance: row.provenance,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export function mapSavedMemoryCategory(
+  row: SavedMemoryCategoryRow,
+  count: number
+): SavedMemoryCategory {
+  return {
+    id: row.id as SavedMemoryCategory["id"],
+    name: row.name as SavedMemoryCategory["name"],
+    description: row.description,
+    count,
   }
 }
 

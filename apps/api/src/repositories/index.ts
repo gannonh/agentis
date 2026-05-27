@@ -10,6 +10,7 @@ import { ProjectMemoryRepository } from "./project-memory-repository.js"
 import { ProjectRepository } from "./project-repository.js"
 import { RunRepository } from "./run-repository.js"
 import { RunStepRepository } from "./run-step-repository.js"
+import { SavedMemoryRepository } from "./saved-memory-repository.js"
 import { ThreadRepository } from "./thread-repository.js"
 import { ToolAccessGrantRepository } from "./tool-access-grant-repository.js"
 
@@ -22,6 +23,7 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     steps: new RunStepRepository(db),
     projects: new ProjectRepository(db),
     projectMemories: new ProjectMemoryRepository(db),
+    savedMemories: new SavedMemoryRepository(db),
     artifacts: new ArtifactRepository(db),
     agents: new AgentRepository(db),
     agentPromotionDrafts: new AgentPromotionDraftRepository(db),
