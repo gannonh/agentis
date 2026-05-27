@@ -31,7 +31,7 @@ export function LearningPage() {
 
       <SkillsCard skills={workspace.skills} pinnedCount={pinnedCount} />
 
-      <LearningSecondaryPanel />
+      <LearningSecondaryPanel memories={workspace.memories} />
 
       <AgentFilterBar value={agentFilter} onChange={setAgentFilter} />
 

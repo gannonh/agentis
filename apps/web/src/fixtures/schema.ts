@@ -92,9 +92,12 @@ export const skillSchema = z.object({
   pinned: z.boolean().default(false),
 })
 
+export const memoryCategorySchema = z.enum(["User Facts", "Preferences", "Active Work"])
+
 export const memorySchema = z.object({
   id: z.string(),
   content: z.string(),
+  category: memoryCategorySchema,
   scope: z.enum(["global", "project", "agent"]),
   importance: z.enum(["low", "medium", "high"]).optional(),
 })
@@ -205,6 +208,7 @@ export type Agent = z.infer<typeof agentSchema>
 export type Thread = z.infer<typeof threadSchema>
 export type Run = z.infer<typeof runSchema>
 export type Skill = z.infer<typeof skillSchema>
+export type Memory = z.infer<typeof memorySchema>
 export type Artifact = z.infer<typeof artifactSchema>
 export type Integration = z.infer<typeof integrationSchema>
 export type StarterAgent = z.infer<typeof starterAgentSchema>
