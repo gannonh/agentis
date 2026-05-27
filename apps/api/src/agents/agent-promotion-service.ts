@@ -176,15 +176,19 @@ export class AgentPromotionService {
       return { ok: false, error: grantResolutionFailed(resolvedGrants.error) }
     }
 
-    const sourceSnapshot = draft.sourceWorkflow
-      ? toSourceWorkflowSnapshot({
-          sourceThread: {
-            id: draft.threadId,
-            title: draft.sourceThreadTitle,
-          },
-          sourceWorkflow: draft.sourceWorkflow,
-        })
-      : {}
+    const sourceWorkflow =
+      draft.sourceWorkflow ??
+      buildSourceWorkflow(
+        draft.sourceThreadTitle,
+        this.repos.messages.listByThreadId(draft.threadId)
+      )
+    const sourceSnapshot = toSourceWorkflowSnapshot({
+      sourceThread: {
+        id: draft.threadId,
+        title: draft.sourceThreadTitle,
+      },
+      sourceWorkflow,
+    })
     const created = this.repos.agents.createWithGrants(
       {
         name: input.name,

@@ -200,6 +200,12 @@ describe("shared schemas", () => {
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, systemPrompt: "" })
     ).toThrow()
+    expect(() =>
+      agentPromotionDraftSchema.parse({
+        ...draft,
+        sourceWorkflow: { ...draft.sourceWorkflow, firstUserPrompt: "" },
+      })
+    ).toThrow()
 
     const update = updateAgentPromotionDraftRequestSchema.parse({
       name: "Support Triage Agent",

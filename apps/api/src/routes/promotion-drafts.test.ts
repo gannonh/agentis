@@ -271,6 +271,55 @@ describe("promotion draft routes", () => {
     )
   })
 
+  it("preserves source context when creating an agent from a legacy draft", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const draft = ctx.repos.agentPromotionDrafts.create({
+      threadId: created.thread.id,
+      sourceThreadTitle: created.thread.title,
+      name: "Support Backlog Agent",
+      description: "Helps triage support backlog patterns.",
+      systemPrompt: "Help triage support backlog patterns.",
+      model: "gpt-4o-mini",
+      toolGrants: [],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      agent: {
+        sourceThread?: { id: string; title: string }
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+      }
+    }
+    expect(body.agent.sourceThread).toMatchObject({
+      id: created.thread.id,
+      title: "Investigate support backlog",
+    })
+    expect(body.agent.sourceWorkflow).toMatchObject({
+      summary: "Investigate support backlog",
+      firstUserPrompt: "Review support backlog patterns",
+    })
+  })
+
   it("rejects draft creation for missing and agent-owned source threads", async () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({

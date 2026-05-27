@@ -71,7 +71,7 @@ export const agentSourceThreadSchema = z.object({
 
 export const agentSourceWorkflowSchema = z.object({
   summary: nonEmptyString,
-  firstUserPrompt: z.string().optional(),
+  firstUserPrompt: nonEmptyString.optional(),
 })
 
 export const threadSchema = z.object({
