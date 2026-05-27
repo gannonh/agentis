@@ -32,7 +32,7 @@ export function LearningPage() {
 
       <SkillsCard skills={workspace.skills} pinnedCount={pinnedCount} />
 
-      <LearningSecondaryPanel />
+      <LearningSecondaryPanel memories={workspace.memories} />
 
       <LearningCandidatesSection candidates={workspace.learningCandidates} />
 

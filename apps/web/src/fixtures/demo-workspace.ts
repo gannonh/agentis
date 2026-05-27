@@ -169,7 +169,29 @@ export const demoWorkspace = workspaceSchema.parse({
     { id: "skill-14", name: "databricks-query-pack", pinned: false },
     { id: "skill-15", name: "customer-churn-segments", pinned: false },
   ],
-  memories: [],
+  memories: [
+    {
+      id: "memory-user-fact-1",
+      content: "User runs an AI automation consulting practice.",
+      category: "User Fact",
+      scope: "global",
+      importance: "high",
+    },
+    {
+      id: "memory-preference-1",
+      content: "User prefers concise responses with direct next steps.",
+      category: "Preference",
+      scope: "global",
+      importance: "medium",
+    },
+    {
+      id: "memory-active-work-1",
+      content: "User is preparing the Agentis memories foundation milestone.",
+      category: "Active Work",
+      scope: "project",
+      importance: "high",
+    },
+  ],
   rubrics: [],
   learningCandidates: [
     {
