@@ -23,7 +23,10 @@ import {
   updateAgentRequestSchema,
   agentPromotionDraftSchema,
   createAgentPromotionDraftResponseSchema,
+  hasBlockingProposedToolGrants,
+  proposedToolGrantsToInputs,
   updateAgentPromotionDraftRequestSchema,
+  type ProposedToolGrant,
 } from "./schemas.js"
 
 describe("shared schemas", () => {
@@ -181,6 +184,19 @@ describe("shared schemas", () => {
         firstUserPrompt: "Review support backlog patterns",
       },
       toolGrants: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+      intelligence: {
+        suggestedPurpose: "Triage support backlog patterns.",
+        repeatedSteps: ["Review incoming issues", "Assign severity"],
+        requiredTools: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+        suggestedPrompt:
+          "Review support backlog patterns and propose next steps.",
+        modelRecommendation: {
+          model: "gpt-4o-mini",
+          reason: "Matches the source thread model.",
+        },
+        rubricCriteria: ["Finds the right issue", "Explains the severity"],
+      },
+      editedFields: ["name", "rubricCriteria"],
       createdAt: now,
       updatedAt: now,
     })
@@ -194,6 +210,60 @@ describe("shared schemas", () => {
     expect(response.draft.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: "conn-1" },
     ])
+    expect(response.draft.intelligence).toMatchObject({
+      suggestedPurpose: "Triage support backlog patterns.",
+      repeatedSteps: ["Review incoming issues", "Assign severity"],
+      requiredTools: [{ toolkitSlug: "github", connectionId: "conn-1" }],
+      suggestedPrompt:
+        "Review support backlog patterns and propose next steps.",
+      modelRecommendation: {
+        model: "gpt-4o-mini",
+        reason: "Matches the source thread model.",
+      },
+      rubricCriteria: ["Finds the right issue", "Explains the severity"],
+    })
+    expect(response.draft.editedFields).toEqual(["name", "rubricCriteria"])
+
+    const draftWithValidation = agentPromotionDraftSchema.parse({
+      ...draft,
+      proposedToolGrants: [
+        {
+          toolkitSlug: "github",
+          toolName: "GITHUB_CREATE_ISSUE",
+          displayName: "Create issue",
+          required: true,
+          validationStatus: "missing_access",
+          remediation: {
+            code: "toolkit_not_connected",
+            message: "Connect GitHub before creating this agent.",
+          },
+        },
+      ],
+      unsupportedSourceSteps: [
+        {
+          id: "step-1",
+          title: "Call unsupported CRM tool",
+          reason: "unsupported_tool",
+          toolName: "CRM_LOOKUP",
+          details: "No matching integration is available.",
+        },
+      ],
+    })
+    expect(draftWithValidation.proposedToolGrants).toHaveLength(1)
+    expect(draftWithValidation.unsupportedSourceSteps).toHaveLength(1)
+    expect(() =>
+      agentPromotionDraftSchema.parse({
+        ...draft,
+        proposedToolGrants: [
+          {
+            toolkitSlug: "github",
+            required: true,
+            validationStatus: "unknown",
+          },
+        ],
+      })
+    ).toThrow()
+
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, name: "" })
     ).toThrow()
@@ -212,12 +282,67 @@ describe("shared schemas", () => {
       description: null,
       systemPrompt: "Route support issues with severity labels.",
       model: "gpt-4.1-mini",
+      intelligence: {
+        rubricCriteria: ["Assigns severity", "Explains handoff"],
+      },
     })
     expect(update.description).toBeNull()
+    expect(update.intelligence?.rubricCriteria).toEqual([
+      "Assigns severity",
+      "Explains handoff",
+    ])
     expect(() => updateAgentPromotionDraftRequestSchema.parse({})).toThrow()
     expect(() =>
       updateAgentPromotionDraftRequestSchema.parse({ name: "" })
     ).toThrow()
+    expect(() =>
+      updateAgentPromotionDraftRequestSchema.parse({
+        name: "Support Triage Agent",
+        proposedToolGrants: [
+          { toolkitSlug: "github", required: true, validationStatus: "valid" },
+        ],
+      })
+    ).toThrow()
+  })
+
+  it("evaluates and converts proposed tool grants", () => {
+    const grants: ProposedToolGrant[] = [
+      {
+        toolkitSlug: "github",
+        toolName: "GITHUB_CREATE_ISSUE",
+        displayName: "GitHub create issue",
+        required: true,
+        validationStatus: "valid",
+        connectionId: "conn-1",
+      },
+      {
+        toolkitSlug: "linear",
+        toolName: "LINEAR_CREATE_ISSUE",
+        displayName: "Linear create issue",
+        required: true,
+        validationStatus: "missing_access",
+      },
+      {
+        toolkitSlug: "slack",
+        toolName: "SLACK_SEND_MESSAGE",
+        displayName: "Slack send message",
+        required: false,
+        validationStatus: "pending_connection",
+      },
+    ]
+
+    expect(hasBlockingProposedToolGrants(grants)).toBe(true)
+    expect(
+      hasBlockingProposedToolGrants([
+        { ...grants[0], validationStatus: "pending_connection" },
+      ])
+    ).toBe(true)
+    expect(hasBlockingProposedToolGrants([grants[0]])).toBe(false)
+    expect(hasBlockingProposedToolGrants([grants[2]])).toBe(false)
+    expect(proposedToolGrantsToInputs(grants)).toEqual([
+      { toolkitSlug: "github", connectionId: "conn-1" },
+    ])
+    expect(proposedToolGrantsToInputs([])).toEqual([])
   })
 
   it("parses agent create, list, detail, update, and grant payloads", () => {

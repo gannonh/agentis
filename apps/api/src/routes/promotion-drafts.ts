@@ -55,7 +55,7 @@ export function createPromotionDraftRoutes(
   const service = new AgentPromotionService(repos, config)
 
   app.get("/:id", (c) => {
-    const draft = repos.agentPromotionDrafts.getById(c.req.param("id"))
+    const draft = service.getDraft(c.req.param("id"))
     if (!draft) {
       return c.json(promotionDraftNotFound(), 404)
     }
@@ -76,7 +76,7 @@ export function createPromotionDraftRoutes(
       return c.json(invalidPromotionDraftPayload(parsed.error.issues), 400)
     }
 
-    const draft = repos.agentPromotionDrafts.update(c.req.param("id"), parsed.data)
+    const draft = service.updateDraft(c.req.param("id"), parsed.data)
     if (!draft) {
       return c.json(promotionDraftNotFound(), 404)
     }
