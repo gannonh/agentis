@@ -18,8 +18,8 @@ describe("fixture schemas", () => {
       suggestionType: "memory",
       status: "suggested",
       actions: [
-        { id: "save-memory", label: "Save memory" },
-        { id: "dismiss", label: "Dismiss" },
+        { id: "save-memory", label: "Save memory", tone: "primary", icon: "sparkles" },
+        { id: "dismiss", label: "Dismiss", tone: "secondary" },
       ],
       provenance: {
         kind: "mocked-llm-derived",

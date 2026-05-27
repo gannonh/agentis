@@ -4,7 +4,9 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import type { LearningCandidate } from "@/fixtures/schema"
 
-const primaryActionId = "save-memory"
+const candidateActionIcons = {
+  sparkles: SparklesIcon,
+} as const
 
 type LearningCandidateCardProps = {
   candidate: LearningCandidate
@@ -46,18 +48,18 @@ export function LearningCandidateCard({ candidate }: LearningCandidateCardProps)
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
           {candidate.actions.map((action) => {
-            const isPrimaryAction = action.id === primaryActionId
+            const ActionIcon = action.icon ? candidateActionIcons[action.icon] : null
 
             return (
               <Button
                 key={action.id}
                 type="button"
-                variant={isPrimaryAction ? "default" : "outline"}
+                variant={action.tone === "primary" ? "default" : "outline"}
                 size="sm"
                 disabled
               >
-                {isPrimaryAction ? (
-                  <HugeiconsIcon icon={SparklesIcon} className="size-3.5" strokeWidth={2} />
+                {ActionIcon ? (
+                  <HugeiconsIcon icon={ActionIcon} className="size-3.5" strokeWidth={2} />
                 ) : null}
                 {action.label}
               </Button>

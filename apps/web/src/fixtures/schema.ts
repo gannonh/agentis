@@ -105,6 +105,31 @@ export const rubricSchema = z.object({
   agentId: z.string().optional(),
 })
 
+export const memoryProvenanceKindSchema = z.enum([
+  "mocked-llm-derived",
+  "mocked-saved-memory",
+  "user-generated",
+])
+
+export const learningCandidateSourceSchema = z.object({
+  threadId: z.string(),
+  threadTitle: z.string(),
+  agentId: z.string(),
+  agentName: z.string(),
+})
+
+export const learningCandidateProvenanceSchema = z.object({
+  kind: memoryProvenanceKindSchema,
+  label: z.string(),
+})
+
+export const learningCandidateActionSchema = z.object({
+  id: z.enum(["save-memory", "dismiss"]),
+  label: z.string(),
+  tone: z.enum(["primary", "secondary"]),
+  icon: z.enum(["sparkles"]).optional(),
+})
+
 export const learningCandidateSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -112,23 +137,10 @@ export const learningCandidateSchema = z.object({
   suggestionType: z.enum(["memory", "skill", "rubric"]),
   status: z.enum(["suggested", "accepted", "dismissed"]),
   confidence: z.number().min(0).max(1),
-  source: z.object({
-    threadId: z.string(),
-    threadTitle: z.string(),
-    agentId: z.string(),
-    agentName: z.string(),
-  }),
-  provenance: z.object({
-    kind: z.enum(["mocked-llm-derived", "mocked-saved-memory", "user-generated"]),
-    label: z.string(),
-  }),
+  source: learningCandidateSourceSchema,
+  provenance: learningCandidateProvenanceSchema,
   createdBy: z.enum(["seed", "user", "system"]),
-  actions: z.array(
-    z.object({
-      id: z.string(),
-      label: z.string(),
-    })
-  ),
+  actions: z.array(learningCandidateActionSchema),
 })
 
 export const learningConversationSchema = z.object({
