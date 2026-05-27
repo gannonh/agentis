@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
+import { LearningSecondaryPanel } from "@/components/learning/learning-secondary-panel"
 import { LearningPage } from "./learning"
 import { MemoriesPage } from "./memories"
 
@@ -29,6 +30,17 @@ describe("LearningPage", () => {
     expect(screen.getByRole("heading", { name: "Rubrics" })).toBeInTheDocument()
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: "Dismiss" }).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("shows an empty-state label when no memories are saved", () => {
+    render(
+      <MemoryRouter>
+        <LearningSecondaryPanel memories={[]} />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("0 saved")).toBeInTheDocument()
+    expect(screen.getByText("No memories stored yet")).toBeInTheDocument()
   })
 
   it("navigates from Learning to Memories", async () => {

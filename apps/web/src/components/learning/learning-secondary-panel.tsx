@@ -62,11 +62,15 @@ export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps
             conversations.
           </p>
           <div className="flex flex-wrap gap-2">
-            {categorySummaries.map((summary) => (
-              <Badge key={summary.category} variant="outline" className="text-xs">
-                {summary.category}: {summary.count}
-              </Badge>
-            ))}
+            {categorySummaries.length > 0 ? (
+              categorySummaries.map((summary) => (
+                <Badge key={summary.category} variant="outline" className="text-xs">
+                  {summary.category}: {summary.count}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-muted-foreground text-xs">No memories stored yet</p>
+            )}
           </div>
           <Link
             to="/memories"
