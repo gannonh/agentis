@@ -1,19 +1,8 @@
 import { describe, expect, it } from "vitest"
-import type { Run, RunStep } from "@workspace/shared"
+import type { RunStep } from "@workspace/shared"
 import { analyzeThreadToolUsage } from "./agent-promotion-tool-analysis.js"
 
 const now = new Date().toISOString()
-
-function run(id: string): Run {
-  return {
-    id,
-    threadId: "thread-1",
-    status: "completed",
-    model: "gpt-4o-mini",
-    startedAt: now,
-    finishedAt: now,
-  }
-}
 
 function step(input: Partial<RunStep> & Pick<RunStep, "type" | "title">): RunStep {
   return {
@@ -31,7 +20,6 @@ function step(input: Partial<RunStep> & Pick<RunStep, "type" | "title">): RunSte
 describe("agent promotion tool analysis", () => {
   it("maps source tool calls to required proposed grants", () => {
     const result = analyzeThreadToolUsage({
-      runs: [run("run-1")],
       steps: [
         step({
           type: "tool-call",
@@ -70,7 +58,6 @@ describe("agent promotion tool analysis", () => {
 
   it("records unsupported and incomplete source steps", () => {
     const result = analyzeThreadToolUsage({
-      runs: [run("run-1")],
       steps: [
         step({
           id: "step-crm",
@@ -133,7 +120,6 @@ describe("agent promotion tool analysis", () => {
 
   it("keeps no-tool threads quiet", () => {
     const result = analyzeThreadToolUsage({
-      runs: [run("run-1")],
       steps: [step({ type: "reasoning", title: "Reason about the request" })],
       connectedToolkitSlugs: [],
     })

@@ -16,6 +16,9 @@ import { createId, nowIso } from "../lib/ids.js"
 
 type DraftRow = typeof agentPromotionDrafts.$inferSelect
 
+const proposedToolGrantListSchema = z.array(proposedToolGrantSchema)
+const unsupportedSourceStepListSchema = z.array(unsupportedSourceStepSchema)
+
 type CreateAgentPromotionDraftInput = {
   threadId: string
   sourceThreadTitle: string
@@ -33,11 +36,11 @@ function parseToolGrants(raw: string): AgentToolGrantInput[] {
 }
 
 function parseProposedToolGrants(raw: string): ProposedToolGrant[] {
-  return z.array(proposedToolGrantSchema).parse(JSON.parse(raw))
+  return proposedToolGrantListSchema.parse(JSON.parse(raw))
 }
 
 function parseUnsupportedSourceSteps(raw: string): UnsupportedSourceStep[] {
-  return z.array(unsupportedSourceStepSchema).parse(JSON.parse(raw))
+  return unsupportedSourceStepListSchema.parse(JSON.parse(raw))
 }
 
 function mapDraft(row: DraftRow): AgentPromotionDraft {
@@ -67,28 +70,8 @@ function nextDescription(
   return existing.description ?? null
 }
 
-function nextToolGrantsJson(
-  input: UpdateAgentPromotionDraftRequest,
-  existing: AgentPromotionDraft
-): string {
-  const grants = input.toolGrants ?? existing.toolGrants
-  return JSON.stringify(grants)
-}
-
-function nextProposedToolGrantsJson(
-  input: UpdateAgentPromotionDraftRequest,
-  existing: AgentPromotionDraft
-): string {
-  const grants = input.proposedToolGrants ?? existing.proposedToolGrants
-  return JSON.stringify(grants)
-}
-
-function nextUnsupportedSourceStepsJson(
-  input: UpdateAgentPromotionDraftRequest,
-  existing: AgentPromotionDraft
-): string {
-  const steps = input.unsupportedSourceSteps ?? existing.unsupportedSourceSteps
-  return JSON.stringify(steps)
+function nextJson<T>(inputValue: T[] | undefined, existingValue: T[]): string {
+  return JSON.stringify(inputValue ?? existingValue)
 }
 
 export class AgentPromotionDraftRepository {
@@ -152,11 +135,14 @@ export class AgentPromotionDraftRepository {
         description: nextDescription(input, existing),
         systemPrompt: input.systemPrompt ?? existing.systemPrompt,
         model: input.model ?? existing.model,
-        toolGrantsJson: nextToolGrantsJson(input, existing),
-        proposedToolGrantsJson: nextProposedToolGrantsJson(input, existing),
-        unsupportedSourceStepsJson: nextUnsupportedSourceStepsJson(
-          input,
-          existing
+        toolGrantsJson: nextJson(input.toolGrants, existing.toolGrants),
+        proposedToolGrantsJson: nextJson(
+          input.proposedToolGrants,
+          existing.proposedToolGrants
+        ),
+        unsupportedSourceStepsJson: nextJson(
+          input.unsupportedSourceSteps,
+          existing.unsupportedSourceSteps
         ),
         updatedAt: nowIso(),
       })

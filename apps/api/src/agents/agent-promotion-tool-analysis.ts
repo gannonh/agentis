@@ -1,12 +1,10 @@
 import type {
   ProposedToolGrant,
-  Run,
   RunStep,
   UnsupportedSourceStep,
 } from "@workspace/shared"
 
 type AnalyzeThreadToolUsageInput = {
-  runs: Run[]
   steps: RunStep[]
   connectedToolkitSlugs: string[]
   connectedToolkitConnectionIds?: Record<string, string>

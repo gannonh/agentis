@@ -163,7 +163,6 @@ export class AgentPromotionService {
     const runs = this.repos.runs.listByThreadId(thread.id)
     const connectedToolkits = this.repos.integrationConnections.listConnectedByUserId()
     const toolAnalysis = analyzeThreadToolUsage({
-      runs,
       steps: this.repos.steps.listByRunIds(runs.map((run) => run.id)),
       connectedToolkitSlugs: connectedToolkits.map(
         (connection) => connection.toolkitSlug
