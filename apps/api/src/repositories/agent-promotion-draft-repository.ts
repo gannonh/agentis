@@ -16,6 +16,23 @@ type DraftRow = typeof agentPromotionDrafts.$inferSelect
 type DraftIntelligence = AgentPromotionDraft["intelligence"]
 type DraftEditedField = AgentPromotionDraft["editedFields"][number]
 
+const editedFieldListSchema = agentPromotionDraftEditedFieldSchema.array()
+const editableDraftFields = [
+  "name",
+  "description",
+  "systemPrompt",
+  "model",
+  "toolGrants",
+] as const satisfies readonly DraftEditedField[]
+const editableIntelligenceFields = [
+  "suggestedPurpose",
+  "repeatedSteps",
+  "requiredTools",
+  "suggestedPrompt",
+  "modelRecommendation",
+  "rubricCriteria",
+] as const satisfies readonly DraftEditedField[]
+
 type CreateAgentPromotionDraftInput = {
   threadId: string
   sourceThreadTitle: string
@@ -48,11 +65,7 @@ function parseIntelligence(raw: string): DraftIntelligence {
 }
 
 function parseEditedFields(raw: string): DraftEditedField[] {
-  return zodEditedFields().parse(JSON.parse(raw))
-}
-
-function zodEditedFields() {
-  return agentPromotionDraftEditedFieldSchema.array()
+  return editedFieldListSchema.parse(JSON.parse(raw))
 }
 
 function mapDraft(row: DraftRow): AgentPromotionDraft {
@@ -95,56 +108,34 @@ function nextIntelligenceJson(
   return JSON.stringify(input.intelligence ?? existing.intelligence)
 }
 
-function appendEditedField(
-  fields: DraftEditedField[],
-  field: DraftEditedField
-): DraftEditedField[] {
-  return fields.includes(field) ? fields : [...fields, field]
-}
-
 function changedIntelligenceFields(
   input: UpdateAgentPromotionDraftRequest,
   existing: AgentPromotionDraft
 ): DraftEditedField[] {
-  if (!input.intelligence) return []
+  const intelligence = input.intelligence
+  if (!intelligence) return []
 
-  const fields: DraftEditedField[] = []
-  for (const field of [
-    "suggestedPurpose",
-    "repeatedSteps",
-    "requiredTools",
-    "suggestedPrompt",
-    "modelRecommendation",
-    "rubricCriteria",
-  ] as const) {
-    if (
-      JSON.stringify(input.intelligence[field]) !==
+  return editableIntelligenceFields.filter(
+    (field) =>
+      JSON.stringify(intelligence[field]) !==
       JSON.stringify(existing.intelligence[field])
-    ) {
-      fields.push(field)
-    }
-  }
-  return fields
+  )
 }
 
 function nextEditedFieldsJson(
   input: UpdateAgentPromotionDraftRequest,
   existing: AgentPromotionDraft
 ): string {
-  let fields = existing.editedFields
-  for (const field of [
-    "name",
-    "description",
-    "systemPrompt",
-    "model",
-    "toolGrants",
-  ] as const) {
-    if (field in input) fields = appendEditedField(fields, field)
+  const fields = new Set<DraftEditedField>(existing.editedFields)
+
+  for (const field of editableDraftFields) {
+    if (field in input) fields.add(field)
   }
   for (const field of changedIntelligenceFields(input, existing)) {
-    fields = appendEditedField(fields, field)
+    fields.add(field)
   }
-  return JSON.stringify(fields)
+
+  return JSON.stringify(Array.from(fields))
 }
 
 export class AgentPromotionDraftRepository {

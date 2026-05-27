@@ -20,65 +20,51 @@ vi.mock("react-router", async () => {
   }
 })
 
-vi.mock("@/lib/api/agents-client", () => ({
-  getAgentPromotionDraft: vi.fn().mockResolvedValue({
-    draft: {
-      id: "draft_test",
-      threadId: "thread_test",
-      sourceThreadTitle: "Investigate support backlog",
-      name: "Support Backlog Agent",
-      description: "Reviews backlog patterns.",
-      systemPrompt: "Review support backlog patterns.",
-      model: "gpt-4o-mini",
-      toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
-      intelligence: {
-        suggestedPurpose: "Review support backlog patterns.",
-        repeatedSteps: ["Review incoming issues", "Assign severity"],
-        requiredTools: [{ toolkitSlug: "github", connectionId: "conn_github" }],
-        suggestedPrompt: "Use the source thread context to review support backlog patterns.",
-        modelRecommendation: {
-          model: "gpt-4.1-mini",
-          reason: "Best fit for careful triage.",
-        },
-        rubricCriteria: ["Finds the right issue", "Explains the severity"],
+vi.mock("@/lib/api/agents-client", () => {
+  const draft = {
+    id: "draft_test",
+    threadId: "thread_test",
+    sourceThreadTitle: "Investigate support backlog",
+    name: "Support Backlog Agent",
+    description: "Reviews backlog patterns.",
+    systemPrompt: "Review support backlog patterns.",
+    model: "gpt-4o-mini",
+    toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+    intelligence: {
+      suggestedPurpose: "Review support backlog patterns.",
+      repeatedSteps: ["Review incoming issues", "Assign severity"],
+      requiredTools: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+      suggestedPrompt: "Use the source thread context to review support backlog patterns.",
+      modelRecommendation: {
+        model: "gpt-4.1-mini",
+        reason: "Best fit for careful triage.",
       },
-      editedFields: ["systemPrompt"],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      rubricCriteria: ["Finds the right issue", "Explains the severity"],
     },
-  }),
-  createAgentFromPromotionDraft: vi.fn().mockResolvedValue({
-    agent: { id: "agent_test" },
-    configurationVersions: [],
-    toolGrants: [],
-  }),
-  updateAgentPromotionDraft: vi.fn().mockResolvedValue({
-    draft: {
-      id: "draft_test",
-      threadId: "thread_test",
-      sourceThreadTitle: "Investigate support backlog",
-      name: "Support Backlog Agent",
-      description: "Reviews backlog patterns.",
-      systemPrompt: "Review support backlog patterns.",
-      model: "gpt-4o-mini",
-      toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
-      intelligence: {
-        suggestedPurpose: "Review support backlog patterns.",
-        repeatedSteps: ["Review incoming issues", "Assign severity"],
-        requiredTools: [{ toolkitSlug: "github", connectionId: "conn_github" }],
-        suggestedPrompt: "Use the source thread context to review support backlog patterns.",
-        modelRecommendation: {
-          model: "gpt-4.1-mini",
-          reason: "Best fit for careful triage.",
+    editedFields: ["systemPrompt"],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  return {
+    getAgentPromotionDraft: vi.fn().mockResolvedValue({ draft }),
+    createAgentFromPromotionDraft: vi.fn().mockResolvedValue({
+      agent: { id: "agent_test" },
+      configurationVersions: [],
+      toolGrants: [],
+    }),
+    updateAgentPromotionDraft: vi.fn().mockResolvedValue({
+      draft: {
+        ...draft,
+        intelligence: {
+          ...draft.intelligence,
+          rubricCriteria: ["Assigns severity", "Explains handoff"],
         },
-        rubricCriteria: ["Assigns severity", "Explains handoff"],
+        editedFields: ["rubricCriteria"],
       },
-      editedFields: ["rubricCriteria"],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  }),
-}))
+    }),
+  }
+})
 
 describe("AgentPromotionDraftPage", () => {
   beforeEach(() => {
