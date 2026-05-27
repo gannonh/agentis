@@ -124,6 +124,26 @@ describe("ThreadDetailPage create-agent action", () => {
     })
   })
 
+  it("announces create-agent errors", async () => {
+    vi.mocked(createAgentPromotionDraft).mockRejectedValueOnce(
+      new Error("Could not prepare agent setup.")
+    )
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: /create agent from thread/i })
+    )
+
+    expect(
+      await screen.findByText("Could not prepare agent setup.")
+    ).toBeInTheDocument()
+  })
+
   it("keeps the create-agent action available for finished threads", () => {
     threadStatus = "finished"
 
@@ -151,9 +171,9 @@ describe("ThreadDetailPage create-agent action", () => {
       screen.queryByRole("button", { name: /create agent from thread/i })
     ).not.toBeInTheDocument()
     const unavailableAction = screen.getByRole("button", {
-      name: "Agent already set",
+      name: "Open agent",
     })
-    expect(unavailableAction).toBeDisabled()
+    expect(unavailableAction).toHaveAttribute("href", "/agents/agent_existing")
     expect(unavailableAction).toHaveAccessibleDescription(
       "This thread already uses an agent. Open that agent to adjust future runs."
     )

@@ -91,9 +91,7 @@ describe("AgentPromotionDraftPage", () => {
         systemPrompt: "Assign severity and next steps.",
         toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
       })
-      expect(navigate).toHaveBeenCalledWith("/agents/agent_test", {
-        state: { createdFromThread: true },
-      })
+      expect(navigate).toHaveBeenCalledWith("/agents/agent_test")
     })
   })
 

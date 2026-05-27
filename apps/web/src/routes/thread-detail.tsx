@@ -20,6 +20,75 @@ import { useThreadSession } from "@/hooks/use-thread-session"
 import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
 import type { ThreadMode } from "@workspace/shared"
 
+type ThreadHeaderActionsProps = {
+  canAbort: boolean
+  canCreateAgentFromThread: boolean
+  creatingAgentDraft: boolean
+  onAbort: () => void
+  onCreateAgentFromThread: () => void
+  owningAgentId: string | null
+}
+
+function ThreadHeaderActions({
+  canAbort,
+  canCreateAgentFromThread,
+  creatingAgentDraft,
+  onAbort,
+  onCreateAgentFromThread,
+  owningAgentId,
+}: ThreadHeaderActionsProps) {
+  return (
+    <div className="flex items-center gap-2">
+      {canAbort ? (
+        <Button type="button" variant="outline" size="sm" onClick={onAbort}>
+          Abort
+        </Button>
+      ) : null}
+      {canCreateAgentFromThread ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={creatingAgentDraft}
+          onClick={onCreateAgentFromThread}
+        >
+          {creatingAgentDraft ? "Preparing agent setup…" : "Create agent from thread"}
+        </Button>
+      ) : null}
+      {owningAgentId ? (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={
+              <Link
+                to={`/agents/${encodeURIComponent(owningAgentId)}`}
+                aria-describedby="thread-agent-owned-note"
+              />
+            }
+          >
+            Open agent
+          </Button>
+          <p
+            id="thread-agent-owned-note"
+            className="text-muted-foreground max-w-48 text-xs leading-snug"
+          >
+            This thread already uses an agent. Open that agent to adjust future runs.
+          </p>
+        </div>
+      ) : null}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        nativeButton={false}
+        render={<Link to="/threads/new">New thread</Link>}
+      />
+    </div>
+  )
+}
+
 export function ThreadDetailPage() {
   const { threadId } = useParams()
   const navigate = useNavigate()
@@ -55,8 +124,8 @@ export function ThreadDetailPage() {
   }, [detail?.thread.mode])
 
   const composerDisabled = !health.available
-  const agentOwnedThread = Boolean(detail?.thread?.agentId)
-  const canCreateAgentFromThread = Boolean(detail?.thread && !agentOwnedThread)
+  const owningAgentId = detail?.thread?.agentId ?? null
+  const canCreateAgentFromThread = Boolean(detail?.thread && !owningAgentId)
 
   const handleSubmit = async (prompt: string) => {
     if (!prompt.trim() || composerDisabled) return
@@ -104,57 +173,14 @@ export function ThreadDetailPage() {
               {detail?.thread.title ?? "Loading…"}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            {canAbort ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => void abortActiveRun()}
-              >
-                Abort
-              </Button>
-            ) : null}
-            {canCreateAgentFromThread ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={creatingAgentDraft}
-                onClick={() => void handleCreateAgentFromThread()}
-              >
-                {creatingAgentDraft
-                  ? "Preparing agent setup…"
-                  : "Create agent from thread"}
-              </Button>
-            ) : null}
-            {agentOwnedThread ? (
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled
-                  aria-describedby="thread-agent-owned-note"
-                >
-                  Agent already set
-                </Button>
-                <p
-                  id="thread-agent-owned-note"
-                  className="text-muted-foreground max-w-48 text-xs leading-snug"
-                >
-                  This thread already uses an agent. Open that agent to adjust future runs.
-                </p>
-              </div>
-            ) : null}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link to="/threads/new">New thread</Link>}
-            />
-          </div>
+          <ThreadHeaderActions
+            canAbort={canAbort}
+            canCreateAgentFromThread={canCreateAgentFromThread}
+            creatingAgentDraft={creatingAgentDraft}
+            onAbort={() => void abortActiveRun()}
+            onCreateAgentFromThread={() => void handleCreateAgentFromThread()}
+            owningAgentId={owningAgentId}
+          />
         </div>
 
         <div className="flex min-h-0 flex-1">
@@ -165,10 +191,14 @@ export function ThreadDetailPage() {
                   <p className="text-muted-foreground text-sm">Loading transcript…</p>
                 ) : null}
                 {error ? (
-                  <p className="text-destructive text-sm">{error}</p>
+                  <p className="text-destructive text-sm" role="alert">
+                    {error}
+                  </p>
                 ) : null}
                 {createAgentError ? (
-                  <p className="text-destructive text-sm">{createAgentError}</p>
+                  <p className="text-destructive text-sm" role="alert">
+                    {createAgentError}
+                  </p>
                 ) : null}
                 {detail?.messages.map((message) => (
                   <Message key={message.id} from={message.role}>

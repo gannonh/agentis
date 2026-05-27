@@ -419,7 +419,7 @@ describe("AgentDetailPage", () => {
     )
   })
 
-  it("shows post-create guidance when opened after creating from a thread", async () => {
+  it("keeps agent detail focused on persistent agent actions", async () => {
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
 
     render(
@@ -439,10 +439,10 @@ describe("AgentDetailPage", () => {
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Agent created from thread. Review settings or start a test thread."
       )
-    ).toBeInTheDocument()
+    ).not.toBeInTheDocument()
   })
 
   it("opens a plain-language test thread and navigates to it", async () => {

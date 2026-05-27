@@ -112,9 +112,7 @@ export function AgentPromotionDraftPage() {
         systemPrompt: form.systemPrompt.trim(),
         toolGrants: form.toolGrants,
       })
-      navigate(`/agents/${encodeURIComponent(created.agent.id)}`, {
-        state: { createdFromThread: true },
-      })
+      navigate(`/agents/${encodeURIComponent(created.agent.id)}`)
     } catch (submitError) {
       setError(
         errorMessage(
