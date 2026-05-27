@@ -2,7 +2,34 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { RouterProvider, createMemoryRouter } from "react-router"
 import { afterEach, vi } from "vitest"
+import type { MemoriesListResponse } from "@workspace/shared"
 import { router } from "@/router"
+
+const seededMemory: MemoriesListResponse["memories"][number] = {
+  id: "memory_seed_agentis_m07",
+  content: "Agentis is adding a Memories foundation.",
+  category: "Project Context",
+  usageGuidance: "Use when explaining the M07 Memories work.",
+  tags: ["agentis", "memories"],
+  importance: "high",
+  date: "2026-05-27",
+  scope: "project",
+  associatedAgent: "Senior Reviewer",
+  source: "seeded",
+  provenance: "mocked seed memory from the M07 planning artifacts",
+  createdAt: "2026-05-27T00:00:00.000Z",
+  updatedAt: "2026-05-27T00:00:00.000Z",
+}
+
+function stubMemoriesFetch(response: MemoriesListResponse): void {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    })
+  )
+}
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -29,39 +56,17 @@ describe("router", () => {
   })
 
   it("renders memories route with saved memory card metadata", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          categories: [
-            {
-              id: "memory_category_project_context",
-              name: "Project Context",
-              description: "Durable project context.",
-              count: 1,
-            },
-          ],
-          memories: [
-            {
-              id: "memory_seed_agentis_m07",
-              content: "Agentis is adding a Memories foundation.",
-              category: "Project Context",
-              usageGuidance: "Use when explaining the M07 Memories work.",
-              tags: ["agentis", "memories"],
-              importance: "high",
-              date: "2026-05-27",
-              scope: "project",
-              associatedAgent: "Senior Reviewer",
-              source: "seeded",
-              provenance: "mocked seed memory from the M07 planning artifacts",
-              createdAt: "2026-05-27T00:00:00.000Z",
-              updatedAt: "2026-05-27T00:00:00.000Z",
-            },
-          ],
-        }),
-      })
-    )
+    stubMemoriesFetch({
+      categories: [
+        {
+          id: "memory_category_project_context",
+          name: "Project Context",
+          description: "Durable project context.",
+          count: 1,
+        },
+      ],
+      memories: [seededMemory],
+    })
     const memoryRouter = createMemoryRouter(router.routes, {
       initialEntries: ["/memories"],
     })
@@ -77,45 +82,23 @@ describe("router", () => {
 
   it("filters memories by category and keeps empty categories visible", async () => {
     const user = userEvent.setup()
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          categories: [
-            {
-              id: "memory_category_project_context",
-              name: "Project Context",
-              description: "Durable project context.",
-              count: 1,
-            },
-            {
-              id: "memory_category_people",
-              name: "People",
-              description: "Stakeholder notes.",
-              count: 0,
-            },
-          ],
-          memories: [
-            {
-              id: "memory_seed_agentis_m07",
-              content: "Agentis is adding a Memories foundation.",
-              category: "Project Context",
-              usageGuidance: "Use when explaining the M07 Memories work.",
-              tags: ["agentis", "memories"],
-              importance: "high",
-              date: "2026-05-27",
-              scope: "project",
-              associatedAgent: "Senior Reviewer",
-              source: "seeded",
-              provenance: "mocked seed memory from the M07 planning artifacts",
-              createdAt: "2026-05-27T00:00:00.000Z",
-              updatedAt: "2026-05-27T00:00:00.000Z",
-            },
-          ],
-        }),
-      })
-    )
+    stubMemoriesFetch({
+      categories: [
+        {
+          id: "memory_category_project_context",
+          name: "Project Context",
+          description: "Durable project context.",
+          count: 1,
+        },
+        {
+          id: "memory_category_people",
+          name: "People",
+          description: "Stakeholder notes.",
+          count: 0,
+        },
+      ],
+      memories: [seededMemory],
+    })
     const memoryRouter = createMemoryRouter(router.routes, {
       initialEntries: ["/memories"],
     })

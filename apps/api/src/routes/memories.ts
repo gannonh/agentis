@@ -2,20 +2,18 @@ import { Hono } from "hono"
 import { memoriesListResponseSchema, savedMemoryCategoryNameSchema } from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
 
-export function createMemoryRoutes(repos: Repositories) {
+export function createMemoryRoutes(repos: Repositories): Hono {
   const app = new Hono()
 
   app.get("/", (c) => {
     const category = c.req.query("category")
-    if (category) {
-      const parsedCategory = savedMemoryCategoryNameSchema.parse(category)
-      return c.json(
-        memoriesListResponseSchema.parse(
-          repos.savedMemories.listByCategory(parsedCategory)
+    const memories = category
+      ? repos.savedMemories.listByCategory(
+          savedMemoryCategoryNameSchema.parse(category)
         )
-      )
-    }
-    return c.json(memoriesListResponseSchema.parse(repos.savedMemories.list()))
+      : repos.savedMemories.list()
+
+    return c.json(memoriesListResponseSchema.parse(memories))
   })
 
   return app

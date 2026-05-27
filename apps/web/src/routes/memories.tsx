@@ -19,7 +19,7 @@ import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { listMemories } from "@/lib/api/memories-client"
 
-function formatMemoryDate(date: string) {
+function formatMemoryDate(date: string): string {
   return new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",
@@ -27,7 +27,11 @@ function formatMemoryDate(date: string) {
   }).format(new Date(date))
 }
 
-function MemoryCard({ memory }: { memory: SavedMemory }) {
+type MemoryCardProps = {
+  memory: SavedMemory
+}
+
+function MemoryCard({ memory }: MemoryCardProps): JSX.Element {
   return (
     <Card>
       <CardHeader>
@@ -72,15 +76,19 @@ function MemoryCard({ memory }: { memory: SavedMemory }) {
   )
 }
 
+type CategorySummaryProps = {
+  categories: SavedMemoryCategory[]
+  selectedCategory: SavedMemoryCategoryName | null
+  onSelectCategory: (category: SavedMemoryCategoryName | null) => void
+}
+
 function CategorySummary({
   categories,
   selectedCategory,
   onSelectCategory,
-}: {
-  categories: SavedMemoryCategory[]
-  selectedCategory: SavedMemoryCategoryName | null
-  onSelectCategory: (category: SavedMemoryCategoryName | null) => void
-}) {
+}: CategorySummaryProps): JSX.Element {
+  const totalSaved = categories.reduce((total, category) => total + category.count, 0)
+
   return (
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Memory categories">
       <Button
@@ -91,9 +99,7 @@ function CategorySummary({
         <Card className="w-full border-0 bg-transparent shadow-none">
           <CardHeader className="gap-1">
             <CardTitle className="text-sm">All categories</CardTitle>
-            <CardDescription>
-              {categories.reduce((total, category) => total + category.count, 0)} saved
-            </CardDescription>
+            <CardDescription>{totalSaved} saved</CardDescription>
           </CardHeader>
         </Card>
       </Button>
@@ -116,7 +122,19 @@ function CategorySummary({
   )
 }
 
-export function MemoriesPage() {
+function getVisibleMemories(
+  data: MemoriesListResponse | null,
+  selectedCategory: SavedMemoryCategoryName | null
+): SavedMemory[] {
+  const memories = data?.memories ?? []
+  if (selectedCategory === null) {
+    return memories
+  }
+
+  return memories.filter((memory) => memory.category === selectedCategory)
+}
+
+export function MemoriesPage(): JSX.Element {
   const [data, setData] = useState<MemoriesListResponse | null>(null)
   const [selectedCategory, setSelectedCategory] =
     useState<SavedMemoryCategoryName | null>(null)
@@ -146,9 +164,7 @@ export function MemoriesPage() {
     }
   }, [])
 
-  const memories = selectedCategory
-    ? (data?.memories ?? []).filter((memory) => memory.category === selectedCategory)
-    : data?.memories ?? []
+  const memories = getVisibleMemories(data, selectedCategory)
 
   return (
     <PageLayout className="gap-6">
