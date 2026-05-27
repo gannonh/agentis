@@ -3,8 +3,10 @@ import type {
   MemoriesListResponse,
   SavedMemory,
   SavedMemoryCategory,
+  SavedMemoryCategoryName,
 } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
 import {
   Card,
   CardContent,
@@ -70,16 +72,45 @@ function MemoryCard({ memory }: { memory: SavedMemory }) {
   )
 }
 
-function CategorySummary({ categories }: { categories: SavedMemoryCategory[] }) {
+function CategorySummary({
+  categories,
+  selectedCategory,
+  onSelectCategory,
+}: {
+  categories: SavedMemoryCategory[]
+  selectedCategory: SavedMemoryCategoryName | null
+  onSelectCategory: (category: SavedMemoryCategoryName | null) => void
+}) {
   return (
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Memory categories">
-      {categories.map((category) => (
-        <Card key={category.id}>
+      <Button
+        variant={selectedCategory === null ? "default" : "outline"}
+        className="h-auto justify-start p-0 text-left"
+        onClick={() => onSelectCategory(null)}
+      >
+        <Card className="w-full border-0 bg-transparent shadow-none">
           <CardHeader className="gap-1">
-            <CardTitle className="text-sm">{category.name}</CardTitle>
-            <CardDescription>{category.count} saved</CardDescription>
+            <CardTitle className="text-sm">All categories</CardTitle>
+            <CardDescription>
+              {categories.reduce((total, category) => total + category.count, 0)} saved
+            </CardDescription>
           </CardHeader>
         </Card>
+      </Button>
+      {categories.map((category) => (
+        <Button
+          key={category.id}
+          variant={selectedCategory === category.name ? "default" : "outline"}
+          className="h-auto justify-start p-0 text-left"
+          onClick={() => onSelectCategory(category.name)}
+        >
+          <Card className="w-full border-0 bg-transparent shadow-none">
+            <CardHeader className="gap-1">
+              <CardTitle className="text-sm">{category.name}</CardTitle>
+              <CardDescription>{category.count} saved</CardDescription>
+            </CardHeader>
+          </Card>
+        </Button>
       ))}
     </section>
   )
@@ -87,6 +118,8 @@ function CategorySummary({ categories }: { categories: SavedMemoryCategory[] }) 
 
 export function MemoriesPage() {
   const [data, setData] = useState<MemoriesListResponse | null>(null)
+  const [selectedCategory, setSelectedCategory] =
+    useState<SavedMemoryCategoryName | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -113,7 +146,9 @@ export function MemoriesPage() {
     }
   }, [])
 
-  const memories = data?.memories ?? []
+  const memories = selectedCategory
+    ? (data?.memories ?? []).filter((memory) => memory.category === selectedCategory)
+    : data?.memories ?? []
 
   return (
     <PageLayout className="gap-6">
@@ -124,12 +159,18 @@ export function MemoriesPage() {
 
       {loading ? <p className="text-muted-foreground text-sm">Loading memories…</p> : null}
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
-      {data ? <CategorySummary categories={data.categories} /> : null}
+      {data ? (
+        <CategorySummary
+          categories={data.categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2" aria-label="Saved memories">
         {memories.length === 0 && !loading ? (
           <EmptyState
-            title="No saved memories"
+            title={selectedCategory ? `No memories in ${selectedCategory}` : "No saved memories"}
             description="Saved memories will appear here after agents or users add reusable context."
           />
         ) : (
