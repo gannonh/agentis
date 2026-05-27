@@ -18,6 +18,7 @@ import type {
   runs,
   threads,
 } from "../db/schema.js"
+import { mapSourceWorkflowSnapshot } from "./source-workflow-snapshot.js"
 
 type ProjectRow = typeof projects.$inferSelect
 type ProjectMemoryRow = typeof projectMemories.$inferSelect
@@ -37,8 +38,8 @@ export function mapThread(row: ThreadRow): Thread {
     projectId: row.projectId ?? undefined,
     agentId: row.agentId ?? undefined,
     agentNameSnapshot: row.agentNameSnapshot ?? undefined,
-    agentConfigurationVersionId:
-      row.agentConfigurationVersionId ?? undefined,
+    agentConfigurationVersionId: row.agentConfigurationVersionId ?? undefined,
+    ...mapSourceWorkflowSnapshot(row),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
@@ -66,9 +67,7 @@ export function mapRun(row: RunRow): Run {
     startedAt: row.startedAt,
     finishedAt: row.finishedAt ?? undefined,
     errorSummary: row.errorSummary ?? undefined,
-    usage: row.usageJson
-      ? (JSON.parse(row.usageJson) as RunUsage)
-      : undefined,
+    usage: row.usageJson ? (JSON.parse(row.usageJson) as RunUsage) : undefined,
     cost: row.cost ?? undefined,
   }
 }

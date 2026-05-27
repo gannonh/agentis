@@ -81,6 +81,14 @@ describe("shared schemas", () => {
         agentId: "agent-1",
         agentNameSnapshot: "Research Agent",
         agentConfigurationVersionId: "agent-version-2",
+        sourceThread: {
+          id: "source-thread-1",
+          title: "Investigate support backlog",
+        },
+        sourceWorkflow: {
+          summary: "Investigate support backlog",
+          firstUserPrompt: "Review support backlog patterns",
+        },
         createdAt: now,
         updatedAt: now,
       },
@@ -128,6 +136,10 @@ describe("shared schemas", () => {
     expect(parsed.thread.agentId).toBe("agent-1")
     expect(parsed.thread.agentNameSnapshot).toBe("Research Agent")
     expect(parsed.thread.agentConfigurationVersionId).toBe("agent-version-2")
+    expect(parsed.thread.sourceThread?.id).toBe("source-thread-1")
+    expect(parsed.thread.sourceWorkflow?.summary).toBe(
+      "Investigate support backlog"
+    )
     expect(parsed.runs[0]?.agentConfigurationVersionId).toBe("agent-version-2")
     expect(version).not.toHaveProperty("toolGrants")
 
@@ -167,6 +179,10 @@ describe("shared schemas", () => {
       description: "Helps triage support backlog patterns.",
       systemPrompt: "Help triage support backlog patterns.",
       model: "gpt-4o-mini",
+      sourceWorkflow: {
+        summary: "Investigate support backlog",
+        firstUserPrompt: "Review support backlog patterns",
+      },
       toolGrants: [{ toolkitSlug: "github", connectionId: "conn-1" }],
       intelligence: {
         suggestedPurpose: "Triage support backlog patterns.",
@@ -188,6 +204,9 @@ describe("shared schemas", () => {
     const response = createAgentPromotionDraftResponseSchema.parse({ draft })
 
     expect(response.draft.threadId).toBe("thread-1")
+    expect(response.draft.sourceWorkflow?.summary).toBe(
+      "Investigate support backlog"
+    )
     expect(response.draft.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: "conn-1" },
     ])
@@ -250,6 +269,12 @@ describe("shared schemas", () => {
     ).toThrow()
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, systemPrompt: "" })
+    ).toThrow()
+    expect(() =>
+      agentPromotionDraftSchema.parse({
+        ...draft,
+        sourceWorkflow: { ...draft.sourceWorkflow, firstUserPrompt: "" },
+      })
     ).toThrow()
 
     const update = updateAgentPromotionDraftRequestSchema.parse({
@@ -359,6 +384,14 @@ describe("shared schemas", () => {
       description: "Finds source-backed answers",
       systemPrompt: "Answer with citations.",
       model: "gpt-4o-mini",
+      sourceThread: {
+        id: "thread-1",
+        title: "Investigate support backlog",
+      },
+      sourceWorkflow: {
+        summary: "Review support backlog patterns",
+        firstUserPrompt: "Review support backlog patterns",
+      },
       createdAt: now,
       updatedAt: now,
       currentConfigurationVersion: {
@@ -372,12 +405,30 @@ describe("shared schemas", () => {
       toolGrantCount: 2,
     })
     expect(listItem.currentConfigurationVersion.version).toBe(1)
+    expect(listItem.sourceThread?.id).toBe("thread-1")
+    expect(listItem.sourceWorkflow?.summary).toBe(
+      "Review support backlog patterns"
+    )
     expect(() =>
       agentListItemSchema.parse({ ...listItem, toolGrantCount: -1 })
     ).toThrow()
     expect(() =>
       agentListItemSchema.parse({ ...listItem, toolGrantCount: 1.5 })
     ).toThrow()
+    expect(() =>
+      agentListItemSchema.parse({
+        ...listItem,
+        sourceWorkflow: { summary: "" },
+      })
+    ).toThrow()
+
+    const unlinkedAgent = agentListItemSchema.parse({
+      ...listItem,
+      id: "agent-2",
+      sourceThread: undefined,
+      sourceWorkflow: undefined,
+    })
+    expect(unlinkedAgent.sourceThread).toBeUndefined()
 
     const grants = [
       {

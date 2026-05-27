@@ -49,6 +49,9 @@ export const agents = sqliteTable(
     systemPrompt: text("system_prompt").notNull(),
     model: text("model").notNull(),
     maxCostPerRunUsd: real("max_cost_per_run_usd"),
+    sourceThreadId: text("source_thread_id"),
+    sourceThreadTitle: text("source_thread_title"),
+    sourceWorkflowJson: text("source_workflow_json"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -93,6 +96,9 @@ export const threads = sqliteTable("threads", {
   agentConfigurationVersionId: text(
     "agent_configuration_version_id"
   ).references(() => agentConfigurationVersions.id),
+  sourceThreadId: text("source_thread_id"),
+  sourceThreadTitle: text("source_thread_title"),
+  sourceWorkflowJson: text("source_workflow_json"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 })
@@ -188,6 +194,7 @@ export const agentPromotionDrafts = sqliteTable(
     description: text("description"),
     systemPrompt: text("system_prompt").notNull(),
     model: text("model").notNull(),
+    sourceWorkflowJson: text("source_workflow_json"),
     toolGrantsJson: text("tool_grants_json").notNull().default("[]"),
     intelligenceJson: text("intelligence_json").notNull().default("{}"),
     editedFieldsJson: text("edited_fields_json").notNull().default("[]"),

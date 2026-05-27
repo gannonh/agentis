@@ -27,6 +27,11 @@ import {
   registerAbortController,
 } from "./abort-registry.js"
 import { getWorkspaceSummaryTool } from "./get-workspace-summary.js"
+import {
+  buildProjectContextContribution,
+  buildSourceWorkflowContribution,
+  type RunPromptSection,
+} from "./run-context.js"
 import { nowIso } from "../lib/ids.js"
 
 const ARTIFACT_PROMPT_PATTERN = /artifact|brief|document|report/i
@@ -40,17 +45,23 @@ function formatSystemPromptSection(title: string, body?: string | null) {
 
 export function buildRunSystemPrompt(input: {
   agentPrompt?: string | null
-  projectContextBlock?: string
+  contextSections?: RunPromptSection[]
 }): string {
-  if (!input.agentPrompt?.trim() && !input.projectContextBlock?.trim()) {
+  const hasContext = input.contextSections?.some((section) =>
+    section.body?.trim()
+  )
+  if (!input.agentPrompt?.trim() && !hasContext) {
     return PLATFORM_SYSTEM_PROMPT
   }
 
-  return [
-    formatSystemPromptSection("Agent instructions", input.agentPrompt),
-    formatSystemPromptSection("Platform requirements", PLATFORM_SYSTEM_PROMPT),
-    formatSystemPromptSection("Project context", input.projectContextBlock),
+  const sections = [
+    { title: "Agent instructions", body: input.agentPrompt },
+    { title: "Platform requirements", body: PLATFORM_SYSTEM_PROMPT },
+    ...(input.contextSections ?? []),
   ]
+
+  return sections
+    .map((section) => formatSystemPromptSection(section.title, section.body))
     .filter((section): section is string => Boolean(section))
     .join("\n\n")
 }
@@ -200,9 +211,17 @@ export class RunExecutor {
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
+    const contextContributions = [
+      buildSourceWorkflowContribution(thread),
+      buildProjectContextContribution({ projectContext, projectContextBlock }),
+    ].filter((contribution): contribution is NonNullable<typeof contribution> =>
+      Boolean(contribution)
+    )
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: agentConfiguration?.systemPrompt,
-      projectContextBlock,
+      contextSections: contextContributions
+        .map((contribution) => contribution.promptSection)
+        .filter((section): section is RunPromptSection => Boolean(section)),
     })
 
     const composioTools = this.services.toolExecution.buildRuntimeTools(
@@ -271,21 +290,14 @@ export class RunExecutor {
         },
       })
     }
-    if (projectContext) {
+    for (const contribution of contextContributions) {
+      if (!contribution.step) continue
       this.repos.steps.create({
         runId,
         type: "reasoning",
         status: "completed",
-        title: "Project context loaded",
-        payload: {
-          projectId: projectContext.project.id,
-          projectName: projectContext.project.name,
-          projectStatus: projectContext.project.status,
-          goalChars: projectContext.goals?.length ?? 0,
-          memoryCount: projectContext.enabledMemoryCount,
-          truncated: projectContext.truncated ?? false,
-          empty: projectContext.empty ?? false,
-        },
+        title: contribution.step.title,
+        payload: contribution.step.payload,
       })
     }
     this.repos.threads.touch(run.threadId)

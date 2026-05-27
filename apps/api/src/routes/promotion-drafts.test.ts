@@ -897,8 +897,20 @@ describe("promotion draft routes", () => {
       { method: "POST" }
     )
     const { draft } = (await draftResponse.json()) as {
-      draft: { id: string; name: string }
+      draft: {
+        id: string
+        name: string
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+      }
     }
+    expect(draft.sourceWorkflow).toMatchObject({
+      summary: "Investigate support backlog",
+      firstUserPrompt: "Review support backlog patterns",
+    })
+
+    ctx.repos.threads.touch(created.thread.id, {
+      title: "Renamed support backlog source",
+    })
 
     const response = await app.request(
       `/api/agent-promotion-drafts/${draft.id}/create-agent`,
@@ -924,6 +936,8 @@ describe("promotion draft routes", () => {
         systemPrompt: string
         model: string
         toolGrantCount: number
+        sourceThread?: { id: string; title: string }
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
       }
       toolGrants: { toolkitSlug: string; connectionId?: string }[]
     }
@@ -933,13 +947,86 @@ describe("promotion draft routes", () => {
       systemPrompt: "Assign severity and next steps.",
       model: "gpt-4.1-mini",
       toolGrantCount: 1,
+      sourceThread: {
+        id: created.thread.id,
+        title: "Investigate support backlog",
+      },
+      sourceWorkflow: {
+        summary: "Investigate support backlog",
+        firstUserPrompt: "Review support backlog patterns",
+      },
     })
     expect(body.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: github.id },
     ])
+    const reloaded = await app.request(`/api/agents/${body.agent.id}`)
+    expect(reloaded.status).toBe(200)
+    const reloadedBody = (await reloaded.json()) as {
+      agent: {
+        sourceThread?: { id: string; title: string }
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+      }
+    }
+    expect(reloadedBody.agent.sourceThread).toMatchObject({
+      id: created.thread.id,
+      title: "Investigate support backlog",
+    })
+    expect(reloadedBody.agent.sourceWorkflow).toMatchObject({
+      summary: "Investigate support backlog",
+      firstUserPrompt: "Review support backlog patterns",
+    })
     expect(ctx.repos.agentPromotionDrafts.getById(draft.id)?.name).toBe(
       "Investigate support backlog Agent"
     )
+  })
+
+  it("preserves source context when creating an agent from a legacy draft", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const draft = ctx.repos.agentPromotionDrafts.create({
+      threadId: created.thread.id,
+      sourceThreadTitle: created.thread.title,
+      name: "Support Backlog Agent",
+      description: "Helps triage support backlog patterns.",
+      systemPrompt: "Help triage support backlog patterns.",
+      model: "gpt-4o-mini",
+      toolGrants: [],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      agent: {
+        sourceThread?: { id: string; title: string }
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+      }
+    }
+    expect(body.agent.sourceThread).toMatchObject({
+      id: created.thread.id,
+      title: "Investigate support backlog",
+    })
+    expect(body.agent.sourceWorkflow).toMatchObject({
+      summary: "Investigate support backlog",
+      firstUserPrompt: "Review support backlog patterns",
+    })
   })
 
   it("rejects draft creation for missing and agent-owned source threads", async () => {

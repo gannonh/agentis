@@ -64,6 +64,16 @@ export const runStepStatusSchema = z.enum([
   "failed",
 ])
 
+export const agentSourceThreadSchema = z.object({
+  id: nonEmptyString,
+  title: z.string(),
+})
+
+export const agentSourceWorkflowSchema = z.object({
+  summary: nonEmptyString,
+  firstUserPrompt: nonEmptyString.optional(),
+})
+
 export const threadSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -74,6 +84,8 @@ export const threadSchema = z.object({
   agentId: z.string().nullable().optional(),
   agentNameSnapshot: z.string().nullable().optional(),
   agentConfigurationVersionId: z.string().nullable().optional(),
+  sourceThread: agentSourceThreadSchema.optional(),
+  sourceWorkflow: agentSourceWorkflowSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -227,6 +239,8 @@ export const agentSchema = z.object({
   systemPrompt: z.string(),
   model: z.string(),
   maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
+  sourceThread: agentSourceThreadSchema.optional(),
+  sourceWorkflow: agentSourceWorkflowSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -352,6 +366,7 @@ export const agentPromotionDraftSchema = z.object({
   description: z.string().optional(),
   systemPrompt: nonEmptyString,
   model: nonEmptyString,
+  sourceWorkflow: agentSourceWorkflowSchema.optional(),
   toolGrants: z.array(agentToolGrantInputSchema),
   intelligence: agentPromotionDraftIntelligenceSchema,
   editedFields: z.array(agentPromotionDraftEditedFieldSchema),
@@ -596,6 +611,8 @@ export type RuntimeHealth = z.infer<typeof runtimeHealthSchema>
 export type AgentConfigurationVersionSummary = z.infer<
   typeof agentConfigurationVersionSummarySchema
 >
+export type AgentSourceThread = z.infer<typeof agentSourceThreadSchema>
+export type AgentSourceWorkflow = z.infer<typeof agentSourceWorkflowSchema>
 export type Agent = z.infer<typeof agentSchema>
 export type AgentListItem = z.infer<typeof agentListItemSchema>
 export type AgentToolGrantInput = z.infer<typeof agentToolGrantInputSchema>

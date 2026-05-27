@@ -23,8 +23,9 @@ import {
   toolkitGrantRemediation,
 } from "./tool-grant-resolution.js"
 import { SUPPORTED_TOOLKIT_NAMES } from "../composio/tool-catalog.js"
-import type { Repositories } from "../repositories/index.js"
+import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 import type { StoredAgentPromotionDraft } from "../repositories/agent-promotion-draft-repository.js"
+import type { Repositories } from "../repositories/index.js"
 
 type ServiceError = {
   status: 400 | 404 | 500
@@ -166,6 +167,16 @@ function buildDescription(title: string | null): string {
 function buildSystemPrompt(sourceText: string | null): string {
   if (!sourceText) return "Use the context from this thread."
   return `Use the context from this thread: ${sourceText}`
+}
+
+function buildSourceWorkflow(sourceThreadTitle: string, messages: Message[]) {
+  const title = cleanTitle(sourceThreadTitle)
+  const sourceText = firstUserText(messages)
+
+  return {
+    summary: title ?? sourceText ?? "Created from thread.",
+    firstUserPrompt: sourceText ?? undefined,
+  }
 }
 
 function buildDraftDefaults(thread: Thread, messages: Message[]) {
@@ -323,6 +334,7 @@ export class AgentPromotionService {
       description: defaults.description,
       systemPrompt: defaults.systemPrompt,
       model: thread.model,
+      sourceWorkflow: buildSourceWorkflow(thread.title, messages),
       toolGrants,
       intelligence: buildDraftIntelligence(thread, messages, toolGrants),
       proposedToolGrants: toolAnalysis.proposedToolGrants,
@@ -377,6 +389,19 @@ export class AgentPromotionService {
       return { ok: false, error: grantResolutionFailed(resolvedGrants.error) }
     }
 
+    const sourceWorkflow =
+      draft.sourceWorkflow ??
+      buildSourceWorkflow(
+        draft.sourceThreadTitle,
+        this.repos.messages.listByThreadId(draft.threadId)
+      )
+    const sourceSnapshot = toSourceWorkflowSnapshot({
+      sourceThread: {
+        id: draft.threadId,
+        title: draft.sourceThreadTitle,
+      },
+      sourceWorkflow,
+    })
     const created = this.repos.agents.createWithGrants(
       {
         name: input.name,
@@ -387,6 +412,7 @@ export class AgentPromotionService {
           input.draftUpdates?.model ??
           draft.model ??
           this.config.defaultModel,
+        ...sourceSnapshot,
       },
       resolvedGrants.grants
     )

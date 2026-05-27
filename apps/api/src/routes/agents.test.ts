@@ -505,11 +505,17 @@ describe("agent routes", () => {
 
     expect(response.status).toBe(200)
     const body = (await response.json()) as {
+      agent: {
+        sourceThread?: unknown
+        sourceWorkflow?: unknown
+      }
       information: {
         recentThreads: unknown[]
         library: { totalCount: number; items: unknown[] }
       }
     }
+    expect(body.agent.sourceThread).toBeUndefined()
+    expect(body.agent.sourceWorkflow).toBeUndefined()
     expect(body.information.recentThreads).toEqual([])
     expect(body.information.library).toEqual({ totalCount: 0, items: [] })
   })
@@ -549,6 +555,19 @@ describe("agent routes", () => {
     const updated = ctx.repos.agents.update(agent.id, {
       toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
     })!
+    const linkedAgent = ctx.repos.agents.create({
+      name: "Promoted Research Agent",
+      systemPrompt: "Follow up on the source workflow.",
+      model: "gpt-4o-mini",
+      sourceThread: {
+        id: "thread_source",
+        title: "Investigate support backlog",
+      },
+      sourceWorkflow: {
+        summary: "Investigate support backlog",
+        firstUserPrompt: "Review support backlog patterns",
+      },
+    })
     const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}/test-thread`, {
@@ -590,6 +609,34 @@ describe("agent routes", () => {
     expect(
       ctx.repos.toolAccessGrants.listByScope("thread", body.thread.id)
     ).toMatchObject([{ toolkitSlug: "slack", connectionId: slack.id }])
+
+    const linkedResponse = await app.request(
+      `/api/agents/${linkedAgent.id}/test-thread`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: "Try the promoted workflow" }),
+      }
+    )
+    expect(linkedResponse.status).toBe(201)
+    const linkedBody = (await linkedResponse.json()) as {
+      thread: {
+        agentId?: string
+        sourceThread?: { id: string; title: string }
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+      }
+    }
+    expect(linkedBody.thread).toMatchObject({
+      agentId: linkedAgent.id,
+      sourceThread: {
+        id: "thread_source",
+        title: "Investigate support backlog",
+      },
+      sourceWorkflow: {
+        summary: "Investigate support backlog",
+        firstUserPrompt: "Review support backlog patterns",
+      },
+    })
   })
 
   it("rejects agent test threads when the saved grant snapshot is disconnected", async () => {
