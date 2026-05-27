@@ -4,6 +4,8 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import type { LearningCandidate } from "@/fixtures/schema"
 
+const primaryActionId = "save-memory"
+
 type LearningCandidateCardProps = {
   candidate: LearningCandidate
 }
@@ -43,20 +45,24 @@ export function LearningCandidateCard({ candidate }: LearningCandidateCardProps)
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
-          {candidate.actions.map((action) => (
-            <Button
-              key={action.id}
-              type="button"
-              variant={action.id === "save-memory" ? "default" : "outline"}
-              size="sm"
-              disabled
-            >
-              {action.id === "save-memory" ? (
-                <HugeiconsIcon icon={SparklesIcon} className="size-3.5" strokeWidth={2} />
-              ) : null}
-              {action.label}
-            </Button>
-          ))}
+          {candidate.actions.map((action) => {
+            const isPrimaryAction = action.id === primaryActionId
+
+            return (
+              <Button
+                key={action.id}
+                type="button"
+                variant={isPrimaryAction ? "default" : "outline"}
+                size="sm"
+                disabled
+              >
+                {isPrimaryAction ? (
+                  <HugeiconsIcon icon={SparklesIcon} className="size-3.5" strokeWidth={2} />
+                ) : null}
+                {action.label}
+              </Button>
+            )
+          })}
         </div>
       </div>
     </article>

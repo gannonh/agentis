@@ -19,7 +19,7 @@ describe("LearningPage", () => {
     expect(screen.getByText("View all 15 skills →")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Rubrics" })).toBeInTheDocument()
-    expect(screen.getAllByText("Creating Agent").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole("heading", { name: "Creating Agent" })).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: "Dismiss" }).length).toBeGreaterThanOrEqual(1)
   })
 
@@ -30,7 +30,6 @@ describe("LearningPage", () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole("heading", { name: "Learning candidates" })).toBeInTheDocument()
     const candidates = within(screen.getByRole("region", { name: "Learning candidates" }))
 
     expect(candidates.getByText("Capture review preference")).toBeInTheDocument()
