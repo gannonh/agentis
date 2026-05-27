@@ -105,6 +105,32 @@ export const rubricSchema = z.object({
   agentId: z.string().optional(),
 })
 
+export const learningCandidateSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  suggestionType: z.enum(["memory", "skill", "rubric"]),
+  status: z.enum(["suggested", "accepted", "dismissed"]),
+  confidence: z.number().min(0).max(1),
+  source: z.object({
+    threadId: z.string(),
+    threadTitle: z.string(),
+    agentId: z.string(),
+    agentName: z.string(),
+  }),
+  provenance: z.object({
+    kind: z.enum(["mocked-llm-derived", "mocked-saved-memory", "user-generated"]),
+    label: z.string(),
+  }),
+  createdBy: z.enum(["seed", "user", "system"]),
+  actions: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+    })
+  ),
+})
+
 export const learningConversationSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -190,6 +216,7 @@ export const workspaceSchema = z.object({
   skills: z.array(skillSchema),
   memories: z.array(memorySchema),
   rubrics: z.array(rubricSchema),
+  learningCandidates: z.array(learningCandidateSchema),
   learningConversations: z.array(learningConversationSchema),
   integrations: z.array(integrationSchema),
   integrationCategories: z.array(integrationCategorySchema),
@@ -205,6 +232,7 @@ export type Agent = z.infer<typeof agentSchema>
 export type Thread = z.infer<typeof threadSchema>
 export type Run = z.infer<typeof runSchema>
 export type Skill = z.infer<typeof skillSchema>
+export type LearningCandidate = z.infer<typeof learningCandidateSchema>
 export type Artifact = z.infer<typeof artifactSchema>
 export type Integration = z.infer<typeof integrationSchema>
 export type StarterAgent = z.infer<typeof starterAgentSchema>
