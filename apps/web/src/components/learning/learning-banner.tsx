@@ -34,9 +34,26 @@ export function LearningBanner() {
           </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="border-status-success-border border-t px-4 py-3">
-          <p className="text-muted-foreground text-xs">
-            Accepted skills, memories, and rubrics stay linked to the agents that earned them.
-          </p>
+          <div className="flex flex-col gap-4 text-xs">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium">What agents can learn</h2>
+              <p className="text-muted-foreground">
+                Skills — Reusable techniques the agent applies to future tasks.
+              </p>
+              <p className="text-muted-foreground">
+                Memories — Facts and preferences remembered across conversations.
+              </p>
+              <p className="text-muted-foreground">
+                Rubrics — Evaluation rules agents use to improve their work.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium">How to use this page</h2>
+              <p className="text-muted-foreground">
+                Review learning suggestions, accept what should be kept, and dismiss what should be skipped.
+              </p>
+            </div>
+          </div>
         </CollapsibleContent>
       </div>
     </Collapsible>

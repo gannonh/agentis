@@ -92,9 +92,21 @@ export const skillSchema = z.object({
   pinned: z.boolean().default(false),
 })
 
+export const memoryCategorySchema = z.enum([
+  "User Fact",
+  "Preference",
+  "Project Context",
+  "Domain Knowledge",
+  "People",
+  "Active Work",
+  "Tools & Workflows",
+  "Organization",
+])
+
 export const memorySchema = z.object({
   id: z.string(),
   content: z.string(),
+  category: memoryCategorySchema,
   scope: z.enum(["global", "project", "agent"]),
   importance: z.enum(["low", "medium", "high"]).optional(),
 })
@@ -103,6 +115,44 @@ export const rubricSchema = z.object({
   id: z.string(),
   name: z.string(),
   agentId: z.string().optional(),
+})
+
+export const memoryProvenanceKindSchema = z.enum([
+  "mocked-llm-derived",
+  "mocked-saved-memory",
+  "user-generated",
+])
+
+export const learningCandidateSourceSchema = z.object({
+  threadId: z.string(),
+  threadTitle: z.string(),
+  agentId: z.string(),
+  agentName: z.string(),
+})
+
+export const learningCandidateProvenanceSchema = z.object({
+  kind: memoryProvenanceKindSchema,
+  label: z.string(),
+})
+
+export const learningCandidateActionSchema = z.object({
+  id: z.enum(["save-memory", "dismiss"]),
+  label: z.string(),
+  tone: z.enum(["primary", "secondary"]),
+  icon: z.enum(["sparkles"]).optional(),
+})
+
+export const learningCandidateSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  suggestionType: z.enum(["memory", "skill", "rubric"]),
+  status: z.enum(["suggested", "accepted", "dismissed"]),
+  confidence: z.number().min(0).max(1),
+  source: learningCandidateSourceSchema,
+  provenance: learningCandidateProvenanceSchema,
+  createdBy: z.enum(["seed", "user", "system"]),
+  actions: z.array(learningCandidateActionSchema),
 })
 
 export const learningConversationSchema = z.object({
@@ -190,6 +240,7 @@ export const workspaceSchema = z.object({
   skills: z.array(skillSchema),
   memories: z.array(memorySchema),
   rubrics: z.array(rubricSchema),
+  learningCandidates: z.array(learningCandidateSchema),
   learningConversations: z.array(learningConversationSchema),
   integrations: z.array(integrationSchema),
   integrationCategories: z.array(integrationCategorySchema),
@@ -205,6 +256,8 @@ export type Agent = z.infer<typeof agentSchema>
 export type Thread = z.infer<typeof threadSchema>
 export type Run = z.infer<typeof runSchema>
 export type Skill = z.infer<typeof skillSchema>
+export type LearningCandidate = z.infer<typeof learningCandidateSchema>
+export type Memory = z.infer<typeof memorySchema>
 export type Artifact = z.infer<typeof artifactSchema>
 export type Integration = z.infer<typeof integrationSchema>
 export type StarterAgent = z.infer<typeof starterAgentSchema>

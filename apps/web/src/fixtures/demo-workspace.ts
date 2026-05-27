@@ -169,8 +169,56 @@ export const demoWorkspace = workspaceSchema.parse({
     { id: "skill-14", name: "databricks-query-pack", pinned: false },
     { id: "skill-15", name: "customer-churn-segments", pinned: false },
   ],
-  memories: [],
+  memories: [
+    {
+      id: "memory-user-fact-1",
+      content: "User runs an AI automation consulting practice.",
+      category: "User Fact",
+      scope: "global",
+      importance: "high",
+    },
+    {
+      id: "memory-preference-1",
+      content: "User prefers concise responses with direct next steps.",
+      category: "Preference",
+      scope: "global",
+      importance: "medium",
+    },
+    {
+      id: "memory-active-work-1",
+      content: "User is preparing the Agentis memories foundation milestone.",
+      category: "Active Work",
+      scope: "project",
+      importance: "high",
+    },
+  ],
   rubrics: [],
+  learningCandidates: [
+    {
+      id: "learning-candidate-mocked-memory-1",
+      title: "Capture review preference",
+      content:
+        "Senior Reviewer should call out overcomplication and missing edge cases before style feedback.",
+      suggestionType: "memory",
+      status: "suggested",
+      confidence: 0.82,
+      source: {
+        threadId: "thread-creating-agent",
+        threadTitle: "Creating Agent",
+        agentId: "senior-reviewer",
+        agentName: "Senior Reviewer",
+      },
+      provenance: {
+        kind: "mocked-llm-derived",
+        label: "Mocked LLM-derived seed",
+      },
+      createdBy: "seed",
+      actions: [
+        { id: "save-memory", label: "Save memory", tone: "primary", icon: "sparkles" },
+        { id: "dismiss", label: "Dismiss", tone: "secondary" },
+      ],
+    },
+  ],
   learningConversations: [
     {
       id: "thread-creating-agent",

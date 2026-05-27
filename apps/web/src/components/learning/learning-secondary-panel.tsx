@@ -1,8 +1,38 @@
 import { Brain01Icon, ClipboardIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Button } from "@workspace/ui/components/button"
+import { Link } from "react-router"
+import { Badge } from "@workspace/ui/components/badge"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
+import type { Memory } from "@/fixtures/schema"
 
-export function LearningSecondaryPanel() {
+type LearningSecondaryPanelProps = {
+  memories: Memory[]
+}
+
+type MemoryCategorySummary = {
+  category: Memory["category"]
+  count: number
+}
+
+function getCategorySummaries(memories: Memory[]): MemoryCategorySummary[] {
+  const summaries: MemoryCategorySummary[] = []
+
+  for (const memory of memories) {
+    const summary = summaries.find((item) => item.category === memory.category)
+
+    if (summary) {
+      summary.count += 1
+    } else {
+      summaries.push({ category: memory.category, count: 1 })
+    }
+  }
+
+  return summaries
+}
+
+export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps) {
+  const categorySummaries = getCategorySummaries(memories)
+
   return (
     <section
       className="rounded-lg border border-border bg-card"
@@ -13,22 +43,41 @@ export function LearningSecondaryPanel() {
       </h2>
       <div className="grid gap-0 md:grid-cols-2 md:divide-x md:divide-border">
         <div className="flex flex-col gap-3 px-4 py-4">
-          <div className="flex items-center gap-2">
-            <HugeiconsIcon
-              icon={Brain01Icon}
-              className="size-4 text-muted-foreground"
-              strokeWidth={2}
-              aria-hidden
-            />
-            <h3 className="text-sm font-medium">Memories</h3>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <HugeiconsIcon
+                icon={Brain01Icon}
+                className="size-4 text-muted-foreground"
+                strokeWidth={2}
+                aria-hidden
+              />
+              <h3 className="text-sm font-medium">Memories</h3>
+            </div>
+            <Badge variant="secondary" className="text-xs tabular-nums">
+              {memories.length} saved
+            </Badge>
           </div>
-          <p className="text-sm font-medium">No memories stored yet</p>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Memories are created when the agent learns about you and your preferences.
+            Memories are created when agents learn facts, preferences, and active work from
+            conversations.
           </p>
-          <Button variant="outline" size="sm" className="w-fit" disabled>
+          <div className="flex flex-wrap gap-2">
+            {categorySummaries.length > 0 ? (
+              categorySummaries.map((summary) => (
+                <Badge key={summary.category} variant="outline" className="text-xs">
+                  {summary.category}: {summary.count}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-muted-foreground text-xs">No memories stored yet</p>
+            )}
+          </div>
+          <Link
+            to="/memories"
+            className={buttonVariants({ variant: "outline", size: "sm", className: "w-fit" })}
+          >
             Browse Memories
-          </Button>
+          </Link>
         </div>
         <div className="flex flex-col gap-3 border-t border-border px-4 py-4 md:border-t-0">
           <div className="flex items-center gap-2">
