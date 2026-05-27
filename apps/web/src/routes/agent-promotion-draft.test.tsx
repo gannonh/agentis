@@ -6,6 +6,7 @@ import { AgentPromotionDraftPage } from "./agent-promotion-draft"
 import {
   createAgentFromPromotionDraft,
   getAgentPromotionDraft,
+  updateAgentPromotionDraft,
 } from "@/lib/api/agents-client"
 
 const navigate = vi.fn()
@@ -51,6 +52,32 @@ vi.mock("@/lib/api/agents-client", () => ({
     configurationVersions: [],
     toolGrants: [],
   }),
+  updateAgentPromotionDraft: vi.fn().mockResolvedValue({
+    draft: {
+      id: "draft_test",
+      threadId: "thread_test",
+      sourceThreadTitle: "Investigate support backlog",
+      name: "Support Backlog Agent",
+      description: "Reviews backlog patterns.",
+      systemPrompt: "Review support backlog patterns.",
+      model: "gpt-4o-mini",
+      toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+      intelligence: {
+        suggestedPurpose: "Review support backlog patterns.",
+        repeatedSteps: ["Review incoming issues", "Assign severity"],
+        requiredTools: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+        suggestedPrompt: "Use the source thread context to review support backlog patterns.",
+        modelRecommendation: {
+          model: "gpt-4.1-mini",
+          reason: "Best fit for careful triage.",
+        },
+        rubricCriteria: ["Assigns severity", "Explains handoff"],
+      },
+      editedFields: ["rubricCriteria"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  }),
 }))
 
 describe("AgentPromotionDraftPage", () => {
@@ -58,6 +85,7 @@ describe("AgentPromotionDraftPage", () => {
     navigate.mockReset()
     vi.mocked(getAgentPromotionDraft).mockClear()
     vi.mocked(createAgentFromPromotionDraft).mockClear()
+    vi.mocked(updateAgentPromotionDraft).mockClear()
   })
 
   it("loads a draft, submits edits, creates an agent, and navigates", async () => {
@@ -132,6 +160,31 @@ describe("AgentPromotionDraftPage", () => {
 
     expect(screen.getByText("Name edited")).toBeInTheDocument()
     expect(screen.getByDisplayValue("Support Triage Agent")).toBeInTheDocument()
+  })
+
+  it("lets users edit rubric criteria before creating the agent", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <AgentPromotionDraftPage />
+      </MemoryRouter>
+    )
+
+    const rubric = await screen.findByLabelText(/rubric criteria/i)
+    expect(rubric).toHaveValue("Finds the right issue\nExplains the severity")
+
+    await user.clear(rubric)
+    await user.type(rubric, "Assigns severity\nExplains handoff")
+    await user.click(screen.getByRole("button", { name: /create agent/i }))
+
+    await waitFor(() => {
+      expect(updateAgentPromotionDraft).toHaveBeenCalledWith("draft_test", {
+        intelligence: expect.objectContaining({
+          rubricCriteria: ["Assigns severity", "Explains handoff"],
+        }),
+      })
+      expect(createAgentFromPromotionDraft).toHaveBeenCalled()
+    })
   })
 
   it("routes cancel back to the source thread after loading the draft", async () => {

@@ -283,6 +283,54 @@ describe("promotion draft routes", () => {
     })
   })
 
+  it("preserves edited rubric criteria when creating an agent", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as {
+      draft: { id: string; intelligence: { rubricCriteria: string[] } }
+    }
+    const rubricCriteria = ["Assigns the right severity", "Explains the handoff"]
+
+    const updated = await app.request(`/api/agent-promotion-drafts/${draft.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        intelligence: { ...draft.intelligence, rubricCriteria },
+      }),
+    })
+    expect(updated.status).toBe(200)
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+          model: "gpt-4.1-mini",
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    expect(ctx.repos.agentPromotionDrafts.getById(draft.id)).toMatchObject({
+      intelligence: { rubricCriteria },
+      editedFields: ["rubricCriteria"],
+    })
+  })
+
   it("creates an agent from draft edits in a single promotion command", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

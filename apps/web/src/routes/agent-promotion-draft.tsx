@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
+import { Textarea } from "@workspace/ui/components/textarea"
 import type { AgentPromotionDraft, AgentToolGrantInput } from "@workspace/shared"
 import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
 import {
@@ -21,6 +22,7 @@ import { PageLayout } from "@/components/shell/page-layout"
 import {
   createAgentFromPromotionDraft,
   getAgentPromotionDraft,
+  updateAgentPromotionDraft,
 } from "@/lib/api/agents-client"
 
 type DraftFormState = AgentSetupFormState & {
@@ -35,6 +37,7 @@ const editableFieldLabels: Partial<Record<DraftEditedField, string>> = {
   systemPrompt: "Instructions",
   model: "Answer engine",
   toolGrants: "Connected apps",
+  rubricCriteria: "Rubric criteria",
 }
 
 function draftToForm(draft: AgentPromotionDraft): DraftFormState {
@@ -70,12 +73,27 @@ function editedFieldLabels(fields: DraftEditedField[]): string[] {
     .filter((label): label is string => Boolean(label))
 }
 
+function rubricCriteriaFromText(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function rubricCriteriaToText(criteria: string[]): string {
+  return criteria.join("\n")
+}
+
 function GeneratedSuggestions({
   draft,
   editedFields,
+  rubricText,
+  onRubricChange,
 }: {
   draft: AgentPromotionDraft
   editedFields: DraftEditedField[]
+  rubricText: string
+  onRubricChange: (value: string) => void
 }) {
   const intelligence = draft.intelligence
   const labels = editedFieldLabels(editedFields)
@@ -156,6 +174,21 @@ function GeneratedSuggestions({
             ) : null}
           </div>
         ) : null}
+
+        <div className="flex flex-col gap-2 sm:col-span-2">
+          <label className="text-sm font-medium" htmlFor="draft-rubric-criteria">
+            Rubric criteria
+          </label>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            One criterion per line. These criteria stay with the draft for later evaluation.
+          </p>
+          <Textarea
+            id="draft-rubric-criteria"
+            value={rubricText}
+            onChange={(event) => onRubricChange(event.target.value)}
+            rows={4}
+          />
+        </div>
       </div>
     </section>
   )
@@ -166,6 +199,7 @@ export function AgentPromotionDraftPage() {
   const navigate = useNavigate()
   const [draft, setDraft] = useState<AgentPromotionDraft | null>(null)
   const [form, setForm] = useState<DraftFormState | null>(null)
+  const [rubricText, setRubricText] = useState("")
   const [locallyEditedFields, setLocallyEditedFields] = useState<
     DraftEditedField[]
   >([])
@@ -187,6 +221,7 @@ export function AgentPromotionDraftPage() {
         if (cancelled) return
         setDraft(loadedDraft)
         setForm(draftToForm(loadedDraft))
+        setRubricText(rubricCriteriaToText(loadedDraft.intelligence.rubricCriteria))
         setLocallyEditedFields([])
       })
       .catch((loadError) => {
@@ -210,6 +245,13 @@ export function AgentPromotionDraftPage() {
     )
   }
 
+  const updateRubricText = (value: string) => {
+    setRubricText(value)
+    setLocallyEditedFields((current) =>
+      uniqueEditedFields([...current, "rubricCriteria"])
+    )
+  }
+
   const toggleToolGrant = (grant: AgentToolGrantInput, selected: boolean) => {
     if (!form) return
 
@@ -220,6 +262,25 @@ export function AgentPromotionDraftPage() {
     updateForm({ toolGrants })
   }
 
+  const persistRubricCriteria = async () => {
+    if (!draftId || !draft) return
+
+    const rubricCriteria = rubricCriteriaFromText(rubricText)
+    if (
+      JSON.stringify(rubricCriteria) ===
+      JSON.stringify(draft.intelligence.rubricCriteria)
+    ) {
+      return
+    }
+
+    await updateAgentPromotionDraft(draftId, {
+      intelligence: {
+        ...draft.intelligence,
+        rubricCriteria,
+      },
+    })
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!draftId || !form || !canSubmit(form, submitting)) return
@@ -228,6 +289,7 @@ export function AgentPromotionDraftPage() {
     setError(null)
 
     try {
+      await persistRubricCriteria()
       const created = await createAgentFromPromotionDraft(draftId, {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
@@ -282,6 +344,8 @@ export function AgentPromotionDraftPage() {
                       ...draft.editedFields,
                       ...locallyEditedFields,
                     ])}
+                    rubricText={rubricText}
+                    onRubricChange={updateRubricText}
                   />
                 ) : null}
 
