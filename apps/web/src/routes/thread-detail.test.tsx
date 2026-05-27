@@ -158,7 +158,7 @@ describe("ThreadDetailPage create-agent action", () => {
     ).toBeInTheDocument()
   })
 
-  it("explains why agent-owned threads cannot create another agent", () => {
+  it("links agent-owned threads to their agent", () => {
     threadAgentId = "agent_existing"
 
     render(
@@ -174,13 +174,10 @@ describe("ThreadDetailPage create-agent action", () => {
       name: "Open agent",
     })
     expect(unavailableAction).toHaveAttribute("href", "/agents/agent_existing")
-    expect(unavailableAction).toHaveAccessibleDescription(
-      "This thread already uses an agent. Open that agent to adjust future runs."
-    )
     expect(
-      screen.getByText(
+      screen.queryByText(
         "This thread already uses an agent. Open that agent to adjust future runs."
       )
-    ).toBeInTheDocument()
+    ).not.toBeInTheDocument()
   })
 })
