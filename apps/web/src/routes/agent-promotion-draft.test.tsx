@@ -30,6 +30,8 @@ vi.mock("@/lib/api/agents-client", () => ({
       systemPrompt: "Review support backlog patterns.",
       model: "gpt-4o-mini",
       toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+      proposedToolGrants: [],
+      unsupportedSourceSteps: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -84,6 +86,58 @@ describe("AgentPromotionDraftPage", () => {
       })
       expect(navigate).toHaveBeenCalledWith("/agents/agent_test")
     })
+  })
+
+  it("renders proposed grants and validation checklist", async () => {
+    vi.mocked(getAgentPromotionDraft).mockResolvedValueOnce({
+      draft: {
+        id: "draft_test",
+        threadId: "thread_test",
+        sourceThreadTitle: "Investigate support backlog",
+        name: "Support Backlog Agent",
+        description: "Reviews backlog patterns.",
+        systemPrompt: "Review support backlog patterns.",
+        model: "gpt-4o-mini",
+        toolGrants: [],
+        proposedToolGrants: [
+          {
+            toolkitSlug: "slack",
+            toolName: "SLACK_SEND_MESSAGE",
+            displayName: "Slack send message",
+            required: true,
+            validationStatus: "missing_access",
+            remediation: {
+              code: "toolkit_not_connected",
+              message: "Connect Slack before creating this agent.",
+            },
+          },
+        ],
+        unsupportedSourceSteps: [
+          {
+            id: "step-crm",
+            title: "Lookup CRM account",
+            reason: "unsupported_tool",
+            toolName: "CRM_LOOKUP",
+            details: "No matching integration is available.",
+          },
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    })
+    render(
+      <MemoryRouter>
+        <AgentPromotionDraftPage />
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText("First-run validation")).toBeInTheDocument()
+    expect(screen.getByText("Slack send message")).toBeInTheDocument()
+    expect(
+      screen.getByText("Connect Slack before creating this agent.")
+    ).toBeInTheDocument()
+    expect(screen.getByText("Lookup CRM account")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /create agent/i })).toBeDisabled()
   })
 
   it("routes cancel back to the source thread after loading the draft", async () => {
