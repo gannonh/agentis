@@ -149,7 +149,11 @@ export function AgentPromotionDraftPage() {
             {loading ? (
               <p className="text-muted-foreground text-sm">Loading draft…</p>
             ) : null}
-            {error ? <p className="text-destructive text-sm">{error}</p> : null}
+            {error ? (
+              <p className="text-destructive text-sm" role="alert" aria-label={error}>
+                {error}
+              </p>
+            ) : null}
             {form ? (
               <>
                 <AgentSetupFields

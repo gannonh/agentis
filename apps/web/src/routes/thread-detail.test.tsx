@@ -150,9 +150,13 @@ describe("ThreadDetailPage create-agent action", () => {
     expect(
       screen.queryByRole("button", { name: /create agent from thread/i })
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: "Agent already set" })
-    ).toBeDisabled()
+    const unavailableAction = screen.getByRole("button", {
+      name: "Agent already set",
+    })
+    expect(unavailableAction).toBeDisabled()
+    expect(unavailableAction).toHaveAccessibleDescription(
+      "This thread already uses an agent. Open that agent to adjust future runs."
+    )
     expect(
       screen.getByText(
         "This thread already uses an agent. Open that agent to adjust future runs."

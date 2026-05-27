@@ -142,7 +142,9 @@ describe("AgentPromotionDraftPage", () => {
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
     expect(
-      await screen.findByText("Check the required setup fields and try again.")
+      await screen.findByRole("alert", {
+        name: "Check the required setup fields and try again.",
+      })
     ).toBeInTheDocument()
     expect(navigate).not.toHaveBeenCalled()
   })

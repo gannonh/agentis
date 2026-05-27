@@ -130,10 +130,19 @@ export function ThreadDetailPage() {
             ) : null}
             {agentOwnedThread ? (
               <div className="flex items-center gap-2">
-                <Button type="button" variant="outline" size="sm" disabled>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  aria-describedby="thread-agent-owned-note"
+                >
                   Agent already set
                 </Button>
-                <p className="text-muted-foreground max-w-48 text-xs leading-snug">
+                <p
+                  id="thread-agent-owned-note"
+                  className="text-muted-foreground max-w-48 text-xs leading-snug"
+                >
                   This thread already uses an agent. Open that agent to adjust future runs.
                 </p>
               </div>
