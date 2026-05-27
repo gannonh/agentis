@@ -18,21 +18,26 @@ function step(input: Partial<RunStep> & Pick<RunStep, "type" | "title">): RunSte
 }
 
 describe("agent promotion tool analysis", () => {
-  it("maps source tool calls to required proposed grants", () => {
+  it("maps runtime tool step payloads to required proposed grants", () => {
     const result = analyzeThreadToolUsage({
       steps: [
         step({
           type: "tool-call",
           title: "Create GitHub issue",
-          payload: { toolName: "GITHUB_CREATE_ISSUE" },
+          payload: {
+            toolkitSlug: "github",
+            toolSlug: "GITHUB_CREATE_ISSUE",
+          },
         }),
         step({
           type: "tool-result",
           title: "Send Slack update",
-          payload: { toolName: "SLACK_SEND_MESSAGE" },
+          payload: {
+            toolkitSlug: "slack",
+            toolSlug: "SLACK_SEND_MESSAGE",
+          },
         }),
       ],
-      connectedToolkitSlugs: ["github"],
     })
 
     expect(result.proposedToolGrants).toMatchObject([
@@ -40,20 +45,44 @@ describe("agent promotion tool analysis", () => {
         toolkitSlug: "github",
         toolName: "GITHUB_CREATE_ISSUE",
         required: true,
-        validationStatus: "valid",
       },
       {
         toolkitSlug: "slack",
         toolName: "SLACK_SEND_MESSAGE",
         required: true,
-        validationStatus: "missing_access",
-        remediation: {
-          code: "toolkit_not_connected",
-          message: "Connect Slack before creating this agent.",
-        },
       },
     ])
     expect(result.unsupportedSourceSteps).toEqual([])
+  })
+
+  it("falls back to legacy raw tool metadata", () => {
+    const result = analyzeThreadToolUsage({
+      steps: [
+        step({
+          type: "tool-call",
+          title: "List Google Drive files",
+          payload: { toolName: "GOOGLE_DRIVE_LIST_FILES" },
+        }),
+        step({
+          type: "tool-call",
+          title: "Call legacy Slack tool",
+          payload: { tool: "SLACK_SEND_MESSAGE" },
+        }),
+      ],
+    })
+
+    expect(result.proposedToolGrants).toMatchObject([
+      {
+        toolkitSlug: "google-drive",
+        toolName: "GOOGLE_DRIVE_LIST_FILES",
+        displayName: "Google Drive list files",
+      },
+      {
+        toolkitSlug: "slack",
+        toolName: "SLACK_SEND_MESSAGE",
+        displayName: "Slack send message",
+      },
+    ])
   })
 
   it("records unsupported and incomplete source steps", () => {
@@ -64,7 +93,7 @@ describe("agent promotion tool analysis", () => {
           type: "tool-call",
           status: "completed",
           title: "Lookup CRM account",
-          payload: { toolName: "CRM_LOOKUP" },
+          payload: { toolkitSlug: "crm", toolSlug: "CRM_LOOKUP" },
         }),
         step({
           id: "step-missing",
@@ -78,10 +107,12 @@ describe("agent promotion tool analysis", () => {
           type: "tool-result",
           status: "failed",
           title: "GitHub create issue failed",
-          payload: { toolName: "GITHUB_CREATE_ISSUE" },
+          payload: {
+            toolkitSlug: "github",
+            toolSlug: "GITHUB_CREATE_ISSUE",
+          },
         }),
       ],
-      connectedToolkitSlugs: [],
     })
 
     expect(result.proposedToolGrants).toEqual([
@@ -90,11 +121,6 @@ describe("agent promotion tool analysis", () => {
         toolName: "GITHUB_CREATE_ISSUE",
         displayName: "GitHub create issue",
         required: true,
-        validationStatus: "missing_access",
-        remediation: {
-          code: "toolkit_not_connected",
-          message: "Connect GitHub before creating this agent.",
-        },
       },
     ])
     expect(result.unsupportedSourceSteps).toMatchObject([
@@ -121,7 +147,6 @@ describe("agent promotion tool analysis", () => {
   it("keeps no-tool threads quiet", () => {
     const result = analyzeThreadToolUsage({
       steps: [step({ type: "reasoning", title: "Reason about the request" })],
-      connectedToolkitSlugs: [],
     })
 
     expect(result).toEqual({ proposedToolGrants: [], unsupportedSourceSteps: [] })

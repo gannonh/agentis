@@ -230,6 +230,14 @@ describe("shared schemas", () => {
     expect(() =>
       updateAgentPromotionDraftRequestSchema.parse({ name: "" })
     ).toThrow()
+    expect(() =>
+      updateAgentPromotionDraftRequestSchema.parse({
+        name: "Support Triage Agent",
+        proposedToolGrants: [
+          { toolkitSlug: "github", required: true, validationStatus: "valid" },
+        ],
+      })
+    ).toThrow()
   })
 
   it("parses agent create, list, detail, update, and grant payloads", () => {

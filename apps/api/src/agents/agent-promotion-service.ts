@@ -1,11 +1,15 @@
-import type {
-  AgentDetailResponse,
-  AgentPromotionDraft,
-  AgentToolGrantInput,
-  CreateAgentRequest,
-  Message,
-  ProposedToolGrant,
-  Thread,
+import {
+  hasBlockingProposedToolGrants,
+  proposedToolGrantsToInputs,
+  type AgentDetailResponse,
+  type AgentPromotionDraft,
+  type AgentToolGrantInput,
+  type CreateAgentRequest,
+  type IntegrationConnection,
+  type Message,
+  type ProposedToolGrant,
+  type Thread,
+  type UpdateAgentPromotionDraftRequest,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { buildAgentDetail } from "./agent-detail-service.js"
@@ -15,6 +19,8 @@ import {
   toolkitGrantRemediation,
 } from "./tool-grant-resolution.js"
 import type { Repositories } from "../repositories/index.js"
+import type { StoredAgentPromotionDraft } from "../repositories/agent-promotion-draft-repository.js"
+import { SUPPORTED_TOOLKIT_NAMES } from "../composio/tool-catalog.js"
 
 type ServiceError = {
   status: 400 | 404 | 500
@@ -127,19 +133,45 @@ function buildDraftDefaults(thread: Thread, messages: Message[]) {
 function firstInvalidRequiredGrant(
   draft: AgentPromotionDraft
 ): ProposedToolGrant | undefined {
-  return draft.proposedToolGrants.find(
-    (grant) => grant.required && grant.validationStatus !== "valid"
+  return draft.proposedToolGrants.find((grant) =>
+    hasBlockingProposedToolGrants([grant])
   )
 }
 
 function defaultRequestedGrants(draft: AgentPromotionDraft): AgentToolGrantInput[] {
-  if (draft.toolGrants.length > 0) return draft.toolGrants
-  return draft.proposedToolGrants
-    .filter((grant) => grant.required && grant.validationStatus === "valid")
-    .map((grant) => ({
-      toolkitSlug: grant.toolkitSlug,
-      connectionId: grant.connectionId,
-    }))
+  return draft.toolGrants.length > 0
+    ? draft.toolGrants
+    : proposedToolGrantsToInputs(draft.proposedToolGrants)
+}
+
+function connectedByToolkit(
+  connections: IntegrationConnection[]
+): Map<string, IntegrationConnection> {
+  return new Map(connections.map((connection) => [connection.toolkitSlug, connection]))
+}
+
+function validateProposedToolGrant(
+  grant: StoredAgentPromotionDraft["proposedToolGrants"][number],
+  connections: Map<string, IntegrationConnection>
+): ProposedToolGrant {
+  const connection = connections.get(grant.toolkitSlug)
+  if (connection) {
+    return {
+      ...grant,
+      validationStatus: "valid",
+      connectionId: connection.id,
+    }
+  }
+
+  const toolkitName = SUPPORTED_TOOLKIT_NAMES[grant.toolkitSlug] ?? grant.toolkitSlug
+  return {
+    ...grant,
+    validationStatus: "missing_access",
+    remediation: {
+      code: "toolkit_not_connected",
+      message: `Connect ${toolkitName} before creating this agent.`,
+    },
+  }
 }
 
 export class AgentPromotionService {
@@ -147,6 +179,37 @@ export class AgentPromotionService {
     private readonly repos: Repositories,
     private readonly config: AppConfig
   ) {}
+
+  private enrichDraft(draft: StoredAgentPromotionDraft): AgentPromotionDraft {
+    const connections = connectedByToolkit(
+      this.repos.integrationConnections.listConnectedByUserId()
+    )
+    const proposedToolGrants = draft.proposedToolGrants.map((grant) =>
+      validateProposedToolGrant(grant, connections)
+    )
+
+    return {
+      ...draft,
+      toolGrants:
+        draft.toolGrants.length > 0
+          ? draft.toolGrants
+          : proposedToolGrantsToInputs(proposedToolGrants),
+      proposedToolGrants,
+    }
+  }
+
+  getDraft(draftId: string): AgentPromotionDraft | null {
+    const draft = this.repos.agentPromotionDrafts.getById(draftId)
+    return draft ? this.enrichDraft(draft) : null
+  }
+
+  updateDraft(
+    draftId: string,
+    input: UpdateAgentPromotionDraftRequest
+  ): AgentPromotionDraft | null {
+    const draft = this.repos.agentPromotionDrafts.update(draftId, input)
+    return draft ? this.enrichDraft(draft) : null
+  }
 
   createDraftFromThread(
     threadId: string
@@ -156,23 +219,18 @@ export class AgentPromotionService {
     if (thread.agentId) return { ok: false, error: threadAlreadyHasAgent() }
 
     const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(thread.id)
-    if (existing) return { ok: true, data: { draft: existing, created: false } }
+    if (existing) {
+      return {
+        ok: true,
+        data: { draft: this.enrichDraft(existing), created: false },
+      }
+    }
 
     const messages = this.repos.messages.listByThreadId(thread.id)
     const defaults = buildDraftDefaults(thread, messages)
     const runs = this.repos.runs.listByThreadId(thread.id)
-    const connectedToolkits = this.repos.integrationConnections.listConnectedByUserId()
     const toolAnalysis = analyzeThreadToolUsage({
       steps: this.repos.steps.listByRunIds(runs.map((run) => run.id)),
-      connectedToolkitSlugs: connectedToolkits.map(
-        (connection) => connection.toolkitSlug
-      ),
-      connectedToolkitConnectionIds: Object.fromEntries(
-        connectedToolkits.map((connection) => [
-          connection.toolkitSlug,
-          connection.id,
-        ])
-      ),
     })
     const draft = this.repos.agentPromotionDrafts.create({
       threadId: thread.id,
@@ -187,14 +245,14 @@ export class AgentPromotionService {
       proposedToolGrants: toolAnalysis.proposedToolGrants,
       unsupportedSourceSteps: toolAnalysis.unsupportedSourceSteps,
     })
-    return { ok: true, data: { draft, created: true } }
+    return { ok: true, data: { draft: this.enrichDraft(draft), created: true } }
   }
 
   createAgentFromDraft(
     draftId: string,
     input: CreateAgentRequest
   ): ServiceResult<AgentDetailResponse> {
-    const draft = this.repos.agentPromotionDrafts.getById(draftId)
+    const draft = this.getDraft(draftId)
     if (!draft) return { ok: false, error: promotionDraftNotFound() }
 
     const invalidRequiredGrant = firstInvalidRequiredGrant(draft)

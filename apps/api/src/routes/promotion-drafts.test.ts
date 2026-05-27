@@ -68,6 +68,20 @@ describe("promotion draft routes", () => {
       mode: "plan",
       toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
     })
+    ctx.repos.steps.create({
+      runId: created.run.id,
+      type: "tool-call",
+      status: "completed",
+      title: "Create GitHub issue",
+      payload: { toolkitSlug: "github", toolSlug: "GITHUB_CREATE_ISSUE" },
+    })
+    ctx.repos.steps.create({
+      runId: created.run.id,
+      type: "tool-call",
+      status: "completed",
+      title: "Call unsupported CRM tool",
+      payload: { toolkitSlug: "crm", toolSlug: "CRM_LOOKUP" },
+    })
     const app = createApp(ctx.repos, ctx.config)
     const response = await app.request(
       `/api/threads/${created.thread.id}/promotion-drafts`,
@@ -91,25 +105,6 @@ describe("promotion draft routes", () => {
         description: "Reviews and routes support backlog patterns.",
         systemPrompt: "Route support issues with clear severity labels.",
         model: "gpt-4.1-mini",
-        proposedToolGrants: [
-          {
-            toolkitSlug: "github",
-            toolName: "GITHUB_CREATE_ISSUE",
-            displayName: "Create issue",
-            required: true,
-            validationStatus: "valid",
-            connectionId: github.id,
-          },
-        ],
-        unsupportedSourceSteps: [
-          {
-            id: "source-step-1",
-            title: "Call unsupported CRM tool",
-            reason: "unsupported_tool",
-            toolName: "CRM_LOOKUP",
-            details: "No matching integration is available.",
-          },
-        ],
       }),
     })
 
@@ -173,14 +168,14 @@ describe("promotion draft routes", () => {
       type: "tool-call",
       status: "completed",
       title: "Create GitHub issue",
-      payload: { toolName: "GITHUB_CREATE_ISSUE" },
+      payload: { toolkitSlug: "github", toolSlug: "GITHUB_CREATE_ISSUE" },
     })
     ctx.repos.steps.create({
       runId: created.run.id,
       type: "tool-call",
       status: "completed",
       title: "Lookup CRM account",
-      payload: { toolName: "CRM_LOOKUP" },
+      payload: { toolkitSlug: "crm", toolSlug: "CRM_LOOKUP" },
     })
     const app = createApp(ctx.repos, ctx.config)
 
@@ -210,6 +205,42 @@ describe("promotion draft routes", () => {
     expect(body.draft.unsupportedSourceSteps).toMatchObject([
       { title: "Lookup CRM account", reason: "unsupported_tool" },
     ])
+  })
+
+  it("rejects public edits to generated validation metadata", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as { draft: { id: string } }
+
+    const updated = await app.request(`/api/agent-promotion-drafts/${draft.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Support Triage Agent",
+        proposedToolGrants: [
+          {
+            toolkitSlug: "github",
+            required: true,
+            validationStatus: "valid",
+          },
+        ],
+      }),
+    })
+
+    expect(updated.status).toBe(400)
+    expect((await updated.json()) as { code: string }).toMatchObject({
+      code: "invalid_promotion_draft",
+    })
   })
 
   it("creates deterministic defaults for thin source threads", async () => {
@@ -242,7 +273,7 @@ describe("promotion draft routes", () => {
     })
   })
 
-  it("validates proposed required grants before creating an agent", async () => {
+  it("validates proposed required grants against current integration access", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
     const created = ctx.repos.threads.createWithInitialRun({
@@ -256,7 +287,7 @@ describe("promotion draft routes", () => {
       type: "tool-call",
       status: "completed",
       title: "Send Slack message",
-      payload: { toolName: "SLACK_SEND_MESSAGE" },
+      payload: { toolkitSlug: "slack", toolSlug: "SLACK_SEND_MESSAGE" },
     })
     const app = createApp(ctx.repos, ctx.config)
     const draftResponse = await app.request(
@@ -282,6 +313,38 @@ describe("promotion draft routes", () => {
       code: "toolkit_not_connected",
       remediation: "Connect Slack before creating this agent.",
     })
+
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const read = await app.request(`/api/agent-promotion-drafts/${draft.id}`)
+    const readBody = (await read.json()) as {
+      draft: {
+        toolGrants: { toolkitSlug: string; connectionId?: string }[]
+        proposedToolGrants: { toolkitSlug: string; validationStatus: string }[]
+      }
+    }
+    expect(readBody.draft.proposedToolGrants).toMatchObject([
+      { toolkitSlug: "slack", validationStatus: "valid" },
+    ])
+    expect(readBody.draft.toolGrants).toMatchObject([
+      { toolkitSlug: "slack", connectionId: slack.id },
+    ])
+
+    const createdAgent = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Notifier",
+          systemPrompt: "Send support updates.",
+        }),
+      }
+    )
+    expect(createdAgent.status).toBe(201)
   })
 
   it("creates an agent from proposed grants when access is present", async () => {
@@ -303,7 +366,7 @@ describe("promotion draft routes", () => {
       type: "tool-call",
       status: "completed",
       title: "Create GitHub issue",
-      payload: { toolName: "GITHUB_CREATE_ISSUE" },
+      payload: { toolkitSlug: "github", toolSlug: "GITHUB_CREATE_ISSUE" },
     })
     const app = createApp(ctx.repos, ctx.config)
     const draftResponse = await app.request(

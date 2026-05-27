@@ -1,10 +1,10 @@
 import {
+  agentPromotionDraftToolGrantProposalSchema,
   agentToolGrantInputListSchema,
-  proposedToolGrantSchema,
   unsupportedSourceStepSchema,
   type AgentPromotionDraft,
+  type AgentPromotionDraftToolGrantProposal,
   type AgentToolGrantInput,
-  type ProposedToolGrant,
   type UnsupportedSourceStep,
   type UpdateAgentPromotionDraftRequest,
 } from "@workspace/shared"
@@ -16,8 +16,17 @@ import { createId, nowIso } from "../lib/ids.js"
 
 type DraftRow = typeof agentPromotionDrafts.$inferSelect
 
-const proposedToolGrantListSchema = z.array(proposedToolGrantSchema)
+const proposedToolGrantListSchema = z.array(
+  agentPromotionDraftToolGrantProposalSchema
+)
 const unsupportedSourceStepListSchema = z.array(unsupportedSourceStepSchema)
+
+export type StoredAgentPromotionDraft = Omit<
+  AgentPromotionDraft,
+  "proposedToolGrants"
+> & {
+  proposedToolGrants: AgentPromotionDraftToolGrantProposal[]
+}
 
 type CreateAgentPromotionDraftInput = {
   threadId: string
@@ -27,7 +36,7 @@ type CreateAgentPromotionDraftInput = {
   systemPrompt: string
   model: string
   toolGrants: AgentToolGrantInput[]
-  proposedToolGrants?: ProposedToolGrant[]
+  proposedToolGrants?: AgentPromotionDraftToolGrantProposal[]
   unsupportedSourceSteps?: UnsupportedSourceStep[]
 }
 
@@ -35,7 +44,9 @@ function parseToolGrants(raw: string): AgentToolGrantInput[] {
   return agentToolGrantInputListSchema.parse(JSON.parse(raw))
 }
 
-function parseProposedToolGrants(raw: string): ProposedToolGrant[] {
+function parseProposedToolGrants(
+  raw: string
+): AgentPromotionDraftToolGrantProposal[] {
   return proposedToolGrantListSchema.parse(JSON.parse(raw))
 }
 
@@ -43,7 +54,7 @@ function parseUnsupportedSourceSteps(raw: string): UnsupportedSourceStep[] {
   return unsupportedSourceStepListSchema.parse(JSON.parse(raw))
 }
 
-function mapDraft(row: DraftRow): AgentPromotionDraft {
+function mapDraft(row: DraftRow): StoredAgentPromotionDraft {
   return {
     id: row.id,
     threadId: row.threadId,
@@ -64,7 +75,7 @@ function mapDraft(row: DraftRow): AgentPromotionDraft {
 
 function nextDescription(
   input: UpdateAgentPromotionDraftRequest,
-  existing: AgentPromotionDraft
+  existing: StoredAgentPromotionDraft
 ): string | null {
   if ("description" in input) return input.description ?? null
   return existing.description ?? null
@@ -77,7 +88,7 @@ function nextJson<T>(inputValue: T[] | undefined, existingValue: T[]): string {
 export class AgentPromotionDraftRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  create(input: CreateAgentPromotionDraftInput): AgentPromotionDraft {
+  create(input: CreateAgentPromotionDraftInput): StoredAgentPromotionDraft {
     const now = nowIso()
     const row: DraftRow = {
       id: createId("agent_draft"),
@@ -99,7 +110,7 @@ export class AgentPromotionDraftRepository {
     return mapDraft(row)
   }
 
-  getById(id: string): AgentPromotionDraft | null {
+  getById(id: string): StoredAgentPromotionDraft | null {
     const row = this.db
       .select()
       .from(agentPromotionDrafts)
@@ -108,7 +119,7 @@ export class AgentPromotionDraftRepository {
     return row ? mapDraft(row) : null
   }
 
-  getLatestByThreadId(threadId: string): AgentPromotionDraft | null {
+  getLatestByThreadId(threadId: string): StoredAgentPromotionDraft | null {
     const row = this.db
       .select()
       .from(agentPromotionDrafts)
@@ -124,7 +135,7 @@ export class AgentPromotionDraftRepository {
   update(
     id: string,
     input: UpdateAgentPromotionDraftRequest
-  ): AgentPromotionDraft | null {
+  ): StoredAgentPromotionDraft | null {
     const existing = this.getById(id)
     if (!existing) return null
 
@@ -136,14 +147,6 @@ export class AgentPromotionDraftRepository {
         systemPrompt: input.systemPrompt ?? existing.systemPrompt,
         model: input.model ?? existing.model,
         toolGrantsJson: nextJson(input.toolGrants, existing.toolGrants),
-        proposedToolGrantsJson: nextJson(
-          input.proposedToolGrants,
-          existing.proposedToolGrants
-        ),
-        unsupportedSourceStepsJson: nextJson(
-          input.unsupportedSourceSteps,
-          existing.unsupportedSourceSteps
-        ),
         updatedAt: nowIso(),
       })
       .where(eq(agentPromotionDrafts.id, id))

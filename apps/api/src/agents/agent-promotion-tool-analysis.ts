@@ -1,85 +1,90 @@
 import type {
-  ProposedToolGrant,
+  AgentPromotionDraftToolGrantProposal,
   RunStep,
   UnsupportedSourceStep,
 } from "@workspace/shared"
+import {
+  CURATED_COMPOSIO_TOOLS,
+  SUPPORTED_TOOLKIT_NAMES,
+} from "../composio/tool-catalog.js"
 
 type AnalyzeThreadToolUsageInput = {
   steps: RunStep[]
-  connectedToolkitSlugs: string[]
-  connectedToolkitConnectionIds?: Record<string, string>
 }
 
-type ToolMapping = {
-  slug: string
-  label: string
-  prefixes: string[]
-}
-
-const TOOL_MAPPINGS: ToolMapping[] = [
-  { slug: "github", label: "GitHub", prefixes: ["GITHUB_"] },
-  { slug: "slack", label: "Slack", prefixes: ["SLACK_"] },
-  { slug: "gmail", label: "Gmail", prefixes: ["GMAIL_"] },
-  {
-    slug: "google-drive",
-    label: "Google Drive",
-    prefixes: ["GOOGLE_DRIVE_", "GOOGLEDRIVE_"],
-  },
-  { slug: "airtable", label: "Airtable", prefixes: ["AIRTABLE_"] },
-]
-
-function getToolName(step: RunStep): string | undefined {
-  const value = step.payload?.toolName ?? step.payload?.tool
+function payloadString(
+  payload: Record<string, unknown> | null | undefined,
+  key: string
+): string | undefined {
+  const value = payload?.[key]
   return typeof value === "string" && value.trim() ? value.trim() : undefined
 }
 
-function displayName(mapping: ToolMapping, toolName: string): string {
-  const prefix = mapping.prefixes.find((candidate) =>
-    toolName.toUpperCase().startsWith(candidate)
-  )
-  const suffix = prefix ? toolName.slice(prefix.length) : toolName
-  const words = suffix
-    .toLowerCase()
-    .split("_")
-    .filter(Boolean)
-    .join(" ")
-  return words ? `${mapping.label} ${words}` : mapping.label
+function normalizedToken(value: string): string {
+  return value.replace(/[^a-z0-9]/gi, "").toUpperCase()
 }
 
-function findMapping(toolName: string): ToolMapping | undefined {
-  const normalized = toolName.toUpperCase()
-  return TOOL_MAPPINGS.find((mapping) =>
-    mapping.prefixes.some((prefix) => normalized.startsWith(prefix))
-  )
+function toolkitToolPrefixes(toolkitSlug: string): string[] {
+  const curatedPrefix = CURATED_COMPOSIO_TOOLS[toolkitSlug]?.toolSlug.split("_")[0]
+  return [curatedPrefix, toolkitSlug.replace(/-/g, "_")]
+    .filter((prefix): prefix is string => Boolean(prefix))
+    .map((prefix) => `${prefix.toUpperCase()}_`)
 }
 
-function connectedGrant(
-  mapping: ToolMapping,
-  toolName: string,
-  connectedToolkitSlugs: Set<string>,
-  connectedToolkitConnectionIds: Record<string, string>
-): ProposedToolGrant {
-  if (connectedToolkitSlugs.has(mapping.slug)) {
-    return {
-      toolkitSlug: mapping.slug,
-      toolName,
-      displayName: displayName(mapping, toolName),
-      required: true,
-      validationStatus: "valid",
-      connectionId: connectedToolkitConnectionIds[mapping.slug],
-    }
+function toolkitFromToolName(toolName: string | undefined): string | undefined {
+  if (!toolName) return undefined
+  if (toolName.startsWith("composio_")) {
+    return toolName.replace(/^composio_/, "").replace(/_/g, "-")
   }
 
+  const normalizedToolName = normalizedToken(toolName)
+  return Object.keys(CURATED_COMPOSIO_TOOLS).find((toolkitSlug) =>
+    toolkitToolPrefixes(toolkitSlug).some((prefix) =>
+      normalizedToolName.startsWith(normalizedToken(prefix))
+    )
+  )
+}
+
+function observedTool(step: RunStep): {
+  toolkitSlug?: string
+  toolName?: string
+} {
+  const toolName =
+    payloadString(step.payload, "toolSlug") ??
+    payloadString(step.payload, "toolName") ??
+    payloadString(step.payload, "tool")
   return {
-    toolkitSlug: mapping.slug,
+    toolkitSlug:
+      payloadString(step.payload, "toolkitSlug") ?? toolkitFromToolName(toolName),
     toolName,
-    displayName: displayName(mapping, toolName),
+  }
+}
+
+function isSupportedToolkit(toolkitSlug: string): boolean {
+  return toolkitSlug in CURATED_COMPOSIO_TOOLS
+}
+
+function displayName(toolkitSlug: string, toolName: string | undefined): string {
+  const toolkitName = SUPPORTED_TOOLKIT_NAMES[toolkitSlug] ?? toolkitSlug
+  if (!toolName) return toolkitName
+
+  const suffix = toolkitToolPrefixes(toolkitSlug).reduce(
+    (current, prefix) => current.replace(new RegExp(`^${prefix}`, "i"), ""),
+    toolName
+  )
+  const words = suffix.toLowerCase().split("_").filter(Boolean).join(" ")
+  return words ? `${toolkitName} ${words}` : toolkitName
+}
+
+function proposedGrant(
+  toolkitSlug: string,
+  toolName: string | undefined
+): AgentPromotionDraftToolGrantProposal {
+  return {
+    toolkitSlug,
+    toolName,
+    displayName: displayName(toolkitSlug, toolName),
     required: true,
-    validationStatus: "missing_access",
-    remediation: {
-      code: "toolkit_not_connected",
-      message: `Connect ${mapping.label} before creating this agent.`,
-    },
   }
 }
 
@@ -89,30 +94,26 @@ function isToolStep(step: RunStep): boolean {
 
 export function analyzeThreadToolUsage({
   steps,
-  connectedToolkitSlugs,
-  connectedToolkitConnectionIds = {},
 }: AnalyzeThreadToolUsageInput): {
-  proposedToolGrants: ProposedToolGrant[]
+  proposedToolGrants: AgentPromotionDraftToolGrantProposal[]
   unsupportedSourceSteps: UnsupportedSourceStep[]
 } {
-  const connected = new Set(connectedToolkitSlugs)
-  const proposedByToolkit = new Map<string, ProposedToolGrant>()
+  const proposedByToolkit = new Map<string, AgentPromotionDraftToolGrantProposal>()
   const unsupportedSourceSteps: UnsupportedSourceStep[] = []
 
   for (const step of steps.filter(isToolStep)) {
-    const toolName = getToolName(step)
-    if (!toolName) {
+    const { toolkitSlug, toolName } = observedTool(step)
+    if (!toolkitSlug) {
       unsupportedSourceSteps.push({
         id: step.id,
         title: step.title,
         reason: "missing_metadata",
-        details: "The source step did not include a tool name.",
+        details: "The source step did not include a toolkit.",
       })
       continue
     }
 
-    const mapping = findMapping(toolName)
-    if (!mapping) {
+    if (!isSupportedToolkit(toolkitSlug)) {
       unsupportedSourceSteps.push({
         id: step.id,
         title: step.title,
@@ -123,16 +124,8 @@ export function analyzeThreadToolUsage({
       continue
     }
 
-    if (!proposedByToolkit.has(mapping.slug)) {
-      proposedByToolkit.set(
-        mapping.slug,
-        connectedGrant(
-          mapping,
-          toolName,
-          connected,
-          connectedToolkitConnectionIds
-        )
-      )
+    if (!proposedByToolkit.has(toolkitSlug)) {
+      proposedByToolkit.set(toolkitSlug, proposedGrant(toolkitSlug, toolName))
     }
 
     if (step.status === "failed") {

@@ -9,11 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import type {
-  AgentPromotionDraft,
-  AgentToolGrantInput,
-  ProposedToolGrant,
-  UnsupportedSourceStep,
+import {
+  hasBlockingProposedToolGrants,
+  type AgentPromotionDraft,
+  type AgentToolGrantInput,
+  type ProposedToolGrant,
+  type UnsupportedSourceStep,
 } from "@workspace/shared"
 import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
 import {
@@ -31,27 +32,13 @@ type DraftFormState = AgentSetupFormState & {
   toolGrants: AgentToolGrantInput[]
 }
 
-function grantInputFromProposal(grant: ProposedToolGrant): AgentToolGrantInput {
-  return {
-    toolkitSlug: grant.toolkitSlug,
-    connectionId: grant.connectionId,
-  }
-}
-
-function draftToolGrants(draft: AgentPromotionDraft): AgentToolGrantInput[] {
-  if (draft.toolGrants.length > 0) return draft.toolGrants
-  return draft.proposedToolGrants
-    .filter((grant) => grant.required && grant.validationStatus === "valid")
-    .map(grantInputFromProposal)
-}
-
 function draftToForm(draft: AgentPromotionDraft): DraftFormState {
   return {
     name: draft.name,
     description: draft.description ?? "",
     model: draft.model,
     systemPrompt: draft.systemPrompt,
-    toolGrants: draftToolGrants(draft),
+    toolGrants: draft.toolGrants,
   }
 }
 
@@ -66,9 +53,7 @@ function sourceThreadLabel(draft: AgentPromotionDraft | null): string {
 
 function hasBlockingValidation(draft: AgentPromotionDraft | null): boolean {
   return Boolean(
-    draft?.proposedToolGrants.some(
-      (grant) => grant.required && grant.validationStatus !== "valid"
-    )
+    draft && hasBlockingProposedToolGrants(draft.proposedToolGrants)
   )
 }
 
