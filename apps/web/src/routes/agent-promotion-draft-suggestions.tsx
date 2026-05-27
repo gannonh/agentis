@@ -66,8 +66,8 @@ export function GeneratedSuggestions({
               Repeated steps
             </p>
             <ul className="list-disc space-y-1 pl-4">
-              {intelligence.repeatedSteps.map((step) => (
-                <li key={step}>{step}</li>
+              {intelligence.repeatedSteps.map((step, index) => (
+                <li key={index}>{step}</li>
               ))}
             </ul>
           </div>

@@ -76,6 +76,42 @@ function grantResolutionFailed(error: string): ServiceError {
   }
 }
 
+function conflictingToolGrants(): ServiceError {
+  return {
+    status: 400,
+    body: {
+      error:
+        "toolGrants and draftUpdates.toolGrants must match when both are provided.",
+      code: "conflicting_tool_grants",
+    },
+  }
+}
+
+function grantKey(grant: { toolkitSlug: string; connectionId?: string | null }) {
+  return `${grant.toolkitSlug}:${grant.connectionId ?? ""}`
+}
+
+function normalizeGrantInputs(
+  grants: CreateAgentFromPromotionDraftRequest["toolGrants"] = []
+) {
+  return grants
+    .map((grant) => ({
+      toolkitSlug: grant.toolkitSlug,
+      connectionId: grant.connectionId ?? null,
+    }))
+    .sort((a, b) => grantKey(a).localeCompare(grantKey(b)))
+}
+
+function grantInputsMatch(
+  left: CreateAgentFromPromotionDraftRequest["toolGrants"],
+  right: CreateAgentFromPromotionDraftRequest["toolGrants"]
+): boolean {
+  return (
+    JSON.stringify(normalizeGrantInputs(left)) ===
+    JSON.stringify(normalizeGrantInputs(right))
+  )
+}
+
 function cleanTitle(title: string): string | null {
   const cleaned = title.trim().replace(/\s+/g, " ")
   return cleaned || null
@@ -143,6 +179,14 @@ export class AgentPromotionService {
     const draft = this.repos.agentPromotionDrafts.getById(draftId)
     if (!draft) return { ok: false, error: promotionDraftNotFound() }
 
+    if (
+      input.toolGrants &&
+      input.draftUpdates?.toolGrants &&
+      !grantInputsMatch(input.toolGrants, input.draftUpdates.toolGrants)
+    ) {
+      return { ok: false, error: conflictingToolGrants() }
+    }
+
     const requestedGrants =
       input.toolGrants ?? input.draftUpdates?.toolGrants ?? draft.toolGrants
     const resolvedGrants = resolveRequestedAgentGrants(
@@ -153,22 +197,29 @@ export class AgentPromotionService {
       return { ok: false, error: grantResolutionFailed(resolvedGrants.error) }
     }
 
-    const updatedDraft = input.draftUpdates
-      ? this.repos.agentPromotionDrafts.update(draft.id, input.draftUpdates)
-      : draft
-    if (!updatedDraft) return { ok: false, error: promotionDraftNotFound() }
-
     const created = this.repos.agents.createWithGrants(
       {
         name: input.name,
         description: input.description,
         systemPrompt: input.systemPrompt,
-        model: input.model ?? updatedDraft.model ?? this.config.defaultModel,
+        model:
+          input.model ??
+          input.draftUpdates?.model ??
+          draft.model ??
+          this.config.defaultModel,
       },
       resolvedGrants.grants
     )
     const detail = buildAgentDetail(this.repos, created.id)
     if (!detail) return { ok: false, error: agentCreationFailed() }
+
+    if (input.draftUpdates) {
+      const updatedDraft = this.repos.agentPromotionDrafts.update(
+        draft.id,
+        input.draftUpdates
+      )
+      if (!updatedDraft) return { ok: false, error: promotionDraftNotFound() }
+    }
 
     return { ok: true, data: detail }
   }

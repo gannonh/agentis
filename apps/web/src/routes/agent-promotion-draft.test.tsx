@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { AgentPromotionDraftPage } from "./agent-promotion-draft"
+import { GeneratedSuggestions } from "./agent-promotion-draft-suggestions"
 import {
   createAgentFromPromotionDraft,
   getAgentPromotionDraft,
@@ -72,6 +73,42 @@ describe("AgentPromotionDraftPage", () => {
     vi.mocked(getAgentPromotionDraft).mockClear()
     vi.mocked(createAgentFromPromotionDraft).mockClear()
     vi.mocked(updateAgentPromotionDraft).mockClear()
+  })
+
+  it("renders repeated suggestions without duplicate React keys", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+
+    render(
+      <GeneratedSuggestions
+        draft={{
+          id: "draft_test",
+          threadId: "thread_test",
+          sourceThreadTitle: "Investigate support backlog",
+          name: "Support Backlog Agent",
+          description: "Reviews backlog patterns.",
+          systemPrompt: "Review support backlog patterns.",
+          model: "gpt-4o-mini",
+          toolGrants: [],
+          intelligence: {
+            repeatedSteps: ["Assign severity", "Assign severity"],
+            requiredTools: [],
+            rubricCriteria: [],
+          },
+          editedFields: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }}
+        editedFields={[]}
+        rubricText=""
+        onRubricChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getAllByText("Assign severity")).toHaveLength(2)
+    expect(consoleError.mock.calls.flat().join("\n")).not.toContain(
+      "Encountered two children with the same key"
+    )
+    consoleError.mockRestore()
   })
 
   it("loads a draft, submits edits, creates an agent, and navigates", async () => {
@@ -176,6 +213,24 @@ describe("AgentPromotionDraftPage", () => {
         })
       )
     })
+  })
+
+  it("clears the rubric edited marker when text matches the loaded draft", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <AgentPromotionDraftPage />
+      </MemoryRouter>
+    )
+
+    const rubric = await screen.findByLabelText(/rubric criteria/i)
+    await user.clear(rubric)
+    await user.type(rubric, "Assigns severity")
+    expect(screen.getByText("Rubric criteria edited")).toBeInTheDocument()
+
+    await user.clear(rubric)
+    await user.type(rubric, "Finds the right issue\nExplains the severity")
+    expect(screen.queryByText("Rubric criteria edited")).not.toBeInTheDocument()
   })
 
   it("routes cancel back to the source thread after loading the draft", async () => {

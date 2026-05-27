@@ -126,6 +126,21 @@ function changedIntelligenceFields(
   )
 }
 
+function draftFieldChanged(
+  field: (typeof editableDraftFields)[number],
+  input: UpdateAgentPromotionDraftRequest,
+  existing: AgentPromotionDraft
+): boolean {
+  if (!(field in input)) return false
+  if (field === "description") {
+    return (input.description ?? null) !== (existing.description ?? null)
+  }
+  if (field === "toolGrants") {
+    return JSON.stringify(input.toolGrants) !== JSON.stringify(existing.toolGrants)
+  }
+  return input[field] !== existing[field]
+}
+
 function nextEditedFieldsJson(
   input: UpdateAgentPromotionDraftRequest,
   existing: AgentPromotionDraft
@@ -133,7 +148,7 @@ function nextEditedFieldsJson(
   const fields = new Set<DraftEditedField>(existing.editedFields)
 
   for (const field of editableDraftFields) {
-    if (field in input) fields.add(field)
+    if (draftFieldChanged(field, input, existing)) fields.add(field)
   }
   for (const field of changedIntelligenceFields(input, existing)) {
     fields.add(field)

@@ -144,10 +144,15 @@ export function AgentPromotionDraftPage() {
   }
 
   const updateRubricText = (value: string) => {
+    const rubricCriteria = rubricCriteriaFromText(value)
     setRubricText(value)
-    setLocallyEditedFields((current) =>
-      uniqueEditedFields([...current, "rubricCriteria"])
-    )
+    setLocallyEditedFields((current) => {
+      const next = current.filter((field) => field !== "rubricCriteria")
+      if (draft && rubricCriteriaChanged(draft, rubricCriteria)) {
+        return uniqueEditedFields([...next, "rubricCriteria"])
+      }
+      return next
+    })
   }
 
   const toggleToolGrant = (grant: AgentToolGrantInput, selected: boolean) => {

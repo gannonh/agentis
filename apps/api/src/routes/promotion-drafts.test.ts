@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import { createApp } from "../app.js"
 import { agentPromotionDrafts } from "../db/schema.js"
@@ -139,6 +139,49 @@ describe("promotion draft routes", () => {
       "description",
       "rubricCriteria",
     ])
+  })
+
+  it("does not mark unchanged draft fields as edited", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const response = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await response.json()) as {
+      draft: {
+        id: string
+        name: string
+        description: string
+        systemPrompt: string
+        model: string
+        toolGrants: { toolkitSlug: string; connectionId?: string }[]
+      }
+    }
+
+    const updated = await app.request(`/api/agent-promotion-drafts/${draft.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: draft.name,
+        description: draft.description,
+        systemPrompt: draft.systemPrompt,
+        model: draft.model,
+        toolGrants: draft.toolGrants,
+      }),
+    })
+
+    expect(updated.status).toBe(200)
+    const updatedBody = (await updated.json()) as {
+      draft: { editedFields: string[] }
+    }
+    expect(updatedBody.draft.editedFields).toEqual([])
   })
 
   it("derives repeated steps from rich source thread messages", async () => {
@@ -324,6 +367,121 @@ describe("promotion draft routes", () => {
       intelligence: { rubricCriteria },
       editedFields: ["rubricCriteria"],
     })
+  })
+
+  it("keeps draft edits unchanged when agent creation cannot be loaded", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as {
+      draft: { id: string; intelligence: { rubricCriteria: string[] } }
+    }
+    vi.spyOn(ctx.repos.agents, "createWithGrants").mockReturnValueOnce({
+      id: "agent_missing",
+      name: "Support Triage Agent",
+      description: "Routes support backlog patterns.",
+      systemPrompt: "Assign severity and next steps.",
+      model: "gpt-4.1-mini",
+      maxCostPerRunUsd: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      currentConfigurationVersion: {
+        id: "agent_version_missing",
+        agentId: "agent_missing",
+        version: 1,
+        systemPrompt: "Assign severity and next steps.",
+        model: "gpt-4.1-mini",
+        maxCostPerRunUsd: null,
+        createdAt: new Date().toISOString(),
+      },
+      toolGrantCount: 0,
+    })
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+          model: "gpt-4.1-mini",
+          draftUpdates: {
+            intelligence: { rubricCriteria: ["Assigns severity"] },
+          },
+        }),
+      }
+    )
+
+    expect(response.status).toBe(500)
+    expect(ctx.repos.agentPromotionDrafts.getById(draft.id)).toMatchObject({
+      intelligence: { rubricCriteria: draft.intelligence.rubricCriteria },
+      editedFields: [],
+    })
+  })
+
+  it("rejects conflicting tool grant sources in a promotion command", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const github = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const slack = ctx.repos.integrationConnections.create({
+      toolkitSlug: "slack",
+      status: "connected",
+      composioConnectedAccountId: "acct-slack",
+    })
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+      toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as { draft: { id: string } }
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Support Triage Agent",
+          description: "Routes support backlog patterns.",
+          systemPrompt: "Assign severity and next steps.",
+          model: "gpt-4.1-mini",
+          toolGrants: [{ toolkitSlug: "github", connectionId: github.id }],
+          draftUpdates: {
+            toolGrants: [{ toolkitSlug: "slack", connectionId: slack.id }],
+          },
+        }),
+      }
+    )
+
+    expect(response.status).toBe(400)
+    expect((await response.json()) as { code: string }).toMatchObject({
+      code: "conflicting_tool_grants",
+    })
+    expect(ctx.repos.agentPromotionDrafts.getById(draft.id)?.toolGrants).toEqual([
+      { toolkitSlug: "github", connectionId: github.id },
+    ])
   })
 
   it("creates an agent from draft edits in a single promotion command", async () => {
