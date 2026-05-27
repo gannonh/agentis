@@ -173,14 +173,14 @@ export const demoWorkspace = workspaceSchema.parse({
     {
       id: "memory-user-fact-1",
       content: "User runs an AI automation consulting practice.",
-      category: "User Facts",
+      category: "User Fact",
       scope: "global",
       importance: "high",
     },
     {
       id: "memory-preference-1",
       content: "User prefers concise responses with direct next steps.",
-      category: "Preferences",
+      category: "Preference",
       scope: "global",
       importance: "medium",
     },

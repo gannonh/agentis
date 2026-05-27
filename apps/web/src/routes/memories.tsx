@@ -12,7 +12,7 @@ export function MemoriesPage() {
       <section className="rounded-lg border border-border bg-card px-4 py-4">
         <p className="text-sm font-medium">{workspace.memories.length} saved memories</p>
         <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-          Browse saved memories in the next milestone slice.
+          Detailed memory browsing is coming soon.
         </p>
       </section>
     </PageLayout>

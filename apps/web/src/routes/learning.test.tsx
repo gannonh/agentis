@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
 import { LearningPage } from "./learning"
+import { MemoriesPage } from "./memories"
 
 describe("LearningPage", () => {
   it("renders learning dashboard aligned with comp", () => {
@@ -22,8 +23,8 @@ describe("LearningPage", () => {
     expect(screen.getByText("View all 15 skills →")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
     expect(screen.getByText("3 saved")).toBeInTheDocument()
-    expect(screen.getByText("User Facts: 1")).toBeInTheDocument()
-    expect(screen.getByText("Preferences: 1")).toBeInTheDocument()
+    expect(screen.getByText("User Fact: 1")).toBeInTheDocument()
+    expect(screen.getByText("Preference: 1")).toBeInTheDocument()
     expect(screen.getByText("Active Work: 1")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Rubrics" })).toBeInTheDocument()
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
@@ -36,14 +37,15 @@ describe("LearningPage", () => {
       <MemoryRouter initialEntries={["/learning"]}>
         <Routes>
           <Route path="/learning" element={<LearningPage />} />
-          <Route path="/memories" element={<h1>Memories Library</h1>} />
+          <Route path="/memories" element={<MemoriesPage />} />
         </Routes>
       </MemoryRouter>
     )
 
     await user.click(screen.getByRole("link", { name: "Browse Memories" }))
 
-    expect(screen.getByRole("heading", { name: "Memories Library" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
+    expect(screen.getByText("Detailed memory browsing is coming soon.")).toBeInTheDocument()
   })
 
   it("filters conversations by agent", async () => {

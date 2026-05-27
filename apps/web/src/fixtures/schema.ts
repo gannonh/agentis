@@ -92,7 +92,16 @@ export const skillSchema = z.object({
   pinned: z.boolean().default(false),
 })
 
-export const memoryCategorySchema = z.enum(["User Facts", "Preferences", "Active Work"])
+export const memoryCategorySchema = z.enum([
+  "User Fact",
+  "Preference",
+  "Project Context",
+  "Domain Knowledge",
+  "People",
+  "Active Work",
+  "Tools & Workflows",
+  "Organization",
+])
 
 export const memorySchema = z.object({
   id: z.string(),
