@@ -96,6 +96,54 @@ describe("ThreadDetailPage create-agent action", () => {
     })
   })
 
+  it("shows seed-and-review loading copy while preparing the agent setup", async () => {
+    let resolveDraft: (value: { draft: { id: string } }) => void = () => {}
+    vi.mocked(createAgentPromotionDraft).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveDraft = resolve
+      }) as ReturnType<typeof createAgentPromotionDraft>
+    )
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: /create agent from thread/i })
+    )
+
+    expect(
+      screen.getByRole("button", { name: /preparing agent setup/i })
+    ).toBeInTheDocument()
+
+    resolveDraft({ draft: { id: "draft_test" } })
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith("/agents/new/from-thread/draft_test")
+    })
+  })
+
+  it("announces create-agent errors", async () => {
+    vi.mocked(createAgentPromotionDraft).mockRejectedValueOnce(
+      new Error("Could not prepare agent setup.")
+    )
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: /create agent from thread/i })
+    )
+
+    expect(
+      await screen.findByText("Could not prepare agent setup.")
+    ).toBeInTheDocument()
+  })
+
   it("keeps the create-agent action available for finished threads", () => {
     threadStatus = "finished"
 
@@ -110,7 +158,7 @@ describe("ThreadDetailPage create-agent action", () => {
     ).toBeInTheDocument()
   })
 
-  it("does not offer create-agent action for agent-owned threads", () => {
+  it("explains why agent-owned threads cannot create another agent", () => {
     threadAgentId = "agent_existing"
 
     render(
@@ -122,5 +170,17 @@ describe("ThreadDetailPage create-agent action", () => {
     expect(
       screen.queryByRole("button", { name: /create agent from thread/i })
     ).not.toBeInTheDocument()
+    const unavailableAction = screen.getByRole("button", {
+      name: "Open agent",
+    })
+    expect(unavailableAction).toHaveAttribute("href", "/agents/agent_existing")
+    expect(unavailableAction).toHaveAccessibleDescription(
+      "This thread already uses an agent. Open that agent to adjust future runs."
+    )
+    expect(
+      screen.getByText(
+        "This thread already uses an agent. Open that agent to adjust future runs."
+      )
+    ).toBeInTheDocument()
   })
 })

@@ -110,7 +110,7 @@ export function AgentDetailHero({
               className="size-3"
               strokeWidth={2}
             />
-            {startingThread ? "Opening…" : "Try this agent"}
+            {startingThread ? "Opening test thread…" : "Start test thread"}
           </Button>
           <Button
             size="icon"

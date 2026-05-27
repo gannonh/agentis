@@ -190,7 +190,7 @@ describe("agent create-to-test acceptance path", () => {
     expect(await screen.findByRole("link", { name: "Research Helper" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("link", { name: "Research Helper" }))
-    await user.click(await screen.findByRole("button", { name: "Try this agent" }))
+    await user.click(await screen.findByRole("button", { name: "Start test thread" }))
 
     expect(startAgentTestThread).toHaveBeenCalledWith("agent_acceptance", {
       prompt: "Try Research Helper",

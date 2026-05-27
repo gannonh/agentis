@@ -61,8 +61,7 @@ function threadAlreadyHasAgent(): ServiceError {
   return {
     status: 400,
     body: {
-      error:
-        "Threads already associated with an agent cannot create another agent.",
+      error: "This thread already uses an agent. Open that agent to adjust future runs.",
       code: "thread_already_has_agent",
     },
   }

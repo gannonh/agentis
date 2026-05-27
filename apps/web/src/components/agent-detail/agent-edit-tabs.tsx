@@ -471,7 +471,7 @@ const INVOCATION_OPTIONS = [
   },
   {
     title: "Thread",
-    description: "Start a test thread from this agent detail page.",
+    description: "Start a test thread to check this agent with real work.",
     status: "Available now",
     action: null,
     icon: ChatIcon,

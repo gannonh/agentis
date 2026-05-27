@@ -1059,8 +1059,10 @@ describe("promotion draft routes", () => {
       code: "thread_not_found",
     })
     expect(agentOwned.status).toBe(400)
-    expect((await agentOwned.json()) as { code: string }).toMatchObject({
+    expect((await agentOwned.json()) as { code: string; error: string }).toMatchObject({
       code: "thread_already_has_agent",
+      error:
+        "This thread already uses an agent. Open that agent to adjust future runs.",
     })
   })
 })

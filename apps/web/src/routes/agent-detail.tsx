@@ -153,7 +153,7 @@ export function AgentDetailPage() {
       setTestThreadState({
         agentId,
         loading: false,
-        error: "We couldn't open a test chat. Try again.",
+        error: "We couldn't open a test thread. Try again.",
       })
     }
   }, [agentId, apiAgentDetail, navigate])
