@@ -6,6 +6,8 @@ type LearningCandidatesSectionProps = {
 }
 
 export function LearningCandidatesSection({ candidates }: LearningCandidatesSectionProps) {
+  if (candidates.length === 0) return null
+
   return (
     <section className="flex flex-col gap-3" aria-labelledby="learning-candidates-heading">
       <div className="flex items-center justify-between gap-2">

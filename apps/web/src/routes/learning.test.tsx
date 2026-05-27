@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
+import { LearningCandidatesSection } from "@/components/learning/learning-candidates-section"
 import { LearningPage } from "./learning"
 
 describe("LearningPage", () => {
@@ -37,8 +38,18 @@ describe("LearningPage", () => {
     expect(candidates.getByText("Creating Agent")).toBeInTheDocument()
     expect(candidates.getByText("Memory suggestion")).toBeInTheDocument()
     expect(candidates.getByText("82% confidence")).toBeInTheDocument()
-    expect(candidates.getByRole("button", { name: "Save memory" })).toBeDisabled()
+    expect(candidates.getByText("Suggested")).toBeInTheDocument()
+
+    const saveMemoryButton = candidates.getByRole("button", { name: "Save memory" })
+    expect(saveMemoryButton).toBeDisabled()
+    expect(saveMemoryButton.querySelector("svg")).toHaveAttribute("aria-hidden", "true")
     expect(candidates.getByRole("button", { name: "Dismiss" })).toBeDisabled()
+  })
+
+  it("does not render an orphaned candidates section when there are no candidates", () => {
+    render(<LearningCandidatesSection candidates={[]} />)
+
+    expect(screen.queryByRole("region", { name: "Learning candidates" })).not.toBeInTheDocument()
   })
 
   it("filters conversations by agent", async () => {

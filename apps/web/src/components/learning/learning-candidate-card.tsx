@@ -12,8 +12,12 @@ type LearningCandidateCardProps = {
   candidate: LearningCandidate
 }
 
+function capitalize(value: string): string {
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`
+}
+
 function formatSuggestionType(type: LearningCandidate["suggestionType"]): string {
-  return `${type.charAt(0).toUpperCase()}${type.slice(1)} suggestion`
+  return `${capitalize(type)} suggestion`
 }
 
 export function LearningCandidateCard({ candidate }: LearningCandidateCardProps) {
@@ -41,7 +45,7 @@ export function LearningCandidateCard({ candidate }: LearningCandidateCardProps)
               <span aria-hidden>·</span>
               <span>{confidence}% confidence</span>
               <span aria-hidden>·</span>
-              <span>{candidate.status}</span>
+              <span>{capitalize(candidate.status)}</span>
             </div>
           </div>
         </div>
@@ -59,7 +63,12 @@ export function LearningCandidateCard({ candidate }: LearningCandidateCardProps)
                 disabled
               >
                 {ActionIcon ? (
-                  <HugeiconsIcon icon={ActionIcon} className="size-3.5" strokeWidth={2} />
+                  <HugeiconsIcon
+                    icon={ActionIcon}
+                    className="size-3.5"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
                 ) : null}
                 {action.label}
               </Button>
