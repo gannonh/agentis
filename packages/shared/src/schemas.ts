@@ -447,6 +447,49 @@ export const projectMemorySchema = z.object({
   updatedAt: z.string(),
 })
 
+export const savedMemoryCategoryNameSchema = z.enum([
+  "User Fact",
+  "Preference",
+  "Project Context",
+  "Domain Knowledge",
+  "People",
+  "Active Work",
+  "Tools & Workflows",
+  "Organization",
+])
+
+export const savedMemoryImportanceSchema = z.enum(["low", "medium", "high"])
+
+export const savedMemoryScopeSchema = z.enum(["global", "project", "agent"])
+
+export const savedMemoryCategorySchema = z.object({
+  id: z.string(),
+  name: savedMemoryCategoryNameSchema,
+  description: z.string(),
+  count: z.number().int().nonnegative(),
+})
+
+export const savedMemorySchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  category: savedMemoryCategoryNameSchema,
+  usageGuidance: z.string(),
+  tags: z.array(z.string()),
+  importance: savedMemoryImportanceSchema,
+  date: z.string(),
+  scope: savedMemoryScopeSchema,
+  associatedAgent: z.string().nullable().optional(),
+  source: z.string(),
+  provenance: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const memoriesListResponseSchema = z.object({
+  categories: z.array(savedMemoryCategorySchema),
+  memories: z.array(savedMemorySchema),
+})
+
 export const projectContextSummarySchema = z.object({
   project: projectSchema,
   goals: z.string().nullable().optional(),
@@ -682,6 +725,10 @@ export type CreateFollowUpResponse = z.infer<
 export type ProjectStatus = z.infer<typeof projectStatusSchema>
 export type Project = z.infer<typeof projectSchema>
 export type ProjectMemory = z.infer<typeof projectMemorySchema>
+export type SavedMemoryCategoryName = z.infer<typeof savedMemoryCategoryNameSchema>
+export type SavedMemoryCategory = z.infer<typeof savedMemoryCategorySchema>
+export type SavedMemory = z.infer<typeof savedMemorySchema>
+export type MemoriesListResponse = z.infer<typeof memoriesListResponseSchema>
 export type ProjectContextSummary = z.infer<typeof projectContextSummarySchema>
 export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>
 export type UpdateProjectRequest = z.infer<typeof updateProjectRequestSchema>

@@ -89,6 +89,51 @@ describe("api routes", () => {
     )
   })
 
+  it("returns seeded saved memories with category metadata", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/memories")
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      categories: { name: string; count: number }[]
+      memories: {
+        content: string
+        category: string
+        usageGuidance: string
+        tags: string[]
+        importance: string
+        date: string
+        scope: string
+        associatedAgent?: string | null
+        source: string
+        provenance: string
+      }[]
+    }
+
+    expect(body.categories.map((category) => category.name)).toEqual([
+      "User Fact",
+      "Preference",
+      "Project Context",
+      "Domain Knowledge",
+      "People",
+      "Active Work",
+      "Tools & Workflows",
+      "Organization",
+    ])
+    expect(body.categories.some((category) => category.count === 0)).toBe(true)
+    expect(body.memories.length).toBeGreaterThan(0)
+    expect(body.memories[0]).toMatchObject({
+      category: "Project Context",
+      usageGuidance: expect.any(String),
+      tags: expect.any(Array),
+      importance: expect.stringMatching(/^(low|medium|high)$/),
+      source: "seeded",
+      provenance: expect.stringContaining("mocked"),
+    })
+  })
+
   it("returns thread detail for resume", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
