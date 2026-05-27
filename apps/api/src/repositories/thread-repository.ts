@@ -1,7 +1,5 @@
 import { desc, eq } from "drizzle-orm"
 import type {
-  AgentSourceThread,
-  AgentSourceWorkflow,
   Message,
   Run,
   Thread,
@@ -18,15 +16,14 @@ import {
 } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapMessage, mapRun, mapThread } from "../lib/mappers.js"
+import {
+  sourceWorkflowColumns,
+  type SourceWorkflowSnapshot,
+} from "../lib/source-workflow-snapshot.js"
 
 type ToolGrantSnapshot = {
   toolkitSlug: string
   connectionId: string
-}
-
-type SourceWorkflowSnapshot = {
-  sourceThread?: AgentSourceThread
-  sourceWorkflow?: AgentSourceWorkflow
 }
 
 type ThreadCreateInput = {
@@ -106,20 +103,6 @@ function createQueuedStepRow(runId: string, createdAt: string): StepRow {
     payloadJson: null,
     createdAt,
     updatedAt: createdAt,
-  }
-}
-
-function serializeSourceWorkflow(
-  sourceWorkflow?: AgentSourceWorkflow
-): string | null {
-  return sourceWorkflow ? JSON.stringify(sourceWorkflow) : null
-}
-
-function sourceWorkflowColumns(input: SourceWorkflowSnapshot) {
-  return {
-    sourceThreadId: input.sourceThread?.id ?? null,
-    sourceThreadTitle: input.sourceThread?.title ?? null,
-    sourceWorkflowJson: serializeSourceWorkflow(input.sourceWorkflow),
   }
 }
 

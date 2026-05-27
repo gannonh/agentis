@@ -1,6 +1,7 @@
 import {
   agentToolGrantInputListSchema,
   type AgentPromotionDraft,
+  type AgentSourceWorkflow,
   type AgentToolGrantInput,
   type UpdateAgentPromotionDraftRequest,
 } from "@workspace/shared"
@@ -8,6 +9,10 @@ import { desc, eq } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import { agentPromotionDrafts } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
+import {
+  parseSourceWorkflowJson,
+  serializeSourceWorkflowJson,
+} from "../lib/source-workflow-snapshot.js"
 
 type DraftRow = typeof agentPromotionDrafts.$inferSelect
 
@@ -18,6 +23,7 @@ type CreateAgentPromotionDraftInput = {
   description?: string | null
   systemPrompt: string
   model: string
+  sourceWorkflow?: AgentSourceWorkflow
   toolGrants: AgentToolGrantInput[]
 }
 
@@ -34,6 +40,7 @@ function mapDraft(row: DraftRow): AgentPromotionDraft {
     description: row.description ?? undefined,
     systemPrompt: row.systemPrompt,
     model: row.model,
+    sourceWorkflow: parseSourceWorkflowJson(row.sourceWorkflowJson),
     toolGrants: parseToolGrants(row.toolGrantsJson),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -69,6 +76,7 @@ export class AgentPromotionDraftRepository {
       description: input.description ?? null,
       systemPrompt: input.systemPrompt,
       model: input.model,
+      sourceWorkflowJson: serializeSourceWorkflowJson(input.sourceWorkflow),
       toolGrantsJson: JSON.stringify(input.toolGrants),
       createdAt: now,
       updatedAt: now,

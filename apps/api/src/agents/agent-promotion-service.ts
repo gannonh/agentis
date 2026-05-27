@@ -12,6 +12,7 @@ import {
   toolkitGrantRemediation,
 } from "./tool-grant-resolution.js"
 import type { Repositories } from "../repositories/index.js"
+import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 
 type ServiceError = {
   status: 400 | 404 | 500
@@ -148,6 +149,7 @@ export class AgentPromotionService {
       description: defaults.description,
       systemPrompt: defaults.systemPrompt,
       model: thread.model,
+      sourceWorkflow: buildSourceWorkflow(thread.title, messages),
       toolGrants: this.repos.toolAccessGrants
         .listByScope("thread", thread.id)
         .map(({ toolkitSlug, connectionId }) => ({
@@ -174,20 +176,22 @@ export class AgentPromotionService {
       return { ok: false, error: grantResolutionFailed(resolvedGrants.error) }
     }
 
-    const sourceThread = this.repos.threads.getById(draft.threadId)
-    const sourceThreadTitle = sourceThread?.title ?? draft.sourceThreadTitle
-    const sourceMessages = this.repos.messages.listByThreadId(draft.threadId)
+    const sourceSnapshot = draft.sourceWorkflow
+      ? toSourceWorkflowSnapshot({
+          sourceThread: {
+            id: draft.threadId,
+            title: draft.sourceThreadTitle,
+          },
+          sourceWorkflow: draft.sourceWorkflow,
+        })
+      : {}
     const created = this.repos.agents.createWithGrants(
       {
         name: input.name,
         description: input.description,
         systemPrompt: input.systemPrompt,
         model: input.model ?? draft.model ?? this.config.defaultModel,
-        sourceThread: {
-          id: draft.threadId,
-          title: sourceThreadTitle,
-        },
-        sourceWorkflow: buildSourceWorkflow(sourceThreadTitle, sourceMessages),
+        ...sourceSnapshot,
       },
       resolvedGrants.grants
     )

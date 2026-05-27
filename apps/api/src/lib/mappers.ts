@@ -1,6 +1,4 @@
 import type {
-  AgentSourceThread,
-  AgentSourceWorkflow,
   Artifact,
   Message,
   MessagePart,
@@ -20,6 +18,7 @@ import type {
   runs,
   threads,
 } from "../db/schema.js"
+import { mapSourceWorkflowSnapshot } from "./source-workflow-snapshot.js"
 
 type ProjectRow = typeof projects.$inferSelect
 type ProjectMemoryRow = typeof projectMemories.$inferSelect
@@ -28,21 +27,6 @@ type ThreadRow = typeof threads.$inferSelect
 type MessageRow = typeof messages.$inferSelect
 type RunRow = typeof runs.$inferSelect
 type RunStepRow = typeof runSteps.$inferSelect
-
-function parseSourceWorkflow(
-  raw: string | null
-): AgentSourceWorkflow | undefined {
-  if (!raw) return undefined
-  return JSON.parse(raw) as AgentSourceWorkflow
-}
-
-function mapSourceThread(row: ThreadRow): AgentSourceThread | undefined {
-  if (!row.sourceThreadId) return undefined
-  return {
-    id: row.sourceThreadId,
-    title: row.sourceThreadTitle ?? row.sourceThreadId,
-  }
-}
 
 export function mapThread(row: ThreadRow): Thread {
   return {
@@ -55,8 +39,7 @@ export function mapThread(row: ThreadRow): Thread {
     agentId: row.agentId ?? undefined,
     agentNameSnapshot: row.agentNameSnapshot ?? undefined,
     agentConfigurationVersionId: row.agentConfigurationVersionId ?? undefined,
-    sourceThread: mapSourceThread(row),
-    sourceWorkflow: parseSourceWorkflow(row.sourceWorkflowJson),
+    ...mapSourceWorkflowSnapshot(row),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

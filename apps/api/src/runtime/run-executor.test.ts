@@ -40,7 +40,7 @@ describe("run executor composio bridge", () => {
   it("keeps platform artifact instructions with explicit prompt sections", () => {
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: "Answer as the configured research agent.",
-      projectContextBlock: "Workspace: Research",
+      contextSections: [{ title: "Project context", body: "Workspace: Research" }],
     })
 
     expect(systemPrompt).toContain(

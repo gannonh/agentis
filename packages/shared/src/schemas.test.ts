@@ -176,6 +176,10 @@ describe("shared schemas", () => {
       description: "Helps triage support backlog patterns.",
       systemPrompt: "Help triage support backlog patterns.",
       model: "gpt-4o-mini",
+      sourceWorkflow: {
+        summary: "Investigate support backlog",
+        firstUserPrompt: "Review support backlog patterns",
+      },
       toolGrants: [{ toolkitSlug: "github", connectionId: "conn-1" }],
       createdAt: now,
       updatedAt: now,
@@ -184,6 +188,9 @@ describe("shared schemas", () => {
     const response = createAgentPromotionDraftResponseSchema.parse({ draft })
 
     expect(response.draft.threadId).toBe("thread-1")
+    expect(response.draft.sourceWorkflow?.summary).toBe(
+      "Investigate support backlog"
+    )
     expect(response.draft.toolGrants).toMatchObject([
       { toolkitSlug: "github", connectionId: "conn-1" },
     ])

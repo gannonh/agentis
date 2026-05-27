@@ -290,6 +290,7 @@ export const agentPromotionDraftSchema = z.object({
   description: z.string().optional(),
   systemPrompt: nonEmptyString,
   model: nonEmptyString,
+  sourceWorkflow: agentSourceWorkflowSchema.optional(),
   toolGrants: z.array(agentToolGrantInputSchema),
   createdAt: z.string(),
   updatedAt: z.string(),

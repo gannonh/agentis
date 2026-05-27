@@ -194,6 +194,7 @@ export const agentPromotionDrafts = sqliteTable(
     description: text("description"),
     systemPrompt: text("system_prompt").notNull(),
     model: text("model").notNull(),
+    sourceWorkflowJson: text("source_workflow_json"),
     toolGrantsJson: text("tool_grants_json").notNull().default("[]"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),

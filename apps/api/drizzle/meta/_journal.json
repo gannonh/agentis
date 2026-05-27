@@ -78,6 +78,13 @@
       "when": 1779814800000,
       "tag": "0010_thread_source_linkage",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1779818400000,
+      "tag": "0011_promotion_draft_source_workflow",
+      "breakpoints": true
     }
   ]
 }

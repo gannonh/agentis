@@ -188,8 +188,20 @@ describe("promotion draft routes", () => {
       { method: "POST" }
     )
     const { draft } = (await draftResponse.json()) as {
-      draft: { id: string; name: string }
+      draft: {
+        id: string
+        name: string
+        sourceWorkflow?: { summary: string; firstUserPrompt?: string }
+      }
     }
+    expect(draft.sourceWorkflow).toMatchObject({
+      summary: "Investigate support backlog",
+      firstUserPrompt: "Review support backlog patterns",
+    })
+
+    ctx.repos.threads.touch(created.thread.id, {
+      title: "Renamed support backlog source",
+    })
 
     const response = await app.request(
       `/api/agent-promotion-drafts/${draft.id}/create-agent`,

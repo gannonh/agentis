@@ -1,8 +1,6 @@
 import type {
   AgentConfigurationVersionSummary,
   AgentListItem,
-  AgentSourceThread,
-  AgentSourceWorkflow,
 } from "@workspace/shared"
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
@@ -12,6 +10,11 @@ import {
   toolAccessGrants,
 } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
+import {
+  mapSourceWorkflowSnapshot,
+  sourceWorkflowColumns,
+  type SourceWorkflowSnapshot,
+} from "../lib/source-workflow-snapshot.js"
 
 type AgentRow = typeof agents.$inferSelect
 type VersionRow = typeof agentConfigurationVersions.$inferSelect
@@ -22,9 +25,7 @@ type AgentCreateInput = {
   systemPrompt: string
   model: string
   maxCostPerRunUsd?: number | null
-  sourceThread?: AgentSourceThread
-  sourceWorkflow?: AgentSourceWorkflow
-}
+} & SourceWorkflowSnapshot
 
 type AgentToolGrantCreateInput = {
   toolkitSlug: string
@@ -122,25 +123,11 @@ function mapVersionSnapshot(
   }
 }
 
-function parseSourceWorkflow(
-  raw: string | null
-): AgentSourceWorkflow | undefined {
-  if (!raw) return undefined
-  return JSON.parse(raw) as AgentSourceWorkflow
-}
-
 function mapAgent(
   row: AgentRow,
   currentConfigurationVersion: AgentConfigurationVersionSummary,
   toolGrantCount: number
 ): AgentListItem {
-  const sourceThread = row.sourceThreadId
-    ? {
-        id: row.sourceThreadId,
-        title: row.sourceThreadTitle ?? row.sourceThreadId,
-      }
-    : undefined
-
   return {
     id: row.id,
     name: row.name,
@@ -148,8 +135,7 @@ function mapAgent(
     systemPrompt: row.systemPrompt,
     model: row.model,
     maxCostPerRunUsd: row.maxCostPerRunUsd,
-    sourceThread,
-    sourceWorkflow: parseSourceWorkflow(row.sourceWorkflowJson),
+    ...mapSourceWorkflowSnapshot(row),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     currentConfigurationVersion,
@@ -176,11 +162,7 @@ export class AgentRepository {
       systemPrompt: input.systemPrompt,
       model: input.model,
       maxCostPerRunUsd: input.maxCostPerRunUsd ?? null,
-      sourceThreadId: input.sourceThread?.id ?? null,
-      sourceThreadTitle: input.sourceThread?.title ?? null,
-      sourceWorkflowJson: input.sourceWorkflow
-        ? JSON.stringify(input.sourceWorkflow)
-        : null,
+      ...sourceWorkflowColumns(input),
       createdAt: now,
       updatedAt: now,
     }
