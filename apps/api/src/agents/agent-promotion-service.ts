@@ -100,8 +100,8 @@ function buildSystemPrompt(sourceText: string | null): string {
   return `Use the context from this thread: ${sourceText}`
 }
 
-function buildSourceWorkflow(thread: Thread, messages: Message[]) {
-  const title = cleanTitle(thread.title)
+function buildSourceWorkflow(sourceThreadTitle: string, messages: Message[]) {
+  const title = cleanTitle(sourceThreadTitle)
   const sourceText = firstUserText(messages)
 
   return {
@@ -175,6 +175,7 @@ export class AgentPromotionService {
     }
 
     const sourceThread = this.repos.threads.getById(draft.threadId)
+    const sourceThreadTitle = sourceThread?.title ?? draft.sourceThreadTitle
     const sourceMessages = this.repos.messages.listByThreadId(draft.threadId)
     const created = this.repos.agents.createWithGrants(
       {
@@ -184,20 +185,9 @@ export class AgentPromotionService {
         model: input.model ?? draft.model ?? this.config.defaultModel,
         sourceThread: {
           id: draft.threadId,
-          title: sourceThread?.title ?? draft.sourceThreadTitle,
+          title: sourceThreadTitle,
         },
-        sourceWorkflow: buildSourceWorkflow(
-          sourceThread ?? {
-            id: draft.threadId,
-            title: draft.sourceThreadTitle,
-            status: "active",
-            model: draft.model,
-            mode: "plan",
-            createdAt: draft.createdAt,
-            updatedAt: draft.updatedAt,
-          },
-          sourceMessages
-        ),
+        sourceWorkflow: buildSourceWorkflow(sourceThreadTitle, sourceMessages),
       },
       resolvedGrants.grants
     )

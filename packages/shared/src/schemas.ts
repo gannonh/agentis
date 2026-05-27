@@ -64,6 +64,16 @@ export const runStepStatusSchema = z.enum([
   "failed",
 ])
 
+export const agentSourceThreadSchema = z.object({
+  id: nonEmptyString,
+  title: z.string(),
+})
+
+export const agentSourceWorkflowSchema = z.object({
+  summary: nonEmptyString,
+  firstUserPrompt: z.string().optional(),
+})
+
 export const threadSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -74,8 +84,8 @@ export const threadSchema = z.object({
   agentId: z.string().nullable().optional(),
   agentNameSnapshot: z.string().nullable().optional(),
   agentConfigurationVersionId: z.string().nullable().optional(),
-  sourceThread: z.lazy(() => agentSourceThreadSchema).optional(),
-  sourceWorkflow: z.lazy(() => agentSourceWorkflowSchema).optional(),
+  sourceThread: agentSourceThreadSchema.optional(),
+  sourceWorkflow: agentSourceWorkflowSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -220,16 +230,6 @@ export const agentConfigurationVersionSummarySchema = z.object({
   model: z.string(),
   maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
   createdAt: z.string(),
-})
-
-export const agentSourceThreadSchema = z.object({
-  id: nonEmptyString,
-  title: z.string(),
-})
-
-export const agentSourceWorkflowSchema = z.object({
-  summary: nonEmptyString,
-  firstUserPrompt: z.string().optional(),
 })
 
 export const agentSchema = z.object({

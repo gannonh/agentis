@@ -29,6 +29,21 @@ type SourceWorkflowSnapshot = {
   sourceWorkflow?: AgentSourceWorkflow
 }
 
+type ThreadCreateInput = {
+  title: string
+  model: string
+  mode: ThreadMode
+  projectId?: string
+  agentId?: string
+  agentNameSnapshot?: string
+} & SourceWorkflowSnapshot
+
+type InitialRunInput = ThreadCreateInput & {
+  prompt: string
+  agentConfigurationVersionId?: string
+  toolGrants?: ToolGrantSnapshot[]
+}
+
 type InitialRunResult = {
   thread: Thread
   message: Message
@@ -94,19 +109,24 @@ function createQueuedStepRow(runId: string, createdAt: string): StepRow {
   }
 }
 
+function serializeSourceWorkflow(
+  sourceWorkflow?: AgentSourceWorkflow
+): string | null {
+  return sourceWorkflow ? JSON.stringify(sourceWorkflow) : null
+}
+
+function sourceWorkflowColumns(input: SourceWorkflowSnapshot) {
+  return {
+    sourceThreadId: input.sourceThread?.id ?? null,
+    sourceThreadTitle: input.sourceThread?.title ?? null,
+    sourceWorkflowJson: serializeSourceWorkflow(input.sourceWorkflow),
+  }
+}
+
 export class ThreadRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  create(
-    input: {
-      title: string
-      model: string
-      mode: ThreadMode
-      projectId?: string
-      agentId?: string
-      agentNameSnapshot?: string
-    } & SourceWorkflowSnapshot
-  ): Thread {
+  create(input: ThreadCreateInput): Thread {
     const now = nowIso()
     const row = {
       id: createId("thread"),
@@ -118,11 +138,7 @@ export class ThreadRepository {
       agentId: input.agentId ?? null,
       agentNameSnapshot: input.agentNameSnapshot ?? null,
       agentConfigurationVersionId: null,
-      sourceThreadId: input.sourceThread?.id ?? null,
-      sourceThreadTitle: input.sourceThread?.title ?? null,
-      sourceWorkflowJson: input.sourceWorkflow
-        ? JSON.stringify(input.sourceWorkflow)
-        : null,
+      ...sourceWorkflowColumns(input),
       createdAt: now,
       updatedAt: now,
     }
@@ -130,19 +146,7 @@ export class ThreadRepository {
     return mapThread(row)
   }
 
-  createWithInitialRun(
-    input: {
-      title: string
-      prompt: string
-      model: string
-      mode: ThreadMode
-      projectId?: string
-      agentId?: string
-      agentNameSnapshot?: string
-      agentConfigurationVersionId?: string
-      toolGrants?: ToolGrantSnapshot[]
-    } & SourceWorkflowSnapshot
-  ): InitialRunResult {
+  createWithInitialRun(input: InitialRunInput): InitialRunResult {
     const now = nowIso()
     const threadRow = {
       id: createId("thread"),
@@ -154,11 +158,7 @@ export class ThreadRepository {
       agentId: input.agentId ?? null,
       agentNameSnapshot: input.agentNameSnapshot ?? null,
       agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
-      sourceThreadId: input.sourceThread?.id ?? null,
-      sourceThreadTitle: input.sourceThread?.title ?? null,
-      sourceWorkflowJson: input.sourceWorkflow
-        ? JSON.stringify(input.sourceWorkflow)
-        : null,
+      ...sourceWorkflowColumns(input),
       createdAt: now,
       updatedAt: now,
     }

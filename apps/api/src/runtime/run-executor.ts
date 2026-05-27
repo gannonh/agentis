@@ -228,6 +228,7 @@ export class RunExecutor {
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
+    const sourceWorkflow = thread.sourceWorkflow
     const sourceWorkflowBlock = formatSourceWorkflowBlock(thread)
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: agentConfiguration?.systemPrompt,
@@ -301,7 +302,7 @@ export class RunExecutor {
         },
       })
     }
-    if (sourceWorkflowBlock && thread.sourceWorkflow) {
+    if (sourceWorkflow) {
       this.repos.steps.create({
         runId,
         type: "reasoning",
@@ -310,8 +311,8 @@ export class RunExecutor {
         payload: {
           sourceThreadId: thread.sourceThread?.id,
           sourceThreadTitle: thread.sourceThread?.title,
-          summary: thread.sourceWorkflow.summary,
-          firstUserPrompt: thread.sourceWorkflow.firstUserPrompt,
+          summary: sourceWorkflow.summary,
+          firstUserPrompt: sourceWorkflow.firstUserPrompt,
         },
       })
     }
