@@ -10,6 +10,11 @@ import {
   toolAccessGrants,
 } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
+import {
+  mapSourceWorkflowSnapshot,
+  sourceWorkflowColumns,
+  type SourceWorkflowSnapshot,
+} from "../lib/source-workflow-snapshot.js"
 
 type AgentRow = typeof agents.$inferSelect
 type VersionRow = typeof agentConfigurationVersions.$inferSelect
@@ -20,7 +25,7 @@ type AgentCreateInput = {
   systemPrompt: string
   model: string
   maxCostPerRunUsd?: number | null
-}
+} & SourceWorkflowSnapshot
 
 type AgentToolGrantCreateInput = {
   toolkitSlug: string
@@ -109,7 +114,9 @@ function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
   }
 }
 
-function mapVersionSnapshot(row: VersionRow): AgentConfigurationVersionSnapshot {
+function mapVersionSnapshot(
+  row: VersionRow
+): AgentConfigurationVersionSnapshot {
   return {
     ...mapVersion(row),
     toolGrants: parseGrantSnapshot(row.toolGrantsJson),
@@ -128,6 +135,7 @@ function mapAgent(
     systemPrompt: row.systemPrompt,
     model: row.model,
     maxCostPerRunUsd: row.maxCostPerRunUsd,
+    ...mapSourceWorkflowSnapshot(row),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     currentConfigurationVersion,
@@ -154,6 +162,7 @@ export class AgentRepository {
       systemPrompt: input.systemPrompt,
       model: input.model,
       maxCostPerRunUsd: input.maxCostPerRunUsd ?? null,
+      ...sourceWorkflowColumns(input),
       createdAt: now,
       updatedAt: now,
     }

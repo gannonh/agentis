@@ -9,7 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import type { AgentPromotionDraft, AgentToolGrantInput } from "@workspace/shared"
+import {
+  hasBlockingProposedToolGrants,
+  type AgentPromotionDraft,
+  type AgentToolGrantInput,
+  type ProposedToolGrant,
+  type UnsupportedSourceStep,
+} from "@workspace/shared"
 import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
 import {
   canSubmitAgentSetup,
@@ -21,9 +27,21 @@ import {
   createAgentFromPromotionDraft,
   getAgentPromotionDraft,
 } from "@/lib/api/agents-client"
+import { GeneratedSuggestions } from "./agent-promotion-draft-suggestions"
 
 type DraftFormState = AgentSetupFormState & {
   toolGrants: AgentToolGrantInput[]
+}
+
+type DraftEditedField = AgentPromotionDraft["editedFields"][number]
+type DraftFormField = keyof DraftFormState
+
+const formFieldEditedFields: Record<DraftFormField, DraftEditedField> = {
+  name: "name",
+  description: "description",
+  model: "model",
+  systemPrompt: "systemPrompt",
+  toolGrants: "toolGrants",
 }
 
 function draftToForm(draft: AgentPromotionDraft): DraftFormState {
@@ -45,11 +63,142 @@ function sourceThreadLabel(draft: AgentPromotionDraft | null): string {
   return `Started from thread: ${draft.sourceThreadTitle || draft.threadId}`
 }
 
+function hasBlockingValidation(draft: AgentPromotionDraft | null): boolean {
+  return Boolean(
+    draft && hasBlockingProposedToolGrants(draft.proposedToolGrants)
+  )
+}
+
+function canSubmit(
+  form: DraftFormState | null,
+  submitting: boolean,
+  draft: AgentPromotionDraft | null
+): boolean {
+  return canSubmitAgentSetup(form, submitting) && !hasBlockingValidation(draft)
+}
+
+function validationStatusLabel(grant: ProposedToolGrant): string {
+  if (grant.validationStatus === "valid") return "Ready"
+  if (grant.validationStatus === "missing_access") return "Needs connection"
+  if (grant.validationStatus === "pending_connection")
+    return "Connection pending"
+  return "Unsupported"
+}
+
+function unsupportedReasonLabel(step: UnsupportedSourceStep): string {
+  if (step.reason === "unsupported_tool") return "Unsupported tool"
+  if (step.reason === "incomplete_tool_call") return "Incomplete step"
+  return "Missing tool metadata"
+}
+
+function DraftValidationChecklist({ draft }: { draft: AgentPromotionDraft }) {
+  const hasValidationItems =
+    draft.proposedToolGrants.length > 0 ||
+    draft.unsupportedSourceSteps.length > 0
+  if (!hasValidationItems) return null
+
+  return (
+    <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-medium">First-run validation</h2>
+        <p className="text-sm text-muted-foreground">
+          Review tool access and source steps before creating this agent.
+        </p>
+      </div>
+
+      {draft.proposedToolGrants.length ? (
+        <div className="grid gap-2">
+          {draft.proposedToolGrants.map((grant) => (
+            <div
+              key={`${grant.toolkitSlug}-${grant.toolName ?? "toolkit"}`}
+              className="rounded-md border border-border px-3 py-2 text-sm"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium">
+                  {grant.displayName ?? grant.toolName ?? grant.toolkitSlug}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {validationStatusLabel(grant)}
+                </span>
+              </div>
+              {grant.remediation?.message ? (
+                <p className="mt-1 text-sm text-destructive">
+                  {grant.remediation.message}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {draft.unsupportedSourceSteps.length ? (
+        <div className="grid gap-2">
+          {draft.unsupportedSourceSteps.map((step) => (
+            <div
+              key={step.id}
+              className="rounded-md border border-border px-3 py-2"
+            >
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="font-medium">{step.title}</span>
+                <span className="text-xs text-muted-foreground">
+                  {unsupportedReasonLabel(step)}
+                </span>
+              </div>
+              {step.details ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {step.details}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function uniqueEditedFields(fields: DraftEditedField[]): DraftEditedField[] {
+  return Array.from(new Set(fields))
+}
+
+function rubricCriteriaFromText(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function rubricCriteriaToText(criteria: string[]): string {
+  return criteria.join("\n")
+}
+
+function editedFieldsForPatch(
+  patch: Partial<DraftFormState>
+): DraftEditedField[] {
+  return Object.entries(formFieldEditedFields)
+    .filter(([field]) => field in patch)
+    .map(([, editedField]) => editedField)
+}
+
+function rubricCriteriaChanged(
+  draft: AgentPromotionDraft,
+  rubricCriteria: string[]
+): boolean {
+  return (
+    JSON.stringify(rubricCriteria) !==
+    JSON.stringify(draft.intelligence.rubricCriteria)
+  )
+}
+
 export function AgentPromotionDraftPage() {
   const { draftId } = useParams()
   const navigate = useNavigate()
   const [draft, setDraft] = useState<AgentPromotionDraft | null>(null)
   const [form, setForm] = useState<DraftFormState | null>(null)
+  const [rubricText, setRubricText] = useState("")
+  const [locallyEditedFields, setLocallyEditedFields] = useState<
+    DraftEditedField[]
+  >([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,6 +217,10 @@ export function AgentPromotionDraftPage() {
         if (cancelled) return
         setDraft(loadedDraft)
         setForm(draftToForm(loadedDraft))
+        setRubricText(
+          rubricCriteriaToText(loadedDraft.intelligence.rubricCriteria)
+        )
+        setLocallyEditedFields([])
       })
       .catch((loadError) => {
         if (!cancelled) {
@@ -85,6 +238,21 @@ export function AgentPromotionDraftPage() {
 
   const updateForm = (patch: Partial<DraftFormState>) => {
     setForm((current) => (current ? { ...current, ...patch } : current))
+    setLocallyEditedFields((current) =>
+      uniqueEditedFields([...current, ...editedFieldsForPatch(patch)])
+    )
+  }
+
+  const updateRubricText = (value: string) => {
+    const rubricCriteria = rubricCriteriaFromText(value)
+    setRubricText(value)
+    setLocallyEditedFields((current) => {
+      const next = current.filter((field) => field !== "rubricCriteria")
+      if (draft && rubricCriteriaChanged(draft, rubricCriteria)) {
+        return uniqueEditedFields([...next, "rubricCriteria"])
+      }
+      return next
+    })
   }
 
   const toggleToolGrant = (grant: AgentToolGrantInput, selected: boolean) => {
@@ -99,19 +267,29 @@ export function AgentPromotionDraftPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!draftId || !form || !canSubmitAgentSetup(form, submitting)) return
+    if (!draftId || !form || !canSubmit(form, submitting, draft)) return
 
     setSubmitting(true)
     setError(null)
 
     try {
-      const created = await createAgentFromPromotionDraft(draftId, {
+      const rubricCriteria = rubricCriteriaFromText(rubricText)
+      const payload = {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
         model: form.model.trim() || undefined,
         systemPrompt: form.systemPrompt.trim(),
         toolGrants: form.toolGrants,
-      })
+      }
+      const created = await createAgentFromPromotionDraft(
+        draftId,
+        draft && rubricCriteriaChanged(draft, rubricCriteria)
+          ? {
+              ...payload,
+              draftUpdates: { intelligence: { rubricCriteria } },
+            }
+          : payload
+      )
       navigate(`/agents/${encodeURIComponent(created.agent.id)}`)
     } catch (submitError) {
       setError(
@@ -141,10 +319,10 @@ export function AgentPromotionDraftPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-4">
             {loading ? (
-              <p className="text-muted-foreground text-sm">Loading draft…</p>
+              <p className="text-sm text-muted-foreground">Loading draft…</p>
             ) : null}
             {error ? (
-              <p className="text-destructive text-sm" role="alert">
+              <p className="text-sm text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
@@ -156,8 +334,24 @@ export function AgentPromotionDraftPage() {
                   onChange={updateForm}
                 />
 
+                {draft ? <DraftValidationChecklist draft={draft} /> : null}
+
+                {draft ? (
+                  <GeneratedSuggestions
+                    draft={draft}
+                    editedFields={uniqueEditedFields([
+                      ...draft.editedFields,
+                      ...locallyEditedFields,
+                    ])}
+                    rubricText={rubricText}
+                    onRubricChange={updateRubricText}
+                  />
+                ) : null}
+
                 <fieldset className="flex flex-col gap-3">
-                  <legend className="text-sm font-medium">Connected apps</legend>
+                  <legend className="text-sm font-medium">
+                    Connected apps
+                  </legend>
                   {draft?.toolGrants.length ? (
                     <div className="grid gap-2 sm:grid-cols-2">
                       {draft.toolGrants.map((grant) => {
@@ -182,7 +376,7 @@ export function AgentPromotionDraftPage() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground rounded-lg border border-dashed border-border px-4 py-5 text-center text-sm">
+                    <p className="rounded-lg border border-dashed border-border px-4 py-5 text-center text-sm text-muted-foreground">
                       This draft has no connected apps.
                     </p>
                   )}
@@ -209,7 +403,7 @@ export function AgentPromotionDraftPage() {
             </Button>
             <Button
               type="submit"
-              disabled={!canSubmitAgentSetup(form, submitting)}
+              disabled={!canSubmit(form, submitting, draft)}
               className="min-h-11 sm:min-h-7"
             >
               {submitting ? "Creating…" : "Create agent"}

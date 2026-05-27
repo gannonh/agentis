@@ -4,27 +4,33 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { MoreVerticalIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
 import { AgentIcon } from "@/lib/agent-icons"
 import { formatRelativeTime } from "@/fixtures"
+import type { AgentSourceThread } from "@workspace/shared"
 import type { Agent } from "@/fixtures/schema"
 
 type AgentDetailHeroProps = {
   agent: Agent
+  sourceThread?: AgentSourceThread
   onStartThread?: () => void
   startingThread?: boolean
 }
 
 export function AgentDetailHero({
   agent,
+  sourceThread,
   onStartThread,
   startingThread = false,
 }: AgentDetailHeroProps) {
   return (
     <header className="flex flex-col gap-0">
-      <nav aria-label="Breadcrumb" className="text-muted-foreground px-1 pb-5 text-sm">
+      <nav
+        aria-label="Breadcrumb"
+        className="px-1 pb-5 text-sm text-muted-foreground"
+      >
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
             <Link
               to="/command-center"
-              className="hover:text-foreground transition-colors"
+              className="transition-colors hover:text-foreground"
             >
               Agents
             </Link>
@@ -32,7 +38,7 @@ export function AgentDetailHero({
           <li aria-hidden className="select-none">
             /
           </li>
-          <li className="text-foreground font-medium" aria-current="page">
+          <li className="font-medium text-foreground" aria-current="page">
             {agent.name}
           </li>
         </ol>
@@ -43,7 +49,11 @@ export function AgentDetailHero({
         <div className="h-28 w-full rounded-t-xl border border-border bg-[radial-gradient(circle_at_34%_38%,oklch(0.73_0.18_54),transparent_24%),linear-gradient(100deg,oklch(0.48_0.16_34),oklch(0.58_0.18_38),oklch(0.52_0.16_24))] sm:h-36" />
         <div className="absolute bottom-0 left-6 flex translate-y-1/2 items-end gap-4">
           <div className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
-            <AgentIcon icon={agent.icon} size="lg" className="text-foreground" />
+            <AgentIcon
+              icon={agent.icon}
+              size="lg"
+              className="text-foreground"
+            />
           </div>
         </div>
       </div>
@@ -51,22 +61,39 @@ export function AgentDetailHero({
       <div className="flex flex-col gap-4 px-6 pt-12 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-3">
           <h1 className="text-2xl font-medium tracking-tight">{agent.name}</h1>
-          <p className="text-muted-foreground max-w-3xl text-base leading-relaxed sm:text-[0.95rem]">
+          <p className="max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-[0.95rem]">
             {agent.description}
           </p>
           <dl className="flex flex-wrap gap-8 text-xs">
             <div>
               <dt className="text-muted-foreground">Last run</dt>
               <dd className="mt-1 text-foreground">
-                {agent.lastRunAt ? formatRelativeTime(agent.lastRunAt) : "No runs"}
+                {agent.lastRunAt
+                  ? formatRelativeTime(agent.lastRunAt)
+                  : "No runs"}
               </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Last updated</dt>
               <dd className="mt-1 text-foreground">
-                {agent.lastUpdatedAt ? formatRelativeTime(agent.lastUpdatedAt) : "Not saved"}
+                {agent.lastUpdatedAt
+                  ? formatRelativeTime(agent.lastUpdatedAt)
+                  : "Not saved"}
               </dd>
             </div>
+            {sourceThread ? (
+              <div>
+                <dt className="text-muted-foreground">Source thread</dt>
+                <dd className="mt-1 text-foreground">
+                  <Link
+                    to={`/threads/${encodeURIComponent(sourceThread.id)}`}
+                    className="transition-colors hover:text-primary"
+                  >
+                    {sourceThread.title || sourceThread.id}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
           </dl>
         </div>
         <div className="flex shrink-0 items-center gap-2 self-start">
@@ -78,11 +105,24 @@ export function AgentDetailHero({
             disabled={!onStartThread || startingThread}
             onClick={onStartThread}
           >
-            <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2} />
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-3"
+              strokeWidth={2}
+            />
             {startingThread ? "Opening test thread…" : "Start test thread"}
           </Button>
-          <Button size="icon" variant="outline" disabled aria-label="Agent actions">
-            <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" strokeWidth={2} />
+          <Button
+            size="icon"
+            variant="outline"
+            disabled
+            aria-label="Agent actions"
+          >
+            <HugeiconsIcon
+              icon={MoreVerticalIcon}
+              className="size-4"
+              strokeWidth={2}
+            />
           </Button>
         </div>
       </div>

@@ -64,6 +64,41 @@
       "when": 1779793800000,
       "tag": "0008_agent_promotion_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1779797400000,
+      "tag": "0009_agent_promotion_draft_intelligence",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1779811200000,
+      "tag": "0010_agent_promotion_validation",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1779811200000,
+      "tag": "0011_agent_source_linkage",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1779814800000,
+      "tag": "0012_thread_source_linkage",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1779818400000,
+      "tag": "0013_promotion_draft_source_workflow",
+      "breakpoints": true
     }
   ]
 }

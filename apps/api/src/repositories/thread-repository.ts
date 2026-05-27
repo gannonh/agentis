@@ -16,10 +16,29 @@ import {
 } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapMessage, mapRun, mapThread } from "../lib/mappers.js"
+import {
+  sourceWorkflowColumns,
+  type SourceWorkflowSnapshot,
+} from "../lib/source-workflow-snapshot.js"
 
 type ToolGrantSnapshot = {
   toolkitSlug: string
   connectionId: string
+}
+
+type ThreadCreateInput = {
+  title: string
+  model: string
+  mode: ThreadMode
+  projectId?: string
+  agentId?: string
+  agentNameSnapshot?: string
+} & SourceWorkflowSnapshot
+
+type InitialRunInput = ThreadCreateInput & {
+  prompt: string
+  agentConfigurationVersionId?: string
+  toolGrants?: ToolGrantSnapshot[]
 }
 
 type InitialRunResult = {
@@ -90,14 +109,7 @@ function createQueuedStepRow(runId: string, createdAt: string): StepRow {
 export class ThreadRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  create(input: {
-    title: string
-    model: string
-    mode: ThreadMode
-    projectId?: string
-    agentId?: string
-    agentNameSnapshot?: string
-  }): Thread {
+  create(input: ThreadCreateInput): Thread {
     const now = nowIso()
     const row = {
       id: createId("thread"),
@@ -109,6 +121,7 @@ export class ThreadRepository {
       agentId: input.agentId ?? null,
       agentNameSnapshot: input.agentNameSnapshot ?? null,
       agentConfigurationVersionId: null,
+      ...sourceWorkflowColumns(input),
       createdAt: now,
       updatedAt: now,
     }
@@ -116,17 +129,7 @@ export class ThreadRepository {
     return mapThread(row)
   }
 
-  createWithInitialRun(input: {
-    title: string
-    prompt: string
-    model: string
-    mode: ThreadMode
-    projectId?: string
-    agentId?: string
-    agentNameSnapshot?: string
-    agentConfigurationVersionId?: string
-    toolGrants?: ToolGrantSnapshot[]
-  }): InitialRunResult {
+  createWithInitialRun(input: InitialRunInput): InitialRunResult {
     const now = nowIso()
     const threadRow = {
       id: createId("thread"),
@@ -138,6 +141,7 @@ export class ThreadRepository {
       agentId: input.agentId ?? null,
       agentNameSnapshot: input.agentNameSnapshot ?? null,
       agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
+      ...sourceWorkflowColumns(input),
       createdAt: now,
       updatedAt: now,
     }

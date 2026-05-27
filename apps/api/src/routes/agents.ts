@@ -12,6 +12,7 @@ import {
 } from "../agents/tool-grant-resolution.js"
 import type { AppConfig } from "../config.js"
 import { summarizeTitle } from "../lib/title-summary.js"
+import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 import type { Repositories } from "../repositories/index.js"
 
 export function createAgentRoutes(repos: Repositories, config: AppConfig) {
@@ -111,7 +112,10 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
 
     try {
       const version = repos.agents.getCurrentConfigurationSnapshot(agent.id)
-      const resolvedGrants = resolveRequestedAgentGrants(repos, version.toolGrants)
+      const resolvedGrants = resolveRequestedAgentGrants(
+        repos,
+        version.toolGrants
+      )
       if ("error" in resolvedGrants) {
         return c.json(
           {
@@ -130,6 +134,10 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
         agentId: agent.id,
         agentNameSnapshot: agent.name,
         agentConfigurationVersionId: version.id,
+        ...toSourceWorkflowSnapshot({
+          sourceThread: agent.sourceThread,
+          sourceWorkflow: agent.sourceWorkflow,
+        }),
         toolGrants: resolvedGrants.grants,
       })
 

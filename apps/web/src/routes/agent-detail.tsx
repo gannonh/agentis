@@ -245,6 +245,7 @@ export function AgentDetailPage() {
         <div className="flex min-w-0 flex-col gap-6">
           <AgentDetailHero
             agent={agent}
+            sourceThread={apiAgentDetail?.agent.sourceThread}
             onStartThread={apiAgentDetail ? launchTestThread : undefined}
             startingThread={isStartingTestThread}
           />
