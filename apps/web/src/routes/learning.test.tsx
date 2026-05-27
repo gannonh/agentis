@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { LearningPage } from "./learning"
@@ -19,8 +19,27 @@ describe("LearningPage", () => {
     expect(screen.getByText("View all 15 skills →")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Memories" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Rubrics" })).toBeInTheDocument()
-    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    expect(screen.getAllByText("Creating Agent").length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByRole("button", { name: "Dismiss" }).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("renders mocked learning candidate metadata and actions", () => {
+    render(
+      <MemoryRouter>
+        <LearningPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole("heading", { name: "Learning candidates" })).toBeInTheDocument()
+    const candidates = within(screen.getByRole("region", { name: "Learning candidates" }))
+
+    expect(candidates.getByText("Capture review preference")).toBeInTheDocument()
+    expect(candidates.getByText("Mocked LLM-derived seed")).toBeInTheDocument()
+    expect(candidates.getByText("Creating Agent")).toBeInTheDocument()
+    expect(candidates.getByText("Memory suggestion")).toBeInTheDocument()
+    expect(candidates.getByText("82% confidence")).toBeInTheDocument()
+    expect(candidates.getByRole("button", { name: "Save memory" })).toBeDisabled()
+    expect(candidates.getByRole("button", { name: "Dismiss" })).toBeDisabled()
   })
 
   it("filters conversations by agent", async () => {
@@ -31,11 +50,14 @@ describe("LearningPage", () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
-    expect(screen.getByText("Editor gate review")).toBeInTheDocument()
+    const conversations = () =>
+      within(screen.getByRole("region", { name: "Learning conversations" }))
+
+    expect(conversations().getByText("Creating Agent")).toBeInTheDocument()
+    expect(conversations().getByText("Editor gate review")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: /Senior Reviewer/i }))
-    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
-    expect(screen.queryByText("Editor gate review")).not.toBeInTheDocument()
+    expect(conversations().getByText("Creating Agent")).toBeInTheDocument()
+    expect(conversations().queryByText("Editor gate review")).not.toBeInTheDocument()
   })
 })
