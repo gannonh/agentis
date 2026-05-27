@@ -82,6 +82,8 @@ function grantResolutionFailed(error: string): ServiceError {
 }
 
 function proposedGrantValidationFailed(grant: ProposedToolGrant): ServiceError {
+  const toolkitName =
+    SUPPORTED_TOOLKIT_NAMES[grant.toolkitSlug] ?? grant.toolkitSlug
   return {
     status: 400,
     body: {
@@ -89,7 +91,18 @@ function proposedGrantValidationFailed(grant: ProposedToolGrant): ServiceError {
       code: grant.remediation?.code ?? "toolkit_not_connected",
       remediation:
         grant.remediation?.message ??
-        `Connect ${grant.toolkitSlug} before creating this agent.`,
+        `Connect ${toolkitName} before creating this agent.`,
+    },
+  }
+}
+
+function validationAnalysisPending(): ServiceError {
+  return {
+    status: 400,
+    body: {
+      error: "Draft validation analysis is pending.",
+      code: "validation_analysis_pending",
+      remediation: "Recreate the promotion draft to analyze source tool usage.",
     },
   }
 }
@@ -138,10 +151,36 @@ function firstInvalidRequiredGrant(
   )
 }
 
-function defaultRequestedGrants(draft: AgentPromotionDraft): AgentToolGrantInput[] {
-  return draft.toolGrants.length > 0
-    ? draft.toolGrants
-    : proposedToolGrantsToInputs(draft.proposedToolGrants)
+function mergeRequiredGrants(
+  requestedGrants: AgentToolGrantInput[],
+  requiredGrants: AgentToolGrantInput[]
+): AgentToolGrantInput[] {
+  const requestedToolkitSlugs = new Set(
+    requestedGrants.map((grant) => grant.toolkitSlug)
+  )
+  return [
+    ...requestedGrants,
+    ...requiredGrants.filter(
+      (grant) => !requestedToolkitSlugs.has(grant.toolkitSlug)
+    ),
+  ]
+}
+
+function defaultRequestedGrants(
+  draft: AgentPromotionDraft
+): AgentToolGrantInput[] {
+  return mergeRequiredGrants(
+    draft.toolGrants,
+    proposedToolGrantsToInputs(draft.proposedToolGrants)
+  )
+}
+
+function hasPendingValidationAnalysis(
+  draft: StoredAgentPromotionDraft
+): boolean {
+  return (
+    draft.proposedToolGrants === null || draft.unsupportedSourceSteps === null
+  )
 }
 
 function connectedByToolkit(
@@ -151,7 +190,7 @@ function connectedByToolkit(
 }
 
 function validateProposedToolGrant(
-  grant: StoredAgentPromotionDraft["proposedToolGrants"][number],
+  grant: NonNullable<StoredAgentPromotionDraft["proposedToolGrants"]>[number],
   connections: Map<string, IntegrationConnection>
 ): ProposedToolGrant {
   const connection = connections.get(grant.toolkitSlug)
@@ -163,7 +202,8 @@ function validateProposedToolGrant(
     }
   }
 
-  const toolkitName = SUPPORTED_TOOLKIT_NAMES[grant.toolkitSlug] ?? grant.toolkitSlug
+  const toolkitName =
+    SUPPORTED_TOOLKIT_NAMES[grant.toolkitSlug] ?? grant.toolkitSlug
   return {
     ...grant,
     validationStatus: "missing_access",
@@ -184,17 +224,18 @@ export class AgentPromotionService {
     const connections = connectedByToolkit(
       this.repos.integrationConnections.listConnectedByUserId()
     )
-    const proposedToolGrants = draft.proposedToolGrants.map((grant) =>
+    const proposedToolGrants = (draft.proposedToolGrants ?? []).map((grant) =>
       validateProposedToolGrant(grant, connections)
     )
 
     return {
       ...draft,
-      toolGrants:
-        draft.toolGrants.length > 0
-          ? draft.toolGrants
-          : proposedToolGrantsToInputs(proposedToolGrants),
+      toolGrants: mergeRequiredGrants(
+        draft.toolGrants,
+        proposedToolGrantsToInputs(proposedToolGrants)
+      ),
       proposedToolGrants,
+      unsupportedSourceSteps: draft.unsupportedSourceSteps ?? [],
     }
   }
 
@@ -252,9 +293,13 @@ export class AgentPromotionService {
     draftId: string,
     input: CreateAgentRequest
   ): ServiceResult<AgentDetailResponse> {
-    const draft = this.getDraft(draftId)
-    if (!draft) return { ok: false, error: promotionDraftNotFound() }
+    const storedDraft = this.repos.agentPromotionDrafts.getById(draftId)
+    if (!storedDraft) return { ok: false, error: promotionDraftNotFound() }
+    if (hasPendingValidationAnalysis(storedDraft)) {
+      return { ok: false, error: validationAnalysisPending() }
+    }
 
+    const draft = this.enrichDraft(storedDraft)
     const invalidRequiredGrant = firstInvalidRequiredGrant(draft)
     if (invalidRequiredGrant) {
       return {
@@ -263,7 +308,12 @@ export class AgentPromotionService {
       }
     }
 
-    const requestedGrants = input.toolGrants ?? defaultRequestedGrants(draft)
+    const requestedGrants = input.toolGrants
+      ? mergeRequiredGrants(
+          input.toolGrants,
+          proposedToolGrantsToInputs(draft.proposedToolGrants)
+        )
+      : defaultRequestedGrants(draft)
     const resolvedGrants = resolveRequestedAgentGrants(
       this.repos,
       requestedGrants

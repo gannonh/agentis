@@ -33,16 +33,37 @@ function toolkitToolPrefixes(toolkitSlug: string): string[] {
 
 function toolkitFromToolName(toolName: string | undefined): string | undefined {
   if (!toolName) return undefined
-  if (toolName.startsWith("composio_")) {
-    return toolName.replace(/^composio_/, "").replace(/_/g, "-")
-  }
-
-  const normalizedToolName = normalizedToken(toolName)
+  const normalizedToolName = normalizedToken(
+    toolName.startsWith("composio_")
+      ? toolName.replace(/^composio_/, "")
+      : toolName
+  )
   return Object.keys(CURATED_COMPOSIO_TOOLS).find((toolkitSlug) =>
     toolkitToolPrefixes(toolkitSlug).some((prefix) =>
       normalizedToolName.startsWith(normalizedToken(prefix))
     )
   )
+}
+
+function composioToolAction(toolkitSlug: string, toolName: string): string {
+  const composioName = toolName.replace(/^composio_/, "")
+  const toolkitPrefixes = [
+    toolkitSlug.replace(/-/g, "_"),
+    CURATED_COMPOSIO_TOOLS[toolkitSlug]?.toolSlug.split("_")[0],
+  ].filter((prefix): prefix is string => Boolean(prefix))
+
+  for (const prefix of toolkitPrefixes) {
+    const suffix = composioName.replace(
+      new RegExp(
+        `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[._-]?`,
+        "i"
+      ),
+      ""
+    )
+    if (suffix !== composioName) return suffix
+  }
+
+  return composioName
 }
 
 function observedTool(step: RunStep): {
@@ -68,11 +89,17 @@ function displayName(toolkitSlug: string, toolName: string | undefined): string 
   const toolkitName = SUPPORTED_TOOLKIT_NAMES[toolkitSlug] ?? toolkitSlug
   if (!toolName) return toolkitName
 
-  const suffix = toolkitToolPrefixes(toolkitSlug).reduce(
-    (current, prefix) => current.replace(new RegExp(`^${prefix}`, "i"), ""),
-    toolName
-  )
-  const words = suffix.toLowerCase().split("_").filter(Boolean).join(" ")
+  const suffix = toolName.startsWith("composio_")
+    ? composioToolAction(toolkitSlug, toolName)
+    : toolkitToolPrefixes(toolkitSlug).reduce(
+        (current, prefix) => current.replace(new RegExp(`^${prefix}`, "i"), ""),
+        toolName
+      )
+  const words = suffix
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .join(" ")
   return words ? `${toolkitName} ${words}` : toolkitName
 }
 
@@ -128,7 +155,7 @@ export function analyzeThreadToolUsage({
       proposedByToolkit.set(toolkitSlug, proposedGrant(toolkitSlug, toolName))
     }
 
-    if (step.status === "failed") {
+    if (step.status === "failed" && step.type === "tool-call") {
       unsupportedSourceSteps.push({
         id: step.id,
         title: step.title,

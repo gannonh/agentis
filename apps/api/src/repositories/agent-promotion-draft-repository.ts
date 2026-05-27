@@ -23,9 +23,10 @@ const unsupportedSourceStepListSchema = z.array(unsupportedSourceStepSchema)
 
 export type StoredAgentPromotionDraft = Omit<
   AgentPromotionDraft,
-  "proposedToolGrants"
+  "proposedToolGrants" | "unsupportedSourceSteps"
 > & {
-  proposedToolGrants: AgentPromotionDraftToolGrantProposal[]
+  proposedToolGrants: AgentPromotionDraftToolGrantProposal[] | null
+  unsupportedSourceSteps: UnsupportedSourceStep[] | null
 }
 
 type CreateAgentPromotionDraftInput = {
@@ -45,12 +46,16 @@ function parseToolGrants(raw: string): AgentToolGrantInput[] {
 }
 
 function parseProposedToolGrants(
-  raw: string
-): AgentPromotionDraftToolGrantProposal[] {
+  raw: string | null
+): AgentPromotionDraftToolGrantProposal[] | null {
+  if (raw === null) return null
   return proposedToolGrantListSchema.parse(JSON.parse(raw))
 }
 
-function parseUnsupportedSourceSteps(raw: string): UnsupportedSourceStep[] {
+function parseUnsupportedSourceSteps(
+  raw: string | null
+): UnsupportedSourceStep[] | null {
+  if (raw === null) return null
   return unsupportedSourceStepListSchema.parse(JSON.parse(raw))
 }
 

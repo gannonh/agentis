@@ -23,7 +23,10 @@ import {
   updateAgentRequestSchema,
   agentPromotionDraftSchema,
   createAgentPromotionDraftResponseSchema,
+  hasBlockingProposedToolGrants,
+  proposedToolGrantsToInputs,
   updateAgentPromotionDraftRequestSchema,
+  type ProposedToolGrant,
 } from "./schemas.js"
 
 describe("shared schemas", () => {
@@ -207,7 +210,11 @@ describe("shared schemas", () => {
       agentPromotionDraftSchema.parse({
         ...draft,
         proposedToolGrants: [
-          { toolkitSlug: "github", required: true, validationStatus: "unknown" },
+          {
+            toolkitSlug: "github",
+            required: true,
+            validationStatus: "unknown",
+          },
         ],
       })
     ).toThrow()
@@ -238,6 +245,46 @@ describe("shared schemas", () => {
         ],
       })
     ).toThrow()
+  })
+
+  it("evaluates and converts proposed tool grants", () => {
+    const grants: ProposedToolGrant[] = [
+      {
+        toolkitSlug: "github",
+        toolName: "GITHUB_CREATE_ISSUE",
+        displayName: "GitHub create issue",
+        required: true,
+        validationStatus: "valid",
+        connectionId: "conn-1",
+      },
+      {
+        toolkitSlug: "linear",
+        toolName: "LINEAR_CREATE_ISSUE",
+        displayName: "Linear create issue",
+        required: true,
+        validationStatus: "missing_access",
+      },
+      {
+        toolkitSlug: "slack",
+        toolName: "SLACK_SEND_MESSAGE",
+        displayName: "Slack send message",
+        required: false,
+        validationStatus: "pending_connection",
+      },
+    ]
+
+    expect(hasBlockingProposedToolGrants(grants)).toBe(true)
+    expect(
+      hasBlockingProposedToolGrants([
+        { ...grants[0], validationStatus: "pending_connection" },
+      ])
+    ).toBe(true)
+    expect(hasBlockingProposedToolGrants([grants[0]])).toBe(false)
+    expect(hasBlockingProposedToolGrants([grants[2]])).toBe(false)
+    expect(proposedToolGrantsToInputs(grants)).toEqual([
+      { toolkitSlug: "github", connectionId: "conn-1" },
+    ])
+    expect(proposedToolGrantsToInputs([])).toEqual([])
   })
 
   it("parses agent create, list, detail, update, and grant payloads", () => {

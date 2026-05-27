@@ -4,7 +4,9 @@ import { analyzeThreadToolUsage } from "./agent-promotion-tool-analysis.js"
 
 const now = new Date().toISOString()
 
-function step(input: Partial<RunStep> & Pick<RunStep, "type" | "title">): RunStep {
+function step(
+  input: Partial<RunStep> & Pick<RunStep, "type" | "title">
+): RunStep {
   return {
     id: input.id ?? `step-${input.title}`,
     runId: input.runId ?? "run-1",
@@ -85,6 +87,37 @@ describe("agent promotion tool analysis", () => {
     ])
   })
 
+  it("infers toolkit grants from composio runtime tool names", () => {
+    const result = analyzeThreadToolUsage({
+      steps: [
+        step({
+          type: "tool-call",
+          title: "List Google Drive files",
+          payload: { toolName: "composio_google_drive.list_files" },
+        }),
+        step({
+          type: "tool-call",
+          title: "Send Slack message",
+          payload: { toolName: "composio_slack.send_message" },
+        }),
+      ],
+    })
+
+    expect(result.proposedToolGrants).toMatchObject([
+      {
+        toolkitSlug: "google-drive",
+        toolName: "composio_google_drive.list_files",
+        displayName: "Google Drive list files",
+      },
+      {
+        toolkitSlug: "slack",
+        toolName: "composio_slack.send_message",
+        displayName: "Slack send message",
+      },
+    ])
+    expect(result.unsupportedSourceSteps).toEqual([])
+  })
+
   it("records unsupported and incomplete source steps", () => {
     const result = analyzeThreadToolUsage({
       steps: [
@@ -104,7 +137,7 @@ describe("agent promotion tool analysis", () => {
         }),
         step({
           id: "step-failed",
-          type: "tool-result",
+          type: "tool-call",
           status: "failed",
           title: "GitHub create issue failed",
           payload: {
@@ -144,11 +177,43 @@ describe("agent promotion tool analysis", () => {
     ])
   })
 
+  it("records one incomplete source step for a failed tool invocation", () => {
+    const result = analyzeThreadToolUsage({
+      steps: [
+        step({
+          id: "call-1",
+          type: "tool-call",
+          status: "failed",
+          title: "Send Slack message",
+          payload: { toolkitSlug: "slack", toolSlug: "SLACK_SEND_MESSAGE" },
+        }),
+        step({
+          id: "result-1",
+          type: "tool-result",
+          status: "failed",
+          title: "Slack send message result",
+          payload: { toolkitSlug: "slack", toolSlug: "SLACK_SEND_MESSAGE" },
+        }),
+      ],
+    })
+
+    expect(result.unsupportedSourceSteps).toMatchObject([
+      {
+        id: "call-1",
+        reason: "incomplete_tool_call",
+        toolName: "SLACK_SEND_MESSAGE",
+      },
+    ])
+  })
+
   it("keeps no-tool threads quiet", () => {
     const result = analyzeThreadToolUsage({
       steps: [step({ type: "reasoning", title: "Reason about the request" })],
     })
 
-    expect(result).toEqual({ proposedToolGrants: [], unsupportedSourceSteps: [] })
+    expect(result).toEqual({
+      proposedToolGrants: [],
+      unsupportedSourceSteps: [],
+    })
   })
 })
