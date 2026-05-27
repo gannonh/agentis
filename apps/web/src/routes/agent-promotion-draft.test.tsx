@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { AgentPromotionDraftPage } from "./agent-promotion-draft"
@@ -30,6 +30,18 @@ vi.mock("@/lib/api/agents-client", () => ({
       systemPrompt: "Review support backlog patterns.",
       model: "gpt-4o-mini",
       toolGrants: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+      intelligence: {
+        suggestedPurpose: "Review support backlog patterns.",
+        repeatedSteps: ["Review incoming issues", "Assign severity"],
+        requiredTools: [{ toolkitSlug: "github", connectionId: "conn_github" }],
+        suggestedPrompt: "Use the source thread context to review support backlog patterns.",
+        modelRecommendation: {
+          model: "gpt-4.1-mini",
+          reason: "Best fit for careful triage.",
+        },
+        rubricCriteria: ["Finds the right issue", "Explains the severity"],
+      },
+      editedFields: ["systemPrompt"],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -84,6 +96,42 @@ describe("AgentPromotionDraftPage", () => {
       })
       expect(navigate).toHaveBeenCalledWith("/agents/agent_test")
     })
+  })
+
+  it("shows generated suggestions and edited-field markers", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <AgentPromotionDraftPage />
+      </MemoryRouter>
+    )
+
+    const suggestions = (await screen.findByText("Generated suggestions")).closest(
+      "section"
+    )
+    expect(suggestions).not.toBeNull()
+    const suggestionContent = within(suggestions as HTMLElement)
+    expect(
+      suggestionContent.getByText("Review support backlog patterns.")
+    ).toBeInTheDocument()
+    expect(suggestionContent.getByText("Review incoming issues")).toBeInTheDocument()
+    expect(suggestionContent.getByText("Assign severity")).toBeInTheDocument()
+    expect(suggestionContent.getByText("github")).toBeInTheDocument()
+    expect(
+      suggestionContent.getByText(
+        "Use the source thread context to review support backlog patterns."
+      )
+    ).toBeInTheDocument()
+    expect(
+      suggestionContent.getByText("Recommended answer engine: gpt-4.1-mini")
+    ).toBeInTheDocument()
+    expect(suggestionContent.getByText("Instructions edited")).toBeInTheDocument()
+
+    await user.clear(screen.getByLabelText(/^name/i))
+    await user.type(screen.getByLabelText(/^name/i), "Support Triage Agent")
+
+    expect(screen.getByText("Name edited")).toBeInTheDocument()
+    expect(screen.getByDisplayValue("Support Triage Agent")).toBeInTheDocument()
   })
 
   it("routes cancel back to the source thread after loading the draft", async () => {
