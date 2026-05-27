@@ -506,7 +506,7 @@ describe("AgentDetailPage", () => {
     )
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
-    await user.click(screen.getByRole("button", { name: "Start test thread" }))
+    await user.click(screen.getByRole("button", { name: "+ New thread" }))
 
     expect(startAgentTestThread).toHaveBeenCalledWith("agent_created", {
       prompt: "Try Created Research Agent",
@@ -533,7 +533,7 @@ describe("AgentDetailPage", () => {
       )
 
       await screen.findByRole("heading", { name: "Created Research Agent" })
-      await user.click(screen.getByRole("button", { name: "Start test thread" }))
+      await user.click(screen.getByRole("button", { name: "+ New thread" }))
 
       expect(
         await screen.findByText("We couldn't open a test thread. Try again.")

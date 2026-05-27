@@ -1,7 +1,7 @@
 import { Link } from "react-router"
 import { Button } from "@workspace/ui/components/button"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { MoreVerticalIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
+import { MoreVerticalIcon } from "@hugeicons/core-free-icons"
 import { AgentIcon } from "@/lib/agent-icons"
 import { formatRelativeTime } from "@/fixtures"
 import type { AgentSourceThread } from "@workspace/shared"
@@ -105,12 +105,7 @@ export function AgentDetailHero({
             disabled={!onStartThread || startingThread}
             onClick={onStartThread}
           >
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              className="size-3"
-              strokeWidth={2}
-            />
-            {startingThread ? "Opening test thread…" : "Start test thread"}
+            {startingThread ? "Opening thread…" : "+ New thread"}
           </Button>
           <Button
             size="icon"
