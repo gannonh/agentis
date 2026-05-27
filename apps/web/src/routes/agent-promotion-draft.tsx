@@ -45,10 +45,6 @@ function sourceThreadLabel(draft: AgentPromotionDraft | null): string {
   return `Started from thread: ${draft.sourceThreadTitle || draft.threadId}`
 }
 
-function canSubmit(form: DraftFormState | null, submitting: boolean): boolean {
-  return canSubmitAgentSetup(form, submitting)
-}
-
 export function AgentPromotionDraftPage() {
   const { draftId } = useParams()
   const navigate = useNavigate()
@@ -103,7 +99,7 @@ export function AgentPromotionDraftPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!draftId || !form || !canSubmit(form, submitting)) return
+    if (!draftId || !form || !canSubmitAgentSetup(form, submitting)) return
 
     setSubmitting(true)
     setError(null)
@@ -150,7 +146,7 @@ export function AgentPromotionDraftPage() {
               <p className="text-muted-foreground text-sm">Loading draft…</p>
             ) : null}
             {error ? (
-              <p className="text-destructive text-sm" role="alert" aria-label={error}>
+              <p className="text-destructive text-sm" role="alert">
                 {error}
               </p>
             ) : null}
@@ -215,7 +211,7 @@ export function AgentPromotionDraftPage() {
             </Button>
             <Button
               type="submit"
-              disabled={!canSubmit(form, submitting)}
+              disabled={!canSubmitAgentSetup(form, submitting)}
               className="min-h-11 sm:min-h-7"
             >
               {submitting ? "Creating…" : "Create agent"}

@@ -62,7 +62,7 @@ describe("AgentPromotionDraftPage", () => {
         "Start with this thread's context, review the setup, then create a reusable agent."
       )
     ).toBeInTheDocument()
-    expect(await screen.findByText("Review agent setup")).toBeInTheDocument()
+    expect(screen.getByText("Review agent setup")).toBeInTheDocument()
     expect(
       screen.getByText("Started from thread: Investigate support backlog")
     ).toBeInTheDocument()
@@ -142,9 +142,7 @@ describe("AgentPromotionDraftPage", () => {
     await user.click(screen.getByRole("button", { name: /create agent/i }))
 
     expect(
-      await screen.findByRole("alert", {
-        name: "Check the required setup fields and try again.",
-      })
+      await screen.findByText("Check the required setup fields and try again.")
     ).toBeInTheDocument()
     expect(navigate).not.toHaveBeenCalled()
   })

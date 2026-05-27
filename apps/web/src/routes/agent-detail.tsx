@@ -73,9 +73,13 @@ type ApiAgentState =
   | { agentId: string; status: "not-found" }
   | { agentId: string; status: "failed" }
 
+type AgentDetailRouteState = {
+  createdFromThread?: boolean
+}
+
 export function AgentDetailPage() {
   const { agentId } = useParams<{ agentId: string }>()
-  const location = useLocation()
+  const { state } = useLocation() as { state: AgentDetailRouteState | null }
   const navigate = useNavigate()
   const fixtureAgent = agentId ? getFixtureAgent(agentId) : undefined
   const shouldLoadApiAgent =
@@ -167,8 +171,7 @@ export function AgentDetailPage() {
     testThreadState.agentId === agentId && testThreadState.loading
   const testThreadError =
     testThreadState.agentId === agentId ? testThreadState.error : null
-  const createdFromThread =
-    (location.state as { createdFromThread?: boolean } | null)?.createdFromThread === true
+  const createdFromThread = state?.createdFromThread === true
   const activeTab =
     editable && activeTabState.agentId === (agentId ?? null)
       ? activeTabState.value
