@@ -7,6 +7,7 @@ import { CommandCenterPage } from "@/routes/command-center"
 import { IntegrationsPage } from "@/routes/integrations"
 import { LearningPage } from "@/routes/learning"
 import { LibraryPage } from "@/routes/library"
+import { MemoriesPage } from "@/routes/memories"
 import { NewThreadPage } from "@/routes/new-thread"
 import { ThreadDetailPage } from "@/routes/thread-detail"
 import { ProjectCreatePage } from "@/routes/project-create"
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: "agents/promote/:draftId", element: <AgentPromotionDraftPage /> },
       { path: "agents/:agentId", element: <AgentDetailPage /> },
       { path: "learning", element: <LearningPage /> },
+      { path: "memories", element: <MemoriesPage /> },
       { path: "integrations", element: <IntegrationsPage /> },
       { path: "projects/new", element: <ProjectCreatePage /> },
       { path: "projects/:projectId", element: <ProjectDetailPage /> },

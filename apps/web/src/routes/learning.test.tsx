@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { MemoryRouter } from "react-router"
+import { MemoryRouter, Route, Routes } from "react-router"
 import { LearningPage } from "./learning"
 
 describe("LearningPage", () => {
@@ -28,6 +28,22 @@ describe("LearningPage", () => {
     expect(screen.getByRole("heading", { name: "Rubrics" })).toBeInTheDocument()
     expect(screen.getByText("Creating Agent")).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: "Dismiss" }).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("navigates from Learning to Memories", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={["/learning"]}>
+        <Routes>
+          <Route path="/learning" element={<LearningPage />} />
+          <Route path="/memories" element={<h1>Memories Library</h1>} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await user.click(screen.getByRole("link", { name: "Browse Memories" }))
+
+    expect(screen.getByRole("heading", { name: "Memories Library" })).toBeInTheDocument()
   })
 
   it("filters conversations by agent", async () => {

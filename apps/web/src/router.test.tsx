@@ -22,6 +22,16 @@ describe("router", () => {
     })
   })
 
+  it("renders the Memories route", async () => {
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/memories"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    expect(await screen.findByRole("heading", { name: "Memories" })).toBeInTheDocument()
+  })
+
   it("renders not found for unknown paths", async () => {
     const memoryRouter = createMemoryRouter(router.routes, {
       initialEntries: ["/does-not-exist"],

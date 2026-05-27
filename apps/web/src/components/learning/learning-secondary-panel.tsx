@@ -1,7 +1,8 @@
 import { Brain01Icon, ClipboardIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { Link } from "react-router"
 import { Badge } from "@workspace/ui/components/badge"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import type { Memory } from "@/fixtures/schema"
 
 type LearningSecondaryPanelProps = {
@@ -57,9 +58,12 @@ export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps
               </Badge>
             ))}
           </div>
-          <Button variant="outline" size="sm" className="w-fit" disabled>
+          <Link
+            to="/memories"
+            className={buttonVariants({ variant: "outline", size: "sm", className: "w-fit" })}
+          >
             Browse Memories
-          </Button>
+          </Link>
         </div>
         <div className="flex flex-col gap-3 border-t border-border px-4 py-4 md:border-t-0">
           <div className="flex items-center gap-2">
