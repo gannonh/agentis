@@ -8,7 +8,7 @@ import { router } from "@/router"
 const seededMemory: MemoriesListResponse["memories"][number] = {
   id: "memory_seed_agentis_m07",
   content: "Agentis is adding a Memories foundation.",
-  category: "Project Context",
+  category: "memory_category_project_context",
   usageGuidance: "Use when explaining the M07 Memories work.",
   tags: ["agentis", "memories"],
   importance: "high",
@@ -21,12 +21,18 @@ const seededMemory: MemoriesListResponse["memories"][number] = {
   updatedAt: "2026-05-27T00:00:00.000Z",
 }
 
-function stubMemoriesFetch(response: MemoriesListResponse): void {
+function stubMemoriesFetch(
+  response: MemoriesListResponse | ((url: string) => MemoriesListResponse)
+): void {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => response,
+    vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString()
+      const payload = typeof response === "function" ? response(url) : response
+      return {
+        ok: true,
+        json: async () => payload,
+      }
     })
   )
 }
@@ -82,8 +88,8 @@ describe("router", () => {
 
   it("filters memories by category and keeps empty categories visible", async () => {
     const user = userEvent.setup()
-    stubMemoriesFetch({
-      categories: [
+    stubMemoriesFetch((url) => {
+      const categories: MemoriesListResponse["categories"] = [
         {
           id: "memory_category_project_context",
           name: "Project Context",
@@ -96,8 +102,13 @@ describe("router", () => {
           description: "Stakeholder notes.",
           count: 0,
         },
-      ],
-      memories: [seededMemory],
+      ]
+
+      if (url.includes("category=memory_category_people")) {
+        return { categories, memories: [] }
+      }
+
+      return { categories, memories: [seededMemory] }
     })
     const memoryRouter = createMemoryRouter(router.routes, {
       initialEntries: ["/memories"],

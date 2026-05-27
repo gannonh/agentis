@@ -1,8 +1,8 @@
 import {
   memoriesListResponseSchema,
-  savedMemoryCategoryNameSchema,
+  savedMemoryCategoryKeySchema,
   type MemoriesListResponse,
-  type SavedMemoryCategoryName,
+  type SavedMemoryCategoryKey,
 } from "@workspace/shared"
 import { ApiError } from "./client"
 
@@ -31,10 +31,10 @@ async function parseJson(response: Response): Promise<MemoriesListResponse> {
 }
 
 export async function listMemories(
-  category?: SavedMemoryCategoryName
+  category?: SavedMemoryCategoryKey
 ): Promise<MemoriesListResponse> {
   const query = category
-    ? `?category=${encodeURIComponent(savedMemoryCategoryNameSchema.parse(category))}`
+    ? `?category=${encodeURIComponent(savedMemoryCategoryKeySchema.parse(category))}`
     : ""
   const response = await fetch(`${API_BASE}/api/memories${query}`)
   return parseJson(response)

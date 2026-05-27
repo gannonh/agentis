@@ -125,7 +125,7 @@ describe("api routes", () => {
     expect(body.categories.some((category) => category.count === 0)).toBe(true)
     expect(body.memories.length).toBeGreaterThan(0)
     expect(body.memories[0]).toMatchObject({
-      category: "Project Context",
+      category: "memory_category_project_context",
       usageGuidance: expect.any(String),
       tags: expect.any(Array),
       importance: expect.stringMatching(/^(low|medium|high)$/),

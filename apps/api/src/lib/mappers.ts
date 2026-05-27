@@ -125,7 +125,7 @@ export function mapSavedMemoryCategory(
   count: number
 ): SavedMemoryCategory {
   return {
-    id: row.id,
+    id: row.id as SavedMemoryCategory["id"],
     name: row.name as SavedMemoryCategory["name"],
     description: row.description,
     count,

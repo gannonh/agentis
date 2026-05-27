@@ -3,7 +3,7 @@ import type {
   MemoriesListResponse,
   SavedMemory,
   SavedMemoryCategory,
-  SavedMemoryCategoryName,
+  SavedMemoryCategoryKey,
 } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
@@ -29,14 +29,15 @@ function formatMemoryDate(date: string): string {
 
 type MemoryCardProps = {
   memory: SavedMemory
+  categoryName: string
 }
 
-function MemoryCard({ memory }: MemoryCardProps): JSX.Element {
+function MemoryCard({ memory, categoryName }: MemoryCardProps): JSX.Element {
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{memory.category}</Badge>
+          <Badge variant="secondary">{categoryName}</Badge>
           <Badge variant="outline">{memory.importance} importance</Badge>
           <Badge variant="outline">{memory.scope}</Badge>
         </div>
@@ -78,8 +79,8 @@ function MemoryCard({ memory }: MemoryCardProps): JSX.Element {
 
 type CategorySummaryProps = {
   categories: SavedMemoryCategory[]
-  selectedCategory: SavedMemoryCategoryName | null
-  onSelectCategory: (category: SavedMemoryCategoryName | null) => void
+  selectedCategory: SavedMemoryCategoryKey | null
+  onSelectCategory: (category: SavedMemoryCategoryKey | null) => void
 }
 
 function CategorySummary({
@@ -106,9 +107,9 @@ function CategorySummary({
       {categories.map((category) => (
         <Button
           key={category.id}
-          variant={selectedCategory === category.name ? "default" : "outline"}
+          variant={selectedCategory === category.id ? "default" : "outline"}
           className="h-auto justify-start p-0 text-left"
-          onClick={() => onSelectCategory(category.name)}
+          onClick={() => onSelectCategory(category.id)}
         >
           <Card className="w-full border-0 bg-transparent shadow-none">
             <CardHeader className="gap-1">
@@ -122,32 +123,40 @@ function CategorySummary({
   )
 }
 
-function getVisibleMemories(
-  data: MemoriesListResponse | null,
-  selectedCategory: SavedMemoryCategoryName | null
-): SavedMemory[] {
-  const memories = data?.memories ?? []
+function getCategoryNameMap(categories: SavedMemoryCategory[]): Map<SavedMemoryCategoryKey, string> {
+  return new Map(categories.map((category) => [category.id, category.name]))
+}
+
+function getSelectedCategoryName(
+  categories: SavedMemoryCategory[],
+  selectedCategory: SavedMemoryCategoryKey | null
+): string | null {
   if (selectedCategory === null) {
-    return memories
+    return null
   }
 
-  return memories.filter((memory) => memory.category === selectedCategory)
+  const category = categories.find((item) => item.id === selectedCategory)
+  return category?.name ?? null
 }
 
 export function MemoriesPage(): JSX.Element {
   const [data, setData] = useState<MemoriesListResponse | null>(null)
   const [selectedCategory, setSelectedCategory] =
-    useState<SavedMemoryCategoryName | null>(null)
+    useState<SavedMemoryCategoryKey | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
+
     setLoading(true)
     setError(null)
-    listMemories()
+
+    listMemories(selectedCategory ?? undefined)
       .then((response) => {
-        if (active) setData(response)
+        if (active) {
+          setData(response)
+        }
       })
       .catch((loadError) => {
         if (active) {
@@ -157,14 +166,20 @@ export function MemoriesPage(): JSX.Element {
         }
       })
       .finally(() => {
-        if (active) setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       })
+
     return () => {
       active = false
     }
-  }, [])
+  }, [selectedCategory])
 
-  const memories = getVisibleMemories(data, selectedCategory)
+  const categories = data?.categories ?? []
+  const categoryNameMap = getCategoryNameMap(categories)
+  const memories = data?.memories ?? []
+  const selectedCategoryName = getSelectedCategoryName(categories, selectedCategory)
 
   return (
     <PageLayout className="gap-6">
@@ -177,7 +192,7 @@ export function MemoriesPage(): JSX.Element {
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
       {data ? (
         <CategorySummary
-          categories={data.categories}
+          categories={categories}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
         />
@@ -186,11 +201,17 @@ export function MemoriesPage(): JSX.Element {
       <section className="grid gap-4 lg:grid-cols-2" aria-label="Saved memories">
         {memories.length === 0 && !loading ? (
           <EmptyState
-            title={selectedCategory ? `No memories in ${selectedCategory}` : "No saved memories"}
+            title={selectedCategoryName ? `No memories in ${selectedCategoryName}` : "No saved memories"}
             description="Saved memories will appear here after agents or users add reusable context."
           />
         ) : (
-          memories.map((memory) => <MemoryCard key={memory.id} memory={memory} />)
+          memories.map((memory) => (
+            <MemoryCard
+              key={memory.id}
+              memory={memory}
+              categoryName={categoryNameMap.get(memory.category) ?? memory.category}
+            />
+          ))
         )}
       </section>
     </PageLayout>

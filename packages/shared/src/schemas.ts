@@ -447,6 +447,17 @@ export const projectMemorySchema = z.object({
   updatedAt: z.string(),
 })
 
+export const savedMemoryCategoryKeySchema = z.enum([
+  "memory_category_user_fact",
+  "memory_category_preference",
+  "memory_category_project_context",
+  "memory_category_domain_knowledge",
+  "memory_category_people",
+  "memory_category_active_work",
+  "memory_category_tools_workflows",
+  "memory_category_organization",
+])
+
 export const savedMemoryCategoryNameSchema = z.enum([
   "User Fact",
   "Preference",
@@ -463,7 +474,7 @@ export const savedMemoryImportanceSchema = z.enum(["low", "medium", "high"])
 export const savedMemoryScopeSchema = z.enum(["global", "project", "agent"])
 
 export const savedMemoryCategorySchema = z.object({
-  id: z.string(),
+  id: savedMemoryCategoryKeySchema,
   name: savedMemoryCategoryNameSchema,
   description: z.string(),
   count: z.number().int().nonnegative(),
@@ -472,7 +483,7 @@ export const savedMemoryCategorySchema = z.object({
 export const savedMemorySchema = z.object({
   id: z.string(),
   content: z.string(),
-  category: savedMemoryCategoryNameSchema,
+  category: savedMemoryCategoryKeySchema,
   usageGuidance: z.string(),
   tags: z.array(z.string()),
   importance: savedMemoryImportanceSchema,
@@ -725,6 +736,7 @@ export type CreateFollowUpResponse = z.infer<
 export type ProjectStatus = z.infer<typeof projectStatusSchema>
 export type Project = z.infer<typeof projectSchema>
 export type ProjectMemory = z.infer<typeof projectMemorySchema>
+export type SavedMemoryCategoryKey = z.infer<typeof savedMemoryCategoryKeySchema>
 export type SavedMemoryCategoryName = z.infer<typeof savedMemoryCategoryNameSchema>
 export type SavedMemoryCategory = z.infer<typeof savedMemoryCategorySchema>
 export type SavedMemory = z.infer<typeof savedMemorySchema>
