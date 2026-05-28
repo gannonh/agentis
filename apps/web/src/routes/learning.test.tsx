@@ -91,13 +91,29 @@ describe("LearningPage", () => {
       suggestions.getByText("Capture review preference")
     ).toBeInTheDocument()
     expect(suggestions.getByText("Mocked LLM-derived seed")).toBeInTheDocument()
-    expect(suggestions.getByText("Creating Agent")).toBeInTheDocument()
-    expect(suggestions.getByText("Memory suggestion")).toBeInTheDocument()
+    expect(
+      suggestions.getAllByText("Creating Agent").length
+    ).toBeGreaterThanOrEqual(1)
+    expect(
+      suggestions.getAllByText("Memory suggestion").length
+    ).toBeGreaterThanOrEqual(1)
     expect(suggestions.getByText("82% confidence")).toBeInTheDocument()
     expect(
       suggestions.getByRole("heading", { name: "Pending" })
     ).toBeInTheDocument()
     expect(suggestions.getAllByText("Pending").length).toBeGreaterThanOrEqual(1)
+    expect(
+      suggestions.getByRole("heading", { name: "Resolved" })
+    ).toBeInTheDocument()
+    expect(
+      suggestions.getByText("Persist durable preferences")
+    ).toBeInTheDocument()
+    expect(
+      suggestions.getByText("Prefer concise direct answers")
+    ).toBeInTheDocument()
+    expect(
+      suggestions.getByText("Capture quality review habits")
+    ).toBeInTheDocument()
 
     const sourceThread = screen.getByRole("heading", { name: "Creating Agent" })
     const nextThread = screen.getByRole("heading", {
