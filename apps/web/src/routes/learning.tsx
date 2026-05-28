@@ -94,7 +94,7 @@ function buildApiLearningData(
     conversations.map((conversation) => [conversation.id, conversation])
   )
   const candidates = savedMemories.flatMap((memory) => {
-    if (!memory.sourceThreadId) return []
+    if (memory.source !== "thread-derived" || !memory.sourceThreadId) return []
     const source = conversationsById.get(memory.sourceThreadId)
     return source ? [toAcceptedMemoryCandidate(memory, source)] : []
   })

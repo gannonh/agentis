@@ -680,6 +680,29 @@ describe("shared schemas", () => {
 
     expect(() =>
       savedMemorySchema.parse({
+        ...threadDerivedMemory,
+        id: "memory-invalid-source",
+        source: "seeded",
+      })
+    ).toThrow()
+    expect(() =>
+      savedMemorySchema.parse({
+        ...threadDerivedMemory,
+        id: "memory-missing-thread-lineage",
+        sourceThreadId: undefined,
+        sourceThreadTitle: undefined,
+      })
+    ).toThrow()
+    expect(() =>
+      savedMemorySchema.parse({
+        ...threadDerivedMemory,
+        id: "memory-user-with-thread-lineage",
+        source: "user-generated",
+      })
+    ).toThrow()
+
+    expect(() =>
+      savedMemorySchema.parse({
         id: "memory-project-scope",
         content: "Remember project planning notes.",
         category: "memory_category_project_context",

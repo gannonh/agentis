@@ -47,7 +47,7 @@ const seededMemory: MemoriesListResponse["memories"][number] = {
   date: "2026-05-27",
   scope: "agent",
   associatedAgent: apiAgent.id,
-  source: "seeded",
+  source: "user-generated",
   provenance: "mocked seed memory from the M07 planning artifacts",
   pinnedToContext: false,
   createdAt: "2026-05-27T00:00:00.000Z",

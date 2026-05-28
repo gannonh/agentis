@@ -473,6 +473,11 @@ export const savedMemoryImportanceSchema = z.enum(["low", "medium", "high"])
 
 export const savedMemoryScopeSchema = z.enum(["global", "agent"])
 
+export const savedMemorySourceSchema = z.enum([
+  "thread-derived",
+  "user-generated",
+])
+
 export const savedMemoryCategorySchema = z.object({
   id: savedMemoryCategoryKeySchema,
   name: savedMemoryCategoryNameSchema,
@@ -480,24 +485,48 @@ export const savedMemoryCategorySchema = z.object({
   count: z.number().int().nonnegative(),
 })
 
-export const savedMemorySchema = z.object({
-  id: z.string(),
-  content: z.string(),
-  category: savedMemoryCategoryKeySchema,
-  usageGuidance: z.string(),
-  tags: z.array(z.string()),
-  importance: savedMemoryImportanceSchema,
-  date: z.string(),
-  scope: savedMemoryScopeSchema,
-  associatedAgent: z.string().nullable().optional(),
-  source: z.string(),
-  sourceThreadId: z.string().nullable().optional(),
-  sourceThreadTitle: z.string().nullable().optional(),
-  provenance: z.string(),
-  pinnedToContext: z.boolean().default(false),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-})
+export const savedMemorySchema = z
+  .object({
+    id: z.string(),
+    content: z.string(),
+    category: savedMemoryCategoryKeySchema,
+    usageGuidance: z.string(),
+    tags: z.array(z.string()),
+    importance: savedMemoryImportanceSchema,
+    date: z.string(),
+    scope: savedMemoryScopeSchema,
+    associatedAgent: z.string().nullable().optional(),
+    source: savedMemorySourceSchema,
+    sourceThreadId: z.string().nullable().optional(),
+    sourceThreadTitle: z.string().nullable().optional(),
+    provenance: z.string(),
+    pinnedToContext: z.boolean().default(false),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .superRefine((memory, ctx) => {
+    if (
+      memory.source === "thread-derived" &&
+      (!memory.sourceThreadId || !memory.sourceThreadTitle)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Thread-derived memories require source thread lineage",
+        path: ["sourceThreadId"],
+      })
+    }
+
+    if (
+      memory.source === "user-generated" &&
+      (memory.sourceThreadId || memory.sourceThreadTitle)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "User-generated memories cannot include source thread lineage",
+        path: ["sourceThreadId"],
+      })
+    }
+  })
 
 export const createSavedMemoryRequestSchema = z.object({
   content: nonEmptyString,
@@ -760,6 +789,7 @@ export type ProjectMemory = z.infer<typeof projectMemorySchema>
 export type SavedMemoryCategoryKey = z.infer<typeof savedMemoryCategoryKeySchema>
 export type SavedMemoryCategoryName = z.infer<typeof savedMemoryCategoryNameSchema>
 export type SavedMemoryCategory = z.infer<typeof savedMemoryCategorySchema>
+export type SavedMemorySource = z.infer<typeof savedMemorySourceSchema>
 export type SavedMemory = z.infer<typeof savedMemorySchema>
 export type CreateSavedMemoryRequest = z.infer<typeof createSavedMemoryRequestSchema>
 export type MemoriesListResponse = z.infer<typeof memoriesListResponseSchema>

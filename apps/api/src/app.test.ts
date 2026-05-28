@@ -130,7 +130,7 @@ describe("api routes", () => {
       usageGuidance: expect.any(String),
       tags: expect.any(Array),
       importance: expect.stringMatching(/^(low|medium|high)$/),
-      source: "seeded",
+      source: "user-generated",
       provenance: expect.stringContaining("mocked"),
     })
   })
@@ -218,7 +218,7 @@ describe("api routes", () => {
       date: "2026-05-27",
       scope: "global",
       associatedAgent: null,
-      source: "seeded",
+      source: "user-generated",
       sourceThreadId: null,
       sourceThreadTitle: null,
       provenance: "test malformed tags row",

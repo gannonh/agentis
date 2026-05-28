@@ -121,7 +121,7 @@ export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
     date: row.date,
     scope: row.scope as SavedMemory["scope"],
     associatedAgent: row.associatedAgent ?? undefined,
-    source: row.source,
+    source: row.source as SavedMemory["source"],
     sourceThreadId: row.sourceThreadId ?? undefined,
     sourceThreadTitle: row.sourceThreadTitle ?? undefined,
     provenance: row.provenance,
