@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
-import type { SavedMemory, ThreadListItem } from "@workspace/shared"
+import type {
+  SavedMemory,
+  SavedMemoryCategory,
+  ThreadListItem,
+  UpdateSavedMemoryRequest,
+} from "@workspace/shared"
 import { AgentFilterBar } from "@/components/learning/agent-filter-bar"
 import { LearningBanner } from "@/components/learning/learning-banner"
 import { LearningConversationRow } from "@/components/learning/learning-conversation-row"
@@ -15,12 +20,15 @@ import type {
   Memory,
 } from "@/fixtures/schema"
 import { listThreads } from "@/lib/api/client"
-import { listMemories } from "@/lib/api/memories-client"
+import { listMemories, updateMemory } from "@/lib/api/memories-client"
+import { EditMemoryDialog } from "@/routes/memories"
 
 type LearningData = {
   conversations: LearningConversation[]
   candidates: LearningCandidate[]
   memories: Memory[]
+  savedMemories: SavedMemory[]
+  categories: SavedMemoryCategory[]
 }
 
 const MEMORY_CATEGORY_NAMES: Record<SavedMemory["category"], Memory["category"]> = {
@@ -52,6 +60,7 @@ function toLearningMemory(memory: SavedMemory): Memory {
     category: MEMORY_CATEGORY_NAMES[memory.category],
     scope: memory.scope,
     associatedAgent: memory.associatedAgent ?? undefined,
+    associatedAgents: memory.associatedAgents,
     sourceThreadId: memory.sourceThreadId ?? undefined,
     sourceThreadTitle: memory.sourceThreadTitle ?? undefined,
     importance: memory.importance,
@@ -85,11 +94,11 @@ function toAcceptedMemoryCandidate(
   }
 }
 
-function buildApiLearningData(
-  threads: ThreadListItem[],
-  savedMemories: SavedMemory[]
+function buildLearningData(
+  conversations: LearningConversation[],
+  savedMemories: SavedMemory[],
+  categories: SavedMemoryCategory[]
 ): LearningData {
-  const conversations = threads.map(toLearningConversation)
   const conversationsById = new Map(
     conversations.map((conversation) => [conversation.id, conversation])
   )
@@ -103,7 +112,35 @@ function buildApiLearningData(
     conversations,
     candidates,
     memories: savedMemories.map(toLearningMemory),
+    savedMemories,
+    categories,
   }
+}
+
+function buildApiLearningData(
+  threads: ThreadListItem[],
+  savedMemories: SavedMemory[],
+  categories: SavedMemoryCategory[]
+): LearningData {
+  return buildLearningData(
+    threads.map(toLearningConversation),
+    savedMemories,
+    categories
+  )
+}
+
+function getLearningMemoryScopeOptions(
+  agents: { id: string; name: string }[]
+) {
+  return [
+    { label: "Global (all agents)", value: "global", scope: "global" as const },
+    ...agents.map((agent) => ({
+      label: agent.name,
+      value: agent.id,
+      scope: "agent" as const,
+      associatedAgent: agent.id,
+    })),
+  ]
 }
 
 function listConversationAgents(conversations: LearningConversation[]) {
@@ -118,6 +155,9 @@ export function LearningPage() {
   const workspace = getWorkspace()
   const [agentFilter, setAgentFilter] = useState("all")
   const [apiData, setApiData] = useState<LearningData | null>(null)
+  const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
+  const [savingMemory, setSavingMemory] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
   const pinnedCount = workspace.skills.filter((skill) => skill.pinned).length
 
   const fixtureData = useMemo<LearningData>(
@@ -125,6 +165,8 @@ export function LearningPage() {
       conversations: workspace.learningConversations,
       candidates: workspace.learningCandidates,
       memories: workspace.memories,
+      savedMemories: [],
+      categories: [],
     }),
     [workspace.learningCandidates, workspace.learningConversations, workspace.memories]
   )
@@ -135,7 +177,7 @@ export function LearningPage() {
     Promise.all([listThreads(), listMemories()])
       .then(([threads, memories]) => {
         if (!cancelled) {
-          setApiData(buildApiLearningData(threads, memories.memories))
+          setApiData(buildApiLearningData(threads, memories.memories, memories.categories))
         }
       })
       .catch(() => {
@@ -148,10 +190,11 @@ export function LearningPage() {
   }, [])
 
   const learningData = apiData ?? fixtureData
-  const agents = useMemo(
+  const filterAgents = useMemo(
     () => listConversationAgents(learningData.conversations),
     [learningData.conversations]
   )
+  const scopeOptions = getLearningMemoryScopeOptions(filterAgents)
 
   const conversations = useMemo(() => {
     if (agentFilter === "all") {
@@ -161,6 +204,39 @@ export function LearningPage() {
       (conversation) => conversation.agentId === agentFilter
     )
   }, [agentFilter, learningData.conversations])
+
+  const memoriesById = useMemo(
+    () => new Map(learningData.savedMemories.map((memory) => [memory.id, memory])),
+    [learningData.savedMemories]
+  )
+
+  async function handleUpdateMemory(
+    memoryId: string,
+    input: UpdateSavedMemoryRequest
+  ): Promise<void> {
+    setSavingMemory(true)
+    setEditError(null)
+
+    try {
+      const updated = await updateMemory(memoryId, input)
+      setApiData((current) => {
+        if (!current) return current
+        const savedMemories = current.savedMemories.map((memory) =>
+          memory.id === updated.id ? updated : memory
+        )
+        return buildLearningData(current.conversations, savedMemories, current.categories)
+      })
+      setEditingMemory(null)
+    } catch (updateMemoryError) {
+      setEditError(
+        updateMemoryError instanceof Error
+          ? updateMemoryError.message
+          : "Failed to update memory"
+      )
+    } finally {
+      setSavingMemory(false)
+    }
+  }
 
   const candidatesByThreadId = useMemo(() => {
     return learningData.candidates.reduce<Record<string, LearningCandidate[]>>(
@@ -177,6 +253,25 @@ export function LearningPage() {
     <PageLayout variant="fixed" className="gap-6">
       <PageHeader title="Learning" />
 
+      {editingMemory ? (
+        <EditMemoryDialog
+          key={editingMemory.id}
+          memory={editingMemory}
+          open={Boolean(editingMemory)}
+          categories={learningData.categories}
+          saving={savingMemory}
+          error={editError}
+          scopeOptions={scopeOptions}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingMemory(null)
+              setEditError(null)
+            }
+          }}
+          onUpdate={handleUpdateMemory}
+        />
+      ) : null}
+
       <LearningBanner />
 
       <section
@@ -187,7 +282,7 @@ export function LearningPage() {
         <LearningSecondaryPanel memories={learningData.memories} />
       </section>
 
-      <AgentFilterBar value={agentFilter} agents={agents} onChange={setAgentFilter} />
+      <AgentFilterBar value={agentFilter} agents={filterAgents} onChange={setAgentFilter} />
 
       <section
         className="flex flex-col gap-3"
@@ -204,6 +299,12 @@ export function LearningPage() {
               key={conversation.id}
               conversation={conversation}
               candidates={candidatesByThreadId[conversation.id]}
+              onEditMemory={(candidate) => {
+                const memory = candidate.savedMemoryId
+                  ? memoriesById.get(candidate.savedMemoryId)
+                  : undefined
+                if (memory) setEditingMemory(memory)
+              }}
             />
           ))
         )}

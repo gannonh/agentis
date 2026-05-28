@@ -3,10 +3,12 @@ import {
   memoriesListResponseSchema,
   savedMemoryCategoryKeySchema,
   savedMemorySchema,
+  updateSavedMemoryRequestSchema,
   type CreateSavedMemoryRequest,
   type MemoriesListResponse,
   type SavedMemory,
   type SavedMemoryCategoryKey,
+  type UpdateSavedMemoryRequest,
 } from "@workspace/shared"
 import { ApiError } from "./client"
 
@@ -58,6 +60,18 @@ export async function createMemory(input: CreateSavedMemoryRequest): Promise<Sav
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(createSavedMemoryRequestSchema.parse(input)),
+  })
+  return parseMemoryJson(response)
+}
+
+export async function updateMemory(
+  memoryId: string,
+  input: UpdateSavedMemoryRequest
+): Promise<SavedMemory> {
+  const response = await fetch(`${API_BASE}/api/memories/${memoryId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updateSavedMemoryRequestSchema.parse(input)),
   })
   return parseMemoryJson(response)
 }

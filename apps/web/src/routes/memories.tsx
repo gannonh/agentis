@@ -27,9 +27,22 @@ import type {
   SavedMemory,
   SavedMemoryCategory,
   SavedMemoryCategoryKey,
+  UpdateSavedMemoryRequest,
 } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button, buttonVariants } from "@workspace/ui/components/button"
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@workspace/ui/components/combobox"
 import {
   Card,
   CardContent,
@@ -58,7 +71,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { EmptyState } from "@/components/shell/empty-state"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
-import { createMemory, listMemories } from "@/lib/api/memories-client"
+import { createMemory, listMemories, updateMemory } from "@/lib/api/memories-client"
 import { useAgents } from "@/hooks/use-agents"
 
 type MemoryScopeFilter = "all" | "global" | `agent:${string}`
@@ -87,6 +100,7 @@ const DEFAULT_ADD_MEMORY_FORM: AddMemoryFormState = {
   tags: [],
   tagsText: "",
   scope: "global",
+  associatedAgents: [],
   pinnedToContext: false,
 }
 
@@ -194,16 +208,23 @@ type MemoryCardProps = {
   memory: SavedMemory
   categoryName: string
   agentNameById: Map<string, string>
+  onEdit: (memory: SavedMemory) => void
 }
 
 function MemoryCard({
   memory,
   categoryName,
   agentNameById,
+  onEdit,
 }: MemoryCardProps): ReactElement {
-  const associatedAgent = memory.associatedAgent
-    ? agentNameById.get(memory.associatedAgent) ?? memory.associatedAgent
-    : null
+  const associatedAgents = memory.associatedAgents.length
+    ? memory.associatedAgents
+    : memory.associatedAgent
+      ? [memory.associatedAgent]
+      : []
+  const associatedAgentNames = associatedAgents.map(
+    (agentId) => agentNameById.get(agentId) ?? agentId
+  )
   return (
     <Card className="min-h-72">
       <CardHeader className="gap-3">
@@ -260,19 +281,20 @@ function MemoryCard({
             <dt className="text-xs text-muted-foreground">Source</dt>
             <dd>{memory.source}</dd>
           </div>
-          {associatedAgent ? (
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                Associated agent
-              </dt>
-              <dd>{associatedAgent}</dd>
-            </div>
-          ) : null}
+          <div>
+            <dt className="text-xs text-muted-foreground">Scope</dt>
+            <dd>
+              {memory.scope === "global" ? "Global" : associatedAgentNames.join(", ")}
+            </dd>
+          </div>
           <div>
             <dt className="text-xs text-muted-foreground">Provenance</dt>
             <dd>{memory.provenance}</dd>
           </div>
         </dl>
+        <Button type="button" variant="outline" onClick={() => onEdit(memory)}>
+          Edit Memory
+        </Button>
       </CardContent>
     </Card>
   )
@@ -453,6 +475,7 @@ function memoryMatchesSearch(
     memory.source,
     memory.provenance,
     memory.associatedAgent ?? "",
+    ...memory.associatedAgents,
     memory.scope,
     memory.importance,
     categoryName,
@@ -467,15 +490,92 @@ function parseTags(tagsText: string): string[] {
     .filter(Boolean)
 }
 
-function getMemoryScopeValue(form: AddMemoryFormState): string {
-  return form.scope === "global" ? "global" : form.associatedAgent ?? ""
+function getScopeSelection(form: AddMemoryFormState): string[] {
+  return form.scope === "global" ? ["global"] : form.associatedAgents ?? []
 }
 
-function getMemoryScopeOption(
-  value: string,
-  options: MemoryScopeOption[]
-): MemoryScopeOption {
-  return options.find((option) => option.value === value) ?? options[0]
+function getScopeFormPatch(
+  currentValues: string[],
+  nextValues: string[]
+): Pick<AddMemoryFormState, "scope" | "associatedAgent" | "associatedAgents"> {
+  const selected = nextValues.includes("global")
+    ? currentValues.includes("global")
+      ? nextValues.filter((value) => value !== "global")
+      : []
+    : nextValues
+
+  return {
+    scope: selected.length > 0 ? "agent" : "global",
+    associatedAgent: selected[0],
+    associatedAgents: selected,
+  }
+}
+
+type MemoryScopeComboboxProps = {
+  value: string[]
+  scopeOptions: MemoryScopeOption[]
+  onChange: (value: string[]) => void
+}
+
+function MemoryScopeCombobox({
+  value,
+  scopeOptions,
+  onChange,
+}: MemoryScopeComboboxProps): ReactElement {
+  const anchor = useComboboxAnchor()
+  const labelsByValue = new Map(
+    scopeOptions.map((option) => [option.value, option.label])
+  )
+
+  return (
+    <Combobox
+      multiple
+      autoHighlight
+      items={scopeOptions.map((option) => option.value)}
+      value={value}
+      onValueChange={onChange}
+    >
+      <ComboboxChips ref={anchor} className="w-full">
+        <ComboboxValue>
+          {(values) => (
+            <>
+              {(values as string[]).map((item) => (
+                <ComboboxChip key={item}>
+                  {labelsByValue.get(item) ?? item}
+                </ComboboxChip>
+              ))}
+              <ComboboxChipsInput placeholder="Select scope" />
+            </>
+          )}
+        </ComboboxValue>
+      </ComboboxChips>
+      <ComboboxContent anchor={anchor}>
+        <ComboboxEmpty>No agents found.</ComboboxEmpty>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item} value={item}>
+              {labelsByValue.get(item) ?? item}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
+
+function getMemoryFormState(memory: SavedMemory): AddMemoryFormState {
+  return {
+    content: memory.content,
+    category: memory.category,
+    importance: memory.importance,
+    usageGuidance: memory.usageGuidance,
+    tags: memory.tags,
+    tagsText: memory.tags.join(", "),
+    scope: memory.scope,
+    associatedAgent: memory.associatedAgent ?? undefined,
+    associatedAgents: memory.associatedAgents,
+    pinnedToContext: memory.pinnedToContext,
+  }
 }
 
 type AddMemoryDialogProps = {
@@ -514,7 +614,8 @@ function AddMemoryDialog({
       usageGuidance: form.usageGuidance,
       tags: parseTags(form.tagsText),
       scope: form.scope,
-      associatedAgent: form.associatedAgent,
+      associatedAgent: form.scope === "agent" ? form.associatedAgent : undefined,
+      associatedAgents: form.scope === "agent" ? form.associatedAgents : [],
       pinnedToContext: form.pinnedToContext,
     })
   }
@@ -610,24 +711,16 @@ function AddMemoryDialog({
 
           <label className="grid gap-1.5 text-sm font-medium">
             Scope
-            <select
-              className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
-              value={getMemoryScopeValue(form)}
-              onChange={(event) => {
-                const option = getMemoryScopeOption(event.target.value, scopeOptions)
+            <MemoryScopeCombobox
+              value={getScopeSelection(form)}
+              scopeOptions={scopeOptions}
+              onChange={(values) =>
                 setForm((current) => ({
                   ...current,
-                  scope: option.scope,
-                  associatedAgent: option.associatedAgent,
+                  ...getScopeFormPatch(getScopeSelection(current), values),
                 }))
-              }}
-            >
-              {scopeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              }
+            />
           </label>
 
           <button
@@ -680,6 +773,188 @@ function AddMemoryDialog({
   )
 }
 
+type EditMemoryDialogProps = {
+  memory: SavedMemory
+  open: boolean
+  categories: SavedMemoryCategory[]
+  saving: boolean
+  error: string | null
+  scopeOptions: MemoryScopeOption[]
+  onOpenChange: (open: boolean) => void
+  onUpdate: (memoryId: string, input: UpdateSavedMemoryRequest) => Promise<void>
+}
+
+export function EditMemoryDialog({
+  memory,
+  open,
+  categories,
+  saving,
+  error,
+  scopeOptions,
+  onOpenChange,
+  onUpdate,
+}: EditMemoryDialogProps): ReactElement {
+  const [form, setForm] = useState<AddMemoryFormState>(() =>
+    getMemoryFormState(memory)
+  )
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault()
+    await onUpdate(memory.id, {
+      content: form.content,
+      category: form.category,
+      importance: form.importance,
+      usageGuidance: form.usageGuidance,
+      tags: parseTags(form.tagsText),
+      scope: form.scope,
+      associatedAgent: form.scope === "agent" ? form.associatedAgent : undefined,
+      associatedAgents: form.scope === "agent" ? form.associatedAgents : [],
+      pinnedToContext: form.pinnedToContext,
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <form className="grid gap-4" onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Edit Memory</DialogTitle>
+            <DialogDescription>
+              Update reusable context. Provenance stays tied to where the memory came from.
+            </DialogDescription>
+          </DialogHeader>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Memory Content
+            <Textarea
+              required
+              value={form.content}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, content: event.target.value }))
+              }
+              className="min-h-24 text-sm"
+            />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-sm font-medium">
+              Category
+              <select
+                className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
+                value={form.category}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    category: event.target.value as SavedMemoryCategoryKey,
+                  }))
+                }
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1.5 text-sm font-medium">
+              Importance (1-5)
+              <select
+                className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
+                value={form.importance}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    importance: event.target.value as SavedMemory["importance"],
+                  }))
+                }
+              >
+                <option value="low">1 low</option>
+                <option value="medium">3 medium</option>
+                <option value="high">5 high</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            When to Use
+            <Input
+              value={form.usageGuidance}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, usageGuidance: event.target.value }))
+              }
+            />
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Tags
+            <Input
+              value={form.tagsText}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, tagsText: event.target.value }))
+              }
+            />
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Scope
+            <MemoryScopeCombobox
+              value={getScopeSelection(form)}
+              scopeOptions={scopeOptions}
+              onChange={(values) =>
+                setForm((current) => ({
+                  ...current,
+                  ...getScopeFormPatch(getScopeSelection(current), values),
+                }))
+              }
+            />
+          </label>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.pinnedToContext}
+            aria-label="Pin to Context"
+            className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-left"
+            onClick={() =>
+              setForm((current) => ({
+                ...current,
+                pinnedToContext: !current.pinnedToContext,
+              }))
+            }
+          >
+            <span className="text-sm font-medium">Pin to Context</span>
+            <span
+              className={cn(
+                "flex h-5 w-9 items-center rounded-full border border-border p-0.5 transition-colors",
+                form.pinnedToContext ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <span
+                className={cn(
+                  "size-4 rounded-full bg-foreground transition-transform",
+                  form.pinnedToContext && "translate-x-4 bg-primary-foreground"
+                )}
+              />
+            </span>
+          </button>
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving || !form.content.trim()}>
+              Save Memory
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function MemoriesPage(): ReactElement {
   const { agents } = useAgents()
   const [data, setData] = useState<MemoriesListResponse | null>(null)
@@ -689,8 +964,10 @@ export function MemoriesPage(): ReactElement {
   const [searchQuery, setSearchQuery] = useState("")
   const [showArchived, setShowArchived] = useState(false)
   const [addMemoryOpen, setAddMemoryOpen] = useState(false)
+  const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
   const [savingMemory, setSavingMemory] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -741,7 +1018,8 @@ export function MemoriesPage(): ReactElement {
       (scopeFilter === "global" && memory.scope === "global") ||
       (scopeFilter.startsWith("agent:") &&
         memory.scope === "agent" &&
-        memory.associatedAgent === scopeFilter.slice("agent:".length))
+        (memory.associatedAgents.includes(scopeFilter.slice("agent:".length)) ||
+          memory.associatedAgent === scopeFilter.slice("agent:".length)))
 
     return matchesScope && memoryMatchesSearch(memory, categoryName, searchQuery)
   })
@@ -784,6 +1062,36 @@ export function MemoriesPage(): ReactElement {
         createMemoryError instanceof Error
           ? createMemoryError.message
           : "Failed to create memory"
+      )
+    } finally {
+      setSavingMemory(false)
+    }
+  }
+
+  async function handleUpdateMemory(
+    memoryId: string,
+    input: UpdateSavedMemoryRequest
+  ): Promise<void> {
+    setSavingMemory(true)
+    setEditError(null)
+
+    try {
+      const updated = await updateMemory(memoryId, input)
+      setData((current) => {
+        if (!current) return current
+        return {
+          ...current,
+          memories: current.memories.map((memory) =>
+            memory.id === updated.id ? updated : memory
+          ),
+        }
+      })
+      setEditingMemory(null)
+    } catch (updateMemoryError) {
+      setEditError(
+        updateMemoryError instanceof Error
+          ? updateMemoryError.message
+          : "Failed to update memory"
       )
     } finally {
       setSavingMemory(false)
@@ -880,6 +1188,25 @@ export function MemoriesPage(): ReactElement {
         />
       ) : null}
 
+      {editingMemory ? (
+        <EditMemoryDialog
+          key={editingMemory.id}
+          memory={editingMemory}
+          open={Boolean(editingMemory)}
+          categories={categories}
+          saving={savingMemory}
+          error={editError}
+          scopeOptions={scopeOptions}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingMemory(null)
+              setEditError(null)
+            }
+          }}
+          onUpdate={handleUpdateMemory}
+        />
+      ) : null}
+
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading memories…</p>
       ) : null}
@@ -919,6 +1246,7 @@ export function MemoriesPage(): ReactElement {
                 categoryNameMap.get(memory.category) ?? memory.category
               }
               agentNameById={agentNameById}
+              onEdit={setEditingMemory}
             />
           ))
         )}

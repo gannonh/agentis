@@ -26,11 +26,13 @@ const suggestionActions = [
 type LearningConversationRowProps = {
   conversation: LearningConversation
   candidates?: LearningCandidate[]
+  onEditMemory?: (candidate: LearningCandidate) => void
 }
 
 export function LearningConversationRow({
   conversation,
   candidates = [],
+  onEditMemory,
 }: LearningConversationRowProps) {
   const [expanded, setExpanded] = useState(false)
   const hasSuggestions = candidates.length > 0
@@ -106,7 +108,10 @@ export function LearningConversationRow({
       {expanded ? (
         <div className="mt-4 border-t border-border pt-4">
           {hasSuggestions ? (
-            <LearningCandidatesSection candidates={candidates} />
+            <LearningCandidatesSection
+              candidates={candidates}
+              onEditMemory={onEditMemory}
+            />
           ) : (
             <p className="text-xs text-muted-foreground">
               No memory candidates linked yet

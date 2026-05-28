@@ -47,8 +47,11 @@ const seededMemory: MemoriesListResponse["memories"][number] = {
   date: "2026-05-27",
   scope: "agent",
   associatedAgent: apiAgent.id,
-  source: "user-generated",
-  provenance: "mocked seed memory from the M07 planning artifacts",
+  associatedAgents: [apiAgent.id],
+  source: "thread-derived",
+  sourceThreadId: "thread-creating-agent",
+  sourceThreadTitle: "Creating Agent",
+  provenance: "Creating Agent",
   pinnedToContext: false,
   createdAt: "2026-05-27T00:00:00.000Z",
   updatedAt: "2026-05-27T00:00:00.000Z",
@@ -151,9 +154,57 @@ describe("router", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("May 27, 2026")).toBeInTheDocument()
     expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
-    expect(
-      screen.getByText("mocked seed memory from the M07 planning artifacts")
-    ).toBeInTheDocument()
+    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    expect(screen.getByText("Scope")).toBeInTheDocument()
+  })
+
+  it("edits memory scope across multiple agents without changing thread provenance", async () => {
+    const user = userEvent.setup()
+    const categories: MemoriesListResponse["categories"] = [
+      {
+        id: "memory_category_project_context",
+        name: "Project Context",
+        description: "Durable project context.",
+        count: 1,
+      },
+    ]
+    const updatedMemory = {
+      ...seededMemory,
+      scope: "agent" as const,
+      associatedAgent: apiAgent.id,
+      associatedAgents: [apiAgent.id, salesAgent.id],
+      provenance: "Creating Agent",
+    }
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString()
+      if (url.endsWith("/api/agents")) {
+        return { ok: true, json: async () => [apiAgent, salesAgent] }
+      }
+      if (url.endsWith(`/api/memories/${seededMemory.id}`) && init?.method === "PATCH") {
+        expect(JSON.parse(String(init.body))).toMatchObject({
+          scope: "agent",
+          associatedAgents: [apiAgent.id, salesAgent.id],
+        })
+        return { ok: true, json: async () => updatedMemory }
+      }
+      return { ok: true, json: async () => ({ categories, memories: [seededMemory] }) }
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/memories"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    expect(await screen.findByText("Creating Agent")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Edit Memory" }))
+    await user.click(screen.getByPlaceholderText("Select scope"))
+    await user.click(await screen.findByRole("option", { name: "Sales Prospector" }))
+    await user.keyboard("{Escape}")
+    await user.click(screen.getByRole("button", { name: "Save Memory" }))
+
+    expect(await screen.findByText("API Research Agent, Sales Prospector")).toBeInTheDocument()
+    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
   })
 
   it("filters memories through the category menu and keeps empty categories visible", async () => {
@@ -228,6 +279,7 @@ describe("router", () => {
       content: "Global guidance applies to every agent.",
       scope: "global",
       associatedAgent: null,
+      associatedAgents: [],
     }
     const researchMemory: MemoriesListResponse["memories"][number] = {
       ...seededMemory,
@@ -235,6 +287,7 @@ describe("router", () => {
       content: "Research Agent should include source notes.",
       scope: "agent",
       associatedAgent: apiAgent.id,
+      associatedAgents: [apiAgent.id],
     }
     const salesMemory: MemoriesListResponse["memories"][number] = {
       ...seededMemory,
@@ -242,6 +295,7 @@ describe("router", () => {
       content: "Sales Prospector should prioritize high-intent accounts.",
       scope: "agent",
       associatedAgent: salesAgent.id,
+      associatedAgents: [salesAgent.id],
     }
     vi.stubGlobal(
       "fetch",
@@ -317,6 +371,7 @@ describe("router", () => {
         content: "Global guidance applies to every agent.",
         scope: "global",
         associatedAgent: null,
+        associatedAgents: [],
       },
       {
         ...seededMemory,
@@ -324,6 +379,7 @@ describe("router", () => {
         content: "Research Agent should include source notes.",
         scope: "agent",
         associatedAgent: apiAgent.id,
+        associatedAgents: [apiAgent.id],
       },
       {
         ...seededMemory,
@@ -331,6 +387,7 @@ describe("router", () => {
         content: "Sales Prospector should prioritize high-intent accounts.",
         scope: "agent",
         associatedAgent: salesAgent.id,
+        associatedAgents: [salesAgent.id],
       },
     ]
     vi.stubGlobal(
@@ -394,6 +451,7 @@ describe("router", () => {
             tags: string[]
             scope: MemoriesListResponse["memories"][number]["scope"]
             associatedAgent?: string
+            associatedAgents?: string[]
             pinnedToContext: boolean
           }
           expect(body.scope).not.toBe("project")
@@ -407,6 +465,7 @@ describe("router", () => {
             date: "2026-05-28",
             scope: body.scope,
             associatedAgent: body.associatedAgent ?? null,
+            associatedAgents: body.associatedAgents ?? [],
             source: "user-generated",
             provenance: "created manually by user",
             pinnedToContext: body.pinnedToContext,
@@ -444,17 +503,12 @@ describe("router", () => {
       "Use when choosing implementation language."
     )
     await user.type(screen.getByLabelText(/Tags \(optional\)/), "typescript, preference")
-    expect(screen.queryByRole("option", { name: /Project/i })).not.toBeInTheDocument()
-    expect(
-      screen.getByRole("option", { name: "Global (all agents)" })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole("option", { name: "Sales Prospector" })
-    ).not.toBeInTheDocument()
-    expect(
-      await screen.findByRole("option", { name: "API Research Agent" })
-    ).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText("Scope"), "agent_api_research")
+    expect(screen.queryByText("Project")).not.toBeInTheDocument()
+    await user.click(screen.getByPlaceholderText("Select scope"))
+    expect(await screen.findByRole("option", { name: "Global (all agents)" })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: "Sales Prospector" })).not.toBeInTheDocument()
+    await user.click(await screen.findByRole("option", { name: "API Research Agent" }))
+    await user.keyboard("{Escape}")
     await user.click(screen.getByRole("switch", { name: "Pin to Context" }))
     await user.click(screen.getByRole("button", { name: "Add Memory" }))
 

@@ -653,9 +653,12 @@ describe("shared schemas", () => {
       category: "memory_category_tools_workflows",
       importance: "medium",
       scope: "agent",
-      associatedAgent: "Sales Prospector",
+      associatedAgents: ["Sales Prospector", "Research Agent"],
     })
-    expect(agentMemoryRequest.associatedAgent).toBe("Sales Prospector")
+    expect(agentMemoryRequest.associatedAgents).toEqual([
+      "Sales Prospector",
+      "Research Agent",
+    ])
 
     const threadDerivedMemory = savedMemorySchema.parse({
       id: "memory-thread-derived",
@@ -667,16 +670,20 @@ describe("shared schemas", () => {
       date: "2026-05-28",
       scope: "agent",
       associatedAgent: "agent-launch-pm",
+      associatedAgents: ["agent-launch-pm", "agent-support"],
       source: "thread-derived",
       sourceThreadId: "thread-launch-plan",
       sourceThreadTitle: "Launch readiness weekly update",
-      provenance: "accepted memory from Launch readiness weekly update",
+      provenance: "Launch readiness weekly update",
       pinnedToContext: true,
       createdAt: now,
       updatedAt: now,
     })
     expect(threadDerivedMemory.sourceThreadId).toBe("thread-launch-plan")
-    expect(threadDerivedMemory.associatedAgent).toBe("agent-launch-pm")
+    expect(threadDerivedMemory.associatedAgents).toEqual([
+      "agent-launch-pm",
+      "agent-support",
+    ])
 
     expect(() =>
       savedMemorySchema.parse({

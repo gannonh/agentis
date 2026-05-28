@@ -102,15 +102,25 @@ export function mapProjectMemory(row: ProjectMemoryRow): ProjectMemory {
   }
 }
 
-function parseSavedMemoryTags(tagsJson: string): string[] {
+function parseStringArray(json: string | null): string[] {
+  if (!json) return []
   try {
-    return JSON.parse(tagsJson) as string[]
+    const value = JSON.parse(json)
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : []
   } catch {
     return []
   }
 }
 
+function parseSavedMemoryTags(tagsJson: string): string[] {
+  return parseStringArray(tagsJson)
+}
+
 export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
+  const associatedAgents = parseStringArray(row.associatedAgentsJson)
+
   return {
     id: row.id,
     content: row.content,
@@ -121,6 +131,11 @@ export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
     date: row.date,
     scope: row.scope as SavedMemory["scope"],
     associatedAgent: row.associatedAgent ?? undefined,
+    associatedAgents: associatedAgents.length
+      ? associatedAgents
+      : row.associatedAgent
+        ? [row.associatedAgent]
+        : [],
     source: row.source as SavedMemory["source"],
     sourceThreadId: row.sourceThreadId ?? undefined,
     sourceThreadTitle: row.sourceThreadTitle ?? undefined,

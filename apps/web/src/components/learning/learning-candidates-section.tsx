@@ -6,6 +6,7 @@ import type { LearningCandidate } from "@/fixtures/schema"
 
 type LearningCandidatesSectionProps = {
   candidates: LearningCandidate[]
+  onEditMemory?: (candidate: LearningCandidate) => void
 }
 
 function isPendingSuggestion(candidate: LearningCandidate): boolean {
@@ -14,6 +15,7 @@ function isPendingSuggestion(candidate: LearningCandidate): boolean {
 
 export function LearningCandidatesSection({
   candidates,
+  onEditMemory,
 }: LearningCandidatesSectionProps) {
   const headingId = useId()
   const pendingCandidates = candidates.filter(isPendingSuggestion)
@@ -48,7 +50,11 @@ export function LearningCandidatesSection({
         <div className="flex flex-col gap-3">
           <h3 className="text-xs font-medium text-muted-foreground">Pending</h3>
           {pendingCandidates.map((candidate) => (
-            <LearningCandidateCard key={candidate.id} candidate={candidate} />
+            <LearningCandidateCard
+              key={candidate.id}
+              candidate={candidate}
+              onEditMemory={onEditMemory}
+            />
           ))}
         </div>
       ) : null}
@@ -59,7 +65,11 @@ export function LearningCandidatesSection({
             Resolved
           </h3>
           {resolvedCandidates.map((candidate) => (
-            <LearningCandidateCard key={candidate.id} candidate={candidate} />
+            <LearningCandidateCard
+              key={candidate.id}
+              candidate={candidate}
+              onEditMemory={onEditMemory}
+            />
           ))}
         </div>
       ) : null}

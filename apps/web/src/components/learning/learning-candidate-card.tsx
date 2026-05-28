@@ -10,6 +10,7 @@ const candidateActionIcons = {
 
 type LearningCandidateCardProps = {
   candidate: LearningCandidate
+  onEditMemory?: (candidate: LearningCandidate) => void
 }
 
 function capitalize(value: string): string {
@@ -28,6 +29,7 @@ function formatSuggestionState(status: LearningCandidate["status"]): string {
 
 export function LearningCandidateCard({
   candidate,
+  onEditMemory,
 }: LearningCandidateCardProps) {
   const confidence = Math.round(candidate.confidence * 100)
 
@@ -66,6 +68,16 @@ export function LearningCandidateCard({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
+          {candidate.savedMemoryId && onEditMemory ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onEditMemory(candidate)}
+            >
+              Edit Memory
+            </Button>
+          ) : null}
           {candidate.actions.map((action) => {
             const ActionIcon = action.icon
               ? candidateActionIcons[action.icon]

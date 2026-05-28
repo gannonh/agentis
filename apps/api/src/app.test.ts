@@ -204,6 +204,55 @@ describe("api routes", () => {
     ).toBeGreaterThanOrEqual(1)
   })
 
+  it("updates memory scope to multiple agents without changing source thread provenance", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+    const firstAgent = ctx.repos.agents.create({
+      name: "Memory Agent",
+      systemPrompt: "Use scoped memories.",
+      model: "gpt-4o-mini",
+    })
+    const secondAgent = ctx.repos.agents.create({
+      name: "Support Agent",
+      systemPrompt: "Use shared scoped memories.",
+      model: "gpt-4o-mini",
+    })
+    const memory = ctx.repos.savedMemories.create({
+      content: "Use concise updates.",
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use for updates.",
+      tags: ["updates"],
+      scope: "global",
+      pinnedToContext: false,
+    })
+
+    const response = await app.request(`/api/memories/${memory.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scope: "agent",
+        associatedAgents: [firstAgent.id, secondAgent.id],
+      }),
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      scope: string
+      associatedAgent: string
+      associatedAgents: string[]
+      source: string
+      provenance: string
+    }
+    expect(body).toMatchObject({
+      scope: "agent",
+      associatedAgent: firstAgent.id,
+      associatedAgents: [firstAgent.id, secondAgent.id],
+      source: "user-generated",
+      provenance: "created manually by user",
+    })
+  })
+
   it("returns saved memories when stored tags JSON is malformed", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
