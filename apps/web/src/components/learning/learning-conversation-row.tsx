@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowRight01Icon,
@@ -31,16 +32,29 @@ export function LearningConversationRow({
   conversation,
   candidates = [],
 }: LearningConversationRowProps) {
+  const [expanded, setExpanded] = useState(false)
+  const hasSuggestions = candidates.length > 0
+
   return (
     <article className="rounded-lg border border-border bg-card px-4 py-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <HugeiconsIcon
-            icon={ArrowRight01Icon}
-            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            strokeWidth={2}
-            aria-hidden
-          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`${expanded ? "Collapse" : "Expand"} ${conversation.title}`}
+            aria-expanded={expanded}
+            onClick={() => setExpanded((current) => !current)}
+            className="mt-0.5"
+          >
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              className={expanded ? "size-3.5 rotate-90" : "size-3.5"}
+              strokeWidth={2}
+              aria-hidden
+            />
+          </Button>
           <div className="flex min-w-0 flex-col gap-2">
             <div>
               <h3 className="text-sm font-medium">{conversation.title}</h3>
@@ -64,7 +78,7 @@ export function LearningConversationRow({
         </div>
 
         <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
-          {candidates.length > 0 ? (
+          {hasSuggestions ? (
             <Badge variant="secondary" className="mr-1 text-xs font-normal">
               {candidates.length}{" "}
               {candidates.length === 1 ? "suggestion" : "suggestions"}
@@ -89,7 +103,7 @@ export function LearningConversationRow({
         </div>
       </div>
 
-      {candidates.length > 0 ? (
+      {hasSuggestions && expanded ? (
         <div className="mt-4 border-t border-border pt-4">
           <LearningCandidatesSection candidates={candidates} />
         </div>

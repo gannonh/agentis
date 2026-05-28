@@ -22,6 +22,10 @@ function formatSuggestionType(
   return `${capitalize(type)} suggestion`
 }
 
+function formatSuggestionState(status: LearningCandidate["status"]): string {
+  return status === "suggested" ? "Pending" : "Resolved"
+}
+
 export function LearningCandidateCard({
   candidate,
 }: LearningCandidateCardProps) {
@@ -56,7 +60,7 @@ export function LearningCandidateCard({
               <span aria-hidden>·</span>
               <span>{confidence}% confidence</span>
               <span aria-hidden>·</span>
-              <span>{capitalize(candidate.status)}</span>
+              <span>{formatSuggestionState(candidate.status)}</span>
             </div>
           </div>
         </div>

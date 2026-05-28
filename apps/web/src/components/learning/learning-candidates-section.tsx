@@ -8,10 +8,18 @@ type LearningCandidatesSectionProps = {
   candidates: LearningCandidate[]
 }
 
+function isPendingSuggestion(candidate: LearningCandidate): boolean {
+  return candidate.status === "suggested"
+}
+
 export function LearningCandidatesSection({
   candidates,
 }: LearningCandidatesSectionProps) {
   const headingId = useId()
+  const pendingCandidates = candidates.filter(isPendingSuggestion)
+  const resolvedCandidates = candidates.filter(
+    (candidate) => !isPendingSuggestion(candidate)
+  )
 
   if (candidates.length === 0) return null
 
@@ -35,9 +43,26 @@ export function LearningCandidatesSection({
           {candidates.length === 1 ? "suggestion" : "suggestions"}
         </span>
       </div>
-      {candidates.map((candidate) => (
-        <LearningCandidateCard key={candidate.id} candidate={candidate} />
-      ))}
+
+      {pendingCandidates.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-medium text-muted-foreground">Pending</h3>
+          {pendingCandidates.map((candidate) => (
+            <LearningCandidateCard key={candidate.id} candidate={candidate} />
+          ))}
+        </div>
+      ) : null}
+
+      {resolvedCandidates.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-medium text-muted-foreground">
+            Resolved
+          </h3>
+          {resolvedCandidates.map((candidate) => (
+            <LearningCandidateCard key={candidate.id} candidate={candidate} />
+          ))}
+        </div>
+      ) : null}
     </section>
   )
 }
