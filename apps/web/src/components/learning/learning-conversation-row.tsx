@@ -103,9 +103,15 @@ export function LearningConversationRow({
         </div>
       </div>
 
-      {hasSuggestions && expanded ? (
+      {expanded ? (
         <div className="mt-4 border-t border-border pt-4">
-          <LearningCandidatesSection candidates={candidates} />
+          {hasSuggestions ? (
+            <LearningCandidatesSection candidates={candidates} />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No memory candidates linked yet
+            </p>
+          )}
         </div>
       ) : null}
     </article>

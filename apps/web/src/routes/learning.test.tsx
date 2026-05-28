@@ -22,6 +22,52 @@ function jsonResponse(data: unknown) {
 }
 
 describe("LearningPage", () => {
+  it("expands API-backed threads with no linked memory candidates", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith("/api/threads")) {
+          return jsonResponse([
+            {
+              id: "seed_thread_customer_voice",
+              title: "Customer voice synthesis",
+              status: "finished",
+              model: "gpt-4o-mini",
+              mode: "agent",
+              agentId: "seed_agent_customer_insights",
+              agentNameSnapshot: "Customer Insights Analyst",
+              createdAt: "2026-05-15T15:30:00.000Z",
+              updatedAt: "2026-05-21T15:30:00.000Z",
+              messageCount: 2,
+            },
+          ])
+        }
+        if (url.endsWith("/api/memories")) {
+          return jsonResponse({ categories: [], memories: [] })
+        }
+        return jsonResponse({})
+      })
+    )
+
+    render(
+      <MemoryRouter>
+        <LearningPage />
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Customer voice synthesis" })
+    const expandButton = screen.getByRole("button", {
+      name: "Expand Customer voice synthesis",
+    })
+
+    await user.click(expandButton)
+
+    expect(expandButton).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByText("No memory candidates linked yet")).toBeInTheDocument()
+  })
+
   it("renders API threads with accepted memory candidates from saved memory lineage", async () => {
     const user = userEvent.setup()
     vi.stubGlobal(
