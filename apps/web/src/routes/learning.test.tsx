@@ -28,6 +28,11 @@ describe("LearningPage", () => {
       screen.getByText("Your agents learn from conversations")
     ).toBeInTheDocument()
     expect(screen.getByText("What agents can learn")).toBeInTheDocument()
+    const learningPillars = screen.getByRole("region", {
+      name: "Learning pillars",
+    })
+    expect(learningPillars).toHaveClass("grid")
+    expect(learningPillars.className).toContain("repeat(auto-fit")
     expect(screen.getByText(/Skills — Reusable techniques/)).toBeInTheDocument()
     expect(
       screen.getByText(/Memories — Facts and preferences/)

@@ -42,9 +42,13 @@ export function LearningPage() {
 
       <LearningBanner />
 
-      <SkillsCard skills={workspace.skills} pinnedCount={pinnedCount} />
-
-      <LearningSecondaryPanel memories={workspace.memories} />
+      <section
+        className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4"
+        aria-label="Learning pillars"
+      >
+        <SkillsCard skills={workspace.skills} pinnedCount={pinnedCount} />
+        <LearningSecondaryPanel memories={workspace.memories} />
+      </section>
 
       <AgentFilterBar value={agentFilter} onChange={setAgentFilter} />
 
