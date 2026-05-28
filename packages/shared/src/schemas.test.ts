@@ -131,6 +131,7 @@ describe("shared schemas", () => {
       information: {
         recentThreads: [],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       },
     }).agent.currentConfigurationVersion
 
@@ -449,6 +450,7 @@ describe("shared schemas", () => {
       information: {
         recentThreads: [],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       },
     })
     expect(detail.agent.id).toBe("agent-1")
@@ -459,8 +461,10 @@ describe("shared schemas", () => {
     const empty = agentDetailInformationSchema.parse({
       recentThreads: [],
       library: { items: [], totalCount: 0 },
+      memories: { agent: [], global: [] },
     })
     expect(empty.library.items).toHaveLength(0)
+    expect(empty.memories.global).toHaveLength(0)
 
     const populated = agentDetailInformationSchema.parse({
       recentThreads: [
@@ -501,6 +505,27 @@ describe("shared schemas", () => {
           },
         ],
       },
+      memories: {
+        agent: [
+          {
+            id: "memory-agent-1",
+            content: "Use source quality notes in every brief.",
+            category: "memory_category_tools_workflows",
+            usageGuidance: "Use in research briefs.",
+            tags: ["research"],
+            importance: "high",
+            date: "2026-05-28",
+            scope: "agent",
+            associatedAgent: "agent-1",
+            source: "user-generated",
+            provenance: "created manually by user",
+            pinnedToContext: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+        global: [],
+      },
     })
     expect(populated.recentThreads[0]?.agentConfigurationVersionId).toBe(
       "agent-version-1"
@@ -510,12 +535,14 @@ describe("shared schemas", () => {
       agentDetailInformationSchema.parse({
         recentThreads: [{ ...populated.recentThreads[0], artifactCount: -1 }],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       })
     ).toThrow()
     expect(() =>
       agentDetailInformationSchema.parse({
         recentThreads: [{ ...populated.recentThreads[0], artifactCount: 1.5 }],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       })
     ).toThrow()
     expect(() =>
@@ -532,6 +559,7 @@ describe("shared schemas", () => {
           },
         ],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       })
     ).toThrow()
   })

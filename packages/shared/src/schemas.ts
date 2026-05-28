@@ -619,9 +619,15 @@ export const agentLibrarySummarySchema = z.object({
   totalCount: nonNegativeInteger,
 })
 
+export const agentMemorySummarySchema = z.object({
+  agent: z.array(savedMemorySchema),
+  global: z.array(savedMemorySchema),
+})
+
 export const agentDetailInformationSchema = z.object({
   recentThreads: z.array(agentRecentThreadSummarySchema),
   library: agentLibrarySummarySchema,
+  memories: agentMemorySummarySchema.default({ agent: [], global: [] }),
 })
 
 export const agentDetailResponseSchema = z.object({
@@ -734,6 +740,7 @@ export type AgentRecentThreadSummary = z.infer<
   typeof agentRecentThreadSummarySchema
 >
 export type AgentLibrarySummary = z.infer<typeof agentLibrarySummarySchema>
+export type AgentMemorySummary = z.infer<typeof agentMemorySummarySchema>
 export type AgentDetailInformation = z.infer<
   typeof agentDetailInformationSchema
 >

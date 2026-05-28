@@ -21,7 +21,24 @@ export function createMemoryRoutes(repos: Repositories): Hono {
 
   app.post("/", async (c) => {
     const input = createSavedMemoryRequestSchema.parse(await c.req.json())
-    const memory = repos.savedMemories.create(input)
+    if (input.scope === "agent") {
+      if (!input.associatedAgent) {
+        return c.json(
+          { error: "Agent is required", code: "agent_required" },
+          400
+        )
+      }
+      if (!repos.agents.getById(input.associatedAgent)) {
+        return c.json(
+          { error: "Agent not found", code: "agent_not_found" },
+          400
+        )
+      }
+    }
+    const memory = repos.savedMemories.create({
+      ...input,
+      associatedAgent: input.scope === "agent" ? input.associatedAgent : undefined,
+    })
 
     return c.json(savedMemorySchema.parse(memory), 201)
   })

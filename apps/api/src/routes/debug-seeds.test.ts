@@ -68,13 +68,19 @@ describe("debug seed routes", () => {
     expect(support.status).toBe(200)
     const supportBody = (await support.json()) as {
       agent: { sourceThread?: { title: string } }
-      information: { recentThreads: unknown[]; library: { totalCount: number } }
+      information: {
+        recentThreads: unknown[]
+        library: { totalCount: number }
+        memories: { global: unknown[]; agent: unknown[] }
+      }
     }
     expect(supportBody.agent.sourceThread?.title).toBe(
       "Support escalations triage workflow"
     )
     expect(supportBody.information.recentThreads.length).toBeGreaterThan(0)
     expect(supportBody.information.library.totalCount).toBeGreaterThan(0)
+    expect(supportBody.information.memories.global.length).toBeGreaterThan(0)
+    expect(supportBody.information.memories.agent).toEqual([])
   })
 
   it("seeds a rich workspace version with no connected integrations", async () => {

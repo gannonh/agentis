@@ -87,6 +87,65 @@ describe("run executor composio bridge", () => {
     ).toBe(true)
   })
 
+  it("loads pinned global and agent memories into agent run context", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer as the research agent.",
+      model: "gpt-4o-mini",
+    })
+    context.repos.savedMemories.create({
+      content: "Always cite customer interviews before recommending roadmap changes.",
+      category: "memory_category_preference",
+      importance: "high",
+      usageGuidance: "Use during roadmap analysis.",
+      tags: ["roadmap"],
+      scope: "global",
+      pinnedToContext: true,
+    })
+    context.repos.savedMemories.create({
+      content: "Draft notes are optional until promoted.",
+      category: "memory_category_preference",
+      importance: "low",
+      usageGuidance: "Use only when pinned.",
+      tags: ["draft"],
+      scope: "agent",
+      associatedAgent: agent.id,
+      pinnedToContext: false,
+    })
+    context.repos.savedMemories.create({
+      content: "Research Agent should include source quality notes in every brief.",
+      category: "memory_category_tools_workflows",
+      importance: "high",
+      usageGuidance: "Use in research briefs.",
+      tags: ["research"],
+      scope: "agent",
+      associatedAgent: agent.id,
+      pinnedToContext: true,
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize this workspace" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const memoryStep = context.repos
+      .steps
+      .listByRunId(run.id)
+      .find((step) => step.title === "Agent memories loaded")
+    expect(memoryStep?.payload).toMatchObject({
+      agentMemoryCount: 1,
+      globalMemoryCount: 1,
+    })
+  }, 10_000)
+
   it("loads the bound agent configuration version when streaming a test-thread run", async () => {
     const { app, context } = createMockRuntimeApp()
     const agent = context.repos.agents.create({

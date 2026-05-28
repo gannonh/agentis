@@ -95,9 +95,9 @@ function getMemoryScopeOptions(agents: AgentListItem[]): MemoryScopeOption[] {
     { label: "Global (all agents)", value: "global", scope: "global" },
     ...agents.map((agent) => ({
       label: agent.name,
-      value: agent.name,
+      value: agent.id,
       scope: "agent" as const,
-      associatedAgent: agent.name,
+      associatedAgent: agent.id,
     })),
   ]
 }
@@ -193,9 +193,17 @@ function CategoryIcon({
 type MemoryCardProps = {
   memory: SavedMemory
   categoryName: string
+  agentNameById: Map<string, string>
 }
 
-function MemoryCard({ memory, categoryName }: MemoryCardProps): ReactElement {
+function MemoryCard({
+  memory,
+  categoryName,
+  agentNameById,
+}: MemoryCardProps): ReactElement {
+  const associatedAgent = memory.associatedAgent
+    ? agentNameById.get(memory.associatedAgent) ?? memory.associatedAgent
+    : null
   return (
     <Card className="min-h-72">
       <CardHeader className="gap-3">
@@ -252,12 +260,12 @@ function MemoryCard({ memory, categoryName }: MemoryCardProps): ReactElement {
             <dt className="text-xs text-muted-foreground">Source</dt>
             <dd>{memory.source}</dd>
           </div>
-          {memory.associatedAgent ? (
+          {associatedAgent ? (
             <div>
               <dt className="text-xs text-muted-foreground">
                 Associated agent
               </dt>
-              <dd>{memory.associatedAgent}</dd>
+              <dd>{associatedAgent}</dd>
             </div>
           ) : null}
           <div>
@@ -709,6 +717,7 @@ export function MemoriesPage(): ReactElement {
   }, [selectedCategory])
 
   const scopeOptions = getMemoryScopeOptions(agents)
+  const agentNameById = new Map(agents.map((agent) => [agent.id, agent.name]))
   const categories = data?.categories ?? []
   const categoryNameMap = getCategoryNameMap(categories)
   const memories = data?.memories ?? []
@@ -897,6 +906,7 @@ export function MemoriesPage(): ReactElement {
               categoryName={
                 categoryNameMap.get(memory.category) ?? memory.category
               }
+              agentNameById={agentNameById}
             />
           ))
         )}

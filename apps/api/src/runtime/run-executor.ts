@@ -28,6 +28,7 @@ import {
 } from "./abort-registry.js"
 import { getWorkspaceSummaryTool } from "./get-workspace-summary.js"
 import {
+  buildAgentMemoriesContribution,
   buildProjectContextContribution,
   buildSourceWorkflowContribution,
   type RunPromptSection,
@@ -211,9 +212,13 @@ export class RunExecutor {
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
+    const agentMemories = run.agentId
+      ? this.repos.savedMemories.listPinnedForAgent(run.agentId)
+      : null
     const contextContributions = [
       buildSourceWorkflowContribution(thread),
       buildProjectContextContribution({ projectContext, projectContextBlock }),
+      buildAgentMemoriesContribution(agentMemories),
     ].filter((contribution): contribution is NonNullable<typeof contribution> =>
       Boolean(contribution)
     )

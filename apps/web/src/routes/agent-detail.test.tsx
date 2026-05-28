@@ -416,7 +416,7 @@ describe("AgentDetailPage", () => {
     )
     expect(
       screen.getByText(
-        "No memories yet. Add one to give this agent persistent context."
+        "No memories available yet. Add one to give this agent persistent context."
       )
     ).toBeInTheDocument()
     expect(
@@ -687,7 +687,7 @@ describe("AgentDetailPage", () => {
     )
     expect(
       screen.getByText(
-        "No memories yet. Add one to give this agent persistent context."
+        "No memories available yet. Add one to give this agent persistent context."
       )
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Configure library" }))

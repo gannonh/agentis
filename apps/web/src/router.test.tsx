@@ -285,7 +285,7 @@ describe("router", () => {
     expect(
       await screen.findByRole("option", { name: "API Research Agent" })
     ).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText("Scope"), "API Research Agent")
+    await user.selectOptions(screen.getByLabelText("Scope"), "agent_api_research")
     await user.click(screen.getByRole("switch", { name: "Pin to Context" }))
     await user.click(screen.getByRole("button", { name: "Add Memory" }))
 

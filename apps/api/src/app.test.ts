@@ -135,6 +135,29 @@ describe("api routes", () => {
     })
   })
 
+  it("rejects agent-scoped saved memories for unknown agents", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/memories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: "Use account context for escalation drafts.",
+        category: "memory_category_preference",
+        importance: "high",
+        scope: "agent",
+        associatedAgent: "agent_missing",
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      error: "Agent not found",
+      code: "agent_not_found",
+    })
+  })
+
   it("creates user-generated saved memories and returns them from the database", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
