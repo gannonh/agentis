@@ -39,32 +39,44 @@ describe("LearningPage", () => {
     expect(screen.getAllByRole("button", { name: "Dismiss" }).length).toBeGreaterThanOrEqual(1)
   })
 
-  it("renders mocked learning candidate metadata and actions", () => {
+  it("renders suggestions below their source conversation", () => {
     render(
       <MemoryRouter>
         <LearningPage />
       </MemoryRouter>
     )
 
-    const candidates = within(screen.getByRole("region", { name: "Learning candidates" }))
+    expect(screen.queryByRole("region", { name: "Learning candidates" })).not.toBeInTheDocument()
 
-    expect(candidates.getByText("Capture review preference")).toBeInTheDocument()
-    expect(candidates.getByText("Mocked LLM-derived seed")).toBeInTheDocument()
-    expect(candidates.getByText("Creating Agent")).toBeInTheDocument()
-    expect(candidates.getByText("Memory suggestion")).toBeInTheDocument()
-    expect(candidates.getByText("82% confidence")).toBeInTheDocument()
-    expect(candidates.getByText("Suggested")).toBeInTheDocument()
+    const suggestionsSection = screen.getByRole("region", { name: "Suggestions" })
+    const suggestions = within(suggestionsSection)
 
-    const saveMemoryButton = candidates.getByRole("button", { name: "Save memory" })
+    expect(suggestions.getByRole("heading", { name: "Suggestions" })).toBeInTheDocument()
+    expect(suggestionsSection.querySelector("svg")).toHaveAttribute("aria-hidden", "true")
+    expect(suggestions.getByText("Capture review preference")).toBeInTheDocument()
+    expect(suggestions.getByText("Mocked LLM-derived seed")).toBeInTheDocument()
+    expect(suggestions.getByText("Creating Agent")).toBeInTheDocument()
+    expect(suggestions.getByText("Memory suggestion")).toBeInTheDocument()
+    expect(suggestions.getByText("82% confidence")).toBeInTheDocument()
+    expect(suggestions.getByText("Suggested")).toBeInTheDocument()
+
+    const sourceThread = screen.getByRole("heading", { name: "Creating Agent" })
+    const nextThread = screen.getByRole("heading", { name: "Editor gate review" })
+    const suggestion = suggestions.getByText("Capture review preference")
+
+    expect(sourceThread.compareDocumentPosition(suggestion)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(suggestion.compareDocumentPosition(nextThread)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+
+    const saveMemoryButton = suggestions.getByRole("button", { name: "Save memory" })
     expect(saveMemoryButton).toBeDisabled()
     expect(saveMemoryButton.querySelector("svg")).toHaveAttribute("aria-hidden", "true")
-    expect(candidates.getByRole("button", { name: "Dismiss" })).toBeDisabled()
+    expect(suggestions.getByRole("button", { name: "Dismiss" })).toBeDisabled()
   })
 
-  it("does not render an orphaned candidates section when there are no candidates", () => {
+  it("does not render an orphaned suggestions section when there are no suggestions", () => {
     render(<LearningCandidatesSection candidates={[]} />)
 
-    expect(screen.queryByRole("region", { name: "Learning candidates" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: "Suggestions" })).not.toBeInTheDocument()
   })
 
   it("shows an empty-state label when no memories are saved", () => {
@@ -119,11 +131,11 @@ describe("LearningPage", () => {
     const conversations = () =>
       within(screen.getByRole("region", { name: "Learning conversations" }))
 
-    expect(conversations().getByText("Creating Agent")).toBeInTheDocument()
-    expect(conversations().getByText("Editor gate review")).toBeInTheDocument()
+    expect(conversations().getByRole("heading", { name: "Creating Agent" })).toBeInTheDocument()
+    expect(conversations().getByRole("heading", { name: "Editor gate review" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: /Senior Reviewer/i }))
-    expect(conversations().getByText("Creating Agent")).toBeInTheDocument()
-    expect(conversations().queryByText("Editor gate review")).not.toBeInTheDocument()
+    expect(conversations().getByRole("heading", { name: "Creating Agent" })).toBeInTheDocument()
+    expect(conversations().queryByRole("heading", { name: "Editor gate review" })).not.toBeInTheDocument()
   })
 })
