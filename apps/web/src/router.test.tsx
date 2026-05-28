@@ -89,6 +89,9 @@ describe("router", () => {
       await screen.findByRole("heading", { name: "Memories" })
     ).toBeInTheDocument()
     expect(
+      screen.getByRole("link", { name: "Back to Learning" })
+    ).toHaveAttribute("href", "/learning")
+    expect(
       screen.getByRole("button", { name: "Dedupe Memories" })
     ).toBeInTheDocument()
     expect(

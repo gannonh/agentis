@@ -1,8 +1,10 @@
 import type { ReactElement } from "react"
 import { useEffect, useState } from "react"
+import { Link } from "react-router"
 import {
   Add01Icon,
   ArchiveIcon,
+  ArrowLeft01Icon,
   BookOpen01Icon,
   Briefcase01Icon,
   Building05Icon,
@@ -25,7 +27,7 @@ import type {
   SavedMemoryCategoryKey,
 } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import {
   Card,
   CardContent,
@@ -457,6 +459,20 @@ export function MemoriesPage(): ReactElement {
       <PageHeader
         title="Memories"
         description={`Browse saved context that agents can reuse across work. ${totalSaved} memories stored.`}
+        leading={
+          <Link
+            to="/learning"
+            aria-label="Back to Learning"
+            className={buttonVariants({ variant: "outline", size: "icon-lg" })}
+          >
+            <HugeiconsIcon
+              icon={ArrowLeft01Icon}
+              className="size-4"
+              strokeWidth={2}
+              aria-hidden
+            />
+          </Link>
+        }
         actions={
           <>
             <Button variant="outline" type="button">
