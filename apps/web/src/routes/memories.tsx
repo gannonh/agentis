@@ -65,6 +65,13 @@ type AddMemoryFormState = CreateSavedMemoryRequest & {
   tagsText: string
 }
 
+type MemoryScopeOption = {
+  label: string
+  value: string
+  scope: CreateSavedMemoryRequest["scope"]
+  associatedAgent?: string
+}
+
 type MemoryCategoryDisplay = {
   icon: IconSvgElement
   tone: string
@@ -80,6 +87,34 @@ const DEFAULT_ADD_MEMORY_FORM: AddMemoryFormState = {
   scope: "global",
   pinnedToContext: false,
 }
+
+const MEMORY_SCOPE_OPTIONS: MemoryScopeOption[] = [
+  { label: "Global (all agents)", value: "global", scope: "global" },
+  {
+    label: "Sales Prospector",
+    value: "Sales Prospector",
+    scope: "agent",
+    associatedAgent: "Sales Prospector",
+  },
+  {
+    label: "Data Analyst",
+    value: "Data Analyst",
+    scope: "agent",
+    associatedAgent: "Data Analyst",
+  },
+  {
+    label: "Developer",
+    value: "Developer",
+    scope: "agent",
+    associatedAgent: "Developer",
+  },
+  {
+    label: "Senior Reviewer",
+    value: "Senior Reviewer",
+    scope: "agent",
+    associatedAgent: "Senior Reviewer",
+  },
+]
 
 const CATEGORY_DISPLAY: Record<SavedMemoryCategoryKey, MemoryCategoryDisplay> =
   {
@@ -431,6 +466,17 @@ function parseTags(tagsText: string): string[] {
     .filter(Boolean)
 }
 
+function getMemoryScopeValue(form: AddMemoryFormState): string {
+  return form.scope === "global" ? "global" : form.associatedAgent ?? ""
+}
+
+function getMemoryScopeOption(value: string): MemoryScopeOption {
+  return (
+    MEMORY_SCOPE_OPTIONS.find((option) => option.value === value) ??
+    MEMORY_SCOPE_OPTIONS[0]
+  )
+}
+
 type AddMemoryDialogProps = {
   open: boolean
   categories: SavedMemoryCategory[]
@@ -452,7 +498,8 @@ function AddMemoryDialog({
 }: AddMemoryDialogProps): ReactElement {
   const [form, setForm] = useState<AddMemoryFormState>({
     ...DEFAULT_ADD_MEMORY_FORM,
-    category: selectedCategory ?? categories[0]?.id ?? DEFAULT_ADD_MEMORY_FORM.category,
+    category:
+      selectedCategory ?? categories[0]?.id ?? DEFAULT_ADD_MEMORY_FORM.category,
   })
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -464,6 +511,7 @@ function AddMemoryDialog({
       usageGuidance: form.usageGuidance,
       tags: parseTags(form.tagsText),
       scope: form.scope,
+      associatedAgent: form.associatedAgent,
       pinnedToContext: form.pinnedToContext,
     })
   }
@@ -561,17 +609,21 @@ function AddMemoryDialog({
             Scope
             <select
               className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
-              value={form.scope}
-              onChange={(event) =>
+              value={getMemoryScopeValue(form)}
+              onChange={(event) => {
+                const option = getMemoryScopeOption(event.target.value)
                 setForm((current) => ({
                   ...current,
-                  scope: event.target.value as SavedMemory["scope"],
+                  scope: option.scope,
+                  associatedAgent: option.associatedAgent,
                 }))
-              }
+              }}
             >
-              <option value="global">Global</option>
-              <option value="project">Project</option>
-              <option value="agent">Agent</option>
+              {MEMORY_SCOPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
 

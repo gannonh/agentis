@@ -619,6 +619,23 @@ describe("shared schemas", () => {
     })
     expect(createdMemoryRequest.pinnedToContext).toBe(true)
 
+    const agentMemoryRequest = createSavedMemoryRequestSchema.parse({
+      content: "Remember the sales prospecting workflow.",
+      category: "memory_category_tools_workflows",
+      importance: "medium",
+      scope: "agent",
+      associatedAgent: "Sales Prospector",
+    })
+    expect(agentMemoryRequest.associatedAgent).toBe("Sales Prospector")
+    expect(() =>
+      createSavedMemoryRequestSchema.parse({
+        content: "Remember project planning notes.",
+        category: "memory_category_project_context",
+        importance: "medium",
+        scope: "project",
+      })
+    ).toThrow()
+
     const context = projectContextSummarySchema.parse({
       project,
       goals: "Ship",

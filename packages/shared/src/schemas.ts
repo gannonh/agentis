@@ -503,7 +503,7 @@ export const createSavedMemoryRequestSchema = z.object({
   importance: savedMemoryImportanceSchema,
   usageGuidance: z.string().optional().default(""),
   tags: z.array(nonEmptyString).optional().default([]),
-  scope: savedMemoryScopeSchema,
+  scope: z.enum(["global", "agent"]),
   associatedAgent: z.string().optional(),
   pinnedToContext: z.boolean().optional().default(false),
 })

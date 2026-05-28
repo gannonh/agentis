@@ -201,8 +201,10 @@ describe("router", () => {
             usageGuidance: string
             tags: string[]
             scope: MemoriesListResponse["memories"][number]["scope"]
+            associatedAgent?: string
             pinnedToContext: boolean
           }
+          expect(body.scope).not.toBe("project")
           const created: MemoriesListResponse["memories"][number] = {
             id: "memory_user_generated",
             content: body.content,
@@ -212,7 +214,7 @@ describe("router", () => {
             importance: body.importance,
             date: "2026-05-28",
             scope: body.scope,
-            associatedAgent: null,
+            associatedAgent: body.associatedAgent ?? null,
             source: "user-generated",
             provenance: "created manually by user",
             pinnedToContext: body.pinnedToContext,
@@ -250,7 +252,14 @@ describe("router", () => {
       "Use when choosing implementation language."
     )
     await user.type(screen.getByLabelText(/Tags \(optional\)/), "typescript, preference")
-    await user.selectOptions(screen.getByLabelText("Scope"), "global")
+    expect(screen.queryByRole("option", { name: /Project/i })).not.toBeInTheDocument()
+    expect(
+      screen.getByRole("option", { name: "Global (all agents)" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("option", { name: "Sales Prospector" })
+    ).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText("Scope"), "Sales Prospector")
     await user.click(screen.getByRole("switch", { name: "Pin to Context" }))
     await user.click(screen.getByRole("button", { name: "Add Memory" }))
 
@@ -259,6 +268,7 @@ describe("router", () => {
     ).toBeInTheDocument()
     expect(screen.getAllByText("user-generated").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("created manually by user")).toBeInTheDocument()
+    expect(screen.getByText("Sales Prospector")).toBeInTheDocument()
     expect(screen.getByText("Pinned to context")).toBeInTheDocument()
   })
 
