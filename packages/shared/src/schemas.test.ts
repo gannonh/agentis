@@ -656,6 +656,28 @@ describe("shared schemas", () => {
       associatedAgent: "Sales Prospector",
     })
     expect(agentMemoryRequest.associatedAgent).toBe("Sales Prospector")
+
+    const threadDerivedMemory = savedMemorySchema.parse({
+      id: "memory-thread-derived",
+      content: "Launch readiness updates should call out blockers directly.",
+      category: "memory_category_preference",
+      usageGuidance: "Use when drafting launch updates.",
+      tags: ["launch", "blockers"],
+      importance: "high",
+      date: "2026-05-28",
+      scope: "agent",
+      associatedAgent: "agent-launch-pm",
+      source: "thread-derived",
+      sourceThreadId: "thread-launch-plan",
+      sourceThreadTitle: "Launch readiness weekly update",
+      provenance: "accepted memory from Launch readiness weekly update",
+      pinnedToContext: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    expect(threadDerivedMemory.sourceThreadId).toBe("thread-launch-plan")
+    expect(threadDerivedMemory.associatedAgent).toBe("agent-launch-pm")
+
     expect(() =>
       savedMemorySchema.parse({
         id: "memory-project-scope",

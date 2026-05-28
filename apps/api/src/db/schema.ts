@@ -60,6 +60,8 @@ export const savedMemories = sqliteTable(
     scope: text("scope").notNull(),
     associatedAgent: text("associated_agent"),
     source: text("source").notNull(),
+    sourceThreadId: text("source_thread_id"),
+    sourceThreadTitle: text("source_thread_title"),
     provenance: text("provenance").notNull(),
     pinnedToContext: integer("pinned_to_context", { mode: "boolean" })
       .notNull()

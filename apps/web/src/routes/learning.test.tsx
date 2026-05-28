@@ -11,9 +11,128 @@ import { MemoriesPage } from "./memories"
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
+function jsonResponse(data: unknown) {
+  return Promise.resolve({
+    ok: true,
+    json: async () => data,
+  })
+}
+
 describe("LearningPage", () => {
+  it("renders API threads with accepted memory candidates from saved memory lineage", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith("/api/threads")) {
+          return jsonResponse([
+            {
+              id: "seed_thread_launch_plan",
+              title: "Launch readiness weekly update",
+              status: "finished",
+              model: "gpt-4o-mini",
+              mode: "agent",
+              agentId: "seed_agent_launch_pm",
+              agentNameSnapshot: "Launch PM Copilot",
+              createdAt: "2026-05-15T15:30:00.000Z",
+              updatedAt: "2026-05-22T15:30:00.000Z",
+              messageCount: 2,
+            },
+            {
+              id: "seed_thread_customer_voice",
+              title: "Customer voice synthesis",
+              status: "finished",
+              model: "gpt-4o-mini",
+              mode: "agent",
+              agentId: "seed_agent_customer_insights",
+              agentNameSnapshot: "Customer Insights Analyst",
+              createdAt: "2026-05-15T15:30:00.000Z",
+              updatedAt: "2026-05-21T15:30:00.000Z",
+              messageCount: 2,
+            },
+          ])
+        }
+        if (url.endsWith("/api/memories")) {
+          return jsonResponse({
+            categories: [],
+            memories: [
+              {
+                id: "seed_memory_project_context_launch",
+                content:
+                  "Agentis is preparing foundation work for manual testing and e2e coverage.",
+                category: "memory_category_project_context",
+                usageGuidance: "Use when answering launch-readiness prompts.",
+                tags: ["agentis", "launch"],
+                importance: "high",
+                date: "2026-05-22",
+                scope: "agent",
+                associatedAgent: "seed_agent_launch_pm",
+                source: "thread-derived",
+                sourceThreadId: "seed_thread_launch_plan",
+                sourceThreadTitle: "Launch readiness weekly update",
+                provenance: "Accepted from Launch readiness weekly update",
+                pinnedToContext: true,
+                createdAt: "2026-05-22T15:30:00.000Z",
+                updatedAt: "2026-05-22T15:30:00.000Z",
+              },
+            ],
+          })
+        }
+        if (url.endsWith("/api/agents")) {
+          return jsonResponse([
+            {
+              id: "seed_agent_launch_pm",
+              name: "Launch PM Copilot",
+              description: "Plans launch readiness.",
+              systemPrompt: "Plan launches.",
+              model: "gpt-4o-mini",
+              createdAt: "2026-05-22T15:30:00.000Z",
+              updatedAt: "2026-05-22T15:30:00.000Z",
+              toolGrantCount: 0,
+              versionCount: 1,
+            },
+          ])
+        }
+        return jsonResponse({})
+      })
+    )
+
+    render(
+      <MemoryRouter>
+        <LearningPage />
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Launch readiness weekly update",
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Customer voice synthesis" })
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole("button", { name: "Expand Launch readiness weekly update" })
+    )
+
+    const suggestions = within(
+      screen.getByRole("region", { name: "Suggestions" })
+    )
+    expect(
+      suggestions.getByText(
+        "Agentis is preparing foundation work for manual testing and e2e coverage."
+      )
+    ).toBeInTheDocument()
+    expect(suggestions.getByText("Memory")).toBeInTheDocument()
+    expect(suggestions.getAllByText("Resolved").length).toBeGreaterThanOrEqual(1)
+    expect(suggestions.queryByRole("button", { name: "Save memory" })).not.toBeInTheDocument()
+  })
+
   it("renders learning dashboard aligned with comp", () => {
     const { container } = render(
       <MemoryRouter>
@@ -104,7 +223,7 @@ describe("LearningPage", () => {
       suggestions.getAllByText("Creating Agent").length
     ).toBeGreaterThanOrEqual(1)
     expect(
-      suggestions.getAllByText("Memory suggestion").length
+      suggestions.getAllByText("Memory").length
     ).toBeGreaterThanOrEqual(1)
     expect(suggestions.getByText("82% confidence")).toBeInTheDocument()
     expect(

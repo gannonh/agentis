@@ -31,6 +31,8 @@ export class SavedMemoryRepository {
       scope: input.scope,
       associatedAgent: input.associatedAgent ?? null,
       source: "user-generated",
+      sourceThreadId: null,
+      sourceThreadTitle: null,
       provenance: "created manually by user",
       pinnedToContext: input.pinnedToContext,
       createdAt: now,

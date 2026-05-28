@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import type { SavedMemory, ThreadListItem } from "@workspace/shared"
 import { AgentFilterBar } from "@/components/learning/agent-filter-bar"
 import { LearningBanner } from "@/components/learning/learning-banner"
 import { LearningConversationRow } from "@/components/learning/learning-conversation-row"
@@ -8,33 +9,169 @@ import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 import { getWorkspace } from "@/fixtures"
-import type { LearningCandidate } from "@/fixtures/schema"
+import type {
+  LearningCandidate,
+  LearningConversation,
+  Memory,
+} from "@/fixtures/schema"
+import { listThreads } from "@/lib/api/client"
+import { listMemories } from "@/lib/api/memories-client"
+
+type LearningData = {
+  conversations: LearningConversation[]
+  candidates: LearningCandidate[]
+  memories: Memory[]
+}
+
+const MEMORY_CATEGORY_NAMES: Record<SavedMemory["category"], Memory["category"]> = {
+  memory_category_user_fact: "User Fact",
+  memory_category_preference: "Preference",
+  memory_category_project_context: "Project Context",
+  memory_category_domain_knowledge: "Domain Knowledge",
+  memory_category_people: "People",
+  memory_category_active_work: "Active Work",
+  memory_category_tools_workflows: "Tools & Workflows",
+  memory_category_organization: "Organization",
+}
+
+function toLearningConversation(thread: ThreadListItem): LearningConversation {
+  return {
+    id: thread.id,
+    title: thread.title,
+    agentId: thread.agentId ?? "unassigned",
+    agentName: thread.agentNameSnapshot ?? "Unassigned agent",
+    messageCount: thread.messageCount ?? 0,
+    updatedAt: thread.updatedAt,
+  }
+}
+
+function toLearningMemory(memory: SavedMemory): Memory {
+  return {
+    id: memory.id,
+    content: memory.content,
+    category: MEMORY_CATEGORY_NAMES[memory.category],
+    scope: memory.scope,
+    associatedAgent: memory.associatedAgent ?? undefined,
+    sourceThreadId: memory.sourceThreadId ?? undefined,
+    sourceThreadTitle: memory.sourceThreadTitle ?? undefined,
+    importance: memory.importance,
+  }
+}
+
+function toAcceptedMemoryCandidate(
+  memory: SavedMemory,
+  source: LearningConversation
+): LearningCandidate {
+  return {
+    id: `learning-candidate-${memory.id}`,
+    title: MEMORY_CATEGORY_NAMES[memory.category],
+    content: memory.content,
+    suggestionType: "memory",
+    status: "accepted",
+    confidence: 1,
+    source: {
+      threadId: source.id,
+      threadTitle: source.title,
+      agentId: source.agentId,
+      agentName: source.agentName,
+    },
+    provenance: {
+      kind: "thread-derived",
+      label: "Accepted",
+    },
+    createdBy: "system",
+    savedMemoryId: memory.id,
+    actions: [],
+  }
+}
+
+function buildApiLearningData(
+  threads: ThreadListItem[],
+  savedMemories: SavedMemory[]
+): LearningData {
+  const conversations = threads.map(toLearningConversation)
+  const conversationsById = new Map(
+    conversations.map((conversation) => [conversation.id, conversation])
+  )
+  const candidates = savedMemories.flatMap((memory) => {
+    if (!memory.sourceThreadId) return []
+    const source = conversationsById.get(memory.sourceThreadId)
+    return source ? [toAcceptedMemoryCandidate(memory, source)] : []
+  })
+
+  return {
+    conversations,
+    candidates,
+    memories: savedMemories.map(toLearningMemory),
+  }
+}
+
+function listConversationAgents(conversations: LearningConversation[]) {
+  const agents = new Map<string, string>()
+  for (const conversation of conversations) {
+    agents.set(conversation.agentId, conversation.agentName)
+  }
+  return [...agents.entries()].map(([id, name]) => ({ id, name }))
+}
 
 export function LearningPage() {
   const workspace = getWorkspace()
-  const [agentFilter, setAgentFilter] = useState<"all" | "senior-reviewer">(
-    "all"
-  )
+  const [agentFilter, setAgentFilter] = useState("all")
+  const [apiData, setApiData] = useState<LearningData | null>(null)
   const pinnedCount = workspace.skills.filter((skill) => skill.pinned).length
+
+  const fixtureData = useMemo<LearningData>(
+    () => ({
+      conversations: workspace.learningConversations,
+      candidates: workspace.learningCandidates,
+      memories: workspace.memories,
+    }),
+    [workspace.learningCandidates, workspace.learningConversations, workspace.memories]
+  )
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all([listThreads(), listMemories()])
+      .then(([threads, memories]) => {
+        if (!cancelled) {
+          setApiData(buildApiLearningData(threads, memories.memories))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const learningData = apiData ?? fixtureData
+  const agents = useMemo(
+    () => listConversationAgents(learningData.conversations),
+    [learningData.conversations]
+  )
 
   const conversations = useMemo(() => {
     if (agentFilter === "all") {
-      return workspace.learningConversations
+      return learningData.conversations
     }
-    return workspace.learningConversations.filter(
+    return learningData.conversations.filter(
       (conversation) => conversation.agentId === agentFilter
     )
-  }, [agentFilter, workspace.learningConversations])
+  }, [agentFilter, learningData.conversations])
 
   const candidatesByThreadId = useMemo(() => {
-    return workspace.learningCandidates.reduce<
-      Record<string, LearningCandidate[]>
-    >((groups, candidate) => {
-      const threadCandidates = groups[candidate.source.threadId] ?? []
-      groups[candidate.source.threadId] = [...threadCandidates, candidate]
-      return groups
-    }, {})
-  }, [workspace.learningCandidates])
+    return learningData.candidates.reduce<Record<string, LearningCandidate[]>>(
+      (groups, candidate) => {
+        const threadCandidates = groups[candidate.source.threadId] ?? []
+        groups[candidate.source.threadId] = [...threadCandidates, candidate]
+        return groups
+      },
+      {}
+    )
+  }, [learningData.candidates])
 
   return (
     <PageLayout variant="fixed" className="gap-6">
@@ -47,10 +184,10 @@ export function LearningPage() {
         aria-label="Learning pillars"
       >
         <SkillsCard skills={workspace.skills} pinnedCount={pinnedCount} />
-        <LearningSecondaryPanel memories={workspace.memories} />
+        <LearningSecondaryPanel memories={learningData.memories} />
       </section>
 
-      <AgentFilterBar value={agentFilter} onChange={setAgentFilter} />
+      <AgentFilterBar value={agentFilter} agents={agents} onChange={setAgentFilter} />
 
       <section
         className="flex flex-col gap-3"

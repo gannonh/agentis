@@ -80,7 +80,44 @@ describe("debug seed routes", () => {
     expect(supportBody.information.recentThreads.length).toBeGreaterThan(0)
     expect(supportBody.information.library.totalCount).toBeGreaterThan(0)
     expect(supportBody.information.memories.global.length).toBeGreaterThan(0)
-    expect(supportBody.information.memories.agent).toEqual([])
+    expect(supportBody.information.memories.agent.length).toBeGreaterThan(0)
+  })
+
+  it("links accepted seeded memories to their source agent threads", async () => {
+    ctx = createTestContext()
+    const app = createDebugSeedTestApp(ctx)
+
+    await app.request("/api/debug/datasets/rich-agent-workspace", {
+      method: "POST",
+    })
+    const response = await app.request("/api/memories")
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      memories: {
+        id: string
+        scope: string
+        associatedAgent?: string
+        sourceThreadId?: string
+        sourceThreadTitle?: string
+      }[]
+    }
+    const launchMemory = body.memories.find(
+      (memory) => memory.id === "seed_memory_project_context_launch"
+    )
+
+    expect(launchMemory).toMatchObject({
+      scope: "agent",
+      associatedAgent: "seed_agent_launch_pm",
+      sourceThreadId: "seed_thread_launch_plan",
+      sourceThreadTitle: "Launch readiness weekly update",
+    })
+    const richSeedMemories = body.memories.filter((memory) =>
+      memory.id.startsWith("seed_memory_")
+    )
+    expect(
+      richSeedMemories.filter((memory) => memory.sourceThreadId).length
+    ).toBe(richSeedMemories.length)
   })
 
   it("seeds a rich workspace version with no connected integrations", async () => {

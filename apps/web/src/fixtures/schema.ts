@@ -108,6 +108,9 @@ export const memorySchema = z.object({
   content: z.string(),
   category: memoryCategorySchema,
   scope: z.enum(["global", "agent"]),
+  associatedAgent: z.string().optional(),
+  sourceThreadId: z.string().optional(),
+  sourceThreadTitle: z.string().optional(),
   importance: z.enum(["low", "medium", "high"]).optional(),
 })
 
@@ -120,6 +123,7 @@ export const rubricSchema = z.object({
 export const memoryProvenanceKindSchema = z.enum([
   "mocked-llm-derived",
   "mocked-saved-memory",
+  "thread-derived",
   "user-generated",
 ])
 
@@ -152,6 +156,7 @@ export const learningCandidateSchema = z.object({
   source: learningCandidateSourceSchema,
   provenance: learningCandidateProvenanceSchema,
   createdBy: z.enum(["seed", "user", "system"]),
+  savedMemoryId: z.string().optional(),
   actions: z.array(learningCandidateActionSchema),
 })
 

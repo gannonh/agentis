@@ -122,6 +122,8 @@ export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
     scope: row.scope as SavedMemory["scope"],
     associatedAgent: row.associatedAgent ?? undefined,
     source: row.source,
+    sourceThreadId: row.sourceThreadId ?? undefined,
+    sourceThreadTitle: row.sourceThreadTitle ?? undefined,
     provenance: row.provenance,
     pinnedToContext: row.pinnedToContext,
     createdAt: row.createdAt,

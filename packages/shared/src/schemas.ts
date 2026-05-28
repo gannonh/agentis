@@ -491,6 +491,8 @@ export const savedMemorySchema = z.object({
   scope: savedMemoryScopeSchema,
   associatedAgent: z.string().nullable().optional(),
   source: z.string(),
+  sourceThreadId: z.string().nullable().optional(),
+  sourceThreadTitle: z.string().nullable().optional(),
   provenance: z.string(),
   pinnedToContext: z.boolean().default(false),
   createdAt: z.string(),

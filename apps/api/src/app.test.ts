@@ -219,6 +219,8 @@ describe("api routes", () => {
       scope: "global",
       associatedAgent: null,
       source: "seeded",
+      sourceThreadId: null,
+      sourceThreadTitle: null,
       provenance: "test malformed tags row",
       createdAt: "2026-05-27T00:00:00.000Z",
       updatedAt: "2026-05-27T00:00:00.000Z",

@@ -19,7 +19,7 @@ function capitalize(value: string): string {
 function formatSuggestionType(
   type: LearningCandidate["suggestionType"]
 ): string {
-  return `${capitalize(type)} suggestion`
+  return capitalize(type)
 }
 
 function formatSuggestionState(status: LearningCandidate["status"]): string {
