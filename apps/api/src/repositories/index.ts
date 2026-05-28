@@ -13,6 +13,7 @@ import { RunStepRepository } from "./run-step-repository.js"
 import { SavedMemoryRepository } from "./saved-memory-repository.js"
 import { ThreadRepository } from "./thread-repository.js"
 import { ToolAccessGrantRepository } from "./tool-access-grant-repository.js"
+import { TestingSeedRepository } from "./testing-seed-repository.js"
 
 export function createRepositories(db: AppDatabase, config?: AppConfig) {
   const composioUserId = config?.composioUserId ?? "agentis-local-user"
@@ -33,6 +34,7 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
       composioUserId
     ),
     toolAccessGrants: new ToolAccessGrantRepository(db),
+    testingSeeds: new TestingSeedRepository(db, config),
   }
 }
 

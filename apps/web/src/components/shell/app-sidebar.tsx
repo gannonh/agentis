@@ -336,7 +336,10 @@ export function AppSidebar() {
         </SidebarMenu>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default">
+            <SidebarMenuButton
+              size="lg"
+              render={<NavLink to="/debug/seeding" className={navLinkClass} />}
+            >
               <Avatar className="size-8 rounded-lg">
                 <AvatarFallback className="rounded-lg text-xs">
                   {workspace.user.displayName.slice(0, 2).toUpperCase()}

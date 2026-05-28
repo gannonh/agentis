@@ -130,6 +130,17 @@ describe("AppSidebar", () => {
     })
   })
 
+  it("links the demo user account button to debug data seeding", async () => {
+    renderSidebar()
+    expect(screen.getByRole("link", { name: /Demo User/ })).toHaveAttribute(
+      "href",
+      "/debug/seeding"
+    )
+    await waitFor(() => {
+      expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    })
+  })
+
   it("does not show referral promo copy", async () => {
     renderSidebar()
     expect(screen.queryByText(/referral/i)).not.toBeInTheDocument()

@@ -8,6 +8,7 @@ import { createAgentRoutes } from "./routes/agents.js"
 import { createArtifactRoutes } from "./routes/artifacts.js"
 import { createIntegrationRoutes } from "./routes/integrations.js"
 import { createMemoryRoutes } from "./routes/memories.js"
+import { createDebugSeedRoutes } from "./routes/debug-seeds.js"
 import { createProjectRoutes } from "./routes/projects.js"
 import {
   createPromotionDraftRoutes,
@@ -65,6 +66,7 @@ export function createApp(
     createPromotionDraftRoutes(repos, config)
   )
   app.route("/api/runs", createRunRoutes(repos, config, services))
+  app.route("/api/debug", createDebugSeedRoutes(repos))
 
   app.get("/api/health", (c) => c.json({ ok: true }))
 
