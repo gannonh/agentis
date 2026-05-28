@@ -32,7 +32,8 @@ function stubMemoriesFetch(
     "fetch",
     vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input.toString()
-      const payload = typeof response === "function" ? await response(url) : response
+      const payload =
+        typeof response === "function" ? await response(url) : response
       return {
         ok: true,
         json: async () => payload,
@@ -54,10 +55,9 @@ describe("router", () => {
 
     render(<RouterProvider router={memoryRouter} />)
 
-    expect(screen.getByRole("link", { name: /Skip to main content/i })).toHaveAttribute(
-      "href",
-      "#main-content"
-    )
+    expect(
+      screen.getByRole("link", { name: /Skip to main content/i })
+    ).toHaveAttribute("href", "#main-content")
     expect(
       await screen.findByRole("heading", { name: "Let's get to work." })
     ).toBeInTheDocument()
@@ -85,15 +85,41 @@ describe("router", () => {
 
     render(<RouterProvider router={memoryRouter} />)
 
-    expect(await screen.findByRole("heading", { name: "Memories" })).toBeInTheDocument()
-    expect(screen.getByText("Agentis is adding a Memories foundation.")).toBeInTheDocument()
-    expect(screen.getByText("Use when explaining the M07 Memories work.")).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { name: "Memories" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Dedupe Memories" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Add Memory" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("switch", { name: "Show archived" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "All Memories" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /All categories/i })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText("Search memories...")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Agentis is adding a Memories foundation.")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Use when explaining the M07 Memories work.")
+    ).toBeInTheDocument()
     expect(screen.getByText("May 27, 2026")).toBeInTheDocument()
     expect(screen.getByText("Senior Reviewer")).toBeInTheDocument()
-    expect(screen.getByText("mocked seed memory from the M07 planning artifacts")).toBeInTheDocument()
+    expect(
+      screen.getByText("mocked seed memory from the M07 planning artifacts")
+    ).toBeInTheDocument()
   })
 
-  it("filters memories by category and keeps empty categories visible", async () => {
+  it("filters memories through the category menu and keeps empty categories visible", async () => {
     const user = userEvent.setup()
     const categories: MemoriesListResponse["categories"] = [
       {
@@ -125,8 +151,16 @@ describe("router", () => {
 
     render(<RouterProvider router={memoryRouter} />)
 
-    expect(await screen.findByRole("button", { name: /People 0 saved/i })).toBeEnabled()
-    await user.click(screen.getByRole("button", { name: /People 0 saved/i }))
+    expect(
+      await screen.findByRole("button", { name: /All categories/i })
+    ).toBeEnabled()
+    await user.click(screen.getByRole("button", { name: /All categories/i }))
+
+    const peopleItem = await screen.findByRole("menuitemradio", {
+      name: /People \(0\)/i,
+    })
+    expect(peopleItem.querySelector("svg")).toBeInTheDocument()
+    await user.click(peopleItem)
 
     expect(screen.getByText("Loading memories…")).toBeInTheDocument()
     expect(
@@ -136,11 +170,8 @@ describe("router", () => {
     resolvePeople?.({ categories, memories: [] })
     expect(await screen.findByText("No memories in People")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: /Project Context 1 saved/i }))
-
-    expect(screen.getByText("Agentis is adding a Memories foundation.")).toBeInTheDocument()
     expect(
-      screen.getByText("mocked seed memory from the M07 planning artifacts")
+      screen.getByRole("button", { name: /People \(0\)/i })
     ).toBeInTheDocument()
   })
 
@@ -151,6 +182,8 @@ describe("router", () => {
 
     render(<RouterProvider router={memoryRouter} />)
 
-    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { name: "Page not found" })
+    ).toBeInTheDocument()
   })
 })
