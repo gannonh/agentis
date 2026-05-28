@@ -26,6 +26,17 @@ const apiAgent: AgentListItem = {
   toolGrantCount: 0,
 }
 
+const salesAgent: AgentListItem = {
+  ...apiAgent,
+  id: "agent_sales_prospector",
+  name: "Sales Prospector",
+  currentConfigurationVersion: {
+    ...apiAgent.currentConfigurationVersion,
+    id: "agent_version_sales_prospector",
+    agentId: "agent_sales_prospector",
+  },
+}
+
 const seededMemory: MemoriesListResponse["memories"][number] = {
   id: "memory_seed_agentis_m07",
   content: "Agentis is adding a Memories foundation.",
@@ -34,8 +45,8 @@ const seededMemory: MemoriesListResponse["memories"][number] = {
   tags: ["agentis", "memories"],
   importance: "high",
   date: "2026-05-27",
-  scope: "project",
-  associatedAgent: "Senior Reviewer",
+  scope: "agent",
+  associatedAgent: apiAgent.id,
   source: "seeded",
   provenance: "mocked seed memory from the M07 planning artifacts",
   pinnedToContext: false,
@@ -52,6 +63,9 @@ function stubMemoriesFetch(
     "fetch",
     vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input.toString()
+      if (url.endsWith("/api/agents")) {
+        return { ok: true, json: async () => [apiAgent] }
+      }
       const payload =
         typeof response === "function" ? await response(url) : response
       return {
@@ -136,7 +150,7 @@ describe("router", () => {
       screen.getByText("Use when explaining the M07 Memories work.")
     ).toBeInTheDocument()
     expect(screen.getByText("May 27, 2026")).toBeInTheDocument()
-    expect(screen.getByText("Senior Reviewer")).toBeInTheDocument()
+    expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
     expect(
       screen.getByText("mocked seed memory from the M07 planning artifacts")
     ).toBeInTheDocument()
@@ -196,6 +210,161 @@ describe("router", () => {
     expect(
       screen.getByRole("button", { name: /People \(0\)/i })
     ).toBeInTheDocument()
+  })
+
+  it("filters memories by global scope and individual agents", async () => {
+    const user = userEvent.setup()
+    const categories: MemoriesListResponse["categories"] = [
+      {
+        id: "memory_category_project_context",
+        name: "Project Context",
+        description: "Durable context.",
+        count: 3,
+      },
+    ]
+    const globalMemory: MemoriesListResponse["memories"][number] = {
+      ...seededMemory,
+      id: "memory_global_guidance",
+      content: "Global guidance applies to every agent.",
+      scope: "global",
+      associatedAgent: null,
+    }
+    const researchMemory: MemoriesListResponse["memories"][number] = {
+      ...seededMemory,
+      id: "memory_research_guidance",
+      content: "Research Agent should include source notes.",
+      scope: "agent",
+      associatedAgent: apiAgent.id,
+    }
+    const salesMemory: MemoriesListResponse["memories"][number] = {
+      ...seededMemory,
+      id: "memory_sales_guidance",
+      content: "Sales Prospector should prioritize high-intent accounts.",
+      scope: "agent",
+      associatedAgent: salesAgent.id,
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString()
+        if (url.endsWith("/api/agents")) {
+          return { ok: true, json: async () => [apiAgent, salesAgent] }
+        }
+
+        return {
+          ok: true,
+          json: async () => ({
+            categories,
+            memories: [globalMemory, researchMemory, salesMemory],
+          }),
+        }
+      })
+    )
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/memories"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    expect(
+      await screen.findByText("Global guidance applies to every agent.")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Research Agent should include source notes.")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Sales Prospector should prioritize high-intent accounts.")
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "All Memories" }))
+    expect(
+      await screen.findByRole("menuitemradio", { name: "Global" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("menuitemradio", { name: "API Research Agent" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("menuitemradio", { name: "Sales Prospector" })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("menuitemradio", { name: "Project" })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("menuitemradio", { name: "Global" }))
+    expect(screen.getByText("Global guidance applies to every agent.")).toBeInTheDocument()
+    expect(
+      screen.queryByText("Research Agent should include source notes.")
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Sales Prospector should prioritize high-intent accounts.")
+    ).not.toBeInTheDocument()
+  })
+
+  it("filters memories by individual agent", async () => {
+    const user = userEvent.setup()
+    const categories: MemoriesListResponse["categories"] = [
+      {
+        id: "memory_category_project_context",
+        name: "Project Context",
+        description: "Durable context.",
+        count: 3,
+      },
+    ]
+    const memories: MemoriesListResponse["memories"] = [
+      {
+        ...seededMemory,
+        id: "memory_global_guidance",
+        content: "Global guidance applies to every agent.",
+        scope: "global",
+        associatedAgent: null,
+      },
+      {
+        ...seededMemory,
+        id: "memory_research_guidance",
+        content: "Research Agent should include source notes.",
+        scope: "agent",
+        associatedAgent: apiAgent.id,
+      },
+      {
+        ...seededMemory,
+        id: "memory_sales_guidance",
+        content: "Sales Prospector should prioritize high-intent accounts.",
+        scope: "agent",
+        associatedAgent: salesAgent.id,
+      },
+    ]
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString()
+        if (url.endsWith("/api/agents")) {
+          return { ok: true, json: async () => [apiAgent, salesAgent] }
+        }
+
+        return { ok: true, json: async () => ({ categories, memories }) }
+      })
+    )
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/memories"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    expect(
+      await screen.findByText("Global guidance applies to every agent.")
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "All Memories" }))
+    await user.click(
+      await screen.findByRole("menuitemradio", { name: "API Research Agent" })
+    )
+
+    expect(screen.getByText("Research Agent should include source notes.")).toBeInTheDocument()
+    expect(
+      screen.queryByText("Global guidance applies to every agent.")
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Sales Prospector should prioritize high-intent accounts.")
+    ).not.toBeInTheDocument()
   })
 
   it("adds a user-generated memory and shows it in the grid", async () => {

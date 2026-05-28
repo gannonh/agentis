@@ -216,7 +216,7 @@ describe("api routes", () => {
       tagsJson: "not-json",
       importance: "medium",
       date: "2026-05-27",
-      scope: "project",
+      scope: "global",
       associatedAgent: null,
       source: "seeded",
       provenance: "test malformed tags row",

@@ -61,7 +61,7 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { createMemory, listMemories } from "@/lib/api/memories-client"
 import { useAgents } from "@/hooks/use-agents"
 
-type MemoryScopeFilter = "all" | "global" | "project"
+type MemoryScopeFilter = "all" | "global" | `agent:${string}`
 
 type AddMemoryFormState = CreateSavedMemoryRequest & {
   tagsText: string
@@ -300,6 +300,7 @@ type MemoryFiltersProps = {
   selectedCategory: SavedMemoryCategoryKey | null
   scopeFilter: MemoryScopeFilter
   searchQuery: string
+  agents: AgentListItem[]
   onSelectCategory: (category: SavedMemoryCategoryKey | null) => void
   onSelectScope: (scope: MemoryScopeFilter) => void
   onSearchQueryChange: (query: string) => void
@@ -310,6 +311,7 @@ function MemoryFilters({
   selectedCategory,
   scopeFilter,
   searchQuery,
+  agents,
   onSelectCategory,
   onSelectScope,
   onSearchQueryChange,
@@ -318,12 +320,15 @@ function MemoryFilters({
   const categoryLabel = selectedCategoryData
     ? `${selectedCategoryData.name} (${selectedCategoryData.count})`
     : `All categories (${categories.length})`
+  const selectedAgentId = scopeFilter.startsWith("agent:")
+    ? scopeFilter.slice("agent:".length)
+    : null
   const scopeLabel =
     scopeFilter === "all"
       ? "All Memories"
       : scopeFilter === "global"
         ? "Global"
-        : "Project"
+        : agents.find((agent) => agent.id === selectedAgentId)?.name ?? "Agent"
 
   return (
     <section
@@ -365,15 +370,17 @@ function MemoryFilters({
               />
               Global
             </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="project">
-              <HugeiconsIcon
-                icon={FolderLibraryIcon}
-                className="size-3.5"
-                strokeWidth={2}
-                aria-hidden
-              />
-              Project
-            </DropdownMenuRadioItem>
+            {agents.map((agent) => (
+              <DropdownMenuRadioItem key={agent.id} value={`agent:${agent.id}`}>
+                <HugeiconsIcon
+                  icon={UserIcon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                {agent.name}
+              </DropdownMenuRadioItem>
+            ))}
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -729,10 +736,14 @@ export function MemoriesPage(): ReactElement {
     getSelectedCategory(categories, selectedCategory)?.name ?? null
   const visibleMemories = memories.filter((memory) => {
     const categoryName = categoryNameMap.get(memory.category) ?? memory.category
-    return (
-      (scopeFilter === "all" || memory.scope === scopeFilter) &&
-      memoryMatchesSearch(memory, categoryName, searchQuery)
-    )
+    const matchesScope =
+      scopeFilter === "all" ||
+      (scopeFilter === "global" && memory.scope === "global") ||
+      (scopeFilter.startsWith("agent:") &&
+        memory.scope === "agent" &&
+        memory.associatedAgent === scopeFilter.slice("agent:".length))
+
+    return matchesScope && memoryMatchesSearch(memory, categoryName, searchQuery)
   })
 
   function handleSelectCategory(category: SavedMemoryCategoryKey | null): void {
@@ -879,6 +890,7 @@ export function MemoriesPage(): ReactElement {
           selectedCategory={selectedCategory}
           scopeFilter={scopeFilter}
           searchQuery={searchQuery}
+          agents={agents}
           onSelectCategory={handleSelectCategory}
           onSelectScope={setScopeFilter}
           onSearchQueryChange={setSearchQuery}

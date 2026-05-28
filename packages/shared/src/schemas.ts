@@ -471,7 +471,7 @@ export const savedMemoryCategoryNameSchema = z.enum([
 
 export const savedMemoryImportanceSchema = z.enum(["low", "medium", "high"])
 
-export const savedMemoryScopeSchema = z.enum(["global", "project", "agent"])
+export const savedMemoryScopeSchema = z.enum(["global", "agent"])
 
 export const savedMemoryCategorySchema = z.object({
   id: savedMemoryCategoryKeySchema,

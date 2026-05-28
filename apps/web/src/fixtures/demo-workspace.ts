@@ -189,7 +189,7 @@ export const demoWorkspace = workspaceSchema.parse({
       id: "memory-active-work-1",
       content: "User is preparing the Agentis memories foundation milestone.",
       category: "Active Work",
-      scope: "project",
+      scope: "agent",
       importance: "high",
     },
   ],

@@ -8,6 +8,7 @@ import {
   connectIntegrationResponseSchema,
   createAgentRequestSchema,
   createSavedMemoryRequestSchema,
+  savedMemorySchema,
   createThreadRequestSchema,
   integrationToolkitSchema,
   integrationsListResponseSchema,
@@ -655,6 +656,24 @@ describe("shared schemas", () => {
       associatedAgent: "Sales Prospector",
     })
     expect(agentMemoryRequest.associatedAgent).toBe("Sales Prospector")
+    expect(() =>
+      savedMemorySchema.parse({
+        id: "memory-project-scope",
+        content: "Remember project planning notes.",
+        category: "memory_category_project_context",
+        usageGuidance: "Use when planning.",
+        tags: [],
+        importance: "medium",
+        date: "2026-05-28",
+        scope: "project",
+        associatedAgent: null,
+        source: "seeded",
+        provenance: "test fixture",
+        pinnedToContext: false,
+        createdAt: now,
+        updatedAt: now,
+      })
+    ).toThrow()
     expect(() =>
       createSavedMemoryRequestSchema.parse({
         content: "Remember project planning notes.",

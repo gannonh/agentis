@@ -107,7 +107,7 @@ export const memorySchema = z.object({
   id: z.string(),
   content: z.string(),
   category: memoryCategorySchema,
-  scope: z.enum(["global", "project", "agent"]),
+  scope: z.enum(["global", "agent"]),
   importance: z.enum(["low", "medium", "high"]).optional(),
 })
 
