@@ -77,6 +77,55 @@ describe("debug seed routes", () => {
     expect(supportBody.information.library.totalCount).toBeGreaterThan(0)
   })
 
+  it("seeds a rich workspace version with no connected integrations", async () => {
+    ctx = createTestContext()
+    const app = createDebugSeedTestApp(ctx)
+
+    const response = await app.request(
+      "/api/debug/datasets/rich-agent-workspace-no-integrations",
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      dataset: { id: string; name: string }
+      counts: Record<string, number>
+    }
+    expect(body.dataset).toMatchObject({
+      id: "rich-agent-workspace-no-integrations",
+      name: "Rich agent workspace, no integrations",
+    })
+    expect(body.counts).toMatchObject({
+      agents: 5,
+      projects: 2,
+      threads: 5,
+      artifacts: 6,
+      savedMemories: 8,
+      integrationConnections: 0,
+    })
+    expect(ctx.repos.integrationConnections.listByUserId()).toHaveLength(0)
+    expect(ctx.repos.agents.list().map((agent) => agent.toolGrantCount)).toEqual([
+      0,
+      0,
+      0,
+      0,
+      0,
+    ])
+
+    const integrations = await app.request("/api/integrations")
+    const integrationsBody = (await integrations.json()) as {
+      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+    }
+    expect(integrationsBody.toolkits).toHaveLength(5)
+    expect(
+      integrationsBody.toolkits.every(
+        (toolkit) =>
+          toolkit.status === "not_connected" &&
+          toolkit.connectedAccountCount === 0
+      )
+    ).toBe(true)
+  })
+
   it("deletes only the rich agent workspace scenario data", async () => {
     ctx = createTestContext()
     const unrelated = ctx.repos.agents.create({

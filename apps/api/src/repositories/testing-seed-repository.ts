@@ -17,7 +17,9 @@ import {
 } from "../db/schema.js"
 import { LocalArtifactStorage } from "../artifacts/local-artifact-storage.js"
 
-export type DebugDatasetId = "rich-agent-workspace"
+export type DebugDatasetId =
+  | "rich-agent-workspace"
+  | "rich-agent-workspace-no-integrations"
 
 export type DebugDatasetSummary = {
   id: DebugDatasetId
@@ -45,6 +47,13 @@ const RICH_WORKSPACE: DebugDatasetSummary = {
   name: "Rich agent workspace",
   description:
     "Seeds five pre-built agents with projects, threads, memories, artifacts, and varied tool access for manual and e2e testing.",
+}
+
+const RICH_WORKSPACE_NO_INTEGRATIONS: DebugDatasetSummary = {
+  id: "rich-agent-workspace-no-integrations",
+  name: "Rich agent workspace, no integrations",
+  description:
+    "Seeds the same rich workspace without connected integration accounts or tool grants so real connections can be created through the Integrations UI.",
 }
 
 const now = "2026-05-22T15:30:00.000Z"
@@ -705,7 +714,7 @@ const grantIds = [
   }),
 ]
 
-function countPayload(): DebugSeedCounts {
+function countPayload(includeIntegrations: boolean): DebugSeedCounts {
   return {
     agents: agentDefinitions.length,
     projects: projectRows.length,
@@ -713,8 +722,21 @@ function countPayload(): DebugSeedCounts {
     artifacts: artifactRows.length,
     savedMemories: savedMemoryRows.length,
     projectMemories: projectMemoryRows.length,
-    integrationConnections: connectionRows.length,
+    integrationConnections: includeIntegrations ? connectionRows.length : 0,
   }
+}
+
+function resolveDataset(datasetId: string) {
+  if (datasetId === RICH_WORKSPACE.id) {
+    return { dataset: RICH_WORKSPACE, includeIntegrations: true }
+  }
+  if (datasetId === RICH_WORKSPACE_NO_INTEGRATIONS.id) {
+    return {
+      dataset: RICH_WORKSPACE_NO_INTEGRATIONS,
+      includeIntegrations: false,
+    }
+  }
+  return null
 }
 
 export class TestingSeedRepository {
@@ -724,20 +746,28 @@ export class TestingSeedRepository {
   ) {}
 
   listDatasets(): DebugDatasetSummary[] {
-    return [RICH_WORKSPACE]
+    return [RICH_WORKSPACE, RICH_WORKSPACE_NO_INTEGRATIONS]
   }
 
   seed(datasetId: string): DebugSeedResult | null {
-    if (datasetId !== RICH_WORKSPACE.id) return null
+    const resolved = resolveDataset(datasetId)
+    if (!resolved) return null
     this.deleteRichWorkspace()
-    this.insertRichWorkspace()
-    return { dataset: RICH_WORKSPACE, counts: countPayload() }
+    this.insertRichWorkspace(resolved.includeIntegrations)
+    return {
+      dataset: resolved.dataset,
+      counts: countPayload(resolved.includeIntegrations),
+    }
   }
 
   delete(datasetId: string): DebugSeedResult | null {
-    if (datasetId !== RICH_WORKSPACE.id) return null
+    const resolved = resolveDataset(datasetId)
+    if (!resolved) return null
     this.deleteRichWorkspace()
-    return { dataset: RICH_WORKSPACE, counts: countPayload() }
+    return {
+      dataset: resolved.dataset,
+      counts: countPayload(resolved.includeIntegrations),
+    }
   }
 
   private deleteRichWorkspace() {
@@ -770,7 +800,7 @@ export class TestingSeedRepository {
     })
   }
 
-  private insertRichWorkspace() {
+  private insertRichWorkspace(includeIntegrations: boolean) {
     const storage = this.config ? new LocalArtifactStorage(this.config) : null
     for (const [storageKey, body] of Object.entries(artifactBodies)) {
       storage?.write(storageKey, Buffer.from(body, "utf8"))
@@ -779,14 +809,16 @@ export class TestingSeedRepository {
     this.db.transaction((tx) => {
       tx.insert(projects).values(projectRows).run()
       tx.insert(projectMemories).values(projectMemoryRows).run()
-      tx.insert(integrationConnections)
-        .values(
-          connectionRows.map((connection) => ({
-            ...connection,
-            userId: this.config?.composioUserId ?? connection.userId,
-          }))
-        )
-        .run()
+      if (includeIntegrations) {
+        tx.insert(integrationConnections)
+          .values(
+            connectionRows.map((connection) => ({
+              ...connection,
+              userId: this.config?.composioUserId ?? connection.userId,
+            }))
+          )
+          .run()
+      }
 
       const agentRows = agentDefinitions.map((agent) => ({
         id: agent.id,
@@ -810,38 +842,44 @@ export class TestingSeedRepository {
         systemPrompt: agent.systemPrompt,
         model: agent.model,
         maxCostPerRunUsd: agent.maxCostPerRunUsd,
-        toolGrantsJson: JSON.stringify(agent.grants),
+        toolGrantsJson: JSON.stringify(includeIntegrations ? agent.grants : []),
         createdAt: lastWeek,
       }))
       tx.insert(agentConfigurationVersions).values(versionRows).run()
 
-      const agentGrantRows = agentDefinitions.flatMap((agent) =>
-        agent.grants.map((grant) => ({
-          id: `seed_grant_${agent.id}_${grant.toolkitSlug}`,
-          scopeType: "agent",
-          scopeId: agent.id,
-          toolkitSlug: grant.toolkitSlug,
-          connectionId: grant.connectionId,
-          createdAt: lastWeek,
-        }))
-      )
+      const agentGrantRows = includeIntegrations
+        ? agentDefinitions.flatMap((agent) =>
+            agent.grants.map((grant) => ({
+              id: `seed_grant_${agent.id}_${grant.toolkitSlug}`,
+              scopeType: "agent",
+              scopeId: agent.id,
+              toolkitSlug: grant.toolkitSlug,
+              connectionId: grant.connectionId,
+              createdAt: lastWeek,
+            }))
+          )
+        : []
       if (agentGrantRows.length > 0) {
         tx.insert(toolAccessGrants).values(agentGrantRows).run()
       }
 
       tx.insert(threads).values(threadRows).run()
 
-      const threadGrantRows = threadRows.flatMap((thread) => {
-        const agent = agentDefinitions.find((item) => item.id === thread.agentId)
-        return (agent?.grants ?? []).map((grant) => ({
-          id: `seed_grant_${thread.id}_${grant.toolkitSlug}`,
-          scopeType: "thread",
-          scopeId: thread.id,
-          toolkitSlug: grant.toolkitSlug,
-          connectionId: grant.connectionId,
-          createdAt: thread.createdAt,
-        }))
-      })
+      const threadGrantRows = includeIntegrations
+        ? threadRows.flatMap((thread) => {
+            const agent = agentDefinitions.find(
+              (item) => item.id === thread.agentId
+            )
+            return (agent?.grants ?? []).map((grant) => ({
+              id: `seed_grant_${thread.id}_${grant.toolkitSlug}`,
+              scopeType: "thread",
+              scopeId: thread.id,
+              toolkitSlug: grant.toolkitSlug,
+              connectionId: grant.connectionId,
+              createdAt: thread.createdAt,
+            }))
+          })
+        : []
       if (threadGrantRows.length > 0) {
         tx.insert(toolAccessGrants).values(threadGrantRows).run()
       }
