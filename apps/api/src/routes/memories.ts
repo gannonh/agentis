@@ -1,5 +1,10 @@
 import { Hono } from "hono"
-import { memoriesListResponseSchema, savedMemoryCategoryKeySchema } from "@workspace/shared"
+import {
+  createSavedMemoryRequestSchema,
+  memoriesListResponseSchema,
+  savedMemoryCategoryKeySchema,
+  savedMemorySchema,
+} from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
 
 export function createMemoryRoutes(repos: Repositories): Hono {
@@ -12,6 +17,13 @@ export function createMemoryRoutes(repos: Repositories): Hono {
     )
 
     return c.json(memoriesListResponseSchema.parse(memories))
+  })
+
+  app.post("/", async (c) => {
+    const input = createSavedMemoryRequestSchema.parse(await c.req.json())
+    const memory = repos.savedMemories.create(input)
+
+    return c.json(savedMemorySchema.parse(memory), 201)
   })
 
   return app

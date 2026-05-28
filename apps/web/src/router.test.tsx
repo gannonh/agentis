@@ -19,6 +19,7 @@ const seededMemory: MemoriesListResponse["memories"][number] = {
   associatedAgent: "Senior Reviewer",
   source: "seeded",
   provenance: "mocked seed memory from the M07 planning artifacts",
+  pinnedToContext: false,
   createdAt: "2026-05-27T00:00:00.000Z",
   updatedAt: "2026-05-27T00:00:00.000Z",
 }
@@ -176,6 +177,89 @@ describe("router", () => {
     expect(
       screen.getByRole("button", { name: /People \(0\)/i })
     ).toBeInTheDocument()
+  })
+
+  it("adds a user-generated memory and shows it in the grid", async () => {
+    const user = userEvent.setup()
+    const categories: MemoriesListResponse["categories"] = [
+      {
+        id: "memory_category_preference",
+        name: "Preference",
+        description: "How a user wants agents to work or communicate.",
+        count: 0,
+      },
+    ]
+    const memories: MemoriesListResponse["memories"] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          const body = JSON.parse(String(init.body)) as {
+            content: string
+            category: MemoriesListResponse["categories"][number]["id"]
+            importance: MemoriesListResponse["memories"][number]["importance"]
+            usageGuidance: string
+            tags: string[]
+            scope: MemoriesListResponse["memories"][number]["scope"]
+            pinnedToContext: boolean
+          }
+          const created: MemoriesListResponse["memories"][number] = {
+            id: "memory_user_generated",
+            content: body.content,
+            category: body.category,
+            usageGuidance: body.usageGuidance,
+            tags: body.tags,
+            importance: body.importance,
+            date: "2026-05-28",
+            scope: body.scope,
+            associatedAgent: null,
+            source: "user-generated",
+            provenance: "created manually by user",
+            pinnedToContext: body.pinnedToContext,
+            createdAt: "2026-05-28T00:00:00.000Z",
+            updatedAt: "2026-05-28T00:00:00.000Z",
+          }
+          memories.unshift(created)
+          categories[0] = { ...categories[0], count: categories[0].count + 1 }
+
+          return { ok: true, status: 201, json: async () => created }
+        }
+
+        return { ok: true, json: async () => ({ categories, memories }) }
+      })
+    )
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/memories"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    await user.click(await screen.findByRole("button", { name: "Add Memory" }))
+    expect(
+      screen.getByRole("heading", { name: "Add Memory" })
+    ).toBeInTheDocument()
+
+    await user.type(
+      screen.getByLabelText("Memory Content"),
+      "User prefers TypeScript over JavaScript."
+    )
+    await user.selectOptions(screen.getByLabelText("Category"), "memory_category_preference")
+    await user.selectOptions(screen.getByLabelText("Importance (1-5)"), "high")
+    await user.type(
+      screen.getByLabelText("When to Use (optional)"),
+      "Use when choosing implementation language."
+    )
+    await user.type(screen.getByLabelText(/Tags \(optional\)/), "typescript, preference")
+    await user.selectOptions(screen.getByLabelText("Scope"), "global")
+    await user.click(screen.getByRole("switch", { name: "Pin to Context" }))
+    await user.click(screen.getByRole("button", { name: "Add Memory" }))
+
+    expect(
+      await screen.findByText("User prefers TypeScript over JavaScript.")
+    ).toBeInTheDocument()
+    expect(screen.getAllByText("user-generated").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText("created manually by user")).toBeInTheDocument()
+    expect(screen.getByText("Pinned to context")).toBeInTheDocument()
   })
 
   it("renders not found for unknown paths", async () => {

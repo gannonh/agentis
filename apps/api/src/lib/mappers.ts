@@ -123,6 +123,7 @@ export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
     associatedAgent: row.associatedAgent ?? undefined,
     source: row.source,
     provenance: row.provenance,
+    pinnedToContext: row.pinnedToContext,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

@@ -61,6 +61,9 @@ export const savedMemories = sqliteTable(
     associatedAgent: text("associated_agent"),
     source: text("source").notNull(),
     provenance: text("provenance").notNull(),
+    pinnedToContext: integer("pinned_to_context", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },

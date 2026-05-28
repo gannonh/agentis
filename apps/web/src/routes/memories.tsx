@@ -1,4 +1,4 @@
-import type { ReactElement } from "react"
+import type { FormEvent, ReactElement } from "react"
 import { useEffect, useState } from "react"
 import { Link } from "react-router"
 import {
@@ -21,6 +21,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import type { IconSvgElement } from "@hugeicons/react"
 import type {
+  CreateSavedMemoryRequest,
   MemoriesListResponse,
   SavedMemory,
   SavedMemoryCategory,
@@ -36,6 +37,14 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
@@ -43,17 +52,33 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
 import { Input } from "@workspace/ui/components/input"
+import { Textarea } from "@workspace/ui/components/textarea"
 import { cn } from "@workspace/ui/lib/utils"
 import { EmptyState } from "@/components/shell/empty-state"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
-import { listMemories } from "@/lib/api/memories-client"
+import { createMemory, listMemories } from "@/lib/api/memories-client"
 
 type MemoryScopeFilter = "all" | "global" | "project"
+
+type AddMemoryFormState = CreateSavedMemoryRequest & {
+  tagsText: string
+}
 
 type MemoryCategoryDisplay = {
   icon: IconSvgElement
   tone: string
+}
+
+const DEFAULT_ADD_MEMORY_FORM: AddMemoryFormState = {
+  content: "",
+  category: "memory_category_user_fact",
+  importance: "medium",
+  usageGuidance: "",
+  tags: [],
+  tagsText: "",
+  scope: "global",
+  pinnedToContext: false,
 }
 
 const CATEGORY_DISPLAY: Record<SavedMemoryCategoryKey, MemoryCategoryDisplay> =
@@ -171,6 +196,14 @@ function MemoryCard({ memory, categoryName }: MemoryCardProps): ReactElement {
               </Badge>
               <Badge variant="outline">{memory.importance} importance</Badge>
               <Badge variant="outline">{memory.scope}</Badge>
+              <Badge
+                variant={memory.source === "user-generated" ? "secondary" : "outline"}
+              >
+                {memory.source}
+              </Badge>
+              {memory.pinnedToContext ? (
+                <Badge variant="secondary">Pinned to context</Badge>
+              ) : null}
             </div>
             <CardTitle className="text-base leading-6">
               {memory.content}
@@ -391,6 +424,207 @@ function memoryMatchesSearch(
   ].some((value) => value.toLowerCase().includes(normalizedQuery))
 }
 
+function parseTags(tagsText: string): string[] {
+  return tagsText
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+}
+
+type AddMemoryDialogProps = {
+  open: boolean
+  categories: SavedMemoryCategory[]
+  saving: boolean
+  error: string | null
+  selectedCategory: SavedMemoryCategoryKey | null
+  onOpenChange: (open: boolean) => void
+  onCreate: (input: CreateSavedMemoryRequest) => Promise<void>
+}
+
+function AddMemoryDialog({
+  open,
+  categories,
+  saving,
+  error,
+  selectedCategory,
+  onOpenChange,
+  onCreate,
+}: AddMemoryDialogProps): ReactElement {
+  const [form, setForm] = useState<AddMemoryFormState>({
+    ...DEFAULT_ADD_MEMORY_FORM,
+    category: selectedCategory ?? categories[0]?.id ?? DEFAULT_ADD_MEMORY_FORM.category,
+  })
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault()
+    await onCreate({
+      content: form.content,
+      category: form.category,
+      importance: form.importance,
+      usageGuidance: form.usageGuidance,
+      tags: parseTags(form.tagsText),
+      scope: form.scope,
+      pinnedToContext: form.pinnedToContext,
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <form className="grid gap-4" onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Add Memory</DialogTitle>
+            <DialogDescription>
+              Add something you want the agent to remember.
+            </DialogDescription>
+          </DialogHeader>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Memory Content
+            <Textarea
+              required
+              value={form.content}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, content: event.target.value }))
+              }
+              placeholder="E.g., 'User prefers TypeScript over JavaScript'"
+              className="min-h-24 text-sm"
+            />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-sm font-medium">
+              Category
+              <select
+                className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
+                value={form.category}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    category: event.target.value as SavedMemoryCategoryKey,
+                  }))
+                }
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1.5 text-sm font-medium">
+              Importance (1-5)
+              <select
+                className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
+                value={form.importance}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    importance: event.target.value as SavedMemory["importance"],
+                  }))
+                }
+              >
+                <option value="low">1 low</option>
+                <option value="medium">3 medium</option>
+                <option value="high">5 high</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            When to Use (optional)
+            <Input
+              value={form.usageGuidance}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, usageGuidance: event.target.value }))
+              }
+              placeholder="E.g., 'When researching consumer products'"
+            />
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Tags (optional)
+            <Input
+              value={form.tagsText}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, tagsText: event.target.value }))
+              }
+              placeholder="E.g., preferences, coding, typescript"
+            />
+            <span className="text-xs font-normal text-muted-foreground">
+              Comma-separated tags for better searchability
+            </span>
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Scope
+            <select
+              className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
+              value={form.scope}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  scope: event.target.value as SavedMemory["scope"],
+                }))
+              }
+            >
+              <option value="global">Global</option>
+              <option value="project">Project</option>
+              <option value="agent">Agent</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.pinnedToContext}
+            aria-label="Pin to Context"
+            className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-left"
+            onClick={() =>
+              setForm((current) => ({
+                ...current,
+                pinnedToContext: !current.pinnedToContext,
+              }))
+            }
+          >
+            <span className="grid gap-0.5">
+              <span className="text-sm font-medium">Pin to Context</span>
+              <span className="text-xs text-muted-foreground">
+                Always include in agent's context
+              </span>
+            </span>
+            <span
+              className={cn(
+                "flex h-5 w-9 items-center rounded-full border border-border p-0.5 transition-colors",
+                form.pinnedToContext ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <span
+                className={cn(
+                  "size-4 rounded-full bg-foreground transition-transform",
+                  form.pinnedToContext && "translate-x-4 bg-primary-foreground"
+                )}
+              />
+            </span>
+          </button>
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving || !form.content.trim()}>
+              Add Memory
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function MemoriesPage(): ReactElement {
   const [data, setData] = useState<MemoriesListResponse | null>(null)
   const [selectedCategory, setSelectedCategory] =
@@ -398,6 +632,9 @@ export function MemoriesPage(): ReactElement {
   const [scopeFilter, setScopeFilter] = useState<MemoryScopeFilter>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [showArchived, setShowArchived] = useState(false)
+  const [addMemoryOpen, setAddMemoryOpen] = useState(false)
+  const [savingMemory, setSavingMemory] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -454,6 +691,43 @@ export function MemoriesPage(): ReactElement {
     setError(null)
   }
 
+  async function handleCreateMemory(input: CreateSavedMemoryRequest): Promise<void> {
+    setSavingMemory(true)
+    setCreateError(null)
+
+    try {
+      const created = await createMemory(input)
+      setData((current) => {
+        if (!current) {
+          return current
+        }
+
+        const memoriesForFilter =
+          selectedCategory === null || selectedCategory === created.category
+            ? [created, ...current.memories]
+            : current.memories
+
+        return {
+          categories: current.categories.map((category) =>
+            category.id === created.category
+              ? { ...category, count: category.count + 1 }
+              : category
+          ),
+          memories: memoriesForFilter,
+        }
+      })
+      setAddMemoryOpen(false)
+    } catch (createMemoryError) {
+      setCreateError(
+        createMemoryError instanceof Error
+          ? createMemoryError.message
+          : "Failed to create memory"
+      )
+    } finally {
+      setSavingMemory(false)
+    }
+  }
+
   return (
     <PageLayout className="gap-6">
       <PageHeader
@@ -484,7 +758,7 @@ export function MemoriesPage(): ReactElement {
               />
               Dedupe Memories
             </Button>
-            <Button type="button">
+            <Button type="button" onClick={() => setAddMemoryOpen(true)}>
               <HugeiconsIcon
                 icon={Add01Icon}
                 className="size-3.5"
@@ -525,6 +799,23 @@ export function MemoriesPage(): ReactElement {
           </>
         }
       />
+
+      {addMemoryOpen ? (
+        <AddMemoryDialog
+          open={addMemoryOpen}
+          categories={categories}
+          saving={savingMemory}
+          error={createError}
+          selectedCategory={selectedCategory}
+          onOpenChange={(open) => {
+            setAddMemoryOpen(open)
+            if (!open) {
+              setCreateError(null)
+            }
+          }}
+          onCreate={handleCreateMemory}
+        />
+      ) : null}
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading memories…</p>

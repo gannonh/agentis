@@ -135,6 +135,52 @@ describe("api routes", () => {
     })
   })
 
+  it("creates user-generated saved memories and returns them from the database", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/memories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: "User prefers TypeScript over JavaScript.",
+        category: "memory_category_preference",
+        importance: "high",
+        usageGuidance: "Use when choosing implementation language.",
+        tags: ["typescript", "preference"],
+        scope: "global",
+        pinnedToContext: true,
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const created = (await response.json()) as {
+      id: string
+      source: string
+      provenance: string
+      pinnedToContext: boolean
+    }
+    expect(created.source).toBe("user-generated")
+    expect(created.provenance).toBe("created manually by user")
+    expect(created.pinnedToContext).toBe(true)
+
+    const listResponse = await app.request("/api/memories")
+    const body = (await listResponse.json()) as {
+      categories: { name: string; count: number }[]
+      memories: { id: string; content: string; pinnedToContext: boolean }[]
+    }
+
+    expect(
+      body.memories.find((memory) => memory.id === created.id)
+    ).toMatchObject({
+      content: "User prefers TypeScript over JavaScript.",
+      pinnedToContext: true,
+    })
+    expect(
+      body.categories.find((category) => category.name === "Preference")?.count
+    ).toBeGreaterThanOrEqual(1)
+  })
+
   it("returns saved memories when stored tags JSON is malformed", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)

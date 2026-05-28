@@ -7,6 +7,7 @@ import {
   artifactTypeSchema,
   connectIntegrationResponseSchema,
   createAgentRequestSchema,
+  createSavedMemoryRequestSchema,
   createThreadRequestSchema,
   integrationToolkitSchema,
   integrationsListResponseSchema,
@@ -606,6 +607,17 @@ describe("shared schemas", () => {
       updatedAt: now,
     })
     expect(memory.enabled).toBe(true)
+
+    const createdMemoryRequest = createSavedMemoryRequestSchema.parse({
+      content: "User prefers TypeScript over JavaScript.",
+      category: "memory_category_preference",
+      importance: "high",
+      usageGuidance: "Use when choosing implementation language.",
+      tags: ["typescript", "preference"],
+      scope: "global",
+      pinnedToContext: true,
+    })
+    expect(createdMemoryRequest.pinnedToContext).toBe(true)
 
     const context = projectContextSummarySchema.parse({
       project,

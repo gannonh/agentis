@@ -492,8 +492,20 @@ export const savedMemorySchema = z.object({
   associatedAgent: z.string().nullable().optional(),
   source: z.string(),
   provenance: z.string(),
+  pinnedToContext: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
+})
+
+export const createSavedMemoryRequestSchema = z.object({
+  content: nonEmptyString,
+  category: savedMemoryCategoryKeySchema,
+  importance: savedMemoryImportanceSchema,
+  usageGuidance: z.string().optional().default(""),
+  tags: z.array(nonEmptyString).optional().default([]),
+  scope: savedMemoryScopeSchema,
+  associatedAgent: z.string().optional(),
+  pinnedToContext: z.boolean().optional().default(false),
 })
 
 export const memoriesListResponseSchema = z.object({
@@ -740,6 +752,7 @@ export type SavedMemoryCategoryKey = z.infer<typeof savedMemoryCategoryKeySchema
 export type SavedMemoryCategoryName = z.infer<typeof savedMemoryCategoryNameSchema>
 export type SavedMemoryCategory = z.infer<typeof savedMemoryCategorySchema>
 export type SavedMemory = z.infer<typeof savedMemorySchema>
+export type CreateSavedMemoryRequest = z.infer<typeof createSavedMemoryRequestSchema>
 export type MemoriesListResponse = z.infer<typeof memoriesListResponseSchema>
 export type ProjectContextSummary = z.infer<typeof projectContextSummarySchema>
 export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>
