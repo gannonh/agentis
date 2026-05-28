@@ -37,7 +37,7 @@ export function LearningPage() {
   }, [workspace.learningCandidates])
 
   return (
-    <PageLayout className="gap-6">
+    <PageLayout variant="fixed" className="gap-6">
       <PageHeader title="Learning" />
 
       <LearningBanner />

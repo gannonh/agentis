@@ -15,11 +15,15 @@ afterEach(() => {
 
 describe("LearningPage", () => {
   it("renders learning dashboard aligned with comp", () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <LearningPage />
       </MemoryRouter>
     )
+    const pageLayout = container.firstElementChild
+
+    expect(pageLayout).toHaveClass("mx-auto")
+    expect(pageLayout).toHaveClass("max-w-[974px]")
 
     expect(
       screen.getByRole("heading", { name: "Learning" })
