@@ -21,6 +21,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import type { IconSvgElement } from "@hugeicons/react"
 import type {
+  AgentListItem,
   CreateSavedMemoryRequest,
   MemoriesListResponse,
   SavedMemory,
@@ -58,6 +59,7 @@ import { EmptyState } from "@/components/shell/empty-state"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { createMemory, listMemories } from "@/lib/api/memories-client"
+import { useAgents } from "@/hooks/use-agents"
 
 type MemoryScopeFilter = "all" | "global" | "project"
 
@@ -88,33 +90,17 @@ const DEFAULT_ADD_MEMORY_FORM: AddMemoryFormState = {
   pinnedToContext: false,
 }
 
-const MEMORY_SCOPE_OPTIONS: MemoryScopeOption[] = [
-  { label: "Global (all agents)", value: "global", scope: "global" },
-  {
-    label: "Sales Prospector",
-    value: "Sales Prospector",
-    scope: "agent",
-    associatedAgent: "Sales Prospector",
-  },
-  {
-    label: "Data Analyst",
-    value: "Data Analyst",
-    scope: "agent",
-    associatedAgent: "Data Analyst",
-  },
-  {
-    label: "Developer",
-    value: "Developer",
-    scope: "agent",
-    associatedAgent: "Developer",
-  },
-  {
-    label: "Senior Reviewer",
-    value: "Senior Reviewer",
-    scope: "agent",
-    associatedAgent: "Senior Reviewer",
-  },
-]
+function getMemoryScopeOptions(agents: AgentListItem[]): MemoryScopeOption[] {
+  return [
+    { label: "Global (all agents)", value: "global", scope: "global" },
+    ...agents.map((agent) => ({
+      label: agent.name,
+      value: agent.name,
+      scope: "agent" as const,
+      associatedAgent: agent.name,
+    })),
+  ]
+}
 
 const CATEGORY_DISPLAY: Record<SavedMemoryCategoryKey, MemoryCategoryDisplay> =
   {
@@ -470,11 +456,11 @@ function getMemoryScopeValue(form: AddMemoryFormState): string {
   return form.scope === "global" ? "global" : form.associatedAgent ?? ""
 }
 
-function getMemoryScopeOption(value: string): MemoryScopeOption {
-  return (
-    MEMORY_SCOPE_OPTIONS.find((option) => option.value === value) ??
-    MEMORY_SCOPE_OPTIONS[0]
-  )
+function getMemoryScopeOption(
+  value: string,
+  options: MemoryScopeOption[]
+): MemoryScopeOption {
+  return options.find((option) => option.value === value) ?? options[0]
 }
 
 type AddMemoryDialogProps = {
@@ -483,6 +469,7 @@ type AddMemoryDialogProps = {
   saving: boolean
   error: string | null
   selectedCategory: SavedMemoryCategoryKey | null
+  scopeOptions: MemoryScopeOption[]
   onOpenChange: (open: boolean) => void
   onCreate: (input: CreateSavedMemoryRequest) => Promise<void>
 }
@@ -493,6 +480,7 @@ function AddMemoryDialog({
   saving,
   error,
   selectedCategory,
+  scopeOptions,
   onOpenChange,
   onCreate,
 }: AddMemoryDialogProps): ReactElement {
@@ -611,7 +599,7 @@ function AddMemoryDialog({
               className="h-9 rounded-md border border-input bg-input/20 px-3 text-sm"
               value={getMemoryScopeValue(form)}
               onChange={(event) => {
-                const option = getMemoryScopeOption(event.target.value)
+                const option = getMemoryScopeOption(event.target.value, scopeOptions)
                 setForm((current) => ({
                   ...current,
                   scope: option.scope,
@@ -619,7 +607,7 @@ function AddMemoryDialog({
                 }))
               }}
             >
-              {MEMORY_SCOPE_OPTIONS.map((option) => (
+              {scopeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -678,6 +666,7 @@ function AddMemoryDialog({
 }
 
 export function MemoriesPage(): ReactElement {
+  const { agents } = useAgents()
   const [data, setData] = useState<MemoriesListResponse | null>(null)
   const [selectedCategory, setSelectedCategory] =
     useState<SavedMemoryCategoryKey | null>(null)
@@ -719,6 +708,7 @@ export function MemoriesPage(): ReactElement {
     }
   }, [selectedCategory])
 
+  const scopeOptions = getMemoryScopeOptions(agents)
   const categories = data?.categories ?? []
   const categoryNameMap = getCategoryNameMap(categories)
   const memories = data?.memories ?? []
@@ -859,6 +849,7 @@ export function MemoriesPage(): ReactElement {
           saving={savingMemory}
           error={createError}
           selectedCategory={selectedCategory}
+          scopeOptions={scopeOptions}
           onOpenChange={(open) => {
             setAddMemoryOpen(open)
             if (!open) {

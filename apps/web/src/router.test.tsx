@@ -2,10 +2,29 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { RouterProvider, createMemoryRouter } from "react-router"
 import { afterEach, vi } from "vitest"
-import type { MemoriesListResponse } from "@workspace/shared"
+import type { AgentListItem, MemoriesListResponse } from "@workspace/shared"
 import { router } from "@/router"
 
 const ORIGINAL_TZ = process.env.TZ
+
+const apiAgent: AgentListItem = {
+  id: "agent_api_research",
+  name: "API Research Agent",
+  description: "Created through the API",
+  systemPrompt: "Answer with citations.",
+  model: "gpt-4o-mini",
+  createdAt: "2026-05-28T00:00:00.000Z",
+  updatedAt: "2026-05-28T00:00:00.000Z",
+  currentConfigurationVersion: {
+    id: "agent_version_api_research",
+    agentId: "agent_api_research",
+    version: 1,
+    systemPrompt: "Answer with citations.",
+    model: "gpt-4o-mini",
+    createdAt: "2026-05-28T00:00:00.000Z",
+  },
+  toolGrantCount: 0,
+}
 
 const seededMemory: MemoriesListResponse["memories"][number] = {
   id: "memory_seed_agentis_m07",
@@ -193,6 +212,10 @@ describe("router", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input.toString()
+        if (url.endsWith("/api/agents")) {
+          return { ok: true, json: async () => [apiAgent] }
+        }
         if (init?.method === "POST") {
           const body = JSON.parse(String(init.body)) as {
             content: string
@@ -257,9 +280,12 @@ describe("router", () => {
       screen.getByRole("option", { name: "Global (all agents)" })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole("option", { name: "Sales Prospector" })
+      screen.queryByRole("option", { name: "Sales Prospector" })
+    ).not.toBeInTheDocument()
+    expect(
+      await screen.findByRole("option", { name: "API Research Agent" })
     ).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText("Scope"), "Sales Prospector")
+    await user.selectOptions(screen.getByLabelText("Scope"), "API Research Agent")
     await user.click(screen.getByRole("switch", { name: "Pin to Context" }))
     await user.click(screen.getByRole("button", { name: "Add Memory" }))
 
@@ -268,7 +294,7 @@ describe("router", () => {
     ).toBeInTheDocument()
     expect(screen.getAllByText("user-generated").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("created manually by user")).toBeInTheDocument()
-    expect(screen.getByText("Sales Prospector")).toBeInTheDocument()
+    expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Pinned to context")).toBeInTheDocument()
   })
 
