@@ -1,4 +1,9 @@
-import type { ProjectContextSummary, Thread } from "@workspace/shared"
+import type {
+  AgentMemorySummary,
+  ProjectContextSummary,
+  SavedMemory,
+  Thread,
+} from "@workspace/shared"
 
 export type RunPromptSection = {
   title: string
@@ -46,6 +51,55 @@ export function buildSourceWorkflowContribution(
         sourceThreadTitle: thread.sourceThread?.title,
         summary: thread.sourceWorkflow.summary,
         firstUserPrompt: thread.sourceWorkflow.firstUserPrompt,
+      },
+    },
+  }
+}
+
+function formatMemory(memory: SavedMemory, index: number): string {
+  const guidance = memory.usageGuidance.trim()
+  const parts = [
+    `${index + 1}. ${memory.content}`,
+    `category: ${memory.category}`,
+    `importance: ${memory.importance}`,
+    guidance ? `usage: ${guidance}` : null,
+  ].filter((part): part is string => Boolean(part))
+  return parts.join(" | ")
+}
+
+function formatAgentMemoriesBlock(memories: AgentMemorySummary): string {
+  const lines: string[] = []
+  if (memories.agent.length > 0) {
+    lines.push(
+      "### Agent memories",
+      ...memories.agent.map((memory, index) => formatMemory(memory, index))
+    )
+  }
+  if (memories.global.length > 0) {
+    lines.push(
+      "### Global memories",
+      ...memories.global.map((memory, index) => formatMemory(memory, index))
+    )
+  }
+  return lines.join("\n")
+}
+
+export function buildAgentMemoriesContribution(
+  memories: AgentMemorySummary | null
+): RunContextContribution | null {
+  if (!memories) return null
+  if (memories.agent.length === 0 && memories.global.length === 0) return null
+
+  return {
+    promptSection: {
+      title: "Agent memories",
+      body: formatAgentMemoriesBlock(memories),
+    },
+    step: {
+      title: "Agent memories loaded",
+      payload: {
+        agentMemoryCount: memories.agent.length,
+        globalMemoryCount: memories.global.length,
       },
     },
   }

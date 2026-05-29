@@ -471,7 +471,12 @@ export const savedMemoryCategoryNameSchema = z.enum([
 
 export const savedMemoryImportanceSchema = z.enum(["low", "medium", "high"])
 
-export const savedMemoryScopeSchema = z.enum(["global", "project", "agent"])
+export const savedMemoryScopeSchema = z.enum(["global", "agent"])
+
+export const savedMemorySourceSchema = z.enum([
+  "thread-derived",
+  "user-generated",
+])
 
 export const savedMemoryCategorySchema = z.object({
   id: savedMemoryCategoryKeySchema,
@@ -480,21 +485,63 @@ export const savedMemoryCategorySchema = z.object({
   count: z.number().int().nonnegative(),
 })
 
-export const savedMemorySchema = z.object({
-  id: z.string(),
-  content: z.string(),
+export const savedMemorySchema = z
+  .object({
+    id: z.string(),
+    content: z.string(),
+    category: savedMemoryCategoryKeySchema,
+    usageGuidance: z.string(),
+    tags: z.array(z.string()),
+    importance: savedMemoryImportanceSchema,
+    date: z.string(),
+    scope: savedMemoryScopeSchema,
+    associatedAgent: z.string().nullable().optional(),
+    associatedAgents: z.array(z.string()).optional().default([]),
+    source: savedMemorySourceSchema,
+    sourceThreadId: z.string().nullable().optional(),
+    sourceThreadTitle: z.string().nullable().optional(),
+    provenance: z.string(),
+    pinnedToContext: z.boolean().default(false),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .superRefine((memory, ctx) => {
+    if (
+      memory.source === "thread-derived" &&
+      (!memory.sourceThreadId || !memory.sourceThreadTitle)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Thread-derived memories require source thread lineage",
+        path: ["sourceThreadId"],
+      })
+    }
+
+    if (
+      memory.source === "user-generated" &&
+      (memory.sourceThreadId || memory.sourceThreadTitle)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "User-generated memories cannot include source thread lineage",
+        path: ["sourceThreadId"],
+      })
+    }
+  })
+
+export const createSavedMemoryRequestSchema = z.object({
+  content: nonEmptyString,
   category: savedMemoryCategoryKeySchema,
-  usageGuidance: z.string(),
-  tags: z.array(z.string()),
   importance: savedMemoryImportanceSchema,
-  date: z.string(),
-  scope: savedMemoryScopeSchema,
-  associatedAgent: z.string().nullable().optional(),
-  source: z.string(),
-  provenance: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+  usageGuidance: z.string().optional().default(""),
+  tags: z.array(nonEmptyString).optional().default([]),
+  scope: z.enum(["global", "agent"]),
+  associatedAgent: z.string().optional(),
+  associatedAgents: z.array(nonEmptyString).optional(),
+  pinnedToContext: z.boolean().optional().default(false),
 })
+
+export const updateSavedMemoryRequestSchema = createSavedMemoryRequestSchema.partial()
 
 export const memoriesListResponseSchema = z.object({
   categories: z.array(savedMemoryCategorySchema),
@@ -607,9 +654,15 @@ export const agentLibrarySummarySchema = z.object({
   totalCount: nonNegativeInteger,
 })
 
+export const agentMemorySummarySchema = z.object({
+  agent: z.array(savedMemorySchema),
+  global: z.array(savedMemorySchema),
+})
+
 export const agentDetailInformationSchema = z.object({
   recentThreads: z.array(agentRecentThreadSummarySchema),
   library: agentLibrarySummarySchema,
+  memories: agentMemorySummarySchema.default({ agent: [], global: [] }),
 })
 
 export const agentDetailResponseSchema = z.object({
@@ -722,6 +775,7 @@ export type AgentRecentThreadSummary = z.infer<
   typeof agentRecentThreadSummarySchema
 >
 export type AgentLibrarySummary = z.infer<typeof agentLibrarySummarySchema>
+export type AgentMemorySummary = z.infer<typeof agentMemorySummarySchema>
 export type AgentDetailInformation = z.infer<
   typeof agentDetailInformationSchema
 >
@@ -739,7 +793,10 @@ export type ProjectMemory = z.infer<typeof projectMemorySchema>
 export type SavedMemoryCategoryKey = z.infer<typeof savedMemoryCategoryKeySchema>
 export type SavedMemoryCategoryName = z.infer<typeof savedMemoryCategoryNameSchema>
 export type SavedMemoryCategory = z.infer<typeof savedMemoryCategorySchema>
+export type SavedMemorySource = z.infer<typeof savedMemorySourceSchema>
 export type SavedMemory = z.infer<typeof savedMemorySchema>
+export type CreateSavedMemoryRequest = z.infer<typeof createSavedMemoryRequestSchema>
+export type UpdateSavedMemoryRequest = z.infer<typeof updateSavedMemoryRequestSchema>
 export type MemoriesListResponse = z.infer<typeof memoriesListResponseSchema>
 export type ProjectContextSummary = z.infer<typeof projectContextSummarySchema>
 export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>

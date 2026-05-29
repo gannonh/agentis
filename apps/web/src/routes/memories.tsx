@@ -1,154 +1,57 @@
 import type { ReactElement } from "react"
 import { useEffect, useState } from "react"
+import { Link } from "react-router"
+import {
+  Add01Icon,
+  ArchiveIcon,
+  ArrowLeft01Icon,
+  Copy01Icon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import type {
+  CreateSavedMemoryRequest,
   MemoriesListResponse,
   SavedMemory,
-  SavedMemoryCategory,
   SavedMemoryCategoryKey,
+  UpdateSavedMemoryRequest,
 } from "@workspace/shared"
-import { Badge } from "@workspace/ui/components/badge"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
+  AddMemoryDialog,
+  EditMemoryDialog,
+} from "@/components/memories/memory-dialogs"
+import { MemoryCard } from "@/components/memories/memory-card"
+import { MemoryFilters } from "@/components/memories/memory-filters"
+import {
+  getCategoryNameMap,
+  getSelectedCategory,
+  memoryMatchesScopeFilter,
+  memoryMatchesSearch,
+} from "@/components/memories/memory-filter-utils"
+import type { MemoryScopeFilter } from "@/components/memories/memory-filter-utils"
+import { getMemoryScopeOptions } from "@/components/memories/memory-scope-options"
 import { EmptyState } from "@/components/shell/empty-state"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
-import { listMemories } from "@/lib/api/memories-client"
-
-function formatMemoryDate(date: string): string {
-  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
-  const value = dateOnly
-    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
-    : new Date(date)
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(value)
-}
-
-type MemoryCardProps = {
-  memory: SavedMemory
-  categoryName: string
-}
-
-function MemoryCard({ memory, categoryName }: MemoryCardProps): ReactElement {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{categoryName}</Badge>
-          <Badge variant="outline">{memory.importance} importance</Badge>
-          <Badge variant="outline">{memory.scope}</Badge>
-        </div>
-        <CardTitle className="text-base leading-6">{memory.content}</CardTitle>
-        <CardDescription>{memory.usageGuidance}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3 text-sm">
-        <div className="flex flex-wrap gap-2">
-          {memory.tags.map((tag) => (
-            <Badge key={tag} variant="outline">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-        <dl className="grid gap-2 sm:grid-cols-2">
-          <div>
-            <dt className="text-muted-foreground text-xs">Date</dt>
-            <dd>{formatMemoryDate(memory.date)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground text-xs">Source</dt>
-            <dd>{memory.source}</dd>
-          </div>
-          {memory.associatedAgent ? (
-            <div>
-              <dt className="text-muted-foreground text-xs">Associated agent</dt>
-              <dd>{memory.associatedAgent}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt className="text-muted-foreground text-xs">Provenance</dt>
-            <dd>{memory.provenance}</dd>
-          </div>
-        </dl>
-      </CardContent>
-    </Card>
-  )
-}
-
-type CategorySummaryProps = {
-  categories: SavedMemoryCategory[]
-  selectedCategory: SavedMemoryCategoryKey | null
-  onSelectCategory: (category: SavedMemoryCategoryKey | null) => void
-}
-
-function CategorySummary({
-  categories,
-  selectedCategory,
-  onSelectCategory,
-}: CategorySummaryProps): ReactElement {
-  const totalSaved = categories.reduce((total, category) => total + category.count, 0)
-
-  return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Memory categories">
-      <Button
-        variant={selectedCategory === null ? "default" : "outline"}
-        className="h-auto justify-start p-0 text-left"
-        onClick={() => onSelectCategory(null)}
-      >
-        <Card className="w-full border-0 bg-transparent shadow-none">
-          <CardHeader className="gap-1">
-            <CardTitle className="text-sm">All categories</CardTitle>
-            <CardDescription>{totalSaved} saved</CardDescription>
-          </CardHeader>
-        </Card>
-      </Button>
-      {categories.map((category) => (
-        <Button
-          key={category.id}
-          variant={selectedCategory === category.id ? "default" : "outline"}
-          className="h-auto justify-start p-0 text-left"
-          onClick={() => onSelectCategory(category.id)}
-        >
-          <Card className="w-full border-0 bg-transparent shadow-none">
-            <CardHeader className="gap-1">
-              <CardTitle className="text-sm">{category.name}</CardTitle>
-              <CardDescription>{category.count} saved</CardDescription>
-            </CardHeader>
-          </Card>
-        </Button>
-      ))}
-    </section>
-  )
-}
-
-function getCategoryNameMap(categories: SavedMemoryCategory[]): Map<SavedMemoryCategoryKey, string> {
-  return new Map(categories.map((category) => [category.id, category.name]))
-}
-
-function getSelectedCategoryName(
-  categories: SavedMemoryCategory[],
-  selectedCategory: SavedMemoryCategoryKey | null
-): string | null {
-  if (selectedCategory === null) {
-    return null
-  }
-
-  const category = categories.find((item) => item.id === selectedCategory)
-  return category?.name ?? null
-}
+import { useAgents } from "@/hooks/use-agents"
+import {
+  createMemory,
+  listMemories,
+  updateMemory,
+} from "@/lib/api/memories-client"
 
 export function MemoriesPage(): ReactElement {
+  const { agents } = useAgents()
   const [data, setData] = useState<MemoriesListResponse | null>(null)
   const [selectedCategory, setSelectedCategory] =
     useState<SavedMemoryCategoryKey | null>(null)
+  const [scopeFilter, setScopeFilter] = useState<MemoryScopeFilter>("all")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [addMemoryOpen, setAddMemoryOpen] = useState(false)
+  const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
+  const [savingMemory, setSavingMemory] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -164,7 +67,9 @@ export function MemoriesPage(): ReactElement {
       .catch((loadError) => {
         if (active) {
           setError(
-            loadError instanceof Error ? loadError.message : "Failed to load memories"
+            loadError instanceof Error
+              ? loadError.message
+              : "Failed to load memories"
           )
         }
       })
@@ -179,47 +84,267 @@ export function MemoriesPage(): ReactElement {
     }
   }, [selectedCategory])
 
+  const scopeOptions = getMemoryScopeOptions(agents)
+  const agentNameById = new Map(agents.map((agent) => [agent.id, agent.name]))
   const categories = data?.categories ?? []
   const categoryNameMap = getCategoryNameMap(categories)
   const memories = data?.memories ?? []
-  const selectedCategoryName = getSelectedCategoryName(categories, selectedCategory)
+  const totalSaved = categories.reduce(
+    (total, category) => total + category.count,
+    0
+  )
+  const selectedCategoryName =
+    getSelectedCategory(categories, selectedCategory)?.name ?? null
+  const visibleMemories = memories.filter((memory) => {
+    const categoryName = categoryNameMap.get(memory.category) ?? memory.category
+    return (
+      memoryMatchesScopeFilter(memory, scopeFilter) &&
+      memoryMatchesSearch(memory, categoryName, searchQuery)
+    )
+  })
 
   function handleSelectCategory(category: SavedMemoryCategoryKey | null): void {
     setSelectedCategory(category)
-    setData((current) => current ? { ...current, memories: [] } : null)
+    setData((current) => (current ? { ...current, memories: [] } : null))
     setLoading(true)
     setError(null)
+  }
+
+  async function handleCreateMemory(
+    input: CreateSavedMemoryRequest
+  ): Promise<void> {
+    setSavingMemory(true)
+    setCreateError(null)
+
+    try {
+      const created = await createMemory(input)
+      setData((current) => {
+        if (!current) {
+          return current
+        }
+
+        const memoriesForFilter =
+          selectedCategory === null || selectedCategory === created.category
+            ? [created, ...current.memories]
+            : current.memories
+
+        return {
+          categories: current.categories.map((category) =>
+            category.id === created.category
+              ? { ...category, count: category.count + 1 }
+              : category
+          ),
+          memories: memoriesForFilter,
+        }
+      })
+      setAddMemoryOpen(false)
+    } catch (createMemoryError) {
+      setCreateError(
+        createMemoryError instanceof Error
+          ? createMemoryError.message
+          : "Failed to create memory"
+      )
+    } finally {
+      setSavingMemory(false)
+    }
+  }
+
+  async function handleUpdateMemory(
+    memoryId: string,
+    input: UpdateSavedMemoryRequest
+  ): Promise<void> {
+    setSavingMemory(true)
+    setEditError(null)
+
+    try {
+      const updated = await updateMemory(memoryId, input)
+      setData((current) => {
+        if (!current) return current
+        const previous = current.memories.find(
+          (memory) => memory.id === updated.id
+        )
+        const categoryChanged =
+          previous != null && previous.category !== updated.category
+        const memories = current.memories
+          .map((memory) => (memory.id === updated.id ? updated : memory))
+          .filter(
+            (memory) =>
+              selectedCategory === null || memory.category === selectedCategory
+          )
+
+        return {
+          ...current,
+          categories: categoryChanged
+            ? current.categories.map((category) => {
+                if (category.id === previous.category) {
+                  return { ...category, count: Math.max(0, category.count - 1) }
+                }
+                if (category.id === updated.category) {
+                  return { ...category, count: category.count + 1 }
+                }
+                return category
+              })
+            : current.categories,
+          memories,
+        }
+      })
+      setEditingMemory(null)
+    } catch (updateMemoryError) {
+      setEditError(
+        updateMemoryError instanceof Error
+          ? updateMemoryError.message
+          : "Failed to update memory"
+      )
+    } finally {
+      setSavingMemory(false)
+    }
   }
 
   return (
     <PageLayout className="gap-6">
       <PageHeader
         title="Memories"
-        description="Browse saved context that agents can reuse across work. Seeded memories are labeled with their source and provenance."
+        description={`Browse saved context that agents can reuse across work. ${totalSaved} memories stored.`}
+        leading={
+          <Link
+            to="/learning"
+            aria-label="Back to Learning"
+            className={buttonVariants({ variant: "outline", size: "icon-lg" })}
+          >
+            <HugeiconsIcon
+              icon={ArrowLeft01Icon}
+              className="size-4"
+              strokeWidth={2}
+              aria-hidden
+            />
+          </Link>
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              type="button"
+              disabled
+              title="Memory deduplication is not implemented yet."
+            >
+              <HugeiconsIcon
+                icon={Copy01Icon}
+                className="size-3.5"
+                strokeWidth={2}
+                aria-hidden
+              />
+              Dedupe Memories
+            </Button>
+            <Button type="button" onClick={() => setAddMemoryOpen(true)}>
+              <HugeiconsIcon
+                icon={Add01Icon}
+                className="size-3.5"
+                strokeWidth={2}
+                aria-hidden
+              />
+              Add Memory
+            </Button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={false}
+              aria-label="Show archived"
+              className="flex items-center gap-2 text-sm text-muted-foreground opacity-50"
+              disabled
+              title="Archived memories are not implemented yet."
+            >
+              <span className="flex h-5 w-9 items-center rounded-full border border-border bg-muted p-0.5 transition-colors">
+                <span className="size-4 rounded-full bg-foreground transition-transform" />
+              </span>
+              <HugeiconsIcon
+                icon={ArchiveIcon}
+                className="size-3.5"
+                strokeWidth={2}
+                aria-hidden
+              />
+              Show archived
+            </button>
+          </>
+        }
       />
 
-      {loading ? <p className="text-muted-foreground text-sm">Loading memories…</p> : null}
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
-      {data ? (
-        <CategorySummary
+      {addMemoryOpen ? (
+        <AddMemoryDialog
+          open={addMemoryOpen}
           categories={categories}
+          saving={savingMemory}
+          error={createError}
           selectedCategory={selectedCategory}
-          onSelectCategory={handleSelectCategory}
+          scopeOptions={scopeOptions}
+          onOpenChange={(open) => {
+            setAddMemoryOpen(open)
+            if (!open) {
+              setCreateError(null)
+            }
+          }}
+          onCreate={handleCreateMemory}
         />
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-2" aria-label="Saved memories">
-        {memories.length === 0 && !loading ? (
+      {editingMemory ? (
+        <EditMemoryDialog
+          key={editingMemory.id}
+          memory={editingMemory}
+          open={Boolean(editingMemory)}
+          categories={categories}
+          saving={savingMemory}
+          error={editError}
+          scopeOptions={scopeOptions}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingMemory(null)
+              setEditError(null)
+            }
+          }}
+          onUpdate={handleUpdateMemory}
+        />
+      ) : null}
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading memories…</p>
+      ) : null}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {data ? (
+        <MemoryFilters
+          categories={categories}
+          selectedCategory={selectedCategory}
+          scopeFilter={scopeFilter}
+          searchQuery={searchQuery}
+          agents={agents}
+          onSelectCategory={handleSelectCategory}
+          onSelectScope={setScopeFilter}
+          onSearchQueryChange={setSearchQuery}
+        />
+      ) : null}
+
+      <section
+        className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3"
+        aria-label="Saved memories"
+      >
+        {visibleMemories.length === 0 && !loading ? (
           <EmptyState
-            title={selectedCategoryName ? `No memories in ${selectedCategoryName}` : "No saved memories"}
+            title={
+              selectedCategoryName
+                ? `No memories in ${selectedCategoryName}`
+                : "No saved memories"
+            }
             description="Saved memories will appear here after agents or users add reusable context."
           />
         ) : (
-          memories.map((memory) => (
+          visibleMemories.map((memory) => (
             <MemoryCard
               key={memory.id}
               memory={memory}
-              categoryName={categoryNameMap.get(memory.category) ?? memory.category}
+              categoryName={
+                categoryNameMap.get(memory.category) ?? memory.category
+              }
+              agentNameById={agentNameById}
+              onEdit={setEditingMemory}
             />
           ))
         )}

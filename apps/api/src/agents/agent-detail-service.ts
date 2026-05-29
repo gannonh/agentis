@@ -29,6 +29,8 @@ export function buildAgentDetail(
     artifactCount: artifactCounts.get(thread.id) ?? 0,
   }))
 
+  const memories = repos.savedMemories.listForAgent(agentId)
+
   return agentDetailResponseSchema.parse({
     agent,
     configurationVersions: repos.agents.listConfigurationVersions(agentId),
@@ -36,6 +38,7 @@ export function buildAgentDetail(
     information: {
       recentThreads,
       library: { items: libraryItems, totalCount: libraryItems.length },
+      memories,
     },
   })
 }

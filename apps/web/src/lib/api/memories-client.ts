@@ -1,8 +1,14 @@
 import {
+  createSavedMemoryRequestSchema,
   memoriesListResponseSchema,
   savedMemoryCategoryKeySchema,
+  savedMemorySchema,
+  updateSavedMemoryRequestSchema,
+  type CreateSavedMemoryRequest,
   type MemoriesListResponse,
+  type SavedMemory,
   type SavedMemoryCategoryKey,
+  type UpdateSavedMemoryRequest,
 } from "@workspace/shared"
 import { ApiError } from "./client"
 
@@ -21,13 +27,19 @@ function getErrorMessage(data: unknown, fallback: string): string {
   return fallback
 }
 
-async function parseJson(response: Response): Promise<MemoriesListResponse> {
-  const data = await response.json()
+async function parseJson<T>(
+  response: Response,
+  schema: { parse: (data: unknown) => T }
+): Promise<T> {
+  const data = await response.json().catch(() => undefined)
   if (!response.ok) {
-    throw new ApiError(getErrorMessage(data, response.statusText), response.status)
+    throw new ApiError(
+      getErrorMessage(data, response.statusText),
+      response.status
+    )
   }
 
-  return memoriesListResponseSchema.parse(data)
+  return schema.parse(data)
 }
 
 export async function listMemories(
@@ -37,5 +49,31 @@ export async function listMemories(
     ? `?category=${encodeURIComponent(savedMemoryCategoryKeySchema.parse(category))}`
     : ""
   const response = await fetch(`${API_BASE}/api/memories${query}`)
-  return parseJson(response)
+  return parseJson(response, memoriesListResponseSchema)
+}
+
+export async function createMemory(
+  input: CreateSavedMemoryRequest
+): Promise<SavedMemory> {
+  const response = await fetch(`${API_BASE}/api/memories`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(createSavedMemoryRequestSchema.parse(input)),
+  })
+  return parseJson(response, savedMemorySchema)
+}
+
+export async function updateMemory(
+  memoryId: string,
+  input: UpdateSavedMemoryRequest
+): Promise<SavedMemory> {
+  const response = await fetch(
+    `${API_BASE}/api/memories/${encodeURIComponent(memoryId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateSavedMemoryRequestSchema.parse(input)),
+    }
+  )
+  return parseJson(response, savedMemorySchema)
 }

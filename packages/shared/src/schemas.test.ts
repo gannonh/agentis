@@ -7,6 +7,8 @@ import {
   artifactTypeSchema,
   connectIntegrationResponseSchema,
   createAgentRequestSchema,
+  createSavedMemoryRequestSchema,
+  savedMemorySchema,
   createThreadRequestSchema,
   integrationToolkitSchema,
   integrationsListResponseSchema,
@@ -130,6 +132,7 @@ describe("shared schemas", () => {
       information: {
         recentThreads: [],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       },
     }).agent.currentConfigurationVersion
 
@@ -448,6 +451,7 @@ describe("shared schemas", () => {
       information: {
         recentThreads: [],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       },
     })
     expect(detail.agent.id).toBe("agent-1")
@@ -458,8 +462,10 @@ describe("shared schemas", () => {
     const empty = agentDetailInformationSchema.parse({
       recentThreads: [],
       library: { items: [], totalCount: 0 },
+      memories: { agent: [], global: [] },
     })
     expect(empty.library.items).toHaveLength(0)
+    expect(empty.memories.global).toHaveLength(0)
 
     const populated = agentDetailInformationSchema.parse({
       recentThreads: [
@@ -500,6 +506,27 @@ describe("shared schemas", () => {
           },
         ],
       },
+      memories: {
+        agent: [
+          {
+            id: "memory-agent-1",
+            content: "Use source quality notes in every brief.",
+            category: "memory_category_tools_workflows",
+            usageGuidance: "Use in research briefs.",
+            tags: ["research"],
+            importance: "high",
+            date: "2026-05-28",
+            scope: "agent",
+            associatedAgent: "agent-1",
+            source: "user-generated",
+            provenance: "created manually by user",
+            pinnedToContext: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+        global: [],
+      },
     })
     expect(populated.recentThreads[0]?.agentConfigurationVersionId).toBe(
       "agent-version-1"
@@ -509,12 +536,14 @@ describe("shared schemas", () => {
       agentDetailInformationSchema.parse({
         recentThreads: [{ ...populated.recentThreads[0], artifactCount: -1 }],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       })
     ).toThrow()
     expect(() =>
       agentDetailInformationSchema.parse({
         recentThreads: [{ ...populated.recentThreads[0], artifactCount: 1.5 }],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       })
     ).toThrow()
     expect(() =>
@@ -531,6 +560,7 @@ describe("shared schemas", () => {
           },
         ],
         library: { items: [], totalCount: 0 },
+        memories: { agent: [], global: [] },
       })
     ).toThrow()
   })
@@ -606,6 +636,104 @@ describe("shared schemas", () => {
       updatedAt: now,
     })
     expect(memory.enabled).toBe(true)
+
+    const createdMemoryRequest = createSavedMemoryRequestSchema.parse({
+      content: "User prefers TypeScript over JavaScript.",
+      category: "memory_category_preference",
+      importance: "high",
+      usageGuidance: "Use when choosing implementation language.",
+      tags: ["typescript", "preference"],
+      scope: "global",
+      pinnedToContext: true,
+    })
+    expect(createdMemoryRequest.pinnedToContext).toBe(true)
+
+    const agentMemoryRequest = createSavedMemoryRequestSchema.parse({
+      content: "Remember the sales prospecting workflow.",
+      category: "memory_category_tools_workflows",
+      importance: "medium",
+      scope: "agent",
+      associatedAgents: ["Sales Prospector", "Research Agent"],
+    })
+    expect(agentMemoryRequest.associatedAgents).toEqual([
+      "Sales Prospector",
+      "Research Agent",
+    ])
+
+    const threadDerivedMemory = savedMemorySchema.parse({
+      id: "memory-thread-derived",
+      content: "Launch readiness updates should call out blockers directly.",
+      category: "memory_category_preference",
+      usageGuidance: "Use when drafting launch updates.",
+      tags: ["launch", "blockers"],
+      importance: "high",
+      date: "2026-05-28",
+      scope: "agent",
+      associatedAgent: "agent-launch-pm",
+      associatedAgents: ["agent-launch-pm", "agent-support"],
+      source: "thread-derived",
+      sourceThreadId: "thread-launch-plan",
+      sourceThreadTitle: "Launch readiness weekly update",
+      provenance: "Launch readiness weekly update",
+      pinnedToContext: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+    expect(threadDerivedMemory.sourceThreadId).toBe("thread-launch-plan")
+    expect(threadDerivedMemory.associatedAgents).toEqual([
+      "agent-launch-pm",
+      "agent-support",
+    ])
+
+    expect(() =>
+      savedMemorySchema.parse({
+        ...threadDerivedMemory,
+        id: "memory-invalid-source",
+        source: "seeded",
+      })
+    ).toThrow()
+    expect(() =>
+      savedMemorySchema.parse({
+        ...threadDerivedMemory,
+        id: "memory-missing-thread-lineage",
+        sourceThreadId: undefined,
+        sourceThreadTitle: undefined,
+      })
+    ).toThrow()
+    expect(() =>
+      savedMemorySchema.parse({
+        ...threadDerivedMemory,
+        id: "memory-user-with-thread-lineage",
+        source: "user-generated",
+      })
+    ).toThrow()
+
+    expect(() =>
+      savedMemorySchema.parse({
+        id: "memory-project-scope",
+        content: "Remember project planning notes.",
+        category: "memory_category_project_context",
+        usageGuidance: "Use when planning.",
+        tags: [],
+        importance: "medium",
+        date: "2026-05-28",
+        scope: "project",
+        associatedAgent: null,
+        source: "seeded",
+        provenance: "test fixture",
+        pinnedToContext: false,
+        createdAt: now,
+        updatedAt: now,
+      })
+    ).toThrow()
+    expect(() =>
+      createSavedMemoryRequestSchema.parse({
+        content: "Remember project planning notes.",
+        category: "memory_category_project_context",
+        importance: "medium",
+        scope: "project",
+      })
+    ).toThrow()
 
     const context = projectContextSummarySchema.parse({
       project,

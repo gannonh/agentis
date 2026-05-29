@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link, NavLink, useLocation, useMatch, useSearchParams } from "react-router"
+import {
+  Link,
+  NavLink,
+  useLocation,
+  useMatch,
+  useSearchParams,
+} from "react-router"
 import type { Project, ThreadListItem } from "@workspace/shared"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -13,10 +19,7 @@ import {
   SparklesIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons"
-import {
-  Avatar,
-  AvatarFallback,
-} from "@workspace/ui/components/avatar"
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
 import {
   Collapsible,
   CollapsibleContent,
@@ -50,12 +53,17 @@ const agentIcons = {
 
 function agentNavIcon(icon?: string) {
   const Icon =
-    icon && icon in agentIcons ? agentIcons[icon as keyof typeof agentIcons] : Search01Icon
+    icon && icon in agentIcons
+      ? agentIcons[icon as keyof typeof agentIcons]
+      : Search01Icon
   return <HugeiconsIcon icon={Icon} strokeWidth={2} />
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(isActive && "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground")
+  cn(
+    isActive &&
+      "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground"
+  )
 
 function useActiveProjectId(threads: ThreadListItem[]) {
   const projectMatch = useMatch({ path: "/projects/:projectId", end: false })
@@ -75,7 +83,12 @@ function useActiveProjectId(threads: ThreadListItem[]) {
     }
 
     return null
-  }, [projectMatch?.params.projectId, searchParams, threadMatch?.params.threadId, threads])
+  }, [
+    projectMatch?.params.projectId,
+    searchParams,
+    threadMatch?.params.threadId,
+    threads,
+  ])
 }
 
 function ProjectSidebarItem({
@@ -95,7 +108,11 @@ function ProjectSidebarItem({
           <NavLink to={`/projects/${project.id}`} className={navLinkClass} />
         }
       >
-        <HugeiconsIcon icon={Folder01Icon} className="size-4 shrink-0" strokeWidth={2} />
+        <HugeiconsIcon
+          icon={Folder01Icon}
+          className="size-4 shrink-0"
+          strokeWidth={2}
+        />
         <span className="truncate">{project.name}</span>
       </SidebarMenuButton>
       <SidebarMenuBadge>{threadCount}</SidebarMenuBadge>
@@ -171,7 +188,7 @@ export function AppSidebar() {
               className="font-medium"
               render={<NavLink to="/threads/new" />}
             >
-              <span className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold">
+              <span className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
                 A
               </span>
               <span>Agentis</span>
@@ -216,9 +233,13 @@ export function AppSidebar() {
               <Link
                 to="/agents/new"
                 aria-label="New agent"
-                className="text-muted-foreground hover:text-sidebar-foreground flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-sidebar-accent"
+                className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
               >
-                <HugeiconsIcon icon={Add01Icon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={Add01Icon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
               </Link>
             </SidebarGroupLabel>
             <CollapsibleContent>
@@ -230,13 +251,19 @@ export function AppSidebar() {
                   </SidebarNavItem>
                   {loadingAgents ? (
                     <SidebarMenuItem>
-                      <SidebarMenuButton disabled className="text-muted-foreground h-8">
+                      <SidebarMenuButton
+                        disabled
+                        className="h-8 text-muted-foreground"
+                      >
                         <span className="text-xs">Loading agents…</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ) : agentsError ? (
                     <SidebarMenuItem>
-                      <SidebarMenuButton disabled className="text-muted-foreground h-8">
+                      <SidebarMenuButton
+                        disabled
+                        className="h-8 text-muted-foreground"
+                      >
                         <span className="text-xs">Agents unavailable</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -263,9 +290,13 @@ export function AppSidebar() {
               <Link
                 to="/projects/new"
                 aria-label="New project"
-                className="text-muted-foreground hover:text-sidebar-foreground flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-sidebar-accent"
+                className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
               >
-                <HugeiconsIcon icon={Add01Icon} className="size-3.5" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={Add01Icon}
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
               </Link>
             </SidebarGroupLabel>
             <CollapsibleContent>
@@ -282,10 +313,12 @@ export function AppSidebar() {
                   {projects.length === 0 ? (
                     <SidebarMenuItem>
                       <SidebarMenuButton
-                        className="text-muted-foreground h-8"
+                        className="h-8 text-muted-foreground"
                         render={<NavLink to="/projects/new" />}
                       >
-                        <span className="text-xs">Create your first project</span>
+                        <span className="text-xs">
+                          Create your first project
+                        </span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ) : null}
@@ -301,7 +334,11 @@ export function AppSidebar() {
               render={
                 <CollapsibleTrigger className="flex w-full items-center justify-between">
                   <span>Threads</span>
-                  <HugeiconsIcon icon={Add01Icon} className="size-3.5" strokeWidth={2} />
+                  <HugeiconsIcon
+                    icon={Add01Icon}
+                    className="size-3.5"
+                    strokeWidth={2}
+                  />
                 </CollapsibleTrigger>
               }
             />
@@ -323,20 +360,31 @@ export function AppSidebar() {
             <SidebarMenuButton disabled className="opacity-70">
               <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} aria-hidden />
               <span>Teams</span>
-              <span className="text-muted-foreground sr-only">(coming soon)</span>
+              <span className="sr-only text-muted-foreground">
+                (coming soon)
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton disabled className="opacity-70">
-              <HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} aria-hidden />
+              <HugeiconsIcon
+                icon={HelpCircleIcon}
+                strokeWidth={2}
+                aria-hidden
+              />
               <span>Help</span>
-              <span className="text-muted-foreground sr-only">(coming soon)</span>
+              <span className="sr-only text-muted-foreground">
+                (coming soon)
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default">
+            <SidebarMenuButton
+              size="lg"
+              render={<NavLink to="/debug/seeding" className={navLinkClass} />}
+            >
               <Avatar className="size-8 rounded-lg">
                 <AvatarFallback className="rounded-lg text-xs">
                   {workspace.user.displayName.slice(0, 2).toUpperCase()}
@@ -346,7 +394,7 @@ export function AppSidebar() {
                 <span className="truncate text-xs font-medium">
                   {workspace.user.displayName}
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span className="truncate text-xs text-muted-foreground">
                   {workspace.user.email}
                 </span>
               </div>

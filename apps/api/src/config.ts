@@ -14,9 +14,11 @@ export const DEFAULT_COMPOSIO_TOOLKIT_VERSIONS: Record<string, string> = {
 export type AppConfig = {
   port: number
   databaseUrl: string
+  nodeEnv: string
   openAiApiKey: string | undefined
   defaultModel: string
   mockRuntime: boolean
+  debugSeedKey: string | undefined
   composioApiKey: string | undefined
   composioRedirectBaseUrl: string | undefined
   composioUserId: string
@@ -80,9 +82,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     port,
     databaseUrl: env.DATABASE_URL ?? "./data/agentis.db",
+    nodeEnv: env.NODE_ENV ?? "development",
     openAiApiKey: env.OPENAI_API_KEY,
     defaultModel: DEFAULT_OPENAI_MODEL,
     mockRuntime: env.AGENTIS_MOCK_RUNTIME === "1",
+    debugSeedKey: env.AGENTIS_DEBUG_SEED_KEY,
     composioApiKey: env.COMPOSIO_API_KEY,
     composioRedirectBaseUrl: env.COMPOSIO_REDIRECT_BASE_URL,
     composioUserId: env.COMPOSIO_USER_ID ?? "agentis-local-user",
@@ -105,6 +109,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
 export function isRuntimeAvailable(config: AppConfig) {
   return Boolean(config.openAiApiKey) || config.mockRuntime
+}
+
+export function isDebugSeedsEnabled(config: AppConfig) {
+  return config.nodeEnv !== "production" && Boolean(config.debugSeedKey?.trim())
 }
 
 export function isComposioAvailable(config: AppConfig) {

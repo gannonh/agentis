@@ -69,7 +69,8 @@ export const demoWorkspace = workspaceSchema.parse({
     {
       id: "editor-quality-gate",
       name: "Editor & Quality Gate",
-      description: "Reviews drafts for clarity, structure, and brand voice before publish.",
+      description:
+        "Reviews drafts for clarity, structure, and brand voice before publish.",
       icon: "command",
       model: "Claude Sonnet 4.6",
       rosterStatus: "active",
@@ -188,7 +189,9 @@ export const demoWorkspace = workspaceSchema.parse({
       id: "memory-active-work-1",
       content: "User is preparing the Agentis memories foundation milestone.",
       category: "Active Work",
-      scope: "project",
+      scope: "agent",
+      associatedAgent: "senior-reviewer",
+      associatedAgents: ["senior-reviewer"],
       importance: "high",
     },
   ],
@@ -214,9 +217,77 @@ export const demoWorkspace = workspaceSchema.parse({
       },
       createdBy: "seed",
       actions: [
-        { id: "save-memory", label: "Save memory", tone: "primary", icon: "sparkles" },
+        {
+          id: "save-memory",
+          label: "Save memory",
+          tone: "primary",
+          icon: "sparkles",
+        },
         { id: "dismiss", label: "Dismiss", tone: "secondary" },
       ],
+    },
+    {
+      id: "learning-candidate-resolved-memory-1",
+      title: "Persist durable preferences",
+      content:
+        "User prefers durable context to be saved as reusable memories after review-heavy threads.",
+      suggestionType: "memory",
+      status: "accepted",
+      confidence: 0.9,
+      source: {
+        threadId: "thread-creating-agent",
+        threadTitle: "Creating Agent",
+        agentId: "senior-reviewer",
+        agentName: "Senior Reviewer",
+      },
+      provenance: {
+        kind: "mocked-saved-memory",
+        label: "Auto-saved",
+      },
+      createdBy: "system",
+      actions: [],
+    },
+    {
+      id: "learning-candidate-resolved-memory-2",
+      title: "Prefer concise direct answers",
+      content:
+        "User favors concise responses with direct next steps and minimal explanatory padding.",
+      suggestionType: "memory",
+      status: "accepted",
+      confidence: 0.86,
+      source: {
+        threadId: "thread-creating-agent",
+        threadTitle: "Creating Agent",
+        agentId: "senior-reviewer",
+        agentName: "Senior Reviewer",
+      },
+      provenance: {
+        kind: "mocked-saved-memory",
+        label: "Auto-saved",
+      },
+      createdBy: "system",
+      actions: [],
+    },
+    {
+      id: "learning-candidate-resolved-rubric-1",
+      title: "Capture quality review habits",
+      content:
+        "Senior Reviewer should evaluate edge cases, overcomplication, and implementation risk before style notes.",
+      suggestionType: "rubric",
+      status: "accepted",
+      confidence: 0.78,
+      source: {
+        threadId: "thread-creating-agent",
+        threadTitle: "Creating Agent",
+        agentId: "senior-reviewer",
+        agentName: "Senior Reviewer",
+      },
+      provenance: {
+        kind: "mocked-saved-memory",
+        label: "Accepted",
+      },
+      createdBy: "system",
+      actions: [],
     },
   ],
   learningConversations: [

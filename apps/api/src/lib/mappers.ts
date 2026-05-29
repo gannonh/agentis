@@ -102,12 +102,27 @@ export function mapProjectMemory(row: ProjectMemoryRow): ProjectMemory {
   }
 }
 
-function parseSavedMemoryTags(tagsJson: string): string[] {
+function parseStringArray(json: string | null): string[] {
+  if (!json) return []
   try {
-    return JSON.parse(tagsJson) as string[]
+    const value = JSON.parse(json)
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : []
   } catch {
     return []
   }
+}
+
+function parseSavedMemoryTags(tagsJson: string): string[] {
+  return parseStringArray(tagsJson)
+}
+
+function getSavedMemoryAssociatedAgents(row: SavedMemoryRow): string[] {
+  const associatedAgents = parseStringArray(row.associatedAgentsJson)
+  if (associatedAgents.length > 0) return associatedAgents
+  if (row.associatedAgent) return [row.associatedAgent]
+  return []
 }
 
 export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
@@ -121,8 +136,12 @@ export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
     date: row.date,
     scope: row.scope as SavedMemory["scope"],
     associatedAgent: row.associatedAgent ?? undefined,
-    source: row.source,
+    associatedAgents: getSavedMemoryAssociatedAgents(row),
+    source: row.source as SavedMemory["source"],
+    sourceThreadId: row.sourceThreadId ?? undefined,
+    sourceThreadTitle: row.sourceThreadTitle ?? undefined,
     provenance: row.provenance,
+    pinnedToContext: row.pinnedToContext,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

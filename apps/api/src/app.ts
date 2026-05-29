@@ -2,12 +2,13 @@ import { Hono } from "hono"
 import { cors } from "hono/cors"
 import type { ComposioServices } from "./composio/index.js"
 import { createComposioServices } from "./composio/index.js"
-import type { AppConfig } from "./config.js"
+import { isDebugSeedsEnabled, type AppConfig } from "./config.js"
 import type { Repositories } from "./repositories/index.js"
 import { createAgentRoutes } from "./routes/agents.js"
 import { createArtifactRoutes } from "./routes/artifacts.js"
 import { createIntegrationRoutes } from "./routes/integrations.js"
 import { createMemoryRoutes } from "./routes/memories.js"
+import { createDebugSeedRoutes } from "./routes/debug-seeds.js"
 import { createProjectRoutes } from "./routes/projects.js"
 import {
   createPromotionDraftRoutes,
@@ -65,6 +66,9 @@ export function createApp(
     createPromotionDraftRoutes(repos, config)
   )
   app.route("/api/runs", createRunRoutes(repos, config, services))
+  if (isDebugSeedsEnabled(config)) {
+    app.route("/api/debug", createDebugSeedRoutes(repos, config))
+  }
 
   app.get("/api/health", (c) => c.json({ ok: true }))
 

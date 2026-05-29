@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { createApp } from "./app.js"
 import { createTestContext, type TestContext } from "./test/setup.js"
 import { isRuntimeAvailable, loadConfig } from "./config.js"
@@ -130,8 +130,153 @@ describe("api routes", () => {
       usageGuidance: expect.any(String),
       tags: expect.any(Array),
       importance: expect.stringMatching(/^(low|medium|high)$/),
-      source: "seeded",
+      source: "user-generated",
       provenance: expect.stringContaining("mocked"),
+    })
+  })
+
+  it("rejects agent-scoped saved memories for unknown agents", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/memories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: "Use account context for escalation drafts.",
+        category: "memory_category_preference",
+        importance: "high",
+        scope: "agent",
+        associatedAgent: "agent_missing",
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      error: "Agent not found",
+      code: "agent_not_found",
+    })
+  })
+
+  it("creates user-generated saved memories and returns them from the database", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/memories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: "User prefers TypeScript over JavaScript.",
+        category: "memory_category_preference",
+        importance: "high",
+        usageGuidance: "Use when choosing implementation language.",
+        tags: ["typescript", "preference"],
+        scope: "global",
+        pinnedToContext: true,
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const created = (await response.json()) as {
+      id: string
+      source: string
+      provenance: string
+      pinnedToContext: boolean
+    }
+    expect(created.source).toBe("user-generated")
+    expect(created.provenance).toBe("created manually by user")
+    expect(created.pinnedToContext).toBe(true)
+
+    const listResponse = await app.request("/api/memories")
+    const body = (await listResponse.json()) as {
+      categories: { name: string; count: number }[]
+      memories: { id: string; content: string; pinnedToContext: boolean }[]
+    }
+
+    expect(
+      body.memories.find((memory) => memory.id === created.id)
+    ).toMatchObject({
+      content: "User prefers TypeScript over JavaScript.",
+      pinnedToContext: true,
+    })
+    expect(
+      body.categories.find((category) => category.name === "Preference")?.count
+    ).toBeGreaterThanOrEqual(1)
+  })
+
+  it("updates memory scope to multiple agents without changing source thread provenance", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+    const firstAgent = ctx.repos.agents.create({
+      name: "Memory Agent",
+      systemPrompt: "Use scoped memories.",
+      model: "gpt-4o-mini",
+    })
+    const secondAgent = ctx.repos.agents.create({
+      name: "Support Agent",
+      systemPrompt: "Use shared scoped memories.",
+      model: "gpt-4o-mini",
+    })
+    const memory = ctx.repos.savedMemories.create({
+      content: "Use concise updates.",
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use for updates.",
+      tags: ["updates"],
+      scope: "global",
+      pinnedToContext: false,
+    })
+
+    const response = await app.request(`/api/memories/${memory.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scope: "agent",
+        associatedAgents: [firstAgent.id, secondAgent.id],
+      }),
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      scope: string
+      associatedAgent: string
+      associatedAgents: string[]
+      source: string
+      provenance: string
+    }
+    expect(body).toMatchObject({
+      scope: "agent",
+      associatedAgent: firstAgent.id,
+      associatedAgents: [firstAgent.id, secondAgent.id],
+      source: "user-generated",
+      provenance: "created manually by user",
+    })
+  })
+
+  it("returns 404 when a saved memory disappears during update", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+    const memory = ctx.repos.savedMemories.create({
+      content: "Use concise updates.",
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use for updates.",
+      tags: ["updates"],
+      scope: "global",
+      pinnedToContext: false,
+    })
+    vi.spyOn(ctx.repos.savedMemories, "update").mockReturnValue(null)
+
+    const response = await app.request(`/api/memories/${memory.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Updated content." }),
+    })
+
+    expect(response.status).toBe(404)
+    expect(await response.json()).toMatchObject({
+      error: "Memory not found",
+      code: "memory_not_found",
     })
   })
 
@@ -139,27 +284,36 @@ describe("api routes", () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
 
-    ctx.db.insert(savedMemories).values({
-      id: "memory_bad_tags",
-      content: "Memory with bad tags",
-      category: "memory_category_project_context",
-      usageGuidance: "Use to verify malformed tags do not break listing.",
-      tagsJson: "not-json",
-      importance: "medium",
-      date: "2026-05-27",
-      scope: "project",
-      associatedAgent: null,
-      source: "seeded",
-      provenance: "test malformed tags row",
-      createdAt: "2026-05-27T00:00:00.000Z",
-      updatedAt: "2026-05-27T00:00:00.000Z",
-    }).run()
+    ctx.db
+      .insert(savedMemories)
+      .values({
+        id: "memory_bad_tags",
+        content: "Memory with bad tags",
+        category: "memory_category_project_context",
+        usageGuidance: "Use to verify malformed tags do not break listing.",
+        tagsJson: "not-json",
+        importance: "medium",
+        date: "2026-05-27",
+        scope: "global",
+        associatedAgent: null,
+        source: "user-generated",
+        sourceThreadId: null,
+        sourceThreadTitle: null,
+        provenance: "test malformed tags row",
+        createdAt: "2026-05-27T00:00:00.000Z",
+        updatedAt: "2026-05-27T00:00:00.000Z",
+      })
+      .run()
 
     const response = await app.request("/api/memories")
 
     expect(response.status).toBe(200)
-    const body = (await response.json()) as { memories: { id: string; tags: string[] }[] }
-    expect(body.memories.find((memory) => memory.id === "memory_bad_tags")?.tags).toEqual([])
+    const body = (await response.json()) as {
+      memories: { id: string; tags: string[] }[]
+    }
+    expect(
+      body.memories.find((memory) => memory.id === "memory_bad_tags")?.tags
+    ).toEqual([])
   })
 
   it("returns thread detail for resume", async () => {

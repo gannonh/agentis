@@ -1,9 +1,11 @@
 import { createBrowserRouter, Navigate } from "react-router"
 import { AppShell } from "@/layouts/app-shell"
+import { isDebugSeedingEnabled } from "@/lib/debug-seeding"
 import { AgentCreatePage } from "@/routes/agent-create"
 import { AgentDetailPage } from "@/routes/agent-detail"
 import { AgentPromotionDraftPage } from "@/routes/agent-promotion-draft"
 import { CommandCenterPage } from "@/routes/command-center"
+import { DebugSeedingPage } from "@/routes/debug-seeding"
 import { IntegrationsPage } from "@/routes/integrations"
 import { LearningPage } from "@/routes/learning"
 import { LibraryPage } from "@/routes/library"
@@ -36,6 +38,9 @@ export const router = createBrowserRouter([
       { path: "learning", element: <LearningPage /> },
       { path: "memories", element: <MemoriesPage /> },
       { path: "integrations", element: <IntegrationsPage /> },
+      ...(isDebugSeedingEnabled()
+        ? [{ path: "debug/seeding", element: <DebugSeedingPage /> }]
+        : []),
       { path: "projects/new", element: <ProjectCreatePage /> },
       { path: "projects/:projectId", element: <ProjectDetailPage /> },
       { path: "library", element: <LibraryPage /> },

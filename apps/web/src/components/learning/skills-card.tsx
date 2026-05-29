@@ -20,7 +20,7 @@ export function SkillsCard({
 
   return (
     <section
-      className="flex flex-col rounded-lg border border-border bg-card"
+      className="flex h-full flex-col rounded-lg border border-border bg-card"
       aria-labelledby="learning-skills-heading"
     >
       <LearningPillarHeader
