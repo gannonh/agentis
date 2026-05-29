@@ -1,10 +1,79 @@
-# Agent Native Tooling
+# Agent Native Tooling PRD and Roadmap
 
 ## Purpose
 
-Track Agentis-native agent capabilities that run inside the Agentis runtime, separate from Composio-backed external integrations.
+Define the product direction, capability roadmap, and implementation references for Agentis-native agent tooling.
 
-Native tooling covers local capabilities such as artifact creation, workspace context, file inspection, file editing, command execution, sandboxing, approvals, and tool observability.
+Agentis-native tooling covers capabilities that run inside the Agentis runtime, separate from Composio-backed external integrations. This includes workspace context, file inspection, file editing, command execution, sandboxing, approvals, documents, tables, browser/research tools, media tools, and tool observability.
+
+## Product goal
+
+Give every Agentis agent a durable workspace and a growing set of native tools so it can inspect, create, transform, and operate on its own working state. The first priority is a demoable workspace-backed read-only tooling slice. Later initiatives should move Agentis toward equivalent coverage for the Hyperagent native tool inventory.
+
+## Roadmap
+
+### V1: Workspace-backed read-only tools
+
+Spec: `docs/specs/2026-05-29-agent-native-tooling-design.md`
+
+Status: Design spec written and ready for Build approval.
+
+Goal: create the first demoable native tooling vertical slice by wiring selected-agent thread creation, agent-owned workspaces, a native tool registry, and read-only workspace file tools.
+
+Scope:
+
+- Built-in generic Agentis agent with a default workspace.
+- One default workspace per custom agent.
+- `/threads/new` creates threads under the selected agent and workspace.
+- `thread.workspaceId` resolves workspace state at runtime.
+- Native tool registry merges read-only native tools into `RunExecutor`.
+- Local filesystem workspace backend under `AGENTIS_STORAGE_ROOT`.
+- `listWorkspaceFiles`, `readWorkspaceFile`, and `searchWorkspaceFiles`.
+- Generic native tool rendering in the run timeline.
+- Promotion gating so only generic Agentis threads can become new agents.
+
+Out of scope:
+
+- File writes, patch application, command execution, package installation, VM/container runtime, production backends, and workspace copy during promotion.
+
+Acceptance:
+
+- A user can create a thread, ask the agent to inspect workspace files, and see native tool calls/results in persisted thread state and the run timeline.
+
+### V2: Safe file edits
+
+Goal: agents can create and edit workspace files under policy.
+
+Scope:
+
+- File create and replace tools.
+- Patch application.
+- Approval or policy gates.
+- Changed-file summaries and timeline UI.
+- Audit-friendly edit metadata.
+
+### V3: Sandboxed execution
+
+Goal: agents can run bounded commands or scripts against a workspace.
+
+Scope:
+
+- Sandbox/runtime backend abstraction.
+- Command or script execution tool.
+- Abort, timeout, stdout/stderr limits, and exit-code capture.
+- Changed-file detection after execution.
+- Container or process backend for local development.
+
+### V4: Hyperagent capability parity expansion
+
+Goal: adopt or provide equivalents for the remaining Hyperagent native tool inventory.
+
+Scope candidates:
+
+- Research tools: web search, browser, Exa, thread search.
+- Data tools: tables and persistent documents.
+- Interactive tools: webpages, slides, and HyperApp-style apps.
+- Media tools: images, video, audio, transcription, avatars, maps.
 
 ## Current state
 
@@ -226,7 +295,11 @@ This inventory records the native tooling in Hyperagent, the platform Agentis is
 
 Source note: inventory copied from the Hyperagent agent tools section screenshot provided during planning.
 
-## Recommended next iteration
+## V1 and follow-on implementation notes
+
+Authoritative V1 design: `docs/specs/2026-05-29-agent-native-tooling-design.md`.
+
+The notes below summarize the V1 architecture and adjacent follow-on capabilities.
 
 ### 1. Native tool registry
 
@@ -364,40 +437,12 @@ Candidate updates:
 - Should agent-created files be versioned?
 - When converting a generic Agentis thread into a new agent, which workspace state should be copied into the new agent workspace?
 
-## Suggested milestone framing
+## Build sequencing summary
 
-### Native Tooling 1: Read-only workspace awareness
-
-Goal: agents can inspect a bounded workspace.
-
-Deliverables:
-
-- Workspace root model.
-- Native tool registry.
-- List, read, and search tools.
-- Generic native tool timeline rendering.
-
-### Native Tooling 2: Safe file edits
-
-Goal: agents can propose and apply file changes under policy.
-
-Deliverables:
-
-- File create and replace tools.
-- Patch application tool.
-- Approval or policy gate.
-- Changed-file timeline UI.
-
-### Native Tooling 3: Sandboxed execution
-
-Goal: agents can run bounded commands against a workspace.
-
-Deliverables:
-
-- Sandbox abstraction.
-- Command execution tool.
-- Abort and timeout support.
-- Output truncation and structured run logging.
+1. **V1: Workspace-backed read-only tools**: implement the linked design spec and prove the selected-agent workspace flow end to end.
+2. **V2: Safe file edits**: add mutating workspace tools after read-only tooling, timeline rendering, and path safety are stable.
+3. **V3: Sandboxed execution**: add command/script execution after workspace mutation policy exists.
+4. **V4: Capability parity expansion**: adopt or provide equivalents for the remaining Hyperagent tools by category.
 
 ## Reference files
 
