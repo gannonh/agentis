@@ -17,6 +17,10 @@ export const threadStatusSchema = z.enum(["active", "finished", "failed"])
 
 export const threadModeSchema = z.enum(["plan", "agent"])
 
+export const workspaceBackendTypeSchema = z.enum(["local-fs"])
+
+export const workspaceStatusSchema = z.enum(["active", "archived"])
+
 export const messageRoleSchema = z.enum(["user", "assistant", "system"])
 
 export const messageStatusSchema = z.enum([
@@ -74,6 +78,17 @@ export const agentSourceWorkflowSchema = z.object({
   firstUserPrompt: nonEmptyString.optional(),
 })
 
+export const workspaceSchema = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  name: z.string(),
+  backendType: workspaceBackendTypeSchema,
+  backendRef: z.string(),
+  status: workspaceStatusSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
 export const threadSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -82,6 +97,7 @@ export const threadSchema = z.object({
   mode: threadModeSchema,
   projectId: z.string().nullable().optional(),
   agentId: z.string().nullable().optional(),
+  workspaceId: z.string().nullable().optional(),
   agentNameSnapshot: z.string().nullable().optional(),
   agentConfigurationVersionId: z.string().nullable().optional(),
   sourceThread: agentSourceThreadSchema.optional(),
@@ -404,6 +420,7 @@ export const createThreadRequestSchema = z.object({
   model: z.string().optional(),
   mode: threadModeSchema.optional(),
   projectId: z.string().optional(),
+  agentId: z.string().optional(),
 })
 
 export const createThreadResponseSchema = z.object({
@@ -677,15 +694,19 @@ export const abortRunResponseSchema = z.object({
 })
 
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+export const GENERIC_AGENTIS_AGENT_ID = "agent_agentis"
 
 export type RunStatus = z.infer<typeof runStatusSchema>
 export type ThreadStatus = z.infer<typeof threadStatusSchema>
 export type ThreadMode = z.infer<typeof threadModeSchema>
+export type WorkspaceBackendType = z.infer<typeof workspaceBackendTypeSchema>
+export type WorkspaceStatus = z.infer<typeof workspaceStatusSchema>
 export type MessageRole = z.infer<typeof messageRoleSchema>
 export type MessageStatus = z.infer<typeof messageStatusSchema>
 export type MessagePart = z.infer<typeof messagePartSchema>
 export type RunStepType = z.infer<typeof runStepTypeSchema>
 export type RunStepStatus = z.infer<typeof runStepStatusSchema>
+export type Workspace = z.infer<typeof workspaceSchema>
 export type Thread = z.infer<typeof threadSchema>
 export type Message = z.infer<typeof messageSchema>
 export type Run = z.infer<typeof runSchema>

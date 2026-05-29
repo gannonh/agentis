@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { messages, runs, toolAccessGrants } from "../db/schema.js"
 import { createTestContext } from "../test/setup.js"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  GENERIC_AGENTIS_WORKSPACE_ID,
+} from "../workspaces/constants.js"
 
 describe("repositories", () => {
   it("creates thread, message, run, and steps", () => {
@@ -174,7 +178,10 @@ describe("repositories", () => {
       threadId: plainThread.id,
       model: plainThread.model,
     })
-    expect(ctx.repos.threads.getById(plainThread.id)?.agentId).toBeUndefined()
+    expect(ctx.repos.threads.getById(plainThread.id)).toMatchObject({
+      agentId: GENERIC_AGENTIS_AGENT_ID,
+      workspaceId: GENERIC_AGENTIS_WORKSPACE_ID,
+    })
     expect(
       ctx.repos.runs.getById(plainRun.id)?.agentConfigurationVersionId
     ).toBeUndefined()

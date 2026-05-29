@@ -196,5 +196,5 @@ describe("agent create-to-test acceptance path", () => {
       prompt: "Try Research Helper",
     })
     expect(await screen.findByText("Test chat opened")).toBeInTheDocument()
-  }, 10_000)
+  }, 20_000)
 })

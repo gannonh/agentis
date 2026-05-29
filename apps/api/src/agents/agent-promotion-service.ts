@@ -26,6 +26,7 @@ import { SUPPORTED_TOOLKIT_NAMES } from "../composio/tool-catalog.js"
 import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 import type { StoredAgentPromotionDraft } from "../repositories/agent-promotion-draft-repository.js"
 import type { Repositories } from "../repositories/index.js"
+import { GENERIC_AGENTIS_AGENT_ID } from "../workspaces/constants.js"
 
 type ServiceError = {
   status: 400 | 404 | 500
@@ -305,7 +306,9 @@ export class AgentPromotionService {
   ): ServiceResult<{ draft: AgentPromotionDraft; created: boolean }> {
     const thread = this.repos.threads.getById(threadId)
     if (!thread) return { ok: false, error: threadNotFound() }
-    if (thread.agentId) return { ok: false, error: threadAlreadyHasAgent() }
+    if (thread.agentId !== GENERIC_AGENTIS_AGENT_ID) {
+      return { ok: false, error: threadAlreadyHasAgent() }
+    }
 
     const existing = this.repos.agentPromotionDrafts.getLatestByThreadId(
       thread.id

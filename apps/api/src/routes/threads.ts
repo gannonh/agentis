@@ -11,9 +11,15 @@ import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
 import { ArtifactService } from "../artifacts/artifact-service.js"
+import {
+  resolveRequestedAgentGrants,
+  toolkitGrantRemediation,
+} from "../agents/tool-grant-resolution.js"
 import { summarizeTitle } from "../lib/title-summary.js"
+import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import { RunExecutor } from "../runtime/run-executor.js"
+import { GENERIC_AGENTIS_AGENT_ID } from "../workspaces/constants.js"
 
 function summarizeThreadPreview(prompt: string) {
   const trimmed = prompt.trim().replace(/\s+/g, " ")
@@ -70,15 +76,56 @@ export function createThreadRoutes(
       )
     }
 
-    const model = body.model ?? config.defaultModel
     const mode = body.mode ?? "plan"
+    const selectedAgentId = body.agentId ?? GENERIC_AGENTIS_AGENT_ID
+
+    if (selectedAgentId !== GENERIC_AGENTIS_AGENT_ID) {
+      const agent = repos.agents.getById(selectedAgentId)
+      if (!agent) {
+        return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+      }
+
+      const version = repos.agents.getCurrentConfigurationSnapshot(agent.id)
+      const resolvedGrants = resolveRequestedAgentGrants(
+        repos,
+        version.toolGrants
+      )
+      if ("error" in resolvedGrants) {
+        return c.json(
+          {
+            error: resolvedGrants.error,
+            remediation: toolkitGrantRemediation(resolvedGrants.error),
+          },
+          400
+        )
+      }
+
+      const created = repos.threads.createWithInitialRun({
+        title: summarizeTitle(body.prompt),
+        prompt: body.prompt,
+        model: version.model,
+        mode,
+        projectId: body.projectId,
+        agentId: agent.id,
+        agentNameSnapshot: agent.name,
+        agentConfigurationVersionId: version.id,
+        ...toSourceWorkflowSnapshot({
+          sourceThread: agent.sourceThread,
+          sourceWorkflow: agent.sourceWorkflow,
+        }),
+        toolGrants: resolvedGrants.grants,
+      })
+
+      return c.json(created, 201)
+    }
 
     const created = repos.threads.createWithInitialRun({
       title: summarizeTitle(body.prompt),
       prompt: body.prompt,
-      model,
+      model: body.model ?? config.defaultModel,
       mode,
       projectId: body.projectId,
+      agentId: GENERIC_AGENTIS_AGENT_ID,
     })
 
     return c.json(created, 201)

@@ -18,7 +18,7 @@ import { createAgentPromotionDraft } from "@/lib/api/agents-client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
 import { useThreadSession } from "@/hooks/use-thread-session"
 import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
-import type { ThreadMode } from "@workspace/shared"
+import { GENERIC_AGENTIS_AGENT_ID, type ThreadMode } from "@workspace/shared"
 
 type ThreadHeaderActionsProps = {
   canAbort: boolean
@@ -112,7 +112,13 @@ export function ThreadDetailPage() {
 
   const composerDisabled = !health.available
   const owningAgentId = detail?.thread?.agentId ?? null
-  const canCreateAgentFromThread = Boolean(detail?.thread && !owningAgentId)
+  const fullAgentId =
+    owningAgentId && owningAgentId !== GENERIC_AGENTIS_AGENT_ID
+      ? owningAgentId
+      : null
+  const canCreateAgentFromThread = Boolean(
+    detail?.thread?.agentId === GENERIC_AGENTIS_AGENT_ID
+  )
 
   const handleSubmit = async (prompt: string) => {
     if (!prompt.trim() || composerDisabled) return
@@ -166,7 +172,7 @@ export function ThreadDetailPage() {
             creatingAgentDraft={creatingAgentDraft}
             onAbort={() => void abortActiveRun()}
             onCreateAgentFromThread={() => void handleCreateAgentFromThread()}
-            owningAgentId={owningAgentId}
+            owningAgentId={fullAgentId}
           />
         </div>
 

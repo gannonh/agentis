@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
+import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { ThreadDetailPage } from "./thread-detail"
 import { createAgentPromotionDraft } from "@/lib/api/agents-client"
 
 const navigate = vi.fn()
 let threadStatus: "active" | "finished" | "failed" = "active"
-let threadAgentId: string | undefined
+let threadAgentId: string | undefined = GENERIC_AGENTIS_AGENT_ID
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router")
@@ -74,7 +75,7 @@ describe("ThreadDetailPage create-agent action", () => {
   beforeEach(() => {
     navigate.mockReset()
     threadStatus = "active"
-    threadAgentId = undefined
+    threadAgentId = GENERIC_AGENTIS_AGENT_ID
     vi.mocked(createAgentPromotionDraft).mockClear()
   })
 

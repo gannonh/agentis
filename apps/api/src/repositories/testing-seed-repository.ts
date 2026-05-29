@@ -1,3 +1,5 @@
+import { mkdirSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import { inArray, sql } from "drizzle-orm"
 import type { AnySQLiteTable } from "drizzle-orm/sqlite-core"
 import type { AppConfig } from "../config.js"
@@ -16,6 +18,7 @@ import {
   savedMemories,
   threads,
   toolAccessGrants,
+  workspaces,
 } from "../db/schema.js"
 import { LocalArtifactStorage } from "../artifacts/local-artifact-storage.js"
 import {
@@ -48,6 +51,12 @@ import {
   threadIds,
   threadRows,
 } from "./testing-seed-data.js"
+import { WorkspaceRepository } from "./workspace-repository.js"
+import {
+  GENERIC_AGENTIS_WORKSPACE_ID,
+  LOCAL_WORKSPACE_BACKEND_TYPE,
+  workspaceBackendRef,
+} from "../workspaces/constants.js"
 import type {
   DebugDataResetResult,
   DebugDatasetSummary,
@@ -109,6 +118,7 @@ export class TestingSeedRepository {
       tx.delete(agentPromotionDrafts).run()
       tx.delete(threads).run()
       tx.delete(agentConfigurationVersions).run()
+      tx.delete(workspaces).run()
       tx.delete(agents).run()
       tx.delete(savedMemories).run()
       tx.delete(projectMemories).run()
@@ -126,6 +136,26 @@ export class TestingSeedRepository {
 
   private getArtifactStorage(): LocalArtifactStorage | null {
     return this.config ? new LocalArtifactStorage(this.config) : null
+  }
+
+  private writeDemoWorkspaceFiles(): void {
+    if (!this.config) return
+    const filesRoot = join(
+      this.config.storageRoot,
+      workspaceBackendRef(GENERIC_AGENTIS_WORKSPACE_ID),
+      "files"
+    )
+    mkdirSync(join(filesRoot, "notes"), { recursive: true })
+    writeFileSync(
+      join(filesRoot, "README.md"),
+      "# Agentis demo workspace\n\nThis workspace contains deterministic files for native tool demos.\n",
+      "utf8"
+    )
+    writeFileSync(
+      join(filesRoot, "notes", "demo-workspace.md"),
+      "# Demo workspace notes\n\nAsk Agentis what files are in its workspace to exercise native file tools.\n",
+      "utf8"
+    )
   }
 
   private countRows(table: AnySQLiteTable): number {
@@ -166,6 +196,7 @@ export class TestingSeedRepository {
       tx.delete(agentConfigurationVersions)
         .where(inArray(agentConfigurationVersions.id, agentVersionIds))
         .run()
+      tx.delete(workspaces).where(inArray(workspaces.agentId, agentIds)).run()
       tx.delete(agents).where(inArray(agents.id, agentIds)).run()
       tx.delete(savedMemories)
         .where(inArray(savedMemories.id, savedMemoryIds))
@@ -185,6 +216,8 @@ export class TestingSeedRepository {
     for (const [storageKey, body] of Object.entries(artifactBodies)) {
       storage?.write(storageKey, Buffer.from(body, "utf8"))
     }
+    new WorkspaceRepository(this.db).ensureGenericAgentisWorkspace()
+    this.writeDemoWorkspaceFiles()
 
     this.db.transaction((tx) => {
       tx.insert(projects).values(projectRows).run()
@@ -227,6 +260,21 @@ export class TestingSeedRepository {
       }))
       tx.insert(agentConfigurationVersions).values(versionRows).run()
 
+      const workspaceRows = agentDefinitions.map((agent) => {
+        const workspaceId = `workspace_${agent.id}`
+        return {
+          id: workspaceId,
+          agentId: agent.id,
+          name: `${agent.name} workspace`,
+          backendType: LOCAL_WORKSPACE_BACKEND_TYPE,
+          backendRef: workspaceBackendRef(workspaceId),
+          status: "active",
+          createdAt: lastWeek,
+          updatedAt: now,
+        }
+      })
+      tx.insert(workspaces).values(workspaceRows).run()
+
       const agentGrantRows = includeIntegrations
         ? agentDefinitions.flatMap((agent) =>
             agent.grants.map((grant) => ({
@@ -243,7 +291,14 @@ export class TestingSeedRepository {
         tx.insert(toolAccessGrants).values(agentGrantRows).run()
       }
 
-      tx.insert(threads).values(threadRows).run()
+      tx.insert(threads)
+        .values(
+          threadRows.map((thread) => ({
+            ...thread,
+            workspaceId: `workspace_${thread.agentId}`,
+          }))
+        )
+        .run()
 
       const threadGrantRows = includeIntegrations
         ? threadRows.flatMap((thread) => {

@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
+import { GENERIC_AGENTIS_WORKSPACE_ID } from "../workspaces/constants.js"
+import { WorkspaceService } from "../workspaces/workspace-service.js"
 
 let ctx: TestContext | undefined
 
@@ -82,6 +84,22 @@ describe("debug seed routes", () => {
     expect(supportBody.information.library.totalCount).toBeGreaterThan(0)
     expect(supportBody.information.memories.global.length).toBeGreaterThan(0)
     expect(supportBody.information.memories.agent.length).toBeGreaterThan(0)
+    expect(ctx.repos.threads.getById("seed_thread_support_triage")).toMatchObject({
+      agentId: "seed_agent_support_triage",
+      workspaceId: "workspace_seed_agent_support_triage",
+    })
+
+    const workspace = await new WorkspaceService(
+      ctx.repos,
+      ctx.config
+    ).openWorkspace(GENERIC_AGENTIS_WORKSPACE_ID)
+    const listing = await workspace.list({ recursive: true })
+    expect(listing.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "README.md", type: "file" }),
+        expect.objectContaining({ path: "notes/demo-workspace.md", type: "file" }),
+      ])
+    )
   })
 
   it("links accepted seeded memories to their source agent threads", async () => {

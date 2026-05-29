@@ -28,6 +28,7 @@ import {
   hasBlockingProposedToolGrants,
   proposedToolGrantsToInputs,
   updateAgentPromotionDraftRequestSchema,
+  workspaceSchema,
   type ProposedToolGrant,
 } from "./schemas.js"
 
@@ -69,6 +70,45 @@ describe("shared schemas", () => {
 
     expect(parsed.thread.id).toBe("thread-1")
     expect(parsed.messages).toHaveLength(1)
+  })
+
+  it("parses selected-agent thread creation requests", () => {
+    const parsed = createThreadRequestSchema.parse({
+      prompt: "List files",
+      mode: "plan",
+      model: "gpt-4o-mini",
+      agentId: "agent_research",
+    })
+
+    expect(parsed.agentId).toBe("agent_research")
+  })
+
+  it("parses workspace payloads and workspace-backed thread metadata", () => {
+    const now = new Date().toISOString()
+    const workspace = workspaceSchema.parse({
+      id: "workspace_agentis",
+      agentId: "agent_agentis",
+      name: "Agentis workspace",
+      backendType: "local-fs",
+      backendRef: "workspaces/workspace_agentis",
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    })
+    const thread = threadSchema.parse({
+      id: "thread-1",
+      title: "Inspect workspace files",
+      status: "active",
+      model: "gpt-4o-mini",
+      mode: "plan",
+      agentId: workspace.agentId,
+      workspaceId: workspace.id,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    expect(workspace.backendType).toBe("local-fs")
+    expect(thread.workspaceId).toBe("workspace_agentis")
   })
 
   it("parses agent-bound thread and run metadata without affecting plain threads", () => {

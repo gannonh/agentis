@@ -11,7 +11,13 @@ const statusLabel: Record<Run["status"], string> = {
   aborted: "Aborted",
 }
 
-function formatPayload(step: RunStep) {
+function getRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function formatComposioPayload(step: RunStep) {
   const payload = step.payload
   if (!payload || typeof payload !== "object" || payload.provider !== "composio") {
     return null
@@ -28,6 +34,46 @@ function formatPayload(step: RunStep) {
       typeof record.remediation === "string" ? record.remediation : undefined,
     input: record.input,
     output: record.output,
+  }
+}
+
+function formatNativePayload(step: RunStep) {
+  const payload = step.payload
+  if (!payload || typeof payload !== "object" || payload.provider !== "native") {
+    return null
+  }
+  const record = payload as Record<string, unknown>
+  const input = getRecord(record.input)
+  const output = getRecord(record.output)
+  const entries = Array.isArray(output?.entries) ? output.entries : undefined
+  const results = Array.isArray(output?.results) ? output.results : undefined
+  const path =
+    typeof input?.path === "string"
+      ? input.path
+      : typeof output?.path === "string"
+        ? output.path
+        : undefined
+  const query = typeof input?.query === "string" ? input.query : undefined
+  const truncated = output?.truncated === true
+  const outputSummary = entries
+    ? `${entries.length} entries${truncated ? " · truncated" : ""}`
+    : results
+      ? `${results.length} matches${truncated ? " · truncated" : ""}`
+      : typeof output?.bytesReturned === "number" && typeof output.totalBytes === "number"
+        ? `${output.bytesReturned}/${output.totalBytes} bytes${truncated ? " · truncated" : ""}`
+        : truncated
+          ? "truncated"
+          : undefined
+
+  return {
+    toolName: typeof record.toolName === "string" ? record.toolName : undefined,
+    workspaceId:
+      typeof record.workspaceId === "string" ? record.workspaceId : undefined,
+    path,
+    query,
+    outputSummary,
+    error: typeof record.error === "string" ? record.error : undefined,
+    code: typeof record.code === "string" ? record.code : undefined,
   }
 }
 
@@ -52,7 +98,8 @@ export function RunTimeline({
       </div>
       <ol className="flex flex-col gap-2">
         {runSteps.map((step) => {
-          const composio = formatPayload(step)
+          const composio = formatComposioPayload(step)
+          const native = formatNativePayload(step)
           return (
             <li
               key={step.id}
@@ -72,6 +119,30 @@ export function RunTimeline({
                   {composio.toolSlug ? ` · ${composio.toolSlug}` : ""}
                   {composio.durationMs != null ? ` · ${composio.durationMs}ms` : ""}
                 </p>
+              ) : null}
+              {native ? (
+                <p className="text-muted-foreground mt-1">
+                  <span>Native</span>
+                  {native.toolName ? ` · ${native.toolName}` : ""}
+                  {native.workspaceId ? ` · ${native.workspaceId}` : ""}
+                </p>
+              ) : null}
+              {native?.path ? (
+                <p className="text-muted-foreground mt-1">Path: {native.path}</p>
+              ) : null}
+              {native?.query ? (
+                <p className="text-muted-foreground mt-1">Query: {native.query}</p>
+              ) : null}
+              {native?.outputSummary ? (
+                <p className="text-muted-foreground mt-1">{native.outputSummary}</p>
+              ) : null}
+              {native?.code ? (
+                <p className="text-amber-700 dark:text-amber-400 mt-1">
+                  {native.code}
+                </p>
+              ) : null}
+              {native?.error ? (
+                <p className="text-destructive mt-1">{native.error}</p>
               ) : null}
               {composio?.remediation ? (
                 <p className="text-amber-700 dark:text-amber-400 mt-1">

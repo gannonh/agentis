@@ -2,12 +2,13 @@ import type {
   AgentConfigurationVersionSummary,
   AgentListItem,
 } from "@workspace/shared"
-import { and, asc, count, desc, eq, inArray } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import {
   agentConfigurationVersions,
   agents,
   toolAccessGrants,
+  workspaces,
 } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import {
@@ -15,6 +16,11 @@ import {
   sourceWorkflowColumns,
   type SourceWorkflowSnapshot,
 } from "../lib/source-workflow-snapshot.js"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  LOCAL_WORKSPACE_BACKEND_TYPE,
+  workspaceBackendRef,
+} from "../workspaces/constants.js"
 
 type AgentRow = typeof agents.$inferSelect
 type VersionRow = typeof agentConfigurationVersions.$inferSelect
@@ -185,9 +191,21 @@ export class AgentRepository {
       connectionId: grant.connectionId,
       createdAt: now,
     }))
+    const workspaceId = createId("workspace")
+    const workspaceRow = {
+      id: workspaceId,
+      agentId: agentRow.id,
+      name: `${agentRow.name} workspace`,
+      backendType: LOCAL_WORKSPACE_BACKEND_TYPE,
+      backendRef: workspaceBackendRef(workspaceId),
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    }
 
     this.db.transaction((tx) => {
       tx.insert(agents).values(agentRow).run()
+      tx.insert(workspaces).values(workspaceRow).run()
       tx.insert(agentConfigurationVersions).values(versionRow).run()
       for (const grantRow of grantRows) {
         tx.insert(toolAccessGrants).values(grantRow).run()
@@ -211,6 +229,7 @@ export class AgentRepository {
     const rows = this.db
       .select()
       .from(agents)
+      .where(ne(agents.id, GENERIC_AGENTIS_AGENT_ID))
       .orderBy(asc(agents.name), asc(agents.createdAt), asc(agents.id))
       .all()
     if (rows.length === 0) return []

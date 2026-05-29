@@ -1,8 +1,12 @@
+import { mkdir, writeFile } from "node:fs/promises"
+import { join } from "node:path"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
+import { threads } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 import { buildRunSystemPrompt, formatToolStepTitle } from "./run-executor.js"
+import { eq } from "drizzle-orm"
 
 let ctx: TestContext | undefined
 
@@ -22,10 +26,13 @@ function createMockRuntimeApp(setup?: (context: TestContext) => void) {
 }
 
 describe("run executor composio bridge", () => {
-  it("keeps the createArtifact step title when finalizing tool calls", () => {
+  it("keeps native workspace tool titles when finalizing tool calls", () => {
     expect(
       formatToolStepTitle({ toolName: "createArtifact", curated: false })
     ).toBe("Create artifact")
+    expect(
+      formatToolStepTitle({ toolName: "listWorkspaceFiles", curated: false })
+    ).toBe("Native: listWorkspaceFiles")
   })
 
   it("keeps default runs on the raw platform prompt", () => {
@@ -85,6 +92,97 @@ describe("run executor composio bridge", () => {
             step.payload?.remediation === "toolkit_not_connected"
         )
     ).toBe(true)
+  })
+
+  it("persists native workspace tool evidence in mock runtime", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const workspace = context.repos.workspaces.ensureGenericAgentisWorkspace()
+    const filesRoot = join(context.config.storageRoot, workspace.backendRef, "files")
+    await mkdir(filesRoot, { recursive: true })
+    await writeFile(join(filesRoot, "demo.md"), "Demo workspace file")
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "What files are in your workspace?" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Native: listWorkspaceFiles",
+          type: "tool-result",
+          status: "completed",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "listWorkspaceFiles",
+            workspaceId: workspace.id,
+            output: expect.objectContaining({
+              entries: [expect.objectContaining({ path: "demo.md" })],
+            }),
+          }),
+        }),
+      ])
+    )
+    const assistant = context.repos.messages
+      .listByThreadId(context.repos.runs.getById(run.id)!.threadId)
+      .find((message) => message.role === "assistant")
+    expect(assistant?.parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "tool-result",
+          toolName: "listWorkspaceFiles",
+          output: expect.objectContaining({ workspaceId: workspace.id }),
+        }),
+      ])
+    )
+  }, 10_000)
+
+  it("fails loudly when a run thread has no workspace", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "What files are in your workspace?" }),
+    })
+    const { thread, run } = (await created.json()) as {
+      thread: { id: string }
+      run: { id: string }
+    }
+    context.db
+      .update(threads)
+      .set({ workspaceId: null })
+      .where(eq(threads.id, thread.id))
+      .run()
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+
+    expect(stream.status).toBe(400)
+    expect(context.repos.runs.getById(run.id)).toMatchObject({
+      status: "failed",
+      errorSummary: "Thread does not have a workspace.",
+    })
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "error",
+          status: "failed",
+          payload: expect.objectContaining({
+            provider: "native",
+            code: "workspace_not_found",
+          }),
+        }),
+      ])
+    )
   })
 
   it("loads pinned global and agent memories into agent run context", async () => {

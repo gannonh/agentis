@@ -3,6 +3,10 @@ import { createApp } from "./app.js"
 import { createTestContext, type TestContext } from "./test/setup.js"
 import { isRuntimeAvailable, loadConfig } from "./config.js"
 import { savedMemories } from "./db/schema.js"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  GENERIC_AGENTIS_WORKSPACE_ID,
+} from "./workspaces/constants.js"
 
 let ctx: TestContext | undefined
 
@@ -41,13 +45,50 @@ describe("api routes", () => {
 
     expect(response.status).toBe(201)
     const body = (await response.json()) as {
-      thread: { id: string }
+      thread: { id: string; agentId?: string; workspaceId?: string }
       message: { role: string }
-      run: { status: string }
+      run: { status: string; agentId?: string }
     }
-    expect(body.thread.id).toBeTruthy()
+    expect(body.thread).toMatchObject({
+      agentId: GENERIC_AGENTIS_AGENT_ID,
+      workspaceId: GENERIC_AGENTIS_WORKSPACE_ID,
+    })
     expect(body.message.role).toBe("user")
-    expect(body.run.status).toBe("queued")
+    expect(body.run).toMatchObject({
+      status: "queued",
+      agentId: GENERIC_AGENTIS_AGENT_ID,
+    })
+  })
+
+  it("creates a selected-agent thread with the agent workspace", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const workspace = ctx.repos.workspaces.getDefaultByAgentId(agent.id)
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Summarize workspace status",
+        agentId: agent.id,
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      thread: { agentId?: string; workspaceId?: string }
+      run: { agentId?: string }
+    }
+    expect(body.thread).toMatchObject({
+      agentId: agent.id,
+      workspaceId: workspace?.id,
+    })
+    expect(body.run.agentId).toBe(agent.id)
   })
 
   it("allows a configured web origin with a trailing slash", async () => {

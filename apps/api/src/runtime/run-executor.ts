@@ -19,6 +19,11 @@ import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
 import { ArtifactService } from "../artifacts/artifact-service.js"
 import { createArtifactTool } from "../artifacts/artifact-tool.js"
+import {
+  buildWorkspaceNativeTools,
+  formatNativeToolRunStepPayload,
+  isNativeWorkspaceToolName,
+} from "../native-tools/read-only-workspace-tools.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import {
   abortRun as signalAbort,
@@ -26,6 +31,11 @@ import {
   getAbortSignal,
   registerAbortController,
 } from "./abort-registry.js"
+import {
+  WorkspaceError,
+  type WorkspaceHandle,
+  WorkspaceService,
+} from "../workspaces/workspace-service.js"
 import { getWorkspaceSummaryTool } from "./get-workspace-summary.js"
 import {
   buildAgentMemoriesContribution,
@@ -82,6 +92,9 @@ export function formatToolStepTitle(input: {
   curated: boolean
 }): string {
   if (input.toolName === "createArtifact") return "Create artifact"
+  if (isNativeWorkspaceToolName(input.toolName)) {
+    return `Native: ${input.toolName}`
+  }
   if (input.toolkitSlug && input.curated) {
     return `Composio: ${input.toolkitSlug}`
   }
@@ -178,6 +191,16 @@ export class RunExecutor {
         .map((part) => part.text)
         .join("") ?? ""
 
+    let workspaceHandle: WorkspaceHandle
+    try {
+      workspaceHandle = await new WorkspaceService(
+        this.repos,
+        this.config
+      ).resolveForThread(run.threadId)
+    } catch (error) {
+      return this.failWithWorkspaceError(runId, run.threadId, error)
+    }
+
     const remediation = this.services.toolExecution.checkPreflightRemediation(
       latestUserPrompt,
       run.threadId
@@ -229,10 +252,12 @@ export class RunExecutor {
         .filter((section): section is RunPromptSection => Boolean(section)),
     })
 
+    const nativeTools = buildWorkspaceNativeTools(workspaceHandle)
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
     )
     const runtimeTools = {
+      ...nativeTools,
       getWorkspaceSummary: getWorkspaceSummaryTool,
       createArtifact: createArtifactTool(this.artifactService, {
         runId,
@@ -252,6 +277,16 @@ export class RunExecutor {
         },
       }),
       ...composioTools,
+    }
+
+    if (this.config.mockRuntime && /files?|workspace file|read .*file|search .*file/i.test(latestUserPrompt)) {
+      return this.executeMockNativeWorkspaceStream(
+        runId,
+        run,
+        threadMessages,
+        workspaceHandle,
+        latestUserPrompt
+      )
     }
 
     if (
@@ -320,6 +355,7 @@ export class RunExecutor {
         toolInput?: unknown
         toolOutput?: unknown
         error?: string
+        errorCode?: string
       }
     ) => {
       const toolkitSlug = composioToolNameToToolkit(toolName)
@@ -346,13 +382,20 @@ export class RunExecutor {
                 toolOutput: input.toolOutput,
                 error: input.error,
               })
-            : {
+            : (formatNativeToolRunStepPayload({
+                toolName,
+                workspaceId: workspaceHandle.id,
+                input: input.toolInput,
+                output: input.toolOutput,
+                error: input.error,
+                code: input.errorCode,
+              }) ?? {
                 toolCallId,
                 toolName,
                 input: input.toolInput,
                 output: input.toolOutput,
                 error: input.error,
-              },
+              }),
       })
       toolStepIds.delete(toolCallId)
     }
@@ -566,6 +609,8 @@ export class RunExecutor {
           finalizeToolStep(part.toolCallId, part.toolName, {
             toolInput: part.input,
             error: message,
+            errorCode:
+              part.error instanceof WorkspaceError ? part.error.code : undefined,
           })
         }
         this.repos.messages.updatePartsAndStatus(
@@ -673,6 +718,39 @@ export class RunExecutor {
     return this.repos.runs.getById(runId)
   }
 
+  private failWithWorkspaceError(
+    runId: string,
+    threadId: string,
+    error: unknown
+  ): never {
+    const message =
+      error instanceof Error ? error.message : "Workspace could not be resolved."
+    const code = error instanceof WorkspaceError ? error.code : "workspace_error"
+    this.repos.messages.create({
+      threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: message }],
+      status: "failed",
+    })
+    this.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: message,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Run failed",
+      payload: {
+        provider: "native",
+        code,
+        error: message,
+      },
+    })
+    this.repos.threads.touch(threadId, { status: "failed" })
+    throw new Error(message)
+  }
+
   private failWithRemediation(
     runId: string,
     threadId: string,
@@ -702,6 +780,145 @@ export class RunExecutor {
     })
     this.repos.threads.touch(threadId, { status: "failed" })
     throw new Error(error.message)
+  }
+
+  private async executeMockNativeWorkspaceStream(
+    runId: string,
+    run: Run,
+    threadMessages: Message[],
+    workspaceHandle: WorkspaceHandle,
+    latestUserPrompt: string
+  ) {
+    const thread = this.repos.threads.getById(run.threadId)
+    if (!thread) throw new Error("Thread not found")
+
+    const assistantMessage = this.repos.messages.create({
+      threadId: run.threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: "" }],
+      status: "streaming",
+    })
+
+    this.repos.runs.updateStatus(runId, "running")
+    this.repos.steps.create({
+      runId,
+      type: "running",
+      status: "running",
+      title: "Running",
+    })
+
+    const toolCallId = `mock-native-tool-${runId}`
+    const shouldSearchWorkspace = /search|find/i.test(latestUserPrompt)
+    const toolName = shouldSearchWorkspace
+      ? "searchWorkspaceFiles"
+      : "listWorkspaceFiles"
+    const nativeQuery =
+      latestUserPrompt.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/)[0] ??
+      "workspace"
+    const toolInput = shouldSearchWorkspace
+      ? { query: nativeQuery }
+      : { path: "", recursive: false }
+    const toolOutput = shouldSearchWorkspace
+      ? {
+          workspaceId: workspaceHandle.id,
+          ...(await workspaceHandle.search({ query: nativeQuery })),
+        }
+      : {
+          workspaceId: workspaceHandle.id,
+          ...(await workspaceHandle.list({ path: "", recursive: false })),
+        }
+    const payload = formatNativeToolRunStepPayload({
+      toolName,
+      workspaceId: workspaceHandle.id,
+      input: toolInput,
+      output: toolOutput,
+    })
+    const summaryText =
+      toolName === "searchWorkspaceFiles"
+        ? `Searched workspace ${workspaceHandle.id}.`
+        : `Listed workspace ${workspaceHandle.id}.`
+
+    const assistantParts: MessagePart[] = [
+      { type: "text", text: summaryText },
+      {
+        type: "tool-call",
+        toolCallId,
+        toolName,
+        input: toolInput,
+      },
+      {
+        type: "tool-result",
+        toolCallId,
+        toolName,
+        output: toolOutput,
+      },
+    ]
+
+    this.repos.steps.create({
+      runId,
+      type: "tool-call",
+      status: "completed",
+      title: `Native: ${toolName}`,
+      payload:
+        formatNativeToolRunStepPayload({
+          toolName,
+          workspaceId: workspaceHandle.id,
+          input: toolInput,
+        }) ?? undefined,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "tool-result",
+      status: "completed",
+      title: `Native: ${toolName}`,
+      payload: payload ?? undefined,
+    })
+
+    this.repos.messages.updatePartsAndStatus(
+      assistantMessage.id,
+      assistantParts,
+      "completed"
+    )
+    this.repos.runs.updateStatus(runId, "completed", {
+      finishedAt: nowIso(),
+      usage: { totalTokens: 0 },
+    })
+    this.repos.steps.create({
+      runId,
+      type: "completed",
+      status: "completed",
+      title: "Completed",
+    })
+    this.repos.threads.touch(run.threadId)
+
+    const model: LanguageModel = new MockLanguageModelV2({
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({
+              type: "text-delta",
+              id: "t1",
+              delta: summaryText,
+            })
+            controller.enqueue({
+              type: "finish",
+              finishReason: "stop",
+              usage: { inputTokens: 1, outputTokens: 10, totalTokens: 11 },
+            })
+            controller.close()
+          },
+        }),
+      }),
+    })
+
+    const result = streamText({
+      model,
+      messages: toModelMessages(threadMessages),
+    })
+
+    return result.toUIMessageStreamResponse({
+      originalMessages: toUiMessages(threadMessages),
+    })
   }
 
   private async executeMockComposioStream(

@@ -5,8 +5,10 @@ import { QuickActions } from "@/components/new-thread/quick-actions"
 import { RecentThreadsSection } from "@/components/new-thread/recent-threads-section"
 import { ThreadComposer } from "@/components/new-thread/thread-composer"
 import { PageLayout } from "@/components/shell/page-layout"
+import { useAgents } from "@/hooks/use-agents"
 export function NewThreadPage() {
   const [selectedAgentId, setSelectedAgentId] = useState(DEFAULT_AGENT_PICKER_ID)
+  const { agents, loading: agentsLoading } = useAgents()
 
   return (
     <PageLayout variant="focused" className="gap-10">
@@ -15,9 +17,14 @@ export function NewThreadPage() {
           Let&apos;s get to work.
         </h1>
 
-        <AgentPicker value={selectedAgentId} onChange={setSelectedAgentId} />
+        <AgentPicker
+          value={selectedAgentId}
+          onChange={setSelectedAgentId}
+          agents={agents}
+          agentsLoading={agentsLoading}
+        />
 
-        <ThreadComposer />
+        <ThreadComposer selectedAgentId={selectedAgentId} />
 
         <QuickActions />
       </div>

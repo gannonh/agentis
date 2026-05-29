@@ -3,7 +3,7 @@ https://github.com/gannonh/agentis/issues/385
 
 ## Status
 
-Draft approved for user review.
+Implemented as the V1 local demo vertical slice.
 
 ## Goal
 
@@ -37,7 +37,7 @@ Agentis already has the runtime mechanics needed to execute native tools:
 - `createArtifact` is a local native tool that writes generated content to artifact storage.
 - Composio tools provide a working pattern for scoped tool availability, preflight remediation, and timeline payload normalization.
 
-Current gaps:
+Pre-implementation gaps captured by this spec:
 
 - No native tool registry.
 - No workspace table or backend abstraction.
