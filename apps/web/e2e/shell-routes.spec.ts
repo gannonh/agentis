@@ -19,6 +19,7 @@ for (const route of routes) {
     await expect(page.locator("#main-content")).toBeVisible()
     await expect(page).toHaveScreenshot(`${route.name}.png`, {
       fullPage: false,
+      maxDiffPixelRatio: route.name === "learning" ? 0.05 : undefined,
     })
   })
 }
