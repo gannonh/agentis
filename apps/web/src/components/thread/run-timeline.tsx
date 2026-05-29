@@ -134,7 +134,7 @@ export function RunTimeline({
   }
 
   const runSteps = steps.filter((step) => step.runId === run.id)
-  const hasDebugSteps = runSteps.some((step) => Boolean(formatDebugPayload(step)))
+  const debugSteps = runSteps.filter((step) => Boolean(formatDebugPayload(step)))
   const visibleSteps = debugMode
     ? runSteps
     : runSteps.filter((step) => !formatDebugPayload(step))
@@ -144,21 +144,19 @@ export function RunTimeline({
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-medium">Run timeline</h2>
         <div className="flex items-center gap-2">
-          {hasDebugSteps ? (
-            <button
-              type="button"
-              aria-pressed={debugMode}
-              className={cn(
-                "rounded-full border px-2 py-0.5 text-[0.625rem] font-medium",
-                debugMode
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-border bg-input/20 text-muted-foreground"
-              )}
-              onClick={() => setDebugMode((value) => !value)}
-            >
-              Debug mode
-            </button>
-          ) : null}
+          <button
+            type="button"
+            aria-pressed={debugMode}
+            className={cn(
+              "rounded-full border px-2 py-0.5 text-[0.625rem] font-medium",
+              debugMode
+                ? "border-primary/50 bg-primary/10 text-primary"
+                : "border-border bg-input/20 text-muted-foreground"
+            )}
+            onClick={() => setDebugMode((value) => !value)}
+          >
+            Debug mode
+          </button>
           <Badge variant="outline">{statusLabel[run.status]}</Badge>
         </div>
       </div>
@@ -239,6 +237,11 @@ export function RunTimeline({
           )
         })}
       </ol>
+      {debugMode && debugSteps.length === 0 ? (
+        <p className="text-muted-foreground text-xs">
+          No debug events for this run.
+        </p>
+      ) : null}
       {run.errorSummary ? (
         <p className="text-destructive text-xs">{run.errorSummary}</p>
       ) : null}

@@ -278,6 +278,25 @@ export class RunExecutor {
       }),
       ...composioTools,
     }
+    const modelMessages = toModelMessages(threadMessages)
+    this.repos.steps.create({
+      runId,
+      type: "reasoning",
+      status: "completed",
+      title: "Debug: model input",
+      payload: {
+        provider: "debug",
+        kind: "model-input",
+        systemPrompt,
+        messages: modelMessages,
+        tools: Object.keys(runtimeTools),
+        workspace: {
+          id: workspaceHandle.id,
+          name: workspaceHandle.rootLabel,
+        },
+        agentConfigurationVersionId: run.agentConfigurationVersionId,
+      },
+    })
 
     if (this.config.mockRuntime && /files?|workspace file|read .*file|search .*file/i.test(latestUserPrompt)) {
       return this.executeMockNativeWorkspaceStream(
@@ -400,25 +419,6 @@ export class RunExecutor {
       toolStepIds.delete(toolCallId)
     }
 
-    const modelMessages = toModelMessages(threadMessages)
-    this.repos.steps.create({
-      runId,
-      type: "reasoning",
-      status: "completed",
-      title: "Debug: model input",
-      payload: {
-        provider: "debug",
-        kind: "model-input",
-        systemPrompt,
-        messages: modelMessages,
-        tools: Object.keys(runtimeTools),
-        workspace: {
-          id: workspaceHandle.id,
-          name: workspaceHandle.rootLabel,
-        },
-        agentConfigurationVersionId: run.agentConfigurationVersionId,
-      },
-    })
     let mockArtifactSuffix = ""
     if (this.config.mockRuntime && wantsGeneratedArtifact(latestUserPrompt)) {
       const generated = this.artifactService.registerGenerated({
@@ -922,9 +922,22 @@ export class RunExecutor {
       assistantParts,
       "completed"
     )
+    const usage = { totalTokens: 0 }
     this.repos.runs.updateStatus(runId, "completed", {
       finishedAt: nowIso(),
-      usage: { totalTokens: 0 },
+      usage,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "reasoning",
+      status: "completed",
+      title: "Debug: model output",
+      payload: {
+        provider: "debug",
+        kind: "model-output",
+        assistantParts,
+        usage,
+      },
     })
     this.repos.steps.create({
       runId,
@@ -1077,9 +1090,22 @@ export class RunExecutor {
       assistantParts,
       "completed"
     )
+    const usage = { totalTokens: 0 }
     this.repos.runs.updateStatus(runId, "completed", {
       finishedAt: nowIso(),
-      usage: { totalTokens: 0 },
+      usage,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "reasoning",
+      status: "completed",
+      title: "Debug: model output",
+      payload: {
+        provider: "debug",
+        kind: "model-output",
+        assistantParts,
+        usage,
+      },
     })
     this.repos.steps.create({
       runId,

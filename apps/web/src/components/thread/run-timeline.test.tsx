@@ -25,6 +25,16 @@ function step(payload: Record<string, unknown>): RunStep {
 }
 
 describe("RunTimeline", () => {
+  it("shows debug mode even when an older run has no debug payload", async () => {
+    const user = userEvent.setup()
+    render(<RunTimeline run={run} steps={[step({ provider: "native" })]} />)
+
+    await user.click(screen.getByRole("button", { name: "Debug mode" }))
+
+    expect(screen.getByText("No debug events for this run."))
+      .toBeInTheDocument()
+  })
+
   it("keeps debug I/O hidden until debug mode is enabled", async () => {
     const user = userEvent.setup()
     render(

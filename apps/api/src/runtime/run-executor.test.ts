@@ -131,6 +131,37 @@ describe("run executor composio bridge", () => {
         }),
       ])
     )
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Debug: model input",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-input",
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                role: "user",
+                content: "What files are in your workspace?",
+              }),
+            ]),
+            tools: expect.arrayContaining(["listWorkspaceFiles"]),
+          }),
+        }),
+        expect.objectContaining({
+          title: "Debug: model output",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-output",
+            assistantParts: expect.arrayContaining([
+              expect.objectContaining({
+                type: "tool-result",
+                toolName: "listWorkspaceFiles",
+              }),
+            ]),
+          }),
+        }),
+      ])
+    )
     const assistant = context.repos.messages
       .listByThreadId(context.repos.runs.getById(run.id)!.threadId)
       .find((message) => message.role === "assistant")
