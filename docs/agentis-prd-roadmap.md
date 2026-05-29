@@ -63,7 +63,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Evaluation: model-generated score and feedback tied to a run and rubric.
 - Artifact: file, document, webpage, data table, image, or other run output.
 
-## Roadmap
+## Roadmap (⚠️ warning out of date)
 
 ### M01: Foundation and Shell UI ✅
 
@@ -149,7 +149,7 @@ Acceptance:
 - User can browse, search, and download artifacts from the Library.
 - Deleting or archiving a project preserves clear artifact ownership rules.
 
-### M05: Agent Creation and Configuration
+### M05: Agent Creation and Configuration ✅
 
 Goal: let users create reusable agents with identity, model, tools, skills, memory scope, and test threads.
 
@@ -170,7 +170,7 @@ Acceptance:
 - Agent runs retain the agent version used for the run.
 - Agent detail shows recent threads, configured tools, and empty observability states.
 
-### M06: Promote Thread to Agent
+### M06: Promote Thread to Agent ✅
 
 Goal: convert a successful thread into a reusable draft agent that the user can review and run again.
 
@@ -191,7 +191,7 @@ Acceptance:
 - Created agent can run a follow-up task based on the source workflow.
 - Missing integration access blocks creation with clear remediation.
 
-### M07: Invocations and Deployment
+### M07: Invocations and Deployment 
 
 Goal: allow configured agents to run outside the manual thread composer through a small set of invocation paths.
 
