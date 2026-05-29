@@ -1,3 +1,4 @@
+import type { ReactElement } from "react"
 import { useEffect, useMemo, useState } from "react"
 import type {
   SavedMemory,
@@ -31,7 +32,22 @@ type LearningData = {
   categories: SavedMemoryCategory[]
 }
 
-const MEMORY_CATEGORY_NAMES: Record<SavedMemory["category"], Memory["category"]> = {
+type LearningAgentOption = {
+  id: string
+  name: string
+}
+
+type LearningMemoryScopeOption = {
+  label: string
+  value: string
+  scope: "global" | "agent"
+  associatedAgent?: string
+}
+
+const MEMORY_CATEGORY_NAMES: Record<
+  SavedMemory["category"],
+  Memory["category"]
+> = {
   memory_category_user_fact: "User Fact",
   memory_category_preference: "Preference",
   memory_category_project_context: "Project Context",
@@ -130,10 +146,14 @@ function buildApiLearningData(
 }
 
 function getLearningMemoryScopeOptions(
-  agents: { id: string; name: string }[]
-) {
+  agents: LearningAgentOption[]
+): LearningMemoryScopeOption[] {
   return [
-    { label: "Global (all agents)", value: "global", scope: "global" as const },
+    {
+      label: "Global (all agents)",
+      value: "global",
+      scope: "global",
+    },
     ...agents.map((agent) => ({
       label: agent.name,
       value: agent.id,
@@ -143,7 +163,9 @@ function getLearningMemoryScopeOptions(
   ]
 }
 
-function listConversationAgents(conversations: LearningConversation[]) {
+function listConversationAgents(
+  conversations: LearningConversation[]
+): LearningAgentOption[] {
   const agents = new Map<string, string>()
   for (const conversation of conversations) {
     agents.set(conversation.agentId, conversation.agentName)
@@ -151,7 +173,7 @@ function listConversationAgents(conversations: LearningConversation[]) {
   return [...agents.entries()].map(([id, name]) => ({ id, name }))
 }
 
-export function LearningPage() {
+export function LearningPage(): ReactElement {
   const workspace = getWorkspace()
   const [agentFilter, setAgentFilter] = useState("all")
   const [apiData, setApiData] = useState<LearningData | null>(null)
@@ -168,7 +190,11 @@ export function LearningPage() {
       savedMemories: [],
       categories: [],
     }),
-    [workspace.learningCandidates, workspace.learningConversations, workspace.memories]
+    [
+      workspace.learningCandidates,
+      workspace.learningConversations,
+      workspace.memories,
+    ]
   )
 
   useEffect(() => {
@@ -176,12 +202,14 @@ export function LearningPage() {
 
     Promise.all([listThreads(), listMemories()])
       .then(([threads, memories]) => {
-        if (!cancelled) {
-          setApiData(buildApiLearningData(threads, memories.memories, memories.categories))
-        }
+        if (cancelled) return
+        setApiData(
+          buildApiLearningData(threads, memories.memories, memories.categories)
+        )
       })
       .catch(() => {
-        if (!cancelled) setApiData(null)
+        if (cancelled) return
+        setApiData(null)
       })
 
     return () => {
@@ -206,7 +234,8 @@ export function LearningPage() {
   }, [agentFilter, learningData.conversations])
 
   const memoriesById = useMemo(
-    () => new Map(learningData.savedMemories.map((memory) => [memory.id, memory])),
+    () =>
+      new Map(learningData.savedMemories.map((memory) => [memory.id, memory])),
     [learningData.savedMemories]
   )
 
@@ -224,7 +253,11 @@ export function LearningPage() {
         const savedMemories = current.savedMemories.map((memory) =>
           memory.id === updated.id ? updated : memory
         )
-        return buildLearningData(current.conversations, savedMemories, current.categories)
+        return buildLearningData(
+          current.conversations,
+          savedMemories,
+          current.categories
+        )
       })
       setEditingMemory(null)
     } catch (updateMemoryError) {
@@ -282,7 +315,11 @@ export function LearningPage() {
         <LearningSecondaryPanel memories={learningData.memories} />
       </section>
 
-      <AgentFilterBar value={agentFilter} agents={filterAgents} onChange={setAgentFilter} />
+      <AgentFilterBar
+        value={agentFilter}
+        agents={filterAgents}
+        onChange={setAgentFilter}
+      />
 
       <section
         className="flex flex-col gap-3"

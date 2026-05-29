@@ -71,7 +71,11 @@ import { cn } from "@workspace/ui/lib/utils"
 import { EmptyState } from "@/components/shell/empty-state"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
-import { createMemory, listMemories, updateMemory } from "@/lib/api/memories-client"
+import {
+  createMemory,
+  listMemories,
+  updateMemory,
+} from "@/lib/api/memories-client"
 import { useAgents } from "@/hooks/use-agents"
 
 type MemoryScopeFilter = "all" | "global" | `agent:${string}`
@@ -220,18 +224,19 @@ function getMemorySourceDescription(memory: SavedMemory): string {
   return `Agent Thread: ${memory.sourceThreadTitle ?? memory.provenance}`
 }
 
+function getMemoryAssociatedAgents(memory: SavedMemory): string[] {
+  if (memory.associatedAgents.length > 0) return memory.associatedAgents
+  if (memory.associatedAgent) return [memory.associatedAgent]
+  return []
+}
+
 function MemoryCard({
   memory,
   categoryName,
   agentNameById,
   onEdit,
 }: MemoryCardProps): ReactElement {
-  const associatedAgents = memory.associatedAgents.length
-    ? memory.associatedAgents
-    : memory.associatedAgent
-      ? [memory.associatedAgent]
-      : []
-  const associatedAgentNames = associatedAgents.map(
+  const associatedAgentNames = getMemoryAssociatedAgents(memory).map(
     (agentId) => agentNameById.get(agentId) ?? agentId
   )
   function handleCardKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
@@ -265,7 +270,9 @@ function MemoryCard({
             <Badge variant="outline">{memory.importance} importance</Badge>
             <Badge variant="outline">{memory.scope}</Badge>
             <Badge
-              variant={memory.source === "user-generated" ? "secondary" : "outline"}
+              variant={
+                memory.source === "user-generated" ? "secondary" : "outline"
+              }
             >
               {getMemorySourceLabel(memory.source)}
             </Badge>
@@ -301,7 +308,9 @@ function MemoryCard({
           <div>
             <dt className="text-xs text-muted-foreground">Scope</dt>
             <dd>
-              {memory.scope === "global" ? "Global" : associatedAgentNames.join(", ")}
+              {memory.scope === "global"
+                ? "Global"
+                : associatedAgentNames.join(", ")}
             </dd>
           </div>
         </dl>
@@ -325,6 +334,41 @@ function getSelectedCategory(
   }
 
   return categories.find((item) => item.id === selectedCategory) ?? null
+}
+
+function getAgentIdFromScopeFilter(
+  scopeFilter: MemoryScopeFilter
+): string | null {
+  if (!scopeFilter.startsWith("agent:")) return null
+  return scopeFilter.slice("agent:".length)
+}
+
+function getScopeFilterLabel(
+  scopeFilter: MemoryScopeFilter,
+  agents: AgentListItem[]
+): string {
+  if (scopeFilter === "all") return "All Memories"
+  if (scopeFilter === "global") return "Global"
+
+  const selectedAgentId = getAgentIdFromScopeFilter(scopeFilter)
+  return agents.find((agent) => agent.id === selectedAgentId)?.name ?? "Agent"
+}
+
+function memoryMatchesScopeFilter(
+  memory: SavedMemory,
+  scopeFilter: MemoryScopeFilter
+): boolean {
+  if (scopeFilter === "all") return true
+  if (scopeFilter === "global") return memory.scope === "global"
+
+  const agentId = getAgentIdFromScopeFilter(scopeFilter)
+  if (!agentId) return false
+
+  return (
+    memory.scope === "agent" &&
+    (memory.associatedAgents.includes(agentId) ||
+      memory.associatedAgent === agentId)
+  )
 }
 
 type MemoryFiltersProps = {
@@ -352,15 +396,7 @@ function MemoryFilters({
   const categoryLabel = selectedCategoryData
     ? `${selectedCategoryData.name} (${selectedCategoryData.count})`
     : `All categories (${categories.length})`
-  const selectedAgentId = scopeFilter.startsWith("agent:")
-    ? scopeFilter.slice("agent:".length)
-    : null
-  const scopeLabel =
-    scopeFilter === "all"
-      ? "All Memories"
-      : scopeFilter === "global"
-        ? "Global"
-        : agents.find((agent) => agent.id === selectedAgentId)?.name ?? "Agent"
+  const scopeLabel = getScopeFilterLabel(scopeFilter, agents)
 
   return (
     <section
@@ -501,18 +537,22 @@ function parseTags(tagsText: string): string[] {
 }
 
 function getScopeSelection(form: AddMemoryFormState): string[] {
-  return form.scope === "global" ? ["global"] : form.associatedAgents ?? []
+  if (form.scope === "global") return ["global"]
+  return form.associatedAgents ?? []
 }
 
 function getScopeFormPatch(
   currentValues: string[],
   nextValues: string[]
 ): Pick<AddMemoryFormState, "scope" | "associatedAgent" | "associatedAgents"> {
-  const selected = nextValues.includes("global")
-    ? currentValues.includes("global")
-      ? nextValues.filter((value) => value !== "global")
-      : []
-    : nextValues
+  let selected = nextValues
+
+  if (nextValues.includes("global")) {
+    selected = []
+    if (currentValues.includes("global")) {
+      selected = nextValues.filter((value) => value !== "global")
+    }
+  }
 
   return {
     scope: selected.length > 0 ? "agent" : "global",
@@ -588,6 +628,22 @@ function getMemoryFormState(memory: SavedMemory): AddMemoryFormState {
   }
 }
 
+function getMemoryRequestFromForm(
+  form: AddMemoryFormState
+): CreateSavedMemoryRequest {
+  return {
+    content: form.content,
+    category: form.category,
+    importance: form.importance,
+    usageGuidance: form.usageGuidance,
+    tags: parseTags(form.tagsText),
+    scope: form.scope,
+    associatedAgent: form.scope === "agent" ? form.associatedAgent : undefined,
+    associatedAgents: form.scope === "agent" ? form.associatedAgents : [],
+    pinnedToContext: form.pinnedToContext,
+  }
+}
+
 type AddMemoryDialogProps = {
   open: boolean
   categories: SavedMemoryCategory[]
@@ -615,19 +671,11 @@ function AddMemoryDialog({
       selectedCategory ?? categories[0]?.id ?? DEFAULT_ADD_MEMORY_FORM.category,
   })
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ): Promise<void> {
     event.preventDefault()
-    await onCreate({
-      content: form.content,
-      category: form.category,
-      importance: form.importance,
-      usageGuidance: form.usageGuidance,
-      tags: parseTags(form.tagsText),
-      scope: form.scope,
-      associatedAgent: form.scope === "agent" ? form.associatedAgent : undefined,
-      associatedAgents: form.scope === "agent" ? form.associatedAgents : [],
-      pinnedToContext: form.pinnedToContext,
-    })
+    await onCreate(getMemoryRequestFromForm(form))
   }
 
   return (
@@ -647,7 +695,10 @@ function AddMemoryDialog({
               required
               value={form.content}
               onChange={(event) =>
-                setForm((current) => ({ ...current, content: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  content: event.target.value,
+                }))
               }
               placeholder="E.g., 'User prefers TypeScript over JavaScript'"
               className="min-h-24 text-sm"
@@ -699,7 +750,10 @@ function AddMemoryDialog({
             <Input
               value={form.usageGuidance}
               onChange={(event) =>
-                setForm((current) => ({ ...current, usageGuidance: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  usageGuidance: event.target.value,
+                }))
               }
               placeholder="E.g., 'When researching consumer products'"
             />
@@ -710,7 +764,10 @@ function AddMemoryDialog({
             <Input
               value={form.tagsText}
               onChange={(event) =>
-                setForm((current) => ({ ...current, tagsText: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  tagsText: event.target.value,
+                }))
               }
               placeholder="E.g., preferences, coding, typescript"
             />
@@ -770,7 +827,11 @@ function AddMemoryDialog({
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={saving || !form.content.trim()}>
@@ -808,19 +869,11 @@ export function EditMemoryDialog({
     getMemoryFormState(memory)
   )
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ): Promise<void> {
     event.preventDefault()
-    await onUpdate(memory.id, {
-      content: form.content,
-      category: form.category,
-      importance: form.importance,
-      usageGuidance: form.usageGuidance,
-      tags: parseTags(form.tagsText),
-      scope: form.scope,
-      associatedAgent: form.scope === "agent" ? form.associatedAgent : undefined,
-      associatedAgents: form.scope === "agent" ? form.associatedAgents : [],
-      pinnedToContext: form.pinnedToContext,
-    })
+    await onUpdate(memory.id, getMemoryRequestFromForm(form))
   }
 
   return (
@@ -830,7 +883,8 @@ export function EditMemoryDialog({
           <DialogHeader>
             <DialogTitle>Edit Memory</DialogTitle>
             <DialogDescription>
-              Update reusable context. Provenance stays tied to where the memory came from.
+              Update reusable context. Provenance stays tied to where the memory
+              came from.
             </DialogDescription>
           </DialogHeader>
 
@@ -840,7 +894,10 @@ export function EditMemoryDialog({
               required
               value={form.content}
               onChange={(event) =>
-                setForm((current) => ({ ...current, content: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  content: event.target.value,
+                }))
               }
               className="min-h-24 text-sm"
             />
@@ -891,7 +948,10 @@ export function EditMemoryDialog({
             <Input
               value={form.usageGuidance}
               onChange={(event) =>
-                setForm((current) => ({ ...current, usageGuidance: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  usageGuidance: event.target.value,
+                }))
               }
             />
           </label>
@@ -901,7 +961,10 @@ export function EditMemoryDialog({
             <Input
               value={form.tagsText}
               onChange={(event) =>
-                setForm((current) => ({ ...current, tagsText: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  tagsText: event.target.value,
+                }))
               }
             />
           </label>
@@ -952,7 +1015,11 @@ export function EditMemoryDialog({
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={saving || !form.content.trim()}>
@@ -1023,15 +1090,10 @@ export function MemoriesPage(): ReactElement {
     getSelectedCategory(categories, selectedCategory)?.name ?? null
   const visibleMemories = memories.filter((memory) => {
     const categoryName = categoryNameMap.get(memory.category) ?? memory.category
-    const matchesScope =
-      scopeFilter === "all" ||
-      (scopeFilter === "global" && memory.scope === "global") ||
-      (scopeFilter.startsWith("agent:") &&
-        memory.scope === "agent" &&
-        (memory.associatedAgents.includes(scopeFilter.slice("agent:".length)) ||
-          memory.associatedAgent === scopeFilter.slice("agent:".length)))
-
-    return matchesScope && memoryMatchesSearch(memory, categoryName, searchQuery)
+    return (
+      memoryMatchesScopeFilter(memory, scopeFilter) &&
+      memoryMatchesSearch(memory, categoryName, searchQuery)
+    )
   })
 
   function handleSelectCategory(category: SavedMemoryCategoryKey | null): void {
@@ -1041,7 +1103,9 @@ export function MemoriesPage(): ReactElement {
     setError(null)
   }
 
-  async function handleCreateMemory(input: CreateSavedMemoryRequest): Promise<void> {
+  async function handleCreateMemory(
+    input: CreateSavedMemoryRequest
+  ): Promise<void> {
     setSavingMemory(true)
     setCreateError(null)
 

@@ -118,9 +118,14 @@ function parseSavedMemoryTags(tagsJson: string): string[] {
   return parseStringArray(tagsJson)
 }
 
-export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
+function getSavedMemoryAssociatedAgents(row: SavedMemoryRow): string[] {
   const associatedAgents = parseStringArray(row.associatedAgentsJson)
+  if (associatedAgents.length > 0) return associatedAgents
+  if (row.associatedAgent) return [row.associatedAgent]
+  return []
+}
 
+export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
   return {
     id: row.id,
     content: row.content,
@@ -131,11 +136,7 @@ export function mapSavedMemory(row: SavedMemoryRow): SavedMemory {
     date: row.date,
     scope: row.scope as SavedMemory["scope"],
     associatedAgent: row.associatedAgent ?? undefined,
-    associatedAgents: associatedAgents.length
-      ? associatedAgents
-      : row.associatedAgent
-        ? [row.associatedAgent]
-        : [],
+    associatedAgents: getSavedMemoryAssociatedAgents(row),
     source: row.source as SavedMemory["source"],
     sourceThreadId: row.sourceThreadId ?? undefined,
     sourceThreadTitle: row.sourceThreadTitle ?? undefined,

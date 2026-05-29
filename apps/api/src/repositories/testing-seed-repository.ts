@@ -42,6 +42,11 @@ export type DebugSeedResult = {
   counts: DebugSeedCounts
 }
 
+type ResolvedDebugDataset = {
+  dataset: DebugDatasetSummary
+  includeIntegrations: boolean
+}
+
 const RICH_WORKSPACE: DebugDatasetSummary = {
   id: "rich-agent-workspace",
   name: "Rich agent workspace",
@@ -742,7 +747,7 @@ function countPayload(includeIntegrations: boolean): DebugSeedCounts {
   }
 }
 
-function resolveDataset(datasetId: string) {
+function resolveDataset(datasetId: string): ResolvedDebugDataset | null {
   if (datasetId === RICH_WORKSPACE.id) {
     return { dataset: RICH_WORKSPACE, includeIntegrations: true }
   }
@@ -786,8 +791,12 @@ export class TestingSeedRepository {
     }
   }
 
-  private deleteRichWorkspace() {
-    const storage = this.config ? new LocalArtifactStorage(this.config) : null
+  private getArtifactStorage(): LocalArtifactStorage | null {
+    return this.config ? new LocalArtifactStorage(this.config) : null
+  }
+
+  private deleteRichWorkspace(): void {
+    const storage = this.getArtifactStorage()
     for (const artifact of artifactRows) {
       storage?.delete(artifact.storageKey)
     }
@@ -816,8 +825,8 @@ export class TestingSeedRepository {
     })
   }
 
-  private insertRichWorkspace(includeIntegrations: boolean) {
-    const storage = this.config ? new LocalArtifactStorage(this.config) : null
+  private insertRichWorkspace(includeIntegrations: boolean): void {
+    const storage = this.getArtifactStorage()
     for (const [storageKey, body] of Object.entries(artifactBodies)) {
       storage?.write(storageKey, Buffer.from(body, "utf8"))
     }

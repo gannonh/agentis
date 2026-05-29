@@ -1,3 +1,4 @@
+import type { ReactElement } from "react"
 import { BulbIcon, SparklesIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Badge } from "@workspace/ui/components/badge"
@@ -30,7 +31,7 @@ function formatSuggestionState(status: LearningCandidate["status"]): string {
 export function LearningCandidateCard({
   candidate,
   onEditMemory,
-}: LearningCandidateCardProps) {
+}: LearningCandidateCardProps): ReactElement {
   const confidence = Math.round(candidate.confidence * 100)
 
   return (

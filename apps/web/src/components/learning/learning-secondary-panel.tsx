@@ -1,3 +1,4 @@
+import type { ReactElement } from "react"
 import { Brain01Icon, ClipboardIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "react-router"
@@ -30,7 +31,9 @@ function getCategorySummaries(memories: Memory[]): MemoryCategorySummary[] {
   return summaries
 }
 
-export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps) {
+export function LearningSecondaryPanel({
+  memories,
+}: LearningSecondaryPanelProps): ReactElement {
   const categorySummaries = getCategorySummaries(memories)
 
   return (
@@ -55,24 +58,34 @@ export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps
             {memories.length} saved
           </Badge>
         </div>
-        <p className="text-muted-foreground text-xs leading-relaxed">
-          Memories are created when agents learn facts, preferences, and active work from
-          conversations.
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Memories are created when agents learn facts, preferences, and active
+          work from conversations.
         </p>
         <div className="flex flex-wrap gap-2">
           {categorySummaries.length > 0 ? (
             categorySummaries.map((summary) => (
-              <Badge key={summary.category} variant="outline" className="text-xs">
+              <Badge
+                key={summary.category}
+                variant="outline"
+                className="text-xs"
+              >
                 {summary.category}: {summary.count}
               </Badge>
             ))
           ) : (
-            <p className="text-muted-foreground text-xs">No memories stored yet</p>
+            <p className="text-xs text-muted-foreground">
+              No memories stored yet
+            </p>
           )}
         </div>
         <Link
           to="/memories"
-          className={buttonVariants({ variant: "outline", size: "sm", className: "w-fit" })}
+          className={buttonVariants({
+            variant: "outline",
+            size: "sm",
+            className: "w-fit",
+          })}
         >
           Browse Memories
         </Link>
@@ -94,7 +107,7 @@ export function LearningSecondaryPanel({ memories }: LearningSecondaryPanelProps
           </h2>
         </div>
         <p className="text-sm font-medium">No rubrics yet</p>
-        <p className="text-muted-foreground text-xs leading-relaxed">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           Rubrics define how agents evaluate and improve their work over time.
         </p>
         <Button variant="outline" size="sm" className="w-fit" disabled>

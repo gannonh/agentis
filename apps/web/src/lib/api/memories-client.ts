@@ -27,22 +27,19 @@ function getErrorMessage(data: unknown, fallback: string): string {
   return fallback
 }
 
-async function parseJson(response: Response): Promise<MemoriesListResponse> {
+async function parseJson<T>(
+  response: Response,
+  schema: { parse: (data: unknown) => T }
+): Promise<T> {
   const data = await response.json()
   if (!response.ok) {
-    throw new ApiError(getErrorMessage(data, response.statusText), response.status)
+    throw new ApiError(
+      getErrorMessage(data, response.statusText),
+      response.status
+    )
   }
 
-  return memoriesListResponseSchema.parse(data)
-}
-
-async function parseMemoryJson(response: Response): Promise<SavedMemory> {
-  const data = await response.json()
-  if (!response.ok) {
-    throw new ApiError(getErrorMessage(data, response.statusText), response.status)
-  }
-
-  return savedMemorySchema.parse(data)
+  return schema.parse(data)
 }
 
 export async function listMemories(
@@ -52,16 +49,18 @@ export async function listMemories(
     ? `?category=${encodeURIComponent(savedMemoryCategoryKeySchema.parse(category))}`
     : ""
   const response = await fetch(`${API_BASE}/api/memories${query}`)
-  return parseJson(response)
+  return parseJson(response, memoriesListResponseSchema)
 }
 
-export async function createMemory(input: CreateSavedMemoryRequest): Promise<SavedMemory> {
+export async function createMemory(
+  input: CreateSavedMemoryRequest
+): Promise<SavedMemory> {
   const response = await fetch(`${API_BASE}/api/memories`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(createSavedMemoryRequestSchema.parse(input)),
   })
-  return parseMemoryJson(response)
+  return parseJson(response, savedMemorySchema)
 }
 
 export async function updateMemory(
@@ -73,5 +72,5 @@ export async function updateMemory(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updateSavedMemoryRequestSchema.parse(input)),
   })
-  return parseMemoryJson(response)
+  return parseJson(response, savedMemorySchema)
 }

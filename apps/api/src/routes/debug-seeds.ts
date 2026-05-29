@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import type { Repositories } from "../repositories/index.js"
 
-export function createDebugSeedRoutes(repos: Repositories) {
+export function createDebugSeedRoutes(repos: Repositories): Hono {
   const app = new Hono()
 
   app.get("/datasets", (c) => {

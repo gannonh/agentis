@@ -1,3 +1,4 @@
+import type { ReactElement } from "react"
 import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -33,7 +34,7 @@ export function LearningConversationRow({
   conversation,
   candidates = [],
   onEditMemory,
-}: LearningConversationRowProps) {
+}: LearningConversationRowProps): ReactElement {
   const [expanded, setExpanded] = useState(false)
   const hasSuggestions = candidates.length > 0
 

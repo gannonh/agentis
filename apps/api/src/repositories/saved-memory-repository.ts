@@ -1,10 +1,10 @@
 import { asc, eq, sql } from "drizzle-orm"
 import type {
+  AgentMemorySummary,
   CreateSavedMemoryRequest,
   MemoriesListResponse,
   SavedMemory,
   SavedMemoryCategoryKey,
-  AgentMemorySummary,
   UpdateSavedMemoryRequest,
 } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
@@ -12,7 +12,9 @@ import { savedMemories, savedMemoryCategories } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapSavedMemory, mapSavedMemoryCategory } from "../lib/mappers.js"
 
-function mapMemories(rows: (typeof savedMemories.$inferSelect)[]): SavedMemory[] {
+function mapMemories(
+  rows: (typeof savedMemories.$inferSelect)[]
+): SavedMemory[] {
   return rows.map(mapSavedMemory)
 }
 
@@ -22,12 +24,10 @@ function getAssociatedAgents(input: {
   associatedAgents?: string[]
 }): string[] {
   if (input.scope === "global") return []
-  const agents = input.associatedAgents?.length
-    ? input.associatedAgents
-    : input.associatedAgent
-      ? [input.associatedAgent]
-      : []
-  return [...new Set(agents)]
+  if (input.associatedAgents?.length)
+    return [...new Set(input.associatedAgents)]
+  if (input.associatedAgent) return [input.associatedAgent]
+  return []
 }
 
 export class SavedMemoryRepository {
@@ -87,7 +87,9 @@ export class SavedMemoryRepository {
         content: input.content ?? existing.content,
         category: input.category ?? existing.category,
         usageGuidance: input.usageGuidance ?? existing.usageGuidance,
-        tagsJson: input.tags ? JSON.stringify(input.tags) : JSON.stringify(existing.tags),
+        tagsJson: input.tags
+          ? JSON.stringify(input.tags)
+          : JSON.stringify(existing.tags),
         importance: input.importance ?? existing.importance,
         scope,
         associatedAgent: associatedAgents[0] ?? null,
@@ -136,9 +138,10 @@ export class SavedMemoryRepository {
       .from(savedMemories)
       .orderBy(asc(savedMemories.date), asc(savedMemories.id))
 
-    const memories = (category
-      ? memoriesQuery.where(eq(savedMemories.category, category))
-      : memoriesQuery
+    const memories = (
+      category
+        ? memoriesQuery.where(eq(savedMemories.category, category))
+        : memoriesQuery
     )
       .all()
       .map(mapSavedMemory)
