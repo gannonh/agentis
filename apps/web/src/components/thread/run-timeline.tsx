@@ -38,6 +38,21 @@ function formatComposioPayload(step: RunStep) {
   }
 }
 
+function formatDebugTools(value: unknown) {
+  if (!Array.isArray(value)) return value
+  return value.map((tool) => {
+    if (typeof tool === "string") return tool
+    const record = getRecord(tool)
+    return typeof record?.name === "string" ? record.name : tool
+  })
+}
+
+function inferDebugToolDetails(value: unknown) {
+  if (!Array.isArray(value)) return undefined
+  const details = value.filter((tool) => getRecord(tool))
+  return details.length > 0 ? details : undefined
+}
+
 function formatDebugPayload(step: RunStep) {
   const payload = step.payload
   if (!payload || typeof payload !== "object" || payload.provider !== "debug") {
@@ -49,8 +64,8 @@ function formatDebugPayload(step: RunStep) {
     systemPrompt:
       typeof record.systemPrompt === "string" ? record.systemPrompt : undefined,
     messages: record.messages,
-    tools: record.tools,
-    toolDetails: record.toolDetails,
+    tools: formatDebugTools(record.tools),
+    toolDetails: record.toolDetails ?? inferDebugToolDetails(record.tools),
     workspace: record.workspace,
     assistantParts: record.assistantParts,
     usage: record.usage,

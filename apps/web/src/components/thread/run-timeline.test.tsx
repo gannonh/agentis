@@ -52,8 +52,7 @@ describe("RunTimeline", () => {
               kind: "model-input",
               systemPrompt: "## Agent instructions\nAnswer with full debug detail.",
               messages: [{ role: "user", content: "Inspect this run." }],
-              tools: ["listWorkspaceFiles", "readWorkspaceFile"],
-              toolDetails: [
+              tools: [
                 {
                   name: "listWorkspaceFiles",
                   description: "List files and directories under the workspace.",
@@ -62,6 +61,7 @@ describe("RunTimeline", () => {
                     fields: [{ name: "path", typeName: "ZodOptional" }],
                   },
                 },
+                "readWorkspaceFile",
               ],
             },
             createdAt: new Date().toISOString(),
@@ -85,6 +85,7 @@ describe("RunTimeline", () => {
     expect(systemPromptSummary.closest("details")).toHaveAttribute("open")
     expect(screen.getByText(/Answer with full debug detail/)).toBeInTheDocument()
     expect(screen.getAllByText(/listWorkspaceFiles/).length).toBeGreaterThan(1)
+    expect(screen.getByText(/readWorkspaceFile/)).toBeInTheDocument()
     expect(screen.getByText("Tool details")).toBeInTheDocument()
     expect(screen.getByText(/List files and directories/)).toBeInTheDocument()
     expect(screen.getByText(/ZodObject/)).toBeInTheDocument()
