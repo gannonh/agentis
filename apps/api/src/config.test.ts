@@ -1,7 +1,24 @@
 import { describe, expect, it } from "vitest"
-import { loadConfig } from "./config.js"
+import { isDebugSeedsEnabled, loadConfig } from "./config.js"
 
 describe("config", () => {
+  it("defaults to production mode when NODE_ENV is unset", () => {
+    const config = loadConfig({})
+
+    expect(config.nodeEnv).toBe("production")
+    expect(isDebugSeedsEnabled(config)).toBe(false)
+  })
+
+  it("enables debug seeds only in development mode", () => {
+    const config = loadConfig({ NODE_ENV: "production" })
+
+    expect(isDebugSeedsEnabled(config)).toBe(false)
+    expect(isDebugSeedsEnabled({ ...config, nodeEnv: "test" })).toBe(false)
+    expect(isDebugSeedsEnabled({ ...config, nodeEnv: "development" })).toBe(
+      true
+    )
+  })
+
   it("keeps default Composio toolkit versions keyed by Agentis toolkit slug", () => {
     const config = loadConfig({})
 

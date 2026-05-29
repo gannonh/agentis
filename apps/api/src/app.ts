@@ -67,7 +67,7 @@ export function createApp(
   )
   app.route("/api/runs", createRunRoutes(repos, config, services))
   if (isDebugSeedsEnabled(config)) {
-    app.route("/api/debug", createDebugSeedRoutes(repos, config))
+    app.route("/api/debug", createDebugSeedRoutes(repos))
   }
 
   app.get("/api/health", (c) => c.json({ ok: true }))

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev",
-    "dev:live": "AGENTIS_MOCK_COMPOSIO=0 AGENTIS_MOCK_RUNTIME=0 turbo dev",
+    "dev": "NODE_ENV=development turbo dev",
+    "dev:live": "NODE_ENV=development AGENTIS_MOCK_COMPOSIO=0 AGENTIS_MOCK_RUNTIME=0 turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck",

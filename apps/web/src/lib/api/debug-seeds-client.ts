@@ -2,7 +2,6 @@ import { z } from "zod"
 import { ApiError } from "@/lib/api/client"
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ""
-const DEBUG_SEED_KEY = import.meta.env.VITE_AGENTIS_DEBUG_SEED_KEY
 
 const debugDatasetSchema = z.object({
   id: z.string(),
@@ -51,16 +50,8 @@ async function parseJson<T>(
   return schema.parse(data)
 }
 
-function getDebugSeedHeaders(): HeadersInit | undefined {
-  return DEBUG_SEED_KEY
-    ? { Authorization: `Bearer ${DEBUG_SEED_KEY}` }
-    : undefined
-}
-
 export async function listDebugDatasets(): Promise<DebugDatasetsResponse> {
-  const response = await fetch(`${API_BASE}/api/debug/datasets`, {
-    headers: getDebugSeedHeaders(),
-  })
+  const response = await fetch(`${API_BASE}/api/debug/datasets`)
   return parseJson(response, debugDatasetsResponseSchema)
 }
 
@@ -69,7 +60,7 @@ export async function seedDebugDataset(
 ): Promise<DebugSeedResult> {
   const response = await fetch(
     `${API_BASE}/api/debug/datasets/${encodeURIComponent(datasetId)}`,
-    { method: "POST", headers: getDebugSeedHeaders() }
+    { method: "POST" }
   )
   return parseJson(response, debugSeedResultSchema)
 }
@@ -79,7 +70,7 @@ export async function deleteDebugDataset(
 ): Promise<DebugSeedResult> {
   const response = await fetch(
     `${API_BASE}/api/debug/datasets/${encodeURIComponent(datasetId)}`,
-    { method: "DELETE", headers: getDebugSeedHeaders() }
+    { method: "DELETE" }
   )
   return parseJson(response, debugSeedResultSchema)
 }

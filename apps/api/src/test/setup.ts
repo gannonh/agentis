@@ -31,7 +31,6 @@ export function createTestContext() {
     openAiApiKey: "test-key",
     defaultModel: "gpt-4o-mini",
     mockRuntime: false,
-    debugSeedKey: undefined,
     composioApiKey: undefined,
     composioRedirectBaseUrl: "http://127.0.0.1:3001",
     composioUserId: "agentis-local-user",
