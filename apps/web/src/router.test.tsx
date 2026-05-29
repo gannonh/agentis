@@ -154,7 +154,7 @@ describe("router", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("May 27, 2026")).toBeInTheDocument()
     expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    expect(screen.getByText("Agent Thread: Creating Agent")).toBeInTheDocument()
     expect(screen.getByText("Scope")).toBeInTheDocument()
   })
 
@@ -196,15 +196,17 @@ describe("router", () => {
 
     render(<RouterProvider router={memoryRouter} />)
 
-    expect(await screen.findByText("Creating Agent")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: `Edit memory: ${seededMemory.content}` }))
+    expect(await screen.findByText("Agent Thread: Creating Agent")).toBeInTheDocument()
+    await user.click(
+      screen.getByRole("button", { name: `Edit memory: ${seededMemory.content}` })
+    )
     await user.click(screen.getByPlaceholderText("Select scope"))
     await user.click(await screen.findByRole("option", { name: "Sales Prospector" }))
     await user.keyboard("{Escape}")
     await user.click(screen.getByRole("button", { name: "Save Memory" }))
 
     expect(await screen.findByText("API Research Agent, Sales Prospector")).toBeInTheDocument()
-    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    expect(screen.getByText("Agent Thread: Creating Agent")).toBeInTheDocument()
   })
 
   it("filters memories through the category menu and keeps empty categories visible", async () => {
@@ -516,7 +518,7 @@ describe("router", () => {
       await screen.findByText("User prefers TypeScript over JavaScript.")
     ).toBeInTheDocument()
     expect(screen.getAllByText("User").length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText("created manually by user")).toBeInTheDocument()
+    expect(screen.queryByText("created manually by user")).not.toBeInTheDocument()
     expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Pinned to context")).toBeInTheDocument()
   })

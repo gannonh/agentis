@@ -215,6 +215,11 @@ function getMemorySourceLabel(source: SavedMemory["source"]): string {
   return source === "thread-derived" ? "Agent Thread" : "User"
 }
 
+function getMemorySourceDescription(memory: SavedMemory): string {
+  if (memory.source === "user-generated") return "User"
+  return `Agent Thread: ${memory.sourceThreadTitle ?? memory.provenance}`
+}
+
 function MemoryCard({
   memory,
   categoryName,
@@ -291,17 +296,13 @@ function MemoryCard({
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Source</dt>
-            <dd>{getMemorySourceLabel(memory.source)}</dd>
+            <dd>{getMemorySourceDescription(memory)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Scope</dt>
             <dd>
               {memory.scope === "global" ? "Global" : associatedAgentNames.join(", ")}
             </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Provenance</dt>
-            <dd>{memory.provenance}</dd>
           </div>
         </dl>
       </CardContent>
