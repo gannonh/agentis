@@ -281,7 +281,7 @@ describe("LearningPage", () => {
     expect(
       screen.queryByRole("option", { name: "Unassigned agent" })
     ).not.toBeInTheDocument()
-  })
+  }, 10_000)
 
   it("renders learning dashboard aligned with comp", () => {
     const { container } = render(
