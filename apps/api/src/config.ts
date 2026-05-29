@@ -112,7 +112,10 @@ export function isRuntimeAvailable(config: AppConfig) {
 }
 
 export function isDebugSeedsEnabled(config: AppConfig) {
-  return config.nodeEnv !== "production" && Boolean(config.debugSeedKey?.trim())
+  return (
+    config.nodeEnv === "development" ||
+    (config.nodeEnv !== "production" && Boolean(config.debugSeedKey?.trim()))
+  )
 }
 
 export function isComposioAvailable(config: AppConfig) {

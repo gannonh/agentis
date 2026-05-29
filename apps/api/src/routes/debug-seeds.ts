@@ -21,6 +21,10 @@ export function createDebugSeedRoutes(
 
   app.use("*", async (c, next) => {
     const debugSeedKey = config.debugSeedKey?.trim()
+    if (!debugSeedKey && config.nodeEnv === "development") {
+      await next()
+      return
+    }
     if (!debugSeedKey || !hasDebugSeedAccess(c.req.raw, debugSeedKey)) {
       return c.json(
         { error: "Debug seed access denied", code: "debug_seed_forbidden" },

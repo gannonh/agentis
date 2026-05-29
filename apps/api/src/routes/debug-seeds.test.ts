@@ -227,7 +227,31 @@ describe("debug seed routes", () => {
     })
   })
 
-  it("does not mount debug seeding routes without a configured debug key", async () => {
+  it("mounts debug seeding routes in development without a configured debug key", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      nodeEnv: "development",
+    })
+
+    const response = await app.request("/api/debug/datasets")
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      datasets: [
+        {
+          id: "rich-agent-workspace",
+          name: "Rich agent workspace",
+        },
+        {
+          id: "rich-agent-workspace-no-integrations",
+          name: "Rich agent workspace, no integrations",
+        },
+      ],
+    })
+  })
+
+  it("does not mount debug seeding routes in tests without a configured debug key", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
 
