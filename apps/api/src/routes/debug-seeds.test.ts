@@ -102,6 +102,39 @@ describe("debug seed routes", () => {
     )
   })
 
+  it("reseeds after a user creates a thread with a seeded agent", async () => {
+    ctx = createTestContext()
+    const app = createDebugSeedTestApp(ctx)
+
+    const firstSeed = await app.request(
+      "/api/debug/datasets/rich-agent-workspace",
+      { method: "POST" }
+    )
+    expect(firstSeed.status).toBe(200)
+
+    const createdThread = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId: "seed_agent_support_triage",
+        prompt: "Use your seeded agent workspace for this follow-up.",
+      }),
+    })
+    expect(createdThread.status).toBe(201)
+
+    const response = await app.request(
+      "/api/debug/datasets/rich-agent-workspace",
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(200)
+    expect(ctx.repos.threads.list().map((thread) => thread.id)).toEqual(
+      expect.not.arrayContaining([
+        expect.stringMatching(/^thread_/),
+      ])
+    )
+  })
+
   it("links accepted seeded memories to their source agent threads", async () => {
     ctx = createTestContext()
     const app = createDebugSeedTestApp(ctx)

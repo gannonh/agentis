@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { inArray, sql } from "drizzle-orm"
+import { inArray, or, sql } from "drizzle-orm"
 import type { AnySQLiteTable } from "drizzle-orm/sqlite-core"
 import type { AppConfig } from "../config.js"
 import type { AppDatabase } from "../db/client.js"
@@ -179,22 +179,104 @@ export class TestingSeedRepository {
   }
 
   private deleteRichWorkspace(): void {
+    const richWorkspaceIds = agentIds.map((agentId) => `workspace_${agentId}`)
+    const richThreadIds = Array.from(
+      new Set([
+        ...threadIds,
+        ...this.db
+          .select({ id: threads.id })
+          .from(threads)
+          .where(
+            or(
+              inArray(threads.agentId, agentIds),
+              inArray(threads.workspaceId, richWorkspaceIds)
+            )
+          )
+          .all()
+          .map((thread) => thread.id),
+      ])
+    )
+    const richRunIds = Array.from(
+      new Set([
+        ...runIds,
+        ...this.db
+          .select({ id: runs.id })
+          .from(runs)
+          .where(
+            or(
+              inArray(runs.threadId, richThreadIds),
+              inArray(runs.agentId, agentIds)
+            )
+          )
+          .all()
+          .map((run) => run.id),
+      ])
+    )
+    const richArtifacts = this.db
+      .select({ id: artifacts.id, storageKey: artifacts.storageKey })
+      .from(artifacts)
+      .where(
+        or(
+          inArray(artifacts.id, artifactIds),
+          inArray(artifacts.projectId, projectIds),
+          inArray(artifacts.threadId, richThreadIds),
+          inArray(artifacts.runId, richRunIds),
+          inArray(artifacts.agentId, agentIds)
+        )
+      )
+      .all()
+
     const storage = this.getArtifactStorage()
-    for (const artifact of artifactRows) {
+    for (const artifact of richArtifacts) {
       storage?.delete(artifact.storageKey)
     }
 
     this.db.transaction((tx) => {
-      tx.delete(artifacts).where(inArray(artifacts.id, artifactIds)).run()
-      tx.delete(toolAccessGrants)
-        .where(inArray(toolAccessGrants.id, grantIds))
+      tx.delete(artifacts)
+        .where(
+          inArray(
+            artifacts.id,
+            richArtifacts.map((artifact) => artifact.id)
+          )
+        )
         .run()
-      tx.delete(runSteps).where(inArray(runSteps.id, stepIds)).run()
-      tx.delete(runs).where(inArray(runs.id, runIds)).run()
-      tx.delete(messages).where(inArray(messages.id, messageIds)).run()
-      tx.delete(threads).where(inArray(threads.id, threadIds)).run()
+      tx.delete(toolAccessGrants)
+        .where(
+          or(
+            inArray(toolAccessGrants.id, grantIds),
+            inArray(toolAccessGrants.scopeId, [...agentIds, ...richThreadIds]),
+            inArray(toolAccessGrants.connectionId, connectionIds)
+          )
+        )
+        .run()
+      tx.delete(runSteps)
+        .where(
+          or(
+            inArray(runSteps.id, stepIds),
+            inArray(runSteps.runId, richRunIds)
+          )
+        )
+        .run()
+      tx.delete(runs).where(inArray(runs.id, richRunIds)).run()
+      tx.delete(messages)
+        .where(
+          or(
+            inArray(messages.id, messageIds),
+            inArray(messages.threadId, richThreadIds)
+          )
+        )
+        .run()
+      tx.delete(agentPromotionDrafts)
+        .where(inArray(agentPromotionDrafts.threadId, richThreadIds))
+        .run()
+      tx.delete(threads).where(inArray(threads.id, richThreadIds)).run()
       tx.delete(agentConfigurationVersions)
-        .where(inArray(agentConfigurationVersions.id, agentVersionIds))
+        .where(
+          or(
+            inArray(agentConfigurationVersions.id, agentVersionIds),
+            inArray(agentConfigurationVersions.agentId, agentIds)
+          )
+        )
         .run()
       tx.delete(workspaces).where(inArray(workspaces.agentId, agentIds)).run()
       tx.delete(agents).where(inArray(agents.id, agentIds)).run()
