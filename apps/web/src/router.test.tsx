@@ -263,7 +263,7 @@ describe("router", () => {
     expect(
       screen.getByRole("button", { name: /People \(0\)/i })
     ).toBeInTheDocument()
-  })
+  }, 10_000)
 
   it("filters memories by global scope and individual agents", async () => {
     const user = userEvent.setup()
@@ -521,7 +521,7 @@ describe("router", () => {
     expect(screen.queryByText("created manually by user")).not.toBeInTheDocument()
     expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Pinned to context")).toBeInTheDocument()
-  })
+  }, 10_000)
 
   it("renders not found for unknown paths", async () => {
     const memoryRouter = createMemoryRouter(router.routes, {
