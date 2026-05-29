@@ -4,6 +4,7 @@ import {
   streamText,
   type LanguageModel,
   type ModelMessage,
+  type ToolSet,
   type UIMessage,
 } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
@@ -138,6 +139,92 @@ function toModelMessages(messages: Message[]): ModelMessage[] {
       content: getTextFromParts(message.parts),
     }))
     .filter((message) => message.content.length > 0) as ModelMessage[]
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function zodTypeName(schema: unknown): string | undefined {
+  if (!isRecord(schema)) return undefined
+  const def = isRecord(schema._def) ? schema._def : null
+  return typeof def?.typeName === "string" ? def.typeName : undefined
+}
+
+function sanitizeJsonValue(value: unknown, depth = 0): unknown {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value
+  }
+  if (depth > 8 || typeof value === "function" || typeof value === "symbol") {
+    return undefined
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeJsonValue(item, depth + 1))
+  }
+  if (!isRecord(value)) return undefined
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, entry]) => [key, sanitizeJsonValue(entry, depth + 1)] as const)
+      .filter(([, entry]) => entry !== undefined)
+  )
+}
+
+function serializeSchemaForDebug(schema: unknown, depth = 0): unknown {
+  if (!isRecord(schema) || depth > 8) return sanitizeJsonValue(schema, depth)
+  const def = isRecord(schema._def) ? schema._def : null
+  if (!def || typeof def.typeName !== "string") return undefined
+
+  const base: Record<string, unknown> = { typeName: def.typeName }
+  if (typeof schema.description === "string") {
+    base.description = schema.description
+  }
+  if (Array.isArray(def.checks)) {
+    base.checks = def.checks
+  }
+  if (Array.isArray(def.values)) {
+    base.values = def.values
+  }
+
+  if (def.typeName === "ZodObject") {
+    const shape = typeof def.shape === "function" ? def.shape() : def.shape
+    if (isRecord(shape)) {
+      base.fields = Object.entries(shape).map(([name, fieldSchema]) => {
+        const serialized = serializeSchemaForDebug(fieldSchema, depth + 1)
+        return {
+          name,
+          ...(isRecord(serialized)
+            ? serialized
+            : { typeName: zodTypeName(fieldSchema) ?? "unknown" }),
+        }
+      })
+    }
+  }
+
+  const innerType = def.innerType ?? def.schema ?? def.type
+  if (innerType) {
+    base.innerType = serializeSchemaForDebug(innerType, depth + 1)
+  }
+
+  return base
+}
+
+function formatToolDebugDetails(tools: ToolSet) {
+  return Object.entries(tools).map(([name, definition]) => {
+    const record = definition as Record<string, unknown>
+    return {
+      name,
+      description:
+        typeof record.description === "string" ? record.description : undefined,
+      inputSchema: serializeSchemaForDebug(record.inputSchema),
+      hasExecute: typeof record.execute === "function",
+    }
+  })
 }
 
 function toUiMessages(messages: Message[]): UIMessage[] {
@@ -290,6 +377,7 @@ export class RunExecutor {
         systemPrompt,
         messages: modelMessages,
         tools: Object.keys(runtimeTools),
+        toolDetails: formatToolDebugDetails(runtimeTools),
         workspace: {
           id: workspaceHandle.id,
           name: workspaceHandle.rootLabel,

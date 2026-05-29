@@ -145,6 +145,20 @@ describe("run executor composio bridge", () => {
               }),
             ]),
             tools: expect.arrayContaining(["listWorkspaceFiles"]),
+            toolDetails: expect.arrayContaining([
+              expect.objectContaining({
+                name: "listWorkspaceFiles",
+                description: expect.stringContaining(
+                  "List files and directories"
+                ),
+                inputSchema: expect.objectContaining({
+                  typeName: "ZodObject",
+                  fields: expect.arrayContaining([
+                    expect.objectContaining({ name: "path" }),
+                  ]),
+                }),
+              }),
+            ]),
           }),
         }),
         expect.objectContaining({
@@ -214,7 +228,31 @@ describe("run executor composio bridge", () => {
                 content: "Say hello for debug inspection.",
               }),
             ]),
-            tools: expect.arrayContaining(["listWorkspaceFiles"]),
+            tools: expect.arrayContaining([
+              "listWorkspaceFiles",
+              "createArtifact",
+            ]),
+            toolDetails: expect.arrayContaining([
+              expect.objectContaining({
+                name: "listWorkspaceFiles",
+                description: expect.stringContaining(
+                  "List files and directories"
+                ),
+                inputSchema: expect.objectContaining({
+                  typeName: "ZodObject",
+                  fields: expect.arrayContaining([
+                    expect.objectContaining({ name: "path" }),
+                    expect.objectContaining({ name: "recursive" }),
+                  ]),
+                }),
+              }),
+              expect.objectContaining({
+                name: "createArtifact",
+                description: expect.stringContaining(
+                  "Create a durable text artifact"
+                ),
+              }),
+            ]),
           }),
         }),
         expect.objectContaining({

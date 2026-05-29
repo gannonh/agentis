@@ -53,6 +53,16 @@ describe("RunTimeline", () => {
               systemPrompt: "## Agent instructions\nAnswer with full debug detail.",
               messages: [{ role: "user", content: "Inspect this run." }],
               tools: ["listWorkspaceFiles", "readWorkspaceFile"],
+              toolDetails: [
+                {
+                  name: "listWorkspaceFiles",
+                  description: "List files and directories under the workspace.",
+                  inputSchema: {
+                    typeName: "ZodObject",
+                    fields: [{ name: "path", typeName: "ZodOptional" }],
+                  },
+                },
+              ],
             },
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -74,7 +84,10 @@ describe("RunTimeline", () => {
 
     expect(systemPromptSummary.closest("details")).toHaveAttribute("open")
     expect(screen.getByText(/Answer with full debug detail/)).toBeInTheDocument()
-    expect(screen.getByText(/listWorkspaceFiles/)).toBeInTheDocument()
+    expect(screen.getAllByText(/listWorkspaceFiles/).length).toBeGreaterThan(1)
+    expect(screen.getByText("Tool details")).toBeInTheDocument()
+    expect(screen.getByText(/List files and directories/)).toBeInTheDocument()
+    expect(screen.getByText(/ZodObject/)).toBeInTheDocument()
   })
 
   it("renders native workspace tool evidence without full file contents", () => {

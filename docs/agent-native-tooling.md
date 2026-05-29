@@ -208,8 +208,11 @@ File: `apps/web/src/components/thread/run-timeline.tsx`
 Current behavior:
 
 - Renders step title, type, and status for all run steps.
-- Has special formatting for Composio payloads.
-- Does not yet render native tool input/output previews in a structured way.
+- Has special formatting for Composio and native workspace payloads.
+- Renders native workspace evidence with path/query, workspace id, status, and bounded output summaries.
+- Keeps full file contents out of timeline evidence.
+- Provides a `Debug mode` toggle that shows persisted model input/output, including system prompt, messages, workspace binding, assistant parts, usage, errors, and tool metadata.
+- Keeps debug `tools` as a compact tool-name list and stores full `toolDetails` with name, description, serializable input schema details, and execution availability.
 
 ### Thread transcript
 

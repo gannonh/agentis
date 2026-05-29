@@ -440,8 +440,10 @@ RunExecutor loads thread.workspaceId
 WorkspaceService opens workspace handle
 NativeToolRegistry builds read-only tools for workspace
 Composio service builds granted external tools
+RunExecutor persists debug model input with system prompt, messages, workspace binding, compact tool names, and full tool metadata
 RunExecutor streams with merged tool map
 Tool calls/results persist as message parts and run steps
+RunExecutor persists debug model output with assistant parts, usage, and errors
 ```
 
 ### Read-only tool call
@@ -452,6 +454,7 @@ Tool validates path inside workspace root
 Tool checks file type and size limits
 Tool returns bounded content/metadata
 Run timeline stores normalized payload
+Debug mode stores compact tool names separately from full tool details with description and serializable input schema details
 Assistant summarizes result
 ```
 
