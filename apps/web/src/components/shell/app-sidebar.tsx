@@ -45,7 +45,6 @@ import { getWorkspace } from "@/fixtures"
 import { useAgents } from "@/hooks/use-agents"
 import { useProjects } from "@/hooks/use-projects"
 import { listThreads } from "@/lib/api/client"
-import { isDebugSeedingEnabled } from "@/lib/debug-seeding"
 
 const agentIcons = {
   search: Search01Icon,
@@ -380,32 +379,28 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        {isDebugSeedingEnabled() ? (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                size="lg"
-                render={
-                  <NavLink to="/debug/seeding" className={navLinkClass} />
-                }
-              >
-                <Avatar className="size-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg text-xs">
-                    {workspace.user.displayName.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex min-w-0 flex-col gap-0.5 leading-none">
-                  <span className="truncate text-xs font-medium">
-                    {workspace.user.displayName}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {workspace.user.email}
-                  </span>
-                </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        ) : null}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              render={<NavLink to="/debug/seeding" className={navLinkClass} />}
+            >
+              <Avatar className="size-8 rounded-lg">
+                <AvatarFallback className="rounded-lg text-xs">
+                  {workspace.user.displayName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+                <span className="truncate text-xs font-medium">
+                  {workspace.user.displayName}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {workspace.user.email}
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
