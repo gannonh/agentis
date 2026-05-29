@@ -1,4 +1,4 @@
-import type { FormEvent, ReactElement } from "react"
+import type { FormEvent, KeyboardEvent, ReactElement } from "react"
 import { useEffect, useState } from "react"
 import { Link } from "react-router"
 import {
@@ -211,6 +211,10 @@ type MemoryCardProps = {
   onEdit: (memory: SavedMemory) => void
 }
 
+function getMemorySourceLabel(source: SavedMemory["source"]): string {
+  return source === "thread-derived" ? "Agent Thread" : "User"
+}
+
 function MemoryCard({
   memory,
   categoryName,
@@ -225,42 +229,50 @@ function MemoryCard({
   const associatedAgentNames = associatedAgents.map(
     (agentId) => agentNameById.get(agentId) ?? agentId
   )
+  function handleCardKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
+    if (event.key !== "Enter" && event.key !== " ") return
+    event.preventDefault()
+    onEdit(memory)
+  }
+
   return (
-    <Card className="min-h-72">
-      <CardHeader className="gap-3">
-        <div className="flex items-start gap-3">
-          <CategoryIcon
-            category={memory.category}
-            className="size-10 rounded-xl"
-          />
-          <div className="min-w-0 flex-1 space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="gap-1">
-                <HugeiconsIcon
-                  icon={getCategoryDisplay(memory.category).icon}
-                  className="size-3"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-                {categoryName}
-              </Badge>
-              <Badge variant="outline">{memory.importance} importance</Badge>
-              <Badge variant="outline">{memory.scope}</Badge>
-              <Badge
-                variant={memory.source === "user-generated" ? "secondary" : "outline"}
-              >
-                {memory.source}
-              </Badge>
-              {memory.pinnedToContext ? (
-                <Badge variant="secondary">Pinned to context</Badge>
-              ) : null}
-            </div>
-            <CardTitle className="text-base leading-6">
-              {memory.content}
-            </CardTitle>
+    <Card
+      role="button"
+      tabIndex={0}
+      aria-label={`Edit memory: ${memory.content}`}
+      className="min-h-72 cursor-pointer text-left transition-colors hover:border-ring/50 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none"
+      onClick={() => onEdit(memory)}
+      onKeyDown={handleCardKeyDown}
+    >
+      <CardHeader className="gap-3 text-left">
+        <div className="flex items-center gap-3">
+          <CategoryIcon category={memory.category} className="size-5" />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="gap-1">
+              <HugeiconsIcon
+                icon={getCategoryDisplay(memory.category).icon}
+                className="size-3"
+                strokeWidth={2}
+                aria-hidden
+              />
+              {categoryName}
+            </Badge>
+            <Badge variant="outline">{memory.importance} importance</Badge>
+            <Badge variant="outline">{memory.scope}</Badge>
+            <Badge
+              variant={memory.source === "user-generated" ? "secondary" : "outline"}
+            >
+              {getMemorySourceLabel(memory.source)}
+            </Badge>
+            {memory.pinnedToContext ? (
+              <Badge variant="secondary">Pinned to context</Badge>
+            ) : null}
           </div>
         </div>
-        <CardDescription className="pl-13 italic">
+        <CardTitle className="text-left text-base leading-6">
+          {memory.content}
+        </CardTitle>
+        <CardDescription className="text-left italic">
           {memory.usageGuidance}
         </CardDescription>
       </CardHeader>
@@ -279,7 +291,7 @@ function MemoryCard({
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Source</dt>
-            <dd>{memory.source}</dd>
+            <dd>{getMemorySourceLabel(memory.source)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Scope</dt>
@@ -292,9 +304,6 @@ function MemoryCard({
             <dd>{memory.provenance}</dd>
           </div>
         </dl>
-        <Button type="button" variant="outline" onClick={() => onEdit(memory)}>
-          Edit Memory
-        </Button>
       </CardContent>
     </Card>
   )

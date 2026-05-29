@@ -197,7 +197,7 @@ describe("router", () => {
     render(<RouterProvider router={memoryRouter} />)
 
     expect(await screen.findByText("Creating Agent")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Edit Memory" }))
+    await user.click(screen.getByRole("button", { name: `Edit memory: ${seededMemory.content}` }))
     await user.click(screen.getByPlaceholderText("Select scope"))
     await user.click(await screen.findByRole("option", { name: "Sales Prospector" }))
     await user.keyboard("{Escape}")
@@ -515,7 +515,7 @@ describe("router", () => {
     expect(
       await screen.findByText("User prefers TypeScript over JavaScript.")
     ).toBeInTheDocument()
-    expect(screen.getAllByText("user-generated").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("User").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("created manually by user")).toBeInTheDocument()
     expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Pinned to context")).toBeInTheDocument()
