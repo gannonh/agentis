@@ -178,7 +178,7 @@ Agentis should model workspace ownership through agents, not projects.
 
 ### Generic Agentis threads and agent creation
 
-Threads started from `/threads/new` belong to the built-in generic Agentis agent and its default workspace. Product language can still describe these as general or agent-less threads, but the data model should keep one rule: every thread has an agent and workspace.
+Threads started from `/threads/new` should belong to the agent selected in the composer. The current UI includes a mocked selector for Agentis or a custom agent, but it is not wired yet. Selecting Agentis creates a thread owned by the built-in generic Agentis agent and its default workspace. Selecting a custom agent creates a thread owned by that agent and its workspace.
 
 Only threads owned by the generic Agentis agent can be converted into a new agent. When this happens, create the new agent's default workspace from the relevant source thread workspace state, then move the thread to the new agent and workspace.
 
