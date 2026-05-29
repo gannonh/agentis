@@ -401,6 +401,24 @@ export class RunExecutor {
     }
 
     const modelMessages = toModelMessages(threadMessages)
+    this.repos.steps.create({
+      runId,
+      type: "reasoning",
+      status: "completed",
+      title: "Debug: model input",
+      payload: {
+        provider: "debug",
+        kind: "model-input",
+        systemPrompt,
+        messages: modelMessages,
+        tools: Object.keys(runtimeTools),
+        workspace: {
+          id: workspaceHandle.id,
+          name: workspaceHandle.rootLabel,
+        },
+        agentConfigurationVersionId: run.agentConfigurationVersionId,
+      },
+    })
     let mockArtifactSuffix = ""
     if (this.config.mockRuntime && wantsGeneratedArtifact(latestUserPrompt)) {
       const generated = this.artifactService.registerGenerated({
@@ -636,12 +654,25 @@ export class RunExecutor {
           assistantParts,
           "completed"
         )
+        const usage = {
+          promptTokens: totalUsage.inputTokens,
+          completionTokens: totalUsage.outputTokens,
+          totalTokens: totalUsage.totalTokens,
+        }
         this.repos.runs.updateStatus(runId, "completed", {
           finishedAt: nowIso(),
-          usage: {
-            promptTokens: totalUsage.inputTokens,
-            completionTokens: totalUsage.outputTokens,
-            totalTokens: totalUsage.totalTokens,
+          usage,
+        })
+        this.repos.steps.create({
+          runId,
+          type: "reasoning",
+          status: "completed",
+          title: "Debug: model output",
+          payload: {
+            provider: "debug",
+            kind: "model-output",
+            assistantParts,
+            usage,
           },
         })
         this.repos.steps.create({
@@ -674,6 +705,18 @@ export class RunExecutor {
         this.repos.runs.updateStatus(runId, "failed", {
           finishedAt: nowIso(),
           errorSummary: message,
+        })
+        this.repos.steps.create({
+          runId,
+          type: "reasoning",
+          status: "failed",
+          title: "Debug: model output",
+          payload: {
+            provider: "debug",
+            kind: "model-output",
+            assistantParts,
+            error: message,
+          },
         })
         this.repos.steps.create({
           runId,

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import type { Run, RunStep } from "@workspace/shared"
 import { RunTimeline } from "./run-timeline"
 
@@ -24,6 +25,48 @@ function step(payload: Record<string, unknown>): RunStep {
 }
 
 describe("RunTimeline", () => {
+  it("keeps debug I/O hidden until debug mode is enabled", async () => {
+    const user = userEvent.setup()
+    render(
+      <RunTimeline
+        run={run}
+        steps={[
+          {
+            id: "step_debug",
+            runId: run.id,
+            type: "reasoning",
+            status: "completed",
+            title: "Debug: model input",
+            payload: {
+              provider: "debug",
+              kind: "model-input",
+              systemPrompt: "## Agent instructions\nAnswer with full debug detail.",
+              messages: [{ role: "user", content: "Inspect this run." }],
+              tools: ["listWorkspaceFiles", "readWorkspaceFile"],
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ]}
+      />
+    )
+
+    expect(screen.getByRole("button", { name: "Debug mode" })).toBeInTheDocument()
+    expect(screen.queryByText("Debug: model input")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Debug mode" }))
+
+    expect(screen.getByText("Debug: model input")).toBeInTheDocument()
+    const systemPromptSummary = screen.getByText("System prompt")
+    expect(systemPromptSummary.closest("details")).not.toHaveAttribute("open")
+
+    await user.click(systemPromptSummary)
+
+    expect(systemPromptSummary.closest("details")).toHaveAttribute("open")
+    expect(screen.getByText(/Answer with full debug detail/)).toBeInTheDocument()
+    expect(screen.getByText(/listWorkspaceFiles/)).toBeInTheDocument()
+  })
+
   it("renders native workspace tool evidence without full file contents", () => {
     render(
       <RunTimeline

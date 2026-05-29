@@ -145,6 +145,66 @@ describe("run executor composio bridge", () => {
     )
   }, 10_000)
 
+  it("persists debug model input and output for run timeline inspection", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Debug Agent",
+      systemPrompt: "Answer as the debug agent.",
+      model: "gpt-4o-mini",
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Say hello for debug inspection." }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Debug: model input",
+          type: "reasoning",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-input",
+            systemPrompt: expect.stringContaining(
+              "## Agent instructions\nAnswer as the debug agent."
+            ),
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                role: "user",
+                content: "Say hello for debug inspection.",
+              }),
+            ]),
+            tools: expect.arrayContaining(["listWorkspaceFiles"]),
+          }),
+        }),
+        expect.objectContaining({
+          title: "Debug: model output",
+          type: "reasoning",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-output",
+            assistantParts: expect.arrayContaining([
+              expect.objectContaining({
+                type: "text",
+                text: expect.stringContaining("Hello from Agentis mock runtime."),
+              }),
+            ]),
+            usage: expect.objectContaining({ totalTokens: expect.any(Number) }),
+          }),
+        }),
+      ])
+    )
+  }, 10_000)
+
   it("fails loudly when a run thread has no workspace", async () => {
     const { app, context } = createMockRuntimeApp()
     const created = await app.request("/api/threads", {

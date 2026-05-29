@@ -1,3 +1,4 @@
+import { useState } from "react"
 import type { Run, RunStep } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
 import { cn } from "@workspace/ui/lib/utils"
@@ -35,6 +36,49 @@ function formatComposioPayload(step: RunStep) {
     input: record.input,
     output: record.output,
   }
+}
+
+function formatDebugPayload(step: RunStep) {
+  const payload = step.payload
+  if (!payload || typeof payload !== "object" || payload.provider !== "debug") {
+    return null
+  }
+  const record = payload as Record<string, unknown>
+  return {
+    kind: typeof record.kind === "string" ? record.kind : undefined,
+    systemPrompt:
+      typeof record.systemPrompt === "string" ? record.systemPrompt : undefined,
+    messages: record.messages,
+    tools: record.tools,
+    workspace: record.workspace,
+    assistantParts: record.assistantParts,
+    usage: record.usage,
+    error: typeof record.error === "string" ? record.error : undefined,
+  }
+}
+
+function formatDebugValue(value: unknown) {
+  if (typeof value === "string") return value
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+function DebugBlock({ title, value }: { title: string; value: unknown }) {
+  if (value === undefined || value === null) return null
+
+  return (
+    <details className="mt-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
+      <summary className="cursor-pointer text-muted-foreground">
+        {title}
+      </summary>
+      <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[0.68rem] text-foreground">
+        {formatDebugValue(value)}
+      </pre>
+    </details>
+  )
 }
 
 function formatNativePayload(step: RunStep) {
@@ -84,22 +128,45 @@ export function RunTimeline({
   run: Run | null
   steps: RunStep[]
 }) {
+  const [debugMode, setDebugMode] = useState(false)
   if (!run) {
     return null
   }
 
   const runSteps = steps.filter((step) => step.runId === run.id)
+  const hasDebugSteps = runSteps.some((step) => Boolean(formatDebugPayload(step)))
+  const visibleSteps = debugMode
+    ? runSteps
+    : runSteps.filter((step) => !formatDebugPayload(step))
 
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-3 border-l border-border bg-card/40 p-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-medium">Run timeline</h2>
-        <Badge variant="outline">{statusLabel[run.status]}</Badge>
+        <div className="flex items-center gap-2">
+          {hasDebugSteps ? (
+            <button
+              type="button"
+              aria-pressed={debugMode}
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-[0.625rem] font-medium",
+                debugMode
+                  ? "border-primary/50 bg-primary/10 text-primary"
+                  : "border-border bg-input/20 text-muted-foreground"
+              )}
+              onClick={() => setDebugMode((value) => !value)}
+            >
+              Debug mode
+            </button>
+          ) : null}
+          <Badge variant="outline">{statusLabel[run.status]}</Badge>
+        </div>
       </div>
       <ol className="flex flex-col gap-2">
-        {runSteps.map((step) => {
+        {visibleSteps.map((step) => {
           const composio = formatComposioPayload(step)
           const native = formatNativePayload(step)
+          const debug = formatDebugPayload(step)
           return (
             <li
               key={step.id}
@@ -113,6 +180,22 @@ export function RunTimeline({
               <p className="text-muted-foreground mt-0.5 capitalize">
                 {step.type.replace("-", " ")} · {step.status}
               </p>
+              {debug?.kind ? (
+                <p className="text-muted-foreground mt-1">{debug.kind}</p>
+              ) : null}
+              {debug?.error ? (
+                <p className="text-destructive mt-1">{debug.error}</p>
+              ) : null}
+              {debug ? (
+                <div>
+                  <DebugBlock title="System prompt" value={debug.systemPrompt} />
+                  <DebugBlock title="Messages" value={debug.messages} />
+                  <DebugBlock title="Tools" value={debug.tools} />
+                  <DebugBlock title="Workspace" value={debug.workspace} />
+                  <DebugBlock title="Assistant parts" value={debug.assistantParts} />
+                  <DebugBlock title="Usage" value={debug.usage} />
+                </div>
+              ) : null}
               {composio?.toolkitSlug ? (
                 <p className="text-muted-foreground mt-1">
                   {composio.toolkitSlug}
