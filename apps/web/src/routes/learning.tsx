@@ -22,7 +22,7 @@ import type {
 } from "@/fixtures/schema"
 import { listThreads } from "@/lib/api/client"
 import { listMemories, updateMemory } from "@/lib/api/memories-client"
-import { EditMemoryDialog } from "@/routes/memories"
+import { EditMemoryDialog } from "@/components/memories/memory-dialogs"
 
 type LearningData = {
   conversations: LearningConversation[]
