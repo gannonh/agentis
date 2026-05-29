@@ -150,7 +150,7 @@ Useful patterns to reuse:
 
 ## Hyperagent native tools inventory
 
-This inventory records the native tooling set previously created in Hyperagent. Use it as a reference surface when deciding Agentis-native tool categories and sequencing.
+This inventory records the native tooling in Hyperagent, the platform Agentis is using as a product reference. Treat it as a target capability map: Agentis should adopt each tool directly, provide an equivalent native capability, or explicitly defer it.
 
 ### Execution
 
