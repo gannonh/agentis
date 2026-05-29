@@ -1,8 +1,10 @@
-import { inArray } from "drizzle-orm"
+import { inArray, sql } from "drizzle-orm"
+import type { AnySQLiteTable } from "drizzle-orm/sqlite-core"
 import type { AppConfig } from "../config.js"
 import type { AppDatabase } from "../db/client.js"
 import {
   agentConfigurationVersions,
+  agentPromotionDrafts,
   agents,
   artifacts,
   integrationConnections,
@@ -47,11 +49,14 @@ import {
   threadRows,
 } from "./testing-seed-data.js"
 import type {
+  DebugDataResetResult,
   DebugDatasetSummary,
+  DebugSeedCounts,
   DebugSeedResult,
 } from "./testing-seed-types.js"
 export type {
   DebugDatasetId,
+  DebugDataResetResult,
   DebugDatasetSummary,
   DebugSeedCounts,
   DebugSeedResult,
@@ -88,8 +93,59 @@ export class TestingSeedRepository {
     }
   }
 
+  deleteAllData(): DebugDataResetResult {
+    const storageKeys = this.db
+      .select({ storageKey: artifacts.storageKey })
+      .from(artifacts)
+      .all()
+      .map((artifact) => artifact.storageKey)
+
+    this.db.transaction((tx) => {
+      tx.delete(artifacts).run()
+      tx.delete(toolAccessGrants).run()
+      tx.delete(runSteps).run()
+      tx.delete(runs).run()
+      tx.delete(messages).run()
+      tx.delete(agentPromotionDrafts).run()
+      tx.delete(threads).run()
+      tx.delete(agentConfigurationVersions).run()
+      tx.delete(agents).run()
+      tx.delete(savedMemories).run()
+      tx.delete(projectMemories).run()
+      tx.delete(projects).run()
+      tx.delete(integrationConnections).run()
+    })
+
+    const storage = this.getArtifactStorage()
+    for (const storageKey of storageKeys) {
+      storage?.delete(storageKey)
+    }
+
+    return { counts: this.countWorkspaceData() }
+  }
+
   private getArtifactStorage(): LocalArtifactStorage | null {
     return this.config ? new LocalArtifactStorage(this.config) : null
+  }
+
+  private countRows(table: AnySQLiteTable): number {
+    const row = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(table)
+      .get()
+    return Number(row?.count ?? 0)
+  }
+
+  private countWorkspaceData(): DebugSeedCounts {
+    return {
+      agents: this.countRows(agents),
+      projects: this.countRows(projects),
+      threads: this.countRows(threads),
+      artifacts: this.countRows(artifacts),
+      savedMemories: this.countRows(savedMemories),
+      projectMemories: this.countRows(projectMemories),
+      integrationConnections: this.countRows(integrationConnections),
+    }
   }
 
   private deleteRichWorkspace(): void {

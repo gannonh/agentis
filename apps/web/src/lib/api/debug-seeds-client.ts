@@ -28,9 +28,15 @@ const debugSeedResultSchema = z.object({
   counts: debugSeedCountsSchema,
 })
 
+const debugDataResetResultSchema = z.object({
+  counts: debugSeedCountsSchema,
+})
+
 export type DebugDataset = z.infer<typeof debugDatasetSchema>
 export type DebugDatasetsResponse = z.infer<typeof debugDatasetsResponseSchema>
+export type DebugSeedCounts = z.infer<typeof debugSeedCountsSchema>
 export type DebugSeedResult = z.infer<typeof debugSeedResultSchema>
+export type DebugDataResetResult = z.infer<typeof debugDataResetResultSchema>
 
 async function parseJson<T>(
   response: Response,
@@ -73,4 +79,11 @@ export async function deleteDebugDataset(
     { method: "DELETE" }
   )
   return parseJson(response, debugSeedResultSchema)
+}
+
+export async function deleteAllDebugData(): Promise<DebugDataResetResult> {
+  const response = await fetch(`${API_BASE}/api/debug/data`, {
+    method: "DELETE",
+  })
+  return parseJson(response, debugDataResetResultSchema)
 }

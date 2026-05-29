@@ -23,6 +23,10 @@ export type DebugSeedResult = {
   counts: DebugSeedCounts
 }
 
+export type DebugDataResetResult = {
+  counts: DebugSeedCounts
+}
+
 export type ResolvedDebugDataset = {
   dataset: DebugDatasetSummary
   includeIntegrations: boolean

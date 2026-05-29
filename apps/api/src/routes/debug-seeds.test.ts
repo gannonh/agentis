@@ -216,6 +216,62 @@ describe("debug seed routes", () => {
     })
   })
 
+  it("deletes all workspace data for a full local reset", async () => {
+    ctx = createTestContext()
+    const app = createDebugSeedTestApp(ctx)
+
+    await app.request("/api/debug/datasets/rich-agent-workspace", {
+      method: "POST",
+    })
+    const project = ctx.repos.projects.create({ name: "Unrelated project" })
+    const agent = ctx.repos.agents.create({
+      name: "Unrelated agent",
+      systemPrompt: "Remain after seed deletion.",
+      model: "gpt-4o-mini",
+    })
+    ctx.repos.threads.createWithInitialRun({
+      title: "Unrelated thread",
+      model: "gpt-4o-mini",
+      mode: "agent",
+      prompt: "Keep this unless all data is deleted.",
+      projectId: project.id,
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    ctx.repos.savedMemories.create({
+      content: "Unrelated memory",
+      category: "memory_category_project_context",
+      usageGuidance: "Use only before reset.",
+      tags: ["reset"],
+      importance: "medium",
+      scope: "global",
+      pinnedToContext: false,
+    })
+
+    const response = await app.request("/api/debug/data", { method: "DELETE" })
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      counts: {
+        agents: 0,
+        projects: 0,
+        threads: 0,
+        artifacts: 0,
+        savedMemories: 0,
+        projectMemories: 0,
+        integrationConnections: 0,
+      },
+    })
+    expect(ctx.repos.agents.list()).toHaveLength(0)
+    expect(ctx.repos.threads.list()).toHaveLength(0)
+    expect(ctx.repos.projects.list({ includeArchived: true })).toHaveLength(0)
+    expect(ctx.repos.artifacts.list()).toHaveLength(0)
+    expect(ctx.repos.savedMemories.list().memories).toHaveLength(0)
+    expect(ctx.repos.integrationConnections.listByUserId()).toHaveLength(0)
+    expect(ctx.repos.integrationToolkits.listFeatured()).toHaveLength(5)
+  })
+
   it("mounts debug seeding routes in development mode", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, {

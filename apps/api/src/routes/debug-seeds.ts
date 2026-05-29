@@ -23,6 +23,10 @@ export function createDebugSeedRoutes(repos: Repositories): Hono {
     return c.json(result)
   })
 
+  app.delete("/data", (c) => {
+    return c.json(repos.testingSeeds.deleteAllData())
+  })
+
   app.delete("/datasets/:datasetId", (c) => {
     const result = repos.testingSeeds.delete(c.req.param("datasetId"))
     if (!result) {

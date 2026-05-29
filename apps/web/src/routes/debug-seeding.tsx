@@ -11,23 +11,28 @@ import {
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import {
+  deleteAllDebugData,
   deleteDebugDataset,
   listDebugDatasets,
   seedDebugDataset,
   type DebugDataset,
+  type DebugDataResetResult,
+  type DebugSeedCounts,
   type DebugSeedResult,
 } from "@/lib/api/debug-seeds-client"
 
 type DebugSeedAction = "seed" | "delete"
 
-function formatCounts(result: DebugSeedResult): string[] {
+type DebugActionResult = DebugSeedResult | DebugDataResetResult
+
+function formatCounts(counts: DebugSeedCounts): string[] {
   return [
-    `${result.counts.agents} agents`,
-    `${result.counts.projects} projects`,
-    `${result.counts.threads} threads`,
-    `${result.counts.artifacts} artifacts`,
-    `${result.counts.savedMemories} saved memories`,
-    `${result.counts.integrationConnections} integrations`,
+    `${counts.agents} agents`,
+    `${counts.projects} projects`,
+    `${counts.threads} threads`,
+    `${counts.artifacts} artifacts`,
+    `${counts.savedMemories} saved memories`,
+    `${counts.integrationConnections} integrations`,
   ]
 }
 
@@ -47,8 +52,9 @@ export function DebugSeedingPage(): ReactElement {
   const [datasets, setDatasets] = useState<DebugDataset[]>([])
   const [loading, setLoading] = useState(true)
   const [workingDatasetId, setWorkingDatasetId] = useState<string | null>(null)
+  const [deletingAll, setDeletingAll] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [lastResult, setLastResult] = useState<DebugSeedResult | null>(null)
+  const [lastResult, setLastResult] = useState<DebugActionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -76,6 +82,25 @@ export function DebugSeedingPage(): ReactElement {
       active = false
     }
   }, [])
+
+  async function deleteAllData(): Promise<void> {
+    setDeletingAll(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const result = await deleteAllDebugData()
+      setLastResult(result)
+      setMessage("Deleted all data.")
+    } catch (actionError) {
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : "Failed to delete all debug data"
+      )
+    } finally {
+      setDeletingAll(false)
+    }
+  }
 
   async function runAction(
     dataset: DebugDataset,
@@ -117,13 +142,31 @@ export function DebugSeedingPage(): ReactElement {
       ) : null}
       {lastResult ? (
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          {formatCounts(lastResult).map((count) => (
+          {formatCounts(lastResult.counts).map((count) => (
             <span key={count} className="rounded-md bg-muted px-2 py-1">
               {count}
             </span>
           ))}
         </div>
       ) : null}
+      <Card>
+        <CardHeader>
+          <CardTitle>Full reset</CardTitle>
+          <CardDescription>
+            Delete all local workspace data, including non-seeded remnants.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={deletingAll || Boolean(workingDatasetId)}
+            onClick={() => void deleteAllData()}
+          >
+            Delete all data
+          </Button>
+        </CardContent>
+      </Card>
       <div className="grid gap-4">
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading datasets…</p>
@@ -139,7 +182,7 @@ export function DebugSeedingPage(): ReactElement {
               <CardContent className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
-                  disabled={working}
+                  disabled={working || deletingAll}
                   onClick={() => void runAction(dataset, "seed")}
                 >
                   Seed {dataset.name}
@@ -147,7 +190,7 @@ export function DebugSeedingPage(): ReactElement {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={working}
+                  disabled={working || deletingAll}
                   onClick={() => void runAction(dataset, "delete")}
                 >
                   Delete {dataset.name}
