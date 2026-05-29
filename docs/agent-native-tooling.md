@@ -148,6 +148,48 @@ Useful patterns to reuse:
 - Run step payload normalization.
 - Explicit connection or grant errors surfaced to the user.
 
+## Hyperagent native tools inventory
+
+This inventory records the native tooling set previously created in Hyperagent. Use it as a reference surface when deciding Agentis-native tool categories and sequencing.
+
+### Execution
+
+- **Script:** Run Python or JavaScript code in an isolated container. Fast startup, with no state persisted between runs.
+- **Full VM:** Persistent virtual machine. Install packages, save files, and maintain state across conversations.
+
+### Research
+
+- **Exa:** Enable Exa.ai semantic search and related tools.
+- **Search:** Search the web for information using SDK web search. Supports native and Exa-backed modes.
+- **Browser:** Control a real browser with AI-powered automation. Click, type, scroll, and take screenshots. Persistent sessions are still an explicit capability question.
+- **Find Similar:** Find pages semantically similar to a given URL. Useful for competitive analysis and content curation.
+- **Exa Answer:** Get direct answers to questions with source citations.
+- **Exa Research:** Deep multi-source research with structured output. Takes 1-3 minutes and returns comprehensive results.
+- **Exa Websets:** Build structured datasets with entity verification and custom field extraction. Useful for lead generation and research.
+- **Thread Search:** Search past conversations for context and decisions.
+
+### Data
+
+- **Tables:** Create, update, and query structured data tables. Useful for research, comparisons, and tracking. Global tables across threads are still an explicit capability question.
+- **Documents:** Create and update persistent documents that can be shared across threads and evolve over time.
+
+### Interactive
+
+- **Webpages and Slides:** Generate styled webpages and slide presentations.
+- **Slides:** Create slide presentations. Polished mode uses AI to render each slide as a visual.
+- **HyperApps:** Create interactive HyperApps with custom UI, persistent state, and direct tool access. Supports forms, wizards, and visual tools.
+
+### Media
+
+- **Images:** Generate and edit images using Google's Gemini models. Supports image editing and style transfer.
+- **Video:** Generate short video clips with native audio. Supports image-to-video, style guidance, and video extension.
+- **Audio:** Generate speech or multi-speaker dialogue using Google's Gemini TTS.
+- **Transcribe:** Transcribe audio files with speaker diarization, timestamps, and emotion detection. Uses fast cloud-based processing.
+- **Avatar:** Create videos of AI avatars speaking a script. Useful for presentations.
+- **Maps:** Geocoding, places search, directions, distance calculations, and interactive map visualization.
+
+Source note: inventory copied from the Hyperagent agent tools section screenshot provided during planning.
+
 ## Recommended next iteration
 
 ### 1. Native tool registry
