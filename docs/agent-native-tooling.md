@@ -148,6 +148,42 @@ Useful patterns to reuse:
 - Run step payload normalization.
 - Explicit connection or grant errors surfaced to the user.
 
+## Workspace ownership model
+
+Agentis should model workspace ownership through agents, not projects.
+
+### Agent
+
+- Owns workspaces.
+- Every agent is provisioned with one default workspace for now.
+- Capabilities are scoped first at the agent level, then narrowed or extended at the thread level.
+- The generic Agentis assistant should be represented as a real built-in agent with its own default workspace.
+
+### Workspace
+
+- Durable working state for an agent.
+- Mental model: an agent's home.
+- Owns many threads or sessions.
+- Has one storage/runtime backend.
+- Initially backed by a filesystem directory with durable files, local SQLite data, artifacts, and a process runtime for code or commands.
+- Later backed by pluggable production storage/runtime implementations such as containers, VMs, Cloudflare, Postgres, object storage, or external sandbox providers.
+- Persists with the agent lifecycle. Archiving an agent archives its workspace.
+
+### Thread
+
+- A chat session with an agent.
+- Belongs to one agent.
+- Belongs to that agent's workspace.
+- Uses the capabilities of its agent, subject to thread-level scoping.
+
+### Generic Agentis threads and agent creation
+
+Threads started from `/threads/new` belong to the built-in generic Agentis agent and its default workspace. Product language can still describe these as general or agent-less threads, but the data model should keep one rule: every thread has an agent and workspace.
+
+Only threads owned by the generic Agentis agent can be converted into a new agent. When this happens, create the new agent's default workspace from the relevant source thread workspace state, then move the thread to the new agent and workspace.
+
+Threads started from a full agent stay with that agent. They cannot be moved to another agent or used to create a different agent.
+
 ## Hyperagent native tools inventory
 
 This inventory records the native tooling in Hyperagent, the platform Agentis is using as a product reference. Treat it as a target capability map: Agentis should adopt each tool directly, provide an equivalent native capability, or explicitly defer it.
@@ -210,19 +246,31 @@ Candidate path:
 
 ### 2. Workspace abstraction
 
-Before file tools, define what workspace means.
+Define workspace as an agent-owned durable home that threads run inside.
 
-Questions to resolve:
+Initial local layout:
 
-- Is the workspace a project-attached directory, an uploaded artifact collection, a repository checkout, or a virtual filesystem?
-- Where is workspace root stored?
-- Can multiple projects have different workspace roots?
-- Should local development use the repo filesystem, a storage directory, or an isolated sandbox?
-- How do we prevent path traversal and accidental access outside the workspace?
+```text
+AGENTIS_STORAGE_ROOT/
+  workspaces/
+    {workspaceId}/
+      files/
+      artifacts/
+      runtime/
+      workspace.sqlite
+```
 
-Candidate interface:
+Candidate model:
 
 ```ts
+type Workspace = {
+  id: string
+  agentId: string
+  backendType: "local-fs" | "container" | "vm" | "cloudflare" | "postgres" | "object-store"
+  backendRef: string
+  status: "active" | "archived"
+}
+
 type WorkspaceHandle = {
   id: string
   rootLabel: string
@@ -233,6 +281,15 @@ type WorkspaceHandle = {
   applyPatch(patch: string): Promise<ApplyPatchResult>
 }
 ```
+
+Implementation constraints:
+
+- Native tools resolve workspace through `thread.workspaceId`.
+- Projects can organize threads and contribute context, but do not own workspaces.
+- The built-in generic Agentis agent owns the default workspace for general threads.
+- Full agents own their default workspace and all threads created from them.
+- Only generic Agentis threads can be converted into new agents.
+- Path resolution must prevent access outside the workspace root.
 
 ### 3. Read-only file tools
 
@@ -299,12 +356,13 @@ Candidate updates:
 
 ## Open product questions
 
-- Should native file tooling operate on uploaded Library artifacts, project workspaces, Git repositories, or all three?
-- Should file edits create new artifacts, modify a project workspace, or both depending on tool choice?
+- Should native file tooling operate on workspace files, uploaded Library artifacts, Git repositories, or all three?
+- Should file edits create new artifacts, modify workspace files, or both depending on tool choice?
 - What approval level should be required for writes and command execution?
 - Should native tools be grantable per thread and agent like Composio tools?
 - Should every native tool call be replayable or exportable for audit?
 - Should agent-created files be versioned?
+- When converting a generic Agentis thread into a new agent, which workspace state should be copied into the new agent workspace?
 
 ## Suggested milestone framing
 
