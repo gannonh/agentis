@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm"
+import { and, asc, eq, or, sql } from "drizzle-orm"
 import type {
   AgentMemorySummary,
   CreateSavedMemoryRequest,
@@ -116,10 +116,18 @@ export class SavedMemoryRepository {
       this.db
         .select()
         .from(savedMemories)
-        .where(eq(savedMemories.scope, "agent"))
+        .where(
+          and(
+            eq(savedMemories.scope, "agent"),
+            or(
+              eq(savedMemories.associatedAgent, agentId),
+              sql`exists (select 1 from json_each(${savedMemories.associatedAgentsJson}) where value = ${agentId})`
+            )
+          )
+        )
         .orderBy(asc(savedMemories.date), asc(savedMemories.id))
         .all()
-    ).filter((memory) => memory.associatedAgents.includes(agentId))
+    )
 
     return { agent, global }
   }

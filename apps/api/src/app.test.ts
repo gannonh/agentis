@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { createApp } from "./app.js"
 import { createTestContext, type TestContext } from "./test/setup.js"
 import { isRuntimeAvailable, loadConfig } from "./config.js"
@@ -253,33 +253,67 @@ describe("api routes", () => {
     })
   })
 
+  it("returns 404 when a saved memory disappears during update", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+    const memory = ctx.repos.savedMemories.create({
+      content: "Use concise updates.",
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use for updates.",
+      tags: ["updates"],
+      scope: "global",
+      pinnedToContext: false,
+    })
+    vi.spyOn(ctx.repos.savedMemories, "update").mockReturnValue(null)
+
+    const response = await app.request(`/api/memories/${memory.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Updated content." }),
+    })
+
+    expect(response.status).toBe(404)
+    expect(await response.json()).toMatchObject({
+      error: "Memory not found",
+      code: "memory_not_found",
+    })
+  })
+
   it("returns saved memories when stored tags JSON is malformed", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)
 
-    ctx.db.insert(savedMemories).values({
-      id: "memory_bad_tags",
-      content: "Memory with bad tags",
-      category: "memory_category_project_context",
-      usageGuidance: "Use to verify malformed tags do not break listing.",
-      tagsJson: "not-json",
-      importance: "medium",
-      date: "2026-05-27",
-      scope: "global",
-      associatedAgent: null,
-      source: "user-generated",
-      sourceThreadId: null,
-      sourceThreadTitle: null,
-      provenance: "test malformed tags row",
-      createdAt: "2026-05-27T00:00:00.000Z",
-      updatedAt: "2026-05-27T00:00:00.000Z",
-    }).run()
+    ctx.db
+      .insert(savedMemories)
+      .values({
+        id: "memory_bad_tags",
+        content: "Memory with bad tags",
+        category: "memory_category_project_context",
+        usageGuidance: "Use to verify malformed tags do not break listing.",
+        tagsJson: "not-json",
+        importance: "medium",
+        date: "2026-05-27",
+        scope: "global",
+        associatedAgent: null,
+        source: "user-generated",
+        sourceThreadId: null,
+        sourceThreadTitle: null,
+        provenance: "test malformed tags row",
+        createdAt: "2026-05-27T00:00:00.000Z",
+        updatedAt: "2026-05-27T00:00:00.000Z",
+      })
+      .run()
 
     const response = await app.request("/api/memories")
 
     expect(response.status).toBe(200)
-    const body = (await response.json()) as { memories: { id: string; tags: string[] }[] }
-    expect(body.memories.find((memory) => memory.id === "memory_bad_tags")?.tags).toEqual([])
+    const body = (await response.json()) as {
+      memories: { id: string; tags: string[] }[]
+    }
+    expect(
+      body.memories.find((memory) => memory.id === "memory_bad_tags")?.tags
+    ).toEqual([])
   })
 
   it("returns thread detail for resume", async () => {

@@ -31,7 +31,7 @@ async function parseJson<T>(
   response: Response,
   schema: { parse: (data: unknown) => T }
 ): Promise<T> {
-  const data = await response.json()
+  const data = await response.json().catch(() => undefined)
   if (!response.ok) {
     throw new ApiError(
       getErrorMessage(data, response.statusText),
@@ -67,10 +67,13 @@ export async function updateMemory(
   memoryId: string,
   input: UpdateSavedMemoryRequest
 ): Promise<SavedMemory> {
-  const response = await fetch(`${API_BASE}/api/memories/${memoryId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updateSavedMemoryRequestSchema.parse(input)),
-  })
+  const response = await fetch(
+    `${API_BASE}/api/memories/${encodeURIComponent(memoryId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateSavedMemoryRequestSchema.parse(input)),
+    }
+  )
   return parseJson(response, savedMemorySchema)
 }

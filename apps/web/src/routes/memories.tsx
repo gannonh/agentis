@@ -16,7 +16,6 @@ import type {
   UpdateSavedMemoryRequest,
 } from "@workspace/shared"
 import { Button, buttonVariants } from "@workspace/ui/components/button"
-import { cn } from "@workspace/ui/lib/utils"
 import {
   AddMemoryDialog,
   EditMemoryDialog,
@@ -48,7 +47,6 @@ export function MemoriesPage(): ReactElement {
     useState<SavedMemoryCategoryKey | null>(null)
   const [scopeFilter, setScopeFilter] = useState<MemoryScopeFilter>("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [showArchived, setShowArchived] = useState(false)
   const [addMemoryOpen, setAddMemoryOpen] = useState(false)
   const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
   const [savingMemory, setSavingMemory] = useState(false)
@@ -162,11 +160,32 @@ export function MemoriesPage(): ReactElement {
       const updated = await updateMemory(memoryId, input)
       setData((current) => {
         if (!current) return current
+        const previous = current.memories.find(
+          (memory) => memory.id === updated.id
+        )
+        const categoryChanged =
+          previous != null && previous.category !== updated.category
+        const memories = current.memories
+          .map((memory) => (memory.id === updated.id ? updated : memory))
+          .filter(
+            (memory) =>
+              selectedCategory === null || memory.category === selectedCategory
+          )
+
         return {
           ...current,
-          memories: current.memories.map((memory) =>
-            memory.id === updated.id ? updated : memory
-          ),
+          categories: categoryChanged
+            ? current.categories.map((category) => {
+                if (category.id === previous.category) {
+                  return { ...category, count: Math.max(0, category.count - 1) }
+                }
+                if (category.id === updated.category) {
+                  return { ...category, count: category.count + 1 }
+                }
+                return category
+              })
+            : current.categories,
+          memories,
         }
       })
       setEditingMemory(null)
@@ -202,7 +221,12 @@ export function MemoriesPage(): ReactElement {
         }
         actions={
           <>
-            <Button variant="outline" type="button">
+            <Button
+              variant="outline"
+              type="button"
+              disabled
+              title="Memory deduplication is not implemented yet."
+            >
               <HugeiconsIcon
                 icon={Copy01Icon}
                 className="size-3.5"
@@ -223,23 +247,14 @@ export function MemoriesPage(): ReactElement {
             <button
               type="button"
               role="switch"
-              aria-checked={showArchived}
+              aria-checked={false}
               aria-label="Show archived"
-              className="flex items-center gap-2 text-sm text-muted-foreground"
-              onClick={() => setShowArchived((current) => !current)}
+              className="flex items-center gap-2 text-sm text-muted-foreground opacity-50"
+              disabled
+              title="Archived memories are not implemented yet."
             >
-              <span
-                className={cn(
-                  "flex h-5 w-9 items-center rounded-full border border-border p-0.5 transition-colors",
-                  showArchived ? "bg-primary" : "bg-muted"
-                )}
-              >
-                <span
-                  className={cn(
-                    "size-4 rounded-full bg-foreground transition-transform",
-                    showArchived && "translate-x-4 bg-primary-foreground"
-                  )}
-                />
+              <span className="flex h-5 w-9 items-center rounded-full border border-border bg-muted p-0.5 transition-colors">
+                <span className="size-4 rounded-full bg-foreground transition-transform" />
               </span>
               <HugeiconsIcon
                 icon={ArchiveIcon}

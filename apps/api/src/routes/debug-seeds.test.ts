@@ -5,10 +5,15 @@ import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
 
+const DEBUG_SEED_HEADERS = { Authorization: "Bearer test-debug-seed-key" }
+
 function createDebugSeedTestApp(context: TestContext) {
   return createApp(
     context.repos,
-    context.config,
+    {
+      ...context.config,
+      debugSeedKey: "test-debug-seed-key",
+    },
     createComposioServices(context.repos, context.config)
   )
 }
@@ -23,12 +28,20 @@ describe("debug seed routes", () => {
     ctx = createTestContext()
     const app = createDebugSeedTestApp(ctx)
 
-    const first = await app.request("/api/debug/datasets/rich-agent-workspace", {
-      method: "POST",
-    })
-    const second = await app.request("/api/debug/datasets/rich-agent-workspace", {
-      method: "POST",
-    })
+    const first = await app.request(
+      "/api/debug/datasets/rich-agent-workspace",
+      {
+        method: "POST",
+        headers: DEBUG_SEED_HEADERS,
+      }
+    )
+    const second = await app.request(
+      "/api/debug/datasets/rich-agent-workspace",
+      {
+        method: "POST",
+        headers: DEBUG_SEED_HEADERS,
+      }
+    )
 
     expect(first.status).toBe(200)
     expect(second.status).toBe(200)
@@ -56,13 +69,9 @@ describe("debug seed routes", () => {
       "seed_agent_research_librarian",
       "seed_agent_support_triage",
     ])
-    expect(ctx.repos.agents.list().map((agent) => agent.toolGrantCount)).toEqual([
-      2,
-      2,
-      3,
-      1,
-      0,
-    ])
+    expect(
+      ctx.repos.agents.list().map((agent) => agent.toolGrantCount)
+    ).toEqual([2, 2, 3, 1, 0])
 
     const support = await app.request("/api/agents/seed_agent_support_triage")
     expect(support.status).toBe(200)
@@ -89,6 +98,7 @@ describe("debug seed routes", () => {
 
     await app.request("/api/debug/datasets/rich-agent-workspace", {
       method: "POST",
+      headers: DEBUG_SEED_HEADERS,
     })
     const response = await app.request("/api/memories")
 
@@ -126,7 +136,7 @@ describe("debug seed routes", () => {
 
     const response = await app.request(
       "/api/debug/datasets/rich-agent-workspace-no-integrations",
-      { method: "POST" }
+      { method: "POST", headers: DEBUG_SEED_HEADERS }
     )
 
     expect(response.status).toBe(200)
@@ -147,17 +157,17 @@ describe("debug seed routes", () => {
       integrationConnections: 0,
     })
     expect(ctx.repos.integrationConnections.listByUserId()).toHaveLength(0)
-    expect(ctx.repos.agents.list().map((agent) => agent.toolGrantCount)).toEqual([
-      0,
-      0,
-      0,
-      0,
-      0,
-    ])
+    expect(
+      ctx.repos.agents.list().map((agent) => agent.toolGrantCount)
+    ).toEqual([0, 0, 0, 0, 0])
 
     const integrations = await app.request("/api/integrations")
     const integrationsBody = (await integrations.json()) as {
-      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+      toolkits: {
+        slug: string
+        status: string
+        connectedAccountCount: number
+      }[]
     }
     expect(integrationsBody.toolkits).toHaveLength(5)
     expect(
@@ -180,10 +190,11 @@ describe("debug seed routes", () => {
 
     await app.request("/api/debug/datasets/rich-agent-workspace", {
       method: "POST",
+      headers: DEBUG_SEED_HEADERS,
     })
     const response = await app.request(
       "/api/debug/datasets/rich-agent-workspace",
-      { method: "DELETE" }
+      { method: "DELETE", headers: DEBUG_SEED_HEADERS }
     )
 
     expect(response.status).toBe(200)
@@ -206,6 +217,7 @@ describe("debug seed routes", () => {
 
     const response = await app.request("/api/debug/datasets/unknown", {
       method: "POST",
+      headers: DEBUG_SEED_HEADERS,
     })
 
     expect(response.status).toBe(404)
@@ -213,5 +225,47 @@ describe("debug seed routes", () => {
       error: "Debug dataset not found",
       code: "debug_dataset_not_found",
     })
+  })
+
+  it("does not mount debug seeding routes without a configured debug key", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/debug/datasets")
+
+    expect(response.status).toBe(404)
+  })
+
+  it("rejects debug seed mutations without the configured bearer token", async () => {
+    ctx = createTestContext()
+    const app = createDebugSeedTestApp(ctx)
+
+    const response = await app.request(
+      "/api/debug/datasets/rich-agent-workspace",
+      {
+        method: "POST",
+      }
+    )
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({
+      error: "Debug seed access denied",
+      code: "debug_seed_forbidden",
+    })
+  })
+
+  it("does not mount debug seeding routes in production", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      debugSeedKey: "test-debug-seed-key",
+      nodeEnv: "production",
+    })
+
+    const response = await app.request("/api/debug/datasets", {
+      headers: DEBUG_SEED_HEADERS,
+    })
+
+    expect(response.status).toBe(404)
   })
 })

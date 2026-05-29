@@ -65,7 +65,9 @@ describe("LearningPage", () => {
     await user.click(expandButton)
 
     expect(expandButton).toHaveAttribute("aria-expanded", "true")
-    expect(screen.getByText("No memory candidates linked yet")).toBeInTheDocument()
+    expect(
+      screen.getByText("No memory candidates linked yet")
+    ).toBeInTheDocument()
   })
 
   it("renders API threads with accepted memory candidates from saved memory lineage", async () => {
@@ -163,7 +165,9 @@ describe("LearningPage", () => {
     ).toBeInTheDocument()
 
     await user.click(
-      screen.getByRole("button", { name: "Expand Launch readiness weekly update" })
+      screen.getByRole("button", {
+        name: "Expand Launch readiness weekly update",
+      })
     )
 
     const suggestions = within(
@@ -175,8 +179,108 @@ describe("LearningPage", () => {
       )
     ).toBeInTheDocument()
     expect(suggestions.getByText("Memory")).toBeInTheDocument()
-    expect(suggestions.getAllByText("Resolved").length).toBeGreaterThanOrEqual(1)
-    expect(suggestions.queryByRole("button", { name: "Save memory" })).not.toBeInTheDocument()
+    expect(suggestions.getAllByText("Resolved").length).toBeGreaterThanOrEqual(
+      1
+    )
+    expect(
+      suggestions.queryByRole("button", { name: "Save memory" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("excludes unassigned conversations from memory scope options", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith("/api/threads")) {
+          return jsonResponse([
+            {
+              id: "thread_unassigned",
+              title: "Unassigned conversation",
+              status: "finished",
+              model: "gpt-4o-mini",
+              mode: "plan",
+              agentId: null,
+              agentNameSnapshot: null,
+              createdAt: "2026-05-15T15:30:00.000Z",
+              updatedAt: "2026-05-21T15:30:00.000Z",
+              messageCount: 2,
+            },
+            {
+              id: "thread_agent",
+              title: "Assigned conversation",
+              status: "finished",
+              model: "gpt-4o-mini",
+              mode: "agent",
+              agentId: "agent_research",
+              agentNameSnapshot: "Research Agent",
+              createdAt: "2026-05-15T15:30:00.000Z",
+              updatedAt: "2026-05-21T15:30:00.000Z",
+              messageCount: 2,
+            },
+          ])
+        }
+        if (url.endsWith("/api/memories")) {
+          return jsonResponse({
+            categories: [
+              {
+                id: "memory_category_preference",
+                name: "Preference",
+                description: "How a user wants agents to work or communicate.",
+                count: 1,
+              },
+            ],
+            memories: [
+              {
+                id: "memory_preference",
+                content: "Use concise summaries.",
+                category: "memory_category_preference",
+                usageGuidance: "Use when summarizing work.",
+                tags: [],
+                importance: "medium",
+                date: "2026-05-22",
+                scope: "global",
+                associatedAgent: null,
+                associatedAgents: [],
+                source: "thread-derived",
+                sourceThreadId: "thread_unassigned",
+                sourceThreadTitle: "Unassigned conversation",
+                provenance: "Accepted from Unassigned conversation",
+                pinnedToContext: false,
+                createdAt: "2026-05-22T15:30:00.000Z",
+                updatedAt: "2026-05-22T15:30:00.000Z",
+              },
+            ],
+          })
+        }
+        return jsonResponse({})
+      })
+    )
+
+    render(
+      <MemoryRouter>
+        <LearningPage />
+      </MemoryRouter>
+    )
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Expand Unassigned conversation",
+      })
+    )
+    await user.click(await screen.findByRole("button", { name: "Edit Memory" }))
+    await user.click(screen.getByPlaceholderText("Select scope"))
+
+    expect(
+      await screen.findByRole("option", { name: "Global (all agents)" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("option", { name: "Research Agent" })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("option", { name: "Unassigned agent" })
+    ).not.toBeInTheDocument()
   })
 
   it("renders learning dashboard aligned with comp", () => {
@@ -268,9 +372,7 @@ describe("LearningPage", () => {
     expect(
       suggestions.getAllByText("Creating Agent").length
     ).toBeGreaterThanOrEqual(1)
-    expect(
-      suggestions.getAllByText("Memory").length
-    ).toBeGreaterThanOrEqual(1)
+    expect(suggestions.getAllByText("Memory").length).toBeGreaterThanOrEqual(1)
     expect(suggestions.getByText("82% confidence")).toBeInTheDocument()
     expect(
       suggestions.getByRole("heading", { name: "Pending" })

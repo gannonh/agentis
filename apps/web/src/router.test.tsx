@@ -130,13 +130,11 @@ describe("router", () => {
     ).toHaveAttribute("href", "/learning")
     expect(
       screen.getByRole("button", { name: "Dedupe Memories" })
-    ).toBeInTheDocument()
+    ).toBeDisabled()
     expect(
       screen.getByRole("button", { name: "Add Memory" })
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole("switch", { name: "Show archived" })
-    ).toBeInTheDocument()
+    expect(screen.getByRole("switch", { name: "Show archived" })).toBeDisabled()
     expect(
       screen.getByRole("button", { name: "All Memories" })
     ).toBeInTheDocument()
@@ -153,7 +151,9 @@ describe("router", () => {
       screen.getByText("Use when explaining the M07 Memories work.")
     ).toBeInTheDocument()
     expect(screen.getByText("May 27, 2026")).toBeInTheDocument()
-    expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
+    expect(
+      screen.getAllByText("API Research Agent").length
+    ).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Agent Thread: Creating Agent")).toBeInTheDocument()
     expect(screen.getByText("Scope")).toBeInTheDocument()
   })
@@ -175,20 +175,30 @@ describe("router", () => {
       associatedAgents: [apiAgent.id, salesAgent.id],
       provenance: "Creating Agent",
     }
-    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === "string" ? input : input.toString()
-      if (url.endsWith("/api/agents")) {
-        return { ok: true, json: async () => [apiAgent, salesAgent] }
-      }
-      if (url.endsWith(`/api/memories/${seededMemory.id}`) && init?.method === "PATCH") {
-        expect(JSON.parse(String(init.body))).toMatchObject({
-          scope: "agent",
-          associatedAgents: [apiAgent.id, salesAgent.id],
-        })
-        return { ok: true, json: async () => updatedMemory }
-      }
-      return { ok: true, json: async () => ({ categories, memories: [seededMemory] }) }
-    })
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = typeof input === "string" ? input : input.toString()
+          if (url.endsWith("/api/agents")) {
+            return { ok: true, json: async () => [apiAgent, salesAgent] }
+          }
+          if (
+            url.endsWith(`/api/memories/${seededMemory.id}`) &&
+            init?.method === "PATCH"
+          ) {
+            expect(JSON.parse(String(init.body))).toMatchObject({
+              scope: "agent",
+              associatedAgents: [apiAgent.id, salesAgent.id],
+            })
+            return { ok: true, json: async () => updatedMemory }
+          }
+          return {
+            ok: true,
+            json: async () => ({ categories, memories: [seededMemory] }),
+          }
+        }
+      )
     vi.stubGlobal("fetch", fetchMock)
     const memoryRouter = createMemoryRouter(router.routes, {
       initialEntries: ["/memories"],
@@ -196,17 +206,98 @@ describe("router", () => {
 
     render(<RouterProvider router={memoryRouter} />)
 
-    expect(await screen.findByText("Agent Thread: Creating Agent")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Agent Thread: Creating Agent")
+    ).toBeInTheDocument()
     await user.click(
-      screen.getByRole("button", { name: `Edit memory: ${seededMemory.content}` })
+      screen.getByRole("button", {
+        name: `Edit memory: ${seededMemory.content}`,
+      })
     )
     await user.click(screen.getByPlaceholderText("Select scope"))
-    await user.click(await screen.findByRole("option", { name: "Sales Prospector" }))
+    await user.click(
+      await screen.findByRole("option", { name: "Sales Prospector" })
+    )
     await user.keyboard("{Escape}")
     await user.click(screen.getByRole("button", { name: "Save Memory" }))
 
-    expect(await screen.findByText("API Research Agent, Sales Prospector")).toBeInTheDocument()
+    expect(
+      await screen.findByText("API Research Agent, Sales Prospector")
+    ).toBeInTheDocument()
     expect(screen.getByText("Agent Thread: Creating Agent")).toBeInTheDocument()
+  })
+
+  it("updates category counts after editing a memory category", async () => {
+    const user = userEvent.setup()
+    const categories: MemoriesListResponse["categories"] = [
+      {
+        id: "memory_category_project_context",
+        name: "Project Context",
+        description: "Durable project context.",
+        count: 1,
+      },
+      {
+        id: "memory_category_preference",
+        name: "Preference",
+        description: "Communication preferences.",
+        count: 0,
+      },
+    ]
+    const updatedMemory: MemoriesListResponse["memories"][number] = {
+      ...seededMemory,
+      category: "memory_category_preference",
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockImplementation(
+          async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = typeof input === "string" ? input : input.toString()
+            if (url.endsWith("/api/agents")) {
+              return { ok: true, json: async () => [apiAgent] }
+            }
+            if (
+              url.endsWith(`/api/memories/${seededMemory.id}`) &&
+              init?.method === "PATCH"
+            ) {
+              return { ok: true, json: async () => updatedMemory }
+            }
+            return {
+              ok: true,
+              json: async () => ({ categories, memories: [seededMemory] }),
+            }
+          }
+        )
+    )
+    const memoryRouter = createMemoryRouter(router.routes, {
+      initialEntries: ["/memories"],
+    })
+
+    render(<RouterProvider router={memoryRouter} />)
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: `Edit memory: ${seededMemory.content}`,
+      })
+    )
+    await user.selectOptions(
+      screen.getByLabelText("Category"),
+      "memory_category_preference"
+    )
+    await user.click(screen.getByRole("button", { name: "Save Memory" }))
+    await user.click(
+      await screen.findByRole("button", { name: /All categories/i })
+    )
+
+    expect(
+      await screen.findByRole("menuitemradio", {
+        name: /Project Context \(0\)/i,
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("menuitemradio", { name: /Preference \(1\)/i })
+    ).toBeInTheDocument()
   })
 
   it("filters memories through the category menu and keeps empty categories visible", async () => {
@@ -329,7 +420,9 @@ describe("router", () => {
       screen.getByText("Research Agent should include source notes.")
     ).toBeInTheDocument()
     expect(
-      screen.getByText("Sales Prospector should prioritize high-intent accounts.")
+      screen.getByText(
+        "Sales Prospector should prioritize high-intent accounts."
+      )
     ).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "All Memories" }))
@@ -347,12 +440,16 @@ describe("router", () => {
     ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("menuitemradio", { name: "Global" }))
-    expect(screen.getByText("Global guidance applies to every agent.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Global guidance applies to every agent.")
+    ).toBeInTheDocument()
     expect(
       screen.queryByText("Research Agent should include source notes.")
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByText("Sales Prospector should prioritize high-intent accounts.")
+      screen.queryByText(
+        "Sales Prospector should prioritize high-intent accounts."
+      )
     ).not.toBeInTheDocument()
   })
 
@@ -417,12 +514,16 @@ describe("router", () => {
       await screen.findByRole("menuitemradio", { name: "API Research Agent" })
     )
 
-    expect(screen.getByText("Research Agent should include source notes.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Research Agent should include source notes.")
+    ).toBeInTheDocument()
     expect(
       screen.queryByText("Global guidance applies to every agent.")
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByText("Sales Prospector should prioritize high-intent accounts.")
+      screen.queryByText(
+        "Sales Prospector should prioritize high-intent accounts."
+      )
     ).not.toBeInTheDocument()
   })
 
@@ -439,49 +540,56 @@ describe("router", () => {
     const memories: MemoriesListResponse["memories"] = []
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === "string" ? input : input.toString()
-        if (url.endsWith("/api/agents")) {
-          return { ok: true, json: async () => [apiAgent] }
-        }
-        if (init?.method === "POST") {
-          const body = JSON.parse(String(init.body)) as {
-            content: string
-            category: MemoriesListResponse["categories"][number]["id"]
-            importance: MemoriesListResponse["memories"][number]["importance"]
-            usageGuidance: string
-            tags: string[]
-            scope: MemoriesListResponse["memories"][number]["scope"]
-            associatedAgent?: string
-            associatedAgents?: string[]
-            pinnedToContext: boolean
-          }
-          expect(body.scope).not.toBe("project")
-          const created: MemoriesListResponse["memories"][number] = {
-            id: "memory_user_generated",
-            content: body.content,
-            category: body.category,
-            usageGuidance: body.usageGuidance,
-            tags: body.tags,
-            importance: body.importance,
-            date: "2026-05-28",
-            scope: body.scope,
-            associatedAgent: body.associatedAgent ?? null,
-            associatedAgents: body.associatedAgents ?? [],
-            source: "user-generated",
-            provenance: "created manually by user",
-            pinnedToContext: body.pinnedToContext,
-            createdAt: "2026-05-28T00:00:00.000Z",
-            updatedAt: "2026-05-28T00:00:00.000Z",
-          }
-          memories.unshift(created)
-          categories[0] = { ...categories[0], count: categories[0].count + 1 }
+      vi
+        .fn()
+        .mockImplementation(
+          async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = typeof input === "string" ? input : input.toString()
+            if (url.endsWith("/api/agents")) {
+              return { ok: true, json: async () => [apiAgent] }
+            }
+            if (init?.method === "POST") {
+              const body = JSON.parse(String(init.body)) as {
+                content: string
+                category: MemoriesListResponse["categories"][number]["id"]
+                importance: MemoriesListResponse["memories"][number]["importance"]
+                usageGuidance: string
+                tags: string[]
+                scope: MemoriesListResponse["memories"][number]["scope"]
+                associatedAgent?: string
+                associatedAgents?: string[]
+                pinnedToContext: boolean
+              }
+              expect(body.scope).not.toBe("project")
+              const created: MemoriesListResponse["memories"][number] = {
+                id: "memory_user_generated",
+                content: body.content,
+                category: body.category,
+                usageGuidance: body.usageGuidance,
+                tags: body.tags,
+                importance: body.importance,
+                date: "2026-05-28",
+                scope: body.scope,
+                associatedAgent: body.associatedAgent ?? null,
+                associatedAgents: body.associatedAgents ?? [],
+                source: "user-generated",
+                provenance: "created manually by user",
+                pinnedToContext: body.pinnedToContext,
+                createdAt: "2026-05-28T00:00:00.000Z",
+                updatedAt: "2026-05-28T00:00:00.000Z",
+              }
+              memories.unshift(created)
+              categories[0] = {
+                ...categories[0],
+                count: categories[0].count + 1,
+              }
 
-          return { ok: true, status: 201, json: async () => created }
-        }
+              return { ok: true, status: 201, json: async () => created }
+            }
 
-        return { ok: true, json: async () => ({ categories, memories }) }
-      })
+            return { ok: true, json: async () => ({ categories, memories }) }
+          }
+        )
     )
     const memoryRouter = createMemoryRouter(router.routes, {
       initialEntries: ["/memories"],
@@ -498,18 +606,30 @@ describe("router", () => {
       screen.getByLabelText("Memory Content"),
       "User prefers TypeScript over JavaScript."
     )
-    await user.selectOptions(screen.getByLabelText("Category"), "memory_category_preference")
+    await user.selectOptions(
+      screen.getByLabelText("Category"),
+      "memory_category_preference"
+    )
     await user.selectOptions(screen.getByLabelText("Importance (1-5)"), "high")
     await user.type(
       screen.getByLabelText("When to Use (optional)"),
       "Use when choosing implementation language."
     )
-    await user.type(screen.getByLabelText(/Tags \(optional\)/), "typescript, preference")
+    await user.type(
+      screen.getByLabelText(/Tags \(optional\)/),
+      "typescript, preference"
+    )
     expect(screen.queryByText("Project")).not.toBeInTheDocument()
     await user.click(screen.getByPlaceholderText("Select scope"))
-    expect(await screen.findByRole("option", { name: "Global (all agents)" })).toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: "Sales Prospector" })).not.toBeInTheDocument()
-    await user.click(await screen.findByRole("option", { name: "API Research Agent" }))
+    expect(
+      await screen.findByRole("option", { name: "Global (all agents)" })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("option", { name: "Sales Prospector" })
+    ).not.toBeInTheDocument()
+    await user.click(
+      await screen.findByRole("option", { name: "API Research Agent" })
+    )
     await user.keyboard("{Escape}")
     await user.click(screen.getByRole("switch", { name: "Pin to Context" }))
     await user.click(screen.getByRole("button", { name: "Add Memory" }))
@@ -518,8 +638,12 @@ describe("router", () => {
       await screen.findByText("User prefers TypeScript over JavaScript.")
     ).toBeInTheDocument()
     expect(screen.getAllByText("User").length).toBeGreaterThanOrEqual(1)
-    expect(screen.queryByText("created manually by user")).not.toBeInTheDocument()
-    expect(screen.getAllByText("API Research Agent").length).toBeGreaterThanOrEqual(1)
+    expect(
+      screen.queryByText("created manually by user")
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getAllByText("API Research Agent").length
+    ).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Pinned to context")).toBeInTheDocument()
   }, 10_000)
 

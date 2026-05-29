@@ -415,9 +415,7 @@ describe("AgentDetailPage", () => {
       "true"
     )
     expect(
-      screen.getByText(
-        "No memories available yet. Add one to give this agent persistent context."
-      )
+      screen.getByText("Add one to give this agent persistent context.")
     ).toBeInTheDocument()
     expect(
       screen.getByText(
@@ -686,9 +684,7 @@ describe("AgentDetailPage", () => {
       "true"
     )
     expect(
-      screen.getByText(
-        "No memories available yet. Add one to give this agent persistent context."
-      )
+      screen.getByText("Add one to give this agent persistent context.")
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Configure library" }))
     expect(screen.getByRole("tab", { name: "Knowledge" })).toHaveAttribute(

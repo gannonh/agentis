@@ -97,6 +97,12 @@ export function createMemoryRoutes(repos: Repositories): Hono {
       associatedAgent: nextAssociatedAgent,
       associatedAgents: nextAssociatedAgents,
     })
+    if (!memory) {
+      return c.json(
+        { error: "Memory not found", code: "memory_not_found" },
+        404
+      )
+    }
 
     return c.json(savedMemorySchema.parse(memory))
   })

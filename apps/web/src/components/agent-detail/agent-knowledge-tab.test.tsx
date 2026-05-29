@@ -40,7 +40,8 @@ describe("AgentKnowledgeTab", () => {
             global: [
               {
                 id: "memory_global",
-                content: "Always cite customer interviews before roadmap changes.",
+                content:
+                  "Always cite customer interviews before roadmap changes.",
                 category: "memory_category_preference",
                 usageGuidance: "Use during roadmap analysis.",
                 tags: ["roadmap"],
@@ -68,7 +69,9 @@ describe("AgentKnowledgeTab", () => {
     ).toBeInTheDocument()
     expect(memories.getByText("Global Memories")).toBeInTheDocument()
     expect(
-      memories.getByText("Always cite customer interviews before roadmap changes.")
+      memories.getByText(
+        "Always cite customer interviews before roadmap changes."
+      )
     ).toBeInTheDocument()
   })
 
@@ -89,7 +92,7 @@ describe("AgentKnowledgeTab", () => {
       "Allow this agent to find and use existing knowledge while it works.",
       "Knowledge discovery controls will be available when this capability is backed by the agent configuration API.",
       "Access presets and per-agent knowledge permissions will appear here when those settings are available.",
-      "No memories available yet. Add one to give this agent persistent context.",
+      "Add one to give this agent persistent context.",
       "No context files added yet. Attach reference files when this capability is available.",
       "0 items",
       "No library artifacts yet",
@@ -97,7 +100,9 @@ describe("AgentKnowledgeTab", () => {
       expect(screen.getByText(text)).toBeInTheDocument()
     }
 
-    expect(screen.queryByRole("button", { name: "Add memories" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Add memories" })
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: "Add context file" })
     ).toBeDisabled()

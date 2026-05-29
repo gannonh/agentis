@@ -154,12 +154,14 @@ function getLearningMemoryScopeOptions(
       value: "global",
       scope: "global",
     },
-    ...agents.map((agent) => ({
-      label: agent.name,
-      value: agent.id,
-      scope: "agent" as const,
-      associatedAgent: agent.id,
-    })),
+    ...agents
+      .filter((agent) => agent.id !== "unassigned")
+      .map((agent) => ({
+        label: agent.name,
+        value: agent.id,
+        scope: "agent" as const,
+        associatedAgent: agent.id,
+      })),
   ]
 }
 
