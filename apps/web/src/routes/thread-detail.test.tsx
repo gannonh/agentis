@@ -14,6 +14,13 @@ let threadAgentName: string | null | undefined = "Agentis"
 let includePendingApproval = false
 const refresh = vi.fn()
 
+function messageText(message: { parts: Array<{ type: string; text?: string }> }) {
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("")
+}
+
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router")
   return {
@@ -60,6 +67,26 @@ vi.mock("@/hooks/use-thread-session", () => ({
       updatedAt: new Date().toISOString(),
     }
     const steps = includePendingApproval ? [pendingStep] : []
+    const messages = includePendingApproval
+      ? [
+          {
+            id: "msg_user",
+            threadId: "thread_test",
+            role: "user" as const,
+            parts: [{ type: "text" as const, text: "Create a file called notes.md" }],
+            status: "completed" as const,
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: "msg_assistant",
+            threadId: "thread_test",
+            role: "assistant" as const,
+            parts: [{ type: "text" as const, text: "" }],
+            status: "completed" as const,
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      : []
     return {
       detail: {
         thread: {
@@ -73,7 +100,7 @@ vi.mock("@/hooks/use-thread-session", () => ({
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
-        messages: [],
+        messages,
         runs: [],
         steps,
       },
@@ -86,7 +113,7 @@ vi.mock("@/hooks/use-thread-session", () => ({
       submitFollowUp: vi.fn(),
       abortActiveRun: vi.fn(),
       refresh,
-      getMessageText: vi.fn(() => ""),
+      getMessageText: vi.fn(messageText),
     }
   },
 }))
@@ -201,6 +228,23 @@ describe("ThreadDetailPage create-agent action", () => {
       )
       expect(refresh).toHaveBeenCalled()
     })
+  })
+
+  it("shows pending workspace approval after the user request without assistant filler", () => {
+    includePendingApproval = true
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    const content = document.body.textContent ?? ""
+    const userIndex = content.indexOf("Create a file called notes.md")
+    const approvalIndex = content.indexOf("Approve workspace edit?")
+
+    expect(userIndex).toBeGreaterThanOrEqual(0)
+    expect(approvalIndex).toBeGreaterThan(userIndex)
+    expect(screen.queryByText(/waiting for approval/i)).not.toBeInTheDocument()
   })
 
   it("keeps the create-agent action available for finished threads", () => {

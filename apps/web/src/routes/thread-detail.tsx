@@ -287,6 +287,26 @@ export function ThreadDetailPage() {
                     {approvalError}
                   </p>
                 ) : null}
+                {detail?.messages.map((message) => {
+                  const text = getMessageText(message)
+                  if (!text.trim() && message.status === "completed") return null
+                  return (
+                    <Message key={message.id} from={message.role}>
+                      <MessageContent>
+                        <MessageResponse>{text}</MessageResponse>
+                        {message.status === "aborted" ? (
+                          <p className="text-muted-foreground mt-2 text-xs">Aborted</p>
+                        ) : null}
+                        {message.status === "failed" ? (
+                          <p className="text-destructive mt-2 text-xs">Failed</p>
+                        ) : null}
+                        {message.status === "streaming" ? (
+                          <p className="text-muted-foreground mt-2 text-xs">Streaming…</p>
+                        ) : null}
+                      </MessageContent>
+                    </Message>
+                  )
+                })}
                 {pendingApprovals.map(({ step, approval }) => (
                   <div
                     key={step.id}
@@ -333,22 +353,6 @@ export function ThreadDetailPage() {
                       </Button>
                     </div>
                   </div>
-                ))}
-                {detail?.messages.map((message) => (
-                  <Message key={message.id} from={message.role}>
-                    <MessageContent>
-                      <MessageResponse>{getMessageText(message)}</MessageResponse>
-                      {message.status === "aborted" ? (
-                        <p className="text-muted-foreground mt-2 text-xs">Aborted</p>
-                      ) : null}
-                      {message.status === "failed" ? (
-                        <p className="text-destructive mt-2 text-xs">Failed</p>
-                      ) : null}
-                      {message.status === "streaming" ? (
-                        <p className="text-muted-foreground mt-2 text-xs">Streaming…</p>
-                      ) : null}
-                    </MessageContent>
-                  </Message>
                 ))}
               </ConversationContent>
             </Conversation>

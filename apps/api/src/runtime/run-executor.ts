@@ -175,20 +175,6 @@ function isPendingApprovalOutput(output: unknown) {
   return isRecord(output) && output.status === "pending_approval"
 }
 
-function formatPendingApprovalAssistantText(parts: MessagePart[]) {
-  const pendingResult = parts.find(
-    (part) => part.type === "tool-result" && isPendingApprovalOutput(part.output)
-  )
-  const output =
-    pendingResult?.type === "tool-result" && isRecord(pendingResult.output)
-      ? pendingResult.output
-      : null
-  const path = typeof output?.path === "string" ? output.path : null
-  return path
-    ? `Workspace edit for ${path} is waiting for approval.`
-    : "Workspace edit is waiting for approval."
-}
-
 function zodTypeName(schema: unknown): string | undefined {
   if (!isRecord(schema)) return undefined
   const def = isRecord(schema._def) ? schema._def : null
@@ -837,12 +823,7 @@ export class RunExecutor {
           this.repos.steps.update(stepId, { status: hasPendingApproval ? "pending" : "failed" })
         }
         toolStepIds.clear()
-        if (hasPendingApproval) {
-          assistantParts = setTextPart(
-            assistantParts,
-            formatPendingApprovalAssistantText(assistantParts)
-          )
-        } else if (!getTextFromParts(assistantParts).trim()) {
+        if (!hasPendingApproval && !getTextFromParts(assistantParts).trim()) {
           const fallback = formatToolResultFallback(assistantParts)
           if (fallback) {
             assistantParts = setTextPart(assistantParts, fallback)
@@ -1377,7 +1358,7 @@ export class RunExecutor {
     })
     const pending = isPendingApprovalOutput(appliedOutput)
     const summaryText = pending
-      ? `Workspace edit for ${toolInput.path} is waiting for approval.`
+      ? ""
       : `Created workspace file ${toolInput.path}.`
     const assistantParts: MessagePart[] = [
       { type: "text", text: summaryText },
