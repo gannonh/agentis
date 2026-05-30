@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router"
+import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { AgentPicker } from "./agent-picker"
 
 const apiAgents = [
@@ -19,7 +20,7 @@ describe("AgentPicker", () => {
     render(
       <MemoryRouter>
         <AgentPicker
-          value="agent_agentis"
+          value={GENERIC_AGENTIS_AGENT_ID}
           onChange={() => {}}
           agents={apiAgents}
           defaultOpen

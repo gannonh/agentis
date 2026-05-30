@@ -469,7 +469,7 @@ describe("AgentDetailPage", () => {
     )
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
-    const newThreadAction = screen.getByRole("button", { name: "+ New thread" })
+    const newThreadAction = screen.getByRole("link", { name: "+ New thread" })
 
     expect(newThreadAction).toHaveAttribute(
       "href",

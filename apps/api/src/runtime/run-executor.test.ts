@@ -194,6 +194,28 @@ describe("run executor composio bridge", () => {
     )
   }, 10_000)
 
+  it("does not route substring matches like profile to native workspace tools", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Update my profile summary" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    expect(context.repos.steps.listByRunId(run.id)).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: "Native: listWorkspaceFiles" }),
+      ])
+    )
+  }, 10_000)
+
   it("persists debug model input and output for run timeline inspection", async () => {
     const { app, context } = createMockRuntimeApp()
     const agent = context.repos.agents.create({

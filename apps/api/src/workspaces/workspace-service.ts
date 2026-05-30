@@ -102,8 +102,28 @@ function normalizeWorkspacePath(inputPath: string | undefined): string {
   return path.posix.normalize(segments.filter((segment) => segment !== ".").join("/"))
 }
 
+function normalizeWorkspaceBackendRef(backendRef: string): string {
+  const rawRef = backendRef.trim()
+  if (!rawRef || path.isAbsolute(rawRef) || /^[/\\]|^[A-Za-z]:[/\\]/.test(rawRef)) {
+    throw new WorkspaceError(
+      "workspace_backend_ref_invalid",
+      "Workspace backend reference must be relative."
+    )
+  }
+
+  const normalized = path.normalize(rawRef)
+  const segments = normalized.split(/[\\/]+/).filter(Boolean)
+  if (segments.some((segment) => segment === "..")) {
+    throw new WorkspaceError(
+      "workspace_backend_ref_invalid",
+      "Workspace backend reference cannot contain traversal segments."
+    )
+  }
+  return normalized
+}
+
 function detectBinary(buffer: Buffer): boolean {
-  const sample = buffer.subarray(0, Math.min(buffer.length, 4096))
+  const sample = buffer.subarray(0, Math.min(buffer.length, BINARY_SAMPLE_BYTES))
   if (sample.includes(0)) return true
   let suspicious = 0
   for (const byte of sample) {
@@ -347,7 +367,15 @@ export class WorkspaceService {
       )
     }
 
-    const workspaceRoot = path.resolve(this.config.storageRoot, workspace.backendRef)
+    const storageRoot = path.resolve(this.config.storageRoot)
+    const backendRef = normalizeWorkspaceBackendRef(workspace.backendRef)
+    const workspaceRoot = path.resolve(storageRoot, backendRef)
+    if (!isInsidePath(workspaceRoot, storageRoot)) {
+      throw new WorkspaceError(
+        "workspace_backend_ref_invalid",
+        "Workspace root resolves outside the storage root."
+      )
+    }
     const filesRoot = path.join(workspaceRoot, "files")
     await mkdir(filesRoot, { recursive: true })
     await mkdir(path.join(workspaceRoot, "artifacts"), { recursive: true })

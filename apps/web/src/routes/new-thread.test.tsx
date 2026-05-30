@@ -112,6 +112,26 @@ describe("NewThreadPage", () => {
     })
   })
 
+  it("normalizes an unknown URL agent to the default before submit", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={["/threads/new?agentId=agent_missing"]}>
+        <NewThreadPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole("button", { name: /agentis/i })).toBeInTheDocument()
+    const input = screen.getByPlaceholderText("What's the task?")
+    await user.type(input, "Plan with the default agent")
+    await user.click(screen.getByRole("button", { name: /send message/i }))
+
+    await waitFor(() => {
+      expect(createThread).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: GENERIC_AGENTIS_AGENT_ID })
+      )
+    })
+  })
+
   it("submits the selected API-backed agent", async () => {
     const user = userEvent.setup()
     render(

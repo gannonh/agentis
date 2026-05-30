@@ -1,4 +1,6 @@
 import { z } from "zod"
+import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
+export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 
 const nonEmptyString = z.string().min(1)
 const nonNegativeNumber = z.number().nonnegative()
@@ -17,7 +19,7 @@ export const threadStatusSchema = z.enum(["active", "finished", "failed"])
 
 export const threadModeSchema = z.enum(["plan", "agent"])
 
-export const workspaceBackendTypeSchema = z.enum(["local-fs"])
+export const workspaceBackendTypeSchema = z.enum([LOCAL_WORKSPACE_BACKEND_TYPE])
 
 export const workspaceStatusSchema = z.enum(["active", "archived"])
 
@@ -694,7 +696,6 @@ export const abortRunResponseSchema = z.object({
 })
 
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-export const GENERIC_AGENTIS_AGENT_ID = "agent_agentis"
 
 export type RunStatus = z.infer<typeof runStatusSchema>
 export type ThreadStatus = z.infer<typeof threadStatusSchema>

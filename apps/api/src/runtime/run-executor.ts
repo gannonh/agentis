@@ -398,8 +398,7 @@ export class RunExecutor {
       }),
       ...composioTools,
     }
-    const conversationMessages = toModelMessages(threadMessages)
-    const modelMessages = conversationMessages
+    const modelMessages = toModelMessages(threadMessages)
     this.createTimelineDebugStep(runId, {
       status: "completed",
       title: "Debug: model input",
@@ -407,7 +406,7 @@ export class RunExecutor {
         provider: "debug",
         kind: "model-input",
         systemPrompt,
-        messages: conversationMessages,
+        messages: modelMessages,
         memoryPrompt,
         memories: agentMemories,
         tools: Object.keys(runtimeTools),
@@ -420,7 +419,7 @@ export class RunExecutor {
       },
     })
 
-    if (this.config.mockRuntime && /files?|workspace file|read .*file|search .*file/i.test(latestUserPrompt)) {
+    if (this.config.mockRuntime && /\bfiles?\b|workspace file|read .*file|search .*file/i.test(latestUserPrompt)) {
       return this.executeMockNativeWorkspaceStream(
         runId,
         run,

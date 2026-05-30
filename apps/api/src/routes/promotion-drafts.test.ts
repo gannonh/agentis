@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import { createApp } from "../app.js"
-import { agentPromotionDrafts } from "../db/schema.js"
+import { agentPromotionDrafts, threads } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -1027,6 +1027,40 @@ describe("promotion draft routes", () => {
       summary: "Investigate support backlog",
       firstUserPrompt: "Review support backlog patterns",
     })
+  })
+
+  it("allows draft creation for legacy threads without an agent", async () => {
+    ctx = createTestContext()
+    ctx.db
+      .insert(threads)
+      .values({
+        id: "thread_legacy_plain",
+        title: "Legacy plain thread",
+        status: "active",
+        model: "gpt-4o-mini",
+        mode: "plan",
+        projectId: null,
+        agentId: null,
+        agentNameSnapshot: null,
+        agentConfigurationVersionId: null,
+        workspaceId: null,
+        sourceThreadId: null,
+        sourceThreadTitle: null,
+        sourceWorkflowJson: null,
+        createdAt: "2026-05-29T00:00:00.000Z",
+        updatedAt: "2026-05-29T00:00:00.000Z",
+      })
+      .run()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request(
+      "/api/threads/thread_legacy_plain/promotion-drafts",
+      { method: "POST" }
+    )
+
+    expect(response.status).toBe(201)
+    expect((await response.json()) as { draft: { sourceThreadTitle: string } })
+      .toMatchObject({ draft: { sourceThreadTitle: "Legacy plain thread" } })
   })
 
   it("rejects draft creation for missing and agent-owned source threads", async () => {

@@ -190,7 +190,7 @@ describe("agent create-to-test acceptance path", () => {
     expect(await screen.findByRole("link", { name: "Research Helper" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("link", { name: "Research Helper" }))
-    const newThreadAction = await screen.findByRole("button", { name: "+ New thread" })
+    const newThreadAction = await screen.findByRole("link", { name: "+ New thread" })
 
     expect(newThreadAction).toHaveAttribute(
       "href",

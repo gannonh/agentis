@@ -306,7 +306,7 @@ export class AgentPromotionService {
   ): ServiceResult<{ draft: AgentPromotionDraft; created: boolean }> {
     const thread = this.repos.threads.getById(threadId)
     if (!thread) return { ok: false, error: threadNotFound() }
-    if (thread.agentId !== GENERIC_AGENTIS_AGENT_ID) {
+    if (thread.agentId && thread.agentId !== GENERIC_AGENTIS_AGENT_ID) {
       return { ok: false, error: threadAlreadyHasAgent() }
     }
 

@@ -64,9 +64,6 @@ export class WorkspaceRepository {
   }
 
   createDefaultForAgent(input: CreateDefaultWorkspaceInput): Workspace {
-    const existing = this.getDefaultByAgentId(input.agentId)
-    if (existing) return existing
-
     const now = nowIso()
     const workspaceId = createId("workspace")
     const row = {
@@ -79,8 +76,17 @@ export class WorkspaceRepository {
       createdAt: now,
       updatedAt: now,
     }
-    this.db.insert(workspaces).values(row).run()
-    return mapWorkspace(row)
+    const inserted = this.db
+      .insert(workspaces)
+      .values(row)
+      .onConflictDoNothing({ target: workspaces.agentId })
+      .returning()
+      .get()
+    if (inserted) return mapWorkspace(inserted)
+
+    const existing = this.getDefaultByAgentId(input.agentId)
+    if (existing) return existing
+    throw new Error(`Agent ${input.agentId} has no default workspace`)
   }
 
   updateStatus(id: string, status: Workspace["status"]): Workspace | null {

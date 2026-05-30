@@ -1,6 +1,8 @@
 import { mkdir, symlink, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
+import { workspaces } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 import { WorkspaceService } from "./workspace-service.js"
 
@@ -97,6 +99,21 @@ describe("workspace service", () => {
     })
     await expect(handle.readText({ path: "escape.md" })).rejects.toMatchObject({
       code: "workspace_symlink_escape",
+    })
+  })
+
+  it("rejects backend refs that escape the storage root", async () => {
+    ctx = createTestContext()
+    const workspace = ctx.repos.workspaces.ensureGenericAgentisWorkspace()
+    ctx.db
+      .update(workspaces)
+      .set({ backendRef: "../outside" })
+      .where(eq(workspaces.id, workspace.id))
+      .run()
+    const service = new WorkspaceService(ctx.repos, ctx.config)
+
+    await expect(service.openWorkspace(workspace.id)).rejects.toMatchObject({
+      code: "workspace_backend_ref_invalid",
     })
   })
 

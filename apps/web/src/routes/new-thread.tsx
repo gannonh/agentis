@@ -9,9 +9,19 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { useAgents } from "@/hooks/use-agents"
 export function NewThreadPage() {
   const [searchParams] = useSearchParams()
-  const initialAgentId = searchParams.get("agentId") || DEFAULT_AGENT_PICKER_ID
-  const [selectedAgentId, setSelectedAgentId] = useState(initialAgentId)
+  const requestedAgentId = searchParams.get("agentId")
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const { agents, loading: agentsLoading } = useAgents()
+  const requestedAgentIsValid = Boolean(
+    requestedAgentId &&
+      (requestedAgentId === DEFAULT_AGENT_PICKER_ID ||
+        agents.some((agent) => agent.id === requestedAgentId))
+  )
+  const urlAgentId =
+    requestedAgentId && requestedAgentIsValid
+      ? requestedAgentId
+      : DEFAULT_AGENT_PICKER_ID
+  const effectiveSelectedAgentId = selectedAgentId ?? urlAgentId
 
   return (
     <PageLayout variant="focused" className="gap-10">
@@ -21,13 +31,13 @@ export function NewThreadPage() {
         </h1>
 
         <AgentPicker
-          value={selectedAgentId}
+          value={effectiveSelectedAgentId}
           onChange={setSelectedAgentId}
           agents={agents}
           agentsLoading={agentsLoading}
         />
 
-        <ThreadComposer selectedAgentId={selectedAgentId} />
+        <ThreadComposer selectedAgentId={effectiveSelectedAgentId} />
 
         <QuickActions />
       </div>

@@ -1,5 +1,5 @@
 import { Link } from "react-router"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MoreVerticalIcon } from "@hugeicons/core-free-icons"
 import { AgentIcon } from "@/lib/agent-icons"
@@ -95,18 +95,18 @@ export function AgentDetailHero({
           </dl>
         </div>
         <div className="flex shrink-0 items-center gap-2 self-start">
-          <Button
-            render={
-              newThreadHref ? <Link to={newThreadHref} /> : undefined
-            }
-            nativeButton={!newThreadHref}
-            type="button"
-            size="sm"
-            className="gap-1.5"
-            disabled={!newThreadHref}
-          >
-            + New thread
-          </Button>
+          {newThreadHref ? (
+            <Link
+              to={newThreadHref}
+              className={buttonVariants({ size: "sm", className: "gap-1.5" })}
+            >
+              + New thread
+            </Link>
+          ) : (
+            <Button type="button" size="sm" className="gap-1.5" disabled>
+              + New thread
+            </Button>
+          )}
           <Button
             size="icon"
             variant="outline"

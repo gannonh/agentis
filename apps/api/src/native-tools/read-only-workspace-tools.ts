@@ -139,7 +139,7 @@ export function buildWorkspaceNativeTools(handle: WorkspaceHandle): ToolSet {
   return {
     listWorkspaceFiles: tool({
       description:
-        "List files and directories under the current Agentis workspace.",
+        "List files and directories under the current workspace.",
       inputSchema: listWorkspaceFilesInputSchema,
       execute: async (input) => {
         const result = await handle.list(input)
@@ -148,7 +148,7 @@ export function buildWorkspaceNativeTools(handle: WorkspaceHandle): ToolSet {
     }),
     readWorkspaceFile: tool({
       description:
-        "Read a text file from the current Agentis workspace. Use this only for workspace-relative paths.",
+        "Read a text file from the current workspace. Use this only for workspace-relative paths.",
       inputSchema: readWorkspaceFileInputSchema,
       execute: async (input) => {
         const result = await handle.readText(input)
@@ -157,7 +157,7 @@ export function buildWorkspaceNativeTools(handle: WorkspaceHandle): ToolSet {
     }),
     searchWorkspaceFiles: tool({
       description:
-        "Search text files in the current Agentis workspace and return matching snippets.",
+        "Search text files in the current workspace and return matching snippets.",
       inputSchema: searchWorkspaceFilesInputSchema,
       execute: async (input) => {
         const result = await handle.search(input)
