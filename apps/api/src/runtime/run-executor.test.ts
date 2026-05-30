@@ -314,7 +314,76 @@ describe("run executor composio bridge", () => {
     )
   })
 
-  it("loads pinned global and agent memories into agent run context", async () => {
+  it("loads all global and selected-agent memories into selected-agent thread context", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Customer Insights Analyst",
+      systemPrompt: "Answer as the customer insights analyst.",
+      model: "gpt-4o-mini",
+    })
+    context.repos.savedMemories.create({
+      content: "Use the beta workspace positioning when summarizing customer themes.",
+      category: "memory_category_organization",
+      importance: "high",
+      usageGuidance: "Use in customer insight synthesis.",
+      tags: ["beta"],
+      scope: "global",
+      pinnedToContext: false,
+    })
+    context.repos.savedMemories.create({
+      content: "Cluster qualitative feedback by segment before recommending action.",
+      category: "memory_category_domain_knowledge",
+      importance: "high",
+      usageGuidance: "Use for customer feedback threads.",
+      tags: ["customer"],
+      scope: "agent",
+      associatedAgent: agent.id,
+      pinnedToContext: false,
+    })
+    context.repos.savedMemories.create({
+      content: "Preserve customer language in summaries.",
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use for executive briefs.",
+      tags: ["voice"],
+      scope: "agent",
+      associatedAgent: agent.id,
+      pinnedToContext: false,
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Summarize recent feedback.",
+        agentId: agent.id,
+      }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    const memoryStep = steps.find((step) => step.title === "Agent memories loaded")
+    expect(memoryStep?.payload).toMatchObject({ agentMemoryCount: 2 })
+    expect(
+      (memoryStep?.payload as { globalMemoryCount?: number } | undefined)
+        ?.globalMemoryCount
+    ).toBeGreaterThanOrEqual(1)
+    const debugInput = steps.find((step) => step.title === "Debug: model input")
+    expect(debugInput?.payload).toMatchObject({
+      systemPrompt: expect.stringContaining("Preserve customer language"),
+    })
+    expect(debugInput?.payload).toMatchObject({
+      systemPrompt: expect.stringContaining("beta workspace positioning"),
+    })
+  }, 10_000)
+
+  it("loads global and agent memories into agent run context", async () => {
     const { app, context } = createMockRuntimeApp()
     const agent = context.repos.agents.create({
       name: "Research Agent",
@@ -367,10 +436,11 @@ describe("run executor composio bridge", () => {
       .steps
       .listByRunId(run.id)
       .find((step) => step.title === "Agent memories loaded")
-    expect(memoryStep?.payload).toMatchObject({
-      agentMemoryCount: 1,
-      globalMemoryCount: 1,
-    })
+    expect(memoryStep?.payload).toMatchObject({ agentMemoryCount: 2 })
+    expect(
+      (memoryStep?.payload as { globalMemoryCount?: number } | undefined)
+        ?.globalMemoryCount
+    ).toBeGreaterThanOrEqual(1)
   }, 10_000)
 
   it("loads the bound agent configuration version when streaming a test-thread run", async () => {

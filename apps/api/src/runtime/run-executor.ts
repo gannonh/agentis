@@ -323,7 +323,7 @@ export class RunExecutor {
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
     const agentMemories = run.agentId
-      ? this.repos.savedMemories.listPinnedForAgent(run.agentId)
+      ? this.repos.savedMemories.listForAgent(run.agentId)
       : null
     const contextContributions = [
       buildSourceWorkflowContribution(thread),
