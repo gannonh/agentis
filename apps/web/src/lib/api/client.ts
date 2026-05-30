@@ -1,6 +1,7 @@
 import {
   abortRunResponseSchema,
   connectIntegrationResponseSchema,
+  createFollowUpRequestSchema,
   createFollowUpResponseSchema,
   createThreadRequestSchema,
   createThreadResponseSchema,
@@ -123,10 +124,11 @@ export async function sendFollowUp(
   threadId: string,
   body: CreateFollowUpRequest
 ) {
+  const payload = createFollowUpRequestSchema.parse(body)
   const response = await fetch(`${API_BASE}/api/threads/${threadId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   })
   return parseJson(response, createFollowUpResponseSchema)
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { Message, Run, ThreadDetail } from "@workspace/shared"
+import type { Message, Run, ThreadDetail, ThreadMode } from "@workspace/shared"
 import {
   abortRun,
   getThread,
@@ -144,10 +144,10 @@ export function useThreadSession(threadId: string | undefined) {
   }, [threadId, startQueuedRunIfNeeded, stopPolling])
 
   const submitFollowUp = useCallback(
-    async (prompt: string) => {
+    async (prompt: string, mode?: ThreadMode) => {
       if (!threadId) return
       setError(null)
-      const { run } = await sendFollowUp(threadId, { prompt })
+      const { run } = await sendFollowUp(threadId, { prompt, mode })
       await refresh()
       await drainStream(run.id)
     },

@@ -198,6 +198,7 @@ export function createThreadRoutes(
       threadId: thread.id,
       prompt: body.prompt,
       title: summarizeTitle(body.prompt),
+      mode: body.mode,
     })
     if (!created) {
       return c.json({ error: "Thread not found" }, 404)

@@ -349,6 +349,41 @@ describe("run executor composio bridge", () => {
     ).rejects.toThrow()
   }, 10_000)
 
+  it("uses requested follow-up mode for workspace mutation approvals", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Create a workspace file immediately",
+        mode: "agent",
+      }),
+    })
+    const { thread } = (await created.json()) as {
+      thread: { id: string }
+    }
+
+    const followUp = await app.request(`/api/threads/${thread.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Create another workspace file for approval",
+        mode: "plan",
+      }),
+    })
+    const { run } = (await followUp.json()) as { run: { id: string } }
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    await stream.text()
+
+    expect(context.repos.threads.getById(thread.id)?.mode).toBe("plan")
+    expect(context.repos.workspaceEdits.getPendingByRunId(run.id)).toMatchObject({
+      status: "pending",
+      approvalMode: "plan",
+    })
+  }, 10_000)
+
   it("applies execute-mode workspace mutations without approval", async () => {
     const { app, context } = createMockRuntimeApp()
     const created = await app.request("/api/threads", {

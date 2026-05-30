@@ -433,6 +433,7 @@ export const createThreadResponseSchema = z.object({
 
 export const createFollowUpRequestSchema = z.object({
   prompt: nonEmptyString,
+  mode: threadModeSchema.optional(),
 })
 
 export const updateThreadRequestSchema = z.object({

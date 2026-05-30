@@ -194,7 +194,7 @@ export function ThreadDetailPage() {
     if (!prompt.trim() || composerDisabled) return
     setSubmitting(true)
     try {
-      await submitFollowUp(prompt.trim())
+      await submitFollowUp(prompt.trim(), mode)
     } finally {
       setSubmitting(false)
     }
