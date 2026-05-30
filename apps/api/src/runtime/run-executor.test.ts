@@ -376,11 +376,27 @@ describe("run executor composio bridge", () => {
     ).toBeGreaterThanOrEqual(1)
     const debugInput = steps.find((step) => step.title === "Debug: model input")
     expect(debugInput?.payload).toMatchObject({
-      systemPrompt: expect.stringContaining("Preserve customer language"),
+      memories: expect.objectContaining({
+        agent: expect.arrayContaining([
+          expect.objectContaining({
+            content: "Preserve customer language in summaries.",
+          }),
+        ]),
+        global: expect.arrayContaining([
+          expect.objectContaining({
+            content:
+              "Use the beta workspace positioning when summarizing customer themes.",
+          }),
+        ]),
+      }),
+      memoryPrompt: expect.stringContaining("Preserve customer language"),
     })
-    expect(debugInput?.payload).toMatchObject({
-      systemPrompt: expect.stringContaining("beta workspace positioning"),
-    })
+    expect(
+      (debugInput?.payload as { systemPrompt?: string } | undefined)?.systemPrompt
+    ).not.toContain("Preserve customer language")
+    expect(
+      (debugInput?.payload as { systemPrompt?: string } | undefined)?.systemPrompt
+    ).not.toContain("beta workspace positioning")
   }, 10_000)
 
   it("loads global and agent memories into agent run context", async () => {

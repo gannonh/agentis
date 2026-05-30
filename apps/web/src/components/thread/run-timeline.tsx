@@ -64,6 +64,8 @@ function formatDebugPayload(step: RunStep) {
     systemPrompt:
       typeof record.systemPrompt === "string" ? record.systemPrompt : undefined,
     messages: record.messages,
+    memoryPrompt: record.memoryPrompt,
+    memories: record.memories,
     tools: formatDebugTools(record.tools),
     toolDetails: record.toolDetails ?? inferDebugToolDetails(record.tools),
     workspace: record.workspace,
@@ -204,6 +206,8 @@ export function RunTimeline({
                 <div>
                   <DebugBlock title="System prompt" value={debug.systemPrompt} />
                   <DebugBlock title="Messages" value={debug.messages} />
+                  <DebugBlock title="Memories" value={debug.memories} />
+                  <DebugBlock title="Memory prompt" value={debug.memoryPrompt} />
                   <DebugBlock title="Tools" value={debug.tools} />
                   <DebugBlock title="Tool details" value={debug.toolDetails} />
                   <DebugBlock title="Workspace" value={debug.workspace} />

@@ -325,19 +325,34 @@ export class RunExecutor {
     const agentMemories = run.agentId
       ? this.repos.savedMemories.listForAgent(run.agentId)
       : null
+    const sourceWorkflowContribution = buildSourceWorkflowContribution(thread)
+    const projectContextContribution = buildProjectContextContribution({
+      projectContext,
+      projectContextBlock,
+    })
+    const memoryContribution = buildAgentMemoriesContribution(agentMemories)
     const contextContributions = [
-      buildSourceWorkflowContribution(thread),
-      buildProjectContextContribution({ projectContext, projectContextBlock }),
-      buildAgentMemoriesContribution(agentMemories),
+      sourceWorkflowContribution,
+      projectContextContribution,
+      memoryContribution,
     ].filter((contribution): contribution is NonNullable<typeof contribution> =>
       Boolean(contribution)
     )
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: agentConfiguration?.systemPrompt,
-      contextSections: contextContributions
-        .map((contribution) => contribution.promptSection)
+      contextSections: [sourceWorkflowContribution, projectContextContribution]
+        .map((contribution) => contribution?.promptSection)
         .filter((section): section is RunPromptSection => Boolean(section)),
     })
+    const memoryPrompt = memoryContribution?.promptSection
+      ? formatSystemPromptSection(
+          memoryContribution.promptSection.title,
+          memoryContribution.promptSection.body
+        )
+      : null
+    const runtimeSystemPrompt = [systemPrompt, memoryPrompt]
+      .filter((section): section is string => Boolean(section))
+      .join("\n\n")
 
     const nativeTools = buildWorkspaceNativeTools(workspaceHandle)
     const composioTools = this.services.toolExecution.buildRuntimeTools(
@@ -365,7 +380,8 @@ export class RunExecutor {
       }),
       ...composioTools,
     }
-    const modelMessages = toModelMessages(threadMessages)
+    const conversationMessages = toModelMessages(threadMessages)
+    const modelMessages = conversationMessages
     this.repos.steps.create({
       runId,
       type: "reasoning",
@@ -375,7 +391,9 @@ export class RunExecutor {
         provider: "debug",
         kind: "model-input",
         systemPrompt,
-        messages: modelMessages,
+        messages: conversationMessages,
+        memoryPrompt,
+        memories: agentMemories,
         tools: Object.keys(runtimeTools),
         toolDetails: formatToolDebugDetails(runtimeTools),
         workspace: {
@@ -581,7 +599,7 @@ export class RunExecutor {
 
     const result = streamText({
       model,
-      system: systemPrompt,
+      system: runtimeSystemPrompt,
       messages: modelMessages,
       tools: runtimeTools,
       stopWhen: stepCountIs(5),

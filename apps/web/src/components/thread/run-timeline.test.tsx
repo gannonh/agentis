@@ -52,6 +52,20 @@ describe("RunTimeline", () => {
               kind: "model-input",
               systemPrompt: "## Agent instructions\nAnswer with full debug detail.",
               messages: [{ role: "user", content: "Inspect this run." }],
+              memories: {
+                agent: [
+                  {
+                    content: "Preserve customer language in summaries.",
+                    scope: "agent",
+                  },
+                ],
+                global: [
+                  {
+                    content: "Use beta workspace positioning.",
+                    scope: "global",
+                  },
+                ],
+              },
               tools: [
                 {
                   name: "listWorkspaceFiles",
@@ -86,6 +100,8 @@ describe("RunTimeline", () => {
     expect(screen.getByText(/Answer with full debug detail/)).toBeInTheDocument()
     expect(screen.getAllByText(/listWorkspaceFiles/).length).toBeGreaterThan(1)
     expect(screen.getByText(/readWorkspaceFile/)).toBeInTheDocument()
+    expect(screen.getByText("Memories")).toBeInTheDocument()
+    expect(screen.getByText(/Preserve customer language/)).toBeInTheDocument()
     expect(screen.getByText("Tool details")).toBeInTheDocument()
     expect(screen.getByText(/List files and directories/)).toBeInTheDocument()
     expect(screen.getByText(/ZodObject/)).toBeInTheDocument()
