@@ -42,6 +42,10 @@ export function createTestContext() {
     artifactPreviewMaxChars: 2_000,
     projectGoalsMaxChars: 4_000,
     projectMemoryMaxChars: 2_000,
+    workspaceListLimit: 200,
+    workspaceReadMaxBytes: 64_000,
+    workspaceSearchLimit: 50,
+    workspaceSearchSnippetChars: 160,
   }
   const repos = createRepositories(db, config)
 

@@ -8,11 +8,13 @@ import type {
 } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import {
+  agents,
   messages,
   runs,
   runSteps,
   threads,
   toolAccessGrants,
+  workspaces,
 } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapMessage, mapRun, mapThread } from "../lib/mappers.js"
@@ -20,6 +22,11 @@ import {
   sourceWorkflowColumns,
   type SourceWorkflowSnapshot,
 } from "../lib/source-workflow-snapshot.js"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  GENERIC_AGENTIS_AGENT_NAME,
+} from "../workspaces/constants.js"
+import { WorkspaceRepository } from "./workspace-repository.js"
 
 type ToolGrantSnapshot = {
   toolkitSlug: string
@@ -32,6 +39,7 @@ type ThreadCreateInput = {
   mode: ThreadMode
   projectId?: string
   agentId?: string
+  workspaceId?: string
   agentNameSnapshot?: string
 } & SourceWorkflowSnapshot
 
@@ -93,6 +101,15 @@ function createQueuedRunRow(input: {
   }
 }
 
+function resolveAgentNameSnapshot(
+  agentId: string,
+  agentNameSnapshot: string | undefined
+): string | null {
+  if (agentNameSnapshot) return agentNameSnapshot
+  if (agentId === GENERIC_AGENTIS_AGENT_ID) return GENERIC_AGENTIS_AGENT_NAME
+  return null
+}
+
 function createQueuedStepRow(runId: string, createdAt: string): StepRow {
   return {
     id: createId("step"),
@@ -111,6 +128,7 @@ export class ThreadRepository {
 
   create(input: ThreadCreateInput): Thread {
     const now = nowIso()
+    const agentId = input.agentId ?? GENERIC_AGENTIS_AGENT_ID
     const row = {
       id: createId("thread"),
       title: input.title,
@@ -118,8 +136,9 @@ export class ThreadRepository {
       model: input.model,
       mode: input.mode,
       projectId: input.projectId ?? null,
-      agentId: input.agentId ?? null,
-      agentNameSnapshot: input.agentNameSnapshot ?? null,
+      agentId,
+      workspaceId: input.workspaceId ?? this.resolveDefaultWorkspaceId(agentId),
+      agentNameSnapshot: resolveAgentNameSnapshot(agentId, input.agentNameSnapshot),
       agentConfigurationVersionId: null,
       ...sourceWorkflowColumns(input),
       createdAt: now,
@@ -131,6 +150,7 @@ export class ThreadRepository {
 
   createWithInitialRun(input: InitialRunInput): InitialRunResult {
     const now = nowIso()
+    const agentId = input.agentId ?? GENERIC_AGENTIS_AGENT_ID
     const threadRow = {
       id: createId("thread"),
       title: input.title,
@@ -138,8 +158,9 @@ export class ThreadRepository {
       model: input.model,
       mode: input.mode,
       projectId: input.projectId ?? null,
-      agentId: input.agentId ?? null,
-      agentNameSnapshot: input.agentNameSnapshot ?? null,
+      agentId,
+      workspaceId: input.workspaceId ?? this.resolveDefaultWorkspaceId(agentId),
+      agentNameSnapshot: resolveAgentNameSnapshot(agentId, input.agentNameSnapshot),
       agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
       ...sourceWorkflowColumns(input),
       createdAt: now,
@@ -153,7 +174,7 @@ export class ThreadRepository {
     const runRow = createQueuedRunRow({
       threadId: threadRow.id,
       model: input.model,
-      agentId: input.agentId,
+      agentId,
       agentConfigurationVersionId: input.agentConfigurationVersionId,
       startedAt: now,
     })
@@ -225,6 +246,33 @@ export class ThreadRepository {
         run: mapRun(runRow),
       }
     })
+  }
+
+  private resolveDefaultWorkspaceId(agentId: string): string {
+    const workspace = this.db
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(eq(workspaces.agentId, agentId))
+      .get()
+    if (workspace) return workspace.id
+
+    if (agentId === GENERIC_AGENTIS_AGENT_ID) {
+      return new WorkspaceRepository(this.db).ensureGenericAgentisWorkspace().id
+    }
+
+    const agent = this.db
+      .select({ id: agents.id, name: agents.name })
+      .from(agents)
+      .where(eq(agents.id, agentId))
+      .get()
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found`)
+    }
+
+    return new WorkspaceRepository(this.db).createDefaultForAgent({
+      agentId: agent.id,
+      agentName: agent.name,
+    }).id
   }
 
   getById(id: string): Thread | null {

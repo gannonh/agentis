@@ -14,6 +14,7 @@ import { SavedMemoryRepository } from "./saved-memory-repository.js"
 import { ThreadRepository } from "./thread-repository.js"
 import { ToolAccessGrantRepository } from "./tool-access-grant-repository.js"
 import { TestingSeedRepository } from "./testing-seed-repository.js"
+import { WorkspaceRepository } from "./workspace-repository.js"
 
 export function createRepositories(db: AppDatabase, config?: AppConfig) {
   const composioUserId = config?.composioUserId ?? "agentis-local-user"
@@ -27,6 +28,7 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     savedMemories: new SavedMemoryRepository(db),
     artifacts: new ArtifactRepository(db),
     agents: new AgentRepository(db),
+    workspaces: new WorkspaceRepository(db),
     agentPromotionDrafts: new AgentPromotionDraftRepository(db),
     integrationToolkits: new IntegrationToolkitRepository(db),
     integrationConnections: new IntegrationConnectionRepository(

@@ -6,7 +6,11 @@ import { createThread } from "@/lib/api/client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
 import { useProjects } from "@/hooks/use-projects"
 
-export function ThreadComposer() {
+type ThreadComposerProps = {
+  selectedAgentId: string
+}
+
+export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { health } = useRuntimeHealth()
@@ -33,6 +37,7 @@ export function ThreadComposer() {
         mode,
         model: health.model,
         projectId: projectId || undefined,
+        agentId: selectedAgentId,
       })
       navigate(`/threads/${thread.id}`, {
         state: { startRunId: run.id },

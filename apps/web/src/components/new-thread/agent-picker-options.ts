@@ -1,12 +1,7 @@
-import { getStarterAgents, getYourPickerAgents } from "@/fixtures"
-import type { Agent, AgentNavIcon, PickerAgentIcon, StarterAgent } from "@/fixtures/schema"
+import { GENERIC_AGENTIS_AGENT_ID, type AgentListItem } from "@workspace/shared"
+import type { PickerAgentIcon } from "@/fixtures/schema"
 
-const rosterIconToPickerIcon: Record<AgentNavIcon, PickerAgentIcon> = {
-  search: "search",
-  command: "briefing",
-}
-
-export const DEFAULT_AGENT_PICKER_ID = "agentis"
+export const DEFAULT_AGENT_PICKER_ID = GENERIC_AGENTIS_AGENT_ID
 
 export type PickerOption = {
   id: string
@@ -15,21 +10,12 @@ export type PickerOption = {
   icon: PickerAgentIcon
 }
 
-function agentToPickerOption(agent: Agent): PickerOption {
+function apiAgentToPickerOption(agent: AgentListItem): PickerOption {
   return {
     id: agent.id,
     name: agent.name,
-    description: agent.description,
-    icon: rosterIconToPickerIcon[agent.icon ?? "search"],
-  }
-}
-
-function starterToPickerOption(starter: StarterAgent): PickerOption {
-  return {
-    id: starter.id,
-    name: starter.name,
-    description: starter.description,
-    icon: starter.icon,
+    description: agent.description ?? "Configured agent",
+    icon: "search",
   }
 }
 
@@ -40,18 +26,10 @@ export const defaultPickerOption: PickerOption = {
   icon: "agentis",
 }
 
-export function buildPickerOptions(): PickerOption[] {
-  return [
-    defaultPickerOption,
-    ...getYourPickerAgents().map(agentToPickerOption),
-    ...getStarterAgents().map(starterToPickerOption),
-  ]
+export function buildPickerOptions(agents: AgentListItem[] = []): PickerOption[] {
+  return [defaultPickerOption, ...agents.map(apiAgentToPickerOption)]
 }
 
-export function agentToPickerMenuOption(agent: Agent): PickerOption {
-  return agentToPickerOption(agent)
-}
-
-export function starterToPickerMenuOption(starter: StarterAgent): PickerOption {
-  return starterToPickerOption(starter)
+export function agentToPickerMenuOption(agent: AgentListItem): PickerOption {
+  return apiAgentToPickerOption(agent)
 }

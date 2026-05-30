@@ -16,7 +16,7 @@ Give every Agentis agent a durable workspace and a growing set of native tools s
 
 Spec: `docs/specs/2026-05-29-agent-native-tooling-design.md`
 
-Status: Design spec written and ready for Build approval.
+Status: V1 vertical slice implemented for local demo and verification.
 
 Goal: create the first demoable native tooling vertical slice by wiring selected-agent thread creation, agent-owned workspaces, a native tool registry, and read-only workspace file tools.
 
@@ -96,6 +96,29 @@ Implemented behavior:
 - Supports `tool-calling` run status.
 - Merges local native tools with granted Composio tools before model execution.
 
+### Agent-owned workspaces and read-only tools
+
+Implemented files:
+
+- `apps/api/src/repositories/workspace-repository.ts`
+- `apps/api/src/workspaces/workspace-service.ts`
+- `apps/api/src/native-tools/read-only-workspace-tools.ts`
+- `apps/api/src/routes/threads.ts`
+- `apps/api/src/runtime/run-executor.ts`
+- `apps/web/src/components/thread/run-timeline.tsx`
+
+Implemented behavior:
+
+- Provisions the built-in generic Agentis agent with `workspace_agentis`.
+- Provisions one default local filesystem workspace for each created or promoted custom agent.
+- Starts `/threads/new` conversations under the selected agent and that agent's workspace.
+- Resolves `thread.workspaceId` before model execution and fails loudly when the workspace is missing.
+- Exposes `listWorkspaceFiles`, `readWorkspaceFile`, and `searchWorkspaceFiles` to runs as native read-only tools.
+- Normalizes paths, blocks traversal, blocks symlink escapes, bounds list/search/read output, rejects binary reads, and reports truncation metadata.
+- Persists native tool calls and results as message parts and run steps.
+- Renders native tool evidence in the run timeline without full file contents.
+- Seeds deterministic demo workspace files through the local debug seed route.
+
 ### Existing native runtime tools
 
 #### `getWorkspaceSummary`
@@ -142,20 +165,19 @@ This is not exposed as a callable tool, but it is a native agent capability.
 
 ## Current boundaries
 
+Native tooling currently includes agent-owned local workspaces, selected-agent thread creation, workspace-aware path resolution, read-only file listing, read-only file reading, read-only file search, native runtime tool wiring, persisted native tool evidence, and concise native timeline rendering.
+
 Native tooling does not currently include:
 
-- File reading.
-- File listing.
-- File search.
 - File editing.
 - Patch application.
-- Workspace-aware path resolution.
 - Shell or command execution.
 - Sandboxed execution.
 - Tool approval gates.
 - Native tool grants or policy controls.
-- A generic native tool catalog.
-- Rich generic tool rendering in the web UI.
+- External or production workspace storage backends.
+- Workspace copy during promotion.
+- Thread transcript rendering for tool-call or tool-result message parts.
 
 The artifact storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents.
 
@@ -186,8 +208,11 @@ File: `apps/web/src/components/thread/run-timeline.tsx`
 Current behavior:
 
 - Renders step title, type, and status for all run steps.
-- Has special formatting for Composio payloads.
-- Does not yet render native tool input/output previews in a structured way.
+- Has special formatting for Composio and native workspace payloads.
+- Renders native workspace evidence with path/query, workspace id, status, and bounded output summaries.
+- Keeps full file contents out of timeline evidence.
+- Provides a `Debug mode` toggle that shows persisted model input/output in development builds, including system prompt, messages, workspace binding, assistant parts, usage, errors, and tool metadata.
+- Keeps debug `tools` as a compact tool-name list and stores full `toolDetails` with name, description, serializable input schema details, and execution availability in development builds; production builds do not persist or expose these debug payloads.
 
 ### Thread transcript
 
@@ -247,9 +272,9 @@ Agentis should model workspace ownership through agents, not projects.
 
 ### Generic Agentis threads and agent creation
 
-Threads started from `/threads/new` should belong to the agent selected in the composer. The current UI includes a mocked selector for Agentis or a custom agent, but it is not wired yet. Selecting Agentis creates a thread owned by the built-in generic Agentis agent and its default workspace. Selecting a custom agent creates a thread owned by that agent and its workspace.
+Threads started from `/threads/new` belong to the agent selected in the composer. Selecting Agentis creates a thread owned by the built-in generic Agentis agent and its default workspace. Selecting a custom agent creates a thread owned by that agent and its workspace.
 
-Only threads owned by the generic Agentis agent can be converted into a new agent. When this happens, create the new agent's default workspace from the relevant source thread workspace state, then move the thread to the new agent and workspace.
+Only threads owned by the generic Agentis agent can be converted into a new agent. When this happens, the new agent receives its own default workspace. Workspace state copy from the source thread remains future work.
 
 Threads started from a full agent stay with that agent. They cannot be moved to another agent or used to create a different agent.
 

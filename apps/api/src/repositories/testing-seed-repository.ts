@@ -1,4 +1,6 @@
-import { inArray, sql } from "drizzle-orm"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
+import { inArray, or, sql } from "drizzle-orm"
 import type { AnySQLiteTable } from "drizzle-orm/sqlite-core"
 import type { AppConfig } from "../config.js"
 import type { AppDatabase } from "../db/client.js"
@@ -16,6 +18,7 @@ import {
   savedMemories,
   threads,
   toolAccessGrants,
+  workspaces,
 } from "../db/schema.js"
 import { LocalArtifactStorage } from "../artifacts/local-artifact-storage.js"
 import {
@@ -48,6 +51,12 @@ import {
   threadIds,
   threadRows,
 } from "./testing-seed-data.js"
+import { WorkspaceRepository } from "./workspace-repository.js"
+import {
+  GENERIC_AGENTIS_WORKSPACE_ID,
+  LOCAL_WORKSPACE_BACKEND_TYPE,
+  workspaceBackendRef,
+} from "../workspaces/constants.js"
 import type {
   DebugDataResetResult,
   DebugDatasetSummary,
@@ -109,6 +118,7 @@ export class TestingSeedRepository {
       tx.delete(agentPromotionDrafts).run()
       tx.delete(threads).run()
       tx.delete(agentConfigurationVersions).run()
+      tx.delete(workspaces).run()
       tx.delete(agents).run()
       tx.delete(savedMemories).run()
       tx.delete(projectMemories).run()
@@ -126,6 +136,26 @@ export class TestingSeedRepository {
 
   private getArtifactStorage(): LocalArtifactStorage | null {
     return this.config ? new LocalArtifactStorage(this.config) : null
+  }
+
+  private writeDemoWorkspaceFiles(): void {
+    if (!this.config) return
+    const filesRoot = join(
+      this.config.storageRoot,
+      workspaceBackendRef(GENERIC_AGENTIS_WORKSPACE_ID),
+      "files"
+    )
+    mkdirSync(join(filesRoot, "notes"), { recursive: true })
+    writeFileSync(
+      join(filesRoot, "README.md"),
+      "# Agentis demo workspace\n\nThis workspace contains deterministic files for native tool demos.\n",
+      "utf8"
+    )
+    writeFileSync(
+      join(filesRoot, "notes", "demo-workspace.md"),
+      "# Demo workspace notes\n\nAsk Agentis what files are in its workspace to exercise native file tools.\n",
+      "utf8"
+    )
   }
 
   private countRows(table: AnySQLiteTable): number {
@@ -149,23 +179,106 @@ export class TestingSeedRepository {
   }
 
   private deleteRichWorkspace(): void {
+    const richWorkspaceIds = agentIds.map((agentId) => `workspace_${agentId}`)
+    const richThreadIds = Array.from(
+      new Set([
+        ...threadIds,
+        ...this.db
+          .select({ id: threads.id })
+          .from(threads)
+          .where(
+            or(
+              inArray(threads.agentId, agentIds),
+              inArray(threads.workspaceId, richWorkspaceIds)
+            )
+          )
+          .all()
+          .map((thread) => thread.id),
+      ])
+    )
+    const richRunIds = Array.from(
+      new Set([
+        ...runIds,
+        ...this.db
+          .select({ id: runs.id })
+          .from(runs)
+          .where(
+            or(
+              inArray(runs.threadId, richThreadIds),
+              inArray(runs.agentId, agentIds)
+            )
+          )
+          .all()
+          .map((run) => run.id),
+      ])
+    )
+    const richArtifacts = this.db
+      .select({ id: artifacts.id, storageKey: artifacts.storageKey })
+      .from(artifacts)
+      .where(
+        or(
+          inArray(artifacts.id, artifactIds),
+          inArray(artifacts.projectId, projectIds),
+          inArray(artifacts.threadId, richThreadIds),
+          inArray(artifacts.runId, richRunIds),
+          inArray(artifacts.agentId, agentIds)
+        )
+      )
+      .all()
+
     const storage = this.getArtifactStorage()
-    for (const artifact of artifactRows) {
+    for (const artifact of richArtifacts) {
       storage?.delete(artifact.storageKey)
     }
 
     this.db.transaction((tx) => {
-      tx.delete(artifacts).where(inArray(artifacts.id, artifactIds)).run()
+      tx.delete(artifacts)
+        .where(
+          inArray(
+            artifacts.id,
+            richArtifacts.map((artifact) => artifact.id)
+          )
+        )
+        .run()
       tx.delete(toolAccessGrants)
-        .where(inArray(toolAccessGrants.id, grantIds))
+        .where(
+          or(
+            inArray(toolAccessGrants.id, grantIds),
+            inArray(toolAccessGrants.scopeId, [...agentIds, ...richThreadIds]),
+            inArray(toolAccessGrants.connectionId, connectionIds)
+          )
+        )
         .run()
-      tx.delete(runSteps).where(inArray(runSteps.id, stepIds)).run()
-      tx.delete(runs).where(inArray(runs.id, runIds)).run()
-      tx.delete(messages).where(inArray(messages.id, messageIds)).run()
-      tx.delete(threads).where(inArray(threads.id, threadIds)).run()
+      tx.delete(runSteps)
+        .where(
+          or(
+            inArray(runSteps.id, stepIds),
+            inArray(runSteps.runId, richRunIds)
+          )
+        )
+        .run()
+      tx.delete(runs).where(inArray(runs.id, richRunIds)).run()
+      tx.delete(messages)
+        .where(
+          or(
+            inArray(messages.id, messageIds),
+            inArray(messages.threadId, richThreadIds)
+          )
+        )
+        .run()
+      tx.delete(agentPromotionDrafts)
+        .where(inArray(agentPromotionDrafts.threadId, richThreadIds))
+        .run()
+      tx.delete(threads).where(inArray(threads.id, richThreadIds)).run()
       tx.delete(agentConfigurationVersions)
-        .where(inArray(agentConfigurationVersions.id, agentVersionIds))
+        .where(
+          or(
+            inArray(agentConfigurationVersions.id, agentVersionIds),
+            inArray(agentConfigurationVersions.agentId, agentIds)
+          )
+        )
         .run()
+      tx.delete(workspaces).where(inArray(workspaces.agentId, agentIds)).run()
       tx.delete(agents).where(inArray(agents.id, agentIds)).run()
       tx.delete(savedMemories)
         .where(inArray(savedMemories.id, savedMemoryIds))
@@ -185,6 +298,8 @@ export class TestingSeedRepository {
     for (const [storageKey, body] of Object.entries(artifactBodies)) {
       storage?.write(storageKey, Buffer.from(body, "utf8"))
     }
+    new WorkspaceRepository(this.db).ensureGenericAgentisWorkspace()
+    this.writeDemoWorkspaceFiles()
 
     this.db.transaction((tx) => {
       tx.insert(projects).values(projectRows).run()
@@ -227,6 +342,21 @@ export class TestingSeedRepository {
       }))
       tx.insert(agentConfigurationVersions).values(versionRows).run()
 
+      const workspaceRows = agentDefinitions.map((agent) => {
+        const workspaceId = `workspace_${agent.id}`
+        return {
+          id: workspaceId,
+          agentId: agent.id,
+          name: `${agent.name} workspace`,
+          backendType: LOCAL_WORKSPACE_BACKEND_TYPE,
+          backendRef: workspaceBackendRef(workspaceId),
+          status: "active",
+          createdAt: lastWeek,
+          updatedAt: now,
+        }
+      })
+      tx.insert(workspaces).values(workspaceRows).run()
+
       const agentGrantRows = includeIntegrations
         ? agentDefinitions.flatMap((agent) =>
             agent.grants.map((grant) => ({
@@ -243,7 +373,14 @@ export class TestingSeedRepository {
         tx.insert(toolAccessGrants).values(agentGrantRows).run()
       }
 
-      tx.insert(threads).values(threadRows).run()
+      tx.insert(threads)
+        .values(
+          threadRows.map((thread) => ({
+            ...thread,
+            workspaceId: `workspace_${thread.agentId}`,
+          }))
+        )
+        .run()
 
       const threadGrantRows = includeIntegrations
         ? threadRows.flatMap((thread) => {

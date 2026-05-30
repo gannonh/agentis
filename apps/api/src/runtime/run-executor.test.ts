@@ -1,8 +1,12 @@
+import { mkdir, writeFile } from "node:fs/promises"
+import { join } from "node:path"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
+import { threads } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 import { buildRunSystemPrompt, formatToolStepTitle } from "./run-executor.js"
+import { eq } from "drizzle-orm"
 
 let ctx: TestContext | undefined
 
@@ -16,16 +20,23 @@ function createMockRuntimeApp(setup?: (context: TestContext) => void) {
   setup?.(ctx)
   const services = createComposioServices(ctx.repos, ctx.config)
   return {
-    app: createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services),
+    app: createApp(
+      ctx.repos,
+      { ...ctx.config, mockRuntime: true, nodeEnv: "development" },
+      services
+    ),
     context: ctx,
   }
 }
 
 describe("run executor composio bridge", () => {
-  it("keeps the createArtifact step title when finalizing tool calls", () => {
+  it("keeps native workspace tool titles when finalizing tool calls", () => {
     expect(
       formatToolStepTitle({ toolName: "createArtifact", curated: false })
     ).toBe("Create artifact")
+    expect(
+      formatToolStepTitle({ toolName: "listWorkspaceFiles", curated: false })
+    ).toBe("Native: listWorkspaceFiles")
   })
 
   it("keeps default runs on the raw platform prompt", () => {
@@ -86,6 +97,342 @@ describe("run executor composio bridge", () => {
         )
     ).toBe(true)
   })
+
+  it("persists native workspace tool evidence in mock runtime", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const workspace = context.repos.workspaces.ensureGenericAgentisWorkspace()
+    const filesRoot = join(context.config.storageRoot, workspace.backendRef, "files")
+    await mkdir(filesRoot, { recursive: true })
+    await writeFile(join(filesRoot, "demo.md"), "Demo workspace file")
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "What files are in your workspace?" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Native: listWorkspaceFiles",
+          type: "tool-result",
+          status: "completed",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "listWorkspaceFiles",
+            workspaceId: workspace.id,
+            output: expect.objectContaining({
+              entries: [expect.objectContaining({ path: "demo.md" })],
+            }),
+          }),
+        }),
+      ])
+    )
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Debug: model input",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-input",
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                role: "user",
+                content: "What files are in your workspace?",
+              }),
+            ]),
+            tools: expect.arrayContaining(["listWorkspaceFiles"]),
+            toolDetails: expect.arrayContaining([
+              expect.objectContaining({
+                name: "listWorkspaceFiles",
+                description: expect.stringContaining(
+                  "List files and directories"
+                ),
+                inputSchema: expect.objectContaining({
+                  typeName: "ZodObject",
+                  fields: expect.arrayContaining([
+                    expect.objectContaining({ name: "path" }),
+                  ]),
+                }),
+              }),
+            ]),
+          }),
+        }),
+        expect.objectContaining({
+          title: "Debug: model output",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-output",
+            assistantParts: expect.arrayContaining([
+              expect.objectContaining({
+                type: "tool-result",
+                toolName: "listWorkspaceFiles",
+              }),
+            ]),
+          }),
+        }),
+      ])
+    )
+    const assistant = context.repos.messages
+      .listByThreadId(context.repos.runs.getById(run.id)!.threadId)
+      .find((message) => message.role === "assistant")
+    expect(assistant?.parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "tool-result",
+          toolName: "listWorkspaceFiles",
+          output: expect.objectContaining({ workspaceId: workspace.id }),
+        }),
+      ])
+    )
+  }, 10_000)
+
+  it("does not route substring matches like profile to native workspace tools", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Update my profile summary" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    expect(context.repos.steps.listByRunId(run.id)).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: "Native: listWorkspaceFiles" }),
+      ])
+    )
+  }, 10_000)
+
+  it("persists debug model input and output for run timeline inspection", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Debug Agent",
+      systemPrompt: "Answer as the debug agent.",
+      model: "gpt-4o-mini",
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Say hello for debug inspection." }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Debug: model input",
+          type: "reasoning",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-input",
+            systemPrompt: expect.stringContaining(
+              "## Agent instructions\nAnswer as the debug agent."
+            ),
+            messages: expect.arrayContaining([
+              expect.objectContaining({
+                role: "user",
+                content: "Say hello for debug inspection.",
+              }),
+            ]),
+            tools: expect.arrayContaining([
+              "listWorkspaceFiles",
+              "createArtifact",
+            ]),
+            toolDetails: expect.arrayContaining([
+              expect.objectContaining({
+                name: "listWorkspaceFiles",
+                description: expect.stringContaining(
+                  "List files and directories"
+                ),
+                inputSchema: expect.objectContaining({
+                  typeName: "ZodObject",
+                  fields: expect.arrayContaining([
+                    expect.objectContaining({ name: "path" }),
+                    expect.objectContaining({ name: "recursive" }),
+                  ]),
+                }),
+              }),
+              expect.objectContaining({
+                name: "createArtifact",
+                description: expect.stringContaining(
+                  "Create a durable text artifact"
+                ),
+              }),
+            ]),
+          }),
+        }),
+        expect.objectContaining({
+          title: "Debug: model output",
+          type: "reasoning",
+          payload: expect.objectContaining({
+            provider: "debug",
+            kind: "model-output",
+            assistantParts: expect.arrayContaining([
+              expect.objectContaining({
+                type: "text",
+                text: expect.stringContaining("Hello from Agentis mock runtime."),
+              }),
+            ]),
+            usage: expect.objectContaining({ totalTokens: expect.any(Number) }),
+          }),
+        }),
+      ])
+    )
+  }, 10_000)
+
+  it("fails loudly when a run thread has no workspace", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "What files are in your workspace?" }),
+    })
+    const { thread, run } = (await created.json()) as {
+      thread: { id: string }
+      run: { id: string }
+    }
+    context.db
+      .update(threads)
+      .set({ workspaceId: null })
+      .where(eq(threads.id, thread.id))
+      .run()
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+
+    expect(stream.status).toBe(400)
+    expect(context.repos.runs.getById(run.id)).toMatchObject({
+      status: "failed",
+      errorSummary: "Thread does not have a workspace.",
+    })
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "error",
+          status: "failed",
+          payload: expect.objectContaining({
+            provider: "native",
+            code: "workspace_not_found",
+          }),
+        }),
+      ])
+    )
+  })
+
+  it("loads only pinned global and agent memories into selected-agent thread context", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Customer Insights Analyst",
+      systemPrompt: "Answer as the customer insights analyst.",
+      model: "gpt-4o-mini",
+    })
+    context.repos.savedMemories.create({
+      content: "Use the beta workspace positioning when summarizing customer themes.",
+      category: "memory_category_organization",
+      importance: "high",
+      usageGuidance: "Use in customer insight synthesis.",
+      tags: ["beta"],
+      scope: "global",
+      pinnedToContext: true,
+    })
+    context.repos.savedMemories.create({
+      content: "Cluster qualitative feedback by segment before recommending action.",
+      category: "memory_category_domain_knowledge",
+      importance: "high",
+      usageGuidance: "Use for customer feedback threads.",
+      tags: ["customer"],
+      scope: "agent",
+      associatedAgent: agent.id,
+      pinnedToContext: false,
+    })
+    context.repos.savedMemories.create({
+      content: "Preserve customer language in summaries.",
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use for executive briefs.",
+      tags: ["voice"],
+      scope: "agent",
+      associatedAgent: agent.id,
+      pinnedToContext: true,
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Summarize recent feedback.",
+        agentId: agent.id,
+      }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    const memoryStep = steps.find((step) => step.title === "Agent memories loaded")
+    expect(memoryStep?.payload).toMatchObject({
+      agentMemoryCount: 1,
+      globalMemoryCount: 1,
+    })
+    const debugInput = steps.find((step) => step.title === "Debug: model input")
+    expect(debugInput?.payload).toMatchObject({
+      memories: expect.objectContaining({
+        agent: [
+          expect.objectContaining({
+            content: "Preserve customer language in summaries.",
+          }),
+        ],
+        global: [
+          expect.objectContaining({
+            content:
+              "Use the beta workspace positioning when summarizing customer themes.",
+          }),
+        ],
+      }),
+      memoryPrompt: expect.stringContaining("Preserve customer language"),
+    })
+    expect(debugInput?.payload).toMatchObject({
+      memories: expect.objectContaining({
+        agent: expect.not.arrayContaining([
+          expect.objectContaining({
+            content:
+              "Cluster qualitative feedback by segment before recommending action.",
+          }),
+        ]),
+      }),
+    })
+    expect(
+      (debugInput?.payload as { systemPrompt?: string } | undefined)?.systemPrompt
+    ).not.toContain("Preserve customer language")
+    expect(
+      (debugInput?.payload as { systemPrompt?: string } | undefined)?.systemPrompt
+    ).not.toContain("beta workspace positioning")
+  }, 10_000)
 
   it("loads pinned global and agent memories into agent run context", async () => {
     const { app, context } = createMockRuntimeApp()

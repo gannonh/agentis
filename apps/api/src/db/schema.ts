@@ -94,6 +94,26 @@ export const agents = sqliteTable(
   ]
 )
 
+export const workspaces = sqliteTable(
+  "workspaces",
+  {
+    id: text("id").primaryKey(),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    backendType: text("backend_type").notNull(),
+    backendRef: text("backend_ref").notNull(),
+    status: text("status").notNull(),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("workspaces_agent_id_unique").on(table.agentId),
+    index("workspaces_status_idx").on(table.status),
+  ]
+)
+
 export const agentConfigurationVersions = sqliteTable(
   "agent_configuration_versions",
   {
@@ -125,6 +145,7 @@ export const threads = sqliteTable("threads", {
   mode: text("mode").notNull(),
   projectId: text("project_id"),
   agentId: text("agent_id").references(() => agents.id),
+  workspaceId: text("workspace_id").references(() => workspaces.id),
   agentNameSnapshot: text("agent_name_snapshot"),
   agentConfigurationVersionId: text(
     "agent_configuration_version_id"

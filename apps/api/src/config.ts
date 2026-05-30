@@ -29,6 +29,10 @@ export type AppConfig = {
   artifactPreviewMaxChars: number
   projectGoalsMaxChars: number
   projectMemoryMaxChars: number
+  workspaceListLimit: number
+  workspaceReadMaxBytes: number
+  workspaceSearchLimit: number
+  workspaceSearchSnippetChars: number
 }
 
 function parseToolkitVersions(raw: string | undefined): Record<string, string> {
@@ -102,6 +106,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     projectMemoryMaxChars: Number(
       env.AGENTIS_PROJECT_MEMORY_MAX_CHARS ?? 2_000
     ),
+    workspaceListLimit: Number(env.AGENTIS_WORKSPACE_LIST_LIMIT ?? 200),
+    workspaceReadMaxBytes: Number(
+      env.AGENTIS_WORKSPACE_READ_MAX_BYTES ?? 64_000
+    ),
+    workspaceSearchLimit: Number(env.AGENTIS_WORKSPACE_SEARCH_LIMIT ?? 50),
+    workspaceSearchSnippetChars: Number(
+      env.AGENTIS_WORKSPACE_SEARCH_SNIPPET_CHARS ?? 160
+    ),
   }
 }
 
@@ -110,6 +122,10 @@ export function isRuntimeAvailable(config: AppConfig) {
 }
 
 export function isDebugSeedsEnabled(config: AppConfig) {
+  return config.nodeEnv === "development"
+}
+
+export function isRunTimelineDebugEnabled(config: AppConfig) {
   return config.nodeEnv === "development"
 }
 

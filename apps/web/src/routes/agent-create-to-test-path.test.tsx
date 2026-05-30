@@ -114,7 +114,7 @@ function renderAcceptancePath() {
         <Route path="/agents/new" element={<AgentCreatePage />} />
         <Route path="/agents/:agentId" element={<AgentDetailPage />} />
         <Route path="/command-center" element={<CommandCenterPage />} />
-        <Route path="/threads/:threadId" element={<div>Test chat opened</div>} />
+        <Route path="/threads/new" element={<div>New thread composer</div>} />
       </Routes>
     </MemoryRouter>
   )
@@ -190,11 +190,16 @@ describe("agent create-to-test acceptance path", () => {
     expect(await screen.findByRole("link", { name: "Research Helper" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("link", { name: "Research Helper" }))
-    await user.click(await screen.findByRole("button", { name: "+ New thread" }))
+    const newThreadAction = await screen.findByRole("link", { name: "+ New thread" })
 
-    expect(startAgentTestThread).toHaveBeenCalledWith("agent_acceptance", {
-      prompt: "Try Research Helper",
-    })
-    expect(await screen.findByText("Test chat opened")).toBeInTheDocument()
-  }, 10_000)
+    expect(newThreadAction).toHaveAttribute(
+      "href",
+      "/threads/new?agentId=agent_acceptance"
+    )
+
+    await user.click(newThreadAction)
+
+    expect(startAgentTestThread).not.toHaveBeenCalled()
+    expect(await screen.findByText("New thread composer")).toBeInTheDocument()
+  }, 20_000)
 })

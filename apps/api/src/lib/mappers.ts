@@ -10,6 +10,7 @@ import type {
   RunStep,
   RunUsage,
   Thread,
+  Workspace,
 } from "@workspace/shared"
 import type {
   artifacts,
@@ -21,6 +22,7 @@ import type {
   runSteps,
   runs,
   threads,
+  workspaces,
 } from "../db/schema.js"
 import { mapSourceWorkflowSnapshot } from "./source-workflow-snapshot.js"
 
@@ -30,6 +32,7 @@ type SavedMemoryRow = typeof savedMemories.$inferSelect
 type SavedMemoryCategoryRow = typeof savedMemoryCategories.$inferSelect
 type ArtifactRow = typeof artifacts.$inferSelect
 type ThreadRow = typeof threads.$inferSelect
+type WorkspaceRow = typeof workspaces.$inferSelect
 type MessageRow = typeof messages.$inferSelect
 type RunRow = typeof runs.$inferSelect
 type RunStepRow = typeof runSteps.$inferSelect
@@ -43,9 +46,23 @@ export function mapThread(row: ThreadRow): Thread {
     mode: row.mode as Thread["mode"],
     projectId: row.projectId ?? undefined,
     agentId: row.agentId ?? undefined,
+    workspaceId: row.workspaceId ?? undefined,
     agentNameSnapshot: row.agentNameSnapshot ?? undefined,
     agentConfigurationVersionId: row.agentConfigurationVersionId ?? undefined,
     ...mapSourceWorkflowSnapshot(row),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export function mapWorkspace(row: WorkspaceRow): Workspace {
+  return {
+    id: row.id,
+    agentId: row.agentId,
+    name: row.name,
+    backendType: row.backendType as Workspace["backendType"],
+    backendRef: row.backendRef,
+    status: row.status as Workspace["status"],
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

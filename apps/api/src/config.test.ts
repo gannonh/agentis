@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { isDebugSeedsEnabled, loadConfig } from "./config.js"
+import {
+  isDebugSeedsEnabled,
+  isRunTimelineDebugEnabled,
+  loadConfig,
+} from "./config.js"
 
 describe("config", () => {
   it("defaults to production mode when NODE_ENV is unset", () => {
@@ -15,6 +19,12 @@ describe("config", () => {
     expect(isDebugSeedsEnabled(config)).toBe(false)
     expect(isDebugSeedsEnabled({ ...config, nodeEnv: "test" })).toBe(false)
     expect(isDebugSeedsEnabled({ ...config, nodeEnv: "development" })).toBe(
+      true
+    )
+    expect(isRunTimelineDebugEnabled({ ...config, nodeEnv: "production" })).toBe(
+      false
+    )
+    expect(isRunTimelineDebugEnabled({ ...config, nodeEnv: "development" })).toBe(
       true
     )
   })

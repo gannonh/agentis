@@ -148,6 +148,13 @@
       "when": 1780010372000,
       "tag": "0020_saved_memory_multi_agent_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1780080000000,
+      "tag": "0021_agent_workspaces",
+      "breakpoints": true
     }
   ]
 }
