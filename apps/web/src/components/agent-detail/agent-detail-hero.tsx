@@ -10,15 +10,13 @@ import type { Agent } from "@/fixtures/schema"
 type AgentDetailHeroProps = {
   agent: Agent
   sourceThread?: AgentSourceThread
-  onStartThread?: () => void
-  startingThread?: boolean
+  newThreadHref?: string
 }
 
 export function AgentDetailHero({
   agent,
   sourceThread,
-  onStartThread,
-  startingThread = false,
+  newThreadHref,
 }: AgentDetailHeroProps) {
   return (
     <header className="flex flex-col gap-0">
@@ -98,14 +96,16 @@ export function AgentDetailHero({
         </div>
         <div className="flex shrink-0 items-center gap-2 self-start">
           <Button
+            render={
+              newThreadHref ? <Link to={newThreadHref} /> : undefined
+            }
+            nativeButton={!newThreadHref}
             type="button"
-            nativeButton
             size="sm"
             className="gap-1.5"
-            disabled={!onStartThread || startingThread}
-            onClick={onStartThread}
+            disabled={!newThreadHref}
           >
-            {startingThread ? "Opening thread…" : "+ New thread"}
+            + New thread
           </Button>
           <Button
             size="icon"

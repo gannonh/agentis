@@ -90,6 +90,28 @@ describe("NewThreadPage", () => {
     })
   })
 
+  it("preselects an agent from the URL", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={["/threads/new?agentId=agent_research"]}>
+        <NewThreadPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole("button", { name: /research agent/i }))
+      .toBeInTheDocument()
+
+    const input = screen.getByPlaceholderText("What's the task?")
+    await user.type(input, "Read the research notes")
+    await user.click(screen.getByRole("button", { name: /send message/i }))
+
+    await waitFor(() => {
+      expect(createThread).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: "agent_research" })
+      )
+    })
+  })
+
   it("submits the selected API-backed agent", async () => {
     const user = userEvent.setup()
     render(

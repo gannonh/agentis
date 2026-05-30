@@ -457,95 +457,25 @@ describe("AgentDetailPage", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("opens a plain-language test thread and navigates to it", async () => {
-    const user = userEvent.setup()
-    const detail = apiAgentDetail()
-    const now = new Date().toISOString()
-    vi.mocked(getAgent).mockResolvedValueOnce(detail)
-    vi.mocked(startAgentTestThread).mockResolvedValueOnce({
-      thread: {
-        id: "thread_test",
-        title: "Test Created Research Agent",
-        status: "active",
-        model: "gpt-4o-mini",
-        mode: "agent",
-        agentId: detail.agent.id,
-        agentNameSnapshot: detail.agent.name,
-        createdAt: now,
-        updatedAt: now,
-      },
-      message: {
-        id: "msg_test",
-        threadId: "thread_test",
-        role: "user",
-        parts: [{ type: "text", text: "Test Created Research Agent" }],
-        status: "completed",
-        createdAt: now,
-      },
-      run: {
-        id: "run_test",
-        threadId: "thread_test",
-        status: "queued",
-        model: "gpt-4o-mini",
-        agentId: detail.agent.id,
-        agentConfigurationVersionId:
-          detail.agent.currentConfigurationVersion.id,
-        startedAt: now,
-      },
-    })
+  it("links new threads to the composer with the agent selected", async () => {
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
 
     render(
       <MemoryRouter initialEntries={["/agents/agent_created"]}>
         <Routes>
           <Route path="/agents/:agentId" element={<AgentDetailPage />} />
-          <Route path="/threads/:threadId" element={<div>Thread opened</div>} />
         </Routes>
       </MemoryRouter>
     )
 
     await screen.findByRole("heading", { name: "Created Research Agent" })
-    await user.click(screen.getByRole("button", { name: "+ New thread" }))
+    const newThreadAction = screen.getByRole("button", { name: "+ New thread" })
 
-    expect(startAgentTestThread).toHaveBeenCalledWith("agent_created", {
-      prompt: "Try Created Research Agent",
-    })
-    expect(await screen.findByText("Thread opened")).toBeInTheDocument()
-  })
-
-  it("shows plain-language test thread errors", async () => {
-    const user = userEvent.setup()
-    const startThreadError = new ApiError("Unable to start thread", 500)
-    const consoleErrorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {})
-    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
-    vi.mocked(startAgentTestThread).mockRejectedValueOnce(startThreadError)
-
-    try {
-      render(
-        <MemoryRouter initialEntries={["/agents/agent_created"]}>
-          <Routes>
-            <Route path="/agents/:agentId" element={<AgentDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      )
-
-      await screen.findByRole("heading", { name: "Created Research Agent" })
-      await user.click(screen.getByRole("button", { name: "+ New thread" }))
-
-      expect(
-        await screen.findByText("We couldn't open a test thread. Try again.")
-      ).toBeInTheDocument()
-      expect(
-        screen.queryByText("Unable to start thread")
-      ).not.toBeInTheDocument()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "[agentis] Failed to start agent test thread",
-        startThreadError
-      )
-    } finally {
-      consoleErrorSpy.mockRestore()
-    }
+    expect(newThreadAction).toHaveAttribute(
+      "href",
+      "/threads/new?agentId=agent_created"
+    )
+    expect(startAgentTestThread).not.toHaveBeenCalled()
   })
 
   it("saves API-backed identity and prompt edits from the detail tabs", async () => {

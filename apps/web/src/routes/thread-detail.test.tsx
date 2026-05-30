@@ -9,6 +9,7 @@ import { createAgentPromotionDraft } from "@/lib/api/agents-client"
 const navigate = vi.fn()
 let threadStatus: "active" | "finished" | "failed" = "active"
 let threadAgentId: string | undefined = GENERIC_AGENTIS_AGENT_ID
+let threadAgentName: string | null | undefined = "Agentis"
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router")
@@ -46,6 +47,7 @@ vi.mock("@/hooks/use-thread-session", () => ({
         mode: "plan",
         model: "gpt-4o-mini",
         agentId: threadAgentId,
+        agentNameSnapshot: threadAgentName,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -76,6 +78,7 @@ describe("ThreadDetailPage create-agent action", () => {
     navigate.mockReset()
     threadStatus = "active"
     threadAgentId = GENERIC_AGENTIS_AGENT_ID
+    threadAgentName = "Agentis"
     vi.mocked(createAgentPromotionDraft).mockClear()
   })
 
@@ -159,8 +162,20 @@ describe("ThreadDetailPage create-agent action", () => {
     ).toBeInTheDocument()
   })
 
+  it("shows the active generic agent near the composer", () => {
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("Active agent")).toBeInTheDocument()
+    expect(screen.getByText("Agentis")).toBeInTheDocument()
+  })
+
   it("links agent-owned threads to their agent", () => {
     threadAgentId = "agent_existing"
+    threadAgentName = "Support Triage Agent"
 
     render(
       <MemoryRouter>
@@ -175,6 +190,8 @@ describe("ThreadDetailPage create-agent action", () => {
       name: "Open agent",
     })
     expect(unavailableAction).toHaveAttribute("href", "/agents/agent_existing")
+    const agentLink = screen.getByRole("link", { name: "Support Triage Agent" })
+    expect(agentLink).toHaveAttribute("href", "/agents/agent_existing")
     expect(
       screen.queryByText(
         "This thread already uses an agent. Open that agent to adjust future runs."

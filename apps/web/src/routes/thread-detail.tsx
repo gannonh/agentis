@@ -20,6 +20,32 @@ import { useThreadSession } from "@/hooks/use-thread-session"
 import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
 import { GENERIC_AGENTIS_AGENT_ID, type ThreadMode } from "@workspace/shared"
 
+type ThreadAgentIndicatorProps = {
+  agentHref: string | null
+  agentName: string
+}
+
+function ThreadAgentIndicator({
+  agentHref,
+  agentName,
+}: ThreadAgentIndicatorProps) {
+  const nameClassName = "truncate text-xs font-medium text-foreground"
+
+  return (
+    <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-card/70 px-3 py-2">
+      <span className="text-muted-foreground text-xs">Active agent</span>
+      <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
+      {agentHref ? (
+        <Link className={nameClassName} to={agentHref}>
+          {agentName}
+        </Link>
+      ) : (
+        <span className={nameClassName}>{agentName}</span>
+      )}
+    </div>
+  )
+}
+
 type ThreadHeaderActionsProps = {
   canAbort: boolean
   canCreateAgentFromThread: boolean
@@ -116,6 +142,14 @@ export function ThreadDetailPage() {
     owningAgentId && owningAgentId !== GENERIC_AGENTIS_AGENT_ID
       ? owningAgentId
       : null
+  const agentHref = fullAgentId
+    ? `/agents/${encodeURIComponent(fullAgentId)}`
+    : null
+  const activeAgentName =
+    detail?.thread.agentNameSnapshot?.trim() ||
+    (owningAgentId === GENERIC_AGENTIS_AGENT_ID
+      ? "Agentis"
+      : owningAgentId || "Agent unavailable")
   const canCreateAgentFromThread = Boolean(
     detail?.thread?.agentId === GENERIC_AGENTIS_AGENT_ID
   )
@@ -214,6 +248,12 @@ export function ThreadDetailPage() {
 
             <div className="border-t border-border p-4">
               <div className="mx-auto w-full max-w-3xl">
+                {detail ? (
+                  <ThreadAgentIndicator
+                    agentHref={agentHref}
+                    agentName={activeAgentName}
+                  />
+                ) : null}
                 <ThreadPromptComposer
                   onSubmit={handleSubmit}
                   disabled={composerDisabled || loading}
