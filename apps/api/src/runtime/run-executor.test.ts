@@ -20,7 +20,11 @@ function createMockRuntimeApp(setup?: (context: TestContext) => void) {
   setup?.(ctx)
   const services = createComposioServices(ctx.repos, ctx.config)
   return {
-    app: createApp(ctx.repos, { ...ctx.config, mockRuntime: true }, services),
+    app: createApp(
+      ctx.repos,
+      { ...ctx.config, mockRuntime: true, nodeEnv: "development" },
+      services
+    ),
     context: ctx,
   }
 }
@@ -314,7 +318,7 @@ describe("run executor composio bridge", () => {
     )
   })
 
-  it("loads all global and selected-agent memories into selected-agent thread context", async () => {
+  it("loads only pinned global and agent memories into selected-agent thread context", async () => {
     const { app, context } = createMockRuntimeApp()
     const agent = context.repos.agents.create({
       name: "Customer Insights Analyst",
@@ -328,7 +332,7 @@ describe("run executor composio bridge", () => {
       usageGuidance: "Use in customer insight synthesis.",
       tags: ["beta"],
       scope: "global",
-      pinnedToContext: false,
+      pinnedToContext: true,
     })
     context.repos.savedMemories.create({
       content: "Cluster qualitative feedback by segment before recommending action.",
@@ -348,7 +352,7 @@ describe("run executor composio bridge", () => {
       tags: ["voice"],
       scope: "agent",
       associatedAgent: agent.id,
-      pinnedToContext: false,
+      pinnedToContext: true,
     })
 
     const created = await app.request("/api/threads", {
@@ -369,27 +373,36 @@ describe("run executor composio bridge", () => {
 
     const steps = context.repos.steps.listByRunId(run.id)
     const memoryStep = steps.find((step) => step.title === "Agent memories loaded")
-    expect(memoryStep?.payload).toMatchObject({ agentMemoryCount: 2 })
-    expect(
-      (memoryStep?.payload as { globalMemoryCount?: number } | undefined)
-        ?.globalMemoryCount
-    ).toBeGreaterThanOrEqual(1)
+    expect(memoryStep?.payload).toMatchObject({
+      agentMemoryCount: 1,
+      globalMemoryCount: 1,
+    })
     const debugInput = steps.find((step) => step.title === "Debug: model input")
     expect(debugInput?.payload).toMatchObject({
       memories: expect.objectContaining({
-        agent: expect.arrayContaining([
+        agent: [
           expect.objectContaining({
             content: "Preserve customer language in summaries.",
           }),
-        ]),
-        global: expect.arrayContaining([
+        ],
+        global: [
           expect.objectContaining({
             content:
               "Use the beta workspace positioning when summarizing customer themes.",
           }),
-        ]),
+        ],
       }),
       memoryPrompt: expect.stringContaining("Preserve customer language"),
+    })
+    expect(debugInput?.payload).toMatchObject({
+      memories: expect.objectContaining({
+        agent: expect.not.arrayContaining([
+          expect.objectContaining({
+            content:
+              "Cluster qualitative feedback by segment before recommending action.",
+          }),
+        ]),
+      }),
     })
     expect(
       (debugInput?.payload as { systemPrompt?: string } | undefined)?.systemPrompt
@@ -399,7 +412,7 @@ describe("run executor composio bridge", () => {
     ).not.toContain("beta workspace positioning")
   }, 10_000)
 
-  it("loads global and agent memories into agent run context", async () => {
+  it("loads pinned global and agent memories into agent run context", async () => {
     const { app, context } = createMockRuntimeApp()
     const agent = context.repos.agents.create({
       name: "Research Agent",
@@ -452,11 +465,10 @@ describe("run executor composio bridge", () => {
       .steps
       .listByRunId(run.id)
       .find((step) => step.title === "Agent memories loaded")
-    expect(memoryStep?.payload).toMatchObject({ agentMemoryCount: 2 })
-    expect(
-      (memoryStep?.payload as { globalMemoryCount?: number } | undefined)
-        ?.globalMemoryCount
-    ).toBeGreaterThanOrEqual(1)
+    expect(memoryStep?.payload).toMatchObject({
+      agentMemoryCount: 1,
+      globalMemoryCount: 1,
+    })
   }, 10_000)
 
   it("loads the bound agent configuration version when streaming a test-thread run", async () => {

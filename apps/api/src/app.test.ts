@@ -51,6 +51,7 @@ describe("api routes", () => {
     }
     expect(body.thread).toMatchObject({
       agentId: GENERIC_AGENTIS_AGENT_ID,
+      agentNameSnapshot: "Agentis",
       workspaceId: GENERIC_AGENTIS_WORKSPACE_ID,
     })
     expect(body.message.role).toBe("user")

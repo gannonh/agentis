@@ -17,7 +17,7 @@ import {
 } from "../composio/tool-catalog.js"
 import { summarizeToolOutput } from "../composio/sanitize.js"
 import type { Repositories } from "../repositories/index.js"
-import type { AppConfig } from "../config.js"
+import { isRunTimelineDebugEnabled, type AppConfig } from "../config.js"
 import { ArtifactService } from "../artifacts/artifact-service.js"
 import { createArtifactTool } from "../artifacts/artifact-tool.js"
 import {
@@ -249,6 +249,24 @@ export class RunExecutor {
     this.contextService = new ProjectContextService(repos, config)
   }
 
+  private createTimelineDebugStep(
+    runId: string,
+    input: {
+      status: "completed" | "failed"
+      title: string
+      payload: Record<string, unknown>
+    }
+  ) {
+    if (!isRunTimelineDebugEnabled(this.config)) return
+    this.repos.steps.create({
+      runId,
+      type: "reasoning",
+      status: input.status,
+      title: input.title,
+      payload: input.payload,
+    })
+  }
+
   async executeStream(runId: string) {
     const run = this.repos.runs.getById(runId)
     if (!run) {
@@ -323,7 +341,7 @@ export class RunExecutor {
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
     const agentMemories = run.agentId
-      ? this.repos.savedMemories.listForAgent(run.agentId)
+      ? this.repos.savedMemories.listPinnedForAgent(run.agentId)
       : null
     const sourceWorkflowContribution = buildSourceWorkflowContribution(thread)
     const projectContextContribution = buildProjectContextContribution({
@@ -382,9 +400,7 @@ export class RunExecutor {
     }
     const conversationMessages = toModelMessages(threadMessages)
     const modelMessages = conversationMessages
-    this.repos.steps.create({
-      runId,
-      type: "reasoning",
+    this.createTimelineDebugStep(runId, {
       status: "completed",
       title: "Debug: model input",
       payload: {
@@ -769,9 +785,7 @@ export class RunExecutor {
           finishedAt: nowIso(),
           usage,
         })
-        this.repos.steps.create({
-          runId,
-          type: "reasoning",
+        this.createTimelineDebugStep(runId, {
           status: "completed",
           title: "Debug: model output",
           payload: {
@@ -812,9 +826,7 @@ export class RunExecutor {
           finishedAt: nowIso(),
           errorSummary: message,
         })
-        this.repos.steps.create({
-          runId,
-          type: "reasoning",
+        this.createTimelineDebugStep(runId, {
           status: "failed",
           title: "Debug: model output",
           payload: {
@@ -1033,9 +1045,7 @@ export class RunExecutor {
       finishedAt: nowIso(),
       usage,
     })
-    this.repos.steps.create({
-      runId,
-      type: "reasoning",
+    this.createTimelineDebugStep(runId, {
       status: "completed",
       title: "Debug: model output",
       payload: {
@@ -1201,9 +1211,7 @@ export class RunExecutor {
       finishedAt: nowIso(),
       usage,
     })
-    this.repos.steps.create({
-      runId,
-      type: "reasoning",
+    this.createTimelineDebugStep(runId, {
       status: "completed",
       title: "Debug: model output",
       payload: {

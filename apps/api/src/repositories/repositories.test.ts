@@ -180,6 +180,7 @@ describe("repositories", () => {
     })
     expect(ctx.repos.threads.getById(plainThread.id)).toMatchObject({
       agentId: GENERIC_AGENTIS_AGENT_ID,
+      agentNameSnapshot: "Agentis",
       workspaceId: GENERIC_AGENTIS_WORKSPACE_ID,
     })
     expect(

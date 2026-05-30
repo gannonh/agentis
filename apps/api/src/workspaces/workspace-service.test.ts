@@ -61,6 +61,25 @@ describe("workspace service", () => {
     })
   })
 
+  it("marks search results truncated when a scanned file exceeds the read limit", async () => {
+    ctx = createTestContext()
+    const { workspace } = await seedWorkspaceFile(
+      "huge.txt",
+      `${"x".repeat(100)}\nneedle-after-limit`
+    )
+    const service = new WorkspaceService(ctx.repos, {
+      ...ctx.config,
+      workspaceReadMaxBytes: 10,
+      workspaceListLimit: 200,
+    })
+    const handle = await service.openWorkspace(workspace.id)
+
+    const search = await handle.search({ query: "needle-after-limit" })
+
+    expect(search.results).toEqual([])
+    expect(search.truncated).toBe(true)
+  })
+
   it("rejects absolute paths, traversal, and symlink escapes", async () => {
     ctx = createTestContext()
     const { workspace, filesRoot } = await seedWorkspaceFile("safe.md", "safe")
@@ -101,6 +120,26 @@ describe("workspace service", () => {
       content: "abcdefghij",
       bytesReturned: 10,
       totalBytes: 26,
+      truncated: true,
+    })
+  })
+
+  it("reads only the configured byte limit from large text files", async () => {
+    ctx = createTestContext()
+    const { workspace } = await seedWorkspaceFile(
+      "huge.txt",
+      `${"x".repeat(500_000)}tail`
+    )
+    const service = new WorkspaceService(ctx.repos, {
+      ...ctx.config,
+      workspaceReadMaxBytes: 10,
+    })
+    const handle = await service.openWorkspace(workspace.id)
+
+    await expect(handle.readText({ path: "huge.txt" })).resolves.toMatchObject({
+      content: "x".repeat(10),
+      bytesReturned: 10,
+      totalBytes: 500_004,
       truncated: true,
     })
   })

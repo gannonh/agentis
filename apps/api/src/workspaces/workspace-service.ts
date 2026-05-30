@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, realpath, stat } from "node:fs/promises"
+import { mkdir, open, readdir, realpath, stat } from "node:fs/promises"
 import path from "node:path"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
@@ -121,6 +121,8 @@ function boundedSnippet(line: string, query: string, maxChars: number) {
   return trimmed.slice(start, start + maxChars)
 }
 
+const BINARY_SAMPLE_BYTES = 4096
+
 export class WorkspaceHandle {
   readonly id: string
   readonly rootLabel: string
@@ -207,12 +209,35 @@ export class WorkspaceHandle {
       this.config.workspaceReadMaxBytes,
       this.config.workspaceReadMaxBytes
     )
-    const buffer = await readFile(absolutePath)
-    if (detectBinary(buffer)) {
-      throw new WorkspaceError("workspace_binary_file", "Workspace file is binary.")
+    const readLength = Math.min(fileStat.size, maxBytes)
+    const fileHandle = await open(absolutePath, "r")
+    let returned: Buffer
+    try {
+      const sampleLength = Math.min(fileStat.size, BINARY_SAMPLE_BYTES)
+      const sampleBuffer = Buffer.alloc(sampleLength)
+      const sampleRead = await fileHandle.read(sampleBuffer, 0, sampleLength, 0)
+      const sample = sampleBuffer.subarray(0, sampleRead.bytesRead)
+      if (detectBinary(sample)) {
+        throw new WorkspaceError("workspace_binary_file", "Workspace file is binary.")
+      }
+
+      if (readLength <= sample.length) {
+        returned = sample.subarray(0, readLength)
+      } else {
+        returned = Buffer.alloc(readLength)
+        sample.copy(returned, 0, 0, sample.length)
+        const remainderRead = await fileHandle.read(
+          returned,
+          sample.length,
+          readLength - sample.length,
+          sample.length
+        )
+        returned = returned.subarray(0, sample.length + remainderRead.bytesRead)
+      }
+    } finally {
+      await fileHandle.close()
     }
 
-    const returned = buffer.subarray(0, maxBytes)
     const content = returned.toString("utf8")
     return {
       path: workspacePath,
@@ -252,6 +277,9 @@ export class WorkspaceHandle {
           continue
         }
         throw error
+      }
+      if (read.truncated) {
+        truncated = true
       }
 
       const lines = read.content.split(/\r?\n/)

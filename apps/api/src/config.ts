@@ -125,6 +125,10 @@ export function isDebugSeedsEnabled(config: AppConfig) {
   return config.nodeEnv === "development"
 }
 
+export function isRunTimelineDebugEnabled(config: AppConfig) {
+  return config.nodeEnv === "development"
+}
+
 export function isComposioAvailable(config: AppConfig) {
   if (config.mockComposio) return true
   if (!config.composioApiKey?.trim()) return false

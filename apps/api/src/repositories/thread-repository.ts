@@ -22,7 +22,10 @@ import {
   sourceWorkflowColumns,
   type SourceWorkflowSnapshot,
 } from "../lib/source-workflow-snapshot.js"
-import { GENERIC_AGENTIS_AGENT_ID } from "../workspaces/constants.js"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  GENERIC_AGENTIS_AGENT_NAME,
+} from "../workspaces/constants.js"
 import { WorkspaceRepository } from "./workspace-repository.js"
 
 type ToolGrantSnapshot = {
@@ -98,6 +101,15 @@ function createQueuedRunRow(input: {
   }
 }
 
+function resolveAgentNameSnapshot(
+  agentId: string,
+  agentNameSnapshot: string | undefined
+): string | null {
+  if (agentNameSnapshot) return agentNameSnapshot
+  if (agentId === GENERIC_AGENTIS_AGENT_ID) return GENERIC_AGENTIS_AGENT_NAME
+  return null
+}
+
 function createQueuedStepRow(runId: string, createdAt: string): StepRow {
   return {
     id: createId("step"),
@@ -126,7 +138,7 @@ export class ThreadRepository {
       projectId: input.projectId ?? null,
       agentId,
       workspaceId: input.workspaceId ?? this.resolveDefaultWorkspaceId(agentId),
-      agentNameSnapshot: input.agentNameSnapshot ?? null,
+      agentNameSnapshot: resolveAgentNameSnapshot(agentId, input.agentNameSnapshot),
       agentConfigurationVersionId: null,
       ...sourceWorkflowColumns(input),
       createdAt: now,
@@ -148,7 +160,7 @@ export class ThreadRepository {
       projectId: input.projectId ?? null,
       agentId,
       workspaceId: input.workspaceId ?? this.resolveDefaultWorkspaceId(agentId),
-      agentNameSnapshot: input.agentNameSnapshot ?? null,
+      agentNameSnapshot: resolveAgentNameSnapshot(agentId, input.agentNameSnapshot),
       agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
       ...sourceWorkflowColumns(input),
       createdAt: now,
