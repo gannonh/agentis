@@ -29,6 +29,13 @@ function createMockRuntimeApp(setup?: (context: TestContext) => void) {
   }
 }
 
+function messageText(parts: Array<{ type: string; text?: string }>) {
+  return parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("")
+}
+
 describe("run executor composio bridge", () => {
   it("keeps native workspace tool titles when finalizing tool calls", () => {
     expect(
@@ -237,6 +244,29 @@ describe("run executor composio bridge", () => {
         }),
       ])
     )
+  }, 10_000)
+
+  it("does not claim plan-mode workspace mutations are applied before approval", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Create a workspace file for approval" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    await stream.text()
+
+    const assistant = context.repos.messages
+      .listByThreadId(context.repos.runs.getById(run.id)!.threadId)
+      .find((message) => message.role === "assistant")
+    const text = messageText(assistant?.parts ?? [])
+
+    expect(text).toContain("waiting for approval")
+    expect(text).not.toMatch(/\b(created|applied|updated)\b/i)
   }, 10_000)
 
   it("approves a pending workspace mutation and records audit metadata", async () => {
