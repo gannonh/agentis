@@ -111,7 +111,7 @@ export function ThreadPromptComposer({
               onClick={() => onModeChange(mode === "plan" ? "agent" : "plan")}
               disabled={disabled || submitting}
             >
-              {mode === "plan" ? "Plan" : "Agent"}
+              {mode === "plan" ? "Plan first" : "Execute"}
               <HugeiconsIcon
                 icon={ArrowDown01Icon}
                 className="size-3.5"

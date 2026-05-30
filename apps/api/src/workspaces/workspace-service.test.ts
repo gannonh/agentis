@@ -1,4 +1,4 @@
-import { mkdir, symlink, writeFile } from "node:fs/promises"
+import { mkdir, readFile, symlink, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { eq } from "drizzle-orm"
@@ -61,6 +61,76 @@ describe("workspace service", () => {
         }),
       ],
     })
+  })
+
+  it("writes, replaces, and patches text inside the workspace jail", async () => {
+    ctx = createTestContext()
+    const workspace = ctx.repos.workspaces.ensureGenericAgentisWorkspace()
+    const service = new WorkspaceService(ctx.repos, ctx.config)
+    const handle = await service.openWorkspace(workspace.id)
+
+    await expect(
+      handle.writeText({ path: "notes/new.md", content: "Alpha\n" })
+    ).resolves.toMatchObject({
+      path: "notes/new.md",
+      operation: "create",
+      bytesWritten: 6,
+      created: true,
+      contentHashAfter: expect.any(String),
+    })
+    await expect(
+      handle.replaceInText({
+        path: "notes/new.md",
+        oldText: "Alpha",
+        newText: "Beta",
+      })
+    ).resolves.toMatchObject({
+      operation: "replace",
+      replacements: 1,
+      contentHashBefore: expect.any(String),
+      contentHashAfter: expect.any(String),
+    })
+    await expect(
+      handle.applyUnifiedPatch({
+        path: "notes/new.md",
+        patch:
+          "--- a/notes/new.md\n+++ b/notes/new.md\n@@ -1 +1 @@\n-Beta\n+Gamma\n",
+      })
+    ).resolves.toMatchObject({
+      operation: "patch",
+      linesAdded: 1,
+      linesRemoved: 1,
+    })
+
+    await expect(
+      readFile(join(ctx.config.storageRoot, workspace.backendRef, "files", "notes/new.md"), "utf8")
+    ).resolves.toBe("Gamma\n")
+  })
+
+  it("rejects unsafe workspace writes", async () => {
+    ctx = createTestContext()
+    const { workspace, filesRoot } = await seedWorkspaceFile("safe.md", "safe")
+    const outsideDir = join(ctx.config.storageRoot, "outside")
+    await mkdir(outsideDir, { recursive: true })
+    await symlink(outsideDir, join(filesRoot, "escape-dir"))
+    const service = new WorkspaceService(ctx.repos, {
+      ...ctx.config,
+      workspaceWriteMaxBytes: 4,
+    })
+    const handle = await service.openWorkspace(workspace.id)
+
+    await expect(
+      handle.writeText({ path: "../outside.md", content: "x" })
+    ).rejects.toMatchObject({ code: "workspace_path_traversal" })
+    await expect(
+      handle.writeText({ path: ".env", content: "x" })
+    ).rejects.toMatchObject({ code: "workspace_write_denied" })
+    await expect(
+      handle.writeText({ path: "too-large.md", content: "12345" })
+    ).rejects.toMatchObject({ code: "workspace_write_too_large" })
+    await expect(
+      handle.writeText({ path: "escape-dir/new.md", content: "safe" })
+    ).rejects.toMatchObject({ code: "workspace_symlink_escape" })
   })
 
   it("marks search results truncated when a scanned file exceeds the read limit", async () => {

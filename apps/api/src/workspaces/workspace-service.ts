@@ -1,5 +1,7 @@
-import { mkdir, open, readdir, realpath, stat } from "node:fs/promises"
+import { createHash } from "node:crypto"
+import { mkdir, open, readdir, realpath, rename, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { applyPatch, parsePatch } from "diff"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 import type { Workspace } from "@workspace/shared"
@@ -51,6 +53,53 @@ export type WorkspaceSearchResult = {
 export type WorkspaceSearchResults = {
   results: WorkspaceSearchResult[]
   truncated: boolean
+}
+
+export type WorkspaceWriteInput = {
+  path: string
+  content: string
+  createOnly?: boolean
+}
+
+export type WorkspaceWriteResult = {
+  path: string
+  operation: "create" | "overwrite"
+  bytesWritten: number
+  previousBytes?: number
+  created: boolean
+  contentHashBefore?: string
+  contentHashAfter: string
+}
+
+export type WorkspaceReplaceInput = {
+  path: string
+  oldText: string
+  newText: string
+  replaceAll?: boolean
+}
+
+export type WorkspaceReplaceResult = {
+  path: string
+  operation: "replace"
+  replacements: number
+  bytesWritten: number
+  contentHashBefore: string
+  contentHashAfter: string
+}
+
+export type WorkspacePatchInput = {
+  path: string
+  patch: string
+}
+
+export type WorkspacePatchResult = {
+  path: string
+  operation: "patch"
+  linesAdded: number
+  linesRemoved: number
+  bytesWritten: number
+  contentHashBefore: string
+  contentHashAfter: string
 }
 
 export class WorkspaceError extends Error {
@@ -130,6 +179,58 @@ function detectBinary(buffer: Buffer): boolean {
     if (byte < 7 || (byte > 13 && byte < 32)) suspicious += 1
   }
   return sample.length > 0 && suspicious / sample.length > 0.3
+}
+
+function hashContent(content: string | Buffer) {
+  return createHash("sha256").update(content).digest("hex")
+}
+
+function assertWritablePath(workspacePath: string, config: AppConfig) {
+  const segments = workspacePath.split("/").filter(Boolean)
+  if (segments.length > 0 && segments[0]!.startsWith(".")) {
+    throw new WorkspaceError(
+      "workspace_write_denied",
+      "Writes to dotfiles at the workspace root are not allowed."
+    )
+  }
+  for (const prefix of config.workspaceWriteDenyPrefixes) {
+    const normalized = prefix.replace(/\\/g, "/").replace(/^\.\//, "")
+    if (
+      workspacePath === normalized ||
+      workspacePath.startsWith(`${normalized}/`)
+    ) {
+      throw new WorkspaceError(
+        "workspace_write_denied",
+        `Writes under ${prefix} are not allowed.`
+      )
+    }
+  }
+}
+
+async function assertWritableTarget(
+  absolutePath: string,
+  filesRootRealPath: string,
+  createOnly: boolean
+) {
+  const existingStat = await stat(absolutePath).catch(() => null)
+  if (createOnly && existingStat) {
+    throw new WorkspaceError(
+      "workspace_file_exists",
+      "Workspace file already exists."
+    )
+  }
+  if (existingStat?.isDirectory()) {
+    throw new WorkspaceError("workspace_path_is_directory", "Workspace path is a directory.")
+  }
+  if (existingStat) {
+    const resolved = await realpath(absolutePath)
+    if (!isInsidePath(resolved, filesRootRealPath)) {
+      throw new WorkspaceError(
+        "workspace_symlink_escape",
+        "Workspace symlink points outside the workspace."
+      )
+    }
+  }
 }
 
 function boundedSnippet(line: string, query: string, maxChars: number) {
@@ -322,6 +423,189 @@ export class WorkspaceHandle {
     }
 
     return { results, truncated }
+  }
+
+  async writeText(input: WorkspaceWriteInput): Promise<WorkspaceWriteResult> {
+    const workspacePath = normalizeWorkspacePath(input.path)
+    if (!workspacePath) {
+      throw new WorkspaceError("workspace_path_required", "Workspace file path is required.")
+    }
+    assertWritablePath(workspacePath, this.config)
+
+    const contentBytes = Buffer.byteLength(input.content, "utf8")
+    if (contentBytes > this.config.workspaceWriteMaxBytes) {
+      throw new WorkspaceError(
+        "workspace_write_too_large",
+        "Workspace write exceeds the configured byte limit."
+      )
+    }
+
+    const filesRootRealPath = await realpath(this.filesRoot)
+    const absolutePath = await this.resolvePath(workspacePath)
+    await assertWritableTarget(
+      absolutePath,
+      filesRootRealPath,
+      input.createOnly ?? false
+    )
+
+    const existingStat = await stat(absolutePath).catch(() => null)
+    let contentHashBefore: string | undefined
+    let previousBytes: number | undefined
+    if (existingStat?.isFile()) {
+      const existing = await this.readText({ path: workspacePath })
+      contentHashBefore = hashContent(existing.content)
+      previousBytes = existingStat.size
+    }
+
+    const parentDir = path.dirname(absolutePath)
+    await mkdir(parentDir, { recursive: true })
+    const parentRealPath = await realpath(parentDir)
+    if (!isInsidePath(parentRealPath, filesRootRealPath)) {
+      throw new WorkspaceError(
+        "workspace_symlink_escape",
+        "Workspace write parent resolves outside the workspace."
+      )
+    }
+    const tempPath = `${absolutePath}.agentis-tmp-${process.pid}`
+    await writeFile(tempPath, input.content, "utf8")
+    const tempRealPath = await realpath(tempPath)
+    if (!isInsidePath(tempRealPath, filesRootRealPath)) {
+      throw new WorkspaceError(
+        "workspace_symlink_escape",
+        "Workspace write resolved outside the workspace."
+      )
+    }
+    await rename(tempPath, absolutePath)
+
+    return {
+      path: workspacePath,
+      operation: existingStat ? "overwrite" : "create",
+      bytesWritten: contentBytes,
+      previousBytes,
+      created: !existingStat,
+      contentHashBefore,
+      contentHashAfter: hashContent(input.content),
+    }
+  }
+
+  async replaceInText(input: WorkspaceReplaceInput): Promise<WorkspaceReplaceResult> {
+    const workspacePath = normalizeWorkspacePath(input.path)
+    if (!workspacePath) {
+      throw new WorkspaceError("workspace_path_required", "Workspace file path is required.")
+    }
+    assertWritablePath(workspacePath, this.config)
+
+    const read = await this.readText({ path: workspacePath })
+    const contentHashBefore = hashContent(read.content)
+    const occurrences = read.content.split(input.oldText).length - 1
+    if (occurrences === 0) {
+      throw new WorkspaceError(
+        "workspace_replace_not_found",
+        "Search text was not found in the workspace file."
+      )
+    }
+    if (!input.replaceAll && occurrences > 1) {
+      throw new WorkspaceError(
+        "workspace_replace_ambiguous",
+        "Search text matched multiple times. Set replaceAll to true to replace every match."
+      )
+    }
+
+    const replacements = input.replaceAll ? occurrences : 1
+    if (replacements > this.config.workspaceReplaceMaxCount) {
+      throw new WorkspaceError(
+        "workspace_replace_limit",
+        "Replacement count exceeds the configured limit."
+      )
+    }
+    const nextContent = input.replaceAll
+      ? read.content.split(input.oldText).join(input.newText)
+      : read.content.replace(input.oldText, input.newText)
+    const writeResult = await this.writeText({
+      path: workspacePath,
+      content: nextContent,
+    })
+
+    return {
+      path: workspacePath,
+      operation: "replace",
+      replacements,
+      bytesWritten: writeResult.bytesWritten,
+      contentHashBefore,
+      contentHashAfter: writeResult.contentHashAfter,
+    }
+  }
+
+  async applyUnifiedPatch(input: WorkspacePatchInput): Promise<WorkspacePatchResult> {
+    const workspacePath = normalizeWorkspacePath(input.path)
+    if (!workspacePath) {
+      throw new WorkspaceError("workspace_path_required", "Workspace file path is required.")
+    }
+    assertWritablePath(workspacePath, this.config)
+
+    const parsed = parsePatch(input.patch)
+    if (!parsed || parsed.length === 0) {
+      throw new WorkspaceError(
+        "workspace_patch_invalid",
+        "Patch could not be parsed."
+      )
+    }
+    if (parsed.length > 1) {
+      throw new WorkspaceError(
+        "workspace_patch_invalid",
+        "Patch must target exactly one file."
+      )
+    }
+
+    const patch = parsed[0]!
+    const oldHeader = patch.oldFileName?.replace(/^a\//, "") ?? ""
+    const newHeader = patch.newFileName?.replace(/^b\//, "") ?? ""
+    const headerPath = newHeader || oldHeader
+    if (headerPath && headerPath !== "/dev/null") {
+      const normalizedHeader = normalizeWorkspacePath(headerPath)
+      if (normalizedHeader !== workspacePath) {
+        throw new WorkspaceError(
+          "workspace_patch_path_mismatch",
+          "Patch file path does not match the requested workspace path."
+        )
+      }
+    }
+
+    const read = await this.readText({ path: workspacePath })
+    const contentHashBefore = hashContent(read.content)
+    const patched = applyPatch(read.content, patch)
+    if (patched === false) {
+      throw new WorkspaceError(
+        "workspace_patch_failed",
+        "Patch could not be applied to the workspace file."
+      )
+    }
+
+    const linesAdded = patch.hunks.reduce(
+      (total, hunk) =>
+        total + hunk.lines.filter((line) => line.startsWith("+")).length,
+      0
+    )
+    const linesRemoved = patch.hunks.reduce(
+      (total, hunk) =>
+        total + hunk.lines.filter((line) => line.startsWith("-")).length,
+      0
+    )
+
+    const writeResult = await this.writeText({
+      path: workspacePath,
+      content: patched,
+    })
+
+    return {
+      path: workspacePath,
+      operation: "patch",
+      linesAdded,
+      linesRemoved,
+      bytesWritten: writeResult.bytesWritten,
+      contentHashBefore,
+      contentHashAfter: writeResult.contentHashAfter,
+    }
   }
 
   private async resolvePath(inputPath: string | undefined): Promise<string> {

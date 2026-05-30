@@ -3,25 +3,25 @@
 todos:
   - id: "spec-v2"
     content: "Write docs/specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md and link from agent-native-tooling.md V2 section"
-    status: pending
+    status: completed
   - id: "workspace-mutations"
     content: "Add writeText/replaceInText/applyUnifiedPatch to WorkspaceHandle + config limits + unit tests"
-    status: pending
+    status: completed
   - id: "audit-table"
     content: "Add workspace_edits migration, repository, and edit service integrated with tool execute"
-    status: pending
+    status: completed
   - id: "mutating-tools"
     content: "Implement mutating-workspace-tools.ts (create/replace/patch) + payload summarization + run-executor merge"
-    status: pending
+    status: completed
   - id: "approval-runtime"
     content: "Wire thread.mode plan/agent to needsApproval, pending steps, approve/deny API, stream resume"
-    status: pending
+    status: completed
   - id: "ui-timeline-approval"
     content: "Timeline changed-file summaries + thread approval UI + composer mode copy; web/api tests"
-    status: pending
+    status: completed
   - id: "mock-uat"
     content: "Extend mock runtime for write tools; document manual UAT in spec"
-    status: pending
+    status: completed
 isProject: false
 ---
 # V2: Safe file edits

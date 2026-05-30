@@ -42,6 +42,8 @@ Acceptance:
 
 ### V2: Safe file edits
 
+Spec: [`docs/specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md`](specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)
+
 Plan: [`.cursor/plans/V2 Safe File Edits-c58edf88.plan.md`](../.cursor/plans/V2%20Safe%20File%20Edits-c58edf88.plan.md)
 
 Goal: agents can create and edit workspace files under policy.

@@ -288,6 +288,42 @@ export const toolAccessGrants = sqliteTable(
   ]
 )
 
+export const workspaceEdits = sqliteTable(
+  "workspace_edits",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => threads.id, { onDelete: "cascade" }),
+    runId: text("run_id")
+      .notNull()
+      .references(() => runs.id, { onDelete: "cascade" }),
+    toolCallId: text("tool_call_id").notNull(),
+    toolName: text("tool_name").notNull(),
+    operation: text("operation").notNull(),
+    path: text("path").notNull(),
+    status: text("status").notNull(),
+    approvalMode: text("approval_mode").notNull(),
+    inputJson: text("input_json").notNull(),
+    resultJson: text("result_json"),
+    contentHashBefore: text("content_hash_before"),
+    contentHashAfter: text("content_hash_after"),
+    createdAt: text("created_at").notNull(),
+    appliedAt: text("applied_at"),
+  },
+  (table) => [
+    index("workspace_edits_run_id_idx").on(table.runId),
+    index("workspace_edits_thread_id_idx").on(table.threadId),
+    uniqueIndex("workspace_edits_run_tool_call_unique").on(
+      table.runId,
+      table.toolCallId
+    ),
+  ]
+)
+
 export const runSteps = sqliteTable(
   "run_steps",
   {

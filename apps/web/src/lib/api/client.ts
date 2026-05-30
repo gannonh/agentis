@@ -234,6 +234,33 @@ export async function revokeThreadToolGrant(
   }
 }
 
+export async function decideToolApproval(
+  runId: string,
+  toolCallId: string,
+  decision: "approve" | "deny"
+) {
+  const response = await fetch(
+    `${API_BASE}/api/runs/${runId}/tool-approvals/${encodeURIComponent(toolCallId)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    }
+  )
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+  return response.json()
+}
+
 export async function abortRun(runId: string) {
   const response = await fetch(`${API_BASE}/api/runs/${runId}/abort`, {
     method: "POST",

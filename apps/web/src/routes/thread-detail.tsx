@@ -15,10 +15,11 @@ import { ThreadProjectContext } from "@/components/thread/thread-project-context
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { PageLayout } from "@/components/shell/page-layout"
 import { createAgentPromotionDraft } from "@/lib/api/agents-client"
+import { decideToolApproval } from "@/lib/api/client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
 import { useThreadSession } from "@/hooks/use-thread-session"
 import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
-import { GENERIC_AGENTIS_AGENT_ID, type ThreadMode } from "@workspace/shared"
+import { GENERIC_AGENTIS_AGENT_ID, type RunStep, type ThreadMode } from "@workspace/shared"
 
 type ThreadAgentIndicatorProps = {
   agentHref: string | null
@@ -44,6 +45,28 @@ function ThreadAgentIndicator({
       )}
     </div>
   )
+}
+
+function getPendingApproval(step: RunStep) {
+  const payload = step.payload
+  if (!payload || typeof payload !== "object") return null
+  const record = payload as Record<string, unknown>
+  const approval =
+    typeof record.approval === "object" && record.approval !== null
+      ? (record.approval as Record<string, unknown>)
+      : null
+  if (approval?.status !== "pending") return null
+  const firstChangedFile = Array.isArray(record.changedFiles)
+    ? (record.changedFiles[0] as { path?: unknown } | undefined)
+    : undefined
+  return {
+    toolCallId:
+      typeof record.toolCallId === "string" ? record.toolCallId : null,
+    toolName:
+      typeof record.toolName === "string" ? record.toolName : "workspace edit",
+    path:
+      typeof firstChangedFile?.path === "string" ? firstChangedFile.path : undefined,
+  }
 }
 
 type ThreadHeaderActionsProps = {
@@ -116,6 +139,7 @@ export function ThreadDetailPage() {
     canAbort,
     submitFollowUp,
     abortActiveRun,
+    refresh,
     getMessageText,
   } = useThreadSession(threadId)
   const {
@@ -129,6 +153,8 @@ export function ThreadDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [creatingAgentDraft, setCreatingAgentDraft] = useState(false)
   const [createAgentError, setCreateAgentError] = useState<string | null>(null)
+  const [approvalError, setApprovalError] = useState<string | null>(null)
+  const [decidingApproval, setDecidingApproval] = useState<string | null>(null)
 
   useEffect(() => {
     if (detail?.thread.mode) {
@@ -153,6 +179,16 @@ export function ThreadDetailPage() {
   const canCreateAgentFromThread = Boolean(
     detail?.thread?.agentId === GENERIC_AGENTIS_AGENT_ID
   )
+  const pendingApprovals = steps
+    .map((step) => ({ step, approval: getPendingApproval(step) }))
+    .filter(
+      (
+        item
+      ): item is {
+        step: RunStep
+        approval: NonNullable<ReturnType<typeof getPendingApproval>>
+      } => Boolean(item.approval?.toolCallId)
+    )
 
   const handleSubmit = async (prompt: string) => {
     if (!prompt.trim() || composerDisabled) return
@@ -161,6 +197,25 @@ export function ThreadDetailPage() {
       await submitFollowUp(prompt.trim())
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleApprovalDecision = async (
+    runId: string,
+    toolCallId: string,
+    decision: "approve" | "deny"
+  ) => {
+    setDecidingApproval(`${toolCallId}:${decision}`)
+    setApprovalError(null)
+    try {
+      await decideToolApproval(runId, toolCallId, decision)
+      await refresh()
+    } catch (error) {
+      setApprovalError(
+        error instanceof Error ? error.message : "Could not update approval."
+      )
+    } finally {
+      setDecidingApproval(null)
     }
   }
 
@@ -227,6 +282,58 @@ export function ThreadDetailPage() {
                     {createAgentError}
                   </p>
                 ) : null}
+                {approvalError ? (
+                  <p className="text-destructive text-sm" role="alert">
+                    {approvalError}
+                  </p>
+                ) : null}
+                {pendingApprovals.map(({ step, approval }) => (
+                  <div
+                    key={step.id}
+                    className="rounded-lg border border-border bg-card/80 p-3 text-sm"
+                  >
+                    <p className="font-medium">Approve workspace edit?</p>
+                    <p className="text-muted-foreground mt-1">
+                      {approval.toolName}
+                      {approval.path ? ` · ${approval.path}` : ""}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={Boolean(decidingApproval)}
+                        onClick={() =>
+                          void handleApprovalDecision(
+                            step.runId,
+                            approval.toolCallId!,
+                            "approve"
+                          )
+                        }
+                      >
+                        {decidingApproval === `${approval.toolCallId}:approve`
+                          ? "Approving…"
+                          : "Approve"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={Boolean(decidingApproval)}
+                        onClick={() =>
+                          void handleApprovalDecision(
+                            step.runId,
+                            approval.toolCallId!,
+                            "deny"
+                          )
+                        }
+                      >
+                        {decidingApproval === `${approval.toolCallId}:deny`
+                          ? "Denying…"
+                          : "Deny"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
                 {detail?.messages.map((message) => (
                   <Message key={message.id} from={message.role}>
                     <MessageContent>

@@ -107,6 +107,12 @@ function formatNativePayload(step: RunStep) {
   const record = payload as Record<string, unknown>
   const input = getRecord(record.input)
   const output = getRecord(record.output)
+  const approval = getRecord(record.approval)
+  const changedFiles = Array.isArray(record.changedFiles)
+    ? record.changedFiles
+        .map((file) => getRecord(file))
+        .filter((file): file is Record<string, unknown> => Boolean(file))
+    : []
   const entries = Array.isArray(output?.entries) ? output.entries : undefined
   const results = Array.isArray(output?.results) ? output.results : undefined
   const path =
@@ -134,6 +140,14 @@ function formatNativePayload(step: RunStep) {
     path,
     query,
     outputSummary,
+    changedFiles: changedFiles.map((file) => ({
+      path: typeof file.path === "string" ? file.path : "unknown",
+      operation: typeof file.operation === "string" ? file.operation : "edit",
+      bytesWritten:
+        typeof file.bytesWritten === "number" ? file.bytesWritten : undefined,
+    })),
+    approvalStatus:
+      typeof approval?.status === "string" ? approval.status : undefined,
     error: typeof record.error === "string" ? record.error : undefined,
     code: typeof record.code === "string" ? record.code : undefined,
   }
@@ -237,6 +251,25 @@ export function RunTimeline({
               ) : null}
               {native?.outputSummary ? (
                 <p className="text-muted-foreground mt-1">{native.outputSummary}</p>
+              ) : null}
+              {native?.approvalStatus ? (
+                <Badge variant="outline" className="mt-2 capitalize">
+                  {native.approvalStatus === "pending"
+                    ? "Pending approval"
+                    : native.approvalStatus}
+                </Badge>
+              ) : null}
+              {native?.changedFiles.length ? (
+                <ul className="text-muted-foreground mt-2 space-y-1">
+                  {native.changedFiles.map((file) => (
+                    <li key={`${file.operation}:${file.path}`}>
+                      Changed {file.path} · {file.operation}
+                      {file.bytesWritten != null
+                        ? ` · ${file.bytesWritten} bytes`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
               ) : null}
               {native?.code ? (
                 <p className="text-amber-700 dark:text-amber-400 mt-1">

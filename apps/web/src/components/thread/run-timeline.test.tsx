@@ -107,6 +107,35 @@ describe("RunTimeline", () => {
     expect(screen.getByText(/ZodObject/)).toBeInTheDocument()
   })
 
+  it("renders mutating workspace summaries and pending approval state", () => {
+    render(
+      <RunTimeline
+        run={run}
+        steps={[
+          step({
+            provider: "native",
+            toolCallId: "tool_call_1",
+            toolName: "createWorkspaceFile",
+            workspaceId: "workspace_agentis",
+            input: { path: "notes.md", content: "hidden body" },
+            output: {
+              path: "notes.md",
+              operation: "create",
+              status: "pending_approval",
+              editId: "wedit_1",
+            },
+            changedFiles: [{ path: "notes.md", operation: "create" }],
+            approval: { status: "pending", editId: "wedit_1" },
+          }),
+        ]}
+      />
+    )
+
+    expect(screen.getByText("Pending approval")).toBeInTheDocument()
+    expect(screen.getByText(/Changed notes.md · create/)).toBeInTheDocument()
+    expect(screen.queryByText(/hidden body/)).not.toBeInTheDocument()
+  })
+
   it("renders native workspace tool evidence without full file contents", () => {
     render(
       <RunTimeline

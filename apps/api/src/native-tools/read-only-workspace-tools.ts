@@ -1,29 +1,18 @@
 import { tool, type ToolSet } from "ai"
 import { z } from "zod"
-import type {
-  WorkspaceEntry,
-  WorkspaceFileRead,
-  WorkspaceHandle,
-  WorkspaceSearchResult,
-} from "../workspaces/workspace-service.js"
+import type { WorkspaceHandle } from "../workspaces/workspace-service.js"
+import { NATIVE_WORKSPACE_READ_TOOL_NAMES } from "./tool-names.js"
 
-export const NATIVE_WORKSPACE_TOOL_NAMES = [
-  "listWorkspaceFiles",
-  "readWorkspaceFile",
-  "searchWorkspaceFiles",
-] as const
+export {
+  formatNativeToolRunStepPayload,
+  isNativeWorkspaceToolName,
+  isMutatingNativeWorkspaceToolName,
+  NATIVE_WORKSPACE_TOOL_NAMES,
+  type NativeToolRunStepPayload,
+  type NativeWorkspaceToolName,
+} from "./native-tool-payload.js"
 
-export type NativeWorkspaceToolName = (typeof NATIVE_WORKSPACE_TOOL_NAMES)[number]
-
-export type NativeToolRunStepPayload = {
-  provider: "native"
-  toolName: NativeWorkspaceToolName
-  workspaceId: string
-  input?: unknown
-  output?: unknown
-  error?: string
-  code?: string
-}
+export { NATIVE_WORKSPACE_READ_TOOL_NAMES, type NativeWorkspaceReadToolName } from "./tool-names.js"
 
 const listWorkspaceFilesInputSchema = z.object({
   path: z.string().optional(),
@@ -42,100 +31,7 @@ const searchWorkspaceFilesInputSchema = z.object({
   limit: z.number().int().positive().optional(),
 })
 
-export function isNativeWorkspaceToolName(
-  toolName: string
-): toolName is NativeWorkspaceToolName {
-  return NATIVE_WORKSPACE_TOOL_NAMES.includes(toolName as NativeWorkspaceToolName)
-}
-
-function summarizeEntries(entries: WorkspaceEntry[]) {
-  return entries.slice(0, 25).map((entry) => ({
-    name: entry.name,
-    path: entry.path,
-    type: entry.type,
-    size: entry.size,
-    modifiedAt: entry.modifiedAt,
-  }))
-}
-
-function summarizeRead(output: WorkspaceFileRead) {
-  return {
-    path: output.path,
-    bytesReturned: output.bytesReturned,
-    totalBytes: output.totalBytes,
-    truncated: output.truncated,
-  }
-}
-
-function summarizeSearch(results: WorkspaceSearchResult[]) {
-  return results.slice(0, 25).map((result) => ({
-    path: result.path,
-    lineNumber: result.lineNumber,
-    snippet: result.snippet,
-  }))
-}
-
-function summarizeNativeOutput(toolName: NativeWorkspaceToolName, output: unknown) {
-  if (toolName === "listWorkspaceFiles" && isObject(output)) {
-    const entries = Array.isArray(output.entries)
-      ? (output.entries as WorkspaceEntry[])
-      : []
-    return {
-      workspaceId: output.workspaceId,
-      entries: summarizeEntries(entries),
-      truncated: output.truncated,
-    }
-  }
-
-  if (toolName === "readWorkspaceFile" && isObject(output)) {
-    return {
-      workspaceId: output.workspaceId,
-      ...summarizeRead(output as WorkspaceFileRead),
-    }
-  }
-
-  if (toolName === "searchWorkspaceFiles" && isObject(output)) {
-    const results = Array.isArray(output.results)
-      ? (output.results as WorkspaceSearchResult[])
-      : []
-    return {
-      workspaceId: output.workspaceId,
-      results: summarizeSearch(results),
-      truncated: output.truncated,
-    }
-  }
-
-  return output
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null
-}
-
-export function formatNativeToolRunStepPayload(input: {
-  toolName: string
-  workspaceId: string
-  input?: unknown
-  output?: unknown
-  error?: string
-  code?: string
-}): NativeToolRunStepPayload | null {
-  if (!isNativeWorkspaceToolName(input.toolName)) return null
-  return {
-    provider: "native",
-    toolName: input.toolName,
-    workspaceId: input.workspaceId,
-    input: input.input,
-    output:
-      input.output === undefined
-        ? undefined
-        : summarizeNativeOutput(input.toolName, input.output),
-    error: input.error,
-    code: input.code,
-  }
-}
-
-export function buildWorkspaceNativeTools(handle: WorkspaceHandle): ToolSet {
+export function buildWorkspaceReadOnlyTools(handle: WorkspaceHandle): ToolSet {
   return {
     listWorkspaceFiles: tool({
       description:
@@ -165,4 +61,15 @@ export function buildWorkspaceNativeTools(handle: WorkspaceHandle): ToolSet {
       },
     }),
   }
+}
+
+/** @deprecated Use buildWorkspaceReadOnlyTools */
+export const buildWorkspaceNativeTools = buildWorkspaceReadOnlyTools
+
+export function isNativeWorkspaceReadToolName(
+  toolName: string
+): toolName is (typeof NATIVE_WORKSPACE_READ_TOOL_NAMES)[number] {
+  return NATIVE_WORKSPACE_READ_TOOL_NAMES.includes(
+    toolName as (typeof NATIVE_WORKSPACE_READ_TOOL_NAMES)[number]
+  )
 }
