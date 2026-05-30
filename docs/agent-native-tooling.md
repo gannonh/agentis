@@ -12,7 +12,7 @@ Give every Agentis agent a durable workspace and a growing set of native tools s
 
 ## Roadmap
 
-### V1: Workspace-backed read-only tools
+### ✅ V1: Workspace-backed read-only tools
 
 Spec: `docs/specs/2026-05-29-agent-native-tooling-design.md`
 
@@ -41,6 +41,8 @@ Acceptance:
 - A user can create a thread, ask the agent to inspect workspace files, and see native tool calls/results in persisted thread state and the run timeline.
 
 ### V2: Safe file edits
+
+Plan: [`.cursor/plans/V2 Safe File Edits-c58edf88.plan.md`](../.cursor/plans/V2%20Safe%20File%20Edits-c58edf88.plan.md)
 
 Goal: agents can create and edit workspace files under policy.
 
