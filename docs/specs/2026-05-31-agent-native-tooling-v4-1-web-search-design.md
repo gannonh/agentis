@@ -2,10 +2,12 @@
 
 ## Goal
 
-Add the first V4 capability parity slice by giving Agentis agents a native
-`searchWeb` research tool. The tool should let an agent retrieve current web
-information with cited, bounded source evidence while keeping Agentis independent
-from any specific frontier model or model provider.
+Add the first V4 capability parity slice by giving Agentis agents the native
+web search tool. The runtime callable tool is `searchWeb`; the product term is
+"web search" even when compact UI surfaces label it "Search". The tool should
+let an agent retrieve current web information with cited, bounded source
+evidence while keeping Agentis independent from any specific frontier model or
+model provider.
 
 V4.1 is a single-tool epic/PR. It proves the research-tool category without
 adding browser automation, Exa deep research, persistent research datasets,
@@ -37,15 +39,19 @@ V1 through V3 already provide the native tool path needed for this slice:
 - Mock-runtime branches exist for local/E2E coverage without live provider
   dependencies.
 
-The current native payload type is workspace-centered and requires
-`workspaceId`. V4.1 should generalize native payload formatting enough to support
-non-workspace native tools without weakening the existing workspace evidence.
+The current native payload type is workspace-file-tool-centered and requires
+`workspaceId`. All Agentis runs are workspace-scoped, but tools are scoped to
+agents. V4.1 should generalize native payload formatting enough to support
+native tools that are not workspace file tools without weakening the existing
+workspace evidence.
 
 ## Product scope
 
-Implement one user-facing native tool:
+Implement one user-facing native tool permission:
 
-### `searchWeb`
+### Web search
+
+Runtime tool name: `searchWeb`.
 
 Input:
 
@@ -99,6 +105,13 @@ Agentis owns the `searchWeb` input/output schema and the timeline payload shape.
 Provider-specific response details are normalized before the model, repository,
 or web UI depends on them.
 
+Tool ownership and execution context are separate axes:
+
+- Tool permissions are agent-scoped and versioned with agent configuration.
+- Tool execution happens within the run's workspace-scoped context.
+- Integration grants remain separate from native tool permissions; Composio tools
+  are integrations, not Agentis native tools.
+
 Recommended files:
 
 - `apps/api/src/native-tools/web-search-tools.ts`
@@ -134,6 +147,18 @@ Add explicit web search config with conservative defaults:
 Credential configuration should follow the verified Vercel AI Gateway mechanism
 for the installed SDK. The implementation should document the required env var
 in `.env.example` once confirmed during Build.
+
+Provider selection is platform-level MVP configuration. Agent-level provider
+selection is deferred. In V4.1, an agent has a binary web search permission:
+enabled or disabled.
+
+Default permission behavior:
+
+- The built-in generic Agentis agent gets web search enabled when global web
+  search is enabled.
+- Custom agents must opt in explicitly.
+- Existing custom agents should not silently gain web search permission during
+  migration.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
 demo flows can prove tool wiring without live search credentials.
@@ -200,8 +225,12 @@ evidence.
 ### Phase 3: Runtime and persistence
 
 - Register `searchWeb` with native runtime tools.
-- Generalize native tool names and payload formatting to include non-workspace
-  native tools.
+- Add versioned native tool permissions to agent configuration, with web search
+  as the first permission.
+- Register `searchWeb` only when global config and the run's bound agent
+  configuration permit it.
+- Generalize native tool names and payload formatting to include native tools
+  that are not workspace file tools.
 - Add mock-runtime coverage that causes `searchWeb` to run for search-like
   prompts.
 - Preserve existing workspace tool behavior.
@@ -218,6 +247,7 @@ evidence.
 - A model run can call `searchWeb` and persist bounded cited web search evidence.
 - The implementation does not hardcode Agentis to OpenAI or any specific model.
 - Provider choice is behind an Agentis-owned `WebSearchProvider` boundary.
+- Agent-level web search permission is versioned with agent configuration.
 - Missing or disabled search config produces a clear failed native tool step.
 - Timeline rendering shows query, provider, result count, and source links.
 - Full page contents are not persisted in run-step evidence.
