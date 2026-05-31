@@ -17,7 +17,8 @@ export const NATIVE_WORKSPACE_TOOL_NAMES = [
   ...EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES,
 ] as const
 
-export type NativeWorkspaceToolName = (typeof NATIVE_WORKSPACE_TOOL_NAMES)[number]
+export type NativeWorkspaceToolName =
+  (typeof NATIVE_WORKSPACE_TOOL_NAMES)[number]
 
 export type NativeToolRunStepPayload = {
   provider: "native"
@@ -43,7 +44,9 @@ export type NativeToolRunStepPayload = {
 export function isNativeWorkspaceToolName(
   toolName: string
 ): toolName is NativeWorkspaceToolName {
-  return NATIVE_WORKSPACE_TOOL_NAMES.includes(toolName as NativeWorkspaceToolName)
+  return NATIVE_WORKSPACE_TOOL_NAMES.includes(
+    toolName as NativeWorkspaceToolName
+  )
 }
 
 export function isMutatingNativeWorkspaceToolName(
@@ -154,16 +157,19 @@ function inferApproval(
   const editId = typeof output.editId === "string" ? output.editId : undefined
   const executionId =
     typeof output.executionId === "string" ? output.executionId : undefined
-  if (!editId && !executionId) return undefined
+
+  const approvalId = executionId
+    ? { executionId }
+    : editId
+      ? { editId }
+      : undefined
+  if (!approvalId) return undefined
+
   if (output.status === "pending_approval") {
-    return executionId
-      ? { status: "pending", executionId }
-      : { status: "pending", editId: editId! }
+    return { status: "pending", ...approvalId }
   }
   if (output.status === "denied") {
-    return executionId
-      ? { status: "denied", executionId }
-      : { status: "denied", editId: editId! }
+    return { status: "denied", ...approvalId }
   }
   return undefined
 }
@@ -180,14 +186,20 @@ function changedFilesFromOutput(
   return [
     {
       path: output.path,
-      operation: typeof output.operation === "string" ? output.operation : "edit",
+      operation:
+        typeof output.operation === "string" ? output.operation : "edit",
       bytesWritten:
-        typeof output.bytesWritten === "number" ? output.bytesWritten : undefined,
+        typeof output.bytesWritten === "number"
+          ? output.bytesWritten
+          : undefined,
     },
   ]
 }
 
-function summarizeNativeOutput(toolName: NativeWorkspaceToolName, output: unknown) {
+function summarizeNativeOutput(
+  toolName: NativeWorkspaceToolName,
+  output: unknown
+) {
   if (toolName === "listWorkspaceFiles" && isObject(output)) {
     const entries = Array.isArray(output.entries)
       ? (output.entries as WorkspaceEntry[])
