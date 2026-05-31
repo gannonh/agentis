@@ -2,7 +2,7 @@
 
 Agentis is an open-source, self-hosted agent workspace for teams that want long-running autonomous work, reusable agents, connected tools, and visible quality controls.
 
-This repository ships **M01 shell surfaces** with fixture data plus **M02 thread sessions** backed by a local API runtime.
+This repository ships the Agentis workbench: API-backed thread sessions, projects, artifacts, integration grants, reusable agents, and native workspace tooling.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ cp apps/web/.env.example apps/web/.env
 pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). The Vite dev server proxies `/api` to the API on port 3001. Press `d` to toggle light/dark theme.
+Open [http://localhost:5177](http://localhost:5177). The Vite dev server proxies `/api` to the API on port 3101. Press `d` to toggle light/dark theme.
 
 ## Scripts
 
@@ -34,12 +34,13 @@ Open [http://localhost:5173](http://localhost:5173). The Vite dev server proxies
 | `pnpm test` | Vitest unit tests |
 | `pnpm test:coverage` | Vitest with coverage |
 | `pnpm test:e2e` | Playwright shell + thread lifecycle tests |
+| `pnpm smoke:sandbox-container` | Build and smoke-test the optional Docker-compatible workspace sandbox |
 
 ## Project structure
 
 ```text
 apps/web/          # Vite + React frontend
-apps/api/          # Hono API, Drizzle SQLite, run executor
+apps/api/          # Hono API, Drizzle SQLite, run executor, workspace sandbox
 packages/ui/       # Shared shadcn/ui components and styles
 packages/shared/   # Shared Zod schemas and API types
 docs/              # Product docs, roadmap, UI comps
@@ -49,6 +50,7 @@ docs/              # Product docs, roadmap, UI comps
 
 - [MVP roadmap](docs/agentis-prd-roadmap.md)
 - [Product overview](docs/overview.md)
+- [Agent native tooling](docs/agent-native-tooling.md)
 - [Design system](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
 

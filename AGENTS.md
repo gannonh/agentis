@@ -4,7 +4,7 @@ Agentis is an early-stage open-source product for configuring and deploying usef
 
 The project is currently in foundation work. Treat the architecture direction as research-backed and still evolving.
 
-## Frontend (M01 + M02 threads)
+## Frontend and API
 
 - **App:** `apps/web` — Vite, React 19, React Router.
 - **API:** `apps/api` — Hono, Drizzle SQLite, OpenAI via Vercel AI SDK for thread/run lifecycle.
@@ -13,6 +13,7 @@ The project is currently in foundation work. Treat the architecture direction as
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
 - **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, and Learning (not thread sessions, projects, or Library).
 - **M04:** API-backed projects, project memories, project context on runs, local artifact storage (`AGENTIS_STORAGE_ROOT`), and Library upload/list/download.
+- **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, and V3 sandboxed command/script execution are API-backed. See [agent-native-tooling.md](docs/agent-native-tooling.md).
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
 ## Routes
@@ -97,6 +98,14 @@ After install:
 1. Set `OPENAI_API_KEY` in the repo root `.env` (see `.env.example`). The API loads that file on startup; `apps/api/.env` is optional for overrides.
 2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API.
 3. For E2E/CI without OpenAI, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
+
+## Native workspace execution
+
+- `runWorkspaceCommand` supports bounded shell commands and Python/Node scripts against the current workspace `files/` tree.
+- `plan` mode records pending workspace actions and waits for approval; `agent` mode executes immediately under policy.
+- `AGENTIS_SANDBOX_BACKEND=local-process` is the default local developer backend and is not a production isolation boundary.
+- `AGENTIS_SANDBOX_BACKEND=local-container` uses the standard `docker` CLI/socket with the image from `AGENTIS_SANDBOX_CONTAINER_IMAGE`; verify it with `pnpm smoke:sandbox-container`.
+- Sandbox output is truncated by config, changed files are summarized, and execution provenance is persisted in `workspace_executions`.
 
 ## Verification and UAT
 
