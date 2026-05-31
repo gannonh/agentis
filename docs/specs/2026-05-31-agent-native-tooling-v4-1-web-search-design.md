@@ -296,7 +296,9 @@ evidence.
   permission for custom agent detail pages. Do not build the full native tool
   catalog management surface in V4.1. The current mocked UI target is the
   `Search` `ToolCard` in
-  `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
+  `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`. Keep the existing
+  mocked catalog cards visible, but render unimplemented mocked tools unchecked
+  and do not persist them.
 - If the basic agent create form is updated in this slice, default `webSearch`
   into `nativeTools` for newly created custom agents and add native tools below
   the existing Connected apps section in `apps/web/src/routes/agent-create.tsx`,
