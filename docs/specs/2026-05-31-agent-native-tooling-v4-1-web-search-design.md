@@ -117,6 +117,8 @@ Tool ownership and execution context are separate axes:
   the model is not told it exists.
 - The built-in Agentis agent is platform-owned, cannot be user-edited, and has
   access to all basic native tools, including web search.
+- The built-in Agentis agent does not have a landing page or Tools tab; custom
+  agent detail pages own the editable Tools UI.
 - For V4.1, "basic native tools" means the already implemented built-in Agentis
   runtime tools plus web search. It does not mean every mocked entry in the
   Tools tab catalog is implemented or model-visible.
@@ -286,8 +288,9 @@ evidence.
 
 - Render web search evidence in `RunTimeline`.
 - Wire the existing agent Tools tab Search card to the `webSearch` native tool
-  permission. Do not build the full native tool catalog management surface in
-  V4.1. The current mocked UI target is the `Search` `ToolCard` in
+  permission for custom agent detail pages. Do not build the full native tool
+  catalog management surface in V4.1. The current mocked UI target is the
+  `Search` `ToolCard` in
   `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
 - Add focused API and web tests.
 - Update `docs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
