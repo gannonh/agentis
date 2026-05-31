@@ -6,7 +6,6 @@ import { createId, nowIso } from "../lib/ids.js"
 
 export type WorkspaceEditStatus =
   | "pending"
-  | "approved"
   | "denied"
   | "applied"
   | "failed"

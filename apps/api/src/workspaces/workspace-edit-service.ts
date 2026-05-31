@@ -1,5 +1,15 @@
 import type { ThreadMode } from "@workspace/shared"
+import {
+  operationForMutationTool,
+  parseWorkspaceMutationInput,
+} from "../native-tools/workspace-mutation-schemas.js"
+import { requiresWorkspaceToolApproval } from "../native-tools/workspace-tool-policy.js"
 import type { WorkspaceEditRepository } from "../repositories/workspace-edit-repository.js"
+import {
+  buildAppliedMutationOutput,
+  buildPendingMutationOutput,
+  type WorkspaceMutationToolOutput,
+} from "./workspace-mutation-output.js"
 import {
   WorkspaceError,
   type WorkspaceHandle,
@@ -134,6 +144,63 @@ export class WorkspaceEditService {
     }
   }
 
+  async executeWorkspaceMutation(
+    handle: WorkspaceHandle,
+    input: {
+      threadId: string
+      runId: string
+      toolCallId: string
+      approvalMode: ThreadMode
+      mutation: WorkspaceMutationInput
+    }
+  ): Promise<WorkspaceMutationToolOutput> {
+    const { mutation } = input
+    const path = mutation.input.path
+    const operation = operationForMutationTool(mutation.toolName)
+    const toolInput = mutation.input as Record<string, unknown>
+    const needsApproval = requiresWorkspaceToolApproval(
+      mutation.toolName,
+      input.approvalMode
+    )
+
+    if (needsApproval) {
+      const edit = this.createPending({
+        workspaceId: handle.id,
+        threadId: input.threadId,
+        runId: input.runId,
+        toolCallId: input.toolCallId,
+        toolName: mutation.toolName,
+        operation,
+        path,
+        approvalMode: input.approvalMode,
+        toolInput,
+      })
+      return buildPendingMutationOutput({
+        workspaceId: handle.id,
+        editId: edit.id,
+        path,
+        operation,
+      })
+    }
+
+    const summary = await this.applyMutation(handle, mutation)
+    const edit = this.recordApplied({
+      workspaceId: handle.id,
+      threadId: input.threadId,
+      runId: input.runId,
+      toolCallId: input.toolCallId,
+      toolName: mutation.toolName,
+      approvalMode: input.approvalMode,
+      toolInput,
+      summary,
+    })
+    return buildAppliedMutationOutput({
+      workspaceId: handle.id,
+      editId: edit.id,
+      summary,
+    })
+  }
+
   async approveByRunToolCall(
     handle: WorkspaceHandle,
     runId: string,
@@ -150,7 +217,10 @@ export class WorkspaceEditService {
       )
     }
 
-    const summary = await this.applyMutation(handle, toMutation(edit.toolName, edit.input))
+    const summary = await this.applyMutation(
+      handle,
+      parseWorkspaceMutationInput(edit.toolName, edit.input)
+    )
     this.edits.update(edit.id, {
       status: "applied",
       result: summary,
@@ -179,38 +249,5 @@ export class WorkspaceEditService {
       throw new WorkspaceError("workspace_edit_not_found", "Workspace edit not found.")
     }
     return updated
-  }
-}
-
-function toMutation(
-  toolName: string,
-  input: Record<string, unknown>
-): WorkspaceMutationInput {
-  if (toolName === "createWorkspaceFile") {
-    return {
-      toolName,
-      input: {
-        path: String(input.path ?? ""),
-        content: String(input.content ?? ""),
-      },
-    }
-  }
-  if (toolName === "replaceInWorkspaceFile") {
-    return {
-      toolName,
-      input: {
-        path: String(input.path ?? ""),
-        oldText: String(input.oldText ?? ""),
-        newText: String(input.newText ?? ""),
-        replaceAll: input.replaceAll === true,
-      },
-    }
-  }
-  return {
-    toolName: "applyWorkspacePatch",
-    input: {
-      path: String(input.path ?? ""),
-      patch: String(input.patch ?? ""),
-    },
   }
 }

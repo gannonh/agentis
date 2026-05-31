@@ -63,9 +63,6 @@ export function buildWorkspaceReadOnlyTools(handle: WorkspaceHandle): ToolSet {
   }
 }
 
-/** @deprecated Use buildWorkspaceReadOnlyTools */
-export const buildWorkspaceNativeTools = buildWorkspaceReadOnlyTools
-
 export function isNativeWorkspaceReadToolName(
   toolName: string
 ): toolName is (typeof NATIVE_WORKSPACE_READ_TOOL_NAMES)[number] {

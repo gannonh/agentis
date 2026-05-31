@@ -7,7 +7,6 @@ import {
   MUTATING_NATIVE_WORKSPACE_TOOL_NAMES,
   NATIVE_WORKSPACE_READ_TOOL_NAMES,
   type MutatingNativeWorkspaceToolName,
-  type NativeWorkspaceReadToolName,
 } from "./tool-names.js"
 
 export const NATIVE_WORKSPACE_TOOL_NAMES = [
@@ -106,7 +105,7 @@ function inferApproval(
   if (output.status === "denied") {
     return { status: "denied", editId: output.editId }
   }
-  return { status: "approved", editId: output.editId }
+  return undefined
 }
 
 function changedFilesFromOutput(
