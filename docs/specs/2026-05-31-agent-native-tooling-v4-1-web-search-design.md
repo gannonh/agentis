@@ -162,7 +162,11 @@ Default permission behavior:
   migration.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
-demo flows can prove tool wiring without live search credentials.
+demo flows can prove tool wiring without live search credentials. When
+`AGENTIS_MOCK_RUNTIME=1`, web search provider availability resolves to the mock
+provider regardless of real gateway credentials. In non-mock runtime, missing
+provider credentials is a preflight P1 failure for agents permitted to use web
+search.
 
 ## Data flow
 
@@ -170,7 +174,7 @@ demo flows can prove tool wiring without live search credentials.
    configuration permits web search and whether the configured provider is
    available. A permitted agent with unavailable web search provider config fails
    fast with visible run evidence instead of letting the model continue without
-   the capability.
+   the capability. Mock runtime resolves this check through the mock provider.
 1. The model calls `searchWeb`.
 2. The tool validates and bounds input.
 3. `WebSearchService` selects the configured `WebSearchProvider`.
@@ -289,6 +293,7 @@ Targeted tests:
 - Missing credential and unsupported provider error mapping.
 - Run preflight failure when the bound agent configuration permits web search
   but provider config is unavailable.
+- Mock runtime provider availability without live gateway credentials.
 - Native run-step payload summary for search results.
 - Run timeline rendering for query, provider, result count, source links,
   truncation, and failures.
