@@ -397,12 +397,14 @@ Targeted tests:
 
 Manual/UAT evidence:
 
-1. With mock runtime enabled, ask for current information and verify a
-   `searchWeb` step appears with deterministic source links.
-2. With real gateway credentials enabled, ask for a current event and verify the
+1. With real gateway credentials enabled, ask for a current event and verify the
    assistant cites bounded sources from the timeline evidence.
-3. Remove or invalidate required search provider credentials and verify the
+2. Remove or invalidate required search provider credentials and verify the
    failure is visible as `web_search_unavailable`.
+
+Mock runtime is for automated, E2E, and local wiring coverage only. UAT must use
+the real configured web search provider; missing credentials are a UAT blocker,
+not a reason to substitute mock evidence.
 
 ## Explicitly deferred
 
