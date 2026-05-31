@@ -15,6 +15,7 @@ import { ThreadRepository } from "./thread-repository.js"
 import { ToolAccessGrantRepository } from "./tool-access-grant-repository.js"
 import { TestingSeedRepository } from "./testing-seed-repository.js"
 import { WorkspaceRepository } from "./workspace-repository.js"
+import { WorkspaceEditRepository } from "./workspace-edit-repository.js"
 
 export function createRepositories(db: AppDatabase, config?: AppConfig) {
   const composioUserId = config?.composioUserId ?? "agentis-local-user"
@@ -29,6 +30,7 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     artifacts: new ArtifactRepository(db),
     agents: new AgentRepository(db),
     workspaces: new WorkspaceRepository(db),
+    workspaceEdits: new WorkspaceEditRepository(db),
     agentPromotionDrafts: new AgentPromotionDraftRepository(db),
     integrationToolkits: new IntegrationToolkitRepository(db),
     integrationConnections: new IntegrationConnectionRepository(

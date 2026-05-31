@@ -50,6 +50,14 @@ export const messagePartSchema = z.discriminatedUnion("type", [
     toolName: z.string(),
     output: z.unknown(),
   }),
+  z.object({
+    type: z.literal("tool-error"),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    error: z.string(),
+    code: z.string().optional(),
+    details: z.unknown().optional(),
+  }),
 ])
 
 export const runStepTypeSchema = z.enum([
@@ -433,6 +441,7 @@ export const createThreadResponseSchema = z.object({
 
 export const createFollowUpRequestSchema = z.object({
   prompt: nonEmptyString,
+  mode: threadModeSchema.optional(),
 })
 
 export const updateThreadRequestSchema = z.object({
@@ -691,6 +700,37 @@ export const agentDetailResponseSchema = z.object({
   information: agentDetailInformationSchema,
 })
 
+export const workspaceEditStatusSchema = z.enum([
+  "pending",
+  "denied",
+  "applied",
+  "failed",
+])
+
+export const workspaceEditSchema = z.object({
+  id: z.string(),
+  workspaceId: z.string(),
+  threadId: z.string(),
+  runId: z.string(),
+  toolCallId: z.string(),
+  toolName: z.string(),
+  operation: z.string(),
+  path: z.string(),
+  status: workspaceEditStatusSchema,
+  approvalMode: threadModeSchema,
+  input: z.record(z.unknown()),
+  result: z.record(z.unknown()).optional(),
+  contentHashBefore: z.string().optional(),
+  contentHashAfter: z.string().optional(),
+  createdAt: z.string(),
+  appliedAt: z.string().optional(),
+})
+
+export const decideToolApprovalResponseSchema = z.object({
+  edit: workspaceEditSchema,
+  output: z.record(z.unknown()),
+})
+
 export const abortRunResponseSchema = z.object({
   run: runSchema,
 })
@@ -713,6 +753,10 @@ export type Message = z.infer<typeof messageSchema>
 export type Run = z.infer<typeof runSchema>
 export type RunUsage = z.infer<typeof runUsageSchema>
 export type RunStep = z.infer<typeof runStepSchema>
+export type WorkspaceEdit = z.infer<typeof workspaceEditSchema>
+export type DecideToolApprovalResponse = z.infer<
+  typeof decideToolApprovalResponseSchema
+>
 export type ConnectionStatus = z.infer<typeof connectionStatusSchema>
 export type ToolAccessScopeType = z.infer<typeof toolAccessScopeTypeSchema>
 export type IntegrationToolkit = z.infer<typeof integrationToolkitSchema>

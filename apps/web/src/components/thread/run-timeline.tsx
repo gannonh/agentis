@@ -99,6 +99,35 @@ function DebugBlock({ title, value }: { title: string; value: unknown }) {
   )
 }
 
+function getNativePath(
+  input: Record<string, unknown> | null,
+  output: Record<string, unknown> | null
+): string | undefined {
+  if (typeof input?.path === "string") return input.path
+  if (typeof output?.path === "string") return output.path
+  return undefined
+}
+
+function formatNativeOutputSummary(
+  output: Record<string, unknown> | null,
+  truncated: boolean
+): string | undefined {
+  const truncationLabel = truncated ? " · truncated" : ""
+  if (Array.isArray(output?.entries)) {
+    return `${output.entries.length} entries${truncationLabel}`
+  }
+  if (Array.isArray(output?.results)) {
+    return `${output.results.length} matches${truncationLabel}`
+  }
+  if (
+    typeof output?.bytesReturned === "number" &&
+    typeof output.totalBytes === "number"
+  ) {
+    return `${output.bytesReturned}/${output.totalBytes} bytes${truncationLabel}`
+  }
+  return truncated ? "truncated" : undefined
+}
+
 function formatNativePayload(step: RunStep) {
   const payload = step.payload
   if (!payload || typeof payload !== "object" || payload.provider !== "native") {
@@ -107,25 +136,16 @@ function formatNativePayload(step: RunStep) {
   const record = payload as Record<string, unknown>
   const input = getRecord(record.input)
   const output = getRecord(record.output)
-  const entries = Array.isArray(output?.entries) ? output.entries : undefined
-  const results = Array.isArray(output?.results) ? output.results : undefined
-  const path =
-    typeof input?.path === "string"
-      ? input.path
-      : typeof output?.path === "string"
-        ? output.path
-        : undefined
+  const approval = getRecord(record.approval)
+  const changedFiles = Array.isArray(record.changedFiles)
+    ? record.changedFiles
+        .map((file) => getRecord(file))
+        .filter((file): file is Record<string, unknown> => Boolean(file))
+    : []
+  const path = getNativePath(input, output)
   const query = typeof input?.query === "string" ? input.query : undefined
   const truncated = output?.truncated === true
-  const outputSummary = entries
-    ? `${entries.length} entries${truncated ? " · truncated" : ""}`
-    : results
-      ? `${results.length} matches${truncated ? " · truncated" : ""}`
-      : typeof output?.bytesReturned === "number" && typeof output.totalBytes === "number"
-        ? `${output.bytesReturned}/${output.totalBytes} bytes${truncated ? " · truncated" : ""}`
-        : truncated
-          ? "truncated"
-          : undefined
+  const outputSummary = formatNativeOutputSummary(output, truncated)
 
   return {
     toolName: typeof record.toolName === "string" ? record.toolName : undefined,
@@ -134,6 +154,14 @@ function formatNativePayload(step: RunStep) {
     path,
     query,
     outputSummary,
+    changedFiles: changedFiles.map((file) => ({
+      path: typeof file.path === "string" ? file.path : "unknown",
+      operation: typeof file.operation === "string" ? file.operation : "edit",
+      bytesWritten:
+        typeof file.bytesWritten === "number" ? file.bytesWritten : undefined,
+    })),
+    approvalStatus:
+      typeof approval?.status === "string" ? approval.status : undefined,
     error: typeof record.error === "string" ? record.error : undefined,
     code: typeof record.code === "string" ? record.code : undefined,
   }
@@ -237,6 +265,25 @@ export function RunTimeline({
               ) : null}
               {native?.outputSummary ? (
                 <p className="text-muted-foreground mt-1">{native.outputSummary}</p>
+              ) : null}
+              {native?.approvalStatus ? (
+                <Badge variant="outline" className="mt-2 capitalize">
+                  {native.approvalStatus === "pending"
+                    ? "Pending approval"
+                    : native.approvalStatus}
+                </Badge>
+              ) : null}
+              {native?.changedFiles.length ? (
+                <ul className="text-muted-foreground mt-2 space-y-1">
+                  {native.changedFiles.map((file, index) => (
+                    <li key={`${file.operation}:${file.path}:${index}`}>
+                      Changed {file.path} · {file.operation}
+                      {file.bytesWritten != null
+                        ? ` · ${file.bytesWritten} bytes`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
               ) : null}
               {native?.code ? (
                 <p className="text-amber-700 dark:text-amber-400 mt-1">

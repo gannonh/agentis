@@ -1,8 +1,10 @@
 import {
   abortRunResponseSchema,
   connectIntegrationResponseSchema,
+  createFollowUpRequestSchema,
   createFollowUpResponseSchema,
   createThreadRequestSchema,
+  decideToolApprovalResponseSchema,
   createThreadResponseSchema,
   createToolGrantRequestSchema,
   integrationsListResponseSchema,
@@ -123,10 +125,11 @@ export async function sendFollowUp(
   threadId: string,
   body: CreateFollowUpRequest
 ) {
+  const payload = createFollowUpRequestSchema.parse(body)
   const response = await fetch(`${API_BASE}/api/threads/${threadId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   })
   return parseJson(response, createFollowUpResponseSchema)
 }
@@ -232,6 +235,22 @@ export async function revokeThreadToolGrant(
         : response.statusText
     throw new ApiError(message, response.status)
   }
+}
+
+export async function decideToolApproval(
+  runId: string,
+  toolCallId: string,
+  decision: "approve" | "deny"
+) {
+  const response = await fetch(
+    `${API_BASE}/api/runs/${runId}/tool-approvals/${encodeURIComponent(toolCallId)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    }
+  )
+  return parseJson(response, decideToolApprovalResponseSchema)
 }
 
 export async function abortRun(runId: string) {

@@ -1,4 +1,5 @@
 import { Hono } from "hono"
+import { z } from "zod"
 import {
   createFollowUpRequestSchema,
   createThreadRequestSchema,
@@ -20,6 +21,7 @@ import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import { RunExecutor } from "../runtime/run-executor.js"
 import { GENERIC_AGENTIS_AGENT_ID } from "../workspaces/constants.js"
+import { WorkspaceError } from "../workspaces/workspace-service.js"
 
 function summarizeThreadPreview(prompt: string) {
   const trimmed = prompt.trim().replace(/\s+/g, " ")
@@ -196,6 +198,7 @@ export function createThreadRoutes(
       threadId: thread.id,
       prompt: body.prompt,
       title: summarizeTitle(body.prompt),
+      mode: body.mode,
     })
     if (!created) {
       return c.json({ error: "Thread not found" }, 404)
@@ -233,6 +236,25 @@ export function createRunRoutes(
       return c.json({ error: "Run not found" }, 404)
     }
     return c.json({ run })
+  })
+
+  app.post("/:id/tool-approvals/:toolCallId", async (c) => {
+    const body = z
+      .object({ decision: z.enum(["approve", "deny"]) })
+      .parse(await c.req.json())
+    try {
+      const result = await executor.decideWorkspaceToolApproval(
+        c.req.param("id"),
+        c.req.param("toolCallId"),
+        body.decision
+      )
+      return c.json({ edit: result.edit, output: result.output })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Approval failed"
+      const code = error instanceof WorkspaceError ? error.code : "approval_failed"
+      const status = code.includes("not_found") ? 404 : 400
+      return c.json({ error: message, code }, status)
+    }
   })
 
   return app

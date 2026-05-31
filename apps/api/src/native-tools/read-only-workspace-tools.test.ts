@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createTestContext, type TestContext } from "../test/setup.js"
 import { WorkspaceService } from "../workspaces/workspace-service.js"
 import {
-  buildWorkspaceNativeTools,
+  buildWorkspaceReadOnlyTools,
   formatNativeToolRunStepPayload,
   isNativeWorkspaceToolName,
 } from "./read-only-workspace-tools.js"
@@ -31,7 +31,7 @@ describe("read-only workspace native tools", () => {
     ctx = createTestContext()
     const handle = await createHandle()
 
-    const tools = buildWorkspaceNativeTools(handle)
+    const tools = buildWorkspaceReadOnlyTools(handle)
     const list = await tools.listWorkspaceFiles.execute?.({ path: "" }, {} as never)
     const read = await tools.readWorkspaceFile.execute?.(
       { path: "notes.md" },
@@ -79,6 +79,33 @@ describe("read-only workspace native tools", () => {
       workspaceId: "workspace_agentis",
       input: { path: "notes.md" },
       output: { path: "notes.md" },
+      changedFiles: undefined,
     })
+
+    expect(
+      formatNativeToolRunStepPayload({
+        toolName: "createWorkspaceFile",
+        workspaceId: "workspace_agentis",
+        output: {
+          editId: "wedit_auto",
+          path: "notes.md",
+          operation: "create",
+          changedFiles: [{ path: "notes.md", operation: "create" }],
+        },
+      })?.approval
+    ).toBeUndefined()
+
+    expect(
+      formatNativeToolRunStepPayload({
+        toolName: "createWorkspaceFile",
+        workspaceId: "workspace_agentis",
+        output: {
+          editId: "wedit_pending",
+          status: "pending_approval",
+          path: "notes.md",
+          operation: "create",
+        },
+      })?.approval
+    ).toEqual({ status: "pending", editId: "wedit_pending" })
   })
 })

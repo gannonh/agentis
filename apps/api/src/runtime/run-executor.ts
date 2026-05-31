@@ -1,30 +1,19 @@
 import { createOpenAI } from "@ai-sdk/openai"
-import {
-  stepCountIs,
-  streamText,
-  type LanguageModel,
-  type ModelMessage,
-  type ToolSet,
-  type UIMessage,
-} from "ai"
+import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
-import type { Message, MessagePart, Run } from "@workspace/shared"
+import type { MessagePart, Run } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import { ComposioRemediationError } from "../composio/tool-execution-service.js"
-import {
-  CURATED_COMPOSIO_TOOLS,
-  SUPPORTED_TOOLKIT_NAMES,
-} from "../composio/tool-catalog.js"
-import { summarizeToolOutput } from "../composio/sanitize.js"
+import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
 import type { Repositories } from "../repositories/index.js"
 import { isRunTimelineDebugEnabled, type AppConfig } from "../config.js"
 import { ArtifactService } from "../artifacts/artifact-service.js"
 import { createArtifactTool } from "../artifacts/artifact-tool.js"
-import {
-  buildWorkspaceNativeTools,
-  formatNativeToolRunStepPayload,
-  isNativeWorkspaceToolName,
-} from "../native-tools/read-only-workspace-tools.js"
+import { buildWorkspaceNativeTools } from "../native-tools/index.js"
+import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
+import { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
+import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
+import { WorkspaceToolApprovalCoordinator } from "../workspaces/workspace-tool-approval.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import {
   abortRun as signalAbort,
@@ -45,6 +34,24 @@ import {
   type RunPromptSection,
 } from "./run-context.js"
 import { nowIso } from "../lib/ids.js"
+import {
+  executeMockComposioStream,
+  executeMockNativeWorkspaceMutationStream,
+  executeMockNativeWorkspaceStream,
+} from "./run-executor-mocks.js"
+import {
+  formatToolResultFallback,
+  getTextFromParts,
+  hasPendingApprovalInParts,
+  setTextPart,
+  suppressTextForPendingApproval,
+  toModelMessages,
+  toUiMessages,
+} from "./run-message-adapters.js"
+import { composioToolNameToToolkit, formatToolStepTitle } from "./run-tool-labels.js"
+
+export { formatToolStepTitle } from "./run-tool-labels.js"
+export { suppressTextForPendingApproval } from "./run-message-adapters.js"
 
 const ARTIFACT_PROMPT_PATTERN = /artifact|brief|document|report/i
 const PLATFORM_SYSTEM_PROMPT =
@@ -80,65 +87,6 @@ export function buildRunSystemPrompt(input: {
 
 function wantsGeneratedArtifact(prompt: string) {
   return ARTIFACT_PROMPT_PATTERN.test(prompt)
-}
-
-function composioToolNameToToolkit(toolName: string): string | undefined {
-  if (!toolName.startsWith("composio_")) return undefined
-  return toolName.replace(/^composio_/, "").replace(/_/g, "-")
-}
-
-export function formatToolStepTitle(input: {
-  toolName: string
-  toolkitSlug?: string
-  curated: boolean
-}): string {
-  if (input.toolName === "createArtifact") return "Create artifact"
-  if (isNativeWorkspaceToolName(input.toolName)) {
-    return `Native: ${input.toolName}`
-  }
-  if (input.toolkitSlug && input.curated) {
-    return `Composio: ${input.toolkitSlug}`
-  }
-  return `Tool: ${input.toolName}`
-}
-
-function getTextFromParts(parts: MessagePart[]) {
-  return parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("")
-}
-
-function setTextPart(parts: MessagePart[], text: string): MessagePart[] {
-  const nonText = parts.filter((part) => part.type !== "text")
-  return text ? [{ type: "text", text }, ...nonText] : nonText
-}
-
-function formatToolResultFallback(parts: MessagePart[]): string | null {
-  const toolResult = [...parts]
-    .reverse()
-    .find((part) => part.type === "tool-result")
-  if (!toolResult || toolResult.type !== "tool-result") return null
-  const summary = summarizeToolOutput(toolResult.output)
-  if (summary === undefined || summary === null) return null
-  if (typeof summary === "string") return summary
-  try {
-    return JSON.stringify(summary, null, 2)
-  } catch {
-    return String(summary)
-  }
-}
-
-function toModelMessages(messages: Message[]): ModelMessage[] {
-  return messages
-    .filter(
-      (message) => message.role === "user" || message.role === "assistant"
-    )
-    .map((message) => ({
-      role: message.role,
-      content: getTextFromParts(message.parts),
-    }))
-    .filter((message) => message.content.length > 0) as ModelMessage[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -227,18 +175,10 @@ function formatToolDebugDetails(tools: ToolSet) {
   })
 }
 
-function toUiMessages(messages: Message[]): UIMessage[] {
-  return messages.map((message) => ({
-    id: message.id,
-    role: message.role,
-    parts: message.parts
-      .filter((part) => part.type === "text")
-      .map((part) => ({ type: "text" as const, text: part.text })),
-  }))
-}
-
 export class RunExecutor {
   private readonly contextService: ProjectContextService
+  private readonly workspaceEditService: WorkspaceEditService
+  private readonly workspaceApproval: WorkspaceToolApprovalCoordinator
 
   constructor(
     private readonly repos: Repositories,
@@ -247,6 +187,21 @@ export class RunExecutor {
     private readonly artifactService: ArtifactService
   ) {
     this.contextService = new ProjectContextService(repos, config)
+    this.workspaceEditService = new WorkspaceEditService(repos.workspaceEdits)
+    this.workspaceApproval = new WorkspaceToolApprovalCoordinator(
+      repos,
+      config,
+      this.workspaceEditService
+    )
+  }
+
+  private mockDeps() {
+    return {
+      repos: this.repos,
+      config: this.config,
+      services: this.services,
+      editService: this.workspaceEditService,
+    }
   }
 
   private createTimelineDebugStep(
@@ -372,7 +327,13 @@ export class RunExecutor {
       .filter((section): section is string => Boolean(section))
       .join("\n\n")
 
-    const nativeTools = buildWorkspaceNativeTools(workspaceHandle)
+    const nativeTools = buildWorkspaceNativeTools({
+      handle: workspaceHandle,
+      editService: this.workspaceEditService,
+      threadId: run.threadId,
+      runId,
+      threadMode: thread.mode,
+    })
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
     )
@@ -419,8 +380,26 @@ export class RunExecutor {
       },
     })
 
+    if (
+      this.config.mockRuntime &&
+      /\b(write|create|edit|patch|replace)\b.*\b(file|workspace)\b|\b(file|workspace)\b.*\b(write|create|edit|patch|replace)\b/i.test(
+        latestUserPrompt
+      )
+    ) {
+      return executeMockNativeWorkspaceMutationStream(
+        this.mockDeps(),
+        runId,
+        run,
+        thread,
+        threadMessages,
+        workspaceHandle,
+        latestUserPrompt
+      )
+    }
+
     if (this.config.mockRuntime && /\bfiles?\b|workspace file|read .*file|search .*file/i.test(latestUserPrompt)) {
-      return this.executeMockNativeWorkspaceStream(
+      return executeMockNativeWorkspaceStream(
+        this.mockDeps(),
         runId,
         run,
         threadMessages,
@@ -434,7 +413,8 @@ export class RunExecutor {
       Object.keys(composioTools).length > 0 &&
       /github|repo/i.test(latestUserPrompt)
     ) {
-      return this.executeMockComposioStream(
+      return executeMockComposioStream(
+        this.mockDeps(),
         runId,
         run,
         threadMessages,
@@ -505,7 +485,8 @@ export class RunExecutor {
       const stepId = toolStepIds.get(toolCallId)
       if (!stepId) return
 
-      const status = input.error ? "failed" : "completed"
+      const pendingApproval = isPendingApprovalOutput(input.toolOutput)
+      const status = input.error ? "failed" : pendingApproval ? "pending" : "completed"
       this.repos.steps.update(stepId, {
         status,
         title: formatToolStepTitle({
@@ -523,6 +504,7 @@ export class RunExecutor {
                 error: input.error,
               })
             : (formatNativeToolRunStepPayload({
+                toolCallId,
                 toolName,
                 workspaceId: workspaceHandle.id,
                 input: input.toolInput,
@@ -621,6 +603,8 @@ export class RunExecutor {
       abortSignal: controller.signal,
       onChunk: async ({ chunk }) => {
         if (chunk.type === "text-delta") {
+          if (hasPendingApprovalInParts(assistantParts)) return
+
           const currentText = getTextFromParts(assistantParts)
           assistantParts = setTextPart(assistantParts, currentText + chunk.text)
           this.repos.messages.updatePartsAndStatus(
@@ -685,7 +669,7 @@ export class RunExecutor {
             toolOutput: chunk.output,
           })
           this.repos.runs.updateStatus(runId, "running")
-          assistantParts = [
+          assistantParts = suppressTextForPendingApproval([
             ...assistantParts.filter(
               (part) =>
                 !(
@@ -699,7 +683,7 @@ export class RunExecutor {
               toolName: chunk.toolName,
               output: chunk.output,
             },
-          ]
+          ])
           this.repos.messages.updatePartsAndStatus(
             assistantMessage.id,
             assistantParts,
@@ -720,7 +704,7 @@ export class RunExecutor {
                 part.toolCallId === result.toolCallId
             )
           ) {
-            assistantParts = [
+            assistantParts = suppressTextForPendingApproval([
               ...assistantParts.filter(
                 (part) =>
                   !(
@@ -734,7 +718,7 @@ export class RunExecutor {
                 toolName: result.toolName,
                 output: result.output,
               },
-            ]
+            ])
           }
         }
         for (const part of stepResult.content) {
@@ -745,12 +729,32 @@ export class RunExecutor {
               : typeof part.error === "string"
                 ? part.error
                 : "Tool execution failed"
+          const code =
+            part.error instanceof WorkspaceError ? part.error.code : undefined
+          const details =
+            part.error instanceof WorkspaceError ? part.error.details : undefined
           finalizeToolStep(part.toolCallId, part.toolName, {
             toolInput: part.input,
             error: message,
-            errorCode:
-              part.error instanceof WorkspaceError ? part.error.code : undefined,
+            errorCode: code,
           })
+          assistantParts = [
+            ...assistantParts.filter(
+              (assistantPart) =>
+                !(
+                  assistantPart.type === "tool-call" &&
+                  assistantPart.toolCallId === part.toolCallId
+                )
+            ),
+            {
+              type: "tool-error",
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              error: message,
+              code,
+              details,
+            },
+          ]
         }
         this.repos.messages.updatePartsAndStatus(
           assistantMessage.id,
@@ -760,11 +764,14 @@ export class RunExecutor {
       },
       onFinish: async ({ totalUsage }) => {
         clearAbortController(runId)
+        const hasPendingApproval = hasPendingApprovalInParts(assistantParts)
         for (const stepId of toolStepIds.values()) {
-          this.repos.steps.update(stepId, { status: "failed" })
+          this.repos.steps.update(stepId, { status: hasPendingApproval ? "pending" : "failed" })
         }
         toolStepIds.clear()
-        if (!getTextFromParts(assistantParts).trim()) {
+        if (hasPendingApproval) {
+          assistantParts = suppressTextForPendingApproval(assistantParts)
+        } else if (!getTextFromParts(assistantParts).trim()) {
           const fallback = formatToolResultFallback(assistantParts)
           if (fallback) {
             assistantParts = setTextPart(assistantParts, fallback)
@@ -780,8 +787,8 @@ export class RunExecutor {
           completionTokens: totalUsage.outputTokens,
           totalTokens: totalUsage.totalTokens,
         }
-        this.repos.runs.updateStatus(runId, "completed", {
-          finishedAt: nowIso(),
+        this.repos.runs.updateStatus(runId, hasPendingApproval ? "tool-calling" : "completed", {
+          finishedAt: hasPendingApproval ? undefined : nowIso(),
           usage,
         })
         this.createTimelineDebugStep(runId, {
@@ -794,12 +801,14 @@ export class RunExecutor {
             usage,
           },
         })
-        this.repos.steps.create({
-          runId,
-          type: "completed",
-          status: "completed",
-          title: "Completed",
-        })
+        if (!hasPendingApproval) {
+          this.repos.steps.create({
+            runId,
+            type: "completed",
+            status: "completed",
+            title: "Completed",
+          })
+        }
         this.repos.threads.touch(run.threadId, { status: "active" })
       },
       onAbort: async () => {
@@ -878,6 +887,14 @@ export class RunExecutor {
     return this.repos.runs.getById(runId)
   }
 
+  async decideWorkspaceToolApproval(
+    runId: string,
+    toolCallId: string,
+    decision: "approve" | "deny"
+  ) {
+    return this.workspaceApproval.decide(runId, toolCallId, decision)
+  }
+
   private failWithWorkspaceError(
     runId: string,
     threadId: string,
@@ -916,7 +933,7 @@ export class RunExecutor {
     threadId: string,
     error: ComposioRemediationError
   ) {
-    const assistantMessage = this.repos.messages.create({
+    this.repos.messages.create({
       threadId,
       role: "assistant",
       parts: [{ type: "text", text: error.message }],
@@ -940,322 +957,6 @@ export class RunExecutor {
     })
     this.repos.threads.touch(threadId, { status: "failed" })
     throw new Error(error.message)
-  }
-
-  private async executeMockNativeWorkspaceStream(
-    runId: string,
-    run: Run,
-    threadMessages: Message[],
-    workspaceHandle: WorkspaceHandle,
-    latestUserPrompt: string
-  ) {
-    const thread = this.repos.threads.getById(run.threadId)
-    if (!thread) throw new Error("Thread not found")
-
-    const assistantMessage = this.repos.messages.create({
-      threadId: run.threadId,
-      role: "assistant",
-      parts: [{ type: "text", text: "" }],
-      status: "streaming",
-    })
-
-    this.repos.runs.updateStatus(runId, "running")
-    this.repos.steps.create({
-      runId,
-      type: "running",
-      status: "running",
-      title: "Running",
-    })
-
-    const toolCallId = `mock-native-tool-${runId}`
-    const shouldSearchWorkspace = /search|find/i.test(latestUserPrompt)
-    const toolName = shouldSearchWorkspace
-      ? "searchWorkspaceFiles"
-      : "listWorkspaceFiles"
-    const nativeQuery =
-      latestUserPrompt.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/)[0] ??
-      "workspace"
-    const toolInput = shouldSearchWorkspace
-      ? { query: nativeQuery }
-      : { path: "", recursive: false }
-    const toolOutput = shouldSearchWorkspace
-      ? {
-          workspaceId: workspaceHandle.id,
-          ...(await workspaceHandle.search({ query: nativeQuery })),
-        }
-      : {
-          workspaceId: workspaceHandle.id,
-          ...(await workspaceHandle.list({ path: "", recursive: false })),
-        }
-    const payload = formatNativeToolRunStepPayload({
-      toolName,
-      workspaceId: workspaceHandle.id,
-      input: toolInput,
-      output: toolOutput,
-    })
-    const summaryText =
-      toolName === "searchWorkspaceFiles"
-        ? `Searched workspace ${workspaceHandle.id}.`
-        : `Listed workspace ${workspaceHandle.id}.`
-
-    const assistantParts: MessagePart[] = [
-      { type: "text", text: summaryText },
-      {
-        type: "tool-call",
-        toolCallId,
-        toolName,
-        input: toolInput,
-      },
-      {
-        type: "tool-result",
-        toolCallId,
-        toolName,
-        output: toolOutput,
-      },
-    ]
-
-    this.repos.steps.create({
-      runId,
-      type: "tool-call",
-      status: "completed",
-      title: `Native: ${toolName}`,
-      payload:
-        formatNativeToolRunStepPayload({
-          toolName,
-          workspaceId: workspaceHandle.id,
-          input: toolInput,
-        }) ?? undefined,
-    })
-    this.repos.steps.create({
-      runId,
-      type: "tool-result",
-      status: "completed",
-      title: `Native: ${toolName}`,
-      payload: payload ?? undefined,
-    })
-
-    this.repos.messages.updatePartsAndStatus(
-      assistantMessage.id,
-      assistantParts,
-      "completed"
-    )
-    const usage = { totalTokens: 0 }
-    this.repos.runs.updateStatus(runId, "completed", {
-      finishedAt: nowIso(),
-      usage,
-    })
-    this.createTimelineDebugStep(runId, {
-      status: "completed",
-      title: "Debug: model output",
-      payload: {
-        provider: "debug",
-        kind: "model-output",
-        assistantParts,
-        usage,
-      },
-    })
-    this.repos.steps.create({
-      runId,
-      type: "completed",
-      status: "completed",
-      title: "Completed",
-    })
-    this.repos.threads.touch(run.threadId)
-
-    const model: LanguageModel = new MockLanguageModelV2({
-      doStream: async () => ({
-        stream: new ReadableStream({
-          start(controller) {
-            controller.enqueue({
-              type: "text-delta",
-              id: "t1",
-              delta: summaryText,
-            })
-            controller.enqueue({
-              type: "finish",
-              finishReason: "stop",
-              usage: { inputTokens: 1, outputTokens: 10, totalTokens: 11 },
-            })
-            controller.close()
-          },
-        }),
-      }),
-    })
-
-    const result = streamText({
-      model,
-      messages: toModelMessages(threadMessages),
-    })
-
-    return result.toUIMessageStreamResponse({
-      originalMessages: toUiMessages(threadMessages),
-    })
-  }
-
-  private async executeMockComposioStream(
-    runId: string,
-    run: Run,
-    threadMessages: Message[],
-    composioTools: Record<string, ReturnType<typeof import("ai").tool>>,
-    latestUserPrompt: string
-  ) {
-    const thread = this.repos.threads.getById(run.threadId)
-    if (!thread) throw new Error("Thread not found")
-
-    const assistantMessage = this.repos.messages.create({
-      threadId: run.threadId,
-      role: "assistant",
-      parts: [{ type: "text", text: "" }],
-      status: "streaming",
-    })
-
-    this.repos.runs.updateStatus(runId, "running")
-    this.repos.steps.create({
-      runId,
-      type: "running",
-      status: "running",
-      title: "Running",
-    })
-
-    const toolName = Object.keys(composioTools)[0]!
-    const toolkitSlug = composioToolNameToToolkit(toolName) ?? "github"
-    const curated = CURATED_COMPOSIO_TOOLS[toolkitSlug]!
-    const toolCallId = `mock-tool-${runId}`
-
-    let toolOutput: unknown = { note: "mock" }
-    try {
-      const toolDef = composioTools[toolName] as {
-        execute?: (input: { note?: string }) => Promise<unknown>
-      }
-      if (toolDef.execute) {
-        toolOutput = await toolDef.execute({ note: latestUserPrompt })
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Composio tool failed"
-      this.repos.messages.updatePartsAndStatus(
-        assistantMessage.id,
-        [{ type: "text", text: message }],
-        "failed"
-      )
-      this.repos.runs.updateStatus(runId, "failed", {
-        finishedAt: nowIso(),
-        errorSummary: message,
-      })
-      this.repos.steps.create({
-        runId,
-        type: "error",
-        status: "failed",
-        title: "Composio tool failed",
-        payload: { message },
-      })
-      this.repos.threads.touch(run.threadId, { status: "failed" })
-      throw new Error(message)
-    }
-
-    const toolkitName = SUPPORTED_TOOLKIT_NAMES[toolkitSlug] ?? toolkitSlug
-    const summaryText =
-      toolkitSlug === "github" &&
-      typeof toolOutput === "object" &&
-      toolOutput !== null
-        ? `GitHub tool completed. Found ${(toolOutput as { repositories?: unknown[] }).repositories?.length ?? 0} repositories (mock).`
-        : `${toolkitName} tool completed (mock).`
-
-    const assistantParts: MessagePart[] = [
-      { type: "text", text: summaryText },
-      {
-        type: "tool-call",
-        toolCallId,
-        toolName,
-        input: {},
-      },
-      {
-        type: "tool-result",
-        toolCallId,
-        toolName,
-        output: toolOutput,
-      },
-    ]
-
-    this.repos.steps.create({
-      runId,
-      type: "tool-call",
-      status: "completed",
-      title: `Composio: ${toolkitSlug}`,
-      payload: this.services.toolExecution.formatRunStepPayload({
-        toolkitSlug,
-        toolSlug: curated.toolSlug,
-        toolInput: {},
-      }),
-    })
-    this.repos.steps.create({
-      runId,
-      type: "tool-result",
-      status: "completed",
-      title: `Composio: ${toolkitSlug}`,
-      payload: this.services.toolExecution.formatRunStepPayload({
-        toolkitSlug,
-        toolSlug: curated.toolSlug,
-        toolOutput,
-      }),
-    })
-
-    this.repos.messages.updatePartsAndStatus(
-      assistantMessage.id,
-      assistantParts,
-      "completed"
-    )
-    const usage = { totalTokens: 0 }
-    this.repos.runs.updateStatus(runId, "completed", {
-      finishedAt: nowIso(),
-      usage,
-    })
-    this.createTimelineDebugStep(runId, {
-      status: "completed",
-      title: "Debug: model output",
-      payload: {
-        provider: "debug",
-        kind: "model-output",
-        assistantParts,
-        usage,
-      },
-    })
-    this.repos.steps.create({
-      runId,
-      type: "completed",
-      status: "completed",
-      title: "Completed",
-    })
-    this.repos.threads.touch(run.threadId)
-
-    const model: LanguageModel = new MockLanguageModelV2({
-      doStream: async () => ({
-        stream: new ReadableStream({
-          start(controller) {
-            controller.enqueue({
-              type: "text-delta",
-              id: "t1",
-              delta: summaryText,
-            })
-            controller.enqueue({
-              type: "finish",
-              finishReason: "stop",
-              usage: { inputTokens: 1, outputTokens: 10, totalTokens: 11 },
-            })
-            controller.close()
-          },
-        }),
-      }),
-    })
-
-    const result = streamText({
-      model,
-      messages: toModelMessages(threadMessages),
-    })
-
-    return result.toUIMessageStreamResponse({
-      originalMessages: toUiMessages(threadMessages),
-    })
   }
 
   private persistAbortedRun(

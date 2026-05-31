@@ -5,11 +5,21 @@ import { MemoryRouter } from "react-router"
 import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { ThreadDetailPage } from "./thread-detail"
 import { createAgentPromotionDraft } from "@/lib/api/agents-client"
+import { decideToolApproval } from "@/lib/api/client"
 
 const navigate = vi.fn()
 let threadStatus: "active" | "finished" | "failed" = "active"
 let threadAgentId: string | undefined = GENERIC_AGENTIS_AGENT_ID
 let threadAgentName: string | null | undefined = "Agentis"
+let includePendingApproval = false
+const refresh = vi.fn()
+
+function messageText(message: { parts: Array<{ type: string; text?: string }> }) {
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("")
+}
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router")
@@ -38,33 +48,79 @@ vi.mock("@/hooks/use-thread-tool-grants", () => ({
 }))
 
 vi.mock("@/hooks/use-thread-session", () => ({
-  useThreadSession: () => ({
-    detail: {
-      thread: {
-        id: "thread_test",
-        title: "Investigate support backlog",
-        status: threadStatus,
-        mode: "plan",
-        model: "gpt-4o-mini",
-        agentId: threadAgentId,
-        agentNameSnapshot: threadAgentName,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+  useThreadSession: () => {
+    const pendingStep = {
+      id: "step_pending",
+      runId: "run_pending",
+      type: "tool-call" as const,
+      status: "pending" as const,
+      title: "Create workspace file",
+      payload: {
+        provider: "native",
+        toolCallId: "tool_call_pending",
+        toolName: "createWorkspaceFile",
+        workspaceId: "workspace_agentis",
+        output: { path: "notes.md", operation: "create", status: "pending_approval" },
+        changedFiles: [],
+        approval: { status: "pending", editId: "wedit_1" },
       },
-      messages: [],
-      runs: [],
-      steps: [],
-    },
-    loading: false,
-    error: null,
-    streaming: false,
-    latestRun: null,
-    steps: [],
-    canAbort: false,
-    submitFollowUp: vi.fn(),
-    abortActiveRun: vi.fn(),
-    getMessageText: vi.fn(() => ""),
-  }),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    const steps = includePendingApproval ? [pendingStep] : []
+    const messages = includePendingApproval
+      ? [
+          {
+            id: "msg_user",
+            threadId: "thread_test",
+            role: "user" as const,
+            parts: [{ type: "text" as const, text: "Create a file called notes.md" }],
+            status: "completed" as const,
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: "msg_assistant",
+            threadId: "thread_test",
+            role: "assistant" as const,
+            parts: [{ type: "text" as const, text: "" }],
+            status: "completed" as const,
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      : []
+    return {
+      detail: {
+        thread: {
+          id: "thread_test",
+          title: "Investigate support backlog",
+          status: threadStatus,
+          mode: "plan",
+          model: "gpt-4o-mini",
+          agentId: threadAgentId,
+          agentNameSnapshot: threadAgentName,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        messages,
+        runs: [],
+        steps,
+      },
+      loading: false,
+      error: null,
+      streaming: false,
+      latestRun: null,
+      steps,
+      canAbort: false,
+      submitFollowUp: vi.fn(),
+      abortActiveRun: vi.fn(),
+      refresh,
+      getMessageText: vi.fn(messageText),
+    }
+  },
+}))
+
+vi.mock("@/lib/api/client", () => ({
+  decideToolApproval: vi.fn().mockResolvedValue({}),
 }))
 
 vi.mock("@/lib/api/agents-client", () => ({
@@ -79,7 +135,10 @@ describe("ThreadDetailPage create-agent action", () => {
     threadStatus = "active"
     threadAgentId = GENERIC_AGENTIS_AGENT_ID
     threadAgentName = "Agentis"
+    includePendingApproval = false
+    refresh.mockClear()
     vi.mocked(createAgentPromotionDraft).mockClear()
+    vi.mocked(decideToolApproval).mockClear()
   })
 
   it("creates an agent draft and navigates from an active thread", async () => {
@@ -146,6 +205,48 @@ describe("ThreadDetailPage create-agent action", () => {
     expect(
       await screen.findByText("Could not prepare agent setup.")
     ).toBeInTheDocument()
+  })
+
+  it("approves pending workspace edits inline", async () => {
+    includePendingApproval = true
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("Approve workspace edit?")).toBeInTheDocument()
+    expect(screen.getByText(/createWorkspaceFile · notes.md/)).toBeInTheDocument()
+    expect(screen.queryByText(/Changed notes\.md/)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Approve" }))
+
+    await waitFor(() => {
+      expect(decideToolApproval).toHaveBeenCalledWith(
+        "run_pending",
+        "tool_call_pending",
+        "approve"
+      )
+      expect(refresh).toHaveBeenCalled()
+    })
+  })
+
+  it("shows pending workspace approval after the user request without assistant filler", () => {
+    includePendingApproval = true
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    const content = document.body.textContent ?? ""
+    const userIndex = content.indexOf("Create a file called notes.md")
+    const approvalIndex = content.indexOf("Approve workspace edit?")
+
+    expect(userIndex).toBeGreaterThanOrEqual(0)
+    expect(approvalIndex).toBeGreaterThan(userIndex)
+    expect(screen.queryByText(/waiting for approval/i)).not.toBeInTheDocument()
   })
 
   it("keeps the create-agent action available for finished threads", () => {

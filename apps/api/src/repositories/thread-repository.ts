@@ -209,6 +209,7 @@ export class ThreadRepository {
     threadId: string
     prompt: string
     title: string
+    mode?: ThreadMode
   }): FollowUpRunResult | null {
     const threadRow = this.db
       .select()
@@ -237,7 +238,7 @@ export class ThreadRepository {
       tx.insert(runs).values(runRow).run()
       tx.insert(runSteps).values(stepRow).run()
       tx.update(threads)
-        .set({ title: input.title, updatedAt: now })
+        .set({ title: input.title, mode: input.mode ?? threadRow.mode, updatedAt: now })
         .where(eq(threads.id, threadRow.id))
         .run()
 

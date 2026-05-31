@@ -33,6 +33,9 @@ export type AppConfig = {
   workspaceReadMaxBytes: number
   workspaceSearchLimit: number
   workspaceSearchSnippetChars: number
+  workspaceWriteMaxBytes: number
+  workspaceWriteDenyPrefixes: string[]
+  workspaceReplaceMaxCount: number
 }
 
 function parseToolkitVersions(raw: string | undefined): Record<string, string> {
@@ -113,6 +116,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     workspaceSearchLimit: Number(env.AGENTIS_WORKSPACE_SEARCH_LIMIT ?? 50),
     workspaceSearchSnippetChars: Number(
       env.AGENTIS_WORKSPACE_SEARCH_SNIPPET_CHARS ?? 160
+    ),
+    workspaceWriteMaxBytes: Number(
+      env.AGENTIS_WORKSPACE_WRITE_MAX_BYTES ?? 262_144
+    ),
+    workspaceWriteDenyPrefixes: (env.AGENTIS_WORKSPACE_WRITE_DENY_PREFIXES ?? "")
+      .split(",")
+      .map((prefix) => prefix.trim())
+      .filter(Boolean),
+    workspaceReplaceMaxCount: Number(
+      env.AGENTIS_WORKSPACE_REPLACE_MAX_COUNT ?? 100
     ),
   }
 }

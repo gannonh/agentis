@@ -1,11 +1,15 @@
-import { mkdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
 import { threads } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
-import { buildRunSystemPrompt, formatToolStepTitle } from "./run-executor.js"
+import {
+  buildRunSystemPrompt,
+  formatToolStepTitle,
+  suppressTextForPendingApproval,
+} from "./run-executor.js"
 import { eq } from "drizzle-orm"
 
 let ctx: TestContext | undefined
@@ -27,6 +31,13 @@ function createMockRuntimeApp(setup?: (context: TestContext) => void) {
     ),
     context: ctx,
   }
+}
+
+function messageText(parts: Array<{ type: string; text?: string }>) {
+  return parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("")
 }
 
 describe("run executor composio bridge", () => {
@@ -192,6 +203,259 @@ describe("run executor composio bridge", () => {
         }),
       ])
     )
+  }, 10_000)
+
+  it("removes assistant claims while workspace mutations are pending approval", () => {
+    const parts = suppressTextForPendingApproval([
+      { type: "text", text: "The file has been created successfully." },
+      {
+        type: "tool-result",
+        toolCallId: "call_pending",
+        toolName: "createWorkspaceFile",
+        output: { status: "pending_approval", path: "todolist.md" },
+      },
+    ])
+
+    expect(messageText(parts)).toBe("")
+    expect(parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "tool-result",
+          toolName: "createWorkspaceFile",
+          output: expect.objectContaining({ status: "pending_approval" }),
+        }),
+      ])
+    )
+  })
+
+  it("creates pending approval for plan-mode workspace mutations", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Create a workspace file for approval" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const edit = context.repos.workspaceEdits.getPendingByRunId(run.id)
+    expect(edit).toMatchObject({
+      status: "pending",
+      approvalMode: "plan",
+      toolName: "createWorkspaceFile",
+    })
+    const workspace = context.repos.workspaces.ensureGenericAgentisWorkspace()
+    const targetPath = join(
+      context.config.storageRoot,
+      workspace.backendRef,
+      "files",
+      edit!.path
+    )
+    await expect(stat(targetPath)).rejects.toThrow()
+    expect(context.repos.runs.getById(run.id)?.status).toBe("tool-calling")
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "tool-call",
+          status: "pending",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "createWorkspaceFile",
+            approval: expect.objectContaining({ status: "pending" }),
+          }),
+        }),
+      ])
+    )
+  }, 10_000)
+
+  it("keeps plan-mode workspace mutation assistant text empty before approval", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Create a workspace file for approval" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    await stream.text()
+
+    const assistant = context.repos.messages
+      .listByThreadId(context.repos.runs.getById(run.id)!.threadId)
+      .find((message) => message.role === "assistant")
+    const text = messageText(assistant?.parts ?? [])
+
+    expect(text).toBe("")
+  }, 10_000)
+
+  it("approves a pending workspace mutation and records audit metadata", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Create a workspace file then wait" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    await stream.text()
+    const pending = context.repos.workspaceEdits.getPendingByRunId(run.id)!
+
+    const approved = await app.request(
+      `/api/runs/${run.id}/tool-approvals/${pending.toolCallId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "approve" }),
+      }
+    )
+
+    expect(approved.status).toBe(200)
+    const edit = context.repos.workspaceEdits.getById(pending.id)
+    expect(edit).toMatchObject({
+      status: "applied",
+      contentHashAfter: expect.any(String),
+    })
+    const file = await readFile(
+      join(
+        context.config.storageRoot,
+        context.repos.workspaces.ensureGenericAgentisWorkspace().backendRef,
+        "files",
+        pending.path
+      ),
+      "utf8"
+    )
+    expect(file).toContain("Created by Agentis mock runtime.")
+    expect(context.repos.runs.getById(run.id)?.status).toBe("completed")
+  }, 10_000)
+
+  it("denies a pending workspace mutation without mutating the file", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Create a workspace file but deny it" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    await stream.text()
+    const pending = context.repos.workspaceEdits.getPendingByRunId(run.id)!
+
+    const denied = await app.request(
+      `/api/runs/${run.id}/tool-approvals/${pending.toolCallId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "deny" }),
+      }
+    )
+
+    expect(denied.status).toBe(200)
+    expect(context.repos.workspaceEdits.getById(pending.id)).toMatchObject({
+      status: "denied",
+    })
+    await expect(
+      stat(
+        join(
+          context.config.storageRoot,
+          context.repos.workspaces.ensureGenericAgentisWorkspace().backendRef,
+          "files",
+          pending.path
+        )
+      )
+    ).rejects.toThrow()
+  }, 10_000)
+
+  it("uses requested follow-up mode for workspace mutation approvals", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Create a workspace file immediately",
+        mode: "agent",
+      }),
+    })
+    const { thread } = (await created.json()) as {
+      thread: { id: string }
+    }
+
+    const followUp = await app.request(`/api/threads/${thread.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Create another workspace file for approval",
+        mode: "plan",
+      }),
+    })
+    const { run } = (await followUp.json()) as { run: { id: string } }
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    await stream.text()
+
+    expect(context.repos.threads.getById(thread.id)?.mode).toBe("plan")
+    expect(context.repos.workspaceEdits.getPendingByRunId(run.id)).toMatchObject({
+      status: "pending",
+      approvalMode: "plan",
+    })
+  }, 10_000)
+
+  it("applies execute-mode workspace mutations without approval", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Create a workspace file immediately",
+        mode: "agent",
+      }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    const edit = context.repos.workspaceEdits.getByRunAndToolCall(
+      run.id,
+      `mock-native-mutation-${run.id}`
+    )
+    expect(edit).toMatchObject({ status: "applied", approvalMode: "agent" })
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "tool-call",
+          status: "completed",
+          payload: expect.objectContaining({
+            changedFiles: [expect.objectContaining({ path: edit?.path })],
+          }),
+        }),
+      ])
+    )
+    const file = await readFile(
+      join(
+        context.config.storageRoot,
+        context.repos.workspaces.ensureGenericAgentisWorkspace().backendRef,
+        "files",
+        edit!.path
+      ),
+      "utf8"
+    )
+    expect(file).toContain("Created by Agentis mock runtime.")
   }, 10_000)
 
   it("does not route substring matches like profile to native workspace tools", async () => {

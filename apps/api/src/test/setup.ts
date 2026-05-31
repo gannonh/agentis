@@ -46,6 +46,9 @@ export function createTestContext() {
     workspaceReadMaxBytes: 64_000,
     workspaceSearchLimit: 50,
     workspaceSearchSnippetChars: 160,
+    workspaceWriteMaxBytes: 262_144,
+    workspaceWriteDenyPrefixes: [],
+    workspaceReplaceMaxCount: 100,
   }
   const repos = createRepositories(db, config)
 

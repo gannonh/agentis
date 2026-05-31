@@ -1,9 +1,26 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
+  AiIdeaIcon,
+  AiSecurityIcon,
   ArrowDown01Icon,
+  BulbIcon,
+  ChartEvaluationIcon,
+  ChatFeedbackIcon,
+  CheckListIcon,
+  FlashIcon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
 import {
   PromptInput,
   PromptInputBody,
@@ -22,12 +39,33 @@ import type { ChatStatus } from "ai"
 import type { IntegrationToolkit, ToolAccessGrant } from "@workspace/shared"
 import { ToolAccessPicker } from "@/components/thread/tool-access-picker"
 
+function MenuItemText({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <span className="flex min-w-0 flex-col gap-0.5">
+      <span>{title}</span>
+      <span className="text-muted-foreground text-[0.68rem] leading-snug">
+        {description}
+      </span>
+    </span>
+  )
+}
+
+type ExecuteBehavior = "auto" | "ask"
+
 type ThreadPromptComposerProps = {
   onSubmit: (prompt: string) => void | Promise<void>
   disabled?: boolean
   health: RuntimeHealth
   mode: ThreadMode
   onModeChange: (mode: ThreadMode) => void
+  executeBehavior: ExecuteBehavior
+  onExecuteBehaviorChange: (behavior: ExecuteBehavior) => void
   submitting?: boolean
   threadId?: string
   toolGrants?: ToolAccessGrant[]
@@ -42,6 +80,8 @@ export function ThreadPromptComposer({
   health,
   mode,
   onModeChange,
+  executeBehavior,
+  onExecuteBehaviorChange,
   submitting,
   threadId,
   toolGrants = [],
@@ -49,13 +89,21 @@ export function ThreadPromptComposer({
   onGrantTool,
   onRevokeTool,
 }: ThreadPromptComposerProps) {
-  const blockedReason = !health.available
-    ? health.reason === "missing_api_key"
-      ? "Add OPENAI_API_KEY to the repo root .env to enable model execution."
-      : "Agent runtime is unavailable. Start the API with pnpm dev."
-    : null
+  let blockedReason: string | null = null
+  if (!health.available) {
+    blockedReason =
+      health.reason === "missing_api_key"
+        ? "Add OPENAI_API_KEY to the repo root .env to enable model execution."
+        : "Agent runtime is unavailable. Start the API with pnpm dev."
+  }
 
   const submitStatus: ChatStatus | undefined = submitting ? "submitted" : undefined
+  const modeLabel = mode === "plan" ? "Plan" : "Execute"
+  const executeBehaviorLabel = executeBehavior === "auto" ? "Auto" : "Ask"
+  const modeAriaLabel =
+    mode === "agent"
+      ? `Mode Execute ${executeBehavior === "auto" ? "Auto" : "Ask first"}`
+      : "Mode Plan"
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -103,21 +151,104 @@ export function ThreadPromptComposer({
           </PromptInputTools>
 
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1"
-              onClick={() => onModeChange(mode === "plan" ? "agent" : "plan")}
-              disabled={disabled || submitting}
-            >
-              {mode === "plan" ? "Plan" : "Agent"}
-              <HugeiconsIcon
-                icon={ArrowDown01Icon}
-                className="size-3.5"
-                strokeWidth={2}
-              />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-2 px-2.5"
+                    disabled={disabled || submitting}
+                    aria-label={modeAriaLabel}
+                  />
+                }
+              >
+                <span className="text-muted-foreground">Mode</span>
+                <span>{modeLabel}</span>
+                {mode === "agent" ? (
+                  <span className="text-muted-foreground">· {executeBehaviorLabel}</span>
+                ) : null}
+                <HugeiconsIcon icon={ArrowDown01Icon} data-icon="inline-end" strokeWidth={2} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" sideOffset={8} className="w-72">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Mode</DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "plan"}
+                    onCheckedChange={(checked) => {
+                      if (checked) onModeChange("plan")
+                    }}
+                  >
+                    <HugeiconsIcon icon={AiIdeaIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Plan"
+                      description="Draft the approach and request approval before workspace edits."
+                    />
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "agent"}
+                    onCheckedChange={(checked) => {
+                      if (checked) onModeChange("agent")
+                    }}
+                  >
+                    <HugeiconsIcon icon={FlashIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Execute"
+                      description="Run the task using the selected execution behavior."
+                    />
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Execute behavior</DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "agent" && executeBehavior === "auto"}
+                    onCheckedChange={(checked) => {
+                      if (!checked) return
+                      onExecuteBehaviorChange("auto")
+                      onModeChange("agent")
+                    }}
+                  >
+                    <HugeiconsIcon icon={FlashIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Auto"
+                      description="Apply allowed changes without stopping for each tool."
+                    />
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "agent" && executeBehavior === "ask"}
+                    disabled
+                  >
+                    <HugeiconsIcon icon={AiSecurityIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Ask first"
+                      description="Approval-gated execute mode. Coming soon."
+                    />
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={BulbIcon} strokeWidth={2} aria-hidden />
+                    Suggest learnings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={CheckListIcon} strokeWidth={2} aria-hidden />
+                    Build skill
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={ChatFeedbackIcon} strokeWidth={2} aria-hidden />
+                    Give feedback
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={ChartEvaluationIcon} strokeWidth={2} aria-hidden />
+                    Run evaluation
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <span className="text-muted-foreground hidden text-xs sm:inline">
               {health.model ?? DEFAULT_OPENAI_MODEL}
             </span>
