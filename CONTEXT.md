@@ -12,8 +12,12 @@ _Avoid_: Workspace-less run, global run
 A capability made available to an agent and used by that agent during workspace-scoped runs.
 _Avoid_: Workspace-scoped tool, when describing tool ownership or availability
 
+**Agent configuration**:
+A versioned set of run-affecting choices for an agent.
+_Avoid_: Agent identity, agent profile
+
 **Tool permission**:
-A binary agent-level setting that determines whether an agent may use a tool.
+A binary agent-level setting in agent configuration that determines whether an agent may use a tool.
 _Avoid_: Provider selection, integration connection
 
 **Tool provider**:
