@@ -117,6 +117,9 @@ Tool ownership and execution context are separate axes:
   the model is not told it exists.
 - The built-in Agentis agent is platform-owned, cannot be user-edited, and has
   access to all basic native tools, including web search.
+- For V4.1, "basic native tools" means the already implemented built-in Agentis
+  runtime tools plus web search. It does not mean every mocked entry in the
+  Tools tab catalog is implemented or model-visible.
 
 Recommended files:
 
