@@ -4,6 +4,20 @@ Agentis is an early-stage open-source product for configuring and deploying usef
 
 The project is currently in foundation work. Treat the architecture direction as research-backed and still evolving.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `gannonh/agentis` via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical triage roles map 1:1 to GitHub labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+
 ## Frontend and API
 
 - **App:** `apps/web` — Vite, React 19, React Router.
