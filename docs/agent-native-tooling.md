@@ -40,11 +40,11 @@ Acceptance:
 
 - A user can create a thread, ask the agent to inspect workspace files, and see native tool calls/results in persisted thread state and the run timeline.
 
-### V2: Safe file edits
+### ✅ V2: Safe file edits
 
-Spec: [`docs/specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md`](specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)
+Spec: `[docs/specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md](specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)`
 
-Plan: [`.cursor/plans/V2 Safe File Edits-c58edf88.plan.md`](../.cursor/plans/V2%20Safe%20File%20Edits-c58edf88.plan.md)
+Plan: `[.cursor/plans/V2 Safe File Edits-c58edf88.plan.md](../.cursor/plans/V2%20Safe%20File%20Edits-c58edf88.plan.md)`
 
 Status: V2 vertical slice implemented for local demo and verification.
 
@@ -58,11 +58,11 @@ Scope:
 - Changed-file summaries and timeline UI.
 - Audit-friendly edit metadata.
 
-### V3: Sandboxed execution
+### ✅ V3: Sandboxed execution
 
-Plan: [`.cursor/plans/V3 Sandboxed Execution-eda6664c.plan.md`](../.cursor/plans/V3%20Sandboxed%20Execution-eda6664c.plan.md)
+Plan: `[.cursor/plans/V3 Sandboxed Execution-eda6664c.plan.md](../.cursor/plans/V3%20Sandboxed%20Execution-eda6664c.plan.md)`
 
-Decision record: [`docs/adr/0001-sandboxed-workspace-execution.md`](adr/0001-sandboxed-workspace-execution.md)
+Decision record: `[docs/adr/0001-sandboxed-workspace-execution.md](adr/0001-sandboxed-workspace-execution.md)`
 
 Status: V3 vertical slice implemented for local demo and verification.
 
@@ -76,15 +76,22 @@ Scope:
 - Changed-file detection after execution.
 - Container or process backend for local development.
 - `runWorkspaceCommand` accepts either `{ kind: "command"; command; cwd? }` or
+
   `{ kind: "script"; language: "python" | "node"; code; cwd? }`.
 - `plan` mode records pending execution rows and waits for user approval; `agent`
+
   mode runs immediately, subject to policy.
 - Execution provenance is stored in `workspace_executions` with sanitized input,
+
   bounded stdout/stderr, exit status, duration, timeout/abort flags, and changed
+
   files.
 - `AGENTIS_SANDBOX_BACKEND=local-container` runs through the standard `docker`
+
   CLI/socket against a Docker-compatible runtime. Docker Desktop and OrbStack are
+
   compatible local examples; ArcBox is future-watch/experimental only and is not
+
   currently supported.
 
 ### V4: Hyperagent capability parity expansion
@@ -97,6 +104,14 @@ Scope candidates:
 - Data tools: tables and persistent documents.
 - Interactive tools: webpages, slides, and HyperApp-style apps.
 - Media tools: images, video, audio, transcription, avatars, maps.
+
+(see `Hyperagent native tools inventory` section below)
+
+Notes:
+
+- This is big scope. Each category could span multiple milestones. 
+- scope 1 tool per epic/PR (e.g., web search)
+- recommend sequencing: 1 tool per category to start
 
 ## Current state
 
@@ -156,12 +171,15 @@ Implemented files:
 Implemented behavior:
 
 - Exposes `createWorkspaceFile`, `replaceInWorkspaceFile`, and
+
   `applyWorkspacePatch` as text-only native workspace tools.
 - Reuses the workspace path jail and write deny prefixes to keep edits under
+
   `workspaces/{id}/files/`.
 - Records edit audit rows with before/after hashes and changed-file metadata.
 - Requires approval in `plan` mode and applies immediately in `agent` mode.
 - Renders pending, approved, denied, failed, and completed edit states in the
+
   run timeline.
 
 ### Sandboxed workspace execution
@@ -180,20 +198,27 @@ Implemented files:
 Implemented behavior:
 
 - Exposes `runWorkspaceCommand` for bounded shell commands and short Python or
+
   Node scripts in the current workspace.
 - Resolves optional `cwd` through the workspace path jail before execution.
 - Uses `local-process` by default for local development and supports
+
   `local-container` through the standard `docker` CLI/socket when configured.
 - Materializes script input under the workspace runtime tree and keeps changed
+
   file detection scoped to the workspace `files/` tree.
 - Captures pre/post workspace snapshots and reports created, modified, and
+
   deleted files up to configured limits.
 - Enforces timeout, abort propagation, stdout/stderr truncation, and optional
+
   command substring deny patterns.
 - Persists execution audit rows with status, approval mode, sanitized input,
+
   result summaries, changed files, and timestamps.
 - Requires approval in `plan` mode and executes immediately in `agent` mode.
 - Renders exit code, duration, stdout/stderr previews, timeout/abort badges,
+
   changed files, and approval states in the run timeline.
 
 ### Existing native runtime tools
@@ -252,7 +277,9 @@ Native tooling does not currently include:
 - Thread transcript rendering for tool-call or tool-result message parts.
 
 Local-process execution is a developer convenience, not a production isolation
+
 boundary. Local-container execution improves local isolation with Docker runtime
+
 controls, but production-grade sandboxing remains future work.
 
 The artifact storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents.
@@ -286,7 +313,9 @@ Current behavior:
 - Renders step title, type, and status for all run steps.
 - Has special formatting for Composio and native workspace payloads.
 - Renders native workspace evidence with path/query, workspace id, status,
+
   approval state, changed files, exit code, duration, timeout/abort flags, and
+
   bounded output summaries.
 - Keeps full file contents out of timeline evidence.
 - Provides a `Debug mode` toggle that shows persisted model input/output in development builds, including system prompt, messages, workspace binding, assistant parts, usage, errors, and tool metadata.
@@ -506,6 +535,7 @@ Acceptance criteria:
 ### 5. Command execution
 
 Command execution exists as the V3 local vertical slice. Treat the implementation
+
 as a bounded local developer runtime, not as the final production sandbox.
 
 Implemented tool:
@@ -520,12 +550,18 @@ Acceptance criteria:
 - Exit code, duration, stdout, and stderr appear in run steps.
 - Destructive commands require approval or are blocked by policy.
 - The local container backend builds from `apps/api/sandbox/Dockerfile`, mounts
+
   workspace `files/` at `/workspace`, mounts generated runtime scripts read-only
+
   at `/runtime-scripts`, disables networking, drops Linux capabilities, prevents
+
   privilege escalation, uses a read-only root filesystem, and applies CPU,
+
   memory, PID, and `/tmp` tmpfs limits.
 - Run `pnpm smoke:sandbox-container` to build the local sandbox image and verify
+
   command execution, Python and Node scripts, persisted `/workspace` writes,
+
   timeout handling, and the active Docker context.
 
 ### 6. UI rendering for native tools
@@ -547,6 +583,7 @@ Candidate updates:
 - Should every native tool call be replayable or exportable for audit?
 - Should agent-created files be versioned?
 - What production sandbox backend should replace or harden the local developer
+
   backends?
 - When converting a generic Agentis thread into a new agent, which workspace state should be copied into the new agent workspace?
 
@@ -574,3 +611,4 @@ Candidate updates:
 - `packages/shared/src/schemas.ts`
 - `apps/web/src/components/thread/run-timeline.tsx`
 - `apps/web/src/components/thread/tool-access-picker.tsx`
+
