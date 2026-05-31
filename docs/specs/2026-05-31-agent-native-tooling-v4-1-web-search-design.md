@@ -91,6 +91,11 @@ The persisted run-step summary should include the query, provider, result count,
 bounded source list, truncation flag, and error code when applicable. It should
 not persist full page contents or unbounded excerpts.
 
+If the selected Gateway/search path supplies structured citation annotations or
+provider-native citation artifacts, preserve them in bounded normalized metadata
+where useful. Keep `results[]` as the stable Agentis-owned contract so the UI,
+repository, and tests do not depend on provider-specific citation fields.
+
 ## Architecture
 
 V4.1 should use a provider-neutral boundary:
