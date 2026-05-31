@@ -20,6 +20,14 @@ _Avoid_: Provider selection, integration connection
 The platform-level service that fulfills a tool capability when an agent is permitted to use it.
 _Avoid_: Agent tool setting, tool permission
 
+**Tool**:
+A native Agentis capability that extends what an agent can do during a workspace-scoped run.
+_Avoid_: Integration, connected app
+
+**Integration**:
+A connection that lets an agent interact with external software or external data sources.
+_Avoid_: Tool, when describing native agent capabilities
+
 **Native tool**:
 An Agentis-owned tool that runs inside Agentis rather than through an external integration provider.
 _Avoid_: Built-in integration, Composio tool
