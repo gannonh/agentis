@@ -254,6 +254,12 @@ Thread transcript rendering can remain unchanged in V4.1. The assistant's final
 text answer should carry the user-facing synthesis with citations from
 `searchWeb` results, while the timeline carries bounded source evidence.
 
+Citation formatting must be deterministic. When the assistant uses
+`searchWeb`, answers should cite sources with inline numbered references such as
+`[1]` and include a matching source list derived from `SearchWebOutput.results`
+with title and URL. Tests should be able to assert the citation markers and
+source URLs without relying on provider-specific prose style.
+
 ## Implementation phases
 
 ### Phase 1: Contract and config
