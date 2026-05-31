@@ -16,6 +16,7 @@ export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
   const { health } = useRuntimeHealth()
   const { projects, loading: projectsLoading } = useProjects()
   const [mode, setMode] = useState<ThreadMode>("plan")
+  const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
   const [projectId, setProjectId] = useState<string>("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,6 +82,8 @@ export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
         health={health}
         mode={mode}
         onModeChange={setMode}
+        executeBehavior={executeBehavior}
+        onExecuteBehaviorChange={setExecuteBehavior}
         submitting={submitting}
       />
     </div>

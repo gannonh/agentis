@@ -729,12 +729,32 @@ export class RunExecutor {
               : typeof part.error === "string"
                 ? part.error
                 : "Tool execution failed"
+          const code =
+            part.error instanceof WorkspaceError ? part.error.code : undefined
+          const details =
+            part.error instanceof WorkspaceError ? part.error.details : undefined
           finalizeToolStep(part.toolCallId, part.toolName, {
             toolInput: part.input,
             error: message,
-            errorCode:
-              part.error instanceof WorkspaceError ? part.error.code : undefined,
+            errorCode: code,
           })
+          assistantParts = [
+            ...assistantParts.filter(
+              (assistantPart) =>
+                !(
+                  assistantPart.type === "tool-call" &&
+                  assistantPart.toolCallId === part.toolCallId
+                )
+            ),
+            {
+              type: "tool-error",
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              error: message,
+              code,
+              details,
+            },
+          ]
         }
         this.repos.messages.updatePartsAndStatus(
           assistantMessage.id,

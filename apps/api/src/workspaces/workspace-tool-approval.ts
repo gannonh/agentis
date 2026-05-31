@@ -1,4 +1,3 @@
-import type { MessagePart } from "@workspace/shared"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
@@ -13,11 +12,7 @@ import {
   type WorkspaceMutationSummary,
 } from "./workspace-edit-service.js"
 import { WorkspaceError, WorkspaceService } from "./workspace-service.js"
-
-function setTextPart(parts: MessagePart[], text: string): MessagePart[] {
-  const nonText = parts.filter((part) => part.type !== "text")
-  return text ? [{ type: "text", text }, ...nonText] : nonText
-}
+import { setTextPart } from "../runtime/run-message-adapters.js"
 
 export class WorkspaceToolApprovalCoordinator {
   constructor(

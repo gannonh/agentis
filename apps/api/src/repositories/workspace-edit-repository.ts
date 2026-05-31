@@ -149,9 +149,7 @@ export class WorkspaceEditRepository {
 
     const appliedAt =
       patch.appliedAt ??
-      (patch.status === "applied" || patch.status === "denied"
-        ? nowIso()
-        : existing.appliedAt)
+      (patch.status === "applied" ? nowIso() : existing.appliedAt)
 
     this.db
       .update(workspaceEdits)
@@ -172,6 +170,24 @@ export class WorkspaceEditRepository {
       .select()
       .from(workspaceEdits)
       .where(eq(workspaceEdits.id, id))
+      .get()
+    return row ? mapRow(row) : null
+  }
+
+  claimPending(
+    id: string,
+    status: Extract<WorkspaceEditStatus, "applied" | "denied">
+  ): WorkspaceEditRecord | null {
+    const row = this.db
+      .update(workspaceEdits)
+      .set({
+        status,
+        appliedAt: null,
+      })
+      .where(
+        and(eq(workspaceEdits.id, id), eq(workspaceEdits.status, "pending"))
+      )
+      .returning()
       .get()
     return row ? mapRow(row) : null
   }

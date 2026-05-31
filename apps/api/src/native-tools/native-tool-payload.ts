@@ -184,7 +184,11 @@ export function formatNativeToolRunStepPayload(input: {
     input.output === undefined
       ? undefined
       : summarizeNativeOutput(input.toolName, input.output)
-  const changedFiles = input.changedFiles ?? changedFilesFromOutput(output)
+  const changedFiles =
+    input.changedFiles ??
+    (isMutatingNativeWorkspaceToolName(input.toolName)
+      ? changedFilesFromOutput(output)
+      : undefined)
 
   return {
     provider: "native",

@@ -61,15 +61,15 @@ function getPendingApproval(step: RunStep) {
     typeof record.toolCallId === "string" ? record.toolCallId : null
   if (!toolCallId) return null
 
-  const firstChangedFile = Array.isArray(record.changedFiles)
-    ? (record.changedFiles[0] as { path?: unknown } | undefined)
-    : undefined
+  const output =
+    typeof record.output === "object" && record.output !== null
+      ? (record.output as Record<string, unknown>)
+      : null
   return {
     toolCallId,
     toolName:
       typeof record.toolName === "string" ? record.toolName : "workspace edit",
-    path:
-      typeof firstChangedFile?.path === "string" ? firstChangedFile.path : undefined,
+    path: typeof output?.path === "string" ? output.path : undefined,
   }
 }
 
@@ -154,6 +154,7 @@ export function ThreadDetailPage() {
   } = useThreadToolGrants(threadId)
 
   const [mode, setMode] = useState<ThreadMode>("plan")
+  const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
   const [submitting, setSubmitting] = useState(false)
   const [creatingAgentDraft, setCreatingAgentDraft] = useState(false)
   const [createAgentError, setCreateAgentError] = useState<string | null>(null)
@@ -375,6 +376,8 @@ export function ThreadDetailPage() {
                   health={health}
                   mode={mode}
                   onModeChange={setMode}
+                  executeBehavior={executeBehavior}
+                  onExecuteBehaviorChange={setExecuteBehavior}
                   submitting={submitting || streaming}
                   threadId={threadId}
                   toolGrants={toolGrants}

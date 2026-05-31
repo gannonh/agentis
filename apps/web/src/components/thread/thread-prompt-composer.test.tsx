@@ -10,6 +10,7 @@ function renderComposer(input?: {
   mode?: ThreadMode
   submitting?: boolean
   onModeChange?: (mode: ThreadMode) => void
+  onExecuteBehaviorChange?: (behavior: "auto" | "ask") => void
 }) {
   return render(
     <ThreadPromptComposer
@@ -17,6 +18,8 @@ function renderComposer(input?: {
       health={health}
       mode={input?.mode ?? "plan"}
       onModeChange={input?.onModeChange ?? vi.fn()}
+      executeBehavior="auto"
+      onExecuteBehaviorChange={input?.onExecuteBehaviorChange ?? vi.fn()}
       submitting={input?.submitting}
     />
   )
@@ -30,6 +33,8 @@ describe("ThreadPromptComposer", () => {
         health={health}
         mode="plan"
         onModeChange={vi.fn()}
+        executeBehavior="auto"
+        onExecuteBehaviorChange={vi.fn()}
       />
     )
 
@@ -42,6 +47,8 @@ describe("ThreadPromptComposer", () => {
         health={health}
         mode="agent"
         onModeChange={vi.fn()}
+        executeBehavior="auto"
+        onExecuteBehaviorChange={vi.fn()}
       />
     )
 

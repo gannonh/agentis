@@ -217,17 +217,36 @@ export class WorkspaceEditService {
       )
     }
 
-    const summary = await this.applyMutation(
-      handle,
-      parseWorkspaceMutationInput(edit.toolName, edit.input)
-    )
-    this.edits.update(edit.id, {
-      status: "applied",
-      result: summary,
-      contentHashBefore: summary.contentHashBefore,
-      contentHashAfter: summary.contentHashAfter,
-    })
-    return { editId: edit.id, summary }
+    const claimed = this.edits.claimPending(edit.id, "applied")
+    if (!claimed) {
+      throw new WorkspaceError(
+        "workspace_edit_not_pending",
+        "Workspace edit is not pending approval."
+      )
+    }
+
+    try {
+      const summary = await this.applyMutation(
+        handle,
+        parseWorkspaceMutationInput(edit.toolName, edit.input)
+      )
+      this.edits.update(edit.id, {
+        status: "applied",
+        result: summary,
+        contentHashBefore: summary.contentHashBefore,
+        contentHashAfter: summary.contentHashAfter,
+      })
+      return { editId: edit.id, summary }
+    } catch (error) {
+      this.edits.update(edit.id, {
+        status: "failed",
+        result: {
+          status: "failed",
+          error: error instanceof Error ? error.message : "Workspace edit failed.",
+        },
+      })
+      throw error
+    }
   }
 
   denyByRunToolCall(runId: string, toolCallId: string) {
@@ -241,13 +260,15 @@ export class WorkspaceEditService {
         "Workspace edit is not pending approval."
       )
     }
-    const updated = this.edits.update(edit.id, {
-      status: "denied",
-      result: { status: "denied" },
-    })
+    const updated = this.edits.claimPending(edit.id, "denied")
     if (!updated) {
-      throw new WorkspaceError("workspace_edit_not_found", "Workspace edit not found.")
+      throw new WorkspaceError(
+        "workspace_edit_not_pending",
+        "Workspace edit is not pending approval."
+      )
     }
-    return updated
+    return this.edits.update(edit.id, {
+      result: { status: "denied" },
+    }) ?? updated
   }
 }

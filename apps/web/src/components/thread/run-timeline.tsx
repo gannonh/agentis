@@ -275,8 +275,8 @@ export function RunTimeline({
               ) : null}
               {native?.changedFiles.length ? (
                 <ul className="text-muted-foreground mt-2 space-y-1">
-                  {native.changedFiles.map((file) => (
-                    <li key={`${file.operation}:${file.path}`}>
+                  {native.changedFiles.map((file, index) => (
+                    <li key={`${file.operation}:${file.path}:${index}`}>
                       Changed {file.path} · {file.operation}
                       {file.bytesWritten != null
                         ? ` · ${file.bytesWritten} bytes`

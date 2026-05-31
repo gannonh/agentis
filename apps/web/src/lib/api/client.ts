@@ -4,6 +4,7 @@ import {
   createFollowUpRequestSchema,
   createFollowUpResponseSchema,
   createThreadRequestSchema,
+  decideToolApprovalResponseSchema,
   createThreadResponseSchema,
   createToolGrantRequestSchema,
   integrationsListResponseSchema,
@@ -249,18 +250,7 @@ export async function decideToolApproval(
       body: JSON.stringify({ decision }),
     }
   )
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    const message =
-      typeof data === "object" &&
-      data !== null &&
-      "error" in data &&
-      typeof data.error === "string"
-        ? data.error
-        : response.statusText
-    throw new ApiError(message, response.status)
-  }
-  return response.json()
+  return parseJson(response, decideToolApprovalResponseSchema)
 }
 
 export async function abortRun(runId: string) {

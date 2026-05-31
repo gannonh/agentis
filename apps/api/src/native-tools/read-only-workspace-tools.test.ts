@@ -79,6 +79,7 @@ describe("read-only workspace native tools", () => {
       workspaceId: "workspace_agentis",
       input: { path: "notes.md" },
       output: { path: "notes.md" },
+      changedFiles: undefined,
     })
 
     expect(

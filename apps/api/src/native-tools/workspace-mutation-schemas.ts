@@ -9,7 +9,7 @@ export const createWorkspaceFileInputSchema = z.object({
 
 export const replaceInWorkspaceFileInputSchema = z.object({
   path: z.string().min(1),
-  oldText: z.string(),
+  oldText: z.string().min(1),
   newText: z.string(),
   replaceAll: z.boolean().optional(),
 })
@@ -18,6 +18,14 @@ export const applyWorkspacePatchInputSchema = z.object({
   path: z.string().min(1),
   patch: z.string().min(1),
 })
+
+function validationDetails(error: z.ZodError) {
+  return error.issues.map((issue) => ({
+    path: issue.path.join("."),
+    message: issue.message,
+    code: issue.code,
+  }))
+}
 
 export function parseWorkspaceMutationInput(
   toolName: string,
@@ -28,7 +36,8 @@ export function parseWorkspaceMutationInput(
     if (!parsed.success) {
       throw new WorkspaceError(
         "workspace_mutation_input_invalid",
-        "Workspace create input is invalid."
+        "Workspace create input is invalid.",
+        validationDetails(parsed.error)
       )
     }
     return { toolName, input: parsed.data }
@@ -38,7 +47,8 @@ export function parseWorkspaceMutationInput(
     if (!parsed.success) {
       throw new WorkspaceError(
         "workspace_mutation_input_invalid",
-        "Workspace replace input is invalid."
+        "Workspace replace input is invalid.",
+        validationDetails(parsed.error)
       )
     }
     return { toolName, input: parsed.data }
@@ -48,7 +58,8 @@ export function parseWorkspaceMutationInput(
     if (!parsed.success) {
       throw new WorkspaceError(
         "workspace_mutation_input_invalid",
-        "Workspace patch input is invalid."
+        "Workspace patch input is invalid.",
+        validationDetails(parsed.error)
       )
     }
     return { toolName, input: parsed.data }

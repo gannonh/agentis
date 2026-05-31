@@ -32,6 +32,27 @@ function formatToolResultsForModel(parts: MessagePart[]) {
     .join("\n")
 }
 
+function renderToolErrorDetails(details: unknown): string {
+  if (details === undefined) return ""
+  try {
+    return ` Details: ${JSON.stringify(details)}`
+  } catch {
+    return ` Details: ${String(details)}`
+  }
+}
+
+function formatToolErrorsForModel(parts: MessagePart[]) {
+  return parts
+    .filter((part) => part.type === "tool-error")
+    .map((part) => {
+      const code = part.code ? ` (${part.code})` : ""
+      return `Tool ${part.toolName} error${code}: ${part.error}${renderToolErrorDetails(
+        part.details
+      )}`
+    })
+    .join("\n")
+}
+
 export function formatToolResultFallback(parts: MessagePart[]): string | null {
   const toolResult = [...parts]
     .reverse()
@@ -55,7 +76,10 @@ export function toModelMessages(messages: Message[]): ModelMessage[] {
     .map((message) => {
       const text = getTextFromParts(message.parts)
       const toolSummary = formatToolResultsForModel(message.parts)
-      const content = [text, toolSummary].filter(Boolean).join("\n\n")
+      const toolErrors = formatToolErrorsForModel(message.parts)
+      const content = [text, toolSummary, toolErrors]
+        .filter(Boolean)
+        .join("\n\n")
       return {
         role: message.role,
         content,

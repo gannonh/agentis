@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
@@ -57,12 +56,16 @@ function MenuItemText({
   )
 }
 
+type ExecuteBehavior = "auto" | "ask"
+
 type ThreadPromptComposerProps = {
   onSubmit: (prompt: string) => void | Promise<void>
   disabled?: boolean
   health: RuntimeHealth
   mode: ThreadMode
   onModeChange: (mode: ThreadMode) => void
+  executeBehavior: ExecuteBehavior
+  onExecuteBehaviorChange: (behavior: ExecuteBehavior) => void
   submitting?: boolean
   threadId?: string
   toolGrants?: ToolAccessGrant[]
@@ -77,6 +80,8 @@ export function ThreadPromptComposer({
   health,
   mode,
   onModeChange,
+  executeBehavior,
+  onExecuteBehaviorChange,
   submitting,
   threadId,
   toolGrants = [],
@@ -84,7 +89,6 @@ export function ThreadPromptComposer({
   onGrantTool,
   onRevokeTool,
 }: ThreadPromptComposerProps) {
-  const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
   let blockedReason: string | null = null
   if (!health.available) {
     blockedReason =
@@ -202,7 +206,7 @@ export function ThreadPromptComposer({
                     checked={mode === "agent" && executeBehavior === "auto"}
                     onCheckedChange={(checked) => {
                       if (!checked) return
-                      setExecuteBehavior("auto")
+                      onExecuteBehaviorChange("auto")
                       onModeChange("agent")
                     }}
                   >

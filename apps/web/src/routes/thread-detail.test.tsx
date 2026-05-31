@@ -60,7 +60,8 @@ vi.mock("@/hooks/use-thread-session", () => ({
         toolCallId: "tool_call_pending",
         toolName: "createWorkspaceFile",
         workspaceId: "workspace_agentis",
-        changedFiles: [{ path: "notes.md", operation: "create" }],
+        output: { path: "notes.md", operation: "create", status: "pending_approval" },
+        changedFiles: [],
         approval: { status: "pending", editId: "wedit_1" },
       },
       createdAt: new Date().toISOString(),
@@ -217,6 +218,7 @@ describe("ThreadDetailPage create-agent action", () => {
 
     expect(screen.getByText("Approve workspace edit?")).toBeInTheDocument()
     expect(screen.getByText(/createWorkspaceFile · notes.md/)).toBeInTheDocument()
+    expect(screen.queryByText(/Changed notes\.md/)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Approve" }))
 

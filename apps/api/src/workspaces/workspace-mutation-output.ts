@@ -35,7 +35,7 @@ export function buildPendingMutationOutput(input: {
     operation: input.operation,
     status: "pending_approval",
     editId: input.editId,
-    changedFiles: [{ path: input.path, operation: input.operation }],
+    changedFiles: [],
   }
 }
 
@@ -64,7 +64,7 @@ export function buildDeniedMutationOutput(input: {
     path: input.path,
     operation: input.operation,
     status: "denied",
-    changedFiles: [{ path: input.path, operation: input.operation }],
+    changedFiles: [],
   }
 }
 

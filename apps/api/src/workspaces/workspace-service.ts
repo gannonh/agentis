@@ -1,5 +1,16 @@
 import { createHash } from "node:crypto"
-import { mkdir, open, readdir, realpath, rename, stat, writeFile } from "node:fs/promises"
+import {
+  mkdir,
+  mkdtemp,
+  open,
+  readFile,
+  readdir,
+  realpath,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises"
 import path from "node:path"
 import { applyPatch, parsePatch } from "diff"
 import type { AppConfig } from "../config.js"
@@ -105,7 +116,8 @@ export type WorkspacePatchResult = {
 export class WorkspaceError extends Error {
   constructor(
     readonly code: string,
-    message: string
+    message: string,
+    readonly details?: unknown
   ) {
     super(message)
     this.name = "WorkspaceError"
@@ -194,7 +206,11 @@ function assertWritablePath(workspacePath: string, config: AppConfig) {
     )
   }
   for (const prefix of config.workspaceWriteDenyPrefixes) {
-    const normalized = prefix.replace(/\\/g, "/").replace(/^\.\//, "")
+    const normalized = prefix
+      .replace(/\\/g, "/")
+      .replace(/^\.\//, "")
+      .replace(/\/+$/, "")
+    if (!normalized) continue
     if (
       workspacePath === normalized ||
       workspacePath.startsWith(`${normalized}/`)
@@ -452,8 +468,8 @@ export class WorkspaceHandle {
     let contentHashBefore: string | undefined
     let previousBytes: number | undefined
     if (existingStat?.isFile()) {
-      const existing = await this.readText({ path: workspacePath })
-      contentHashBefore = hashContent(existing.content)
+      const existing = await readFile(absolutePath)
+      contentHashBefore = hashContent(existing)
       previousBytes = existingStat.size
     }
 
@@ -466,16 +482,21 @@ export class WorkspaceHandle {
         "Workspace write parent resolves outside the workspace."
       )
     }
-    const tempPath = `${absolutePath}.agentis-tmp-${process.pid}`
-    await writeFile(tempPath, input.content, "utf8")
-    const tempRealPath = await realpath(tempPath)
-    if (!isInsidePath(tempRealPath, filesRootRealPath)) {
-      throw new WorkspaceError(
-        "workspace_symlink_escape",
-        "Workspace write resolved outside the workspace."
-      )
+    const tempDir = await mkdtemp(path.join(parentDir, ".agentis-tmp-"))
+    try {
+      const tempPath = path.join(tempDir, "content")
+      await writeFile(tempPath, input.content, { encoding: "utf8", flag: "wx" })
+      const tempRealPath = await realpath(tempPath)
+      if (!isInsidePath(tempRealPath, filesRootRealPath)) {
+        throw new WorkspaceError(
+          "workspace_symlink_escape",
+          "Workspace write resolved outside the workspace."
+        )
+      }
+      await rename(tempPath, absolutePath)
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
     }
-    await rename(tempPath, absolutePath)
 
     return {
       path: workspacePath,
@@ -495,7 +516,20 @@ export class WorkspaceHandle {
     }
     assertWritablePath(workspacePath, this.config)
 
+    if (!input.oldText) {
+      throw new WorkspaceError(
+        "workspace_replace_text_required",
+        "Search text is required."
+      )
+    }
+
     const read = await this.readText({ path: workspacePath })
+    if (read.truncated) {
+      throw new WorkspaceError(
+        "workspace_file_too_large",
+        "Workspace file is too large to modify safely."
+      )
+    }
     const contentHashBefore = hashContent(read.content)
     const occurrences = read.content.split(input.oldText).length - 1
     if (occurrences === 0) {
@@ -518,9 +552,10 @@ export class WorkspaceHandle {
         "Replacement count exceeds the configured limit."
       )
     }
+    const matchIndex = read.content.indexOf(input.oldText)
     const nextContent = input.replaceAll
       ? read.content.split(input.oldText).join(input.newText)
-      : read.content.replace(input.oldText, input.newText)
+      : `${read.content.slice(0, matchIndex)}${input.newText}${read.content.slice(matchIndex + input.oldText.length)}`
     const writeResult = await this.writeText({
       path: workspacePath,
       content: nextContent,
@@ -572,6 +607,12 @@ export class WorkspaceHandle {
     }
 
     const read = await this.readText({ path: workspacePath })
+    if (read.truncated) {
+      throw new WorkspaceError(
+        "workspace_file_too_large",
+        "Workspace file is too large to patch safely."
+      )
+    }
     const contentHashBefore = hashContent(read.content)
     const patched = applyPatch(read.content, patch)
     if (patched === false) {

@@ -124,7 +124,7 @@ describe("RunTimeline", () => {
               status: "pending_approval",
               editId: "wedit_1",
             },
-            changedFiles: [{ path: "notes.md", operation: "create" }],
+            changedFiles: [],
             approval: { status: "pending", editId: "wedit_1" },
           }),
         ]}
@@ -132,7 +132,8 @@ describe("RunTimeline", () => {
     )
 
     expect(screen.getByText("Pending approval")).toBeInTheDocument()
-    expect(screen.getByText(/Changed notes.md · create/)).toBeInTheDocument()
+    expect(screen.getByText("Path: notes.md")).toBeInTheDocument()
+    expect(screen.queryByText(/Changed notes.md · create/)).not.toBeInTheDocument()
     expect(screen.queryByText(/hidden body/)).not.toBeInTheDocument()
   })
 
