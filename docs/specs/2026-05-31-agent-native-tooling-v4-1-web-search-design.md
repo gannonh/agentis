@@ -250,6 +250,13 @@ is not operational. The tool/provider path should still map unavailable
 credentials and mid-run provider failures to explicit web search errors for
 direct tests, races, or degraded provider state after preflight.
 
+Preflight provider unavailability should fail the run before model execution.
+If `searchWeb` is called and the provider request fails during tool execution,
+the native tool step should fail with an explicit web search error code, and the
+model may still produce a final answer explaining that web search failed. The
+overall run should fail only when preflight fails or the model cannot produce a
+final response after the tool failure.
+
 Malformed or oversized individual results should be omitted or truncated when
 the remaining response can still be safely normalized. The whole tool should
 fail only when the provider response cannot produce a trustworthy bounded result.
@@ -347,6 +354,8 @@ that is worse than provider/tool-native citation behavior.
   treated as a P1 operational issue.
 - A permitted web search run fails fast before model execution when provider
   config is unavailable.
+- Mid-run web search provider failures create failed native tool evidence and
+  allow the model to recover when possible.
 - An agent configuration without web search permission does not expose
   `searchWeb` to the model.
 - Timeline rendering shows query, provider, result count, and source links.
