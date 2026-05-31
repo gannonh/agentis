@@ -56,12 +56,16 @@ function getPendingApproval(step: RunStep) {
       ? (record.approval as Record<string, unknown>)
       : null
   if (approval?.status !== "pending") return null
+
+  const toolCallId =
+    typeof record.toolCallId === "string" ? record.toolCallId : null
+  if (!toolCallId) return null
+
   const firstChangedFile = Array.isArray(record.changedFiles)
     ? (record.changedFiles[0] as { path?: unknown } | undefined)
     : undefined
   return {
-    toolCallId:
-      typeof record.toolCallId === "string" ? record.toolCallId : null,
+    toolCallId,
     toolName:
       typeof record.toolName === "string" ? record.toolName : "workspace edit",
     path:
@@ -187,7 +191,7 @@ export function ThreadDetailPage() {
       ): item is {
         step: RunStep
         approval: NonNullable<ReturnType<typeof getPendingApproval>>
-      } => Boolean(item.approval?.toolCallId)
+      } => Boolean(item.approval)
     )
 
   const handleSubmit = async (prompt: string) => {
@@ -325,7 +329,7 @@ export function ThreadDetailPage() {
                         onClick={() =>
                           void handleApprovalDecision(
                             step.runId,
-                            approval.toolCallId!,
+                            approval.toolCallId,
                             "approve"
                           )
                         }
@@ -342,7 +346,7 @@ export function ThreadDetailPage() {
                         onClick={() =>
                           void handleApprovalDecision(
                             step.runId,
-                            approval.toolCallId!,
+                            approval.toolCallId,
                             "deny"
                           )
                         }

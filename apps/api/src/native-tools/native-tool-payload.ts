@@ -109,6 +109,25 @@ function inferApproval(
   return { status: "approved", editId: output.editId }
 }
 
+function changedFilesFromOutput(
+  output: unknown
+): NativeToolRunStepPayload["changedFiles"] | undefined {
+  if (!isObject(output)) return undefined
+  if (Array.isArray(output.changedFiles)) {
+    return output.changedFiles as NativeToolRunStepPayload["changedFiles"]
+  }
+  if (typeof output.path !== "string") return undefined
+
+  return [
+    {
+      path: output.path,
+      operation: typeof output.operation === "string" ? output.operation : "edit",
+      bytesWritten:
+        typeof output.bytesWritten === "number" ? output.bytesWritten : undefined,
+    },
+  ]
+}
+
 function summarizeNativeOutput(toolName: NativeWorkspaceToolName, output: unknown) {
   if (toolName === "listWorkspaceFiles" && isObject(output)) {
     const entries = Array.isArray(output.entries)
@@ -166,23 +185,7 @@ export function formatNativeToolRunStepPayload(input: {
     input.output === undefined
       ? undefined
       : summarizeNativeOutput(input.toolName, input.output)
-  const changedFiles =
-    input.changedFiles ??
-    (isObject(output) && Array.isArray(output.changedFiles)
-      ? (output.changedFiles as NativeToolRunStepPayload["changedFiles"])
-      : isObject(output) && typeof output.path === "string"
-        ? [
-            {
-              path: output.path,
-              operation:
-                typeof output.operation === "string" ? output.operation : "edit",
-              bytesWritten:
-                typeof output.bytesWritten === "number"
-                  ? output.bytesWritten
-                  : undefined,
-            },
-          ]
-        : undefined)
+  const changedFiles = input.changedFiles ?? changedFilesFromOutput(output)
 
   return {
     provider: "native",

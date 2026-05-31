@@ -25,7 +25,10 @@ import {
   formatNativeToolRunStepPayload,
   isNativeWorkspaceToolName,
 } from "../native-tools/native-tool-payload.js"
-import { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
+import {
+  summarizeChangedFiles,
+  WorkspaceEditService,
+} from "../workspaces/workspace-edit-service.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import {
   abortRun as signalAbort,
@@ -133,19 +136,19 @@ function formatToolResultFallback(parts: MessagePart[]): string | null {
   }
 }
 
+function renderToolSummary(output: unknown): string {
+  const summary = summarizeToolOutput(output)
+  if (summary === undefined) return ""
+  if (typeof summary === "string") return summary
+  return JSON.stringify(summary) ?? ""
+}
+
 function formatToolResultsForModel(parts: MessagePart[]) {
   return parts
     .filter((part) => part.type === "tool-result")
-    .map((part) => {
-      const summary = summarizeToolOutput(part.output)
-      const rendered =
-        typeof summary === "string"
-          ? summary
-          : summary === undefined
-            ? ""
-            : JSON.stringify(summary)
-      return `Tool ${part.toolName} result: ${rendered}`
-    })
+    .map(
+      (part) => `Tool ${part.toolName} result: ${renderToolSummary(part.output)}`
+    )
     .filter((line) => line.length > 0)
     .join("\n")
 }
@@ -976,33 +979,36 @@ export class RunExecutor {
             runId,
             toolCallId
           )
-        : { editId: this.workspaceEditService.denyByRunToolCall(runId, toolCallId).id }
+        : {
+            editId: this.workspaceEditService.denyByRunToolCall(
+              runId,
+              toolCallId
+            ).id,
+          }
 
     const edit = this.repos.workspaceEdits.getById(result.editId)
     if (!edit) {
       throw new WorkspaceError("workspace_edit_not_found", "Workspace edit not found.")
     }
 
-    const output =
-      decision === "approve" && "summary" in result
-        ? {
-            workspaceId: handle.id,
-            editId: result.editId,
-            ...result.summary,
-            changedFiles: [{
-              path: result.summary.path,
-              operation: result.summary.operation,
-              bytesWritten: result.summary.bytesWritten,
-            }],
-          }
-        : {
-            workspaceId: handle.id,
-            editId: result.editId,
-            path: edit.path,
-            operation: edit.operation,
-            status: "denied",
-            changedFiles: [{ path: edit.path, operation: edit.operation }],
-          }
+    let output: Record<string, unknown>
+    if (decision === "approve" && "summary" in result) {
+      output = {
+        workspaceId: handle.id,
+        editId: result.editId,
+        ...result.summary,
+        changedFiles: summarizeChangedFiles(result.summary),
+      }
+    } else {
+      output = {
+        workspaceId: handle.id,
+        editId: result.editId,
+        path: edit.path,
+        operation: edit.operation,
+        status: "denied",
+        changedFiles: [{ path: edit.path, operation: edit.operation }],
+      }
+    }
 
     const step = this.repos.steps
       .listByRunId(runId)
@@ -1038,9 +1044,10 @@ export class RunExecutor {
       )
     )
     if (assistant) {
-      const text = decision === "approve"
-        ? "Workspace edit approved and applied."
-        : "Workspace edit denied. No file was changed."
+      const text =
+        decision === "approve"
+          ? "Workspace edit approved and applied."
+          : "Workspace edit denied. No file was changed."
       const parts = setTextPart(
         assistant.parts.map((part) =>
           part.type === "tool-result" && part.toolCallId === toolCallId
@@ -1308,33 +1315,28 @@ export class RunExecutor {
       content: `Created by Agentis mock runtime.\n\nPrompt: ${latestUserPrompt.trim()}\n`,
     }
 
-    const output = thread.mode === "plan"
-      ? (() => {
-          const edit = this.workspaceEditService.createPending({
-            workspaceId: workspaceHandle.id,
-            threadId: thread.id,
-            runId,
-            toolCallId,
-            toolName,
-            operation: "create",
-            path: toolInput.path,
-            approvalMode: thread.mode,
-            toolInput,
-          })
-          return {
-            workspaceId: workspaceHandle.id,
-            path: toolInput.path,
-            operation: "create",
-            status: "pending_approval" as const,
-            editId: edit.id,
-            changedFiles: [{ path: toolInput.path, operation: "create" }],
-          }
-        })()
-      : (() => {
-          return null
-        })()
-
-    const appliedOutput = output ?? await (async () => {
+    let appliedOutput: Record<string, unknown>
+    if (thread.mode === "plan") {
+      const edit = this.workspaceEditService.createPending({
+        workspaceId: workspaceHandle.id,
+        threadId: thread.id,
+        runId,
+        toolCallId,
+        toolName,
+        operation: "create",
+        path: toolInput.path,
+        approvalMode: thread.mode,
+        toolInput,
+      })
+      appliedOutput = {
+        workspaceId: workspaceHandle.id,
+        path: toolInput.path,
+        operation: "create",
+        status: "pending_approval" as const,
+        editId: edit.id,
+        changedFiles: [{ path: toolInput.path, operation: "create" }],
+      }
+    } else {
       const summary = await this.workspaceEditService.applyMutation(
         workspaceHandle,
         { toolName, input: toolInput }
@@ -1349,17 +1351,13 @@ export class RunExecutor {
         toolInput,
         summary,
       })
-      return {
+      appliedOutput = {
         workspaceId: workspaceHandle.id,
         editId: edit.id,
         ...summary,
-        changedFiles: [{
-          path: summary.path,
-          operation: summary.operation,
-          bytesWritten: summary.bytesWritten,
-        }],
+        changedFiles: summarizeChangedFiles(summary),
       }
-    })()
+    }
 
     const stepPayload = formatNativeToolRunStepPayload({
       toolCallId,

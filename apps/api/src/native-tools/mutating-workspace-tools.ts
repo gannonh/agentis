@@ -7,7 +7,6 @@ import {
   type WorkspaceMutationInput,
 } from "../workspaces/workspace-edit-service.js"
 import type { WorkspaceHandle } from "../workspaces/workspace-service.js"
-import { WorkspaceError } from "../workspaces/workspace-service.js"
 import { requiresWorkspaceToolApproval } from "./workspace-tool-policy.js"
 
 const createWorkspaceFileInputSchema = z.object({
@@ -49,6 +48,7 @@ async function runMutation(
   mutation: WorkspaceMutationInput
 ) {
   const path = String(toolInput.path ?? "")
+  const operation = operationForTool(toolName)
   const needsApproval = requiresWorkspaceToolApproval(toolName, context.threadMode)
 
   if (needsApproval) {
@@ -58,7 +58,7 @@ async function runMutation(
       runId: context.runId,
       toolCallId,
       toolName,
-      operation: operationForTool(toolName),
+      operation,
       path,
       approvalMode: context.threadMode,
       toolInput,
@@ -66,35 +66,28 @@ async function runMutation(
     return {
       workspaceId: context.handle.id,
       path,
-      operation: operationForTool(toolName),
+      operation,
       status: "pending_approval" as const,
       editId: edit.id,
-      changedFiles: [{ path, operation: operationForTool(toolName) }],
+      changedFiles: [{ path, operation }],
     }
   }
 
-  try {
-    const summary = await context.editService.applyMutation(context.handle, mutation)
-    context.editService.recordApplied({
-      workspaceId: context.handle.id,
-      threadId: context.threadId,
-      runId: context.runId,
-      toolCallId,
-      toolName,
-      approvalMode: context.threadMode,
-      toolInput,
-      summary,
-    })
-    return {
-      workspaceId: context.handle.id,
-      ...summary,
-      changedFiles: summarizeChangedFiles(summary),
-    }
-  } catch (error) {
-    if (error instanceof WorkspaceError) {
-      throw error
-    }
-    throw error
+  const summary = await context.editService.applyMutation(context.handle, mutation)
+  context.editService.recordApplied({
+    workspaceId: context.handle.id,
+    threadId: context.threadId,
+    runId: context.runId,
+    toolCallId,
+    toolName,
+    approvalMode: context.threadMode,
+    toolInput,
+    summary,
+  })
+  return {
+    workspaceId: context.handle.id,
+    ...summary,
+    changedFiles: summarizeChangedFiles(summary),
   }
 }
 

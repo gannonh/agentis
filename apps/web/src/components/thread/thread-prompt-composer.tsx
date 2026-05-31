@@ -85,13 +85,21 @@ export function ThreadPromptComposer({
   onRevokeTool,
 }: ThreadPromptComposerProps) {
   const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
-  const blockedReason = !health.available
-    ? health.reason === "missing_api_key"
-      ? "Add OPENAI_API_KEY to the repo root .env to enable model execution."
-      : "Agent runtime is unavailable. Start the API with pnpm dev."
-    : null
+  let blockedReason: string | null = null
+  if (!health.available) {
+    blockedReason =
+      health.reason === "missing_api_key"
+        ? "Add OPENAI_API_KEY to the repo root .env to enable model execution."
+        : "Agent runtime is unavailable. Start the API with pnpm dev."
+  }
 
   const submitStatus: ChatStatus | undefined = submitting ? "submitted" : undefined
+  const modeLabel = mode === "plan" ? "Plan" : "Execute"
+  const executeBehaviorLabel = executeBehavior === "auto" ? "Auto" : "Ask"
+  const modeAriaLabel =
+    mode === "agent"
+      ? `Mode Execute ${executeBehavior === "auto" ? "Auto" : "Ask first"}`
+      : "Mode Plan"
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -148,18 +156,14 @@ export function ThreadPromptComposer({
                     size="sm"
                     className="h-7 gap-2 px-2.5"
                     disabled={disabled || submitting}
-                    aria-label={
-                      mode === "agent"
-                        ? `Mode Execute ${executeBehavior === "auto" ? "Auto" : "Ask first"}`
-                        : "Mode Plan"
-                    }
+                    aria-label={modeAriaLabel}
                   />
                 }
               >
                 <span className="text-muted-foreground">Mode</span>
-                <span>{mode === "plan" ? "Plan" : "Execute"}</span>
+                <span>{modeLabel}</span>
                 {mode === "agent" ? (
-                  <span className="text-muted-foreground">· {executeBehavior === "auto" ? "Auto" : "Ask"}</span>
+                  <span className="text-muted-foreground">· {executeBehaviorLabel}</span>
                 ) : null}
                 <HugeiconsIcon icon={ArrowDown01Icon} data-icon="inline-end" strokeWidth={2} />
               </DropdownMenuTrigger>

@@ -99,6 +99,35 @@ function DebugBlock({ title, value }: { title: string; value: unknown }) {
   )
 }
 
+function getNativePath(
+  input: Record<string, unknown> | null,
+  output: Record<string, unknown> | null
+): string | undefined {
+  if (typeof input?.path === "string") return input.path
+  if (typeof output?.path === "string") return output.path
+  return undefined
+}
+
+function formatNativeOutputSummary(
+  output: Record<string, unknown> | null,
+  truncated: boolean
+): string | undefined {
+  const truncationLabel = truncated ? " · truncated" : ""
+  if (Array.isArray(output?.entries)) {
+    return `${output.entries.length} entries${truncationLabel}`
+  }
+  if (Array.isArray(output?.results)) {
+    return `${output.results.length} matches${truncationLabel}`
+  }
+  if (
+    typeof output?.bytesReturned === "number" &&
+    typeof output.totalBytes === "number"
+  ) {
+    return `${output.bytesReturned}/${output.totalBytes} bytes${truncationLabel}`
+  }
+  return truncated ? "truncated" : undefined
+}
+
 function formatNativePayload(step: RunStep) {
   const payload = step.payload
   if (!payload || typeof payload !== "object" || payload.provider !== "native") {
@@ -113,25 +142,10 @@ function formatNativePayload(step: RunStep) {
         .map((file) => getRecord(file))
         .filter((file): file is Record<string, unknown> => Boolean(file))
     : []
-  const entries = Array.isArray(output?.entries) ? output.entries : undefined
-  const results = Array.isArray(output?.results) ? output.results : undefined
-  const path =
-    typeof input?.path === "string"
-      ? input.path
-      : typeof output?.path === "string"
-        ? output.path
-        : undefined
+  const path = getNativePath(input, output)
   const query = typeof input?.query === "string" ? input.query : undefined
   const truncated = output?.truncated === true
-  const outputSummary = entries
-    ? `${entries.length} entries${truncated ? " · truncated" : ""}`
-    : results
-      ? `${results.length} matches${truncated ? " · truncated" : ""}`
-      : typeof output?.bytesReturned === "number" && typeof output.totalBytes === "number"
-        ? `${output.bytesReturned}/${output.totalBytes} bytes${truncated ? " · truncated" : ""}`
-        : truncated
-          ? "truncated"
-          : undefined
+  const outputSummary = formatNativeOutputSummary(output, truncated)
 
   return {
     toolName: typeof record.toolName === "string" ? record.toolName : undefined,
