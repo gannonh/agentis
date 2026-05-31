@@ -215,7 +215,8 @@ search.
 5. Raw provider output is normalized into `SearchWebOutput`.
 6. The run executor persists the tool call and result as message parts.
 7. Native payload formatting stores bounded search evidence in the run step.
-8. The assistant summarizes the cited results in normal text.
+8. The assistant summarizes the cited results in normal text and includes
+   citations from the `searchWeb` results it used.
 9. `RunTimeline` renders the query, provider, result count, and source links.
 
 ## Error handling
@@ -250,8 +251,8 @@ Extend `RunTimeline` native formatting for web search payloads:
 - Render error code and message on failure.
 
 Thread transcript rendering can remain unchanged in V4.1. The assistant's final
-text answer should carry the user-facing synthesis, while the timeline carries
-evidence.
+text answer should carry the user-facing synthesis with citations from
+`searchWeb` results, while the timeline carries bounded source evidence.
 
 ## Implementation phases
 
@@ -326,6 +327,8 @@ evidence.
 - An agent configuration without web search permission does not expose
   `searchWeb` to the model.
 - Timeline rendering shows query, provider, result count, and source links.
+- Assistant answers that use `searchWeb` include citations from returned search
+  results.
 - Full page contents are not persisted in run-step evidence.
 - Mock runtime can demonstrate the flow without live search credentials.
 - Existing workspace read, edit, and execution native tool tests continue to
@@ -354,6 +357,8 @@ Targeted tests:
 - Native run-step payload summary for search results.
 - Run timeline rendering for query, provider, result count, source links,
   truncation, and failures.
+- Mock-runtime and provider-backed answer synthesis includes citations from
+  `searchWeb` results.
 - Agent Tools tab toggles Search using native tool permissions, while
   integrations continue using integration grants.
 - Mock-runtime run executor flow that persists a search tool call/result.
