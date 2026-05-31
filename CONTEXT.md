@@ -39,3 +39,7 @@ _Avoid_: Built-in integration, Composio tool
 **Workspace file tool**:
 A native tool that inspects, creates, edits, or executes against files in the run's workspace.
 _Avoid_: Native tool, when the narrower file/workspace meaning is intended
+
+**Web search**:
+A native tool that lets an agent search the web for current information during a workspace-scoped run.
+_Avoid_: Search, when specificity matters
