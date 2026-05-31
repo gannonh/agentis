@@ -173,7 +173,9 @@ Default permission behavior:
   includes tool configuration. The current basic single-form create flow may
   send that default directly rather than exposing the full walkthrough UI.
 - Development/debug seed agents should be initialized with `webSearch`
-  permission so fake demo data matches the new-agent default.
+  permission so fake demo data matches the new-agent default. Do not seed
+  placeholder native tool ids for mocked Tools UI entries that are not
+  implemented yet.
 
 Agent configuration snapshots should store only permitted native tool ids, for
 example `nativeToolsJson: ["webSearch"]`. Absence from the snapshot means the
