@@ -35,6 +35,21 @@ describe("config", () => {
     expect(config.composioToolkitVersions["google-drive"]).toBe("20260519_01")
   })
 
+  it("defaults production sandbox execution to the container backend", () => {
+    expect(loadConfig({ NODE_ENV: "production" }).sandboxBackend).toBe(
+      "local-container"
+    )
+    expect(loadConfig({ NODE_ENV: "development" }).sandboxBackend).toBe(
+      "local-process"
+    )
+    expect(
+      loadConfig({
+        NODE_ENV: "production",
+        AGENTIS_SANDBOX_BACKEND: "local-process",
+      }).sandboxBackend
+    ).toBe("local-process")
+  })
+
   it("applies single-toolkit version overrides by Agentis toolkit slug", () => {
     const config = loadConfig({
       COMPOSIO_TOOLKIT_VERSION_GOOGLE_DRIVE: "20260601_00",

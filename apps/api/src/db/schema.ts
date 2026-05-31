@@ -324,6 +324,40 @@ export const workspaceEdits = sqliteTable(
   ]
 )
 
+export const workspaceExecutions = sqliteTable(
+  "workspace_executions",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => threads.id, { onDelete: "cascade" }),
+    runId: text("run_id")
+      .notNull()
+      .references(() => runs.id, { onDelete: "cascade" }),
+    toolCallId: text("tool_call_id").notNull(),
+    toolName: text("tool_name").notNull(),
+    kind: text("kind").notNull(),
+    status: text("status").notNull(),
+    approvalMode: text("approval_mode").notNull(),
+    inputJson: text("input_json").notNull(),
+    resultJson: text("result_json"),
+    changedFilesJson: text("changed_files_json"),
+    createdAt: text("created_at").notNull(),
+    finishedAt: text("finished_at"),
+  },
+  (table) => [
+    index("workspace_executions_run_id_idx").on(table.runId),
+    index("workspace_executions_thread_id_idx").on(table.threadId),
+    uniqueIndex("workspace_executions_run_tool_call_unique").on(
+      table.runId,
+      table.toolCallId
+    ),
+  ]
+)
+
 export const runSteps = sqliteTable(
   "run_steps",
   {

@@ -70,6 +70,11 @@ function getPendingApproval(step: RunStep) {
     toolName:
       typeof record.toolName === "string" ? record.toolName : "workspace edit",
     path: typeof output?.path === "string" ? output.path : undefined,
+    actionType:
+      typeof record.toolName === "string" &&
+      record.toolName === "runWorkspaceCommand"
+        ? "execution"
+        : "edit",
   }
 }
 
@@ -317,7 +322,11 @@ export function ThreadDetailPage() {
                     key={step.id}
                     className="rounded-lg border border-border bg-card/80 p-3 text-sm"
                   >
-                    <p className="font-medium">Approve workspace edit?</p>
+                    <p className="font-medium">
+                      {approval.actionType === "execution"
+                        ? "Approve workspace action?"
+                        : "Approve workspace edit?"}
+                    </p>
                     <p className="text-muted-foreground mt-1">
                       {approval.toolName}
                       {approval.path ? ` · ${approval.path}` : ""}

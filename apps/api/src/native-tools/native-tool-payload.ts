@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import type {
   WorkspaceEntry,
   WorkspaceFileRead,
@@ -6,15 +7,19 @@ import type {
 import {
   MUTATING_NATIVE_WORKSPACE_TOOL_NAMES,
   NATIVE_WORKSPACE_READ_TOOL_NAMES,
+  EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES,
+  type ExecutionNativeWorkspaceToolName,
   type MutatingNativeWorkspaceToolName,
 } from "./tool-names.js"
 
 export const NATIVE_WORKSPACE_TOOL_NAMES = [
   ...NATIVE_WORKSPACE_READ_TOOL_NAMES,
   ...MUTATING_NATIVE_WORKSPACE_TOOL_NAMES,
+  ...EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES,
 ] as const
 
-export type NativeWorkspaceToolName = (typeof NATIVE_WORKSPACE_TOOL_NAMES)[number]
+export type NativeWorkspaceToolName =
+  (typeof NATIVE_WORKSPACE_TOOL_NAMES)[number]
 
 export type NativeToolRunStepPayload = {
   provider: "native"
@@ -32,14 +37,17 @@ export type NativeToolRunStepPayload = {
   }>
   approval?: {
     status: "pending" | "approved" | "denied"
-    editId: string
+    editId?: string
+    executionId?: string
   }
 }
 
 export function isNativeWorkspaceToolName(
   toolName: string
 ): toolName is NativeWorkspaceToolName {
-  return NATIVE_WORKSPACE_TOOL_NAMES.includes(toolName as NativeWorkspaceToolName)
+  return NATIVE_WORKSPACE_TOOL_NAMES.includes(
+    toolName as NativeWorkspaceToolName
+  )
 }
 
 export function isMutatingNativeWorkspaceToolName(
@@ -47,6 +55,14 @@ export function isMutatingNativeWorkspaceToolName(
 ): toolName is MutatingNativeWorkspaceToolName {
   return MUTATING_NATIVE_WORKSPACE_TOOL_NAMES.includes(
     toolName as MutatingNativeWorkspaceToolName
+  )
+}
+
+export function isExecutionNativeWorkspaceToolName(
+  toolName: string
+): toolName is ExecutionNativeWorkspaceToolName {
+  return EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES.includes(
+    toolName as ExecutionNativeWorkspaceToolName
   )
 }
 
@@ -95,15 +111,71 @@ function summarizeMutatingOutput(output: unknown) {
   }
 }
 
+function summarizeExecutionInput(input: unknown) {
+  if (!isObject(input)) return input
+  if (input.kind === "command") {
+    const command = typeof input.command === "string" ? input.command : ""
+    return {
+      kind: input.kind,
+      command: "[REDACTED]",
+      commandLength: command.length,
+      commandSha256: createHash("sha256").update(command).digest("hex"),
+      cwd: input.cwd,
+    }
+  }
+  if (input.kind === "script") {
+    const code = typeof input.code === "string" ? input.code : ""
+    return {
+      kind: input.kind,
+      language: input.language,
+      code: "[REDACTED]",
+      codeLength: code.length,
+      codeSha256: createHash("sha256").update(code).digest("hex"),
+      cwd: input.cwd,
+    }
+  }
+  return input
+}
+
+function summarizeExecutionOutput(output: unknown) {
+  if (!isObject(output)) return output
+  return {
+    workspaceId: output.workspaceId,
+    executionId: output.executionId,
+    kind: output.kind,
+    exitCode: output.exitCode,
+    durationMs: output.durationMs,
+    stdout: output.stdout,
+    stderr: output.stderr,
+    stdoutTruncated: output.stdoutTruncated,
+    stderrTruncated: output.stderrTruncated,
+    timedOut: output.timedOut,
+    aborted: output.aborted,
+    status: output.status,
+    changedFiles: output.changedFiles,
+  }
+}
+
 function inferApproval(
   output: unknown
 ): NativeToolRunStepPayload["approval"] | undefined {
-  if (!isObject(output) || typeof output.editId !== "string") return undefined
+  if (!isObject(output)) return undefined
+  const editId = typeof output.editId === "string" ? output.editId : undefined
+  const executionId =
+    typeof output.executionId === "string" ? output.executionId : undefined
+
+  const approvalId = executionId
+    ? { executionId }
+    : editId
+      ? { editId }
+      : undefined
+  if (!approvalId) return undefined
+
   if (output.status === "pending_approval") {
-    return { status: "pending", editId: output.editId }
+    return { status: "pending", ...approvalId }
   }
   if (output.status === "denied") {
-    return { status: "denied", editId: output.editId }
+    return { status: "denied", ...approvalId }
   }
   return undefined
 }
@@ -120,14 +192,20 @@ function changedFilesFromOutput(
   return [
     {
       path: output.path,
-      operation: typeof output.operation === "string" ? output.operation : "edit",
+      operation:
+        typeof output.operation === "string" ? output.operation : "edit",
       bytesWritten:
-        typeof output.bytesWritten === "number" ? output.bytesWritten : undefined,
+        typeof output.bytesWritten === "number"
+          ? output.bytesWritten
+          : undefined,
     },
   ]
 }
 
-function summarizeNativeOutput(toolName: NativeWorkspaceToolName, output: unknown) {
+function summarizeNativeOutput(
+  toolName: NativeWorkspaceToolName,
+  output: unknown
+) {
   if (toolName === "listWorkspaceFiles" && isObject(output)) {
     const entries = Array.isArray(output.entries)
       ? (output.entries as WorkspaceEntry[])
@@ -161,6 +239,10 @@ function summarizeNativeOutput(toolName: NativeWorkspaceToolName, output: unknow
     return summarizeMutatingOutput(output)
   }
 
+  if (isExecutionNativeWorkspaceToolName(toolName)) {
+    return summarizeExecutionOutput(output)
+  }
+
   return output
 }
 
@@ -184,9 +266,13 @@ export function formatNativeToolRunStepPayload(input: {
     input.output === undefined
       ? undefined
       : summarizeNativeOutput(input.toolName, input.output)
+  const toolInput = isExecutionNativeWorkspaceToolName(input.toolName)
+    ? summarizeExecutionInput(input.input)
+    : input.input
   const changedFiles =
     input.changedFiles ??
-    (isMutatingNativeWorkspaceToolName(input.toolName)
+    (isMutatingNativeWorkspaceToolName(input.toolName) ||
+    isExecutionNativeWorkspaceToolName(input.toolName)
       ? changedFilesFromOutput(output)
       : undefined)
 
@@ -195,7 +281,7 @@ export function formatNativeToolRunStepPayload(input: {
     toolCallId: input.toolCallId,
     toolName: input.toolName,
     workspaceId: input.workspaceId,
-    input: input.input,
+    input: toolInput,
     output,
     error: input.error,
     code: input.code,

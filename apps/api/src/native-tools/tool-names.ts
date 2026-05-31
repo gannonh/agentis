@@ -15,3 +15,10 @@ export const MUTATING_NATIVE_WORKSPACE_TOOL_NAMES = [
 
 export type MutatingNativeWorkspaceToolName =
   (typeof MUTATING_NATIVE_WORKSPACE_TOOL_NAMES)[number]
+
+export const EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES = [
+  "runWorkspaceCommand",
+] as const
+
+export type ExecutionNativeWorkspaceToolName =
+  (typeof EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES)[number]

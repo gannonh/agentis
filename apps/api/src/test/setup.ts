@@ -49,6 +49,13 @@ export function createTestContext() {
     workspaceWriteMaxBytes: 262_144,
     workspaceWriteDenyPrefixes: [],
     workspaceReplaceMaxCount: 100,
+    sandboxBackend: "local-process",
+    sandboxTimeoutMs: 30_000,
+    sandboxMaxStdoutBytes: 65_536,
+    sandboxMaxStderrBytes: 65_536,
+    sandboxChangedFilesLimit: 50,
+    sandboxCommandDenyPatterns: [],
+    sandboxContainerImage: "agentis-sandbox:local",
   }
   const repos = createRepositories(db, config)
 

@@ -1,3 +1,5 @@
+import { abortSandboxExecutionsForRun } from "../sandbox/execution-registry.js"
+
 const controllers = new Map<string, AbortController>()
 
 export function registerAbortController(runId: string, controller: AbortController) {
@@ -5,8 +7,9 @@ export function registerAbortController(runId: string, controller: AbortControll
 }
 
 export function abortRun(runId: string): boolean {
+  const abortedSandbox = abortSandboxExecutionsForRun(runId)
   const controller = controllers.get(runId)
-  if (!controller) return false
+  if (!controller) return abortedSandbox
   controller.abort()
   controllers.delete(runId)
   return true

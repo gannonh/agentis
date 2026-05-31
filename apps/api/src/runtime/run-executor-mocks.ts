@@ -11,6 +11,7 @@ import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payl
 import type { Repositories } from "../repositories/index.js"
 import { nowIso } from "../lib/ids.js"
 import type { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
+import type { WorkspaceExecutionService } from "../workspaces/workspace-execution-service.js"
 import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
 import type { WorkspaceHandle } from "../workspaces/workspace-service.js"
 import { composioToolNameToToolkit, formatToolStepTitle } from "./run-tool-labels.js"
@@ -21,6 +22,7 @@ export type RunExecutorMocksDeps = {
   config: AppConfig
   services: ComposioServices
   editService: WorkspaceEditService
+  executionService: WorkspaceExecutionService
 }
 
 function createTimelineDebugStep(
@@ -248,6 +250,106 @@ export async function executeMockNativeWorkspaceMutationStream(
     status: pending ? "pending" : "completed",
     title: formatToolStepTitle({ toolName, curated: false }),
     payload: stepPayload ?? undefined,
+  })
+  deps.repos.messages.updatePartsAndStatus(
+    assistantMessage.id,
+    assistantParts,
+    "completed"
+  )
+  deps.repos.runs.updateStatus(runId, pending ? "tool-calling" : "completed", {
+    finishedAt: pending ? undefined : nowIso(),
+    usage: { totalTokens: 0 },
+  })
+  createTimelineDebugStep(deps, runId, {
+    status: "completed",
+    title: "Debug: model output",
+    payload: {
+      provider: "debug",
+      kind: "model-output",
+      assistantParts,
+      usage: { totalTokens: 0 },
+    },
+  })
+  if (!pending) {
+    deps.repos.steps.create({
+      runId,
+      type: "completed",
+      status: "completed",
+      title: "Completed",
+    })
+  }
+  deps.repos.threads.touch(run.threadId)
+
+  const result = streamText({
+    model: mockTextStream(summaryText) as LanguageModel,
+    messages: toModelMessages(threadMessages),
+  })
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: toUiMessages(threadMessages),
+  })
+}
+
+export async function executeMockNativeWorkspaceExecutionStream(
+  deps: RunExecutorMocksDeps,
+  runId: string,
+  run: Run,
+  thread: Thread,
+  threadMessages: Message[],
+  workspaceHandle: WorkspaceHandle,
+  latestUserPrompt: string
+) {
+  const assistantMessage = deps.repos.messages.create({
+    threadId: run.threadId,
+    role: "assistant",
+    parts: [{ type: "text", text: "" }],
+    status: "streaming",
+  })
+
+  deps.repos.runs.updateStatus(runId, "running")
+  deps.repos.steps.create({
+    runId,
+    type: "running",
+    status: "running",
+    title: "Running",
+  })
+
+  const toolName = "runWorkspaceCommand" as const
+  const toolCallId = `mock-native-execution-${runId}`
+  const toolInput = { kind: "command" as const, command: "printf hello" }
+  const toolOutput = await deps.executionService.executeWorkspaceCommand(
+    workspaceHandle,
+    {
+      threadId: thread.id,
+      runId,
+      toolCallId,
+      approvalMode: thread.mode,
+      input: toolInput,
+    }
+  )
+  const pending = isPendingApprovalOutput(toolOutput)
+  const summaryText = pending
+    ? ""
+    : `Ran workspace command with exit code ${toolOutput.exitCode}.`
+  const assistantParts: MessagePart[] = [
+    { type: "text", text: summaryText },
+    { type: "tool-call", toolCallId, toolName, input: toolInput },
+    { type: "tool-result", toolCallId, toolName, output: toolOutput },
+  ]
+
+  deps.repos.steps.create({
+    runId,
+    type: "tool-call",
+    status: pending ? "pending" : "completed",
+    title: formatToolStepTitle({ toolName, curated: false }),
+    payload:
+      formatNativeToolRunStepPayload({
+        toolCallId,
+        toolName,
+        workspaceId: workspaceHandle.id,
+        input: toolInput,
+        output: toolOutput,
+      }) ?? undefined,
   })
   deps.repos.messages.updatePartsAndStatus(
     assistantMessage.id,

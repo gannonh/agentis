@@ -10,7 +10,7 @@ Thank you for your interest in contributing. Agentis is early-stage; we welcome 
    - `cp .env.example .env` and set `OPENAI_API_KEY` at the repo root
    - `cp apps/web/.env.example apps/web/.env` (optional web overrides)
 4. Optional: `apps/api/.env` for API-only overrides (otherwise root `.env` is used).
-5. Start dev servers: `pnpm dev` (API on `:3001`, web on `:5173`)
+5. Start dev servers: `pnpm dev` (API on `:3101`, web on `:5177`)
 
 ## Quality checks
 
@@ -50,5 +50,6 @@ Follow [DESIGN.md](DESIGN.md) for visual and interaction conventions.
 ## Data boundaries
 
 - **Thread sessions** (`/threads/new`, `/threads/:threadId`) use the API in `apps/api` and shared schemas in `packages/shared`.
-- **Other product surfaces** (Command Center, Agents, Integrations, Learning, Library) still use typed fixtures in `apps/web/src/fixtures/` until later milestones.
+- **Projects, Library artifacts, integrations, agents, and native workspace tools** are API-backed.
+- **Command Center, Learning, and parts of the agent roster/detail experience** still use typed fixtures in `apps/web/src/fixtures/` until later milestones.
 - Update fixture seed data when demo screens should reflect new product concepts outside the thread flow.

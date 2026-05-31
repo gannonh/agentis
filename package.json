@@ -11,7 +11,8 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:coverage": "turbo test:coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "smoke:sandbox-container": "pnpm --filter api smoke:sandbox-container"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
