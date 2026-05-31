@@ -166,6 +166,11 @@ demo flows can prove tool wiring without live search credentials.
 
 ## Data flow
 
+0. Before model execution, the run executor checks whether the bound agent
+   configuration permits web search and whether the configured provider is
+   available. A permitted agent with unavailable web search provider config fails
+   fast with visible run evidence instead of letting the model continue without
+   the capability.
 1. The model calls `searchWeb`.
 2. The tool validates and bounds input.
 3. `WebSearchService` selects the configured `WebSearchProvider`.
@@ -185,6 +190,12 @@ Use explicit error codes:
   by the installed SDK or current config.
 - `web_search_failed`: provider request failed, timed out, or rate-limited.
 - `web_search_normalization_failed`: provider response could not be normalized.
+
+For normal run execution, `web_search_unavailable` should be raised during
+preflight when the bound agent configuration permits web search but the provider
+is not operational. The tool/provider path should still map unavailable
+credentials and mid-run provider failures to explicit web search errors for
+direct tests, races, or degraded provider state after preflight.
 
 Malformed or oversized individual results should be omitted or truncated when
 the remaining response can still be safely normalized. The whole tool should
@@ -229,6 +240,8 @@ evidence.
   as the first permission.
 - Register `searchWeb` only when global config and the run's bound agent
   configuration permit it.
+- Add run preflight that fails permitted web search runs when provider config is
+  unavailable.
 - Generalize native tool names and payload formatting to include native tools
   that are not workspace file tools.
 - Add mock-runtime coverage that causes `searchWeb` to run for search-like
@@ -250,6 +263,8 @@ evidence.
 - Agent-level web search permission is versioned with agent configuration.
 - Missing search provider config produces a clear failed native tool step and is
   treated as a P1 operational issue.
+- A permitted web search run fails fast before model execution when provider
+  config is unavailable.
 - Timeline rendering shows query, provider, result count, and source links.
 - Full page contents are not persisted in run-step evidence.
 - Mock runtime can demonstrate the flow without live search credentials.
@@ -272,6 +287,8 @@ Targeted tests:
 - Config parsing for disabled, mock, and gateway-backed search.
 - Provider normalization from representative gateway responses.
 - Missing credential and unsupported provider error mapping.
+- Run preflight failure when the bound agent configuration permits web search
+  but provider config is unavailable.
 - Native run-step payload summary for search results.
 - Run timeline rendering for query, provider, result count, source links,
   truncation, and failures.
