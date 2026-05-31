@@ -111,6 +111,9 @@ Tool ownership and execution context are separate axes:
 - Tool execution happens within the run's workspace-scoped context.
 - Integration grants remain separate from native tool permissions; Composio tools
   are integrations, not Agentis native tools.
+- Tool permissions shape the model-visible tool list. If web search is not
+  permitted for the bound agent configuration, `searchWeb` is not registered and
+  the model is not told it exists.
 
 Recommended files:
 
@@ -171,10 +174,12 @@ search.
 ## Data flow
 
 0. Before model execution, the run executor checks whether the bound agent
-   configuration permits web search and whether the configured provider is
-   available. A permitted agent with unavailable web search provider config fails
-   fast with visible run evidence instead of letting the model continue without
-   the capability. Mock runtime resolves this check through the mock provider.
+   configuration permits web search. If not, `searchWeb` is omitted from the
+   model-visible tool list. If permitted, the run executor checks whether the
+   configured provider is available. A permitted agent with unavailable web
+   search provider config fails fast with visible run evidence instead of
+   letting the model continue without the capability. Mock runtime resolves this
+   check through the mock provider.
 1. The model calls `searchWeb`.
 2. The tool validates and bounds input.
 3. `WebSearchService` selects the configured `WebSearchProvider`.
@@ -242,8 +247,7 @@ evidence.
 - Register `searchWeb` with native runtime tools.
 - Add versioned native tool permissions to agent configuration, with web search
   as the first permission.
-- Register `searchWeb` only when global config and the run's bound agent
-  configuration permit it.
+- Register `searchWeb` only when the run's bound agent configuration permits it.
 - Add run preflight that fails permitted web search runs when provider config is
   unavailable.
 - Generalize native tool names and payload formatting to include native tools
@@ -269,6 +273,8 @@ evidence.
   treated as a P1 operational issue.
 - A permitted web search run fails fast before model execution when provider
   config is unavailable.
+- An agent configuration without web search permission does not expose
+  `searchWeb` to the model.
 - Timeline rendering shows query, provider, result count, and source links.
 - Full page contents are not persisted in run-step evidence.
 - Mock runtime can demonstrate the flow without live search credentials.
