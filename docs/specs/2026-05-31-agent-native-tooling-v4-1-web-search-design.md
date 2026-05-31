@@ -163,6 +163,14 @@ Add explicit web search config with conservative defaults:
 - `AGENTIS_WEB_SEARCH_MAX_RESULTS=5`
 - `AGENTIS_WEB_SEARCH_MAX_SNIPPET_CHARS=500`
 
+Apply hard safety caps regardless of requested input or env values:
+
+- `maxResults`: default 5, hard cap 10.
+- `snippet`: default 500 characters per result, hard cap 1,000 characters per
+  result.
+- `metadata`: bounded citation/search artifacts only.
+- Full page contents must not be fetched or persisted in V4.1.
+
 Credential configuration should follow the verified Vercel AI Gateway mechanism
 for the installed SDK. The implementation should document the required env var
 in `.env.example` once confirmed during Build.
