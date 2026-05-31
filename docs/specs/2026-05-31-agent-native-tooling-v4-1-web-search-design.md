@@ -169,7 +169,9 @@ Default permission behavior:
 Agent configuration snapshots should store only permitted native tool ids, for
 example `nativeToolsJson: ["webSearch"]`. Absence from the snapshot means the
 agent is not permitted to use that tool and the runtime callable is not
-registered. Do not store explicit false values for every known native tool.
+registered. Do not store explicit false values for every known native tool. API
+DTOs should expose this list as `nativeTools`, separate from integration
+`toolGrants`.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
 demo flows can prove tool wiring without live search credentials. When
@@ -270,7 +272,8 @@ evidence.
 - Render web search evidence in `RunTimeline`.
 - Wire the existing agent Tools tab Search card to the `webSearch` native tool
   permission. Do not build the full native tool catalog management surface in
-  V4.1.
+  V4.1. The current mocked UI target is the `Search` `ToolCard` in
+  `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
 - Add focused API and web tests.
 - Update `docs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
   depending on Build completion.
