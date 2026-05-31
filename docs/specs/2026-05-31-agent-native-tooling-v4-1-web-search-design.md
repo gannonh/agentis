@@ -168,7 +168,9 @@ binary web search permission: permitted or not permitted.
 Default permission behavior:
 
 - The built-in Agentis agent has web search as part of its basic tool set.
-- Custom agents must opt in explicitly.
+- New custom agents should default web search to permitted once the create flow
+  includes tool configuration. The current basic single-form create flow may
+  send that default directly rather than exposing the full walkthrough UI.
 - Existing custom agents should not silently gain web search permission during
   migration.
 
@@ -292,6 +294,9 @@ evidence.
   catalog management surface in V4.1. The current mocked UI target is the
   `Search` `ToolCard` in
   `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
+- If the basic agent create form is updated in this slice, default `webSearch`
+  into `nativeTools` for newly created custom agents even before the future
+  screen-by-screen create walkthrough exists.
 - Add focused API and web tests.
 - Update `docs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
   depending on Build completion.
