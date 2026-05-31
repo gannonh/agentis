@@ -127,6 +127,7 @@ Recommended files:
 - `apps/api/src/native-tools/native-tool-payload.ts`
 - `apps/api/src/runtime/run-executor.ts`
 - `apps/web/src/components/thread/run-timeline.tsx`
+- `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`
 
 The Build phase should first inspect the installed AI SDK Gateway API in this
 repo. If Vercel Gateway search tools can be registered directly while preserving
@@ -236,8 +237,10 @@ evidence.
 ### Phase 1: Contract and config
 
 - Add search input/output schemas and provider interface.
-- Add config parsing and tests for search enablement, provider selection, max
-  results, and snippet limits.
+- Add versioned native tool permission schemas, with `webSearch` as the first
+  permitted native tool id.
+- Add config parsing and tests for provider selection, max results, and snippet
+  limits.
 - Update `.env.example` with confirmed gateway credential and search settings.
 
 ### Phase 2: Provider implementation
@@ -265,6 +268,9 @@ evidence.
 ### Phase 4: Timeline and docs
 
 - Render web search evidence in `RunTimeline`.
+- Wire the existing agent Tools tab Search card to the `webSearch` native tool
+  permission. Do not build the full native tool catalog management surface in
+  V4.1.
 - Add focused API and web tests.
 - Update `docs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
   depending on Build completion.
@@ -275,6 +281,8 @@ evidence.
 - The implementation does not hardcode Agentis to OpenAI or any specific model.
 - Provider choice is behind an Agentis-owned `WebSearchProvider` boundary.
 - Agent-level web search permission is versioned with agent configuration.
+- The existing agent Tools tab can toggle the `webSearch` permission without
+  conflating it with integration grants.
 - Missing search provider config produces a clear failed native tool step and is
   treated as a P1 operational issue.
 - A permitted web search run fails fast before model execution when provider
@@ -300,7 +308,8 @@ pnpm typecheck && pnpm build && pnpm lint
 Targeted tests:
 
 - `searchWeb` input validation and limit handling.
-- Config parsing for disabled, mock, and gateway-backed search.
+- Config parsing for mock and gateway-backed search providers.
+- Agent create/update/detail schemas for versioned `webSearch` permission.
 - Provider normalization from representative gateway responses.
 - Missing credential and unsupported provider error mapping.
 - Run preflight failure when the bound agent configuration permits web search
@@ -309,6 +318,8 @@ Targeted tests:
 - Native run-step payload summary for search results.
 - Run timeline rendering for query, provider, result count, source links,
   truncation, and failures.
+- Agent Tools tab toggles Search using native tool permissions, while
+  integrations continue using integration grants.
 - Mock-runtime run executor flow that persists a search tool call/result.
 
 Manual/UAT evidence:
