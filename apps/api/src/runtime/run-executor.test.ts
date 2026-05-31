@@ -5,7 +5,11 @@ import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
 import { threads } from "../db/schema.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
-import { buildRunSystemPrompt, formatToolStepTitle } from "./run-executor.js"
+import {
+  buildRunSystemPrompt,
+  formatToolStepTitle,
+  suppressTextForPendingApproval,
+} from "./run-executor.js"
 import { eq } from "drizzle-orm"
 
 let ctx: TestContext | undefined
@@ -200,6 +204,29 @@ describe("run executor composio bridge", () => {
       ])
     )
   }, 10_000)
+
+  it("removes assistant claims while workspace mutations are pending approval", () => {
+    const parts = suppressTextForPendingApproval([
+      { type: "text", text: "The file has been created successfully." },
+      {
+        type: "tool-result",
+        toolCallId: "call_pending",
+        toolName: "createWorkspaceFile",
+        output: { status: "pending_approval", path: "todolist.md" },
+      },
+    ])
+
+    expect(messageText(parts)).toBe("")
+    expect(parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "tool-result",
+          toolName: "createWorkspaceFile",
+          output: expect.objectContaining({ status: "pending_approval" }),
+        }),
+      ])
+    )
+  })
 
   it("creates pending approval for plan-mode workspace mutations", async () => {
     const { app, context } = createMockRuntimeApp()

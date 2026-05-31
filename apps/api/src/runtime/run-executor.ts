@@ -175,6 +175,16 @@ function isPendingApprovalOutput(output: unknown) {
   return isRecord(output) && output.status === "pending_approval"
 }
 
+function hasPendingApprovalPart(parts: MessagePart[]) {
+  return parts.some(
+    (part) => part.type === "tool-result" && isPendingApprovalOutput(part.output)
+  )
+}
+
+export function suppressTextForPendingApproval(parts: MessagePart[]) {
+  return hasPendingApprovalPart(parts) ? setTextPart(parts, "") : parts
+}
+
 function zodTypeName(schema: unknown): string | undefined {
   if (!isRecord(schema)) return undefined
   const def = isRecord(schema._def) ? schema._def : null
@@ -677,6 +687,8 @@ export class RunExecutor {
       abortSignal: controller.signal,
       onChunk: async ({ chunk }) => {
         if (chunk.type === "text-delta") {
+          if (hasPendingApprovalPart(assistantParts)) return
+
           const currentText = getTextFromParts(assistantParts)
           assistantParts = setTextPart(assistantParts, currentText + chunk.text)
           this.repos.messages.updatePartsAndStatus(
@@ -741,7 +753,7 @@ export class RunExecutor {
             toolOutput: chunk.output,
           })
           this.repos.runs.updateStatus(runId, "running")
-          assistantParts = [
+          assistantParts = suppressTextForPendingApproval([
             ...assistantParts.filter(
               (part) =>
                 !(
@@ -755,7 +767,7 @@ export class RunExecutor {
               toolName: chunk.toolName,
               output: chunk.output,
             },
-          ]
+          ])
           this.repos.messages.updatePartsAndStatus(
             assistantMessage.id,
             assistantParts,
@@ -776,7 +788,7 @@ export class RunExecutor {
                 part.toolCallId === result.toolCallId
             )
           ) {
-            assistantParts = [
+            assistantParts = suppressTextForPendingApproval([
               ...assistantParts.filter(
                 (part) =>
                   !(
@@ -790,7 +802,7 @@ export class RunExecutor {
                 toolName: result.toolName,
                 output: result.output,
               },
-            ]
+            ])
           }
         }
         for (const part of stepResult.content) {
@@ -816,14 +828,14 @@ export class RunExecutor {
       },
       onFinish: async ({ totalUsage }) => {
         clearAbortController(runId)
-        const hasPendingApproval = assistantParts.some(
-          (part) => part.type === "tool-result" && isPendingApprovalOutput(part.output)
-        )
+        const hasPendingApproval = hasPendingApprovalPart(assistantParts)
         for (const stepId of toolStepIds.values()) {
           this.repos.steps.update(stepId, { status: hasPendingApproval ? "pending" : "failed" })
         }
         toolStepIds.clear()
-        if (!hasPendingApproval && !getTextFromParts(assistantParts).trim()) {
+        if (hasPendingApproval) {
+          assistantParts = suppressTextForPendingApproval(assistantParts)
+        } else if (!getTextFromParts(assistantParts).trim()) {
           const fallback = formatToolResultFallback(assistantParts)
           if (fallback) {
             assistantParts = setTextPart(assistantParts, fallback)
