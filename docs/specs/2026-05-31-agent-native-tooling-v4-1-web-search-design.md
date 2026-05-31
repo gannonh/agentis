@@ -142,12 +142,14 @@ Recommended files:
 - `apps/web/src/routes/agent-create.tsx`
 - `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`
 
-The Build phase should first inspect the installed AI SDK Gateway API in this
-repo. If Vercel Gateway search tools can be registered directly while preserving
-Agentis run-step normalization, use that path. If they cannot be invoked cleanly
-from inside the Agentis wrapper, use a small gateway-backed internal AI SDK call
-inside `WebSearchProvider.search()` and normalize its cited/search output. In
-both cases, the external Agentis contract remains `searchWeb`.
+The Build phase should inspect the installed AI SDK Gateway API in this repo,
+but default to the Agentis-owned `WebSearchProvider` wrapper. Use direct Gateway
+search tool registration only if it clearly preserves Agentis permission gating,
+preflight availability checks, bounded persistence, mock runtime behavior,
+run-step normalization, and citation evidence with less complexity. When in
+doubt, use a gateway-backed internal AI SDK call inside
+`WebSearchProvider.search()` and normalize its cited/search output. In both
+cases, the external Agentis contract remains `searchWeb`.
 
 OpenAI-native web search may be added later as a provider implementation, but it
 must not be the product boundary or the default assumption for V4.1.
