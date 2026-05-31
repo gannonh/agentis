@@ -12,6 +12,7 @@ import { createArtifactTool } from "../artifacts/artifact-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
 import { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
+import { WorkspaceExecutionService } from "../workspaces/workspace-execution-service.js"
 import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
 import { WorkspaceToolApprovalCoordinator } from "../workspaces/workspace-tool-approval.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
@@ -36,6 +37,7 @@ import {
 import { nowIso } from "../lib/ids.js"
 import {
   executeMockComposioStream,
+  executeMockNativeWorkspaceExecutionStream,
   executeMockNativeWorkspaceMutationStream,
   executeMockNativeWorkspaceStream,
 } from "./run-executor-mocks.js"
@@ -178,6 +180,7 @@ function formatToolDebugDetails(tools: ToolSet) {
 export class RunExecutor {
   private readonly contextService: ProjectContextService
   private readonly workspaceEditService: WorkspaceEditService
+  private readonly workspaceExecutionService: WorkspaceExecutionService
   private readonly workspaceApproval: WorkspaceToolApprovalCoordinator
 
   constructor(
@@ -188,10 +191,15 @@ export class RunExecutor {
   ) {
     this.contextService = new ProjectContextService(repos, config)
     this.workspaceEditService = new WorkspaceEditService(repos.workspaceEdits)
+    this.workspaceExecutionService = new WorkspaceExecutionService(
+      repos.workspaceExecutions,
+      config
+    )
     this.workspaceApproval = new WorkspaceToolApprovalCoordinator(
       repos,
       config,
-      this.workspaceEditService
+      this.workspaceEditService,
+      this.workspaceExecutionService
     )
   }
 
@@ -201,6 +209,7 @@ export class RunExecutor {
       config: this.config,
       services: this.services,
       editService: this.workspaceEditService,
+      executionService: this.workspaceExecutionService,
     }
   }
 
@@ -330,6 +339,7 @@ export class RunExecutor {
     const nativeTools = buildWorkspaceNativeTools({
       handle: workspaceHandle,
       editService: this.workspaceEditService,
+      executionService: this.workspaceExecutionService,
       threadId: run.threadId,
       runId,
       threadMode: thread.mode,
@@ -379,6 +389,23 @@ export class RunExecutor {
         agentConfigurationVersionId: run.agentConfigurationVersionId,
       },
     })
+
+    if (
+      this.config.mockRuntime &&
+      /\b(mock sandbox|run echo|run .*command|sandbox command)\b/i.test(
+        latestUserPrompt
+      )
+    ) {
+      return executeMockNativeWorkspaceExecutionStream(
+        this.mockDeps(),
+        runId,
+        run,
+        thread,
+        threadMessages,
+        workspaceHandle,
+        latestUserPrompt
+      )
+    }
 
     if (
       this.config.mockRuntime &&

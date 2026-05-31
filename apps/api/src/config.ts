@@ -36,6 +36,13 @@ export type AppConfig = {
   workspaceWriteMaxBytes: number
   workspaceWriteDenyPrefixes: string[]
   workspaceReplaceMaxCount: number
+  sandboxBackend: "local-process" | "local-container"
+  sandboxTimeoutMs: number
+  sandboxMaxStdoutBytes: number
+  sandboxMaxStderrBytes: number
+  sandboxChangedFilesLimit: number
+  sandboxCommandDenyPatterns: string[]
+  sandboxContainerImage: string
 }
 
 function parseToolkitVersions(raw: string | undefined): Record<string, string> {
@@ -127,6 +134,28 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     workspaceReplaceMaxCount: Number(
       env.AGENTIS_WORKSPACE_REPLACE_MAX_COUNT ?? 100
     ),
+    sandboxBackend:
+      env.AGENTIS_SANDBOX_BACKEND === "local-container"
+        ? "local-container"
+        : "local-process",
+    sandboxTimeoutMs: Number(env.AGENTIS_SANDBOX_TIMEOUT_MS ?? 30_000),
+    sandboxMaxStdoutBytes: Number(
+      env.AGENTIS_SANDBOX_MAX_STDOUT_BYTES ?? 65_536
+    ),
+    sandboxMaxStderrBytes: Number(
+      env.AGENTIS_SANDBOX_MAX_STDERR_BYTES ?? 65_536
+    ),
+    sandboxChangedFilesLimit: Number(
+      env.AGENTIS_SANDBOX_CHANGED_FILES_LIMIT ?? 50
+    ),
+    sandboxCommandDenyPatterns: (
+      env.AGENTIS_SANDBOX_COMMAND_DENY_PATTERNS ?? ""
+    )
+      .split(",")
+      .map((pattern) => pattern.trim())
+      .filter(Boolean),
+    sandboxContainerImage:
+      env.AGENTIS_SANDBOX_CONTAINER_IMAGE ?? "agentis-sandbox:local",
   }
 }
 

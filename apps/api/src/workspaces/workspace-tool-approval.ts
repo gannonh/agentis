@@ -11,6 +11,11 @@ import {
   WorkspaceEditService,
   type WorkspaceMutationSummary,
 } from "./workspace-edit-service.js"
+import { WorkspaceExecutionService } from "./workspace-execution-service.js"
+import {
+  buildDeniedExecutionOutput,
+  type WorkspaceExecutionToolOutput,
+} from "./workspace-execution-output.js"
 import { WorkspaceError, WorkspaceService } from "./workspace-service.js"
 import { setTextPart } from "../runtime/run-message-adapters.js"
 
@@ -18,7 +23,8 @@ export class WorkspaceToolApprovalCoordinator {
   constructor(
     private readonly repos: Repositories,
     private readonly config: AppConfig,
-    private readonly editService: WorkspaceEditService
+    private readonly editService: WorkspaceEditService,
+    private readonly executionService: WorkspaceExecutionService
   ) {}
 
   async decide(
@@ -38,29 +44,99 @@ export class WorkspaceToolApprovalCoordinator {
       thread.workspaceId
     )
 
-    const result =
-      decision === "approve"
-        ? await this.editService.approveByRunToolCall(handle, runId, toolCallId)
-        : { editId: this.editService.denyByRunToolCall(runId, toolCallId).id }
+    const pendingExecution = this.repos.workspaceExecutions.getByRunAndToolCall(
+      runId,
+      toolCallId
+    )
+    const pendingEdit = pendingExecution
+      ? null
+      : this.repos.workspaceEdits.getByRunAndToolCall(runId, toolCallId)
 
-    const edit = this.repos.workspaceEdits.getById(result.editId)
-    if (!edit) {
-      throw new WorkspaceError("workspace_edit_not_found", "Workspace edit not found.")
+    let action:
+      | NonNullable<typeof pendingExecution>
+      | NonNullable<typeof pendingEdit>
+    let output: WorkspaceMutationToolOutput | WorkspaceExecutionToolOutput
+    let toolName: string
+    let toolInput: Record<string, unknown>
+    let approval:
+      | { status: "approved" | "denied"; editId: string }
+      | { status: "approved" | "denied"; executionId: string }
+    let assistantText: string
+
+    if (pendingExecution) {
+      const result =
+        decision === "approve"
+          ? await this.executionService.approveByRunToolCall(
+              handle,
+              runId,
+              toolCallId
+            )
+          : {
+              executionId: this.executionService.denyByRunToolCall(
+                runId,
+                toolCallId
+              ).id,
+            }
+      const execution = this.repos.workspaceExecutions.getById(result.executionId)
+      if (!execution) {
+        throw new WorkspaceError(
+          "workspace_execution_not_found",
+          "Workspace execution not found."
+        )
+      }
+      action = execution
+      output =
+        decision === "approve" && "output" in result
+          ? result.output
+          : buildDeniedExecutionOutput({
+              workspaceId: handle.id,
+              executionId: result.executionId,
+              kind: execution.kind,
+            })
+      toolName = execution.toolName
+      toolInput = execution.input
+      approval = {
+        status: decision === "approve" ? "approved" : "denied",
+        executionId: execution.id,
+      }
+      assistantText =
+        decision === "approve"
+          ? "Workspace action approved and executed."
+          : "Workspace action denied. No command was run."
+    } else {
+      const result =
+        decision === "approve"
+          ? await this.editService.approveByRunToolCall(handle, runId, toolCallId)
+          : { editId: this.editService.denyByRunToolCall(runId, toolCallId).id }
+      const edit = this.repos.workspaceEdits.getById(result.editId)
+      if (!edit) {
+        throw new WorkspaceError("workspace_edit_not_found", "Workspace edit not found.")
+      }
+      action = edit
+      output =
+        decision === "approve" && "summary" in result
+          ? buildAppliedMutationOutput({
+              workspaceId: handle.id,
+              editId: result.editId,
+              summary: result.summary as WorkspaceMutationSummary,
+            })
+          : buildDeniedMutationOutput({
+              workspaceId: handle.id,
+              editId: result.editId,
+              path: edit.path,
+              operation: edit.operation,
+            })
+      toolName = edit.toolName
+      toolInput = edit.input
+      approval = {
+        status: decision === "approve" ? "approved" : "denied",
+        editId: edit.id,
+      }
+      assistantText =
+        decision === "approve"
+          ? "Workspace edit approved and applied."
+          : "Workspace edit denied. No file was changed."
     }
-
-    const output: WorkspaceMutationToolOutput =
-      decision === "approve" && "summary" in result
-        ? buildAppliedMutationOutput({
-            workspaceId: handle.id,
-            editId: result.editId,
-            summary: result.summary as WorkspaceMutationSummary,
-          })
-        : buildDeniedMutationOutput({
-            workspaceId: handle.id,
-            editId: result.editId,
-            path: edit.path,
-            operation: edit.operation,
-          })
 
     const step = this.repos.steps
       .listByRunId(runId)
@@ -74,14 +150,11 @@ export class WorkspaceToolApprovalCoordinator {
         payload:
           formatNativeToolRunStepPayload({
             toolCallId,
-            toolName: edit.toolName,
+            toolName,
             workspaceId: handle.id,
-            input: edit.input,
+            input: toolInput,
             output,
-            approval:
-              decision === "approve"
-                ? { status: "approved", editId: result.editId }
-                : { status: "denied", editId: result.editId },
+            approval,
           }) ?? undefined,
       })
     }
@@ -95,17 +168,13 @@ export class WorkspaceToolApprovalCoordinator {
       )
     )
     if (assistant) {
-      const text =
-        decision === "approve"
-          ? "Workspace edit approved and applied."
-          : "Workspace edit denied. No file was changed."
       const parts = setTextPart(
         assistant.parts.map((part) =>
           part.type === "tool-result" && part.toolCallId === toolCallId
             ? { ...part, output }
             : part
         ),
-        text
+        assistantText
       )
       this.repos.messages.updatePartsAndStatus(assistant.id, parts, "completed")
     }
@@ -119,6 +188,6 @@ export class WorkspaceToolApprovalCoordinator {
     })
     this.repos.threads.touch(run.threadId, { status: "active" })
 
-    return { edit, output }
+    return { action, output }
   }
 }

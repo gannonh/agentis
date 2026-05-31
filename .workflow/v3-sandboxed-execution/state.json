@@ -1,0 +1,31 @@
+{
+  "title": "V3 Sandboxed Execution",
+  "slug": "v3-sandboxed-execution",
+  "created_at": "2026-05-31T16:11:41+00:00",
+  "status": "in_progress",
+  "approval": {
+    "required": false,
+    "granted": true,
+    "notes": "Local implementation, verification, and atomic commits only. Ask before external/destructive actions or delegated subagents."
+  },
+  "packets": [
+    { "id": "discovery", "status": "completed" },
+    { "id": "sandbox-core", "status": "completed" },
+    { "id": "snapshot", "status": "completed" },
+    { "id": "audit-service", "status": "completed" },
+    { "id": "native-runtime", "status": "completed" },
+    { "id": "web-ui", "status": "completed" },
+    { "id": "docs-env", "status": "completed" },
+    { "id": "verification", "status": "completed" }
+  ],
+  "verification": {
+    "status": "completed",
+    "checks": [
+      "pnpm --filter api test src/sandbox/workspace-file-snapshot.test.ts src/sandbox/local-process-backend.test.ts src/workspaces/workspace-execution-service.test.ts src/native-tools/native-tool-payload.test.ts src/runtime/run-executor.test.ts",
+      "pnpm --filter web test src/components/thread/run-timeline.test.tsx src/routes/thread-detail.test.tsx",
+      "pnpm typecheck && pnpm build && pnpm lint",
+      "pnpm --filter api test",
+      "pnpm --filter web test src/routes/agent-detail.test.tsx"
+    ]
+  }
+}

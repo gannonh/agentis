@@ -6,12 +6,15 @@ import type {
 import {
   MUTATING_NATIVE_WORKSPACE_TOOL_NAMES,
   NATIVE_WORKSPACE_READ_TOOL_NAMES,
+  EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES,
+  type ExecutionNativeWorkspaceToolName,
   type MutatingNativeWorkspaceToolName,
 } from "./tool-names.js"
 
 export const NATIVE_WORKSPACE_TOOL_NAMES = [
   ...NATIVE_WORKSPACE_READ_TOOL_NAMES,
   ...MUTATING_NATIVE_WORKSPACE_TOOL_NAMES,
+  ...EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES,
 ] as const
 
 export type NativeWorkspaceToolName = (typeof NATIVE_WORKSPACE_TOOL_NAMES)[number]
@@ -32,7 +35,8 @@ export type NativeToolRunStepPayload = {
   }>
   approval?: {
     status: "pending" | "approved" | "denied"
-    editId: string
+    editId?: string
+    executionId?: string
   }
 }
 
@@ -47,6 +51,14 @@ export function isMutatingNativeWorkspaceToolName(
 ): toolName is MutatingNativeWorkspaceToolName {
   return MUTATING_NATIVE_WORKSPACE_TOOL_NAMES.includes(
     toolName as MutatingNativeWorkspaceToolName
+  )
+}
+
+export function isExecutionNativeWorkspaceToolName(
+  toolName: string
+): toolName is ExecutionNativeWorkspaceToolName {
+  return EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES.includes(
+    toolName as ExecutionNativeWorkspaceToolName
   )
 }
 
@@ -95,15 +107,63 @@ function summarizeMutatingOutput(output: unknown) {
   }
 }
 
+function summarizeExecutionInput(input: unknown) {
+  if (!isObject(input)) return input
+  if (input.kind === "command") {
+    return {
+      kind: input.kind,
+      command:
+        typeof input.command === "string" ? input.command.slice(0, 4000) : "",
+      cwd: input.cwd,
+    }
+  }
+  if (input.kind === "script") {
+    return {
+      kind: input.kind,
+      language: input.language,
+      code: typeof input.code === "string" ? input.code.slice(0, 4000) : "",
+      cwd: input.cwd,
+    }
+  }
+  return input
+}
+
+function summarizeExecutionOutput(output: unknown) {
+  if (!isObject(output)) return output
+  return {
+    workspaceId: output.workspaceId,
+    executionId: output.executionId,
+    kind: output.kind,
+    exitCode: output.exitCode,
+    durationMs: output.durationMs,
+    stdout: output.stdout,
+    stderr: output.stderr,
+    stdoutTruncated: output.stdoutTruncated,
+    stderrTruncated: output.stderrTruncated,
+    timedOut: output.timedOut,
+    aborted: output.aborted,
+    status: output.status,
+    changedFiles: output.changedFiles,
+  }
+}
+
 function inferApproval(
   output: unknown
 ): NativeToolRunStepPayload["approval"] | undefined {
-  if (!isObject(output) || typeof output.editId !== "string") return undefined
+  if (!isObject(output)) return undefined
+  const editId = typeof output.editId === "string" ? output.editId : undefined
+  const executionId =
+    typeof output.executionId === "string" ? output.executionId : undefined
+  if (!editId && !executionId) return undefined
   if (output.status === "pending_approval") {
-    return { status: "pending", editId: output.editId }
+    return executionId
+      ? { status: "pending", executionId }
+      : { status: "pending", editId: editId! }
   }
   if (output.status === "denied") {
-    return { status: "denied", editId: output.editId }
+    return executionId
+      ? { status: "denied", executionId }
+      : { status: "denied", editId: editId! }
   }
   return undefined
 }
@@ -161,6 +221,10 @@ function summarizeNativeOutput(toolName: NativeWorkspaceToolName, output: unknow
     return summarizeMutatingOutput(output)
   }
 
+  if (isExecutionNativeWorkspaceToolName(toolName)) {
+    return summarizeExecutionOutput(output)
+  }
+
   return output
 }
 
@@ -184,9 +248,13 @@ export function formatNativeToolRunStepPayload(input: {
     input.output === undefined
       ? undefined
       : summarizeNativeOutput(input.toolName, input.output)
+  const toolInput = isExecutionNativeWorkspaceToolName(input.toolName)
+    ? summarizeExecutionInput(input.input)
+    : input.input
   const changedFiles =
     input.changedFiles ??
-    (isMutatingNativeWorkspaceToolName(input.toolName)
+    (isMutatingNativeWorkspaceToolName(input.toolName) ||
+    isExecutionNativeWorkspaceToolName(input.toolName)
       ? changedFilesFromOutput(output)
       : undefined)
 
@@ -195,7 +263,7 @@ export function formatNativeToolRunStepPayload(input: {
     toolCallId: input.toolCallId,
     toolName: input.toolName,
     workspaceId: input.workspaceId,
-    input: input.input,
+    input: toolInput,
     output,
     error: input.error,
     code: input.code,

@@ -458,6 +458,48 @@ describe("run executor composio bridge", () => {
     expect(file).toContain("Created by Agentis mock runtime.")
   }, 10_000)
 
+  it("executes mock sandbox commands and persists execution evidence", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "mock sandbox run echo hello",
+        mode: "agent",
+      }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const execution = context.repos.workspaceExecutions.getByRunAndToolCall(
+      run.id,
+      `mock-native-execution-${run.id}`
+    )
+    expect(execution).toMatchObject({ status: "applied", kind: "command" })
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Native: runWorkspaceCommand",
+          status: "completed",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "runWorkspaceCommand",
+            output: expect.objectContaining({
+              executionId: execution?.id,
+              exitCode: 0,
+              stdout: expect.stringContaining("hello"),
+            }),
+          }),
+        }),
+      ])
+    )
+  }, 10_000)
+
   it("does not route substring matches like profile to native workspace tools", async () => {
     const { app, context } = createMockRuntimeApp()
     const created = await app.request("/api/threads", {

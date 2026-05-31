@@ -12,6 +12,7 @@ let threadStatus: "active" | "finished" | "failed" = "active"
 let threadAgentId: string | undefined = GENERIC_AGENTIS_AGENT_ID
 let threadAgentName: string | null | undefined = "Agentis"
 let includePendingApproval = false
+let pendingToolName = "createWorkspaceFile"
 const refresh = vi.fn()
 
 function messageText(message: { parts: Array<{ type: string; text?: string }> }) {
@@ -58,11 +59,25 @@ vi.mock("@/hooks/use-thread-session", () => ({
       payload: {
         provider: "native",
         toolCallId: "tool_call_pending",
-        toolName: "createWorkspaceFile",
+        toolName: pendingToolName,
         workspaceId: "workspace_agentis",
-        output: { path: "notes.md", operation: "create", status: "pending_approval" },
+        output:
+          pendingToolName === "runWorkspaceCommand"
+            ? {
+                executionId: "wexec_1",
+                kind: "command",
+                status: "pending_approval",
+              }
+            : {
+                path: "notes.md",
+                operation: "create",
+                status: "pending_approval",
+              },
         changedFiles: [],
-        approval: { status: "pending", editId: "wedit_1" },
+        approval:
+          pendingToolName === "runWorkspaceCommand"
+            ? { status: "pending", executionId: "wexec_1" }
+            : { status: "pending", editId: "wedit_1" },
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -136,6 +151,7 @@ describe("ThreadDetailPage create-agent action", () => {
     threadAgentId = GENERIC_AGENTIS_AGENT_ID
     threadAgentName = "Agentis"
     includePendingApproval = false
+    pendingToolName = "createWorkspaceFile"
     refresh.mockClear()
     vi.mocked(createAgentPromotionDraft).mockClear()
     vi.mocked(decideToolApproval).mockClear()
@@ -247,6 +263,20 @@ describe("ThreadDetailPage create-agent action", () => {
     expect(userIndex).toBeGreaterThanOrEqual(0)
     expect(approvalIndex).toBeGreaterThan(userIndex)
     expect(screen.queryByText(/waiting for approval/i)).not.toBeInTheDocument()
+  })
+
+  it("generalizes pending approval copy for workspace executions", () => {
+    includePendingApproval = true
+    pendingToolName = "runWorkspaceCommand"
+
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("Approve workspace action?")).toBeInTheDocument()
+    expect(screen.getByText(/runWorkspaceCommand/)).toBeInTheDocument()
   })
 
   it("keeps the create-agent action available for finished threads", () => {

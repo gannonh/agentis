@@ -168,4 +168,41 @@ describe("RunTimeline", () => {
       screen.queryByText(/This full content should stay out/)
     ).not.toBeInTheDocument()
   })
+
+  it("renders workspace execution stdout stderr duration and changed files", () => {
+    render(
+      <RunTimeline
+        run={run}
+        steps={[
+          step({
+            provider: "native",
+            toolCallId: "tool_call_1",
+            toolName: "runWorkspaceCommand",
+            workspaceId: "workspace_agentis",
+            input: { kind: "command", command: "printf hello" },
+            output: {
+              workspaceId: "workspace_agentis",
+              executionId: "wexec_1",
+              kind: "command",
+              exitCode: 0,
+              durationMs: 15,
+              stdout: "hello",
+              stderr: "",
+              stdoutTruncated: false,
+              stderrTruncated: false,
+              timedOut: false,
+              aborted: false,
+              changedFiles: [{ path: "out.txt", operation: "created" }],
+            },
+            changedFiles: [{ path: "out.txt", operation: "created" }],
+          }),
+        ]}
+      />
+    )
+
+    expect(screen.getByText(/Exit 0 · 15ms/)).toBeInTheDocument()
+    expect(screen.getByText("stdout")).toBeInTheDocument()
+    expect(screen.getByText("hello")).toBeInTheDocument()
+    expect(screen.getByText(/Changed out.txt · created/)).toBeInTheDocument()
+  })
 })

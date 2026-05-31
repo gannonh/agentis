@@ -264,12 +264,19 @@ export class WorkspaceHandle {
   readonly id: string
   readonly rootLabel: string
   private readonly filesRoot: string
+  private readonly runtimeRoot: string
   private readonly config: AppConfig
 
-  constructor(input: { workspace: Workspace; filesRoot: string; config: AppConfig }) {
+  constructor(input: {
+    workspace: Workspace
+    filesRoot: string
+    runtimeRoot: string
+    config: AppConfig
+  }) {
     this.id = input.workspace.id
     this.rootLabel = input.workspace.name
     this.filesRoot = input.filesRoot
+    this.runtimeRoot = input.runtimeRoot
     this.config = input.config
   }
 
@@ -649,6 +656,41 @@ export class WorkspaceHandle {
     }
   }
 
+  async getFilesRootRealPath(): Promise<string> {
+    return realpath(this.filesRoot)
+  }
+
+  async resolveExecutionCwd(
+    inputPath: string | undefined
+  ): Promise<{ workspacePath: string; absolutePath: string }> {
+    const workspacePath = normalizeWorkspacePath(inputPath)
+    const absolutePath = await this.resolvePath(workspacePath)
+    const targetStat = await stat(absolutePath).catch(() => null)
+    if (!targetStat) {
+      throw new WorkspaceError("sandbox_cwd_invalid", "Sandbox cwd was not found.")
+    }
+    if (!targetStat.isDirectory()) {
+      throw new WorkspaceError(
+        "sandbox_cwd_invalid",
+        "Sandbox cwd must be a directory."
+      )
+    }
+    return { workspacePath, absolutePath }
+  }
+
+  async materializeRuntimeScript(input: {
+    executionId: string
+    language: "python" | "node"
+    code: string
+  }): Promise<string> {
+    const scriptsRoot = path.join(this.runtimeRoot, "scripts")
+    await mkdir(scriptsRoot, { recursive: true })
+    const extension = input.language === "python" ? "py" : "js"
+    const scriptPath = path.join(scriptsRoot, `${input.executionId}.${extension}`)
+    await writeFile(scriptPath, input.code, { encoding: "utf8", flag: "wx" })
+    return scriptPath
+  }
+
   private async resolvePath(inputPath: string | undefined): Promise<string> {
     const workspacePath = normalizeWorkspacePath(inputPath)
     const filesRootRealPath = await realpath(this.filesRoot)
@@ -702,11 +744,17 @@ export class WorkspaceService {
       )
     }
     const filesRoot = path.join(workspaceRoot, "files")
+    const runtimeRoot = path.join(workspaceRoot, "runtime")
     await mkdir(filesRoot, { recursive: true })
     await mkdir(path.join(workspaceRoot, "artifacts"), { recursive: true })
-    await mkdir(path.join(workspaceRoot, "runtime"), { recursive: true })
+    await mkdir(runtimeRoot, { recursive: true })
 
-    return new WorkspaceHandle({ workspace, filesRoot, config: this.config })
+    return new WorkspaceHandle({
+      workspace,
+      filesRoot,
+      runtimeRoot,
+      config: this.config,
+    })
   }
 
   async resolveForThread(threadId: string): Promise<WorkspaceHandle> {

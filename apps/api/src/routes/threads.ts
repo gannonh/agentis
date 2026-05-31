@@ -248,7 +248,7 @@ export function createRunRoutes(
         c.req.param("toolCallId"),
         body.decision
       )
-      return c.json({ edit: result.edit, output: result.output })
+      return c.json({ edit: result.action, action: result.action, output: result.output })
     } catch (error) {
       const message = error instanceof Error ? error.message : "Approval failed"
       const code = error instanceof WorkspaceError ? error.code : "approval_failed"

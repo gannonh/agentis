@@ -128,6 +128,33 @@ function formatNativeOutputSummary(
   return truncated ? "truncated" : undefined
 }
 
+function formatExecutionSummary(output: Record<string, unknown> | null) {
+  if (!output || output.kind !== "command" && output.kind !== "script") {
+    return undefined
+  }
+  const exitCode =
+    typeof output.exitCode === "number" || output.exitCode === null
+      ? output.exitCode
+      : undefined
+  const durationMs =
+    typeof output.durationMs === "number" ? output.durationMs : undefined
+  if (exitCode === undefined && durationMs === undefined) return undefined
+  return [
+    exitCode === null ? "Exit -" : `Exit ${exitCode}`,
+    durationMs !== undefined ? `${durationMs}ms` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+}
+
+function formatPreview(value: unknown, truncated: unknown) {
+  if (typeof value !== "string" || !value) return undefined
+  return {
+    text: value,
+    truncated: truncated === true,
+  }
+}
+
 function formatNativePayload(step: RunStep) {
   const payload = step.payload
   if (!payload || typeof payload !== "object" || payload.provider !== "native") {
@@ -146,6 +173,11 @@ function formatNativePayload(step: RunStep) {
   const query = typeof input?.query === "string" ? input.query : undefined
   const truncated = output?.truncated === true
   const outputSummary = formatNativeOutputSummary(output, truncated)
+  const executionSummary = formatExecutionSummary(output)
+  const stdout = formatPreview(output?.stdout, output?.stdoutTruncated)
+  const stderr = formatPreview(output?.stderr, output?.stderrTruncated)
+  const timedOut = output?.timedOut === true
+  const aborted = output?.aborted === true
 
   return {
     toolName: typeof record.toolName === "string" ? record.toolName : undefined,
@@ -154,6 +186,11 @@ function formatNativePayload(step: RunStep) {
     path,
     query,
     outputSummary,
+    executionSummary,
+    stdout,
+    stderr,
+    timedOut,
+    aborted,
     changedFiles: changedFiles.map((file) => ({
       path: typeof file.path === "string" ? file.path : "unknown",
       operation: typeof file.operation === "string" ? file.operation : "edit",
@@ -265,6 +302,35 @@ export function RunTimeline({
               ) : null}
               {native?.outputSummary ? (
                 <p className="text-muted-foreground mt-1">{native.outputSummary}</p>
+              ) : null}
+              {native?.executionSummary ? (
+                <p className="text-muted-foreground mt-1">
+                  {native.executionSummary}
+                </p>
+              ) : null}
+              {native?.timedOut || native?.aborted ? (
+                <div className="mt-2 flex gap-1">
+                  {native.timedOut ? <Badge variant="outline">Timed out</Badge> : null}
+                  {native.aborted ? <Badge variant="outline">Aborted</Badge> : null}
+                </div>
+              ) : null}
+              {native?.stdout ? (
+                <div className="mt-2">
+                  <p className="text-muted-foreground font-medium">stdout</p>
+                  <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[0.68rem] text-foreground">
+                    {native.stdout.text}
+                    {native.stdout.truncated ? "\n[truncated]" : ""}
+                  </pre>
+                </div>
+              ) : null}
+              {native?.stderr ? (
+                <div className="mt-2">
+                  <p className="text-muted-foreground font-medium">stderr</p>
+                  <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[0.68rem] text-foreground">
+                    {native.stderr.text}
+                    {native.stderr.truncated ? "\n[truncated]" : ""}
+                  </pre>
+                </div>
               ) : null}
               {native?.approvalStatus ? (
                 <Badge variant="outline" className="mt-2 capitalize">

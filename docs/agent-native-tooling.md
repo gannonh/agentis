@@ -58,6 +58,8 @@ Scope:
 
 ### V3: Sandboxed execution
 
+Plan: [`.cursor/plans/V3 Sandboxed Execution-eda6664c.plan.md`](../.cursor/plans/V3%20Sandboxed%20Execution-eda6664c.plan.md)
+
 Goal: agents can run bounded commands or scripts against a workspace.
 
 Scope:
