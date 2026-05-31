@@ -172,8 +172,8 @@ Default permission behavior:
 - New custom agents should default web search to permitted once the create flow
   includes tool configuration. The current basic single-form create flow may
   send that default directly rather than exposing the full walkthrough UI.
-- Seeded or local early-development custom agents may be initialized or
-  backfilled with `webSearch` permission so demos match the new-agent default.
+- Development/debug seed agents should be initialized with `webSearch`
+  permission so fake demo data matches the new-agent default.
 
 Agent configuration snapshots should store only permitted native tool ids, for
 example `nativeToolsJson: ["webSearch"]`. Absence from the snapshot means the
