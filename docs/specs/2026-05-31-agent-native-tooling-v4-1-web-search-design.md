@@ -138,7 +138,6 @@ must not be the product boundary or the default assumption for V4.1.
 
 Add explicit web search config with conservative defaults:
 
-- `AGENTIS_WEB_SEARCH_ENABLED=0|1`
 - `AGENTIS_WEB_SEARCH_PROVIDER=vercel-gateway|mock`
 - `AGENTIS_WEB_SEARCH_BACKEND=perplexity|parallel`
 - `AGENTIS_WEB_SEARCH_MAX_RESULTS=5`
@@ -148,14 +147,16 @@ Credential configuration should follow the verified Vercel AI Gateway mechanism
 for the installed SDK. The implementation should document the required env var
 in `.env.example` once confirmed during Build.
 
-Provider selection is platform-level MVP configuration. Agent-level provider
-selection is deferred. In V4.1, an agent has a binary web search permission:
-enabled or disabled.
+Provider selection is platform-level MVP configuration, not a global enablement
+toggle. Web search is an Agentis capability; if its configured provider is
+unavailable, that is an operational fault to surface, not a normal disabled
+state. Agent-level provider selection is deferred. In V4.1, an agent has a
+binary web search permission: permitted or not permitted.
 
 Default permission behavior:
 
 - The built-in generic Agentis agent gets web search enabled when global web
-  search is enabled.
+  search provider configuration is available.
 - Custom agents must opt in explicitly.
 - Existing custom agents should not silently gain web search permission during
   migration.
@@ -179,7 +180,6 @@ demo flows can prove tool wiring without live search credentials.
 
 Use explicit error codes:
 
-- `web_search_disabled`: search is disabled by config.
 - `web_search_unavailable`: required gateway/search credentials are missing.
 - `web_search_provider_unsupported`: configured provider/backend is unsupported
   by the installed SDK or current config.
@@ -248,7 +248,8 @@ evidence.
 - The implementation does not hardcode Agentis to OpenAI or any specific model.
 - Provider choice is behind an Agentis-owned `WebSearchProvider` boundary.
 - Agent-level web search permission is versioned with agent configuration.
-- Missing or disabled search config produces a clear failed native tool step.
+- Missing search provider config produces a clear failed native tool step and is
+  treated as a P1 operational issue.
 - Timeline rendering shows query, provider, result count, and source links.
 - Full page contents are not persisted in run-step evidence.
 - Mock runtime can demonstrate the flow without live search credentials.
@@ -282,7 +283,8 @@ Manual/UAT evidence:
    `searchWeb` step appears with deterministic source links.
 2. With real gateway credentials enabled, ask for a current event and verify the
    assistant cites bounded sources from the timeline evidence.
-3. Disable search and verify the failure is visible as `web_search_disabled`.
+3. Remove or invalidate required search provider credentials and verify the
+   failure is visible as `web_search_unavailable`.
 
 ## Explicitly deferred
 

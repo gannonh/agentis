@@ -24,6 +24,10 @@ _Avoid_: Provider selection, integration connection
 The platform-level service that fulfills a tool capability when an agent is permitted to use it.
 _Avoid_: Agent tool setting, tool permission
 
+**Provider availability**:
+The operational readiness of a tool provider needed to fulfill permitted tool use.
+_Avoid_: Tool permission, enabled state
+
 **Tool**:
 A native Agentis capability that extends what an agent can do during a workspace-scoped run.
 _Avoid_: Integration, connected app
