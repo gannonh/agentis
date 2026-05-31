@@ -134,6 +134,7 @@ Recommended files:
 - `apps/api/src/native-tools/native-tool-payload.ts`
 - `apps/api/src/runtime/run-executor.ts`
 - `apps/web/src/components/thread/run-timeline.tsx`
+- `apps/web/src/routes/agent-create.tsx`
 - `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`
 
 The Build phase should first inspect the installed AI SDK Gateway API in this
@@ -295,8 +296,9 @@ evidence.
   `Search` `ToolCard` in
   `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
 - If the basic agent create form is updated in this slice, default `webSearch`
-  into `nativeTools` for newly created custom agents even before the future
-  screen-by-screen create walkthrough exists.
+  into `nativeTools` for newly created custom agents and add native tools below
+  the existing Connected apps section in `apps/web/src/routes/agent-create.tsx`,
+  even before the future screen-by-screen create walkthrough exists.
 - Add focused API and web tests.
 - Update `docs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
   depending on Build completion.
