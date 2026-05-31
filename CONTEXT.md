@@ -18,7 +18,7 @@ _Avoid_: Agent identity, agent profile
 
 **Tool permission**:
 A binary agent-level setting in agent configuration that determines whether an agent may use a tool.
-_Avoid_: Provider selection, integration connection
+_Avoid_: Disabled tool, provider selection, integration connection
 
 **Tool provider**:
 The platform-level service that fulfills a tool capability when an agent is permitted to use it.

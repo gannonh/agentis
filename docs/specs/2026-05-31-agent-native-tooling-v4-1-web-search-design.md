@@ -158,11 +158,16 @@ binary web search permission: permitted or not permitted.
 
 Default permission behavior:
 
-- The built-in generic Agentis agent gets web search enabled when global web
-  search provider configuration is available.
+- The built-in generic Agentis agent gets web search permitted when web search
+  provider configuration is available.
 - Custom agents must opt in explicitly.
 - Existing custom agents should not silently gain web search permission during
   migration.
+
+Agent configuration snapshots should store only permitted native tool ids, for
+example `nativeToolsJson: ["webSearch"]`. Absence from the snapshot means the
+agent is not permitted to use that tool and the runtime callable is not
+registered. Do not store explicit false values for every known native tool.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
 demo flows can prove tool wiring without live search credentials. When
