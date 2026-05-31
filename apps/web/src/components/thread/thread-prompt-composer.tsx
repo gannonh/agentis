@@ -1,12 +1,27 @@
-import { type ReactNode, useEffect, useRef, useState } from "react"
-import { createPortal } from "react-dom"
+import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
+  AiIdeaIcon,
+  AiSecurityIcon,
   ArrowDown01Icon,
-  Tick02Icon,
+  BulbIcon,
+  ChartEvaluationIcon,
+  ChatFeedbackIcon,
+  CheckListIcon,
+  FlashIcon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
 import {
   PromptInput,
   PromptInputBody,
@@ -25,41 +40,20 @@ import type { ChatStatus } from "ai"
 import type { IntegrationToolkit, ToolAccessGrant } from "@workspace/shared"
 import { ToolAccessPicker } from "@/components/thread/tool-access-picker"
 
-function ModeCheck({ active }: { active: boolean }) {
-  return active ? (
-    <HugeiconsIcon icon={Tick02Icon} className="mt-0.5 size-3.5" strokeWidth={2} />
-  ) : (
-    <span className="mt-0.5 size-3.5" aria-hidden="true" />
-  )
-}
-
-function MenuLabel({ children }: { children: string }) {
-  return <p className="px-2 py-1.5 text-xs text-muted-foreground">{children}</p>
-}
-
-function ModeMenuItem({
-  active,
-  children,
-  onClick,
-  disabled,
+function MenuItemText({
+  title,
+  description,
 }: {
-  active?: boolean
-  children: ReactNode
-  onClick?: () => void
-  disabled?: boolean
+  title: string
+  description: string
 }) {
   return (
-    <button
-      type="button"
-      role="menuitem"
-      disabled={disabled}
-      data-disabled={disabled ? "" : undefined}
-      className="flex min-h-7 w-full items-start gap-2 rounded-md px-2 py-1 text-left text-xs/relaxed outline-none hover:bg-foreground/10 disabled:pointer-events-none disabled:opacity-50"
-      onClick={onClick}
-    >
-      <ModeCheck active={Boolean(active)} />
-      {children}
-    </button>
+    <span className="flex min-w-0 flex-col gap-0.5">
+      <span>{title}</span>
+      <span className="text-muted-foreground text-[0.68rem] leading-snug">
+        {description}
+      </span>
+    </span>
   )
 }
 
@@ -90,9 +84,7 @@ export function ThreadPromptComposer({
   onGrantTool,
   onRevokeTool,
 }: ThreadPromptComposerProps) {
-  const [modeMenuOpen, setModeMenuOpen] = useState(false)
-  const [modeMenuPosition, setModeMenuPosition] = useState({ top: 8, right: 0 })
-  const modeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
   const blockedReason = !health.available
     ? health.reason === "missing_api_key"
       ? "Add OPENAI_API_KEY to the repo root .env to enable model execution."
@@ -100,101 +92,6 @@ export function ThreadPromptComposer({
     : null
 
   const submitStatus: ChatStatus | undefined = submitting ? "submitted" : undefined
-
-  useEffect(() => {
-    if (!modeMenuOpen) return
-
-    const updatePosition = () => {
-      const rect = modeButtonRef.current?.getBoundingClientRect()
-      if (!rect) return
-      const menuHeight = 430
-      setModeMenuPosition({
-        top: Math.max(
-          8,
-          Math.min(rect.top - menuHeight, window.innerHeight - menuHeight - 8)
-        ),
-        right: Math.max(8, window.innerWidth - rect.right),
-      })
-    }
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setModeMenuOpen(false)
-    }
-
-    updatePosition()
-    window.addEventListener("resize", updatePosition)
-    window.addEventListener("scroll", updatePosition, true)
-    window.addEventListener("keydown", closeOnEscape)
-    return () => {
-      window.removeEventListener("resize", updatePosition)
-      window.removeEventListener("scroll", updatePosition, true)
-      window.removeEventListener("keydown", closeOnEscape)
-    }
-  }, [modeMenuOpen])
-
-  const modeMenu = modeMenuOpen
-    ? createPortal(
-        <div
-          role="menu"
-          className="fixed z-50 max-h-[calc(100vh-1rem)] w-72 overflow-y-auto rounded-lg border border-border bg-popover/95 p-1 text-popover-foreground shadow-md"
-          style={{ top: modeMenuPosition.top, right: modeMenuPosition.right }}
-        >
-          <MenuLabel>MODE</MenuLabel>
-          <ModeMenuItem
-            active={mode === "plan"}
-            onClick={() => {
-              onModeChange("plan")
-              setModeMenuOpen(false)
-            }}
-          >
-            <span className="flex flex-col gap-0.5">
-              <span>Plan</span>
-              <span className="text-muted-foreground text-[0.68rem] leading-snug">
-                Think through an approach and ask before taking action.
-              </span>
-            </span>
-          </ModeMenuItem>
-          <ModeMenuItem
-            active={mode === "agent"}
-            onClick={() => {
-              onModeChange("agent")
-              setModeMenuOpen(false)
-            }}
-          >
-            <span className="flex flex-col gap-0.5">
-              <span>Execute</span>
-              <span className="text-muted-foreground text-[0.68rem] leading-snug">
-                Act immediately using the selected execute behavior.
-              </span>
-            </span>
-          </ModeMenuItem>
-          <div className="ml-7 mt-1 rounded-md border border-border/60 bg-background/40 p-1">
-            <ModeMenuItem active={mode === "agent"} disabled>
-              <span className="flex flex-col gap-0.5">
-                <span>Auto</span>
-                <span className="text-muted-foreground text-[0.68rem] leading-snug">
-                  Run everything end-to-end without stopping.
-                </span>
-              </span>
-            </ModeMenuItem>
-            <ModeMenuItem disabled>
-              <span className="flex flex-col gap-0.5">
-                <span>Ask first</span>
-                <span className="text-muted-foreground text-[0.68rem] leading-snug">
-                  Pause for approval before sensitive actions.
-                </span>
-              </span>
-            </ModeMenuItem>
-          </div>
-          <div className="-mx-1 my-1 h-px bg-border/50" />
-          <MenuLabel>ACTIONS</MenuLabel>
-          <ModeMenuItem disabled>Suggest learnings</ModeMenuItem>
-          <ModeMenuItem disabled>Build skill</ModeMenuItem>
-          <ModeMenuItem disabled>Give feedback</ModeMenuItem>
-          <ModeMenuItem disabled>Run evaluation</ModeMenuItem>
-        </div>,
-        document.body
-      )
-    : null
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -242,27 +139,108 @@ export function ThreadPromptComposer({
           </PromptInputTools>
 
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <Button
-                ref={modeButtonRef}
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                disabled={disabled || submitting}
-                aria-haspopup="menu"
-                aria-expanded={modeMenuOpen}
-                onClick={() => setModeMenuOpen((open) => !open)}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-2 px-2.5"
+                    disabled={disabled || submitting}
+                    aria-label={
+                      mode === "agent"
+                        ? `Mode Execute ${executeBehavior === "auto" ? "Auto" : "Ask first"}`
+                        : "Mode Plan"
+                    }
+                  />
+                }
               >
-                {mode === "plan" ? "Plan" : "Execute"}
-                <HugeiconsIcon
-                  icon={ArrowDown01Icon}
-                  className="size-3.5"
-                  strokeWidth={2}
-                />
-              </Button>
-              {modeMenu}
-            </div>
+                <span className="text-muted-foreground">Mode</span>
+                <span>{mode === "plan" ? "Plan" : "Execute"}</span>
+                {mode === "agent" ? (
+                  <span className="text-muted-foreground">· {executeBehavior === "auto" ? "Auto" : "Ask"}</span>
+                ) : null}
+                <HugeiconsIcon icon={ArrowDown01Icon} data-icon="inline-end" strokeWidth={2} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" sideOffset={8} className="w-72">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Mode</DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "plan"}
+                    onCheckedChange={(checked) => {
+                      if (checked) onModeChange("plan")
+                    }}
+                  >
+                    <HugeiconsIcon icon={AiIdeaIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Plan"
+                      description="Draft the approach and request approval before workspace edits."
+                    />
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "agent"}
+                    onCheckedChange={(checked) => {
+                      if (checked) onModeChange("agent")
+                    }}
+                  >
+                    <HugeiconsIcon icon={FlashIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Execute"
+                      description="Run the task using the selected execution behavior."
+                    />
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Execute behavior</DropdownMenuLabel>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "agent" && executeBehavior === "auto"}
+                    onCheckedChange={(checked) => {
+                      if (!checked) return
+                      setExecuteBehavior("auto")
+                      onModeChange("agent")
+                    }}
+                  >
+                    <HugeiconsIcon icon={FlashIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Auto"
+                      description="Apply allowed changes without stopping for each tool."
+                    />
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={mode === "agent" && executeBehavior === "ask"}
+                    disabled
+                  >
+                    <HugeiconsIcon icon={AiSecurityIcon} strokeWidth={2} aria-hidden />
+                    <MenuItemText
+                      title="Ask first"
+                      description="Approval-gated execute mode. Coming soon."
+                    />
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={BulbIcon} strokeWidth={2} aria-hidden />
+                    Suggest learnings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={CheckListIcon} strokeWidth={2} aria-hidden />
+                    Build skill
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={ChatFeedbackIcon} strokeWidth={2} aria-hidden />
+                    Give feedback
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <HugeiconsIcon icon={ChartEvaluationIcon} strokeWidth={2} aria-hidden />
+                    Run evaluation
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <span className="text-muted-foreground hidden text-xs sm:inline">
               {health.model ?? DEFAULT_OPENAI_MODEL}
             </span>

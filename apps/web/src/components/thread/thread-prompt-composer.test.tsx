@@ -48,18 +48,18 @@ describe("ThreadPromptComposer", () => {
     expect(screen.getByRole("button", { name: /execute/i })).toBeInTheDocument()
   })
 
-  it("opens a mode menu with execute submodes and disabled action placeholders", async () => {
+  it("opens a two-level shadcn mode selector with execute behavior choices", async () => {
     const user = userEvent.setup()
     renderComposer({ mode: "agent" })
 
-    await user.click(screen.getByRole("button", { name: /execute/i }))
+    await user.click(screen.getByRole("button", { name: /mode execute auto/i }))
 
-    expect(screen.getByText("MODE")).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /plan/i })).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /execute/i })).toBeInTheDocument()
-    expect(screen.getByText("Auto")).toBeInTheDocument()
-    expect(screen.getByText("Ask first")).toBeInTheDocument()
-    expect(screen.getByText("ACTIONS")).toBeInTheDocument()
+    expect(await screen.findByText("Execute behavior")).toBeInTheDocument()
+    expect(screen.getByRole("menuitemcheckbox", { name: /plandraft/i })).toHaveAttribute("aria-checked", "false")
+    expect(screen.getByRole("menuitemcheckbox", { name: /executerun/i })).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("menuitemcheckbox", { name: /autoapply/i })).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("menuitemcheckbox", { name: /ask firstapproval/i })).toHaveAttribute("aria-checked", "false")
+    expect(screen.getByText("Actions")).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: /suggest learnings/i })).toHaveAttribute("data-disabled")
     expect(screen.getByRole("menuitem", { name: /build skill/i })).toHaveAttribute("data-disabled")
     expect(screen.getByRole("menuitem", { name: /give feedback/i })).toHaveAttribute("data-disabled")
@@ -71,8 +71,8 @@ describe("ThreadPromptComposer", () => {
     const onModeChange = vi.fn()
     renderComposer({ mode: "agent", submitting: false, onModeChange })
 
-    await user.click(screen.getByRole("button", { name: /execute/i }))
-    await user.click(screen.getByRole("menuitem", { name: /^plan/i }))
+    await user.click(screen.getByRole("button", { name: /mode execute auto/i }))
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: /plandraft/i }))
 
     expect(onModeChange).toHaveBeenCalledWith("plan")
   })
