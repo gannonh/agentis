@@ -12,6 +12,14 @@ _Avoid_: Workspace-less run, global run
 A capability made available to an agent and used by that agent during workspace-scoped runs.
 _Avoid_: Workspace-scoped tool, when describing tool ownership or availability
 
+**Tool permission**:
+A binary agent-level setting that determines whether an agent may use a tool.
+_Avoid_: Provider selection, integration connection
+
+**Tool provider**:
+The platform-level service that fulfills a tool capability when an agent is permitted to use it.
+_Avoid_: Agent tool setting, tool permission
+
 **Native tool**:
 An Agentis-owned tool that runs inside Agentis rather than through an external integration provider.
 _Avoid_: Built-in integration, Composio tool
