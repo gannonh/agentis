@@ -298,7 +298,9 @@ evidence.
   `Search` `ToolCard` in
   `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`. Keep the existing
   mocked catalog cards visible, but render unimplemented mocked tools unchecked
-  and do not persist them.
+  and do not persist them. Make the Search card an accessible checkbox-backed
+  control; checked means include `webSearch` in `nativeTools`, unchecked means
+  omit it.
 - If the basic agent create form is updated in this slice, default `webSearch`
   into `nativeTools` for newly created custom agents and add native tools below
   the existing Connected apps section in `apps/web/src/routes/agent-create.tsx`,
