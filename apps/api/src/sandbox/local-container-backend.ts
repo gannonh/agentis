@@ -1,21 +1,12 @@
-import {
-  spawn,
-  spawnSync,
-  type ChildProcessWithoutNullStreams,
-} from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import path from "node:path"
 import type {
   SandboxBackend,
   SandboxExecuteInput,
   SandboxExecuteResult,
 } from "./types.js"
+import { collectProcessResult } from "./process-result.js"
 import { WorkspaceError } from "../workspaces/workspace-service.js"
-
-type StreamCapture = {
-  text: string
-  truncated: boolean
-  push(chunk: Buffer): void
-}
 
 type DockerRunArgsInput = {
   image: string
@@ -30,47 +21,16 @@ type DockerRunArgsInput = {
 const DOCKER_RUNTIME_UNAVAILABLE_MESSAGE =
   "Docker-compatible runtime is not available for local-container sandbox execution."
 
-function createStreamCapture(maxBytes: number): StreamCapture {
-  let captured = Buffer.alloc(0)
-  let truncated = false
-  return {
-    get text() {
-      return captured.toString("utf8")
-    },
-    get truncated() {
-      return truncated
-    },
-    push(chunk: Buffer) {
-      if (captured.length >= maxBytes) {
-        truncated = true
-        return
-      }
-      const remaining = maxBytes - captured.length
-      if (chunk.length > remaining) {
-        truncated = true
-      }
-      captured = Buffer.concat([captured, chunk.subarray(0, remaining)])
-    },
-  }
-}
-
-function terminateChild(child: ChildProcessWithoutNullStreams) {
-  if (child.exitCode !== null || child.killed) return
-  child.kill("SIGTERM")
-  setTimeout(() => {
-    if (child.exitCode === null && !child.killed) {
-      child.kill("SIGKILL")
-    }
-  }, 100).unref()
-}
-
-function workspaceCwd(filesRoot: string, cwd: string) {
+function workspaceCwd(filesRoot: string, cwd: string): string {
   const relativePath = path.relative(filesRoot, cwd)
   if (!relativePath) return "/workspace"
   return `/workspace/${relativePath.split(path.sep).join("/")}`
 }
 
-function scriptArgv(argv: string[] | undefined) {
+function scriptArgv(argv: string[] | undefined): {
+  command: string[]
+  scriptDirectory: string
+} {
   const [binary, scriptPath, ...rest] = argv ?? []
   if (!binary || !scriptPath) {
     throw new WorkspaceError(
@@ -127,7 +87,12 @@ export function buildDockerRunArgs(input: DockerRunArgsInput): string[] {
     args.push("--env", `${key}=${value}`)
   }
 
-  args.push("-w", workspaceCwd(input.filesRoot, input.cwd), input.image, ...command)
+  args.push(
+    "-w",
+    workspaceCwd(input.filesRoot, input.cwd),
+    input.image,
+    ...command
+  )
   return args
 }
 
@@ -138,9 +103,13 @@ export class LocalContainerSandboxBackend implements SandboxBackend {
     input: SandboxExecuteInput,
     signal: AbortSignal
   ): Promise<SandboxExecuteResult> {
-    const docker = spawnSync("docker", ["info", "--format", "{{.ServerVersion}}"], {
-      encoding: "utf8",
-    })
+    const docker = spawnSync(
+      "docker",
+      ["info", "--format", "{{.ServerVersion}}"],
+      {
+        encoding: "utf8",
+      }
+    )
     if (docker.error || docker.status !== 0) {
       throw new WorkspaceError(
         "sandbox_backend_unavailable",
@@ -153,61 +122,19 @@ export class LocalContainerSandboxBackend implements SandboxBackend {
     }
 
     const startedAt = Date.now()
-    const stdout = createStreamCapture(input.maxStdoutBytes)
-    const stderr = createStreamCapture(input.maxStderrBytes)
-    let timedOut = false
-    let aborted = signal.aborted
-
-    return new Promise((resolve, reject) => {
-      const child = spawn(
-        "docker",
-        buildDockerRunArgs({ ...input, image: this.image }),
-        {
-          cwd: input.filesRoot,
-          env: {
-            ...process.env,
-            PATH: process.env.PATH ?? "",
-          },
-          shell: false,
-        }
-      )
-
-      const timeout = setTimeout(() => {
-        timedOut = true
-        terminateChild(child)
-      }, input.timeoutMs)
-
-      const abort = () => {
-        aborted = true
-        terminateChild(child)
+    const child = spawn(
+      "docker",
+      buildDockerRunArgs({ ...input, image: this.image }),
+      {
+        cwd: input.filesRoot,
+        env: {
+          ...process.env,
+          PATH: process.env.PATH ?? "",
+        },
+        shell: false,
       }
-      signal.addEventListener("abort", abort, { once: true })
+    )
 
-      child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk))
-      child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk))
-      child.on("error", (error) => {
-        clearTimeout(timeout)
-        signal.removeEventListener("abort", abort)
-        reject(error)
-      })
-      child.on("close", (code) => {
-        clearTimeout(timeout)
-        signal.removeEventListener("abort", abort)
-        resolve({
-          exitCode: timedOut || aborted ? null : code,
-          stdout: stdout.text,
-          stderr: stderr.text,
-          stdoutTruncated: stdout.truncated,
-          stderrTruncated: stderr.truncated,
-          durationMs: Date.now() - startedAt,
-          timedOut,
-          aborted,
-        })
-      })
-
-      if (signal.aborted) {
-        abort()
-      }
-    })
+    return collectProcessResult(child, input, signal, startedAt)
   }
 }

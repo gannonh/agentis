@@ -28,7 +28,11 @@ export type WorkspaceExecutionRecord = {
   finishedAt?: string
 }
 
-function parseJsonObject(value: string | null): Record<string, unknown> | undefined {
+type ChangedFileRecord = WorkspaceExecutionRecord["changedFiles"][number]
+
+function parseJsonObject(
+  value: string | null
+): Record<string, unknown> | undefined {
   if (!value) return undefined
   const parsed = JSON.parse(value) as unknown
   return typeof parsed === "object" && parsed !== null
@@ -36,10 +40,28 @@ function parseJsonObject(value: string | null): Record<string, unknown> | undefi
     : undefined
 }
 
-function parseChangedFiles(value: string | null) {
-  return value
-    ? (JSON.parse(value) as Array<{ path: string; operation: string }>)
-    : []
+function parseChangedFiles(value: string | null): ChangedFileRecord[] {
+  return value ? (JSON.parse(value) as ChangedFileRecord[]) : []
+}
+
+function stringifyJsonObject(
+  value: Record<string, unknown> | undefined
+): string | null {
+  return value === undefined ? null : JSON.stringify(value)
+}
+
+function stringifyChangedFiles(
+  files: ChangedFileRecord[] | undefined
+): string | null {
+  return files && files.length > 0 ? JSON.stringify(files) : null
+}
+
+function finishedAtForStatus(
+  status: WorkspaceExecutionStatus | undefined,
+  existingFinishedAt?: string
+): string | null {
+  if (status && status !== "pending") return nowIso()
+  return existingFinishedAt ?? null
 }
 
 function mapRow(
@@ -77,7 +99,7 @@ export class WorkspaceExecutionRepository {
     approvalMode: ThreadMode
     input: Record<string, unknown>
     result?: Record<string, unknown>
-    changedFiles?: Array<{ path: string; operation: string }>
+    changedFiles?: ChangedFileRecord[]
   }): WorkspaceExecutionRecord {
     const now = nowIso()
     const row = {
@@ -91,10 +113,8 @@ export class WorkspaceExecutionRepository {
       status: input.status,
       approvalMode: input.approvalMode,
       inputJson: JSON.stringify(input.input),
-      resultJson: input.result ? JSON.stringify(input.result) : null,
-      changedFilesJson: input.changedFiles
-        ? JSON.stringify(input.changedFiles)
-        : null,
+      resultJson: stringifyJsonObject(input.result),
+      changedFilesJson: stringifyChangedFiles(input.changedFiles),
       createdAt: now,
       finishedAt: input.status === "pending" ? null : now,
     }
@@ -147,34 +167,23 @@ export class WorkspaceExecutionRepository {
     patch: {
       status?: WorkspaceExecutionStatus
       result?: Record<string, unknown>
-      changedFiles?: Array<{ path: string; operation: string }>
+      changedFiles?: ChangedFileRecord[]
       finishedAt?: string
     }
   ): WorkspaceExecutionRecord | null {
     const existing = this.getById(id)
     if (!existing) return null
     const finishedAt =
-      patch.finishedAt ??
-      (patch.status && patch.status !== "pending"
-        ? nowIso()
-        : existing.finishedAt ?? null)
+      patch.finishedAt ?? finishedAtForStatus(patch.status, existing.finishedAt)
+    const result = patch.result ?? existing.result
+    const changedFiles = patch.changedFiles ?? existing.changedFiles
 
     this.db
       .update(workspaceExecutions)
       .set({
         status: patch.status ?? existing.status,
-        resultJson:
-          patch.result !== undefined
-            ? JSON.stringify(patch.result)
-            : existing.result
-              ? JSON.stringify(existing.result)
-              : null,
-        changedFilesJson:
-          patch.changedFiles !== undefined
-            ? JSON.stringify(patch.changedFiles)
-            : existing.changedFiles.length
-              ? JSON.stringify(existing.changedFiles)
-              : null,
+        resultJson: stringifyJsonObject(result),
+        changedFilesJson: stringifyChangedFiles(changedFiles),
         finishedAt,
       })
       .where(eq(workspaceExecutions.id, id))
@@ -190,7 +199,10 @@ export class WorkspaceExecutionRepository {
       .update(workspaceExecutions)
       .set({ status })
       .where(
-        and(eq(workspaceExecutions.id, id), eq(workspaceExecutions.status, "pending"))
+        and(
+          eq(workspaceExecutions.id, id),
+          eq(workspaceExecutions.status, "pending")
+        )
       )
       .returning()
       .get()

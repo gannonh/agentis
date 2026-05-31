@@ -17,10 +17,7 @@ import type {
   WorkspaceExecutionRecord,
   WorkspaceExecutionRepository,
 } from "../repositories/workspace-execution-repository.js"
-import {
-  WorkspaceError,
-  type WorkspaceHandle,
-} from "./workspace-service.js"
+import { WorkspaceError, type WorkspaceHandle } from "./workspace-service.js"
 import {
   buildAppliedExecutionOutput,
   buildDeniedExecutionOutput,
@@ -29,7 +26,10 @@ import {
 } from "./workspace-execution-output.js"
 
 const TOOL_NAME = "runWorkspaceCommand"
-function sanitizeInput(input: RunWorkspaceCommandInput): Record<string, unknown> {
+
+function sanitizeInput(
+  input: RunWorkspaceCommandInput
+): Record<string, unknown> {
   if (input.kind === "command") {
     return {
       kind: input.kind,
@@ -45,7 +45,9 @@ function sanitizeInput(input: RunWorkspaceCommandInput): Record<string, unknown>
   }
 }
 
-function outputRecord(output: WorkspaceExecutionToolOutput) {
+function outputRecord(
+  output: WorkspaceExecutionToolOutput
+): Record<string, unknown> {
   return {
     exitCode: output.exitCode,
     durationMs: output.durationMs,
@@ -57,6 +59,14 @@ function outputRecord(output: WorkspaceExecutionToolOutput) {
     aborted: output.aborted,
     status: output.status,
   }
+}
+
+function statusForOutput(
+  output: WorkspaceExecutionToolOutput
+): WorkspaceExecutionRecord["status"] {
+  if (output.aborted) return "aborted"
+  if (output.timedOut) return "failed"
+  return "applied"
 }
 
 export class WorkspaceExecutionService {
@@ -72,7 +82,7 @@ export class WorkspaceExecutionService {
     toolCallId: string
     approvalMode: ThreadMode
     toolInput: RunWorkspaceCommandInput
-  }) {
+  }): WorkspaceExecutionRecord {
     return this.executions.create({
       workspaceId: input.workspaceId,
       threadId: input.threadId,
@@ -206,7 +216,12 @@ export class WorkspaceExecutionService {
     toolInput: RunWorkspaceCommandInput
   ): Promise<WorkspaceExecutionToolOutput> {
     try {
-      const result = await this.runSandbox(handle, execution.id, execution.runId, toolInput)
+      const result = await this.runSandbox(
+        handle,
+        execution.id,
+        execution.runId,
+        toolInput
+      )
       const output = buildAppliedExecutionOutput({
         workspaceId: handle.id,
         executionId: execution.id,
@@ -215,7 +230,7 @@ export class WorkspaceExecutionService {
         changedFiles: result.changedFiles,
       })
       this.executions.update(execution.id, {
-        status: output.aborted ? "aborted" : output.timedOut ? "failed" : "applied",
+        status: statusForOutput(output),
         result: outputRecord(output),
         changedFiles: output.changedFiles,
       })
@@ -225,7 +240,10 @@ export class WorkspaceExecutionService {
         status: "failed",
         result: {
           status: "failed",
-          error: error instanceof Error ? error.message : "Workspace execution failed.",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Workspace execution failed.",
         },
         changedFiles: [],
       })
@@ -290,7 +308,7 @@ export class WorkspaceExecutionService {
     handle: WorkspaceHandle,
     executionId: string,
     input: RunWorkspaceCommandInput
-  ) {
+  ): Promise<string[] | undefined> {
     if (input.kind !== "script") return undefined
     const scriptPath = await handle.materializeRuntimeScript({
       executionId,
