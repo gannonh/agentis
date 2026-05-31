@@ -51,6 +51,7 @@ Implement one user-facing native tool permission:
 
 ### Web search
 
+Native tool permission id: `webSearch`.
 Runtime tool name: `searchWeb`.
 
 Input:
