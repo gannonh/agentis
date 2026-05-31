@@ -175,7 +175,9 @@ DTOs should expose this list as `nativeTools`, separate from integration
 responses, and agent configuration version summaries so current editable state
 and historical run-bound configuration are both visible. A `nativeTools`-only
 agent edit should create a new agent configuration version because it changes
-the model-visible tool list.
+the model-visible tool list. Runs should read native tool permissions directly
+from their bound agent configuration version; do not copy native tool
+permissions into thread-level grants in V4.1.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
 demo flows can prove tool wiring without live search credentials. When
