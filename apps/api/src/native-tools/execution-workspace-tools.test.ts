@@ -16,5 +16,10 @@ describe("runWorkspaceCommandInputSchema", () => {
         }),
       })
     )
+    expect(jsonSchema).not.toHaveProperty("oneOf")
+    expect(jsonSchema).not.toHaveProperty("anyOf")
+    expect(jsonSchema).not.toHaveProperty("allOf")
+    expect(jsonSchema).not.toHaveProperty("enum")
+    expect(jsonSchema).not.toHaveProperty("not")
   })
 })

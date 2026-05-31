@@ -52,16 +52,6 @@ const runWorkspaceCommandJsonSchema: JSONSchema7 = {
     },
   },
   required: ["kind"],
-  anyOf: [
-    {
-      properties: { kind: { const: "command" } },
-      required: ["kind", "command"],
-    },
-    {
-      properties: { kind: { const: "script" } },
-      required: ["kind", "language", "code"],
-    },
-  ],
 }
 
 export const runWorkspaceCommandInputSchema =
