@@ -69,6 +69,10 @@ Scope:
 - Abort, timeout, stdout/stderr limits, and exit-code capture.
 - Changed-file detection after execution.
 - Container or process backend for local development.
+- `AGENTIS_SANDBOX_BACKEND=local-container` runs through the standard `docker`
+  CLI/socket against a Docker-compatible runtime. Docker Desktop and OrbStack are
+  compatible local examples; ArcBox is future-watch/experimental only and is not
+  currently supported.
 
 ### V4: Hyperagent capability parity expansion
 
@@ -446,6 +450,14 @@ Acceptance criteria:
 - Output is bounded and persisted safely.
 - Exit code, duration, stdout, and stderr appear in run steps.
 - Destructive commands require approval or are blocked by policy.
+- The local container backend builds from `apps/api/sandbox/Dockerfile`, mounts
+  workspace `files/` at `/workspace`, mounts generated runtime scripts read-only
+  at `/runtime-scripts`, disables networking, drops Linux capabilities, prevents
+  privilege escalation, uses a read-only root filesystem, and applies CPU,
+  memory, PID, and `/tmp` tmpfs limits.
+- Run `pnpm smoke:sandbox-container` to build the local sandbox image and verify
+  command execution, Python and Node scripts, persisted `/workspace` writes,
+  timeout handling, and the active Docker context.
 
 ### 6. UI rendering for native tools
 
