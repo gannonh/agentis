@@ -2,10 +2,12 @@
 
 ## Goal
 
-Add the first V4 capability parity slice by giving Agentis agents a native
-`searchWeb` research tool. The tool should let an agent retrieve current web
-information with cited, bounded source evidence while keeping Agentis independent
-from any specific frontier model or model provider.
+Add the first V4 capability parity slice by giving Agentis agents the native
+web search tool. The runtime callable tool is `searchWeb`; the product term is
+"web search" even when compact UI surfaces label it "Search". The tool should
+let an agent retrieve current web information with cited, bounded source
+evidence while keeping Agentis independent from any specific frontier model or
+model provider.
 
 V4.1 is a single-tool epic/PR. It proves the research-tool category without
 adding browser automation, Exa deep research, persistent research datasets,
@@ -37,15 +39,20 @@ V1 through V3 already provide the native tool path needed for this slice:
 - Mock-runtime branches exist for local/E2E coverage without live provider
   dependencies.
 
-The current native payload type is workspace-centered and requires
-`workspaceId`. V4.1 should generalize native payload formatting enough to support
-non-workspace native tools without weakening the existing workspace evidence.
+The current native payload type is workspace-file-tool-centered and requires
+`workspaceId`. All Agentis runs are workspace-scoped, but tools are scoped to
+agents. V4.1 should generalize native payload formatting enough to support
+native tools that are not workspace file tools without weakening the existing
+workspace evidence.
 
 ## Product scope
 
-Implement one user-facing native tool:
+Implement one user-facing native tool permission:
 
-### `searchWeb`
+### Web search
+
+Native tool permission id: `webSearch`.
+Runtime tool name: `searchWeb`.
 
 Input:
 
@@ -84,6 +91,11 @@ The persisted run-step summary should include the query, provider, result count,
 bounded source list, truncation flag, and error code when applicable. It should
 not persist full page contents or unbounded excerpts.
 
+If the selected Gateway/search path supplies structured citation annotations or
+provider-native citation artifacts, preserve them in bounded normalized metadata
+where useful. Keep `results[]` as the stable Agentis-owned contract so the UI,
+repository, and tests do not depend on provider-specific citation fields.
+
 ## Architecture
 
 V4.1 should use a provider-neutral boundary:
@@ -99,6 +111,23 @@ Agentis owns the `searchWeb` input/output schema and the timeline payload shape.
 Provider-specific response details are normalized before the model, repository,
 or web UI depends on them.
 
+Tool ownership and execution context are separate axes:
+
+- Tool permissions are agent-scoped and versioned with agent configuration.
+- Tool execution happens within the run's workspace-scoped context.
+- Integration grants remain separate from native tool permissions; Composio tools
+  are integrations, not Agentis native tools.
+- Tool permissions shape the model-visible tool list. If web search is not
+  permitted for the bound agent configuration, `searchWeb` is not registered and
+  the model is not told it exists.
+- The built-in Agentis agent is platform-owned, cannot be user-edited, and has
+  access to all basic native tools, including web search.
+- The built-in Agentis agent does not have a landing page or Tools tab; custom
+  agent detail pages own the editable Tools UI.
+- For V4.1, "basic native tools" means the already implemented built-in Agentis
+  runtime tools plus web search. It does not mean every mocked entry in the
+  Tools tab catalog is implemented or model-visible.
+
 Recommended files:
 
 - `apps/api/src/native-tools/web-search-tools.ts`
@@ -110,13 +139,17 @@ Recommended files:
 - `apps/api/src/native-tools/native-tool-payload.ts`
 - `apps/api/src/runtime/run-executor.ts`
 - `apps/web/src/components/thread/run-timeline.tsx`
+- `apps/web/src/routes/agent-create.tsx`
+- `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`
 
-The Build phase should first inspect the installed AI SDK Gateway API in this
-repo. If Vercel Gateway search tools can be registered directly while preserving
-Agentis run-step normalization, use that path. If they cannot be invoked cleanly
-from inside the Agentis wrapper, use a small gateway-backed internal AI SDK call
-inside `WebSearchProvider.search()` and normalize its cited/search output. In
-both cases, the external Agentis contract remains `searchWeb`.
+The Build phase should inspect the installed AI SDK Gateway API in this repo,
+but default to the Agentis-owned `WebSearchProvider` wrapper. Use direct Gateway
+search tool registration only if it clearly preserves Agentis permission gating,
+preflight availability checks, bounded persistence, mock runtime behavior,
+run-step normalization, and citation evidence with less complexity. When in
+doubt, use a gateway-backed internal AI SDK call inside
+`WebSearchProvider.search()` and normalize its cited/search output. In both
+cases, the external Agentis contract remains `searchWeb`.
 
 OpenAI-native web search may be added later as a provider implementation, but it
 must not be the product boundary or the default assumption for V4.1.
@@ -125,21 +158,71 @@ must not be the product boundary or the default assumption for V4.1.
 
 Add explicit web search config with conservative defaults:
 
-- `AGENTIS_WEB_SEARCH_ENABLED=0|1`
 - `AGENTIS_WEB_SEARCH_PROVIDER=vercel-gateway|mock`
 - `AGENTIS_WEB_SEARCH_BACKEND=perplexity|parallel`
 - `AGENTIS_WEB_SEARCH_MAX_RESULTS=5`
 - `AGENTIS_WEB_SEARCH_MAX_SNIPPET_CHARS=500`
 
+Apply hard safety caps regardless of requested input or env values:
+
+- `maxResults`: default 5, hard cap 10.
+- `snippet`: default 500 characters per result, hard cap 1,000 characters per
+  result.
+- `metadata`: bounded citation/search artifacts only.
+- Full page contents must not be fetched or persisted in V4.1.
+
 Credential configuration should follow the verified Vercel AI Gateway mechanism
 for the installed SDK. The implementation should document the required env var
 in `.env.example` once confirmed during Build.
 
+Provider selection is platform-level MVP configuration, not a global enablement
+toggle. Web search is an Agentis capability; if its configured provider is
+unavailable, that is an operational fault to surface, not a normal disabled
+state. Agent-level provider selection is deferred. In V4.1, an agent has a
+binary web search permission: permitted or not permitted.
+
+Default permission behavior:
+
+- The built-in Agentis agent has web search as part of its basic tool set.
+- New custom agents should default web search to permitted once the create flow
+  includes tool configuration. The current basic single-form create flow may
+  send that default directly rather than exposing the full walkthrough UI.
+- Development/debug seed agents should be initialized with `webSearch`
+  permission so fake demo data matches the new-agent default. Do not seed
+  placeholder native tool ids for mocked Tools UI entries that are not
+  implemented yet.
+
+Agent configuration snapshots should store only permitted native tool ids, for
+example `nativeToolsJson: ["webSearch"]`. Absence from the snapshot means the
+agent is not permitted to use that tool and the runtime callable is not
+registered. Do not store explicit false values for every known native tool. API
+DTOs should expose this list as `nativeTools`, separate from integration
+`toolGrants`. Add `nativeTools` to agent create/update inputs, agent detail
+responses, and agent configuration version summaries so current editable state
+and historical run-bound configuration are both visible. A `nativeTools`-only
+custom agent edit should create a new agent configuration version because it
+changes the model-visible tool list. Custom-agent runs should read native tool
+permissions directly from their bound agent configuration version; do not copy
+native tool permissions into thread-level grants in V4.1. Built-in Agentis runs
+should use the platform-owned basic tool set instead of editable `nativeTools`
+state.
+
 Mock runtime should use the mock provider automatically so unit, E2E, and local
-demo flows can prove tool wiring without live search credentials.
+demo flows can prove tool wiring without live search credentials. When
+`AGENTIS_MOCK_RUNTIME=1`, web search provider availability resolves to the mock
+provider regardless of real gateway credentials. In non-mock runtime, missing
+provider credentials is a preflight P1 failure for agents permitted to use web
+search.
 
 ## Data flow
 
+0. Before model execution, the run executor checks whether the bound agent
+   configuration permits web search. If not, `searchWeb` is omitted from the
+   model-visible tool list. If permitted, the run executor checks whether the
+   configured provider is available. A permitted agent with unavailable web
+   search provider config fails fast with visible run evidence instead of
+   letting the model continue without the capability. Mock runtime resolves this
+   check through the mock provider.
 1. The model calls `searchWeb`.
 2. The tool validates and bounds input.
 3. `WebSearchService` selects the configured `WebSearchProvider`.
@@ -147,19 +230,32 @@ demo flows can prove tool wiring without live search credentials.
 5. Raw provider output is normalized into `SearchWebOutput`.
 6. The run executor persists the tool call and result as message parts.
 7. Native payload formatting stores bounded search evidence in the run step.
-8. The assistant summarizes the cited results in normal text.
+8. The assistant summarizes the cited results in normal text and includes
+   citations from the `searchWeb` results it used.
 9. `RunTimeline` renders the query, provider, result count, and source links.
 
 ## Error handling
 
 Use explicit error codes:
 
-- `web_search_disabled`: search is disabled by config.
 - `web_search_unavailable`: required gateway/search credentials are missing.
 - `web_search_provider_unsupported`: configured provider/backend is unsupported
   by the installed SDK or current config.
 - `web_search_failed`: provider request failed, timed out, or rate-limited.
 - `web_search_normalization_failed`: provider response could not be normalized.
+
+For normal run execution, `web_search_unavailable` should be raised during
+preflight when the bound agent configuration permits web search but the provider
+is not operational. The tool/provider path should still map unavailable
+credentials and mid-run provider failures to explicit web search errors for
+direct tests, races, or degraded provider state after preflight.
+
+Preflight provider unavailability should fail the run before model execution.
+If `searchWeb` is called and the provider request fails during tool execution,
+the native tool step should fail with an explicit web search error code, and the
+model may still produce a final answer explaining that web search failed. The
+overall run should fail only when preflight fails or the model cannot produce a
+final response after the tool failure.
 
 Malformed or oversized individual results should be omitted or truncated when
 the remaining response can still be safely normalized. The whole tool should
@@ -177,16 +273,28 @@ Extend `RunTimeline` native formatting for web search payloads:
 - Render error code and message on failure.
 
 Thread transcript rendering can remain unchanged in V4.1. The assistant's final
-text answer should carry the user-facing synthesis, while the timeline carries
-evidence.
+text answer should carry the user-facing synthesis with citations from
+`searchWeb` results, while the timeline carries bounded source evidence.
+
+Citation formatting should prefer deterministic inline citations with consistent
+formatting derived from the `searchWeb` tool result. During Build, inspect
+whether the selected AI SDK/Gateway search path provides a stronger native
+citation UI or structured citation output. If it does, preserve that path as
+long as citations remain visible in the assistant answer and testable from
+normalized tool output. Avoid spending V4.1 effort on a custom citation renderer
+that is worse than provider/tool-native citation behavior.
 
 ## Implementation phases
 
 ### Phase 1: Contract and config
 
 - Add search input/output schemas and provider interface.
-- Add config parsing and tests for search enablement, provider selection, max
-  results, and snippet limits.
+- Add versioned native tool permission schemas, with `webSearch` as the first
+  permitted native tool id.
+- Add `nativeTools` to agent create/update/detail DTOs and configuration version
+  summaries while leaving `toolGrants` integration-specific.
+- Add config parsing and tests for provider selection, max results, and snippet
+  limits.
 - Update `.env.example` with confirmed gateway credential and search settings.
 
 ### Phase 2: Provider implementation
@@ -200,8 +308,14 @@ evidence.
 ### Phase 3: Runtime and persistence
 
 - Register `searchWeb` with native runtime tools.
-- Generalize native tool names and payload formatting to include non-workspace
-  native tools.
+- Add versioned native tool permissions to agent configuration, with web search
+  as the first permission.
+- Register `searchWeb` only when the run is for the built-in Agentis agent or
+  the run's bound custom-agent configuration permits it.
+- Add run preflight that fails permitted web search runs when provider config is
+  unavailable.
+- Generalize native tool names and payload formatting to include native tools
+  that are not workspace file tools.
 - Add mock-runtime coverage that causes `searchWeb` to run for search-like
   prompts.
 - Preserve existing workspace tool behavior.
@@ -209,6 +323,19 @@ evidence.
 ### Phase 4: Timeline and docs
 
 - Render web search evidence in `RunTimeline`.
+- Wire the existing agent Tools tab Search card to the `webSearch` native tool
+  permission for custom agent detail pages. Do not build the full native tool
+  catalog management surface in V4.1. The current mocked UI target is the
+  `Search` `ToolCard` in
+  `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`. Keep the existing
+  mocked catalog cards visible, but render unimplemented mocked tools unchecked
+  and do not persist them. Make the Search card an accessible checkbox-backed
+  control for the human configuring the custom agent; checked means include
+  `webSearch` in `nativeTools`, unchecked means omit it.
+- If the basic agent create form is updated in this slice, default `webSearch`
+  into `nativeTools` for newly created custom agents and add native tools below
+  the existing Connected apps section in `apps/web/src/routes/agent-create.tsx`,
+  even before the future screen-by-screen create walkthrough exists.
 - Add focused API and web tests.
 - Update `docs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
   depending on Build completion.
@@ -218,8 +345,22 @@ evidence.
 - A model run can call `searchWeb` and persist bounded cited web search evidence.
 - The implementation does not hardcode Agentis to OpenAI or any specific model.
 - Provider choice is behind an Agentis-owned `WebSearchProvider` boundary.
-- Missing or disabled search config produces a clear failed native tool step.
+- Agent-level web search permission is versioned with agent configuration.
+- The built-in Agentis agent exposes web search as a basic tool without user
+  configuration.
+- The existing agent Tools tab can toggle the `webSearch` permission without
+  conflating it with integration grants.
+- Missing search provider config produces a clear failed native tool step and is
+  treated as a P1 operational issue.
+- A permitted web search run fails fast before model execution when provider
+  config is unavailable.
+- Mid-run web search provider failures create failed native tool evidence and
+  allow the model to recover when possible.
+- An agent configuration without web search permission does not expose
+  `searchWeb` to the model.
 - Timeline rendering shows query, provider, result count, and source links.
+- Assistant answers that use `searchWeb` include citations from returned search
+  results.
 - Full page contents are not persisted in run-step evidence.
 - Mock runtime can demonstrate the flow without live search credentials.
 - Existing workspace read, edit, and execution native tool tests continue to
@@ -238,21 +379,32 @@ pnpm typecheck && pnpm build && pnpm lint
 Targeted tests:
 
 - `searchWeb` input validation and limit handling.
-- Config parsing for disabled, mock, and gateway-backed search.
+- Config parsing for mock and gateway-backed search providers.
+- Agent create/update/detail schemas for versioned `webSearch` permission.
 - Provider normalization from representative gateway responses.
 - Missing credential and unsupported provider error mapping.
+- Run preflight failure when the bound agent configuration permits web search
+  but provider config is unavailable.
+- Mock runtime provider availability without live gateway credentials.
 - Native run-step payload summary for search results.
 - Run timeline rendering for query, provider, result count, source links,
   truncation, and failures.
+- Mock-runtime and provider-backed answer synthesis includes citations from
+  `searchWeb` results.
+- Agent Tools tab toggles Search using native tool permissions, while
+  integrations continue using integration grants.
 - Mock-runtime run executor flow that persists a search tool call/result.
 
 Manual/UAT evidence:
 
-1. With mock runtime enabled, ask for current information and verify a
-   `searchWeb` step appears with deterministic source links.
-2. With real gateway credentials enabled, ask for a current event and verify the
+1. With real gateway credentials enabled, ask for a current event and verify the
    assistant cites bounded sources from the timeline evidence.
-3. Disable search and verify the failure is visible as `web_search_disabled`.
+2. Remove or invalidate required search provider credentials and verify the
+   failure is visible as `web_search_unavailable`.
+
+Mock runtime is for automated, E2E, and local wiring coverage only. UAT must use
+the real configured web search provider; missing credentials are a UAT blocker,
+not a reason to substitute mock evidence.
 
 ## Explicitly deferred
 
