@@ -115,6 +115,8 @@ Tool ownership and execution context are separate axes:
 - Tool permissions shape the model-visible tool list. If web search is not
   permitted for the bound agent configuration, `searchWeb` is not registered and
   the model is not told it exists.
+- The built-in Agentis agent is platform-owned, cannot be user-edited, and has
+  access to all basic native tools, including web search.
 
 Recommended files:
 
@@ -160,8 +162,7 @@ binary web search permission: permitted or not permitted.
 
 Default permission behavior:
 
-- The built-in generic Agentis agent gets web search permitted when web search
-  provider configuration is available.
+- The built-in Agentis agent has web search as part of its basic tool set.
 - Custom agents must opt in explicitly.
 - Existing custom agents should not silently gain web search permission during
   migration.
@@ -174,10 +175,12 @@ DTOs should expose this list as `nativeTools`, separate from integration
 `toolGrants`. Add `nativeTools` to agent create/update inputs, agent detail
 responses, and agent configuration version summaries so current editable state
 and historical run-bound configuration are both visible. A `nativeTools`-only
-agent edit should create a new agent configuration version because it changes
-the model-visible tool list. Runs should read native tool permissions directly
-from their bound agent configuration version; do not copy native tool
-permissions into thread-level grants in V4.1.
+custom agent edit should create a new agent configuration version because it
+changes the model-visible tool list. Custom-agent runs should read native tool
+permissions directly from their bound agent configuration version; do not copy
+native tool permissions into thread-level grants in V4.1. Built-in Agentis runs
+should use the platform-owned basic tool set instead of editable `nativeTools`
+state.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
 demo flows can prove tool wiring without live search credentials. When
@@ -266,7 +269,8 @@ evidence.
 - Register `searchWeb` with native runtime tools.
 - Add versioned native tool permissions to agent configuration, with web search
   as the first permission.
-- Register `searchWeb` only when the run's bound agent configuration permits it.
+- Register `searchWeb` only when the run is for the built-in Agentis agent or
+  the run's bound custom-agent configuration permits it.
 - Add run preflight that fails permitted web search runs when provider config is
   unavailable.
 - Generalize native tool names and payload formatting to include native tools
@@ -292,6 +296,8 @@ evidence.
 - The implementation does not hardcode Agentis to OpenAI or any specific model.
 - Provider choice is behind an Agentis-owned `WebSearchProvider` boundary.
 - Agent-level web search permission is versioned with agent configuration.
+- The built-in Agentis agent exposes web search as a basic tool without user
+  configuration.
 - The existing agent Tools tab can toggle the `webSearch` permission without
   conflating it with integration grants.
 - Missing search provider config produces a clear failed native tool step and is

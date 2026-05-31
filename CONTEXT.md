@@ -16,6 +16,14 @@ _Avoid_: Workspace-scoped tool, when describing tool ownership or availability
 A versioned set of run-affecting choices for an agent.
 _Avoid_: Agent identity, agent profile
 
+**Built-in Agentis agent**:
+The platform-owned default agent that cannot be user-edited and has access to basic native tools.
+_Avoid_: Custom agent, user-configured agent
+
+**Basic tool**:
+A native tool included in the built-in Agentis agent's default capability set.
+_Avoid_: Integration, custom agent permission
+
 **Tool permission**:
 A binary agent-level setting in agent configuration that determines whether an agent may use a tool.
 _Avoid_: Disabled tool, provider selection, integration connection
