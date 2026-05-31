@@ -171,7 +171,9 @@ example `nativeToolsJson: ["webSearch"]`. Absence from the snapshot means the
 agent is not permitted to use that tool and the runtime callable is not
 registered. Do not store explicit false values for every known native tool. API
 DTOs should expose this list as `nativeTools`, separate from integration
-`toolGrants`.
+`toolGrants`. Add `nativeTools` to agent create/update inputs, agent detail
+responses, and agent configuration version summaries so current editable state
+and historical run-bound configuration are both visible.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
 demo flows can prove tool wiring without live search credentials. When
@@ -241,6 +243,8 @@ evidence.
 - Add search input/output schemas and provider interface.
 - Add versioned native tool permission schemas, with `webSearch` as the first
   permitted native tool id.
+- Add `nativeTools` to agent create/update/detail DTOs and configuration version
+  summaries while leaving `toolGrants` integration-specific.
 - Add config parsing and tests for provider selection, max results, and snippet
   limits.
 - Update `.env.example` with confirmed gateway credential and search settings.
