@@ -254,11 +254,13 @@ Thread transcript rendering can remain unchanged in V4.1. The assistant's final
 text answer should carry the user-facing synthesis with citations from
 `searchWeb` results, while the timeline carries bounded source evidence.
 
-Citation formatting must be deterministic. When the assistant uses
-`searchWeb`, answers should cite sources with inline numbered references such as
-`[1]` and include a matching source list derived from `SearchWebOutput.results`
-with title and URL. Tests should be able to assert the citation markers and
-source URLs without relying on provider-specific prose style.
+Citation formatting should prefer deterministic inline citations with consistent
+formatting derived from the `searchWeb` tool result. During Build, inspect
+whether the selected AI SDK/Gateway search path provides a stronger native
+citation UI or structured citation output. If it does, preserve that path as
+long as citations remain visible in the assistant answer and testable from
+normalized tool output. Avoid spending V4.1 effort on a custom citation renderer
+that is worse than provider/tool-native citation behavior.
 
 ## Implementation phases
 
