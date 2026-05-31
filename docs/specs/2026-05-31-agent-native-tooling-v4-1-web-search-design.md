@@ -173,7 +173,9 @@ registered. Do not store explicit false values for every known native tool. API
 DTOs should expose this list as `nativeTools`, separate from integration
 `toolGrants`. Add `nativeTools` to agent create/update inputs, agent detail
 responses, and agent configuration version summaries so current editable state
-and historical run-bound configuration are both visible.
+and historical run-bound configuration are both visible. A `nativeTools`-only
+agent edit should create a new agent configuration version because it changes
+the model-visible tool list.
 
 Mock runtime should use the mock provider automatically so unit, E2E, and local
 demo flows can prove tool wiring without live search credentials. When
