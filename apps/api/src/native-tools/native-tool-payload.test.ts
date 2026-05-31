@@ -28,6 +28,12 @@ describe("formatNativeToolRunStepPayload", () => {
       provider: "native",
       toolName: "runWorkspaceCommand",
       changedFiles: [{ path: "out.txt", operation: "created" }],
+      input: expect.objectContaining({
+        command: "[REDACTED]",
+        commandLength: 12,
+        commandSha256:
+          "2189aff6492b39e6aa62f939b98cbc0cfaa1392da9df3a5ef73a7b0b369119d3",
+      }),
       output: expect.objectContaining({
         executionId: "wexec_1",
         exitCode: 0,
@@ -54,6 +60,31 @@ describe("formatNativeToolRunStepPayload", () => {
     expect(payload?.approval).toEqual({
       status: "pending",
       executionId: "wexec_1",
+    })
+  })
+
+  it("redacts script bodies while preserving metadata", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_exec",
+      toolName: "runWorkspaceCommand",
+      workspaceId: "workspace_agentis",
+      input: { kind: "script", language: "node", code: "console.log('secret')" },
+      output: {
+        workspaceId: "workspace_agentis",
+        executionId: "wexec_1",
+        kind: "script",
+        status: "pending_approval",
+        changedFiles: [],
+      },
+    })
+
+    expect(payload?.input).toMatchObject({
+      kind: "script",
+      language: "node",
+      code: "[REDACTED]",
+      codeLength: 21,
+      codeSha256:
+        "d7a53897ed8cf81ed82725b181df666b7e1e78f749b23febbc6b8043c652f648",
     })
   })
 })

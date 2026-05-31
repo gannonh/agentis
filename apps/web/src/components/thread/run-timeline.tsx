@@ -129,7 +129,7 @@ function formatNativeOutputSummary(
 }
 
 function formatExecutionSummary(output: Record<string, unknown> | null) {
-  if (!output || output.kind !== "command" && output.kind !== "script") {
+  if (!output || (output.kind !== "command" && output.kind !== "script")) {
     return undefined
   }
   const exitCode =

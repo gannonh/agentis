@@ -118,16 +118,25 @@ export class WorkspaceToolApprovalCoordinator {
       this.repos.messages.updatePartsAndStatus(assistant.id, parts, "completed")
     }
 
-    this.repos.runs.updateStatus(runId, "completed", { finishedAt: nowIso() })
-    this.repos.steps.create({
-      runId,
-      type: "completed",
-      status: "completed",
-      title: "Completed",
-    })
-    this.repos.threads.touch(run.threadId, { status: "active" })
+    if (!this.hasPendingWorkspaceApprovals(runId)) {
+      this.repos.runs.updateStatus(runId, "completed", { finishedAt: nowIso() })
+      this.repos.steps.create({
+        runId,
+        type: "completed",
+        status: "completed",
+        title: "Completed",
+      })
+      this.repos.threads.touch(run.threadId, { status: "active" })
+    }
 
     return { action: resolution.action, output: resolution.output }
+  }
+
+  private hasPendingWorkspaceApprovals(runId: string): boolean {
+    return Boolean(
+      this.repos.workspaceEdits.getPendingByRunId(runId) ||
+        this.repos.workspaceExecutions.getPendingByRunId(runId)
+    )
   }
 
   private async resolveDecision(

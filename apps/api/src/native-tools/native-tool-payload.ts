@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import type {
   WorkspaceEntry,
   WorkspaceFileRead,
@@ -113,18 +114,23 @@ function summarizeMutatingOutput(output: unknown) {
 function summarizeExecutionInput(input: unknown) {
   if (!isObject(input)) return input
   if (input.kind === "command") {
+    const command = typeof input.command === "string" ? input.command : ""
     return {
       kind: input.kind,
-      command:
-        typeof input.command === "string" ? input.command.slice(0, 4000) : "",
+      command: "[REDACTED]",
+      commandLength: command.length,
+      commandSha256: createHash("sha256").update(command).digest("hex"),
       cwd: input.cwd,
     }
   }
   if (input.kind === "script") {
+    const code = typeof input.code === "string" ? input.code : ""
     return {
       kind: input.kind,
       language: input.language,
-      code: typeof input.code === "string" ? input.code.slice(0, 4000) : "",
+      code: "[REDACTED]",
+      codeLength: code.length,
+      codeSha256: createHash("sha256").update(code).digest("hex"),
       cwd: input.cwd,
     }
   }

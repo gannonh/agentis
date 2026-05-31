@@ -79,19 +79,15 @@ Scope:
 
   `{ kind: "script"; language: "python" | "node"; code; cwd? }`.
 - `plan` mode records pending execution rows and waits for user approval; `agent`
-
   mode runs immediately, subject to policy.
 - Execution provenance is stored in `workspace_executions` with sanitized input,
-
   bounded stdout/stderr, exit status, duration, timeout/abort flags, and changed
-
   files.
+- Production defaults to `AGENTIS_SANDBOX_BACKEND=local-container` when unset;
+  development/test defaults to `local-process` for local iteration.
 - `AGENTIS_SANDBOX_BACKEND=local-container` runs through the standard `docker`
-
   CLI/socket against a Docker-compatible runtime. Docker Desktop and OrbStack are
-
   compatible local examples; ArcBox is future-watch/experimental only and is not
-
   currently supported.
 
 ### V4: Hyperagent capability parity expansion
@@ -198,12 +194,11 @@ Implemented files:
 Implemented behavior:
 
 - Exposes `runWorkspaceCommand` for bounded shell commands and short Python or
-
   Node scripts in the current workspace.
 - Resolves optional `cwd` through the workspace path jail before execution.
-- Uses `local-process` by default for local development and supports
-
-  `local-container` through the standard `docker` CLI/socket when configured.
+- Uses `local-process` by default for local development/test and defaults to
+  `local-container` in production when unset. It also supports `local-container`
+  through the standard `docker` CLI/socket when configured.
 - Materializes script input under the workspace runtime tree and keeps changed
 
   file detection scoped to the workspace `files/` tree.
@@ -611,4 +606,3 @@ Candidate updates:
 - `packages/shared/src/schemas.ts`
 - `apps/web/src/components/thread/run-timeline.tsx`
 - `apps/web/src/components/thread/tool-access-picker.tsx`
-

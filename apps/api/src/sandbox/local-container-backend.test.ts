@@ -54,11 +54,6 @@ describe("LocalContainerSandboxBackend", () => {
     vi.useRealTimers()
     childProcess.spawn.mockReset()
     childProcess.spawnSync.mockReset()
-    childProcess.spawnSync.mockReturnValue({
-      status: 0,
-      stdout: "Docker context is available\n",
-      stderr: "",
-    })
   })
 
   it("builds hardened docker argv for command execution", () => {
@@ -103,6 +98,18 @@ describe("LocalContainerSandboxBackend", () => {
     ])
   })
 
+  it("rejects container cwd values outside the files root", () => {
+    expect(() =>
+      buildDockerRunArgs({
+        image: "agentis-sandbox:local",
+        filesRoot: "/tmp/agentis/files",
+        cwd: "/tmp/agentis/other",
+        kind: "command",
+        command: "printf hello",
+      })
+    ).toThrow("Sandbox cwd must stay within the workspace files root.")
+  })
+
   it("mounts runtime scripts read-only for script execution", () => {
     const args = buildDockerRunArgs({
       image: "agentis-sandbox:local",
@@ -124,11 +131,13 @@ describe("LocalContainerSandboxBackend", () => {
   })
 
   it("throws sandbox_backend_unavailable when the docker runtime is unavailable", async () => {
-    childProcess.spawnSync.mockReturnValue({
-      status: 1,
-      stdout: "",
-      stderr: "Cannot connect to the Docker daemon",
-    })
+    childProcess.spawn.mockReturnValue(
+      createMockChildProcess({
+        stderr: "Cannot connect to the Docker daemon",
+        exitCode: 1,
+        closeDelayMs: 0,
+      })
+    )
 
     await expect(
       new LocalContainerSandboxBackend("agentis-sandbox:local").execute(
@@ -149,18 +158,31 @@ describe("LocalContainerSandboxBackend", () => {
       message:
         "Docker-compatible runtime is not available for local-container sandbox execution.",
     })
-    expect(childProcess.spawn).not.toHaveBeenCalled()
+    expect(childProcess.spawn).toHaveBeenCalledWith(
+      "docker",
+      ["info", "--format", "{{.ServerVersion}}"],
+      expect.objectContaining({ shell: false })
+    )
   })
 
   it("spawns docker directly and captures bounded output", async () => {
-    childProcess.spawn.mockReturnValue(
-      createMockChildProcess({
-        stdout: "abcdef",
-        stderr: "",
-        exitCode: 0,
-        closeDelayMs: 0,
-      })
-    )
+    childProcess.spawn
+      .mockReturnValueOnce(
+        createMockChildProcess({
+          stdout: "Docker context is available\n",
+          stderr: "",
+          exitCode: 0,
+          closeDelayMs: 0,
+        })
+      )
+      .mockReturnValueOnce(
+        createMockChildProcess({
+          stdout: "abcdef",
+          stderr: "",
+          exitCode: 0,
+          closeDelayMs: 0,
+        })
+      )
 
     const result = await new LocalContainerSandboxBackend(
       "agentis-sandbox:local"
@@ -178,7 +200,8 @@ describe("LocalContainerSandboxBackend", () => {
       new AbortController().signal
     )
 
-    expect(childProcess.spawn).toHaveBeenCalledWith(
+    expect(childProcess.spawnSync).not.toHaveBeenCalled()
+    expect(childProcess.spawn).toHaveBeenLastCalledWith(
       "docker",
       expect.arrayContaining(["run", "--rm", "--network", "none"]),
       expect.objectContaining({
@@ -201,7 +224,16 @@ describe("LocalContainerSandboxBackend", () => {
   it("marks timed-out docker runs and terminates the spawned process", async () => {
     vi.useFakeTimers()
     const child = createMockChildProcess({ closeDelayMs: undefined })
-    childProcess.spawn.mockReturnValue(child)
+    childProcess.spawn
+      .mockReturnValueOnce(
+        createMockChildProcess({
+          stdout: "Docker context is available\n",
+          stderr: "",
+          exitCode: 0,
+          closeDelayMs: 0,
+        })
+      )
+      .mockReturnValueOnce(child)
 
     const resultPromise = new LocalContainerSandboxBackend(
       "agentis-sandbox:local"

@@ -54,7 +54,18 @@ export async function captureWorkspaceFileSnapshot(
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
       if (truncated) return
       const absolutePath = path.join(directory, entry.name)
-      const resolvedPath = await realpath(absolutePath)
+      const resolvedPath = await realpath(absolutePath).catch((error) => {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          (error.code === "ENOENT" || error.code === "ELOOP")
+        ) {
+          return null
+        }
+        throw error
+      })
+      if (!resolvedPath) continue
       if (!isInsidePath(resolvedPath, filesRootRealPath)) continue
       if (entry.isDirectory()) {
         await visit(absolutePath)

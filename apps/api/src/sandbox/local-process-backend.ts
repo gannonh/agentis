@@ -29,6 +29,7 @@ export class LocalProcessSandboxBackend implements SandboxBackend {
         ? spawn(input.command ?? "", {
             cwd: input.cwd,
             env: buildEnv(input.filesRoot, input.env),
+            detached: process.platform !== "win32",
             shell: true,
           })
         : spawn(input.argv?.[0] ?? "", input.argv?.slice(1) ?? [], {
@@ -36,6 +37,9 @@ export class LocalProcessSandboxBackend implements SandboxBackend {
             env: buildEnv(input.filesRoot, input.env),
             shell: false,
           })
+    if (input.kind === "command" && process.platform !== "win32") {
+      child.unref()
+    }
 
     return collectProcessResult(child, input, signal, startedAt)
   }

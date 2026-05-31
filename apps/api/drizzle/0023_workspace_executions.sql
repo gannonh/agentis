@@ -23,3 +23,31 @@ CREATE INDEX `workspace_executions_run_id_idx` ON `workspace_executions` (`run_i
 CREATE INDEX `workspace_executions_thread_id_idx` ON `workspace_executions` (`thread_id`);
 --> statement-breakpoint
 CREATE UNIQUE INDEX `workspace_executions_run_tool_call_unique` ON `workspace_executions` (`run_id`,`tool_call_id`);
+--> statement-breakpoint
+CREATE TRIGGER `workspace_executions_consistency_insert`
+BEFORE INSERT ON `workspace_executions`
+BEGIN
+	SELECT RAISE(ABORT, 'workspace_executions run/thread/workspace mismatch')
+	WHERE NOT EXISTS (
+		SELECT 1
+		FROM `runs`
+		INNER JOIN `threads` ON `threads`.`id` = `runs`.`thread_id`
+		WHERE `runs`.`id` = NEW.`run_id`
+			AND `runs`.`thread_id` = NEW.`thread_id`
+			AND `threads`.`workspace_id` = NEW.`workspace_id`
+	);
+END;
+--> statement-breakpoint
+CREATE TRIGGER `workspace_executions_consistency_update`
+BEFORE UPDATE OF `run_id`, `thread_id`, `workspace_id` ON `workspace_executions`
+BEGIN
+	SELECT RAISE(ABORT, 'workspace_executions run/thread/workspace mismatch')
+	WHERE NOT EXISTS (
+		SELECT 1
+		FROM `runs`
+		INNER JOIN `threads` ON `threads`.`id` = `runs`.`thread_id`
+		WHERE `runs`.`id` = NEW.`run_id`
+			AND `runs`.`thread_id` = NEW.`thread_id`
+			AND `threads`.`workspace_id` = NEW.`workspace_id`
+	);
+END;

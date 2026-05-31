@@ -12,3 +12,9 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
+
+RUN groupadd --system sandbox \
+  && useradd --system --gid sandbox --home-dir /workspace --shell /usr/sbin/nologin sandbox \
+  && chown sandbox:sandbox /workspace
+
+USER sandbox

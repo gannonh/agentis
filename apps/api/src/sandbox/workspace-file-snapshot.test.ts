@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises"
+import { mkdir, rm, symlink, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { randomUUID } from "node:crypto"
@@ -56,5 +56,22 @@ describe("workspace file snapshots", () => {
     expect(diffWorkspaceFileSnapshots(before, after, 1)).toEqual([
       { path: "a.txt", operation: "created" },
     ])
+  })
+
+  it("skips dangling symlinks during traversal", async () => {
+    const filesRoot = await createFilesRoot()
+    try {
+      await writeFile(join(filesRoot, "kept.txt"), "ok")
+      await symlink(join(filesRoot, "missing.txt"), join(filesRoot, "dangling"))
+
+      const snapshot = await captureWorkspaceFileSnapshot(filesRoot, {
+        maxFiles: 100,
+        maxFileBytes: 1024,
+      })
+
+      expect([...snapshot.files.keys()]).toEqual(["kept.txt"])
+    } finally {
+      await rm(join(filesRoot, ".."), { recursive: true, force: true })
+    }
   })
 })

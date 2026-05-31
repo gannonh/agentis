@@ -197,7 +197,7 @@ export class WorkspaceExecutionRepository {
   ): WorkspaceExecutionRecord | null {
     const row = this.db
       .update(workspaceExecutions)
-      .set({ status })
+      .set({ status, finishedAt: nowIso() })
       .where(
         and(
           eq(workspaceExecutions.id, id),

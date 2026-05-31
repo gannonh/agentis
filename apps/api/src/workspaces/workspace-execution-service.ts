@@ -154,6 +154,14 @@ export class WorkspaceExecutionService {
         "Workspace execution is not pending approval."
       )
     }
+    if (execution.workspaceId !== handle.id) {
+      throw new WorkspaceError(
+        "workspace_execution_workspace_mismatch",
+        "Workspace execution does not belong to this workspace."
+      )
+    }
+    const parsed = parseWorkspaceExecutionInput(execution.input)
+    this.assertAllowed(parsed)
     const claimed = this.executions.claimPending(execution.id, "applied")
     if (!claimed) {
       throw new WorkspaceError(
@@ -161,8 +169,6 @@ export class WorkspaceExecutionService {
         "Workspace execution is not pending approval."
       )
     }
-    const parsed = parseWorkspaceExecutionInput(execution.input)
-    this.assertAllowed(parsed)
     const output = await this.runAndRecord(handle, claimed, parsed)
     return { executionId: execution.id, output }
   }
@@ -199,6 +205,7 @@ export class WorkspaceExecutionService {
 
   private assertAllowed(input: RunWorkspaceCommandInput) {
     if (input.kind !== "command") return
+    // Best-effort guard for local development; production defaults to container isolation.
     const denied = this.config.sandboxCommandDenyPatterns.find((pattern) =>
       input.command.includes(pattern)
     )
@@ -270,8 +277,27 @@ export class WorkspaceExecutionService {
     const unregister = registerSandboxExecution(runId, controller)
     const runAbortSignal = getAbortSignal(runId)
     const abort = () => controller.abort()
-    runAbortSignal?.addEventListener("abort", abort, { once: true })
+    if (runAbortSignal?.aborted) {
+      controller.abort()
+    } else {
+      runAbortSignal?.addEventListener("abort", abort, { once: true })
+    }
     try {
+      if (controller.signal.aborted) {
+        return {
+          result: {
+            exitCode: null,
+            stdout: "",
+            stderr: "",
+            stdoutTruncated: false,
+            stderrTruncated: false,
+            durationMs: 0,
+            timedOut: false,
+            aborted: true,
+          },
+          changedFiles: [],
+        }
+      }
       const result = await createSandboxBackend(this.config).execute(
         {
           workspaceId: handle.id,

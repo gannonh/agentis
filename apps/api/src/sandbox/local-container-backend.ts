@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from "node:child_process"
+import { spawn } from "node:child_process"
 import path from "node:path"
 import type {
   SandboxBackend,
@@ -22,8 +22,20 @@ const DOCKER_RUNTIME_UNAVAILABLE_MESSAGE =
   "Docker-compatible runtime is not available for local-container sandbox execution."
 
 function workspaceCwd(filesRoot: string, cwd: string): string {
-  const relativePath = path.relative(filesRoot, cwd)
+  const resolvedFilesRoot = path.resolve(filesRoot)
+  const resolvedCwd = path.resolve(cwd)
+  const relativePath = path.relative(resolvedFilesRoot, resolvedCwd)
   if (!relativePath) return "/workspace"
+  if (
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new WorkspaceError(
+      "sandbox_invalid_cwd",
+      "Sandbox cwd must stay within the workspace files root."
+    )
+  }
   return `/workspace/${relativePath.split(path.sep).join("/")}`
 }
 
@@ -97,29 +109,15 @@ export function buildDockerRunArgs(input: DockerRunArgsInput): string[] {
 }
 
 export class LocalContainerSandboxBackend implements SandboxBackend {
+  private dockerAvailable: Promise<void> | undefined
+
   constructor(private readonly image: string) {}
 
   async execute(
     input: SandboxExecuteInput,
     signal: AbortSignal
   ): Promise<SandboxExecuteResult> {
-    const docker = spawnSync(
-      "docker",
-      ["info", "--format", "{{.ServerVersion}}"],
-      {
-        encoding: "utf8",
-      }
-    )
-    if (docker.error || docker.status !== 0) {
-      throw new WorkspaceError(
-        "sandbox_backend_unavailable",
-        DOCKER_RUNTIME_UNAVAILABLE_MESSAGE,
-        {
-          stderr: docker.stderr?.toString(),
-          error: docker.error?.message,
-        }
-      )
-    }
+    await this.ensureDockerAvailable(signal)
 
     const startedAt = Date.now()
     const child = spawn(
@@ -136,5 +134,53 @@ export class LocalContainerSandboxBackend implements SandboxBackend {
     )
 
     return collectProcessResult(child, input, signal, startedAt)
+  }
+
+  private ensureDockerAvailable(signal: AbortSignal): Promise<void> {
+    this.dockerAvailable ??= this.checkDockerAvailable(signal)
+    return this.dockerAvailable
+  }
+
+  private async checkDockerAvailable(signal: AbortSignal): Promise<void> {
+    const child = spawn("docker", ["info", "--format", "{{.ServerVersion}}"], {
+      env: {
+        ...process.env,
+        PATH: process.env.PATH ?? "",
+      },
+      shell: false,
+    })
+    const result = await collectProcessResult(
+      child,
+      {
+        timeoutMs: 3_000,
+        maxStdoutBytes: 1024,
+        maxStderrBytes: 4096,
+      },
+      signal,
+      Date.now()
+    ).catch((error) => {
+      this.dockerAvailable = undefined
+      throw new WorkspaceError(
+        "sandbox_backend_unavailable",
+        DOCKER_RUNTIME_UNAVAILABLE_MESSAGE,
+        {
+          error: error instanceof Error ? error.message : String(error),
+        }
+      )
+    })
+    if (result.exitCode !== 0) {
+      this.dockerAvailable = undefined
+      throw new WorkspaceError(
+        "sandbox_backend_unavailable",
+        DOCKER_RUNTIME_UNAVAILABLE_MESSAGE,
+        {
+          stderr: result.stderr,
+          error:
+            result.timedOut || result.aborted
+              ? "Docker availability check did not complete."
+              : undefined,
+        }
+      )
+    }
   }
 }

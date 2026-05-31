@@ -1,6 +1,9 @@
 import { asSchema } from "ai"
 import { describe, expect, it } from "vitest"
-import { runWorkspaceCommandInputSchema } from "./workspace-execution-schemas.js"
+import {
+  parseWorkspaceExecutionInput,
+  runWorkspaceCommandInputSchema,
+} from "./workspace-execution-schemas.js"
 
 describe("runWorkspaceCommandInputSchema", () => {
   it("serializes to an OpenAI-compatible JSON Schema object", () => {
@@ -21,5 +24,18 @@ describe("runWorkspaceCommandInputSchema", () => {
     expect(jsonSchema).not.toHaveProperty("allOf")
     expect(jsonSchema).not.toHaveProperty("enum")
     expect(jsonSchema).not.toHaveProperty("not")
+  })
+
+  it("rejects whitespace-only commands and scripts", () => {
+    expect(() =>
+      parseWorkspaceExecutionInput({ kind: "command", command: "   " })
+    ).toThrow("Workspace execution input is invalid.")
+    expect(() =>
+      parseWorkspaceExecutionInput({
+        kind: "script",
+        language: "node",
+        code: "\n\t",
+      })
+    ).toThrow("Workspace execution input is invalid.")
   })
 })

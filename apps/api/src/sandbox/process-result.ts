@@ -37,13 +37,36 @@ function createStreamCapture(maxBytes: number): StreamCapture {
 }
 
 function terminateChild(child: ChildProcessWithoutNullStreams): void {
-  if (child.exitCode !== null || child.killed) return
-  child.kill("SIGTERM")
+  if (child.exitCode !== null) return
+  signalChild(child, "SIGTERM")
   setTimeout(() => {
-    if (child.exitCode === null && !child.killed) {
-      child.kill("SIGKILL")
+    if (child.exitCode === null) {
+      signalChild(child, "SIGKILL")
     }
   }, 100).unref()
+}
+
+function signalChild(
+  child: ChildProcessWithoutNullStreams,
+  signal: NodeJS.Signals
+): void {
+  if (child.exitCode !== null) return
+  if (process.platform !== "win32" && child.pid) {
+    try {
+      process.kill(-child.pid, signal)
+      return
+    } catch (error) {
+      if (
+        typeof error !== "object" ||
+        error === null ||
+        !("code" in error) ||
+        error.code !== "ESRCH"
+      ) {
+        throw error
+      }
+    }
+  }
+  child.kill(signal)
 }
 
 export function collectProcessResult(

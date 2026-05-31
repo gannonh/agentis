@@ -5,13 +5,17 @@ import { WorkspaceError } from "../workspaces/workspace-service.js"
 const runWorkspaceCommandParseSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("command"),
-    command: z.string().min(1),
+    command: z.string().refine((value) => value.trim().length > 0, {
+      message: "Command must contain non-whitespace characters.",
+    }),
     cwd: z.string().optional(),
   }),
   z.object({
     kind: z.literal("script"),
     language: z.enum(["python", "node"]),
-    code: z.string().min(1),
+    code: z.string().refine((value) => value.trim().length > 0, {
+      message: "Script must contain non-whitespace characters.",
+    }),
     cwd: z.string().optional(),
   }),
 ])

@@ -2,6 +2,10 @@ import { readFile, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { createTestContext, type TestContext } from "../test/setup.js"
+import {
+  clearAbortController,
+  registerAbortController,
+} from "../runtime/abort-registry.js"
 import { WorkspaceService } from "./workspace-service.js"
 import { WorkspaceExecutionService } from "./workspace-execution-service.js"
 
@@ -114,9 +118,97 @@ describe("WorkspaceExecutionService", () => {
     ])
     expect(context.repos.workspaceExecutions.getById(approved.executionId)).toMatchObject({
       status: "applied",
+      finishedAt: expect.any(String),
     })
     await expect(
       readFile(join(context.config.storageRoot, workspace.backendRef, "files", "approved.txt"), "utf8")
     ).resolves.toBe("approved")
+  })
+
+  it("does not claim pending commands for a different workspace", async () => {
+    const { context, run, handle, service } = await setup("plan")
+    await service.executeWorkspaceCommand(handle, {
+      threadId: run.threadId,
+      runId: run.id,
+      toolCallId: "call_exec",
+      approvalMode: "plan",
+      input: { kind: "command", command: "printf nope" },
+    })
+    const otherAgent = context.repos.agents.create({
+      name: "Other Agent",
+      systemPrompt: "Test agent",
+      model: "gpt-4o-mini",
+    })
+    const otherWorkspace = context.repos.workspaces.getDefaultByAgentId(
+      otherAgent.id
+    )!
+    const otherHandle = await new WorkspaceService(
+      context.repos,
+      context.config
+    ).openWorkspace(otherWorkspace.id)
+
+    await expect(
+      service.approveByRunToolCall(otherHandle, run.id, "call_exec")
+    ).rejects.toMatchObject({
+      code: "workspace_execution_workspace_mismatch",
+    })
+    expect(
+      context.repos.workspaceExecutions.getByRunAndToolCall(run.id, "call_exec")
+    ).toMatchObject({ status: "pending" })
+  })
+
+  it("keeps denied commands pending when approval revalidation fails", async () => {
+    const { context, run, handle, service } = await setup("plan")
+    await service.executeWorkspaceCommand(handle, {
+      threadId: run.threadId,
+      runId: run.id,
+      toolCallId: "call_exec",
+      approvalMode: "plan",
+      input: { kind: "command", command: "rm -rf /" },
+    })
+    context.config.sandboxCommandDenyPatterns = ["rm -rf /"]
+
+    await expect(
+      service.approveByRunToolCall(handle, run.id, "call_exec")
+    ).rejects.toMatchObject({ code: "sandbox_command_denied" })
+    expect(
+      context.repos.workspaceExecutions.getByRunAndToolCall(run.id, "call_exec")
+    ).toMatchObject({ status: "pending" })
+  })
+
+  it("does not start sandbox execution when the run signal is already aborted", async () => {
+    const { context, workspace, thread, run, handle, service } =
+      await setup("agent")
+    const controller = new AbortController()
+    registerAbortController(run.id, controller)
+    controller.abort()
+
+    try {
+      const output = await service.executeWorkspaceCommand(handle, {
+        threadId: thread.id,
+        runId: run.id,
+        toolCallId: "call_exec",
+        approvalMode: "agent",
+        input: { kind: "command", command: "printf no > aborted.txt" },
+      })
+
+      expect(output).toMatchObject({
+        exitCode: null,
+        aborted: true,
+        changedFiles: [],
+      })
+      await expect(
+        stat(
+          join(
+            context.config.storageRoot,
+            workspace.backendRef,
+            "files",
+            "aborted.txt"
+          )
+        )
+      ).rejects.toThrow()
+    } finally {
+      clearAbortController(run.id)
+    }
   })
 })
