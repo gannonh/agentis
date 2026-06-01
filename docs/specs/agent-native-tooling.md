@@ -121,6 +121,18 @@ Production/live use is backed by Vercel AI Gateway search configuration;
 mock-runtime use resolves through a deterministic mock provider for automated
 tests and local wiring.
 
+#### V4.2: Persistent Documents
+
+Spec: `docs/specs/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
+
+V4.2 plans the first Data-category slice: persistent markdown documents.
+Agentis will use one durable Library primitive named Document across product,
+API, backend, shared schemas, runtime tools, tests, and docs. Documents support
+thread, project, and global visibility, version history, find/read/create tools,
+and targeted markdown section updates. The Build phase must complete the domain
+rename atomically so active code and documentation do not retain the prior
+Library primitive terminology.
+
 ---
 
 ## Current state
