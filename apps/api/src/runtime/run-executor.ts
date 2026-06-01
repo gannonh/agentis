@@ -11,6 +11,13 @@ import { ArtifactService } from "../artifacts/artifact-service.js"
 import { createArtifactTool } from "../artifacts/artifact-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
+import {
+  isWebSearchPermitted,
+  resolveNativeToolsForRun,
+} from "../native-tools/native-tool-permissions.js"
+import { buildWebSearchTools } from "../native-tools/web-search-tools.js"
+import { WebSearchError } from "../research/web-search-provider.js"
+import { WebSearchService } from "../research/web-search-service.js"
 import { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
 import { WorkspaceExecutionService } from "../workspaces/workspace-execution-service.js"
 import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
@@ -37,6 +44,7 @@ import {
 import { nowIso } from "../lib/ids.js"
 import {
   executeMockComposioStream,
+  executeMockNativeWebSearchStream,
   executeMockNativeWorkspaceExecutionStream,
   executeMockNativeWorkspaceMutationStream,
   executeMockNativeWorkspaceStream,
@@ -58,6 +66,9 @@ export { suppressTextForPendingApproval } from "./run-message-adapters.js"
 const ARTIFACT_PROMPT_PATTERN = /artifact|brief|document|report/i
 const PLATFORM_SYSTEM_PROMPT =
   "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createArtifact when the user asks for a durable artifact, document, brief, report, or library item. If the request has enough context to create useful content, choose a concise title, filename, and content instead of asking for schema fields."
+
+const WEB_SEARCH_SYSTEM_PROMPT =
+  "When you use searchWeb, cite the sources you relied on inline using markdown links like [title](url) drawn from the returned results. Do not invent URLs."
 
 function formatSystemPromptSection(title: string, body?: string | null) {
   const trimmed = body?.trim()
@@ -182,6 +193,7 @@ export class RunExecutor {
   private readonly workspaceEditService: WorkspaceEditService
   private readonly workspaceExecutionService: WorkspaceExecutionService
   private readonly workspaceApproval: WorkspaceToolApprovalCoordinator
+  private readonly webSearchService: WebSearchService
 
   constructor(
     private readonly repos: Repositories,
@@ -189,6 +201,7 @@ export class RunExecutor {
     private readonly services: ComposioServices,
     private readonly artifactService: ArtifactService
   ) {
+    this.webSearchService = new WebSearchService(config)
     this.contextService = new ProjectContextService(repos, config)
     this.workspaceEditService = new WorkspaceEditService(repos.workspaceEdits)
     this.workspaceExecutionService = new WorkspaceExecutionService(
@@ -210,6 +223,7 @@ export class RunExecutor {
       services: this.services,
       editService: this.workspaceEditService,
       executionService: this.workspaceExecutionService,
+      webSearchService: this.webSearchService,
     }
   }
 
@@ -301,6 +315,22 @@ export class RunExecutor {
       this.repos.threads.touch(run.threadId, { status: "failed" })
       throw new Error(message)
     }
+    const permittedNativeToolIds = resolveNativeToolsForRun({
+      agentId: run.agentId,
+      agentConfiguration,
+    })
+    const webSearchPermitted = isWebSearchPermitted(permittedNativeToolIds)
+    if (webSearchPermitted && !this.webSearchService.isAvailable()) {
+      return this.failWithWebSearchError(
+        runId,
+        run.threadId,
+        new WebSearchError(
+          "web_search_unavailable",
+          "Web search provider is not configured"
+        )
+      )
+    }
+
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
@@ -332,11 +362,15 @@ export class RunExecutor {
           memoryContribution.promptSection.body
         )
       : null
-    const runtimeSystemPrompt = [systemPrompt, memoryPrompt]
+    const runtimeSystemPrompt = [
+      systemPrompt,
+      webSearchPermitted ? WEB_SEARCH_SYSTEM_PROMPT : null,
+      memoryPrompt,
+    ]
       .filter((section): section is string => Boolean(section))
       .join("\n\n")
 
-    const nativeTools = buildWorkspaceNativeTools({
+    const workspaceNativeTools = buildWorkspaceNativeTools({
       handle: workspaceHandle,
       editService: this.workspaceEditService,
       executionService: this.workspaceExecutionService,
@@ -344,11 +378,15 @@ export class RunExecutor {
       runId,
       threadMode: thread.mode,
     })
+    const webSearchTools = webSearchPermitted
+      ? buildWebSearchTools(this.webSearchService)
+      : {}
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
     )
     const runtimeTools = {
-      ...nativeTools,
+      ...workspaceNativeTools,
+      ...webSearchTools,
       getWorkspaceSummary: getWorkspaceSummaryTool,
       createArtifact: createArtifactTool(this.artifactService, {
         runId,
@@ -403,6 +441,23 @@ export class RunExecutor {
         thread,
         threadMessages,
         workspaceHandle,
+        latestUserPrompt
+      )
+    }
+
+    if (
+      this.config.mockRuntime &&
+      webSearchPermitted &&
+      /\b(search|look up|latest|current|web)\b/i.test(latestUserPrompt) &&
+      !/\bfiles?\b|workspace file|read .*file|search .*file/i.test(
+        latestUserPrompt
+      )
+    ) {
+      return executeMockNativeWebSearchStream(
+        this.mockDeps(),
+        runId,
+        run,
+        threadMessages,
         latestUserPrompt
       )
     }
@@ -757,7 +812,11 @@ export class RunExecutor {
                 ? part.error
                 : "Tool execution failed"
           const code =
-            part.error instanceof WorkspaceError ? part.error.code : undefined
+            part.error instanceof WorkspaceError
+              ? part.error.code
+              : part.error instanceof WebSearchError
+                ? part.error.code
+                : undefined
           const details =
             part.error instanceof WorkspaceError ? part.error.details : undefined
           finalizeToolStep(part.toolCallId, part.toolName, {
@@ -953,6 +1012,37 @@ export class RunExecutor {
     })
     this.repos.threads.touch(threadId, { status: "failed" })
     throw new Error(message)
+  }
+
+  private failWithWebSearchError(
+    runId: string,
+    threadId: string,
+    error: WebSearchError
+  ): never {
+    this.repos.messages.create({
+      threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: error.message }],
+      status: "failed",
+    })
+    this.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: error.message,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Web search unavailable",
+      payload: {
+        provider: "native",
+        toolName: "searchWeb",
+        code: error.code,
+        error: error.message,
+      },
+    })
+    this.repos.threads.touch(threadId, { status: "failed" })
+    throw new Error(error.message)
   }
 
   private failWithRemediation(

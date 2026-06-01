@@ -126,6 +126,7 @@ export const agentConfigurationVersions = sqliteTable(
     model: text("model").notNull(),
     maxCostPerRunUsd: real("max_cost_per_run_usd"),
     toolGrantsJson: text("tool_grants_json").notNull().default("[]"),
+    nativeToolsJson: text("native_tools_json").notNull().default("[]"),
     createdAt: text("created_at").notNull(),
   },
   (table) => [

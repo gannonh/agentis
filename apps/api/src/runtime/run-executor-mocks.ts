@@ -8,6 +8,7 @@ import {
 } from "../composio/tool-catalog.js"
 import { isRunTimelineDebugEnabled, type AppConfig } from "../config.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
+import type { WebSearchService } from "../research/web-search-service.js"
 import type { Repositories } from "../repositories/index.js"
 import { nowIso } from "../lib/ids.js"
 import type { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
@@ -23,6 +24,7 @@ export type RunExecutorMocksDeps = {
   services: ComposioServices
   editService: WorkspaceEditService
   executionService: WorkspaceExecutionService
+  webSearchService: WebSearchService
 }
 
 function createTimelineDebugStep(
@@ -63,6 +65,121 @@ function mockTextStream(summaryText: string) {
         },
       }),
     }),
+  })
+}
+
+function inferSearchQuery(prompt: string) {
+  return (
+    prompt
+      .replace(/\b(search|look up|find)\b/gi, " ")
+      .replace(/\b(the )?web\b/gi, " ")
+      .replace(/\b(for|about|current|latest)\b/gi, " ")
+      .replace(/[^\p{L}\p{N}\s.-]/gu, " ")
+      .trim()
+      .replace(/\s+/g, " ") || prompt.trim()
+  )
+}
+
+export async function executeMockNativeWebSearchStream(
+  deps: RunExecutorMocksDeps,
+  runId: string,
+  run: Run,
+  threadMessages: Message[],
+  latestUserPrompt: string
+) {
+  const thread = deps.repos.threads.getById(run.threadId)
+  if (!thread) throw new Error("Thread not found")
+
+  const assistantMessage = deps.repos.messages.create({
+    threadId: run.threadId,
+    role: "assistant",
+    parts: [{ type: "text", text: "" }],
+    status: "streaming",
+  })
+
+  deps.repos.runs.updateStatus(runId, "running")
+  deps.repos.steps.create({
+    runId,
+    type: "running",
+    status: "running",
+    title: "Running",
+  })
+
+  const toolName = "searchWeb" as const
+  const toolCallId = `mock-native-search-${runId}`
+  const toolInput = { query: inferSearchQuery(latestUserPrompt) }
+  const toolOutput = await deps.webSearchService.search(toolInput)
+  const firstResult = toolOutput.results[0]
+  const summaryText = firstResult
+    ? `Found ${toolOutput.resultCount} web results. Top source: [${firstResult.title}](${firstResult.url}).`
+    : `Found ${toolOutput.resultCount} web results.`
+  const assistantParts: MessagePart[] = [
+    { type: "text", text: summaryText },
+    { type: "tool-call", toolCallId, toolName, input: toolInput },
+    { type: "tool-result", toolCallId, toolName, output: toolOutput },
+  ]
+
+  deps.repos.steps.create({
+    runId,
+    type: "tool-call",
+    status: "completed",
+    title: formatToolStepTitle({ toolName, curated: false }),
+    payload:
+      formatNativeToolRunStepPayload({
+        toolCallId,
+        toolName,
+        input: toolInput,
+      }) ?? undefined,
+  })
+  deps.repos.steps.create({
+    runId,
+    type: "tool-result",
+    status: "completed",
+    title: formatToolStepTitle({ toolName, curated: false }),
+    payload:
+      formatNativeToolRunStepPayload({
+        toolCallId,
+        toolName,
+        input: toolInput,
+        output: toolOutput,
+      }) ?? undefined,
+  })
+
+  deps.repos.messages.updatePartsAndStatus(
+    assistantMessage.id,
+    assistantParts,
+    "completed"
+  )
+  const usage = { totalTokens: 0 }
+  deps.repos.runs.updateStatus(runId, "completed", {
+    finishedAt: nowIso(),
+    usage,
+  })
+  createTimelineDebugStep(deps, runId, {
+    status: "completed",
+    title: "Debug: model output",
+    payload: {
+      provider: "debug",
+      kind: "model-output",
+      assistantParts,
+      usage,
+    },
+  })
+  deps.repos.steps.create({
+    runId,
+    type: "completed",
+    status: "completed",
+    title: "Completed",
+  })
+  deps.repos.threads.touch(run.threadId)
+
+  const result = streamText({
+    model: mockTextStream(summaryText) as LanguageModel,
+    messages: toModelMessages(threadMessages),
+  })
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: toUiMessages(threadMessages),
   })
 }
 

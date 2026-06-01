@@ -56,6 +56,7 @@ describe("agent repository", () => {
         version: 2,
         systemPrompt: "Answer with citations and source quality notes.",
         model: "gpt-4.1-mini",
+        nativeToolsJson: "[]",
         createdAt: "2026-05-23T22:00:00.000Z",
       })
       .run()

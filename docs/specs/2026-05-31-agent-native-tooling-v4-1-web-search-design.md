@@ -1,5 +1,9 @@
 # Agent native tooling V4.1: provider-neutral web search
 
+## Status
+
+Implemented.
+
 ## Goal
 
 Add the first V4 capability parity slice by giving Agentis agents the native
@@ -415,6 +419,18 @@ not a reason to substitute mock evidence.
 - Native tool grants/policy UI.
 - Full page crawling or transcript rendering of full source content.
 - OpenAI-native web search as the default product boundary.
+
+## Build completion report
+
+- Spec path: `docs/specs/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
+- Base SHA: `7f3f75a3`
+- Tasks completed: provider-neutral `searchWeb` contract/config/provider boundary, versioned `webSearch` native tool permission, runtime registration/preflight/mock flow, bounded native run-step evidence, timeline rendering, agent create/detail Search controls, docs/env updates.
+- Files changed: shared schemas, API config/repositories/runtime/native tool/research modules, DB migration, web agent create/detail/timeline surfaces, focused tests, `.env.example`, and `docs/agent-native-tooling.md`.
+- Verification run: `pnpm --filter api test`, `pnpm --filter web test`, `pnpm typecheck && pnpm build && pnpm lint`.
+- Review gates: single-agent TDD red/green checks, spec compliance self-review, code quality self-review.
+- Approved deviations: none.
+- Known follow-up issues: real-service UAT still requires valid Vercel AI Gateway credentials; lint reports the existing `apps/web/public/mockServiceWorker.js` unused eslint-disable warning.
+- Independent subagent review: unavailable; single-agent path used.
 
 ## Build handoff
 

@@ -128,6 +128,7 @@ describe("AgentCreatePage", () => {
         model: "gpt-4o-mini",
         systemPrompt: "Answer with citations.",
         toolGrants: [{ toolkitSlug: "github" }],
+        nativeTools: ["webSearch"],
       })
     })
     expect(navigate).toHaveBeenCalledWith("/agents/agent_test")

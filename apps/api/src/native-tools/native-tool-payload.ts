@@ -4,12 +4,16 @@ import type {
   WorkspaceFileRead,
   WorkspaceSearchResult,
 } from "../workspaces/workspace-service.js"
+import type { SearchWebOutput } from "@workspace/shared"
 import {
   MUTATING_NATIVE_WORKSPACE_TOOL_NAMES,
+  NATIVE_WEB_SEARCH_TOOL_NAMES,
   NATIVE_WORKSPACE_READ_TOOL_NAMES,
   EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES,
   type ExecutionNativeWorkspaceToolName,
   type MutatingNativeWorkspaceToolName,
+  type NativeToolName,
+  type NativeWebSearchToolName,
 } from "./tool-names.js"
 
 export const NATIVE_WORKSPACE_TOOL_NAMES = [
@@ -24,8 +28,8 @@ export type NativeWorkspaceToolName =
 export type NativeToolRunStepPayload = {
   provider: "native"
   toolCallId?: string
-  toolName: NativeWorkspaceToolName
-  workspaceId: string
+  toolName: NativeToolName
+  workspaceId?: string
   input?: unknown
   output?: unknown
   error?: string
@@ -64,6 +68,71 @@ export function isExecutionNativeWorkspaceToolName(
   return EXECUTION_NATIVE_WORKSPACE_TOOL_NAMES.includes(
     toolName as ExecutionNativeWorkspaceToolName
   )
+}
+
+export function isNativeWebSearchToolName(
+  toolName: string
+): toolName is NativeWebSearchToolName {
+  return NATIVE_WEB_SEARCH_TOOL_NAMES.includes(toolName as NativeWebSearchToolName)
+}
+
+export function isNativeToolName(toolName: string): toolName is NativeToolName {
+  return (
+    isNativeWorkspaceToolName(toolName) || isNativeWebSearchToolName(toolName)
+  )
+}
+
+function summarizeWebSearchOutput(output: unknown) {
+  if (!isObject(output)) return output
+  const results = Array.isArray(output.results)
+    ? output.results
+        .slice(0, 10)
+        .map((result) => {
+          if (!isObject(result)) return null
+          if (
+            typeof result.title !== "string" ||
+            typeof result.url !== "string"
+          ) {
+            return null
+          }
+          return {
+            title: result.title,
+            url: result.url,
+            snippet:
+              typeof result.snippet === "string" ? result.snippet : undefined,
+            source:
+              typeof result.source === "string" ? result.source : undefined,
+            publishedAt:
+              typeof result.publishedAt === "string"
+                ? result.publishedAt
+                : undefined,
+          }
+        })
+        .filter((result): result is NonNullable<typeof result> => Boolean(result))
+    : []
+
+  return {
+    query: typeof output.query === "string" ? output.query : undefined,
+    provider: typeof output.provider === "string" ? output.provider : undefined,
+    resultCount:
+      typeof output.resultCount === "number" ? output.resultCount : results.length,
+    truncated: output.truncated === true,
+    results,
+    metadata: isObject(output.metadata) ? output.metadata : undefined,
+  } satisfies Partial<SearchWebOutput>
+}
+
+function summarizeWebSearchInput(input: unknown) {
+  if (!isObject(input)) return input
+  return {
+    query: typeof input.query === "string" ? input.query : undefined,
+    maxResults:
+      typeof input.maxResults === "number" ? input.maxResults : undefined,
+    domains: Array.isArray(input.domains)
+      ? input.domains.filter((domain): domain is string => typeof domain === "string")
+      : undefined,
+    recency: typeof input.recency === "string" ? input.recency : undefined,
+  }
 }
 
 function summarizeEntries(entries: WorkspaceEntry[]) {
@@ -253,7 +322,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 export function formatNativeToolRunStepPayload(input: {
   toolCallId?: string
   toolName: string
-  workspaceId: string
+  workspaceId?: string
   input?: unknown
   output?: unknown
   error?: string
@@ -261,7 +330,25 @@ export function formatNativeToolRunStepPayload(input: {
   approval?: NativeToolRunStepPayload["approval"]
   changedFiles?: NativeToolRunStepPayload["changedFiles"]
 }): NativeToolRunStepPayload | null {
-  if (!isNativeWorkspaceToolName(input.toolName)) return null
+  if (isNativeWebSearchToolName(input.toolName)) {
+    return {
+      provider: "native",
+      toolCallId: input.toolCallId,
+      toolName: input.toolName,
+      input: summarizeWebSearchInput(input.input),
+      output:
+        input.output === undefined
+          ? undefined
+          : summarizeWebSearchOutput(input.output),
+      error: input.error,
+      code: input.code,
+    }
+  }
+
+  if (!isNativeWorkspaceToolName(input.toolName) || !input.workspaceId) {
+    return null
+  }
+
   const output =
     input.output === undefined
       ? undefined

@@ -1,6 +1,11 @@
 import type {
   AgentConfigurationVersionSummary,
   AgentListItem,
+  NativeToolPermissionId,
+} from "@workspace/shared"
+import {
+  DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS,
+  nativeToolsSchema,
 } from "@workspace/shared"
 import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
@@ -31,6 +36,7 @@ type AgentCreateInput = {
   systemPrompt: string
   model: string
   maxCostPerRunUsd?: number | null
+  nativeTools?: NativeToolPermissionId[]
 } & SourceWorkflowSnapshot
 
 type AgentToolGrantCreateInput = {
@@ -42,6 +48,33 @@ type AgentConfigurationVersionSnapshot = AgentConfigurationVersionSummary & {
   toolGrants: AgentToolGrantCreateInput[]
 }
 
+function normalizeNativeTools(
+  nativeTools: NativeToolPermissionId[]
+): NativeToolPermissionId[] {
+  return [...new Set(nativeTools)].sort()
+}
+
+function nativeToolsMatch(
+  currentNativeTools: NativeToolPermissionId[],
+  nextNativeTools: NativeToolPermissionId[]
+): boolean {
+  if (currentNativeTools.length !== nextNativeTools.length) return false
+  return currentNativeTools.every(
+    (toolId, index) => toolId === nextNativeTools[index]
+  )
+}
+
+function serializeNativeToolsSnapshot(
+  nativeTools: NativeToolPermissionId[]
+): string {
+  return JSON.stringify(normalizeNativeTools(nativeTools))
+}
+
+function parseNativeToolsSnapshot(raw: string): NativeToolPermissionId[] {
+  const parsed = JSON.parse(raw) as unknown
+  return nativeToolsSchema.parse(parsed)
+}
+
 type AgentUpdateInput = {
   name?: string
   description?: string | null
@@ -49,6 +82,7 @@ type AgentUpdateInput = {
   model?: string
   maxCostPerRunUsd?: number | null
   toolGrants?: AgentToolGrantCreateInput[]
+  nativeTools?: NativeToolPermissionId[]
 }
 
 function normalizeGrants(
@@ -116,6 +150,7 @@ function mapVersion(row: VersionRow): AgentConfigurationVersionSummary {
     systemPrompt: row.systemPrompt,
     model: row.model,
     maxCostPerRunUsd: row.maxCostPerRunUsd,
+    nativeTools: parseNativeToolsSnapshot(row.nativeToolsJson),
     createdAt: row.createdAt,
   }
 }
@@ -158,7 +193,9 @@ export class AgentRepository {
 
   createWithGrants(
     input: AgentCreateInput,
-    grants: AgentToolGrantCreateInput[]
+    grants: AgentToolGrantCreateInput[],
+    nativeTools: NativeToolPermissionId[] = input.nativeTools ??
+      DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS
   ): AgentListItem {
     const now = nowIso()
     const agentRow = {
@@ -173,6 +210,7 @@ export class AgentRepository {
       updatedAt: now,
     }
     const normalizedGrants = normalizeGrants(grants)
+    const normalizedNativeTools = normalizeNativeTools(nativeTools)
     const versionRow = {
       id: createId("agent_version"),
       agentId: agentRow.id,
@@ -181,6 +219,7 @@ export class AgentRepository {
       model: input.model,
       maxCostPerRunUsd: input.maxCostPerRunUsd ?? null,
       toolGrantsJson: serializeGrantSnapshot(normalizedGrants),
+      nativeToolsJson: serializeNativeToolsSnapshot(normalizedNativeTools),
       createdAt: now,
     }
     const grantRows = normalizedGrants.map((grant) => ({
@@ -305,13 +344,21 @@ export class AgentRepository {
       : []
     const grantsChanged =
       hasGrantEdit && !grantsMatch(currentGrants, nextGrants)
+    const hasNativeToolsEdit = input.nativeTools !== undefined
+    const currentNativeTools = this.getCurrentVersionSnapshot(agentId).nativeTools
+    const nextNativeTools = hasNativeToolsEdit
+      ? normalizeNativeTools(input.nativeTools ?? [])
+      : currentNativeTools
+    const nativeToolsChanged =
+      hasNativeToolsEdit && !nativeToolsMatch(currentNativeTools, nextNativeTools)
     const identityChanged =
       nextName !== existing.name || nextDescription !== existing.description
     const configurationChanged =
       nextSystemPrompt !== existing.systemPrompt ||
       nextModel !== existing.model ||
       nextMaxCostPerRunUsd !== existing.maxCostPerRunUsd
-    const versionChanged = configurationChanged || grantsChanged
+    const versionChanged =
+      configurationChanged || grantsChanged || nativeToolsChanged
 
     if (!identityChanged && !versionChanged) {
       return mapAgent(
@@ -324,6 +371,13 @@ export class AgentRepository {
     const versionToolGrantsJson = versionChanged
       ? serializeGrantSnapshot(
           hasGrantEdit ? nextGrants : this.listAgentToolGrantInputs(agentId)
+        )
+      : null
+    const versionNativeToolsJson = versionChanged
+      ? serializeNativeToolsSnapshot(
+          hasNativeToolsEdit
+            ? nextNativeTools
+            : this.getCurrentVersionSnapshot(agentId).nativeTools
         )
       : null
     const now = nowIso()
@@ -374,6 +428,9 @@ export class AgentRepository {
             model: nextModel,
             maxCostPerRunUsd: nextMaxCostPerRunUsd,
             toolGrantsJson: versionToolGrantsJson,
+            nativeToolsJson:
+              versionNativeToolsJson ??
+              serializeNativeToolsSnapshot(currentNativeTools),
             createdAt: now,
           })
           .run()

@@ -793,6 +793,7 @@ describe("promotion draft routes", () => {
         systemPrompt: "Assign severity and next steps.",
         model: "gpt-4.1-mini",
         maxCostPerRunUsd: null,
+        nativeTools: ["webSearch"],
         createdAt: new Date().toISOString(),
       },
       toolGrantCount: 0,

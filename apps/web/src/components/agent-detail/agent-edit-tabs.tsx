@@ -35,6 +35,7 @@ import type {
   AgentDetailInformation,
   AgentDetailResponse,
   IntegrationToolkit,
+  NativeToolPermissionId,
   UpdateAgentRequest,
 } from "@workspace/shared"
 import { useIntegrations } from "@/hooks/use-integrations"
@@ -686,15 +687,36 @@ function ToolCard({
   title,
   description,
   icon,
-  checked = true,
+  checked,
+  onCheckedChange,
 }: {
   title: string
   description: string
   icon: (typeof TOOL_GROUPS)[number]["items"][number][2]
-  checked?: boolean
+  checked: boolean
+  onCheckedChange?: (checked: boolean) => void
 }) {
+  const interactive = Boolean(onCheckedChange)
   return (
-    <div className="flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3">
+    <label
+      className={`flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3 ${
+        interactive ? "cursor-pointer hover:bg-muted/40" : ""
+      }`}
+    >
+      {interactive ? (
+        <input
+          type="checkbox"
+          className="mt-1"
+          aria-label={title}
+          checked={checked}
+          onChange={(event) => onCheckedChange?.(event.target.checked)}
+        />
+      ) : (
+        <span
+          aria-hidden
+          className="mt-1 size-3.5 rounded-sm border border-border bg-background"
+        />
+      )}
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <HugeiconsIcon icon={icon} className="size-4" strokeWidth={2} />
       </span>
@@ -707,7 +729,7 @@ function ToolCard({
           {description}
         </span>
       </span>
-    </div>
+    </label>
   )
 }
 
@@ -768,12 +790,18 @@ export function AgentToolsTab({
   const [selectedToolkits, setSelectedToolkits] = useState(
     new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
   )
+  const [selectedNativeTools, setSelectedNativeTools] = useState<
+    Set<NativeToolPermissionId>
+  >(new Set(detail.agent.currentConfigurationVersion.nativeTools))
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     setSelectedToolkits(
       new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
+    )
+    setSelectedNativeTools(
+      new Set(detail.agent.currentConfigurationVersion.nativeTools)
     )
   }, [detail])
 
@@ -784,6 +812,21 @@ export function AgentToolsTab({
         next.add(toolkitSlug)
       } else {
         next.delete(toolkitSlug)
+      }
+      return next
+    })
+  }
+
+  function setNativeToolSelected(
+    toolId: NativeToolPermissionId,
+    checked: boolean
+  ) {
+    setSelectedNativeTools((current) => {
+      const next = new Set(current)
+      if (checked) {
+        next.add(toolId)
+      } else {
+        next.delete(toolId)
       }
       return next
     })
@@ -800,6 +843,7 @@ export function AgentToolsTab({
           .map((toolkit) =>
             toToolGrantInput(toolkit.slug, grantedBySlug.get(toolkit.slug))
           ),
+        nativeTools: [...selectedNativeTools].sort(),
       })
       setStatus("Tools saved")
     } catch (error) {
@@ -877,9 +921,8 @@ export function AgentToolsTab({
           <h2 id="tools-heading" className="text-sm font-medium">
             Tools
           </h2>
-          <Badge variant="secondary">19 active</Badge>
+          <Badge variant="secondary">{selectedNativeTools.size} active</Badge>
         </div>
-        {/* TODO: replace this static tool catalog with the server-backed native tool registry. */}
         {TOOL_GROUPS.map((group) => (
           <div key={group.label} className="flex flex-col gap-2">
             <h3 className="text-xs font-medium text-muted-foreground">
@@ -892,6 +935,15 @@ export function AgentToolsTab({
                   title={title}
                   description={description}
                   icon={icon}
+                  checked={
+                    title === "Search" && selectedNativeTools.has("webSearch")
+                  }
+                  onCheckedChange={
+                    title === "Search"
+                      ? (checked) =>
+                          setNativeToolSelected("webSearch", checked)
+                      : undefined
+                  }
                 />
               ))}
             </div>

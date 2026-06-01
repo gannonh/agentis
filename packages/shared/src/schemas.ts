@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
 export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
+import { nativeToolsSchema } from "./web-search.js"
 
 const nonEmptyString = z.string().min(1)
 const nonNegativeNumber = z.number().nonnegative()
@@ -255,6 +256,7 @@ export const agentConfigurationVersionSummarySchema = z.object({
   systemPrompt: z.string(),
   model: z.string(),
   maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
+  nativeTools: nativeToolsSchema,
   createdAt: z.string(),
 })
 
@@ -330,6 +332,7 @@ export const createAgentRequestSchema = z.object({
   systemPrompt: nonEmptyString,
   model: z.string().optional(),
   toolGrants: agentToolGrantInputListSchema.optional(),
+  nativeTools: nativeToolsSchema.optional(),
 })
 
 export const updateAgentRequestSchema = z
@@ -340,6 +343,7 @@ export const updateAgentRequestSchema = z
     model: nonEmptyString.optional(),
     maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
+    nativeTools: nativeToolsSchema.optional(),
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one agent edit field is required.",
@@ -376,6 +380,7 @@ export const agentPromotionDraftEditedFieldSchema = z.enum([
   "systemPrompt",
   "model",
   "toolGrants",
+  "nativeTools",
   "suggestedPurpose",
   "repeatedSteps",
   "requiredTools",

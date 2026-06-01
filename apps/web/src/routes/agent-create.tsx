@@ -115,6 +115,7 @@ export function AgentCreatePage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<AgentSetupFormState>(INITIAL_FORM)
   const [selectedToolGrantSlugs, setSelectedToolGrantSlugs] = useState<string[]>([])
+  const [webSearchSelected, setWebSearchSelected] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toolkits, loading: loadingIntegrations, error: integrationsError } = useIntegrations()
@@ -137,6 +138,7 @@ export function AgentCreatePage() {
         model: form.model.trim() || undefined,
         systemPrompt: form.systemPrompt.trim(),
         toolGrants: selectedToolGrantSlugs.map((toolkitSlug) => ({ toolkitSlug })),
+        nativeTools: webSearchSelected ? ["webSearch"] : [],
       })
       navigate(`/agents/${encodeURIComponent(detail.agent.id)}`)
     } catch (submitError) {
@@ -230,6 +232,24 @@ export function AgentCreatePage() {
                   ))}
                 </div>
               )}
+            </fieldset>
+
+            <fieldset className="flex flex-col gap-3">
+              <legend className="text-sm font-medium">Built-in capabilities</legend>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm hover:bg-muted/40">
+                <input
+                  type="checkbox"
+                  aria-label="Search"
+                  checked={webSearchSelected}
+                  onChange={(event) => setWebSearchSelected(event.target.checked)}
+                />
+                <span className="flex min-w-0 flex-col">
+                  <span className="font-medium">Search</span>
+                  <span className="text-xs text-muted-foreground">
+                    Find current web information with bounded source evidence.
+                  </span>
+                </span>
+              </label>
             </fieldset>
           </CardContent>
           <CardFooter className="mt-2 flex justify-between gap-3 border-t border-border pt-4">

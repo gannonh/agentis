@@ -128,6 +128,35 @@ function formatNativeOutputSummary(
   return truncated ? "truncated" : undefined
 }
 
+function formatWebSearchSources(output: Record<string, unknown> | null) {
+  if (!Array.isArray(output?.results)) return []
+  return output.results
+    .map((result) => getRecord(result))
+    .filter((result): result is Record<string, unknown> => Boolean(result))
+    .map((result) => ({
+      title: typeof result.title === "string" ? result.title : "Untitled source",
+      url: typeof result.url === "string" ? result.url : undefined,
+      source: typeof result.source === "string" ? result.source : undefined,
+    }))
+    .filter((result) => Boolean(result.url))
+}
+
+function formatWebSearchSummary(output: Record<string, unknown> | null) {
+  if (!output || !Array.isArray(output.results)) return undefined
+  const provider = typeof output.provider === "string" ? output.provider : "search"
+  const resultCount =
+    typeof output.resultCount === "number"
+      ? output.resultCount
+      : output.results.length
+  return [
+    provider,
+    `${resultCount} ${resultCount === 1 ? "result" : "results"}`,
+    output.truncated === true ? "truncated" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+}
+
 function formatExecutionSummary(output: Record<string, unknown> | null) {
   if (!output || (output.kind !== "command" && output.kind !== "script")) {
     return undefined
@@ -172,7 +201,11 @@ function formatNativePayload(step: RunStep) {
   const path = getNativePath(input, output)
   const query = typeof input?.query === "string" ? input.query : undefined
   const truncated = output?.truncated === true
-  const outputSummary = formatNativeOutputSummary(output, truncated)
+  const toolName = typeof record.toolName === "string" ? record.toolName : undefined
+  const webSearchSummary =
+    toolName === "searchWeb" ? formatWebSearchSummary(output) : undefined
+  const outputSummary =
+    webSearchSummary ?? formatNativeOutputSummary(output, truncated)
   const executionSummary = formatExecutionSummary(output)
   const stdout = formatPreview(output?.stdout, output?.stdoutTruncated)
   const stderr = formatPreview(output?.stderr, output?.stderrTruncated)
@@ -180,12 +213,13 @@ function formatNativePayload(step: RunStep) {
   const aborted = output?.aborted === true
 
   return {
-    toolName: typeof record.toolName === "string" ? record.toolName : undefined,
+    toolName,
     workspaceId:
       typeof record.workspaceId === "string" ? record.workspaceId : undefined,
     path,
     query,
     outputSummary,
+    sources: toolName === "searchWeb" ? formatWebSearchSources(output) : [],
     executionSummary,
     stdout,
     stderr,
@@ -289,7 +323,7 @@ export function RunTimeline({
               ) : null}
               {native ? (
                 <p className="text-muted-foreground mt-1">
-                  <span>Native</span>
+                  Native
                   {native.toolName ? ` · ${native.toolName}` : ""}
                   {native.workspaceId ? ` · ${native.workspaceId}` : ""}
                 </p>
@@ -307,6 +341,23 @@ export function RunTimeline({
                 <p className="text-muted-foreground mt-1">
                   {native.executionSummary}
                 </p>
+              ) : null}
+              {native?.sources.length ? (
+                <ul className="text-muted-foreground mt-2 space-y-1">
+                  {native.sources.map((source) => (
+                    <li key={source.url}>
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-foreground underline-offset-4 hover:underline"
+                      >
+                        {source.title}
+                      </a>
+                      {source.source ? ` · ${source.source}` : ""}
+                    </li>
+                  ))}
+                </ul>
               ) : null}
               {native?.timedOut || native?.aborted ? (
                 <div className="mt-2 flex gap-1">

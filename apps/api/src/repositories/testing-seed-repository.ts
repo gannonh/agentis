@@ -338,6 +338,7 @@ export class TestingSeedRepository {
         model: agent.model,
         maxCostPerRunUsd: agent.maxCostPerRunUsd,
         toolGrantsJson: JSON.stringify(includeIntegrations ? agent.grants : []),
+        nativeToolsJson: JSON.stringify(["webSearch"]),
         createdAt: lastWeek,
       }))
       tx.insert(agentConfigurationVersions).values(versionRows).run()

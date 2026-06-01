@@ -220,6 +220,70 @@ describe("agent routes", () => {
     expect(reloadedBody.toolGrants).toMatchObject([{ toolkitSlug: "github" }])
   })
 
+  it("creates agents with default native web search permission", async () => {
+    ctx = createTestContext()
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request("/api/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Research Agent",
+        systemPrompt: "Answer with citations.",
+        model: "gpt-4o-mini",
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      agent: {
+        currentConfigurationVersion: { nativeTools: string[] }
+      }
+      configurationVersions: { nativeTools: string[] }[]
+    }
+    expect(body.agent.currentConfigurationVersion.nativeTools).toEqual([
+      "webSearch",
+    ])
+    expect(body.configurationVersions[0]?.nativeTools).toEqual(["webSearch"])
+  })
+
+  it("creates a configuration version for native-tools-only edits", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nativeTools: [] }),
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      agent: {
+        currentConfigurationVersion: {
+          version: number
+          nativeTools: string[]
+        }
+      }
+      configurationVersions: { version: number; nativeTools: string[] }[]
+    }
+    expect(body.agent.currentConfigurationVersion).toMatchObject({
+      version: 2,
+      nativeTools: [],
+    })
+    expect(body.configurationVersions.map((version) => version.version)).toEqual([
+      1,
+      2,
+    ])
+    expect(body.configurationVersions[0]?.nativeTools).toEqual(["webSearch"])
+    expect(body.configurationVersions[1]?.nativeTools).toEqual([])
+  })
+
   it("persists the full edit vertical through /api agent writes", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

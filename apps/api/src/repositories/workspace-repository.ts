@@ -184,6 +184,7 @@ export class WorkspaceRepository {
           model: DEFAULT_OPENAI_MODEL,
           maxCostPerRunUsd: null,
           toolGrantsJson: "[]",
+          nativeToolsJson: "[]",
           createdAt: now,
         })
         .run()

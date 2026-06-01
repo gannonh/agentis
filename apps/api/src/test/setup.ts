@@ -56,6 +56,11 @@ export function createTestContext() {
     sandboxChangedFilesLimit: 50,
     sandboxCommandDenyPatterns: [],
     sandboxContainerImage: "agentis-sandbox:local",
+    webSearchProvider: "vercel-gateway",
+    webSearchBackend: "perplexity",
+    webSearchMaxResults: 5,
+    webSearchMaxSnippetChars: 500,
+    aiGatewayApiKey: undefined,
   }
   const repos = createRepositories(db, config)
 
