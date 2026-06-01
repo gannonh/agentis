@@ -1,0 +1,50 @@
+import { tool } from "ai"
+import { z } from "zod"
+import { describe, expect, it } from "vitest"
+import {
+  WEB_SEARCH_SYSTEM_PROMPT,
+  resolveNativeRuntimeCapabilities,
+} from "./native-tool-capability-catalog.js"
+
+describe("native tool capability catalog", () => {
+  it("uses the catalog to expose permitted available web search", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["webSearch"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Search the web for Agentis news.",
+      buildTools: {
+        webSearch: () => ({
+          searchWeb: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.systemPromptSections).toEqual([
+      WEB_SEARCH_SYSTEM_PROMPT,
+    ])
+    expect(capabilities.runtimeTools).toHaveProperty("searchWeb")
+    expect(capabilities.webSearch).toMatchObject({
+      permitted: true,
+      requested: true,
+      enabled: true,
+    })
+  })
+
+  it("blocks explicit permitted web search when the provider is unavailable", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["webSearch"],
+      providerAvailability: { webSearch: false },
+      latestUserPrompt: "Search the web for current AI news.",
+      buildTools: { webSearch: () => ({}) },
+    })
+
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.webSearch.unavailableError).toMatchObject({
+      code: "web_search_unavailable",
+      message: "Web search provider is not configured",
+    })
+  })
+})

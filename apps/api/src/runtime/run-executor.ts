@@ -12,7 +12,7 @@ import { createArtifactTool } from "../artifacts/artifact-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
 import { resolveNativeToolsForRun } from "../native-tools/native-tool-permissions.js"
-import { resolveNativeRuntimeCapabilities } from "../native-tools/native-runtime-capabilities.js"
+import { resolveNativeRuntimeCapabilities } from "../native-tools/native-tool-capability-catalog.js"
 import { buildWebSearchTools } from "../native-tools/web-search-tools.js"
 import { WebSearchError } from "../research/web-search-provider.js"
 import { WebSearchService } from "../research/web-search-service.js"
@@ -336,8 +336,11 @@ export class RunExecutor {
     })
     const nativeRuntimeCapabilities = resolveNativeRuntimeCapabilities({
       permittedNativeToolIds,
-      webSearchAvailable: this.webSearchService.isAvailable(),
+      providerAvailability: { webSearch: this.webSearchService.isAvailable() },
       latestUserPrompt,
+      buildTools: {
+        webSearch: () => buildWebSearchTools(this.webSearchService),
+      },
     })
     if (nativeRuntimeCapabilities.webSearch.unavailableError) {
       return this.failWithWebSearchError(
@@ -394,9 +397,7 @@ export class RunExecutor {
       runId,
       threadMode: thread.mode,
     })
-    const webSearchTools = nativeRuntimeCapabilities.webSearch.enabled
-      ? buildWebSearchTools(this.webSearchService)
-      : {}
+    const webSearchTools = nativeRuntimeCapabilities.runtimeTools
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
     )

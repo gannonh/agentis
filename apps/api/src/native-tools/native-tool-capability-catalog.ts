@@ -1,6 +1,9 @@
-import type { NativeToolPermissionId } from "@workspace/shared"
+import {
+  WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
+  type NativeToolPermissionId,
+} from "@workspace/shared"
+import type { ToolSet } from "ai"
 import { WebSearchError } from "../research/web-search-provider.js"
-import { isWebSearchPermitted } from "./native-tool-permissions.js"
 
 export const WEB_SEARCH_SYSTEM_PROMPT =
   "When you use searchWeb, cite the sources you relied on inline using markdown links like [title](url) drawn from the returned results. Do not invent URLs."
@@ -12,24 +15,42 @@ export function looksLikeWebSearchIntent(prompt: string): boolean {
   )
 }
 
+type ProviderAvailability = {
+  webSearch: boolean
+}
+
+type ToolBuilders = {
+  webSearch?: () => ToolSet
+}
+
 export function resolveNativeRuntimeCapabilities(input: {
   permittedNativeToolIds: NativeToolPermissionId[]
-  webSearchAvailable: boolean
+  providerAvailability: ProviderAvailability
   latestUserPrompt: string
+  buildTools?: ToolBuilders
 }) {
-  const webSearchPermitted = isWebSearchPermitted(input.permittedNativeToolIds)
+  const webSearchPermitted = input.permittedNativeToolIds.includes(
+    WEB_SEARCH_NATIVE_TOOL_CAPABILITY.id
+  )
   const webSearchRequested = looksLikeWebSearchIntent(input.latestUserPrompt)
-  const webSearchEnabled = webSearchPermitted && input.webSearchAvailable
+  const webSearchAvailable = input.providerAvailability.webSearch
+  const webSearchEnabled = webSearchPermitted && webSearchAvailable
   const unavailableError =
-    webSearchPermitted && !input.webSearchAvailable && webSearchRequested
+    webSearchPermitted && !webSearchAvailable && webSearchRequested
       ? new WebSearchError(
           "web_search_unavailable",
           "Web search provider is not configured"
         )
       : undefined
+  const runtimeTools =
+    webSearchEnabled && input.buildTools?.webSearch
+      ? input.buildTools.webSearch()
+      : {}
 
   return {
-    systemPromptSections: webSearchEnabled ? [WEB_SEARCH_SYSTEM_PROMPT] : [],
+    runtimeTools,
+    systemPromptSections:
+      webSearchEnabled ? [WEB_SEARCH_SYSTEM_PROMPT] : [],
     webSearch: {
       permitted: webSearchPermitted,
       requested: webSearchRequested,

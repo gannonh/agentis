@@ -31,16 +31,19 @@ import {
   WebhookIcon,
   ZapIcon,
 } from "@hugeicons/core-free-icons"
-import type {
-  AgentDetailInformation,
-  AgentDetailResponse,
-  IntegrationToolkit,
-  NativeToolPermissionId,
-  UpdateAgentRequest,
+import {
+  WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
+  type AgentDetailInformation,
+  type AgentDetailResponse,
+  type IntegrationToolkit,
+  type NativeToolPermissionId,
+  type UpdateAgentRequest,
 } from "@workspace/shared"
 import { useIntegrations } from "@/hooks/use-integrations"
 
 type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
+
+const WEB_SEARCH_CAPABILITY = WEB_SEARCH_NATIVE_TOOL_CAPABILITY
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -628,10 +631,10 @@ const TOOL_GROUPS: Array<{ label: string; items: ToolGroupItem[] }> = [
         icon: AiSearchIcon,
       },
       {
-        title: "Search",
-        description: "Search the web for information using SDK web search.",
+        title: WEB_SEARCH_CAPABILITY.label,
+        description: WEB_SEARCH_CAPABILITY.description,
         icon: Search01Icon,
-        nativeToolId: "webSearch",
+        nativeToolId: WEB_SEARCH_CAPABILITY.id,
       },
       {
         title: "Browser",

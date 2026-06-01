@@ -11,7 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import type { IntegrationToolkit } from "@workspace/shared"
+import {
+  WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
+  type IntegrationToolkit,
+} from "@workspace/shared"
 import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
 import {
   canSubmitAgentSetup,
@@ -38,6 +41,8 @@ const SYSTEM_PROMPT_PLACEHOLDER = [
   "Apps it can use:",
   "Response style:",
 ].join("\n")
+
+const WEB_SEARCH_CAPABILITY = WEB_SEARCH_NATIVE_TOOL_CAPABILITY
 
 function formatCategory(value: string) {
   return value
@@ -115,7 +120,9 @@ export function AgentCreatePage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<AgentSetupFormState>(INITIAL_FORM)
   const [selectedToolGrantSlugs, setSelectedToolGrantSlugs] = useState<string[]>([])
-  const [webSearchSelected, setWebSearchSelected] = useState(true)
+  const [webSearchSelected, setWebSearchSelected] = useState(
+    WEB_SEARCH_CAPABILITY.defaultSelected
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toolkits, loading: loadingIntegrations, error: integrationsError } = useIntegrations()
@@ -138,7 +145,7 @@ export function AgentCreatePage() {
         model: form.model.trim() || undefined,
         systemPrompt: form.systemPrompt.trim(),
         toolGrants: selectedToolGrantSlugs.map((toolkitSlug) => ({ toolkitSlug })),
-        nativeTools: webSearchSelected ? ["webSearch"] : [],
+        nativeTools: webSearchSelected ? [WEB_SEARCH_CAPABILITY.id] : [],
       })
       navigate(`/agents/${encodeURIComponent(detail.agent.id)}`)
     } catch (submitError) {
@@ -244,9 +251,9 @@ export function AgentCreatePage() {
                   onChange={(event) => setWebSearchSelected(event.target.checked)}
                 />
                 <span className="flex min-w-0 flex-col">
-                  <span className="font-medium">Search</span>
+                  <span className="font-medium">{WEB_SEARCH_CAPABILITY.label}</span>
                   <span className="text-xs text-muted-foreground">
-                    Find current web information with bounded source evidence.
+                    {WEB_SEARCH_CAPABILITY.description}
                   </span>
                 </span>
               </label>
