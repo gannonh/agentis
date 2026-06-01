@@ -362,6 +362,44 @@ Recommended order:
 
 The change set should stay atomic because mixed terminology would preserve the modeling problem V4.2 is meant to solve.
 
+## Acceptance criteria
+
+V4.2 is accepted when all of the following are true:
+
+1. The active codebase has one durable Library primitive named Document.
+   - Product copy, route names, API clients, shared schemas, backend services, repositories, storage helpers, runtime tools, fixtures, tests, and active docs use document terminology.
+   - The final terminology search over active `apps`, `packages`, and `docs` paths returns zero hits for the previous primitive name.
+2. Existing durable Library data survives the migration.
+   - Existing rows are available as documents after migration.
+   - Existing stored content remains downloadable or readable through document APIs.
+   - Migration tests cover existing generated and uploaded content.
+3. Agents can create markdown documents.
+   - `createDocument` creates a document with title, markdown content, visibility scope, provenance, current version, preview text, and Library visibility.
+   - Version 1 is created atomically with the document.
+   - Document creation appears in the run timeline with bounded evidence.
+4. Agents can find and read accessible documents.
+   - `findDocuments` returns only documents accessible to the current run under thread, project, and global scope rules.
+   - `readDocument` returns bounded markdown content, metadata, current version, and a section outline.
+   - Oversized reads report truncation metadata.
+5. Agents can update living markdown documents.
+   - `updateDocumentSection` changes exactly one existing section and creates a new version.
+   - `appendDocumentSection` appends or adds section content and creates a new version.
+   - Missing, ambiguous, inaccessible, or non-markdown targets fail with explicit errors.
+6. Scope behavior matches the agreed model.
+   - Thread documents are visible only in their source thread.
+   - Project documents are visible across threads in the same project.
+   - Global documents are visible across agents and threads in the user's Agentis workspace.
+   - Agent association is stored as provenance, not as an access boundary.
+7. Library and project UI support documents.
+   - Library lists documents with title, scope, source/provenance, type or format, and updated time.
+   - Document detail shows markdown content, metadata, version history, and download/export.
+   - Project Documents tab shows project-scoped documents and document-language empty states.
+8. Run timeline evidence is useful and bounded.
+   - Document search, read, create, section update, append, and version creation actions render with ids, title, scope, versions, status, and previews.
+   - Timeline payloads do not store unbounded markdown content.
+9. End-to-end behavior is demonstrated.
+   - A user can create a global markdown document in one thread, start a different agent/thread, find and read the document, update a section, and see the updated version in Library.
+
 ## Verification
 
 Required command checks:
