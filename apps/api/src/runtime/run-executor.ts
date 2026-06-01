@@ -11,10 +11,8 @@ import { ArtifactService } from "../artifacts/artifact-service.js"
 import { createArtifactTool } from "../artifacts/artifact-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
-import {
-  isWebSearchPermitted,
-  resolveNativeToolsForRun,
-} from "../native-tools/native-tool-permissions.js"
+import { resolveNativeToolsForRun } from "../native-tools/native-tool-permissions.js"
+import { resolveNativeRuntimeCapabilities } from "../native-tools/native-runtime-capabilities.js"
 import { buildWebSearchTools } from "../native-tools/web-search-tools.js"
 import { WebSearchError } from "../research/web-search-provider.js"
 import { WebSearchService } from "../research/web-search-service.js"
@@ -69,9 +67,6 @@ export { suppressTextForPendingApproval } from "./run-message-adapters.js"
 const ARTIFACT_PROMPT_PATTERN = /artifact|brief|document|report/i
 const PLATFORM_SYSTEM_PROMPT =
   "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createArtifact when the user asks for a durable artifact, document, brief, report, or library item. If the request has enough context to create useful content, choose a concise title, filename, and content instead of asking for schema fields."
-
-const WEB_SEARCH_SYSTEM_PROMPT =
-  "When you use searchWeb, cite the sources you relied on inline using markdown links like [title](url) drawn from the returned results. Do not invent URLs."
 
 function formatSystemPromptSection(title: string, body?: string | null) {
   const trimmed = body?.trim()
@@ -339,15 +334,16 @@ export class RunExecutor {
       agentId: run.agentId,
       agentConfiguration,
     })
-    const webSearchPermitted = isWebSearchPermitted(permittedNativeToolIds)
-    if (webSearchPermitted && !this.webSearchService.isAvailable()) {
+    const nativeRuntimeCapabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds,
+      webSearchAvailable: this.webSearchService.isAvailable(),
+      latestUserPrompt,
+    })
+    if (nativeRuntimeCapabilities.webSearch.unavailableError) {
       return this.failWithWebSearchError(
         runId,
         run.threadId,
-        new WebSearchError(
-          "web_search_unavailable",
-          "Web search provider is not configured"
-        )
+        nativeRuntimeCapabilities.webSearch.unavailableError
       )
     }
 
@@ -384,7 +380,7 @@ export class RunExecutor {
       : null
     const runtimeSystemPrompt = [
       systemPrompt,
-      webSearchPermitted ? WEB_SEARCH_SYSTEM_PROMPT : null,
+      ...nativeRuntimeCapabilities.systemPromptSections,
       memoryPrompt,
     ]
       .filter((section): section is string => Boolean(section))
@@ -398,7 +394,7 @@ export class RunExecutor {
       runId,
       threadMode: thread.mode,
     })
-    const webSearchTools = webSearchPermitted
+    const webSearchTools = nativeRuntimeCapabilities.webSearch.enabled
       ? buildWebSearchTools(this.webSearchService)
       : {}
     const composioTools = this.services.toolExecution.buildRuntimeTools(
@@ -467,11 +463,8 @@ export class RunExecutor {
 
     if (
       this.config.mockRuntime &&
-      webSearchPermitted &&
-      /\b(search|look up|latest|current|web)\b/i.test(latestUserPrompt) &&
-      !/\bfiles?\b|workspace file|read .*file|search .*file/i.test(
-        latestUserPrompt
-      )
+      nativeRuntimeCapabilities.webSearch.enabled &&
+      nativeRuntimeCapabilities.webSearch.requested
     ) {
       return executeMockNativeWebSearchStream(
         this.mockDeps(),

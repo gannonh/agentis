@@ -595,93 +595,123 @@ export function AgentSkillsTab() {
   )
 }
 
-const TOOL_GROUPS = [
+type ToolGroupItem = {
+  title: string
+  description: string
+  icon: typeof Search01Icon
+  nativeToolId?: NativeToolPermissionId
+}
+
+const TOOL_GROUPS: Array<{ label: string; items: ToolGroupItem[] }> = [
   {
     label: "Execution",
     items: [
-      [
-        "Script",
-        "Run Python/JS code in an isolated container.",
-        ComputerTerminal01Icon,
-      ],
-      [
-        "Full VM",
-        "Persistent virtual machine. Install packages, save files, and run jobs.",
-        ServerStack01Icon,
-      ],
+      {
+        title: "Script",
+        description: "Run Python/JS code in an isolated container.",
+        icon: ComputerTerminal01Icon,
+      },
+      {
+        title: "Full VM",
+        description:
+          "Persistent virtual machine. Install packages, save files, and run jobs.",
+        icon: ServerStack01Icon,
+      },
     ],
   },
   {
     label: "Research",
     items: [
-      ["Exa", "Enable Exa.ai semantic search and related tools.", AiSearchIcon],
-      [
-        "Search",
-        "Search the web for information using SDK web search.",
-        Search01Icon,
-      ],
-      [
-        "Browser",
-        "Control a real browser with AI-powered automation.",
-        BrowserIcon,
-      ],
-      [
-        "Find Similar",
-        "Find pages semantically similar to a given URL.",
-        Link03Icon,
-      ],
-      [
-        "Exa Answer",
-        "Get direct answers to questions with source citations.",
-        ChatIcon,
-      ],
-      [
-        "Exa Research",
-        "Deep multi-source research with structured output.",
-        Database01Icon,
-      ],
+      {
+        title: "Exa",
+        description: "Enable Exa.ai semantic search and related tools.",
+        icon: AiSearchIcon,
+      },
+      {
+        title: "Search",
+        description: "Search the web for information using SDK web search.",
+        icon: Search01Icon,
+        nativeToolId: "webSearch",
+      },
+      {
+        title: "Browser",
+        description: "Control a real browser with AI-powered automation.",
+        icon: BrowserIcon,
+      },
+      {
+        title: "Find Similar",
+        description: "Find pages semantically similar to a given URL.",
+        icon: Link03Icon,
+      },
+      {
+        title: "Exa Answer",
+        description: "Get direct answers to questions with source citations.",
+        icon: ChatIcon,
+      },
+      {
+        title: "Exa Research",
+        description: "Deep multi-source research with structured output.",
+        icon: Database01Icon,
+      },
     ],
   },
   {
     label: "Data",
     items: [
-      [
-        "Tables",
-        "Create, update, and query structured data tables.",
-        TableIcon,
-      ],
-      ["Documents", "Create and update persistent documents.", File02Icon],
+      {
+        title: "Tables",
+        description: "Create, update, and query structured data tables.",
+        icon: TableIcon,
+      },
+      {
+        title: "Documents",
+        description: "Create and update persistent documents.",
+        icon: File02Icon,
+      },
     ],
   },
   {
     label: "Interactive",
     items: [
-      [
-        "Webpages & Slides",
-        "Generate styled webpages and slide presentations.",
-        Globe02Icon,
-      ],
-      [
-        "Slides",
-        "Create slide presentations for delivery.",
-        Presentation01Icon,
-      ],
+      {
+        title: "Webpages & Slides",
+        description: "Generate styled webpages and slide presentations.",
+        icon: Globe02Icon,
+      },
+      {
+        title: "Slides",
+        description: "Create slide presentations for delivery.",
+        icon: Presentation01Icon,
+      },
     ],
   },
   {
     label: "Media",
     items: [
-      ["Images", "Generate and edit images.", Image02Icon],
-      ["Video", "Generate short video clips with native audio.", Video01Icon],
-      ["Audio", "Generate speech or multi-speaker dialogue.", Mic01Icon],
-      [
-        "Maps",
-        "Geocoding, places search, directions, and distance calculations.",
-        MapsIcon,
-      ],
+      {
+        title: "Images",
+        description: "Generate and edit images.",
+        icon: Image02Icon,
+      },
+      {
+        title: "Video",
+        description: "Generate short video clips with native audio.",
+        icon: Video01Icon,
+      },
+      {
+        title: "Audio",
+        description: "Generate speech or multi-speaker dialogue.",
+        icon: Mic01Icon,
+      },
+      {
+        title: "Maps",
+        description:
+          "Geocoding, places search, directions, and distance calculations.",
+        icon: MapsIcon,
+      },
     ],
   },
-] as const
+]
 
 function ToolCard({
   title,
@@ -692,7 +722,7 @@ function ToolCard({
 }: {
   title: string
   description: string
-  icon: (typeof TOOL_GROUPS)[number]["items"][number][2]
+  icon: ToolGroupItem["icon"]
   checked: boolean
   onCheckedChange?: (checked: boolean) => void
 }) {
@@ -929,23 +959,25 @@ export function AgentToolsTab({
               {group.label}
             </h3>
             <div className="grid gap-2 sm:grid-cols-2">
-              {group.items.map(([title, description, icon]) => (
-                <ToolCard
-                  key={title}
-                  title={title}
-                  description={description}
-                  icon={icon}
-                  checked={
-                    title === "Search" && selectedNativeTools.has("webSearch")
-                  }
-                  onCheckedChange={
-                    title === "Search"
-                      ? (checked) =>
-                          setNativeToolSelected("webSearch", checked)
-                      : undefined
-                  }
-                />
-              ))}
+              {group.items.map((item) => {
+                const nativeToolId = item.nativeToolId
+                return (
+                  <ToolCard
+                    key={item.title}
+                    title={item.title}
+                    description={item.description}
+                    icon={item.icon}
+                    checked={
+                      nativeToolId ? selectedNativeTools.has(nativeToolId) : false
+                    }
+                    onCheckedChange={
+                      nativeToolId
+                        ? (checked) => setNativeToolSelected(nativeToolId, checked)
+                        : undefined
+                    }
+                  />
+                )
+              })}
             </div>
           </div>
         ))}

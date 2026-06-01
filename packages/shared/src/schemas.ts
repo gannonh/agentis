@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
-import { nativeToolsSchema } from "./web-search.js"
+import { nativeToolsSchema } from "./native-tools.js"
 export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 
 const nonEmptyString = z.string().min(1)
@@ -380,7 +380,6 @@ export const agentPromotionDraftEditedFieldSchema = z.enum([
   "systemPrompt",
   "model",
   "toolGrants",
-  "nativeTools",
   "suggestedPurpose",
   "repeatedSteps",
   "requiredTools",

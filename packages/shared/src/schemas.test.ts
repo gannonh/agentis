@@ -31,6 +31,10 @@ import {
   workspaceSchema,
   type ProposedToolGrant,
 } from "./schemas.js"
+import {
+  DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS,
+  nativeToolPermissionIdSchema,
+} from "./native-tools.js"
 import { searchWebInputSchema, searchWebResultSchema } from "./web-search.js"
 
 describe("shared schemas", () => {
@@ -214,6 +218,11 @@ describe("shared schemas", () => {
     expect(() => createThreadRequestSchema.parse({ prompt: "" })).toThrow()
   })
 
+  it("keeps native tool permissions in their shared native-tool contract", () => {
+    expect(nativeToolPermissionIdSchema.parse("webSearch")).toBe("webSearch")
+    expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual(["webSearch"])
+  })
+
   it("requires web search queries and result URLs to be safe for source links", () => {
     expect(() => searchWebInputSchema.parse({ query: "   " })).toThrow()
     expect(searchWebInputSchema.parse({ query: "  Agentis news  " }).query).toBe(
@@ -328,6 +337,12 @@ describe("shared schemas", () => {
       })
     ).toThrow()
 
+    expect(() =>
+      agentPromotionDraftSchema.parse({
+        ...draft,
+        editedFields: ["nativeTools"],
+      })
+    ).toThrow()
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, name: "" })
     ).toThrow()
