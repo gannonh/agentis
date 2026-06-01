@@ -90,7 +90,7 @@ Scope:
   compatible local examples; ArcBox is future-watch/experimental only and is not
   currently supported.
 
-### V4: Hyperagent capability parity expansion
+### ⏳ V4: Hyperagent capability parity expansion
 
 Goal: adopt or provide equivalents for the remaining Hyperagent native tool inventory.
 
@@ -109,6 +109,10 @@ Notes:
 - scope 1 tool per epic/PR (e.g., web search)
 - recommend sequencing: 1 tool per category to start
 
+#### V4.1: Web Search
+
+Spec: `docs/specs/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
+
 V4.1 implemented the first research slice: provider-neutral native web search.
 Agentis exposes the model-visible `searchWeb` runtime tool behind the
 agent-owned `webSearch` native permission, normalizes provider output into a
@@ -116,6 +120,8 @@ bounded Agentis contract, and renders search evidence in the run timeline.
 Production/live use is backed by Vercel AI Gateway search configuration;
 mock-runtime use resolves through a deterministic mock provider for automated
 tests and local wiring.
+
+---
 
 ## Current state
 
