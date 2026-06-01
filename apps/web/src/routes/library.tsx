@@ -170,6 +170,8 @@ export function LibraryPage() {
       return
     }
     let cancelled = false
+    setDetail(null)
+    setError(null)
     fetch(`/api/documents/${selectedDocumentId}/detail`)
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load document detail")

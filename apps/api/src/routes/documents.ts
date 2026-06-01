@@ -119,19 +119,16 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
 
   app.get("/:documentId/detail", (c) => {
     const documentId = c.req.param("documentId")
-    const document = repos.documents.getById(documentId)
-    if (!document) {
-      return c.json(
-        { error: "Document not found", code: "document_not_found" },
-        404
-      )
+    const result = documentService.getDownload(documentId)
+    if (!result.ok) {
+      const status = result.status === 404 ? 404 : (500 as const)
+      return c.json({ error: result.message, code: result.code }, status)
     }
-    const content = documentService.getDownload(documentId)
-    const previewContent = content.ok && document.mimeType.startsWith("text/")
-      ? content.data.toString("utf8")
+    const previewContent = result.document.mimeType.startsWith("text/")
+      ? result.data.toString("utf8")
       : null
     return c.json({
-      document: toPublicDocument(document),
+      document: toPublicDocument(result.document),
       content: previewContent,
       versions: repos.documents.listVersions(documentId).map((version) => ({
         id: version.id,
