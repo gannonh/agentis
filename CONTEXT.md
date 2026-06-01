@@ -41,7 +41,7 @@ A native Agentis capability that extends what an agent can do during a workspace
 _Avoid_: Integration, connected app
 
 **Native tool capability catalog**:
-The Agentis-owned catalog that maps tool permission ids to runtime tool exposure, prompt contribution, provider availability requirements, timeline evidence, default selection, and user-facing metadata.
+The Agentis-owned catalog that maps user-controlled tool permission ids to runtime tool exposure, prompt contribution, provider availability requirements, timeline evidence, default selection, and user-facing metadata. The first cataloged permission is web search. Workspace file tools remain basic native tools and stay outside the first catalog slice.
 _Avoid_: Tool provider, integration catalog, when describing native Agentis capabilities
 
 **Integration**:
