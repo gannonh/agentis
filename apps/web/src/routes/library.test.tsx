@@ -4,26 +4,26 @@ import { describe, expect, it, vi } from "vitest"
 import { LibraryPage } from "./library"
 
 vi.mock("@/lib/api/projects-client", () => ({
-  listArtifacts: vi.fn().mockResolvedValue([
+  listDocuments: vi.fn().mockResolvedValue([
     {
-      id: "artifact_test",
+      id: "document_test",
       title: "Q2 Brief",
-      type: "document",
+      documentType: "markdown",
       mimeType: "text/plain",
       sizeBytes: 120,
-      storageKey: "artifacts/test.txt",
+      storageKey: "documents/test.txt",
       projectNameSnapshot: "Launch",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
   ]),
   listProjects: vi.fn().mockResolvedValue([]),
-  uploadArtifact: vi.fn(),
-  artifactDownloadUrl: (id: string) => `/api/artifacts/${id}/download`,
+  uploadDocument: vi.fn(),
+  documentDownloadUrl: (id: string) => `/api/documents/${id}/download`,
 }))
 
 describe("LibraryPage", () => {
-  it("renders API-backed artifact cards", async () => {
+  it("renders API-backed document cards", async () => {
     render(
       <MemoryRouter>
         <LibraryPage />
@@ -31,7 +31,7 @@ describe("LibraryPage", () => {
     )
 
     expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
-    expect(screen.getByLabelText("Search artifacts")).toBeEnabled()
+    expect(screen.getByLabelText("Search documents")).toBeEnabled()
 
     await waitFor(() => {
       expect(screen.getByText("Q2 Brief")).toBeInTheDocument()

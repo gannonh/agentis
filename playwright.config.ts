@@ -34,6 +34,7 @@ export default defineConfig({
         AGENTIS_WEB_ORIGIN: "http://127.0.0.1:5175",
         COMPOSIO_REDIRECT_BASE_URL: "http://127.0.0.1:3002",
         DATABASE_URL: "./data/e2e-agentis.db",
+        AGENTIS_API_PORT: "3002",
         PORT: "3002",
       },
     },

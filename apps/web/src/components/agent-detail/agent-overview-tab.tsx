@@ -22,7 +22,7 @@ type AgentOverviewThread = Pick<
   Thread,
   "id" | "title" | "status" | "updatedAt"
 > & {
-  artifactCount?: number
+  documentCount?: number
   lastRunStatus?: string
 }
 
@@ -216,9 +216,9 @@ export function AgentOverviewTab({
               {primaryThread.lastRunStatus
                 ? `Latest run: ${primaryThread.lastRunStatus}`
                 : "Open this thread to review the latest work trail."}
-              {primaryThread.artifactCount
-                ? ` ${primaryThread.artifactCount} artifact${
-                    primaryThread.artifactCount === 1 ? "" : "s"
+              {primaryThread.documentCount
+                ? ` ${primaryThread.documentCount} document${
+                    primaryThread.documentCount === 1 ? "" : "s"
                   } available.`
                 : ""}
             </p>

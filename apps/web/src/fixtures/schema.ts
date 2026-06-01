@@ -190,11 +190,11 @@ export const integrationCategorySchema = z.object({
   count: z.number(),
 })
 
-export const artifactSchema = z.object({
+export const documentSchema = z.object({
   id: z.string(),
   title: z.string(),
-  type: z.enum([
-    "document",
+  documentType: z.enum([
+    "markdown",
     "webpage",
     "image",
     "video",
@@ -252,7 +252,7 @@ export const workspaceSchema = z.object({
   integrationCategories: z.array(integrationCategorySchema),
   connectedIntegrations: z.number(),
   integrationNotice: integrationNoticeSchema.optional(),
-  artifacts: z.array(artifactSchema),
+  documents: z.array(documentSchema),
   capabilityExamples: z.array(capabilityExampleSchema),
   starterAgents: z.array(starterAgentSchema),
 })
@@ -264,7 +264,7 @@ export type Run = z.infer<typeof runSchema>
 export type Skill = z.infer<typeof skillSchema>
 export type LearningCandidate = z.infer<typeof learningCandidateSchema>
 export type Memory = z.infer<typeof memorySchema>
-export type Artifact = z.infer<typeof artifactSchema>
+export type Document = z.infer<typeof documentSchema>
 export type Integration = z.infer<typeof integrationSchema>
 export type StarterAgent = z.infer<typeof starterAgentSchema>
 export type PickerAgentIcon = z.infer<typeof pickerAgentIconSchema>

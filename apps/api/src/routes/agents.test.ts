@@ -493,9 +493,9 @@ describe("agent routes", () => {
     ctx.repos.runs.updateStatus(createdThread.run.id, "completed", {
       finishedAt: new Date().toISOString(),
     })
-    ctx.repos.artifacts.create({
+    ctx.repos.documents.create({
       title: "Research notes",
-      type: "document",
+      documentType: "markdown",
       mimeType: "text/markdown",
       sizeBytes: 42,
       storageKey: "research-notes.md",
@@ -518,7 +518,7 @@ describe("agent routes", () => {
           id: string
           title: string
           lastRunStatus?: string
-          artifactCount?: number
+          documentCount?: number
         }[]
         library: {
           totalCount: number
@@ -534,7 +534,7 @@ describe("agent routes", () => {
         id: createdThread.thread.id,
         title: "Test Research Agent",
         lastRunStatus: "completed",
-        artifactCount: 1,
+        documentCount: 1,
       },
     ])
     expect(body.information.library.totalCount).toBe(1)

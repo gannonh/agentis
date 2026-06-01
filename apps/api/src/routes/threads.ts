@@ -11,7 +11,7 @@ import {
 import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
-import { ArtifactService } from "../artifacts/artifact-service.js"
+import { DocumentService } from "../documents/document-service.js"
 import {
   resolveRequestedAgentGrants,
   toolkitGrantRemediation,
@@ -51,13 +51,13 @@ export function createThreadRoutes(
     const threads = repos.threads.list().map((thread) => {
       const messages = repos.messages.listByThreadId(thread.id)
       const latestRun = repos.runs.getLatestByThreadId(thread.id)
-      const artifactCount = repos.artifacts.list({ threadId: thread.id }).length
+      const documentCount = repos.documents.list({ threadId: thread.id }).length
       return threadListItemSchema.parse({
         ...thread,
         messageCount: messages.length,
         lastRunStatus: latestRun?.status,
         summary: firstUserMessageText(messages),
-        artifactCount,
+        documentCount,
       })
     })
     return c.json(threads)
@@ -216,8 +216,8 @@ export function createRunRoutes(
   services: ComposioServices
 ) {
   const app = new Hono()
-  const artifactService = new ArtifactService(repos, config)
-  const executor = new RunExecutor(repos, config, services, artifactService)
+  const documentService = new DocumentService(repos, config)
+  const executor = new RunExecutor(repos, config, services, documentService)
 
   app.post("/:id/stream", async (c) => {
     try {

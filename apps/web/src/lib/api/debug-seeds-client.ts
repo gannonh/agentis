@@ -13,7 +13,7 @@ const debugSeedCountsSchema = z.object({
   agents: z.number(),
   projects: z.number(),
   threads: z.number(),
-  artifacts: z.number(),
+  documents: z.number(),
   savedMemories: z.number(),
   projectMemories: z.number(),
   integrationConnections: z.number(),

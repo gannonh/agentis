@@ -1,24 +1,24 @@
 import { useMemo, useState } from "react"
-import type { ArtifactPublic as Artifact } from "@workspace/shared"
+import type { DocumentPublic as Document } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon } from "@hugeicons/core-free-icons"
 import { formatRelativeTime } from "@/fixtures"
-import { artifactDownloadUrl } from "@/lib/api/projects-client"
+import { documentDownloadUrl } from "@/lib/api/projects-client"
 import { ApiError } from "@/lib/api/client"
 
-type ProjectArtifactsPanelProps = {
-  artifacts: Artifact[]
+type ProjectDocumentsPanelProps = {
+  documents: Document[]
   title: string
   emptyMessage: string
 }
 
-export function ProjectArtifactsPanel({
-  artifacts,
+export function ProjectDocumentsPanel({
+  documents,
   title,
   emptyMessage,
-}: ProjectArtifactsPanelProps) {
+}: ProjectDocumentsPanelProps) {
   const [query, setQuery] = useState("")
   const [downloadErrors, setDownloadErrors] = useState<Record<string, string>>(
     {}
@@ -26,18 +26,18 @@ export function ProjectArtifactsPanel({
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    if (!needle) return artifacts
-    return artifacts.filter(
-      (artifact) =>
-        artifact.title.toLowerCase().includes(needle) ||
-        artifact.description?.toLowerCase().includes(needle) ||
-        artifact.type.toLowerCase().includes(needle)
+    if (!needle) return documents
+    return documents.filter(
+      (document) =>
+        document.title.toLowerCase().includes(needle) ||
+        document.description?.toLowerCase().includes(needle) ||
+        document.documentType.toLowerCase().includes(needle)
     )
-  }, [artifacts, query])
+  }, [documents, query])
 
-  const handleDownload = async (artifact: Artifact) => {
+  const handleDownload = async (projectDocument: Document) => {
     try {
-      const response = await fetch(artifactDownloadUrl(artifact.id))
+      const response = await fetch(documentDownloadUrl(projectDocument.id))
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
         throw new ApiError(
@@ -52,14 +52,14 @@ export function ProjectArtifactsPanel({
       }
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
-      const anchor = document.createElement("a")
+      const anchor = window.document.createElement("a")
       anchor.href = url
-      anchor.download = artifact.title
+      anchor.download = projectDocument.title
       anchor.click()
       URL.revokeObjectURL(url)
       setDownloadErrors((current) => {
         const next = { ...current }
-        delete next[artifact.id]
+        delete next[projectDocument.id]
         return next
       })
     } catch (downloadError) {
@@ -69,7 +69,7 @@ export function ProjectArtifactsPanel({
           : "Download failed"
       setDownloadErrors((current) => ({
         ...current,
-        [artifact.id]: message,
+        [projectDocument.id]: message,
       }))
     }
   }
@@ -78,7 +78,7 @@ export function ProjectArtifactsPanel({
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-medium">
-          {title} ({artifacts.length})
+          {title} ({documents.length})
         </h2>
         <div className="relative min-w-[12rem] flex-1 sm:max-w-xs sm:flex-none">
           <HugeiconsIcon
@@ -101,29 +101,29 @@ export function ProjectArtifactsPanel({
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {filtered.map((artifact) => (
+          {filtered.map((document) => (
             <li
-              key={artifact.id}
+              key={document.id}
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{artifact.title}</p>
+                <p className="truncate text-sm font-medium">{document.title}</p>
                 <p className="text-muted-foreground text-xs capitalize">
-                  {artifact.type} · {formatRelativeTime(artifact.createdAt)}
-                  {artifact.threadTitleSnapshot
-                    ? ` · ${artifact.threadTitleSnapshot}`
+                  {document.documentType} · {formatRelativeTime(document.createdAt)}
+                  {document.threadTitleSnapshot
+                    ? ` · ${document.threadTitleSnapshot}`
                     : ""}
                 </p>
-                {downloadErrors[artifact.id] ? (
+                {downloadErrors[document.id] ? (
                   <p className="text-destructive text-xs">
-                    {downloadErrors[artifact.id]}
+                    {downloadErrors[document.id]}
                   </p>
                 ) : null}
               </div>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => void handleDownload(artifact)}
+                onClick={() => void handleDownload(document)}
               >
                 Download
               </Button>

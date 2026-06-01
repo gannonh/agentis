@@ -354,9 +354,9 @@ export function AgentActivityTab({
             </p>
             <h2 className="mt-2 text-lg font-medium">{thread.title}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {thread.artifactCount
-                ? `${thread.artifactCount} artifact${thread.artifactCount === 1 ? "" : "s"} available from this thread.`
-                : "No artifacts captured for this thread yet."}
+              {thread.documentCount
+                ? `${thread.documentCount} document${thread.documentCount === 1 ? "" : "s"} available from this thread.`
+                : "No documents captured for this thread yet."}
             </p>
           </article>
         ))

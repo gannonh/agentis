@@ -5,7 +5,7 @@ import { createComposioServices } from "./composio/index.js"
 import { isDebugSeedsEnabled, type AppConfig } from "./config.js"
 import type { Repositories } from "./repositories/index.js"
 import { createAgentRoutes } from "./routes/agents.js"
-import { createArtifactRoutes } from "./routes/artifacts.js"
+import { createDocumentRoutes } from "./routes/documents.js"
 import { createIntegrationRoutes } from "./routes/integrations.js"
 import { createMemoryRoutes } from "./routes/memories.js"
 import { createDebugSeedRoutes } from "./routes/debug-seeds.js"
@@ -56,7 +56,7 @@ export function createApp(
   app.route("/api/agents", createAgentRoutes(repos, config))
   app.route("/api/projects", createProjectRoutes(repos, config))
   app.route("/api/memories", createMemoryRoutes(repos))
-  app.route("/api/artifacts", createArtifactRoutes(repos, config))
+  app.route("/api/documents", createDocumentRoutes(repos, config))
   app.route("/api/integrations", createIntegrationRoutes(services, config))
   app.route("/api/threads", createThreadRoutes(repos, config))
   app.route("/api/threads", createThreadPromotionRoutes(repos, config))

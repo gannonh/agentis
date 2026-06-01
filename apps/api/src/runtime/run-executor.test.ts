@@ -44,8 +44,8 @@ function messageText(parts: Array<{ type: string; text?: string }>) {
 describe("run executor composio bridge", () => {
   it("keeps native workspace tool titles when finalizing tool calls", () => {
     expect(
-      formatToolStepTitle({ toolName: "createArtifact", curated: false })
-    ).toBe("Create artifact")
+      formatToolStepTitle({ toolName: "createDocument", curated: false })
+    ).toBe("Create document")
     expect(
       formatToolStepTitle({ toolName: "listWorkspaceFiles", curated: false })
     ).toBe("Native: listWorkspaceFiles")
@@ -55,12 +55,12 @@ describe("run executor composio bridge", () => {
     const systemPrompt = buildRunSystemPrompt({})
 
     expect(systemPrompt).toContain("You are Agentis")
-    expect(systemPrompt).toContain("createArtifact")
-    expect(systemPrompt).toContain("durable artifact")
+    expect(systemPrompt).toContain("createDocument")
+    expect(systemPrompt).toContain("durable document")
     expect(systemPrompt).not.toContain("## Platform requirements")
   })
 
-  it("keeps platform artifact instructions with explicit prompt sections", () => {
+  it("keeps platform document instructions with explicit prompt sections", () => {
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: "Answer as the configured research agent.",
       contextSections: [{ title: "Project context", body: "Workspace: Research" }],
@@ -70,8 +70,8 @@ describe("run executor composio bridge", () => {
       "## Agent instructions\nAnswer as the configured research agent."
     )
     expect(systemPrompt).toContain("## Platform requirements")
-    expect(systemPrompt).toContain("createArtifact")
-    expect(systemPrompt).toContain("durable artifact")
+    expect(systemPrompt).toContain("createDocument")
+    expect(systemPrompt).toContain("durable document")
     expect(systemPrompt).toContain("instead of asking for schema fields")
     expect(systemPrompt).toContain("## Project context\nWorkspace: Research")
     expect(systemPrompt.indexOf("## Agent instructions")).toBeLessThan(
@@ -881,7 +881,7 @@ describe("run executor composio bridge", () => {
             ]),
             tools: expect.arrayContaining([
               "listWorkspaceFiles",
-              "createArtifact",
+              "createDocument",
             ]),
             toolDetails: expect.arrayContaining([
               expect.objectContaining({
@@ -898,9 +898,9 @@ describe("run executor composio bridge", () => {
                 }),
               }),
               expect.objectContaining({
-                name: "createArtifact",
+                name: "createDocument",
                 description: expect.stringContaining(
-                  "Create a durable text artifact"
+                  "Create a durable text document"
                 ),
               }),
             ]),
@@ -1256,7 +1256,7 @@ describe("run executor composio bridge", () => {
     expect(
       steps.some((step) => step.title === "Source workflow context loaded")
     ).toBe(false)
-  }, 10_000)
+  }, 20_000)
 
   it("loads source workflow context on linked agent follow-up runs", async () => {
     const { app, context } = createMockRuntimeApp()

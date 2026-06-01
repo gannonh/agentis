@@ -1,5 +1,6 @@
 import type {
-  Artifact,
+  Document,
+  DocumentVersion,
   Message,
   MessagePart,
   Project,
@@ -13,7 +14,8 @@ import type {
   Workspace,
 } from "@workspace/shared"
 import type {
-  artifacts,
+  documents,
+  documentVersions,
   messages,
   projectMemories,
   projects,
@@ -30,7 +32,8 @@ type ProjectRow = typeof projects.$inferSelect
 type ProjectMemoryRow = typeof projectMemories.$inferSelect
 type SavedMemoryRow = typeof savedMemories.$inferSelect
 type SavedMemoryCategoryRow = typeof savedMemoryCategories.$inferSelect
-type ArtifactRow = typeof artifacts.$inferSelect
+type DocumentRow = typeof documents.$inferSelect
+type DocumentVersionRow = typeof documentVersions.$inferSelect
 type ThreadRow = typeof threads.$inferSelect
 type WorkspaceRow = typeof workspaces.$inferSelect
 type MessageRow = typeof messages.$inferSelect
@@ -176,7 +179,7 @@ export function mapSavedMemoryCategory(
   }
 }
 
-function parseArtifactMetadata(metadataJson: string) {
+function parseDocumentMetadata(metadataJson: string) {
   try {
     return JSON.parse(metadataJson) as Record<string, unknown>
   } catch {
@@ -184,19 +187,21 @@ function parseArtifactMetadata(metadataJson: string) {
   }
 }
 
-export function mapArtifact(row: ArtifactRow): Artifact {
+export function mapDocument(row: DocumentRow): Document {
   return {
     id: row.id,
     title: row.title,
     description: row.description ?? undefined,
-    type: row.type as Artifact["type"],
+    documentType: row.documentType as Document["documentType"],
+    contentFormat: row.contentFormat,
     mimeType: row.mimeType,
     sizeBytes: row.sizeBytes,
     storageKey: row.storageKey,
     previewText: row.previewText ?? undefined,
     metadata: row.metadataJson
-      ? parseArtifactMetadata(row.metadataJson)
+      ? parseDocumentMetadata(row.metadataJson)
       : undefined,
+    visibilityScope: row.visibilityScope as Document["visibilityScope"],
     projectId: row.projectId ?? undefined,
     projectNameSnapshot: row.projectNameSnapshot ?? undefined,
     threadId: row.threadId ?? undefined,
@@ -204,10 +209,27 @@ export function mapArtifact(row: ArtifactRow): Artifact {
     runId: row.runId ?? undefined,
     agentId: row.agentId ?? undefined,
     agentNameSnapshot: row.agentNameSnapshot ?? undefined,
+    currentVersionId: row.currentVersionId ?? undefined,
+    currentVersion: row.currentVersion ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
 }
+
+export function mapDocumentVersion(row: DocumentVersionRow): DocumentVersion {
+  return {
+    id: row.id,
+    documentId: row.documentId,
+    version: row.version,
+    contentHash: row.contentHash,
+    contentStorageKey: row.contentStorageKey,
+    changeSummary: row.changeSummary ?? undefined,
+    createdByRunId: row.createdByRunId ?? undefined,
+    createdByThreadId: row.createdByThreadId ?? undefined,
+    createdAt: row.createdAt,
+  }
+}
+
 
 export function mapRunStep(row: RunStepRow): RunStep {
   return {

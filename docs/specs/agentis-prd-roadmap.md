@@ -2,7 +2,7 @@
 
 Agentis is an open-source, self-hosted agent workspace for teams that want long-running autonomous work, reusable agents, connected tools, and visible quality controls.
 
-The MVP should let a user start work in a thread, connect tools through Composio, produce durable artifacts, promote repeatable work into an agent, invoke that agent again, and inspect run quality from a command center.
+The MVP should let a user start work in a thread, connect tools through Composio, produce durable documents, promote repeatable work into an agent, invoke that agent again, and inspect run quality from a command center.
 
 - Product overview: `docs/overview.md`
 - Reference comps: `docs/comps`; app shell, thread composer, command center, agent detail, learning, integrations, and project creation screenshots.
@@ -18,7 +18,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Provide a self-hosted path for teams to run capable AI agents against their own tools and data.
 - Make the first-run experience understandable through a polished app shell, clear navigation, and demo-ready sample states.
 - Use Composio as the primary integration layer for third-party tools and OAuth flows.
-- Treat threads, agents, learnings, artifacts, and evaluations as first-class product surfaces.
+- Treat threads, agents, learnings, documents, and evaluations as first-class product surfaces.
 - Build in vertical slices so every milestone can be demoed from the UI.
 
 ## MVP users
@@ -30,14 +30,14 @@ The MVP should let a user start work in a thread, connect tools through Composio
 ## MVP product surfaces
 
 - App shell and navigation: sidebar, workspace state, dark theme, empty states, responsive layout.
-- Threads: prompt composer, transcript, run timeline, tool calls, abort, follow-ups, artifacts.
+- Threads: prompt composer, transcript, run timeline, tool calls, abort, follow-ups, documents.
 - Projects: shared context and goals available to threads.
 - Integrations: Composio connection catalog, OAuth status, per-agent and per-thread tool access.
 - Agents: create, configure, test, run, and reuse configured workers.
 - Invocations: start with thread invocation, then add scheduled and Slack or webhook invocation.
 - Learning: skills, memories, and rubrics as reviewable suggestions from prior runs.
 - Command Center: roster, recent runs, quality, cost, active operations, and pending improvements.
-- Library: durable artifact collection with search and download.
+- Library: durable document collection with search and download.
 
 ## MVP non-goals
 
@@ -51,8 +51,8 @@ The MVP should let a user start work in a thread, connect tools through Composio
 ## Core domain model
 
 - Workspace: installation-level container for users, settings, providers, and connections.
-- Project: scoped context, goals, memories, threads, and artifacts.
-- Thread: conversational work session with messages, runs, tool calls, and artifacts.
+- Project: scoped context, goals, memories, threads, and documents.
+- Thread: conversational work session with messages, runs, tool calls, and documents.
 - Run: one agent execution with status, steps, usage, costs, errors, and outputs.
 - Integration connection: Composio-backed account connection with auth status and scopes.
 - Tool access grant: explicit permission for a thread or agent to use a connected integration.
@@ -61,7 +61,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Memory: persisted fact or preference scoped globally, by project, or by agent.
 - Rubric: evaluation criteria for scored runs.
 - Evaluation: model-generated score and feedback tied to a run and rubric.
-- Artifact: file, document, webpage, data table, image, or other run output.
+- Document: file, document, webpage, data table, image, or other run output.
 
 ## Roadmap (⚠️ warning out of date)
 
@@ -82,7 +82,7 @@ Acceptance:
 
 - User can run the app locally and navigate every MVP route without backend services.
 - Shell screens match the referenced product structure closely enough for stakeholder review.
-- Mock data demonstrates agents, runs, integrations, learnings, and artifacts.
+- Mock data demonstrates agents, runs, integrations, learnings, and documents.
 - Lint, typecheck, tests, and build run from documented commands.
 - First contributor can clone, configure, and run the frontend using the README.
 
@@ -128,26 +128,26 @@ Acceptance:
 - Attempts to use disconnected or ungranted tools produce a visible remediation path.
 - Connection state survives app restart.
 
-### M04: Projects, Context, and Artifacts ✅
+### M04: Projects, Context, and Documents ✅
 
-Goal: make work durable by grouping threads into projects, injecting project context, and collecting generated artifacts.
+Goal: make work durable by grouping threads into projects, injecting project context, and collecting generated documents.
 
 Deliverables:
 
 - Project create/edit flow with name, description, and goals.
 - Project selector in the composer and thread metadata.
 - Context assembly that injects project goals and selected project memories into runs.
-- Artifact model with upload, generated output registration, download, and basic preview metadata.
-- Library screen with search, filters, artifact cards, and project/thread provenance.
+- Document model with upload, generated output registration, download, and basic preview metadata.
+- Library screen with search, filters, document cards, and project/thread provenance.
 - Basic file storage abstraction for local self-hosted deployments.
 
 Acceptance:
 
 - User can create a project and start a thread inside it.
 - Project goals are included in the run context and visible from the thread.
-- A run can create at least one durable artifact and link it to the thread, project, and library.
-- User can browse, search, and download artifacts from the Library.
-- Deleting or archiving a project preserves clear artifact ownership rules.
+- A run can create at least one durable document and link it to the thread, project, and library.
+- User can browse, search, and download documents from the Library.
+- Deleting or archiving a project preserves clear document ownership rules.
 
 ### M05: Agent Creation and Configuration ✅
 
@@ -201,7 +201,7 @@ Deliverables:
 - Schedule creation with cadence, timezone, prompt template, and selected project context.
 - Slack invocation path through Composio for a configured workspace or channel.
 - Webhook endpoint with signing secret, sample payload, and run history.
-- Invocation run records linked to agent, trigger, inputs, outputs, and artifacts.
+- Invocation run records linked to agent, trigger, inputs, outputs, and documents.
 - Safety controls for disabled agents, missing credentials, rate limits, and cost limits.
 
 Acceptance:
@@ -263,7 +263,7 @@ Deliverables:
 - Docker Compose setup for app, API, worker, database, queue, and object storage.
 - Environment validation and setup wizard for model provider keys, Composio credentials, storage, and base URLs.
 - Local authentication for single-user and small-team installs.
-- Backup and restore documentation for database and artifact storage.
+- Backup and restore documentation for database and document storage.
 - Security pass for secret handling, OAuth callback configuration, tool permission boundaries, and webhook signing.
 - Seed demo workspace for reviewers and contributors.
 - MVP documentation: architecture overview, deployment guide, user guide, contributor guide, and troubleshooting.
@@ -271,9 +271,9 @@ Deliverables:
 Acceptance:
 
 - User can install Agentis locally from the README and complete setup without private project knowledge.
-- A fresh self-hosted install can run the core demo: create project, connect tool, run thread, create artifact, promote agent, invoke agent, view Command Center.
-- Secrets are never exposed in frontend bundles, logs, or exported artifacts.
-- Worker restart does not lose completed run history or artifacts.
+- A fresh self-hosted install can run the core demo: create project, connect tool, run thread, create document, promote agent, invoke agent, view Command Center.
+- Secrets are never exposed in frontend bundles, logs, or exported documents.
+- Worker restart does not lose completed run history or documents.
 - MVP docs explain supported features, known limits, and extension points.
 
 ## MVP demo script
@@ -283,11 +283,11 @@ Acceptance:
 3. Create a project with goals.
 4. Connect GitHub or Slack from Integrations.
 5. Start a thread in the project and grant the connected tool.
-6. Run a task that calls the tool and produces an artifact.
+6. Run a task that calls the tool and produces an document.
 7. Promote the successful thread into an agent.
 8. Attach a rubric and run the agent again.
 9. Trigger the agent through a schedule, Slack, or webhook.
-10. Review the run, artifact, cost, score, and improvement item in Command Center.
+10. Review the run, document, cost, score, and improvement item in Command Center.
 
 ## Open questions
 
@@ -296,7 +296,7 @@ Acceptance:
 - Self-host scope: Docker Compose only for MVP, with Kubernetes docs later.
 - Auth scope: single-user install first or small-team workspace first.
 - External invocation priority: Slack first, webhook first, or schedule first.
-- Artifact types: documents and files first, with webpages/slides/images later.
+- Document types: documents and files first, with webpages/slides/images later.
 
 ## Suggested MVP cut line
 

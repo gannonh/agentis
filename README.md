@@ -2,7 +2,7 @@
 
 Agentis is an open-source, self-hosted agent workspace for teams that want long-running autonomous work, reusable agents, connected tools, and visible quality controls.
 
-This repository ships the Agentis workbench: API-backed thread sessions, projects, artifacts, integration grants, reusable agents, and native workspace tooling.
+This repository ships the Agentis workbench: API-backed thread sessions, projects, documents, integration grants, reusable agents, and native workspace tooling.
 
 ## Prerequisites
 

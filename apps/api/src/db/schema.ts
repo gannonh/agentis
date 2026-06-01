@@ -378,18 +378,20 @@ export const runSteps = sqliteTable(
   ]
 )
 
-export const artifacts = sqliteTable(
-  "artifacts",
+export const documents = sqliteTable(
+  "documents",
   {
     id: text("id").primaryKey(),
     title: text("title").notNull(),
     description: text("description"),
-    type: text("type").notNull(),
+    documentType: text("document_type").notNull(),
+    contentFormat: text("content_format").notNull(),
     mimeType: text("mime_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
     storageKey: text("storage_key").notNull(),
     previewText: text("preview_text"),
     metadataJson: text("metadata_json"),
+    visibilityScope: text("visibility_scope").notNull(),
     projectId: text("project_id").references(() => projects.id),
     projectNameSnapshot: text("project_name_snapshot"),
     threadId: text("thread_id").references(() => threads.id),
@@ -397,14 +399,43 @@ export const artifacts = sqliteTable(
     runId: text("run_id").references(() => runs.id),
     agentId: text("agent_id"),
     agentNameSnapshot: text("agent_name_snapshot"),
+    currentVersionId: text("current_version_id"),
+    currentVersion: integer("current_version"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
   (table) => [
-    index("artifacts_type_idx").on(table.type),
-    index("artifacts_project_id_idx").on(table.projectId),
-    index("artifacts_thread_id_idx").on(table.threadId),
-    index("artifacts_run_id_idx").on(table.runId),
-    index("artifacts_created_at_idx").on(table.createdAt),
+    index("documents_type_idx").on(table.documentType),
+    index("documents_visibility_scope_idx").on(table.visibilityScope),
+    index("documents_project_id_idx").on(table.projectId),
+    index("documents_thread_id_idx").on(table.threadId),
+    index("documents_run_id_idx").on(table.runId),
+    index("documents_created_at_idx").on(table.createdAt),
+    index("documents_updated_at_idx").on(table.updatedAt),
   ]
 )
+
+export const documentVersions = sqliteTable(
+  "document_versions",
+  {
+    id: text("id").primaryKey(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    contentHash: text("content_hash").notNull(),
+    contentStorageKey: text("content_storage_key").notNull(),
+    changeSummary: text("change_summary"),
+    createdByRunId: text("created_by_run_id").references(() => runs.id),
+    createdByThreadId: text("created_by_thread_id").references(() => threads.id),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("document_versions_document_id_idx").on(table.documentId),
+    uniqueIndex("document_versions_document_version_unique").on(
+      table.documentId,
+      table.version
+    ),
+  ]
+)
+

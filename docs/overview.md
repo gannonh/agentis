@@ -18,15 +18,15 @@ Threads are iterative. Keep chatting to refine the output, add constraints, or r
 
 **Data analysis across systems.** "Analyze churn trends in our customer data." The agent connects to Databricks, writes and executes queries, interprets the results, pulls the churned accounts into a segmented list in HubSpot, drafts re-engagement emails, and posts the key findings to Slack.
 
-**Content production.** "Create a campaign for our summer product launch." The agent researches competitors, generates mood boards and ad concepts, writes copy across formats, produces video and image assets, and organizes everything into a brief.
+**Content production.** "Create a campaign for our summer product launch." The agent researches competitors, generates mood boards and ad concepts, writes copy across formats, produces video and image documents, and organizes everything into a brief.
 
 **Good to know**
 
 - The agent adapts as it goes. If a website is down, a query returns unexpected results, or new information changes the picture, it adjusts rather than failing.
 
-- Threads persist. You can leave and come back. The full history, all generated artifacts, and the computing environment are still there.
+- Threads persist. You can leave and come back. The full history, all generated documents, and the computing environment are still there.
 
-- Most artifact types (webpages, documents, slides, images, videos) can be downloaded or published directly from the thread.
+- Most document types (webpages, documents, slides, images, videos) can be downloaded or published directly from the thread.
 
 ## Agents
 
@@ -98,7 +98,7 @@ The system also surfaces suggested improvements (prompt adjustments, new skills,
 
 ## Library
 
-The Library collects every deliverable produced across all your threads and agent runs (webpages, images, videos, documents, data tables, and other artifacts) in one place. Browse, search, download, or publish anything with a shareable URL.
+The Library collects every deliverable produced across all your threads and agent runs (webpages, images, videos, documents, data tables, and other documents) in one place. Browse, search, download, or publish anything with a shareable URL.
 
 ## Integrations
 

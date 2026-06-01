@@ -10,7 +10,11 @@ export function formatToolStepTitle(input: {
   toolkitSlug?: string
   curated: boolean
 }): string {
-  if (input.toolName === "createArtifact") return "Create artifact"
+  if (input.toolName === "createDocument") return "Create document"
+  if (input.toolName === "findDocuments") return "Find documents"
+  if (input.toolName === "readDocument") return "Read document"
+  if (input.toolName === "updateDocumentSection") return "Update document section"
+  if (input.toolName === "appendDocumentSection") return "Append document section"
   if (input.toolName === "createWorkspaceFile") return "Create workspace file"
   if (input.toolName === "replaceInWorkspaceFile") return "Replace in workspace file"
   if (input.toolName === "applyWorkspacePatch") return "Apply workspace patch"

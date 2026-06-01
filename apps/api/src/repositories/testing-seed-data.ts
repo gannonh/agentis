@@ -8,7 +8,7 @@ export const RICH_WORKSPACE: DebugDatasetSummary = {
   id: "rich-agent-workspace",
   name: "Rich agent workspace",
   description:
-    "Seeds five pre-built agents with projects, threads, memories, artifacts, and varied tool access for manual and e2e testing.",
+    "Seeds five pre-built agents with projects, threads, memories, documents, and varied tool access for manual and e2e testing.",
 }
 
 export const RICH_WORKSPACE_NO_INTEGRATIONS: DebugDatasetSummary = {
@@ -29,7 +29,7 @@ export const projectRows = [
     description:
       "Manual testing project for validating agent configuration, project context, library references, and launch-planning flows.",
     goals:
-      "Validate agent setup and edit flows. Exercise project-scoped context in new threads. Confirm artifacts and memories appear where product builders expect them.",
+      "Validate agent setup and edit flows. Exercise project-scoped context in new threads. Confirm documents and memories appear where product builders expect them.",
     status: "active",
     archivedAt: null,
     createdAt: lastWeek,
@@ -39,7 +39,7 @@ export const projectRows = [
     id: "seed_project_customer_voice",
     name: "Customer Voice Program",
     description:
-      "Research and support workspace for testing knowledge-rich agents with customer feedback, docs, and triage artifacts.",
+      "Research and support workspace for testing knowledge-rich agents with customer feedback, docs, and triage documents.",
     goals:
       "Summarize support themes, generate release-note inputs, and keep customer-facing docs aligned with current positioning.",
     status: "active",
@@ -54,7 +54,7 @@ export const projectMemoryRows = [
     id: "seed_project_memory_launch_story",
     projectId: "seed_project_agentis_launch",
     content:
-      "The launch narrative should emphasize configurable agents, project memory, and artifact handoff rather than low-level automation internals.",
+      "The launch narrative should emphasize configurable agents, project memory, and document handoff rather than low-level automation internals.",
     enabled: true,
     createdAt: lastWeek,
     updatedAt: now,
@@ -169,7 +169,7 @@ export const agentDefinitions = [
     description:
       "Turns support themes, interview notes, and Airtable research records into prioritized product insights.",
     systemPrompt:
-      "You are Customer Insights Analyst. Cluster qualitative feedback, preserve customer language, cite source artifacts, and separate validated patterns from hypotheses. Return concise briefs with severity, audience, and recommended follow-up.",
+      "You are Customer Insights Analyst. Cluster qualitative feedback, preserve customer language, cite source documents, and separate validated patterns from hypotheses. Return concise briefs with severity, audience, and recommended follow-up.",
     model: "gpt-4o-mini",
     maxCostPerRunUsd: 1.25,
     sourceThreadId: "seed_thread_customer_voice",
@@ -199,9 +199,9 @@ export const agentDefinitions = [
     sourceThreadTitle: "Docs refresh from product deltas",
     sourceWorkflowJson: JSON.stringify({
       summary:
-        "Review product changes, compare them against docs artifacts, and produce a docs update checklist.",
+        "Review product changes, compare them against docs documents, and produce a docs update checklist.",
       firstUserPrompt:
-        "Find the docs that need updates for project memory and library artifacts.",
+        "Find the docs that need updates for project memory and library documents.",
     }),
     grants: [
       { toolkitSlug: "google-drive", connectionId: "seed_conn_google_drive" },
@@ -222,7 +222,7 @@ export const agentDefinitions = [
     sourceThreadTitle: "Launch planning command workflow",
     sourceWorkflowJson: JSON.stringify({
       summary:
-        "Gather project goals, team updates, docs status, and library artifacts into a weekly launch readiness report.",
+        "Gather project goals, team updates, docs status, and library documents into a weekly launch readiness report.",
       firstUserPrompt:
         "Prepare a launch readiness update for the Agentis beta workspace.",
     }),
@@ -237,7 +237,7 @@ export const agentDefinitions = [
     versionId: "seed_agent_version_research_librarian_v1",
     name: "Research Librarian",
     description:
-      "Builds source-backed briefs from the artifact library, GitHub issues, and external research notes.",
+      "Builds source-backed briefs from the document library, GitHub issues, and external research notes.",
     systemPrompt:
       "You are Research Librarian. Retrieve the strongest available evidence, label source type, and produce structured briefs with citations, open questions, and recommended next searches.",
     model: "gpt-4.1-mini",
@@ -363,7 +363,7 @@ export const promptsByThreadId: Record<string, string> = {
   seed_thread_customer_voice:
     "Synthesize the latest customer voice inputs into product opportunities and launch readiness risks.",
   seed_thread_docs_refresh:
-    "Audit the docs artifacts for project memory, library uploads, and agent configuration gaps.",
+    "Audit the docs documents for project memory, library uploads, and agent configuration gaps.",
   seed_thread_research_brief:
     "Create a concise research brief about the agent configuration patterns we should support first.",
   seed_thread_support_triage:
@@ -378,18 +378,18 @@ export const answersByThreadId: Record<string, string> = {
   seed_thread_docs_refresh:
     "Docs checklist: add a manual testing data section, document seeded scenario reset steps, and include screenshots after the debugging route ships.",
   seed_thread_research_brief:
-    "Configuration patterns to support first: role-specific prompts, connected tools, project context, artifact handoff, and promotion from a successful thread.",
+    "Configuration patterns to support first: role-specific prompts, connected tools, project context, document handoff, and promotion from a successful thread.",
   seed_thread_support_triage:
     "Triage complete. Two issues are documentation gaps, one is a potential integration credential blocker. Draft replies acknowledge impact and request reproduction details where needed.",
 }
 
-export const artifactRows = [
+export const documentRows = [
   {
-    id: "seed_artifact_launch_brief",
+    id: "seed_document_launch_brief",
     title: "Launch readiness brief",
     description:
       "Weekly launch status with owners, blockers, and confidence notes.",
-    type: "document",
+    documentType: "markdown",
     mimeType: "text/markdown",
     sizeBytes: 728,
     storageKey: "debug-seeds/rich-agent-workspace/launch-readiness-brief.md",
@@ -407,11 +407,11 @@ export const artifactRows = [
     updatedAt: now,
   },
   {
-    id: "seed_artifact_customer_themes",
+    id: "seed_document_customer_themes",
     title: "Customer themes table",
     description:
-      "Prioritized customer feedback clusters for testing table artifacts.",
-    type: "table",
+      "Prioritized customer feedback clusters for testing table documents.",
+    documentType: "table",
     mimeType: "text/csv",
     sizeBytes: 392,
     storageKey: "debug-seeds/rich-agent-workspace/customer-themes.csv",
@@ -429,11 +429,11 @@ export const artifactRows = [
     updatedAt: yesterday,
   },
   {
-    id: "seed_artifact_docs_checklist",
+    id: "seed_document_docs_checklist",
     title: "Docs refresh checklist",
     description:
       "Documentation tasks for current project memory and library surfaces.",
-    type: "document",
+    documentType: "markdown",
     mimeType: "text/markdown",
     sizeBytes: 476,
     storageKey: "debug-seeds/rich-agent-workspace/docs-refresh-checklist.md",
@@ -451,15 +451,15 @@ export const artifactRows = [
     updatedAt: now,
   },
   {
-    id: "seed_artifact_research_brief",
+    id: "seed_document_research_brief",
     title: "Agent configuration research brief",
     description: "Source-backed notes on early agent configuration patterns.",
-    type: "webpage",
+    documentType: "webpage",
     mimeType: "text/html",
     sizeBytes: 622,
     storageKey: "debug-seeds/rich-agent-workspace/configuration-research.html",
     previewText:
-      "Configuration patterns: role-specific prompts, tool access, project context, artifact handoff, and thread promotion.",
+      "Configuration patterns: role-specific prompts, tool access, project context, document handoff, and thread promotion.",
     metadataJson: JSON.stringify({ scenario: "rich-agent-workspace" }),
     projectId: "seed_project_agentis_launch",
     projectNameSnapshot: "Agentis Launch Readiness",
@@ -472,16 +472,16 @@ export const artifactRows = [
     updatedAt: yesterday,
   },
   {
-    id: "seed_artifact_support_reply_pack",
+    id: "seed_document_support_reply_pack",
     title: "Support reply pack",
     description:
       "Draft customer replies for common onboarding and integration cases.",
-    type: "document",
+    documentType: "markdown",
     mimeType: "text/markdown",
     sizeBytes: 584,
     storageKey: "debug-seeds/rich-agent-workspace/support-reply-pack.md",
     previewText:
-      "Includes reply drafts for missing credentials, unclear onboarding next steps, and artifact download confusion.",
+      "Includes reply drafts for missing credentials, unclear onboarding next steps, and document download confusion.",
     metadataJson: JSON.stringify({ scenario: "rich-agent-workspace" }),
     projectId: "seed_project_customer_voice",
     projectNameSnapshot: "Customer Voice Program",
@@ -494,11 +494,11 @@ export const artifactRows = [
     updatedAt: now,
   },
   {
-    id: "seed_artifact_launch_slide_notes",
+    id: "seed_document_launch_slide_notes",
     title: "Launch demo slide notes",
     description:
       "Slide outline for a manual testing demo with seeded workspace data.",
-    type: "slides",
+    documentType: "slides",
     mimeType: "text/markdown",
     sizeBytes: 438,
     storageKey: "debug-seeds/rich-agent-workspace/launch-demo-slide-notes.md",
@@ -676,8 +676,8 @@ export const savedMemoryRows = [
   },
 ]
 
-export const artifactBodies: Record<string, string> = Object.fromEntries(
-  artifactRows.map((artifact) => [artifact.storageKey, artifact.previewText])
+export const documentBodies: Record<string, string> = Object.fromEntries(
+  documentRows.map((document) => [document.storageKey, document.previewText])
 )
 
 export const agentIds = agentDefinitions.map((agent) => agent.id)
@@ -697,7 +697,7 @@ export const stepIds = threadRows.flatMap((thread) => [
   `seed_step_${thread.id.replace("seed_thread_", "")}_queued`,
   `seed_step_${thread.id.replace("seed_thread_", "")}_completed`,
 ])
-export const artifactIds = artifactRows.map((artifact) => artifact.id)
+export const documentIds = documentRows.map((document) => document.id)
 export const savedMemoryIds = savedMemoryRows.map((memory) => memory.id)
 export const grantIds = [
   ...agentDefinitions.flatMap((agent) =>
@@ -716,7 +716,7 @@ export function countPayload(includeIntegrations: boolean): DebugSeedCounts {
     agents: agentDefinitions.length,
     projects: projectRows.length,
     threads: threadRows.length,
-    artifacts: artifactRows.length,
+    documents: documentRows.length,
     savedMemories: savedMemoryRows.length,
     projectMemories: projectMemoryRows.length,
     integrationConnections: includeIntegrations ? connectionRows.length : 0,

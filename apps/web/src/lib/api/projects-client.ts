@@ -1,14 +1,14 @@
 import {
-  artifactPublicSchema,
-  artifactTypeSchema,
+  documentPublicSchema,
+  documentTypeSchema,
   createProjectMemoryRequestSchema,
   createProjectRequestSchema,
   projectMemorySchema,
   projectSchema,
   updateProjectMemoryRequestSchema,
   updateProjectRequestSchema,
-  type ArtifactPublic as Artifact,
-  type ArtifactType,
+  type DocumentPublic as Document,
+  type DocumentType,
   type CreateProjectMemoryRequest,
   type CreateProjectRequest,
   type Project,
@@ -173,24 +173,24 @@ export async function deleteProjectMemory(
   }
 }
 
-export type ArtifactListFilters = {
+export type DocumentListFilters = {
   query?: string
-  type?: ArtifactType
+  documentType?: DocumentType
   projectId?: string
   threadId?: string
 }
 
-export async function listArtifacts(
-  filters: ArtifactListFilters = {}
-): Promise<Artifact[]> {
+export async function listDocuments(
+  filters: DocumentListFilters = {}
+): Promise<Document[]> {
   const params = new URLSearchParams()
   if (filters.query) params.set("query", filters.query)
-  if (filters.type) params.set("type", filters.type)
+  if (filters.documentType) params.set("documentType", filters.documentType)
   if (filters.projectId) params.set("projectId", filters.projectId)
   if (filters.threadId) params.set("threadId", filters.threadId)
   const query = params.toString()
   const response = await fetch(
-    `${API_BASE}/api/artifacts${query ? `?${query}` : ""}`
+    `${API_BASE}/api/documents${query ? `?${query}` : ""}`
   )
   if (!response.ok) {
     const data = await response.json().catch(() => ({}))
@@ -203,33 +203,33 @@ export async function listArtifacts(
         : response.statusText
     throw new ApiError(message, response.status)
   }
-  return parseArray(artifactPublicSchema, await response.json())
+  return parseArray(documentPublicSchema, await response.json())
 }
 
-export async function uploadArtifact(input: {
+export async function uploadDocument(input: {
   title: string
-  type: ArtifactType
+  documentType: DocumentType
   file: File
   description?: string
   projectId?: string
   threadId?: string
-}): Promise<Artifact> {
-  const parsedType = artifactTypeSchema.parse(input.type)
+}): Promise<Document> {
+  const parsedType = documentTypeSchema.parse(input.documentType)
   const form = new FormData()
   form.set("title", input.title)
-  form.set("type", parsedType)
+  form.set("documentType", parsedType)
   form.set("file", input.file)
   if (input.description) form.set("description", input.description)
   if (input.projectId) form.set("projectId", input.projectId)
   if (input.threadId) form.set("threadId", input.threadId)
 
-  const response = await fetch(`${API_BASE}/api/artifacts`, {
+  const response = await fetch(`${API_BASE}/api/documents`, {
     method: "POST",
     body: form,
   })
-  return parseJson(response, artifactPublicSchema)
+  return parseJson(response, documentPublicSchema)
 }
 
-export function artifactDownloadUrl(artifactId: string) {
-  return `${API_BASE}/api/artifacts/${artifactId}/download`
+export function documentDownloadUrl(documentId: string) {
+  return `${API_BASE}/api/documents/${documentId}/download`
 }

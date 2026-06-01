@@ -746,7 +746,7 @@ export class WorkspaceService {
     const filesRoot = path.join(workspaceRoot, "files")
     const runtimeRoot = path.join(workspaceRoot, "runtime")
     await mkdir(filesRoot, { recursive: true })
-    await mkdir(path.join(workspaceRoot, "artifacts"), { recursive: true })
+    await mkdir(path.join(workspaceRoot, "documents"), { recursive: true })
     await mkdir(runtimeRoot, { recursive: true })
 
     return new WorkspaceHandle({

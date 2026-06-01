@@ -613,8 +613,8 @@ export const updateProjectMemoryRequestSchema = z.object({
   enabled: z.boolean().optional(),
 })
 
-export const artifactTypeSchema = z.enum([
-  "document",
+export const documentTypeSchema = z.enum([
+  "markdown",
   "webpage",
   "image",
   "video",
@@ -623,16 +623,24 @@ export const artifactTypeSchema = z.enum([
   "other",
 ])
 
-export const artifactSchema = z.object({
+export const documentVisibilityScopeSchema = z.enum([
+  "thread",
+  "project",
+  "global",
+])
+
+export const documentSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable().optional(),
-  type: artifactTypeSchema,
+  documentType: documentTypeSchema,
+  contentFormat: z.string(),
   mimeType: z.string(),
   sizeBytes: z.number(),
   storageKey: z.string(),
   previewText: z.string().nullable().optional(),
   metadata: z.record(z.unknown()).nullable().optional(),
+  visibilityScope: documentVisibilityScopeSchema,
   projectId: z.string().nullable().optional(),
   projectNameSnapshot: z.string().nullable().optional(),
   threadId: z.string().nullable().optional(),
@@ -640,16 +648,31 @@ export const artifactSchema = z.object({
   runId: z.string().nullable().optional(),
   agentId: z.string().nullable().optional(),
   agentNameSnapshot: z.string().nullable().optional(),
+  currentVersionId: z.string().nullable().optional(),
+  currentVersion: z.number().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
 
-/** API responses omit internal storage paths. */
-export const artifactPublicSchema = artifactSchema.omit({ storageKey: true })
+export const documentVersionSchema = z.object({
+  id: z.string(),
+  documentId: z.string(),
+  version: z.number(),
+  contentHash: z.string(),
+  contentStorageKey: z.string(),
+  changeSummary: z.string().nullable().optional(),
+  createdByRunId: z.string().nullable().optional(),
+  createdByThreadId: z.string().nullable().optional(),
+  createdAt: z.string(),
+})
 
-export const listArtifactsQuerySchema = z.object({
+/** API responses omit internal storage paths. */
+export const documentPublicSchema = documentSchema.omit({ storageKey: true })
+
+export const listDocumentsQuerySchema = z.object({
   query: z.string().optional(),
-  type: artifactTypeSchema.optional(),
+  documentType: documentTypeSchema.optional(),
+  visibilityScope: documentVisibilityScopeSchema.optional(),
   projectId: z.string().optional(),
   threadId: z.string().optional(),
 })
@@ -666,7 +689,7 @@ export const threadListItemSchema = threadSchema.extend({
   messageCount: z.number().optional(),
   lastRunStatus: runStatusSchema.optional(),
   summary: z.string().nullable().optional(),
-  artifactCount: z.number().optional(),
+  documentCount: z.number().optional(),
 })
 
 export const agentRecentThreadSummarySchema = threadListItemSchema
@@ -681,10 +704,10 @@ export const agentRecentThreadSummarySchema = threadListItemSchema
     lastRunStatus: true,
     summary: true,
   })
-  .extend({ artifactCount: nonNegativeInteger })
+  .extend({ documentCount: nonNegativeInteger })
 
 export const agentLibrarySummarySchema = z.object({
-  items: z.array(artifactPublicSchema),
+  items: z.array(documentPublicSchema),
   totalCount: nonNegativeInteger,
 })
 
@@ -887,10 +910,12 @@ export type CreateProjectMemoryRequest = z.infer<
 export type UpdateProjectMemoryRequest = z.infer<
   typeof updateProjectMemoryRequestSchema
 >
-export type ArtifactType = z.infer<typeof artifactTypeSchema>
-export type Artifact = z.infer<typeof artifactSchema>
-export type ArtifactPublic = z.infer<typeof artifactPublicSchema>
-export type ListArtifactsQuery = z.infer<typeof listArtifactsQuerySchema>
+export type DocumentType = z.infer<typeof documentTypeSchema>
+export type DocumentVisibilityScope = z.infer<typeof documentVisibilityScopeSchema>
+export type Document = z.infer<typeof documentSchema>
+export type DocumentVersion = z.infer<typeof documentVersionSchema>
+export type DocumentPublic = z.infer<typeof documentPublicSchema>
+export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>
 export type ThreadDetail = z.infer<typeof threadDetailSchema>
 export type ThreadListItem = z.infer<typeof threadListItemSchema>
 export type AbortRunResponse = z.infer<typeof abortRunResponseSchema>

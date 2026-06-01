@@ -146,7 +146,7 @@ export function ProjectThreadsPanel({ threads }: ProjectThreadsPanelProps) {
                       className="size-3.5"
                       strokeWidth={2}
                     />
-                    {thread.artifactCount ?? 0} assets
+                    {thread.documentCount ?? 0} documents
                   </span>
                 </div>
               </Link>

@@ -229,9 +229,9 @@ describe("repositories", () => {
       agentNameSnapshot: otherAgent.name,
       agentConfigurationVersionId: otherAgent.currentConfigurationVersion.id,
     })
-    ctx.repos.artifacts.create({
+    ctx.repos.documents.create({
       title: "Agent notes",
-      type: "document",
+      documentType: "markdown",
       mimeType: "text/markdown",
       sizeBytes: 12,
       storageKey: "agent-notes.md",
@@ -240,9 +240,9 @@ describe("repositories", () => {
       threadId: newer.id,
       threadTitleSnapshot: newer.title,
     })
-    ctx.repos.artifacts.create({
+    ctx.repos.documents.create({
       title: "Other notes",
-      type: "document",
+      documentType: "markdown",
       mimeType: "text/markdown",
       sizeBytes: 12,
       storageKey: "other-notes.md",
@@ -254,10 +254,10 @@ describe("repositories", () => {
       ctx.repos.threads.listByAgentId(agent.id).map((thread) => thread.id)
     ).toEqual([newer.id, older.id])
     expect(ctx.repos.threads.listByAgentId("missing-agent")).toEqual([])
-    expect(ctx.repos.artifacts.list({ agentId: agent.id })).toMatchObject([
+    expect(ctx.repos.documents.list({ agentId: agent.id })).toMatchObject([
       { title: "Agent notes", agentId: agent.id },
     ])
-    expect(ctx.repos.artifacts.list({ agentId: "missing-agent" })).toEqual([])
+    expect(ctx.repos.documents.list({ agentId: "missing-agent" })).toEqual([])
     ctx.cleanup()
   })
 

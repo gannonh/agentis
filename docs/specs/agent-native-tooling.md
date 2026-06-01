@@ -250,26 +250,26 @@ File: `apps/api/src/runtime/get-workspace-summary.ts`
 
 Returns a static/demo summary of the Agentis workspace. It is useful as an M02-era runtime smoke test, but it does not inspect real workspace state or files.
 
-#### `createArtifact`
+#### `createDocument`
 
-File: `apps/api/src/artifacts/artifact-tool.ts`
+File: `apps/api/src/documents/document-tool.ts`
 
-Lets the model create a durable text artifact linked to the current run, thread, project, and Library.
+Lets the model create a durable text document linked to the current run, thread, project, and Library.
 
 Supporting files:
 
-- `apps/api/src/artifacts/artifact-service.ts`
-- `apps/api/src/artifacts/local-artifact-storage.ts`
-- `apps/api/src/repositories/artifact-repository.ts`
-- `apps/api/src/routes/artifacts.ts`
+- `apps/api/src/documents/document-service.ts`
+- `apps/api/src/documents/local-document-storage.ts`
+- `apps/api/src/repositories/document-repository.ts`
+- `apps/api/src/routes/documents.ts`
 
 Implemented behavior:
 
 - Accepts title, type, filename, content, description, and preview text.
-- Writes generated content to local artifact storage under `AGENTIS_STORAGE_ROOT`.
-- Persists artifact metadata in SQLite.
-- Links generated artifacts to provenance where available.
-- Logs artifact creation in the run timeline.
+- Writes generated content to local document storage under `AGENTIS_STORAGE_ROOT`.
+- Persists document metadata in SQLite.
+- Links generated documents to provenance where available.
+- Logs document creation in the run timeline.
 
 ### Native context assembly
 
@@ -303,7 +303,7 @@ boundary. Local-container execution improves local isolation with Docker runtime
 
 controls, but production-grade sandboxing remains future work.
 
-The artifact storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents.
+The document storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents.
 
 ## Existing tool and persistence model
 
@@ -387,7 +387,7 @@ Agentis should model workspace ownership through agents, not projects.
 - Mental model: an agent's home.
 - Owns many threads or sessions.
 - Has one storage/runtime backend.
-- Initially backed by a filesystem directory with durable files, local SQLite data, artifacts, and a process runtime for code or commands.
+- Initially backed by a filesystem directory with durable files, local SQLite data, documents, and a process runtime for code or commands.
 - Later backed by pluggable production storage/runtime implementations such as containers, VMs, Cloudflare, Postgres, object storage, or external sandbox providers.
 - Persists with the agent lifecycle. Archiving an agent archives its workspace.
 
@@ -481,7 +481,7 @@ AGENTIS_STORAGE_ROOT/
   workspaces/
     {workspaceId}/
       files/
-      artifacts/
+      documents/
       runtime/
       workspace.sqlite
 ```
@@ -598,8 +598,8 @@ Candidate updates:
 
 ## Open product questions
 
-- Should native file tooling operate on workspace files, uploaded Library artifacts, Git repositories, or all three?
-- Should file edits create new artifacts, modify workspace files, or both depending on tool choice?
+- Should native file tooling operate on workspace files, uploaded Library documents, Git repositories, or all three?
+- Should file edits create new documents, modify workspace files, or both depending on tool choice?
 - Should native tools be grantable per thread and agent like Composio tools?
 - Should every native tool call be replayable or exportable for audit?
 - Should agent-created files be versioned?
@@ -619,9 +619,9 @@ Candidate updates:
 
 - `apps/api/src/runtime/run-executor.ts`
 - `apps/api/src/runtime/get-workspace-summary.ts`
-- `apps/api/src/artifacts/artifact-tool.ts`
-- `apps/api/src/artifacts/artifact-service.ts`
-- `apps/api/src/artifacts/local-artifact-storage.ts`
+- `apps/api/src/documents/document-tool.ts`
+- `apps/api/src/documents/document-service.ts`
+- `apps/api/src/documents/local-document-storage.ts`
 - `apps/api/src/runtime/run-context.ts`
 - `apps/api/src/native-tools/execution-workspace-tools.ts`
 - `apps/api/src/workspaces/workspace-execution-service.ts`

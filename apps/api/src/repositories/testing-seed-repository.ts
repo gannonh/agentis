@@ -8,7 +8,7 @@ import {
   agentConfigurationVersions,
   agentPromotionDrafts,
   agents,
-  artifacts,
+  documents,
   integrationConnections,
   messages,
   projectMemories,
@@ -20,7 +20,7 @@ import {
   toolAccessGrants,
   workspaces,
 } from "../db/schema.js"
-import { LocalArtifactStorage } from "../artifacts/local-artifact-storage.js"
+import { LocalDocumentStorage } from "../documents/local-document-storage.js"
 import {
   RICH_WORKSPACE,
   RICH_WORKSPACE_NO_INTEGRATIONS,
@@ -28,9 +28,9 @@ import {
   agentIds,
   agentVersionIds,
   answersByThreadId,
-  artifactBodies,
-  artifactIds,
-  artifactRows,
+  documentBodies,
+  documentIds,
+  documentRows,
   connectionIds,
   connectionRows,
   countPayload,
@@ -104,13 +104,13 @@ export class TestingSeedRepository {
 
   deleteAllData(): DebugDataResetResult {
     const storageKeys = this.db
-      .select({ storageKey: artifacts.storageKey })
-      .from(artifacts)
+      .select({ storageKey: documents.storageKey })
+      .from(documents)
       .all()
-      .map((artifact) => artifact.storageKey)
+      .map((document) => document.storageKey)
 
     this.db.transaction((tx) => {
-      tx.delete(artifacts).run()
+      tx.delete(documents).run()
       tx.delete(toolAccessGrants).run()
       tx.delete(runSteps).run()
       tx.delete(runs).run()
@@ -126,7 +126,7 @@ export class TestingSeedRepository {
       tx.delete(integrationConnections).run()
     })
 
-    const storage = this.getArtifactStorage()
+    const storage = this.getDocumentStorage()
     for (const storageKey of storageKeys) {
       storage?.delete(storageKey)
     }
@@ -134,8 +134,8 @@ export class TestingSeedRepository {
     return { counts: this.countWorkspaceData() }
   }
 
-  private getArtifactStorage(): LocalArtifactStorage | null {
-    return this.config ? new LocalArtifactStorage(this.config) : null
+  private getDocumentStorage(): LocalDocumentStorage | null {
+    return this.config ? new LocalDocumentStorage(this.config) : null
   }
 
   private writeDemoWorkspaceFiles(): void {
@@ -171,7 +171,7 @@ export class TestingSeedRepository {
       agents: this.countRows(agents),
       projects: this.countRows(projects),
       threads: this.countRows(threads),
-      artifacts: this.countRows(artifacts),
+      documents: this.countRows(documents),
       savedMemories: this.countRows(savedMemories),
       projectMemories: this.countRows(projectMemories),
       integrationConnections: this.countRows(integrationConnections),
@@ -212,31 +212,31 @@ export class TestingSeedRepository {
           .map((run) => run.id),
       ])
     )
-    const richArtifacts = this.db
-      .select({ id: artifacts.id, storageKey: artifacts.storageKey })
-      .from(artifacts)
+    const richDocuments = this.db
+      .select({ id: documents.id, storageKey: documents.storageKey })
+      .from(documents)
       .where(
         or(
-          inArray(artifacts.id, artifactIds),
-          inArray(artifacts.projectId, projectIds),
-          inArray(artifacts.threadId, richThreadIds),
-          inArray(artifacts.runId, richRunIds),
-          inArray(artifacts.agentId, agentIds)
+          inArray(documents.id, documentIds),
+          inArray(documents.projectId, projectIds),
+          inArray(documents.threadId, richThreadIds),
+          inArray(documents.runId, richRunIds),
+          inArray(documents.agentId, agentIds)
         )
       )
       .all()
 
-    const storage = this.getArtifactStorage()
-    for (const artifact of richArtifacts) {
-      storage?.delete(artifact.storageKey)
+    const storage = this.getDocumentStorage()
+    for (const document of richDocuments) {
+      storage?.delete(document.storageKey)
     }
 
     this.db.transaction((tx) => {
-      tx.delete(artifacts)
+      tx.delete(documents)
         .where(
           inArray(
-            artifacts.id,
-            richArtifacts.map((artifact) => artifact.id)
+            documents.id,
+            richDocuments.map((document) => document.id)
           )
         )
         .run()
@@ -294,8 +294,8 @@ export class TestingSeedRepository {
   }
 
   private insertRichWorkspace(includeIntegrations: boolean): void {
-    const storage = this.getArtifactStorage()
-    for (const [storageKey, body] of Object.entries(artifactBodies)) {
+    const storage = this.getDocumentStorage()
+    for (const [storageKey, body] of Object.entries(documentBodies)) {
       storage?.write(storageKey, Buffer.from(body, "utf8"))
     }
     new WorkspaceRepository(this.db).ensureGenericAgentisWorkspace()
@@ -479,7 +479,20 @@ export class TestingSeedRepository {
       })
       tx.insert(runSteps).values(stepRows).run()
 
-      tx.insert(artifacts).values(artifactRows).run()
+      tx.insert(documents)
+        .values(
+          documentRows.map((document) => ({
+            ...document,
+            contentFormat:
+              document.documentType === "markdown"
+                ? "markdown"
+                : document.mimeType.startsWith("text/")
+                  ? "text"
+                  : "binary",
+            visibilityScope: document.projectId ? "project" : "global",
+          }))
+        )
+        .run()
       tx.insert(savedMemories).values(savedMemoryRows).run()
     })
   }
