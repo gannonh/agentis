@@ -126,7 +126,31 @@ export async function executeMockNativeWebSearchStream(
   const toolName = "searchWeb" as const
   const toolCallId = `mock-native-search-${runId}`
   const toolInput = { query: inferSearchQuery(latestUserPrompt) }
-  const toolOutput = await deps.webSearchService.search(toolInput)
+  let toolOutput: SearchWebOutput
+  try {
+    toolOutput = await deps.webSearchService.search(toolInput)
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Web search failed"
+    deps.repos.messages.updatePartsAndStatus(
+      assistantMessage.id,
+      [{ type: "text", text: message }],
+      "failed"
+    )
+    deps.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: message,
+    })
+    deps.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Web search failed",
+      payload: { provider: "native", toolName, toolCallId, message },
+    })
+    deps.repos.threads.touch(run.threadId, { status: "failed" })
+    throw error
+  }
   const summaryText = formatMockWebSearchSummary(toolOutput)
   const assistantParts: MessagePart[] = [
     { type: "text", text: summaryText },

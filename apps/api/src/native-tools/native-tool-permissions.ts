@@ -9,12 +9,10 @@ export function resolveNativeToolsForRun(input: {
   agentId?: string | null
   agentConfiguration: { nativeTools: NativeToolPermissionId[] } | null
 }): NativeToolPermissionId[] {
-  if (
-    input.agentId === GENERIC_AGENTIS_AGENT_ID ||
-    !input.agentConfiguration
-  ) {
+  if (input.agentId === GENERIC_AGENTIS_AGENT_ID || !input.agentId) {
     return [...PLATFORM_BASIC_NATIVE_TOOL_PERMISSIONS]
   }
+  if (!input.agentConfiguration) return []
 
   return input.agentConfiguration.nativeTools
 }

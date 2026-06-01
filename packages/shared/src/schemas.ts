@@ -417,6 +417,7 @@ export const updateAgentPromotionDraftRequestSchema = z
     systemPrompt: nonEmptyString.optional(),
     model: nonEmptyString.optional(),
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
+    nativeTools: nativeToolsSchema.optional(),
     intelligence: updateAgentPromotionDraftIntelligenceSchema.optional(),
   })
   .strict()

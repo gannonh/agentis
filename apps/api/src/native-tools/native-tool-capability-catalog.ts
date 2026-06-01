@@ -34,7 +34,8 @@ export function resolveNativeRuntimeCapabilities(input: {
   )
   const webSearchRequested = looksLikeWebSearchIntent(input.latestUserPrompt)
   const webSearchAvailable = input.providerAvailability.webSearch
-  const webSearchEnabled = webSearchPermitted && webSearchAvailable
+  const webSearchEnabled =
+    webSearchPermitted && webSearchRequested && webSearchAvailable
   const unavailableError =
     webSearchPermitted && !webSearchAvailable && webSearchRequested
       ? new WebSearchError(
@@ -49,8 +50,7 @@ export function resolveNativeRuntimeCapabilities(input: {
 
   return {
     runtimeTools,
-    systemPromptSections:
-      webSearchEnabled ? [WEB_SEARCH_SYSTEM_PROMPT] : [],
+    systemPromptSections: webSearchEnabled ? [WEB_SEARCH_SYSTEM_PROMPT] : [],
     webSearch: {
       permitted: webSearchPermitted,
       requested: webSearchRequested,

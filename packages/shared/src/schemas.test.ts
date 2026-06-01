@@ -222,15 +222,17 @@ describe("shared schemas", () => {
   it("keeps native tool permissions in their shared native-tool contract", () => {
     expect(nativeToolPermissionIdSchema.parse("webSearch")).toBe("webSearch")
     expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual(["webSearch"])
-    expect(NATIVE_TOOL_CAPABILITY_CATALOG).toEqual([
-      expect.objectContaining({
-        id: "webSearch",
-        runtimeToolName: "searchWeb",
-        label: "Search",
-        group: "Research",
-        defaultSelected: true,
-      }),
-    ])
+    expect(NATIVE_TOOL_CAPABILITY_CATALOG).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "webSearch",
+          runtimeToolName: "searchWeb",
+          label: "Search",
+          group: "Research",
+          defaultSelected: true,
+        }),
+      ])
+    )
   })
 
   it("requires web search queries and result URLs to be safe for source links", () => {

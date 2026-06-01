@@ -30,8 +30,41 @@ describe("web search normalization", () => {
     })
 
     expect(output.resultCount).toBe(1)
-    expect(output.results[0]?.snippet).toHaveLength(101)
+    expect(output.results[0]?.snippet).toHaveLength(100)
     expect(output.results[0]?.source).toBe("example.com")
+  })
+
+  it("marks output truncated only when results exceed the requested cap", () => {
+    const output = normalizeSearchResults({
+      query: "latest ai news",
+      provider: "mock",
+      rawResults: [
+        { title: "Missing url" },
+        {
+          title: "Example headline",
+          url: "https://example.com/story",
+        },
+      ],
+      maxResults: 5,
+      maxSnippetChars: 100,
+    })
+
+    expect(output.resultCount).toBe(1)
+    expect(output.truncated).toBe(false)
+
+    const capped = normalizeSearchResults({
+      query: "latest ai news",
+      provider: "mock",
+      rawResults: [
+        { title: "One", url: "https://example.com/one" },
+        { title: "Two", url: "https://example.com/two" },
+      ],
+      maxResults: 1,
+      maxSnippetChars: 100,
+    })
+
+    expect(capped.resultCount).toBe(1)
+    expect(capped.truncated).toBe(true)
   })
 
   it("rejects unsafe urls and invalid normalized fields", () => {

@@ -575,6 +575,43 @@ describe("promotion draft routes", () => {
     expect(body.configurationVersions[0]?.nativeTools).toEqual([])
   })
 
+  it("uses draft-updated native tools when creating an agent from a draft", async () => {
+    ctx = createTestContext()
+    const created = ctx.repos.threads.createWithInitialRun({
+      title: "Investigate support backlog",
+      prompt: "Review support backlog patterns",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+    const draftResponse = await app.request(
+      `/api/threads/${created.thread.id}/promotion-drafts`,
+      { method: "POST" }
+    )
+    const { draft } = (await draftResponse.json()) as { draft: { id: string } }
+
+    const response = await app.request(
+      `/api/agent-promotion-drafts/${draft.id}/create-agent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "No Search Agent",
+          systemPrompt: "Answer without web search.",
+          draftUpdates: { nativeTools: [] },
+        }),
+      }
+    )
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      agent: { currentConfigurationVersion: { nativeTools: string[] } }
+      configurationVersions: { nativeTools: string[] }[]
+    }
+    expect(body.agent.currentConfigurationVersion.nativeTools).toEqual([])
+    expect(body.configurationVersions[0]?.nativeTools).toEqual([])
+  })
+
   it("keeps required proposed grants when create payload includes explicit grants", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

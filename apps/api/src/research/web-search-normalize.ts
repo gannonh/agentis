@@ -18,8 +18,10 @@ type RawSearchResult = {
 type NormalizedSearchResult = SearchWebOutput["results"][number]
 
 function truncateString(value: string, maxChars: number): string {
+  if (maxChars <= 0) return ""
   if (value.length <= maxChars) return value
-  return `${value.slice(0, maxChars)}…`
+  if (maxChars === 1) return "…"
+  return `${value.slice(0, maxChars - 1)}…`
 }
 
 function trimOptionalString(value: unknown, maxChars: number): string | undefined {
@@ -123,7 +125,7 @@ export function normalizeSearchResults(input: {
     provider: input.provider,
     results,
     resultCount: results.length,
-    truncated: input.rawResults.length > results.length,
+    truncated: input.rawResults.length > input.maxResults,
     metadata: input.metadata,
   })
 }

@@ -25,6 +25,14 @@ export const NATIVE_WORKSPACE_TOOL_NAMES = [
 export type NativeWorkspaceToolName =
   (typeof NATIVE_WORKSPACE_TOOL_NAMES)[number]
 
+const WEB_SEARCH_TITLE_MAX_CHARS = 200
+const WEB_SEARCH_URL_MAX_CHARS = 500
+const WEB_SEARCH_SNIPPET_MAX_CHARS = 500
+const WEB_SEARCH_SOURCE_MAX_CHARS = 200
+const WEB_SEARCH_METADATA_MAX_CHARS = 200
+const WEB_SEARCH_DOMAIN_LIMIT = 10
+const WEB_SEARCH_METADATA_KEYS = ["gatewayTool", "requestId"] as const
+
 export type NativeToolRunStepPayload = {
   provider: "native"
   toolCallId?: string
@@ -84,6 +92,13 @@ export function isNativeToolName(toolName: string): toolName is NativeToolName {
   )
 }
 
+function truncateText(value: string, maxChars: number): string {
+  if (value.length <= maxChars) return value
+  if (maxChars <= 0) return ""
+  if (maxChars === 1) return "…"
+  return `${value.slice(0, maxChars - 1)}…`
+}
+
 function summarizeWebSearchResult(
   result: unknown
 ): SearchWebOutput["results"][number] | null {
@@ -93,13 +108,34 @@ function summarizeWebSearchResult(
   }
 
   return {
-    title: result.title,
-    url: result.url,
-    snippet: typeof result.snippet === "string" ? result.snippet : undefined,
-    source: typeof result.source === "string" ? result.source : undefined,
+    title: truncateText(result.title, WEB_SEARCH_TITLE_MAX_CHARS),
+    url: truncateText(result.url, WEB_SEARCH_URL_MAX_CHARS),
+    snippet:
+      typeof result.snippet === "string"
+        ? truncateText(result.snippet, WEB_SEARCH_SNIPPET_MAX_CHARS)
+        : undefined,
+    source:
+      typeof result.source === "string"
+        ? truncateText(result.source, WEB_SEARCH_SOURCE_MAX_CHARS)
+        : undefined,
     publishedAt:
-      typeof result.publishedAt === "string" ? result.publishedAt : undefined,
+      typeof result.publishedAt === "string"
+        ? truncateText(result.publishedAt, WEB_SEARCH_METADATA_MAX_CHARS)
+        : undefined,
   }
+}
+
+function summarizeWebSearchMetadata(
+  metadata: unknown
+): Record<string, string> | undefined {
+  if (!isObject(metadata)) return undefined
+  const entries = WEB_SEARCH_METADATA_KEYS.flatMap((key) => {
+    const value = metadata[key]
+    return typeof value === "string"
+      ? [[key, truncateText(value, WEB_SEARCH_METADATA_MAX_CHARS)] as const]
+      : []
+  })
+  return entries.length ? Object.fromEntries(entries) : undefined
 }
 
 function summarizeWebSearchOutput(output: unknown): unknown {
@@ -122,7 +158,7 @@ function summarizeWebSearchOutput(output: unknown): unknown {
         : results.length,
     truncated: output.truncated === true,
     results,
-    metadata: isObject(output.metadata) ? output.metadata : undefined,
+    metadata: summarizeWebSearchMetadata(output.metadata),
   } satisfies Partial<SearchWebOutput>
 }
 
@@ -141,9 +177,10 @@ function summarizeWebSearchInput(input: unknown): unknown {
     maxResults:
       typeof input.maxResults === "number" ? input.maxResults : undefined,
     domains: Array.isArray(input.domains)
-      ? input.domains.filter(
-          (domain): domain is string => typeof domain === "string"
-        )
+      ? input.domains
+          .filter((domain): domain is string => typeof domain === "string")
+          .slice(0, WEB_SEARCH_DOMAIN_LIMIT)
+          .map((domain) => truncateText(domain, WEB_SEARCH_SOURCE_MAX_CHARS))
       : undefined,
     recency: isSearchWebRecency(input.recency) ? input.recency : undefined,
   } satisfies Partial<SearchWebInput>

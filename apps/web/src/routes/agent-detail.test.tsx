@@ -705,6 +705,43 @@ describe("AgentDetailPage", () => {
     expect(screen.getByRole("heading", { name: "Access" })).toBeInTheDocument()
   })
 
+  it("counts both native tools and integration grants in the Tools badge", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+
+    expect(screen.getByText("2 active")).toBeInTheDocument()
+  })
+
+  it("renders catalog-only tools as static cards instead of toggles", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+
+    expect(screen.getByText("Browser").closest("label")).toBeNull()
+    expect(screen.getByRole("checkbox", { name: "Search" })).toBeInTheDocument()
+  })
+
   it("saves API-backed tool grants from the Tools tab", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())

@@ -729,27 +729,8 @@ function ToolCard({
   checked: boolean
   onCheckedChange?: (checked: boolean) => void
 }) {
-  const interactive = Boolean(onCheckedChange)
-  return (
-    <label
-      className={`flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3 ${
-        interactive ? "cursor-pointer hover:bg-muted/40" : ""
-      }`}
-    >
-      {interactive ? (
-        <input
-          type="checkbox"
-          className="mt-1"
-          aria-label={title}
-          checked={checked}
-          onChange={(event) => onCheckedChange?.(event.target.checked)}
-        />
-      ) : (
-        <span
-          aria-hidden
-          className="mt-1 size-3.5 rounded-sm border border-border bg-background"
-        />
-      )}
+  const content = (
+    <>
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <HugeiconsIcon icon={icon} className="size-4" strokeWidth={2} />
       </span>
@@ -762,6 +743,31 @@ function ToolCard({
           {description}
         </span>
       </span>
+    </>
+  )
+
+  if (!onCheckedChange) {
+    return (
+      <div className="flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3">
+        <span
+          aria-hidden
+          className="mt-1 size-3.5 rounded-full bg-muted-foreground/30"
+        />
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <label className="flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border border-border bg-card/70 p-3 hover:bg-muted/40">
+      <input
+        type="checkbox"
+        className="mt-1"
+        aria-label={title}
+        checked={checked}
+        onChange={(event) => onCheckedChange(event.target.checked)}
+      />
+      {content}
     </label>
   )
 }
@@ -954,7 +960,9 @@ export function AgentToolsTab({
           <h2 id="tools-heading" className="text-sm font-medium">
             Tools
           </h2>
-          <Badge variant="secondary">{selectedNativeTools.size} active</Badge>
+          <Badge variant="secondary">
+            {selectedNativeTools.size + selectedToolkits.size} active
+          </Badge>
         </div>
         {TOOL_GROUPS.map((group) => (
           <div key={group.label} className="flex flex-col gap-2">

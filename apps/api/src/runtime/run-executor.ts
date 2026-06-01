@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai"
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
-import type { MessagePart, Run } from "@workspace/shared"
+import { GENERIC_AGENTIS_AGENT_ID, type MessagePart, type Run } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import { ComposioRemediationError } from "../composio/tool-execution-service.js"
 import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
@@ -311,7 +311,9 @@ export class RunExecutor {
       ? this.repos.agents.getConfigurationVersionById(
           run.agentConfigurationVersionId
         )
-      : null
+      : run.agentId && run.agentId !== GENERIC_AGENTIS_AGENT_ID
+        ? this.repos.agents.getCurrentConfigurationSnapshot(run.agentId)
+        : null
     if (run.agentConfigurationVersionId && !agentConfiguration) {
       const message =
         "Agent configuration version not found: " +

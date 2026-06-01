@@ -47,4 +47,30 @@ describe("native tool capability catalog", () => {
       message: "Web search provider is not configured",
     })
   })
+
+  it("keeps permitted available web search inactive without search intent", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["webSearch"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Summarize this text",
+      buildTools: {
+        webSearch: () => ({
+          searchWeb: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.webSearch).toMatchObject({
+      permitted: true,
+      requested: false,
+      enabled: false,
+    })
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.systemPromptSections).not.toContain(
+      WEB_SEARCH_SYSTEM_PROMPT
+    )
+  })
 })

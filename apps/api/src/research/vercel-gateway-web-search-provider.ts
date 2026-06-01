@@ -32,6 +32,7 @@ type ParallelSearchResponse = {
     title?: string
     url?: string
     excerpt?: string
+    excerpts?: string[]
     publishDate?: string | null
   }>
   searchId?: string
@@ -114,10 +115,22 @@ export function createVercelGatewayWebSearchProvider(
       const toolName = gatewayToolName(config.webSearchBackend)
 
       try {
+        if (config.webSearchBackend === "parallel" && bounded.recency) {
+          throw new WebSearchError(
+            "web_search_provider_unsupported",
+            "The parallel web search backend does not support recency filters"
+          )
+        }
+
         const searchTool =
           config.webSearchBackend === "parallel"
             ? gateway.tools.parallelSearch({
                 maxResults,
+                ...(bounded.domains
+                  ? { searchDomainFilter: bounded.domains }
+                  : {}),
+              } as Parameters<typeof gateway.tools.parallelSearch>[0] & {
+                searchDomainFilter?: string[]
               })
             : gateway.tools.perplexitySearch({
                 maxResults,
@@ -179,10 +192,15 @@ export function createVercelGatewayWebSearchProvider(
 function mapParallelResults(results: unknown[]) {
   return results.map((result) => {
     if (!isObject(result)) return {}
+    const excerpts = Array.isArray(result.excerpts)
+      ? result.excerpts.filter((excerpt): excerpt is string =>
+          typeof excerpt === "string"
+        )
+      : []
     return {
       title: result.title,
       url: result.url,
-      snippet: result.excerpt,
+      snippet: excerpts.length > 0 ? excerpts.join("\n\n") : result.excerpt,
       publishedAt: result.publishDate ?? undefined,
     }
   })
