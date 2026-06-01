@@ -72,8 +72,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
         model: body.model ?? config.defaultModel,
         nativeTools: body.nativeTools,
       },
-      resolvedGrants.grants,
-      body.nativeTools
+      resolvedGrants.grants
     )
 
     return c.json(buildAgentDetail(repos, created.id), 201)

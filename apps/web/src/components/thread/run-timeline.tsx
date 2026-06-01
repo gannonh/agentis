@@ -12,6 +12,12 @@ const statusLabel: Record<Run["status"], string> = {
   aborted: "Aborted",
 }
 
+type WebSearchSource = {
+  title: string
+  url: string
+  source?: string
+}
+
 function getRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null
     ? (value as Record<string, unknown>)
@@ -20,7 +26,11 @@ function getRecord(value: unknown): Record<string, unknown> | null {
 
 function formatComposioPayload(step: RunStep) {
   const payload = step.payload
-  if (!payload || typeof payload !== "object" || payload.provider !== "composio") {
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    payload.provider !== "composio"
+  ) {
     return null
   }
   const record = payload as Record<string, unknown>
@@ -92,7 +102,7 @@ function DebugBlock({ title, value }: { title: string; value: unknown }) {
       <summary className="cursor-pointer text-muted-foreground">
         {title}
       </summary>
-      <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[0.68rem] text-foreground">
+      <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted/50 p-2 font-mono text-[0.68rem] break-words whitespace-pre-wrap text-foreground">
         {formatDebugValue(value)}
       </pre>
     </details>
@@ -128,22 +138,32 @@ function formatNativeOutputSummary(
   return truncated ? "truncated" : undefined
 }
 
-function formatWebSearchSources(output: Record<string, unknown> | null) {
-  if (!Array.isArray(output?.results)) return []
-  return output.results
-    .map((result) => getRecord(result))
-    .filter((result): result is Record<string, unknown> => Boolean(result))
-    .map((result) => ({
-      title: typeof result.title === "string" ? result.title : "Untitled source",
-      url: typeof result.url === "string" ? result.url : undefined,
-      source: typeof result.source === "string" ? result.source : undefined,
-    }))
-    .filter((result) => Boolean(result.url))
+function formatWebSearchSource(result: unknown): WebSearchSource | null {
+  const record = getRecord(result)
+  if (!record || typeof record.url !== "string") return null
+
+  return {
+    title: typeof record.title === "string" ? record.title : "Untitled source",
+    url: record.url,
+    source: typeof record.source === "string" ? record.source : undefined,
+  }
 }
 
-function formatWebSearchSummary(output: Record<string, unknown> | null) {
+function formatWebSearchSources(
+  output: Record<string, unknown> | null
+): WebSearchSource[] {
+  if (!Array.isArray(output?.results)) return []
+  return output.results
+    .map(formatWebSearchSource)
+    .filter((result): result is WebSearchSource => Boolean(result))
+}
+
+function formatWebSearchSummary(
+  output: Record<string, unknown> | null
+): string | undefined {
   if (!output || !Array.isArray(output.results)) return undefined
-  const provider = typeof output.provider === "string" ? output.provider : "search"
+  const provider =
+    typeof output.provider === "string" ? output.provider : "search"
   const resultCount =
     typeof output.resultCount === "number"
       ? output.resultCount
@@ -186,7 +206,11 @@ function formatPreview(value: unknown, truncated: unknown) {
 
 function formatNativePayload(step: RunStep) {
   const payload = step.payload
-  if (!payload || typeof payload !== "object" || payload.provider !== "native") {
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    payload.provider !== "native"
+  ) {
     return null
   }
   const record = payload as Record<string, unknown>
@@ -201,7 +225,8 @@ function formatNativePayload(step: RunStep) {
   const path = getNativePath(input, output)
   const query = typeof input?.query === "string" ? input.query : undefined
   const truncated = output?.truncated === true
-  const toolName = typeof record.toolName === "string" ? record.toolName : undefined
+  const toolName =
+    typeof record.toolName === "string" ? record.toolName : undefined
   const webSearchSummary =
     toolName === "searchWeb" ? formatWebSearchSummary(output) : undefined
   const outputSummary =
@@ -251,7 +276,9 @@ export function RunTimeline({
   }
 
   const runSteps = steps.filter((step) => step.runId === run.id)
-  const debugSteps = runSteps.filter((step) => Boolean(formatDebugPayload(step)))
+  const debugSteps = runSteps.filter((step) =>
+    Boolean(formatDebugPayload(step))
+  )
   const visibleSteps = debugMode
     ? runSteps
     : runSteps.filter((step) => !formatDebugPayload(step))
@@ -292,58 +319,75 @@ export function RunTimeline({
               )}
             >
               <p className="font-medium">{step.title}</p>
-              <p className="text-muted-foreground mt-0.5 capitalize">
+              <p className="mt-0.5 text-muted-foreground capitalize">
                 {step.type.replace("-", " ")} · {step.status}
               </p>
               {debug?.kind ? (
-                <p className="text-muted-foreground mt-1">{debug.kind}</p>
+                <p className="mt-1 text-muted-foreground">{debug.kind}</p>
               ) : null}
               {debug?.error ? (
-                <p className="text-destructive mt-1">{debug.error}</p>
+                <p className="mt-1 text-destructive">{debug.error}</p>
               ) : null}
               {debug ? (
                 <div>
-                  <DebugBlock title="System prompt" value={debug.systemPrompt} />
+                  <DebugBlock
+                    title="System prompt"
+                    value={debug.systemPrompt}
+                  />
                   <DebugBlock title="Messages" value={debug.messages} />
                   <DebugBlock title="Memories" value={debug.memories} />
-                  <DebugBlock title="Memory prompt" value={debug.memoryPrompt} />
+                  <DebugBlock
+                    title="Memory prompt"
+                    value={debug.memoryPrompt}
+                  />
                   <DebugBlock title="Tools" value={debug.tools} />
                   <DebugBlock title="Tool details" value={debug.toolDetails} />
                   <DebugBlock title="Workspace" value={debug.workspace} />
-                  <DebugBlock title="Assistant parts" value={debug.assistantParts} />
+                  <DebugBlock
+                    title="Assistant parts"
+                    value={debug.assistantParts}
+                  />
                   <DebugBlock title="Usage" value={debug.usage} />
                 </div>
               ) : null}
               {composio?.toolkitSlug ? (
-                <p className="text-muted-foreground mt-1">
+                <p className="mt-1 text-muted-foreground">
                   {composio.toolkitSlug}
                   {composio.toolSlug ? ` · ${composio.toolSlug}` : ""}
-                  {composio.durationMs != null ? ` · ${composio.durationMs}ms` : ""}
+                  {composio.durationMs != null
+                    ? ` · ${composio.durationMs}ms`
+                    : ""}
                 </p>
               ) : null}
               {native ? (
-                <p className="text-muted-foreground mt-1">
+                <p className="mt-1 text-muted-foreground">
                   Native
                   {native.toolName ? ` · ${native.toolName}` : ""}
                   {native.workspaceId ? ` · ${native.workspaceId}` : ""}
                 </p>
               ) : null}
               {native?.path ? (
-                <p className="text-muted-foreground mt-1">Path: {native.path}</p>
+                <p className="mt-1 text-muted-foreground">
+                  Path: {native.path}
+                </p>
               ) : null}
               {native?.query ? (
-                <p className="text-muted-foreground mt-1">Query: {native.query}</p>
+                <p className="mt-1 text-muted-foreground">
+                  Query: {native.query}
+                </p>
               ) : null}
               {native?.outputSummary ? (
-                <p className="text-muted-foreground mt-1">{native.outputSummary}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {native.outputSummary}
+                </p>
               ) : null}
               {native?.executionSummary ? (
-                <p className="text-muted-foreground mt-1">
+                <p className="mt-1 text-muted-foreground">
                   {native.executionSummary}
                 </p>
               ) : null}
               {native?.sources.length ? (
-                <ul className="text-muted-foreground mt-2 space-y-1">
+                <ul className="mt-2 space-y-1 text-muted-foreground">
                   {native.sources.map((source) => (
                     <li key={source.url}>
                       <a
@@ -361,14 +405,18 @@ export function RunTimeline({
               ) : null}
               {native?.timedOut || native?.aborted ? (
                 <div className="mt-2 flex gap-1">
-                  {native.timedOut ? <Badge variant="outline">Timed out</Badge> : null}
-                  {native.aborted ? <Badge variant="outline">Aborted</Badge> : null}
+                  {native.timedOut ? (
+                    <Badge variant="outline">Timed out</Badge>
+                  ) : null}
+                  {native.aborted ? (
+                    <Badge variant="outline">Aborted</Badge>
+                  ) : null}
                 </div>
               ) : null}
               {native?.stdout ? (
                 <div className="mt-2">
-                  <p className="text-muted-foreground font-medium">stdout</p>
-                  <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[0.68rem] text-foreground">
+                  <p className="font-medium text-muted-foreground">stdout</p>
+                  <pre className="mt-1 max-h-24 overflow-auto rounded bg-muted/50 p-2 font-mono text-[0.68rem] break-words whitespace-pre-wrap text-foreground">
                     {native.stdout.text}
                     {native.stdout.truncated ? "\n[truncated]" : ""}
                   </pre>
@@ -376,8 +424,8 @@ export function RunTimeline({
               ) : null}
               {native?.stderr ? (
                 <div className="mt-2">
-                  <p className="text-muted-foreground font-medium">stderr</p>
-                  <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[0.68rem] text-foreground">
+                  <p className="font-medium text-muted-foreground">stderr</p>
+                  <pre className="mt-1 max-h-24 overflow-auto rounded bg-muted/50 p-2 font-mono text-[0.68rem] break-words whitespace-pre-wrap text-foreground">
                     {native.stderr.text}
                     {native.stderr.truncated ? "\n[truncated]" : ""}
                   </pre>
@@ -391,7 +439,7 @@ export function RunTimeline({
                 </Badge>
               ) : null}
               {native?.changedFiles.length ? (
-                <ul className="text-muted-foreground mt-2 space-y-1">
+                <ul className="mt-2 space-y-1 text-muted-foreground">
                   {native.changedFiles.map((file, index) => (
                     <li key={`${file.operation}:${file.path}:${index}`}>
                       Changed {file.path} · {file.operation}
@@ -403,32 +451,32 @@ export function RunTimeline({
                 </ul>
               ) : null}
               {native?.code ? (
-                <p className="text-amber-700 dark:text-amber-400 mt-1">
+                <p className="mt-1 text-amber-700 dark:text-amber-400">
                   {native.code}
                 </p>
               ) : null}
               {native?.error ? (
-                <p className="text-destructive mt-1">{native.error}</p>
+                <p className="mt-1 text-destructive">{native.error}</p>
               ) : null}
               {composio?.remediation ? (
-                <p className="text-amber-700 dark:text-amber-400 mt-1">
+                <p className="mt-1 text-amber-700 dark:text-amber-400">
                   {composio.remediation}
                 </p>
               ) : null}
               {composio?.error ? (
-                <p className="text-destructive mt-1">{composio.error}</p>
+                <p className="mt-1 text-destructive">{composio.error}</p>
               ) : null}
             </li>
           )
         })}
       </ol>
       {debugMode && debugSteps.length === 0 ? (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           No debug events for this run.
         </p>
       ) : null}
       {run.errorSummary ? (
-        <p className="text-destructive text-xs">{run.errorSummary}</p>
+        <p className="text-xs text-destructive">{run.errorSummary}</p>
       ) : null}
     </aside>
   )

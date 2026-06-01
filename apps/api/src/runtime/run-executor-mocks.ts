@@ -1,6 +1,12 @@
 import { streamText, type LanguageModel } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
-import type { Message, MessagePart, Run, Thread } from "@workspace/shared"
+import type {
+  Message,
+  MessagePart,
+  Run,
+  SearchWebOutput,
+  Thread,
+} from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import {
   CURATED_COMPOSIO_TOOLS,
@@ -15,7 +21,10 @@ import type { WorkspaceEditService } from "../workspaces/workspace-edit-service.
 import type { WorkspaceExecutionService } from "../workspaces/workspace-execution-service.js"
 import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
 import type { WorkspaceHandle } from "../workspaces/workspace-service.js"
-import { composioToolNameToToolkit, formatToolStepTitle } from "./run-tool-labels.js"
+import {
+  composioToolNameToToolkit,
+  formatToolStepTitle,
+} from "./run-tool-labels.js"
 import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
 
 export type RunExecutorMocksDeps = {
@@ -68,16 +77,25 @@ function mockTextStream(summaryText: string) {
   })
 }
 
-function inferSearchQuery(prompt: string) {
-  return (
-    prompt
-      .replace(/\b(search|look up|find)\b/gi, " ")
-      .replace(/\b(the )?web\b/gi, " ")
-      .replace(/\b(for|about|current|latest)\b/gi, " ")
-      .replace(/[^\p{L}\p{N}\s.-]/gu, " ")
-      .trim()
-      .replace(/\s+/g, " ") || prompt.trim()
-  )
+function inferSearchQuery(prompt: string): string {
+  const normalized = prompt
+    .replace(/\b(search|look up|find)\b/gi, " ")
+    .replace(/\b(the )?web\b/gi, " ")
+    .replace(/\b(for|about|current|latest)\b/gi, " ")
+    .replace(/[^\p{L}\p{N}\s.-]/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+
+  return normalized || prompt.trim()
+}
+
+function formatMockWebSearchSummary(toolOutput: SearchWebOutput): string {
+  const firstResult = toolOutput.results[0]
+  if (!firstResult) {
+    return `Found ${toolOutput.resultCount} web results.`
+  }
+
+  return `Found ${toolOutput.resultCount} web results. Top source: [${firstResult.title}](${firstResult.url}).`
 }
 
 export async function executeMockNativeWebSearchStream(
@@ -109,10 +127,7 @@ export async function executeMockNativeWebSearchStream(
   const toolCallId = `mock-native-search-${runId}`
   const toolInput = { query: inferSearchQuery(latestUserPrompt) }
   const toolOutput = await deps.webSearchService.search(toolInput)
-  const firstResult = toolOutput.results[0]
-  const summaryText = firstResult
-    ? `Found ${toolOutput.resultCount} web results. Top source: [${firstResult.title}](${firstResult.url}).`
-    : `Found ${toolOutput.resultCount} web results.`
+  const summaryText = formatMockWebSearchSummary(toolOutput)
   const assistantParts: MessagePart[] = [
     { type: "text", text: summaryText },
     { type: "tool-call", toolCallId, toolName, input: toolInput },
@@ -215,8 +230,10 @@ export async function executeMockNativeWorkspaceStream(
     ? "searchWorkspaceFiles"
     : "listWorkspaceFiles"
   const nativeQuery =
-    latestUserPrompt.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/)[0] ??
-    "workspace"
+    latestUserPrompt
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .trim()
+      .split(/\s+/)[0] ?? "workspace"
   const toolInput = shouldSearchWorkspace
     ? { query: nativeQuery }
     : { path: "", recursive: false }

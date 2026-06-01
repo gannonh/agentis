@@ -194,8 +194,7 @@ export class AgentRepository {
   createWithGrants(
     input: AgentCreateInput,
     grants: AgentToolGrantCreateInput[],
-    nativeTools: NativeToolPermissionId[] = input.nativeTools ??
-      DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS
+    nativeTools?: NativeToolPermissionId[]
   ): AgentListItem {
     const now = nowIso()
     const agentRow = {
@@ -210,7 +209,9 @@ export class AgentRepository {
       updatedAt: now,
     }
     const normalizedGrants = normalizeGrants(grants)
-    const normalizedNativeTools = normalizeNativeTools(nativeTools)
+    const normalizedNativeTools = normalizeNativeTools(
+      nativeTools ?? input.nativeTools ?? DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS
+    )
     const versionRow = {
       id: createId("agent_version"),
       agentId: agentRow.id,
@@ -345,12 +346,13 @@ export class AgentRepository {
     const grantsChanged =
       hasGrantEdit && !grantsMatch(currentGrants, nextGrants)
     const hasNativeToolsEdit = input.nativeTools !== undefined
-    const currentNativeTools = this.getCurrentVersionSnapshot(agentId).nativeTools
+    const currentNativeTools = currentVersion.nativeTools
     const nextNativeTools = hasNativeToolsEdit
       ? normalizeNativeTools(input.nativeTools ?? [])
       : currentNativeTools
     const nativeToolsChanged =
-      hasNativeToolsEdit && !nativeToolsMatch(currentNativeTools, nextNativeTools)
+      hasNativeToolsEdit &&
+      !nativeToolsMatch(currentNativeTools, nextNativeTools)
     const identityChanged =
       nextName !== existing.name || nextDescription !== existing.description
     const configurationChanged =
@@ -373,13 +375,7 @@ export class AgentRepository {
           hasGrantEdit ? nextGrants : this.listAgentToolGrantInputs(agentId)
         )
       : null
-    const versionNativeToolsJson = versionChanged
-      ? serializeNativeToolsSnapshot(
-          hasNativeToolsEdit
-            ? nextNativeTools
-            : this.getCurrentVersionSnapshot(agentId).nativeTools
-        )
-      : null
+    const versionNativeToolsJson = serializeNativeToolsSnapshot(nextNativeTools)
     const now = nowIso()
 
     this.db.transaction((tx) => {
@@ -428,9 +424,7 @@ export class AgentRepository {
             model: nextModel,
             maxCostPerRunUsd: nextMaxCostPerRunUsd,
             toolGrantsJson: versionToolGrantsJson,
-            nativeToolsJson:
-              versionNativeToolsJson ??
-              serializeNativeToolsSnapshot(currentNativeTools),
+            nativeToolsJson: versionNativeToolsJson,
             createdAt: now,
           })
           .run()

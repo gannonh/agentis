@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto"
+import type { SearchWebInput, SearchWebOutput } from "@workspace/shared"
 import type {
   WorkspaceEntry,
   WorkspaceFileRead,
   WorkspaceSearchResult,
 } from "../workspaces/workspace-service.js"
-import type { SearchWebOutput } from "@workspace/shared"
 import {
   MUTATING_NATIVE_WORKSPACE_TOOL_NAMES,
   NATIVE_WEB_SEARCH_TOOL_NAMES,
@@ -73,7 +73,9 @@ export function isExecutionNativeWorkspaceToolName(
 export function isNativeWebSearchToolName(
   toolName: string
 ): toolName is NativeWebSearchToolName {
-  return NATIVE_WEB_SEARCH_TOOL_NAMES.includes(toolName as NativeWebSearchToolName)
+  return NATIVE_WEB_SEARCH_TOOL_NAMES.includes(
+    toolName as NativeWebSearchToolName
+  )
 }
 
 export function isNativeToolName(toolName: string): toolName is NativeToolName {
@@ -82,57 +84,69 @@ export function isNativeToolName(toolName: string): toolName is NativeToolName {
   )
 }
 
-function summarizeWebSearchOutput(output: unknown) {
+function summarizeWebSearchResult(
+  result: unknown
+): SearchWebOutput["results"][number] | null {
+  if (!isObject(result)) return null
+  if (typeof result.title !== "string" || typeof result.url !== "string") {
+    return null
+  }
+
+  return {
+    title: result.title,
+    url: result.url,
+    snippet: typeof result.snippet === "string" ? result.snippet : undefined,
+    source: typeof result.source === "string" ? result.source : undefined,
+    publishedAt:
+      typeof result.publishedAt === "string" ? result.publishedAt : undefined,
+  }
+}
+
+function summarizeWebSearchOutput(output: unknown): unknown {
   if (!isObject(output)) return output
   const results = Array.isArray(output.results)
     ? output.results
         .slice(0, 10)
-        .map((result) => {
-          if (!isObject(result)) return null
-          if (
-            typeof result.title !== "string" ||
-            typeof result.url !== "string"
-          ) {
-            return null
-          }
-          return {
-            title: result.title,
-            url: result.url,
-            snippet:
-              typeof result.snippet === "string" ? result.snippet : undefined,
-            source:
-              typeof result.source === "string" ? result.source : undefined,
-            publishedAt:
-              typeof result.publishedAt === "string"
-                ? result.publishedAt
-                : undefined,
-          }
-        })
-        .filter((result): result is NonNullable<typeof result> => Boolean(result))
+        .map(summarizeWebSearchResult)
+        .filter((result): result is SearchWebOutput["results"][number] =>
+          Boolean(result)
+        )
     : []
 
   return {
     query: typeof output.query === "string" ? output.query : undefined,
     provider: typeof output.provider === "string" ? output.provider : undefined,
     resultCount:
-      typeof output.resultCount === "number" ? output.resultCount : results.length,
+      typeof output.resultCount === "number"
+        ? output.resultCount
+        : results.length,
     truncated: output.truncated === true,
     results,
     metadata: isObject(output.metadata) ? output.metadata : undefined,
   } satisfies Partial<SearchWebOutput>
 }
 
-function summarizeWebSearchInput(input: unknown) {
+function isSearchWebRecency(
+  value: unknown
+): value is NonNullable<SearchWebInput["recency"]> {
+  return (
+    value === "day" || value === "week" || value === "month" || value === "year"
+  )
+}
+
+function summarizeWebSearchInput(input: unknown): unknown {
   if (!isObject(input)) return input
   return {
     query: typeof input.query === "string" ? input.query : undefined,
     maxResults:
       typeof input.maxResults === "number" ? input.maxResults : undefined,
     domains: Array.isArray(input.domains)
-      ? input.domains.filter((domain): domain is string => typeof domain === "string")
+      ? input.domains.filter(
+          (domain): domain is string => typeof domain === "string"
+        )
       : undefined,
-    recency: typeof input.recency === "string" ? input.recency : undefined,
-  }
+    recency: isSearchWebRecency(input.recency) ? input.recency : undefined,
+  } satisfies Partial<SearchWebInput>
 }
 
 function summarizeEntries(entries: WorkspaceEntry[]) {

@@ -58,7 +58,10 @@ import {
   toModelMessages,
   toUiMessages,
 } from "./run-message-adapters.js"
-import { composioToolNameToToolkit, formatToolStepTitle } from "./run-tool-labels.js"
+import {
+  composioToolNameToToolkit,
+  formatToolStepTitle,
+} from "./run-tool-labels.js"
 
 export { formatToolStepTitle } from "./run-tool-labels.js"
 export { suppressTextForPendingApproval } from "./run-message-adapters.js"
@@ -102,6 +105,21 @@ function wantsGeneratedArtifact(prompt: string) {
   return ARTIFACT_PROMPT_PATTERN.test(prompt)
 }
 
+function toolStepStatus(input: {
+  error?: string
+  pendingApproval: boolean
+}): "failed" | "pending" | "completed" {
+  if (input.error) return "failed"
+  if (input.pendingApproval) return "pending"
+  return "completed"
+}
+
+function toolErrorCode(error: unknown): string | undefined {
+  if (error instanceof WorkspaceError) return error.code
+  if (error instanceof WebSearchError) return error.code
+  return undefined
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
@@ -131,7 +149,9 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 
   return Object.fromEntries(
     Object.entries(value)
-      .map(([key, entry]) => [key, sanitizeJsonValue(entry, depth + 1)] as const)
+      .map(
+        ([key, entry]) => [key, sanitizeJsonValue(entry, depth + 1)] as const
+      )
       .filter(([, entry]) => entry !== undefined)
   )
 }
@@ -479,7 +499,12 @@ export class RunExecutor {
       )
     }
 
-    if (this.config.mockRuntime && /\bfiles?\b|workspace file|read .*file|search .*file/i.test(latestUserPrompt)) {
+    if (
+      this.config.mockRuntime &&
+      /\bfiles?\b|workspace file|read .*file|search .*file/i.test(
+        latestUserPrompt
+      )
+    ) {
       return executeMockNativeWorkspaceStream(
         this.mockDeps(),
         runId,
@@ -568,7 +593,10 @@ export class RunExecutor {
       if (!stepId) return
 
       const pendingApproval = isPendingApprovalOutput(input.toolOutput)
-      const status = input.error ? "failed" : pendingApproval ? "pending" : "completed"
+      const status = toolStepStatus({
+        error: input.error,
+        pendingApproval,
+      })
       this.repos.steps.update(stepId, {
         status,
         title: formatToolStepTitle({
@@ -811,14 +839,11 @@ export class RunExecutor {
               : typeof part.error === "string"
                 ? part.error
                 : "Tool execution failed"
-          const code =
-            part.error instanceof WorkspaceError
-              ? part.error.code
-              : part.error instanceof WebSearchError
-                ? part.error.code
-                : undefined
+          const code = toolErrorCode(part.error)
           const details =
-            part.error instanceof WorkspaceError ? part.error.details : undefined
+            part.error instanceof WorkspaceError
+              ? part.error.details
+              : undefined
           finalizeToolStep(part.toolCallId, part.toolName, {
             toolInput: part.input,
             error: message,
@@ -852,7 +877,9 @@ export class RunExecutor {
         clearAbortController(runId)
         const hasPendingApproval = hasPendingApprovalInParts(assistantParts)
         for (const stepId of toolStepIds.values()) {
-          this.repos.steps.update(stepId, { status: hasPendingApproval ? "pending" : "failed" })
+          this.repos.steps.update(stepId, {
+            status: hasPendingApproval ? "pending" : "failed",
+          })
         }
         toolStepIds.clear()
         if (hasPendingApproval) {
@@ -873,10 +900,14 @@ export class RunExecutor {
           completionTokens: totalUsage.outputTokens,
           totalTokens: totalUsage.totalTokens,
         }
-        this.repos.runs.updateStatus(runId, hasPendingApproval ? "tool-calling" : "completed", {
-          finishedAt: hasPendingApproval ? undefined : nowIso(),
-          usage,
-        })
+        this.repos.runs.updateStatus(
+          runId,
+          hasPendingApproval ? "tool-calling" : "completed",
+          {
+            finishedAt: hasPendingApproval ? undefined : nowIso(),
+            usage,
+          }
+        )
         this.createTimelineDebugStep(runId, {
           status: "completed",
           title: "Debug: model output",
@@ -987,8 +1018,11 @@ export class RunExecutor {
     error: unknown
   ): never {
     const message =
-      error instanceof Error ? error.message : "Workspace could not be resolved."
-    const code = error instanceof WorkspaceError ? error.code : "workspace_error"
+      error instanceof Error
+        ? error.message
+        : "Workspace could not be resolved."
+    const code =
+      error instanceof WorkspaceError ? error.code : "workspace_error"
     this.repos.messages.create({
       threadId,
       role: "assistant",

@@ -11,6 +11,8 @@ type RawSearchResult = {
   lastUpdated?: unknown
 }
 
+type NormalizedSearchResult = SearchWebOutput["results"][number]
+
 function truncateSnippet(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value
   return `${value.slice(0, maxChars)}…`
@@ -21,6 +23,39 @@ function domainFromUrl(url: string): string | undefined {
     return new URL(url).hostname
   } catch {
     return undefined
+  }
+}
+
+function firstString(...values: unknown[]): string | undefined {
+  return values.find((value): value is string => typeof value === "string")
+}
+
+function normalizeSearchResult(
+  raw: RawSearchResult,
+  maxSnippetChars: number
+): NormalizedSearchResult | null {
+  if (typeof raw.title !== "string" || typeof raw.url !== "string") {
+    return null
+  }
+
+  try {
+    new URL(raw.url)
+  } catch {
+    return null
+  }
+
+  const snippet =
+    typeof raw.snippet === "string"
+      ? truncateSnippet(raw.snippet, maxSnippetChars)
+      : undefined
+  const source = firstString(raw.source) ?? domainFromUrl(raw.url)
+
+  return {
+    title: raw.title.trim(),
+    url: raw.url,
+    snippet,
+    source,
+    publishedAt: firstString(raw.publishedAt, raw.date, raw.lastUpdated),
   }
 }
 
@@ -49,39 +84,11 @@ export function normalizeSearchResults(input: {
   maxSnippetChars: number
   metadata?: Record<string, unknown>
 }): SearchWebOutput {
-  const results = []
+  const results: NormalizedSearchResult[] = []
   for (const raw of input.rawResults) {
     if (results.length >= input.maxResults) break
-    if (typeof raw.title !== "string" || typeof raw.url !== "string") continue
-    try {
-      new URL(raw.url)
-    } catch {
-      continue
-    }
-
-    const snippet =
-      typeof raw.snippet === "string"
-        ? truncateSnippet(raw.snippet, input.maxSnippetChars)
-        : undefined
-    const publishedAt =
-      typeof raw.publishedAt === "string"
-        ? raw.publishedAt
-        : typeof raw.date === "string"
-          ? raw.date
-          : typeof raw.lastUpdated === "string"
-            ? raw.lastUpdated
-            : undefined
-
-    results.push({
-      title: raw.title.trim(),
-      url: raw.url,
-      snippet,
-      source:
-        typeof raw.source === "string"
-          ? raw.source
-          : domainFromUrl(raw.url),
-      publishedAt,
-    })
+    const result = normalizeSearchResult(raw, input.maxSnippetChars)
+    if (result) results.push(result)
   }
 
   if (results.length === 0 && input.rawResults.length > 0) {

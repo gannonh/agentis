@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
-export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 import { nativeToolsSchema } from "./web-search.js"
+export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 
 const nonEmptyString = z.string().min(1)
 const nonNegativeNumber = z.number().nonnegative()
@@ -574,7 +574,8 @@ export const createSavedMemoryRequestSchema = z.object({
   pinnedToContext: z.boolean().optional().default(false),
 })
 
-export const updateSavedMemoryRequestSchema = createSavedMemoryRequestSchema.partial()
+export const updateSavedMemoryRequestSchema =
+  createSavedMemoryRequestSchema.partial()
 
 export const memoriesListResponseSchema = z.object({
   categories: z.array(savedMemoryCategorySchema),
@@ -861,13 +862,21 @@ export type CreateFollowUpResponse = z.infer<
 export type ProjectStatus = z.infer<typeof projectStatusSchema>
 export type Project = z.infer<typeof projectSchema>
 export type ProjectMemory = z.infer<typeof projectMemorySchema>
-export type SavedMemoryCategoryKey = z.infer<typeof savedMemoryCategoryKeySchema>
-export type SavedMemoryCategoryName = z.infer<typeof savedMemoryCategoryNameSchema>
+export type SavedMemoryCategoryKey = z.infer<
+  typeof savedMemoryCategoryKeySchema
+>
+export type SavedMemoryCategoryName = z.infer<
+  typeof savedMemoryCategoryNameSchema
+>
 export type SavedMemoryCategory = z.infer<typeof savedMemoryCategorySchema>
 export type SavedMemorySource = z.infer<typeof savedMemorySourceSchema>
 export type SavedMemory = z.infer<typeof savedMemorySchema>
-export type CreateSavedMemoryRequest = z.infer<typeof createSavedMemoryRequestSchema>
-export type UpdateSavedMemoryRequest = z.infer<typeof updateSavedMemoryRequestSchema>
+export type CreateSavedMemoryRequest = z.infer<
+  typeof createSavedMemoryRequestSchema
+>
+export type UpdateSavedMemoryRequest = z.infer<
+  typeof updateSavedMemoryRequestSchema
+>
 export type MemoriesListResponse = z.infer<typeof memoriesListResponseSchema>
 export type ProjectContextSummary = z.infer<typeof projectContextSummarySchema>
 export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>

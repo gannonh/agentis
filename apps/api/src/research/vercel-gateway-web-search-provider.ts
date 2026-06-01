@@ -37,9 +37,7 @@ type ParallelSearchResponse = {
   searchId?: string
 }
 
-function isPerplexityError(
-  value: unknown
-): value is PerplexitySearchError {
+function isPerplexityError(value: unknown): value is PerplexitySearchError {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -51,7 +49,9 @@ function isPerplexityError(
 function mapGatewayFailure(error: unknown): WebSearchError {
   if (error instanceof WebSearchError) return error
   const message =
-    error instanceof Error ? error.message : "Web search provider request failed"
+    error instanceof Error
+      ? error.message
+      : "Web search provider request failed"
   if (/unsupported|not found|unknown tool/i.test(message)) {
     return new WebSearchError("web_search_provider_unsupported", message)
   }
@@ -59,6 +59,20 @@ function mapGatewayFailure(error: unknown): WebSearchError {
     return new WebSearchError("web_search_unavailable", message)
   }
   return new WebSearchError("web_search_failed", message)
+}
+
+function gatewayToolName(backend: AppConfig["webSearchBackend"]): string {
+  return backend === "parallel" ? "parallel_search" : "perplexity_search"
+}
+
+function gatewayRequestId(
+  backend: AppConfig["webSearchBackend"],
+  output: unknown
+): string | undefined {
+  if (backend === "parallel") {
+    return (output as ParallelSearchResponse).searchId
+  }
+  return (output as PerplexitySearchResponse).id
 }
 
 export function createVercelGatewayWebSearchProvider(
@@ -79,10 +93,7 @@ export function createVercelGatewayWebSearchProvider(
     async search(input: SearchWebInput) {
       const bounded = boundSearchInput(input, config)
       const maxResults = bounded.maxResults ?? config.webSearchMaxResults
-      const toolName =
-        config.webSearchBackend === "parallel"
-          ? "parallel_search"
-          : "perplexity_search"
+      const toolName = gatewayToolName(config.webSearchBackend)
 
       try {
         const searchTool =
@@ -116,9 +127,7 @@ export function createVercelGatewayWebSearchProvider(
 
         if (isPerplexityError(toolResult.output)) {
           throw new WebSearchError(
-            toolResult.output.error === "invalid_input"
-              ? "web_search_failed"
-              : "web_search_failed",
+            "web_search_failed",
             toolResult.output.message
           )
         }
@@ -136,10 +145,10 @@ export function createVercelGatewayWebSearchProvider(
           maxSnippetChars: config.webSearchMaxSnippetChars,
           metadata: {
             gatewayTool: toolName,
-            requestId:
-              config.webSearchBackend === "parallel"
-                ? (toolResult.output as ParallelSearchResponse).searchId
-                : (toolResult.output as PerplexitySearchResponse).id,
+            requestId: gatewayRequestId(
+              config.webSearchBackend,
+              toolResult.output
+            ),
           },
         })
       } catch (error) {
