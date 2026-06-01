@@ -3,6 +3,7 @@ import { extname } from "node:path"
 import type {
   Document,
   DocumentType,
+  DocumentVersion,
   DocumentVisibilityScope,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
@@ -321,11 +322,15 @@ export class DocumentService {
       }
     }
 
-    const version = input.version
-      ? this.repos.documents.getVersion(document.id, input.version)
-      : document.currentVersion
-        ? this.repos.documents.getVersion(document.id, document.currentVersion)
-        : null
+    let version: DocumentVersion | null = null
+    if (input.version) {
+      version = this.repos.documents.getVersion(document.id, input.version)
+    } else if (document.currentVersion) {
+      version = this.repos.documents.getVersion(
+        document.id,
+        document.currentVersion
+      )
+    }
     if (input.version && !version) {
       return {
         ok: false,
@@ -401,10 +406,12 @@ export class DocumentService {
         content: input.content,
       })
       const outline = parseMarkdownSections(nextContent)
-      const section = input.heading
-        ? outline.find((entry) => entry.heading === input.heading?.trim()) ??
+      let section = parent ?? outline[outline.length - 1]
+      if (input.heading) {
+        section =
+          outline.find((entry) => entry.heading === input.heading?.trim()) ??
           outline[outline.length - 1]
-        : parent ?? outline[outline.length - 1]
+      }
       if (!section) {
         return {
           ok: false,

@@ -127,11 +127,12 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
       )
     }
     const content = documentService.getDownload(documentId)
+    const previewContent = content.ok && document.mimeType.startsWith("text/")
+      ? content.data.toString("utf8")
+      : null
     return c.json({
       document: toPublicDocument(document),
-      content: content.ok && document.mimeType.startsWith("text/")
-        ? content.data.toString("utf8")
-        : null,
+      content: previewContent,
       versions: repos.documents.listVersions(documentId).map((version) => ({
         id: version.id,
         version: version.version,

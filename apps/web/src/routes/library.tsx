@@ -41,6 +41,29 @@ const DOCUMENT_TYPES: DocumentType[] = [
   "other",
 ]
 
+type DocumentDetail = {
+  document: Document
+  content: string | null
+  versions: Array<{
+    id: string
+    version: number
+    changeSummary?: string
+    createdAt: string
+  }>
+}
+
+function apiErrorMessage(data: unknown, fallback: string): string {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    "error" in data &&
+    typeof data.error === "string"
+  ) {
+    return data.error
+  }
+  return fallback
+}
+
 export function LibraryPage() {
   const [searchParams] = useSearchParams()
   const [documents, setDocuments] = useState<Document[]>([])
@@ -62,11 +85,7 @@ export function LibraryPage() {
   const [downloadErrors, setDownloadErrors] = useState<Record<string, string>>(
     {}
   )
-  const [detail, setDetail] = useState<{
-    document: Document
-    content: string | null
-    versions: Array<{ id: string; version: number; changeSummary?: string; createdAt: string }>
-  } | null>(null)
+  const [detail, setDetail] = useState<DocumentDetail | null>(null)
   const selectedDocumentId = searchParams.get("documentId")
 
   useEffect(() => {
@@ -154,11 +173,7 @@ export function LibraryPage() {
     fetch(`/api/documents/${selectedDocumentId}/detail`)
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load document detail")
-        return response.json() as Promise<{
-          document: Document
-          content: string | null
-          versions: Array<{ id: string; version: number; changeSummary?: string; createdAt: string }>
-        }>
+        return response.json() as Promise<DocumentDetail>
       })
       .then((nextDetail) => {
         if (!cancelled) setDetail(nextDetail)
@@ -183,12 +198,7 @@ export function LibraryPage() {
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
         throw new ApiError(
-          typeof data === "object" &&
-            data !== null &&
-            "error" in data &&
-            typeof data.error === "string"
-            ? data.error
-            : "Download failed",
+          apiErrorMessage(data, "Download failed"),
           response.status
         )
       }
