@@ -4,6 +4,20 @@ Agentis is an early-stage open-source product for configuring and deploying usef
 
 The project is currently in foundation work. Treat the architecture direction as research-backed and still evolving.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `gannonh/agentis` via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical triage roles map 1:1 to GitHub labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+
 ## Frontend and API
 
 - **App:** `apps/web` — Vite, React 19, React Router.
@@ -13,7 +27,7 @@ The project is currently in foundation work. Treat the architecture direction as
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
 - **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, and Learning (not thread sessions, projects, or Library).
 - **M04:** API-backed projects, project memories, project context on runs, local artifact storage (`AGENTIS_STORAGE_ROOT`), and Library upload/list/download.
-- **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, and V3 sandboxed command/script execution are API-backed. See [agent-native-tooling.md](docs/agent-native-tooling.md).
+- **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, and V3 sandboxed command/script execution are API-backed. See [agent-native-tooling.md](docs/specs/agent-native-tooling.md).
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
 ## Routes

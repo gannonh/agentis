@@ -87,4 +87,52 @@ describe("formatNativeToolRunStepPayload", () => {
         "d7a53897ed8cf81ed82725b181df666b7e1e78f749b23febbc6b8043c652f648",
     })
   })
+
+  it("bounds persisted native web search evidence", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_search",
+      toolName: "searchWeb",
+      input: {
+        query: "latest ai news",
+        domains: Array.from({ length: 12 }, (_, index) => `example${index}.com`),
+      },
+      output: {
+        query: "latest ai news",
+        provider: "mock",
+        resultCount: 1,
+        truncated: false,
+        results: [
+          {
+            title: "x".repeat(600),
+            url: `https://example.com/${"a".repeat(600)}`,
+            snippet: "s".repeat(900),
+            source: "source".repeat(200),
+            publishedAt: "2026-01-01",
+          },
+        ],
+        metadata: {
+          requestId: "request-1",
+          rawResponse: "x".repeat(10_000),
+        },
+      },
+    })
+
+    const input = payload?.input as { domains?: string[] }
+    const output = payload?.output as {
+      results: Array<{
+        title: string
+        url: string
+        snippet?: string
+        source?: string
+      }>
+      metadata?: Record<string, unknown>
+    }
+
+    expect(input.domains).toHaveLength(10)
+    expect(output.results[0]?.title).toHaveLength(200)
+    expect(output.results[0]?.url).toHaveLength(500)
+    expect(output.results[0]?.snippet).toHaveLength(500)
+    expect(output.results[0]?.source).toHaveLength(200)
+    expect(output.metadata).toEqual({ requestId: "request-1" })
+  })
 })

@@ -31,6 +31,12 @@ import {
   workspaceSchema,
   type ProposedToolGrant,
 } from "./schemas.js"
+import {
+  DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS,
+  NATIVE_TOOL_CAPABILITY_CATALOG,
+  nativeToolPermissionIdSchema,
+} from "./native-tools.js"
+import { searchWebInputSchema, searchWebResultSchema } from "./web-search.js"
 
 describe("shared schemas", () => {
   it("parses a thread detail payload", () => {
@@ -163,6 +169,7 @@ describe("shared schemas", () => {
           version: 2,
           systemPrompt: "Answer with citations.",
           model: "gpt-4.1-mini",
+          nativeTools: ["webSearch"],
           createdAt: now,
         },
         toolGrantCount: 1,
@@ -210,6 +217,41 @@ describe("shared schemas", () => {
 
   it("rejects empty create thread prompts", () => {
     expect(() => createThreadRequestSchema.parse({ prompt: "" })).toThrow()
+  })
+
+  it("keeps native tool permissions in their shared native-tool contract", () => {
+    expect(nativeToolPermissionIdSchema.parse("webSearch")).toBe("webSearch")
+    expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual(["webSearch"])
+    expect(NATIVE_TOOL_CAPABILITY_CATALOG).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "webSearch",
+          runtimeToolName: "searchWeb",
+          label: "Search",
+          group: "Research",
+          defaultSelected: true,
+        }),
+      ])
+    )
+  })
+
+  it("requires web search queries and result URLs to be safe for source links", () => {
+    expect(() => searchWebInputSchema.parse({ query: "   " })).toThrow()
+    expect(searchWebInputSchema.parse({ query: "  Agentis news  " }).query).toBe(
+      "Agentis news"
+    )
+    expect(() =>
+      searchWebResultSchema.parse({
+        title: "Unsafe result",
+        url: "javascript:alert(1)",
+      })
+    ).toThrow()
+    expect(
+      searchWebResultSchema.parse({
+        title: "Safe result",
+        url: "https://example.com/news",
+      }).url
+    ).toBe("https://example.com/news")
   })
 
   it("parses thread-seeded agent draft contracts", () => {
@@ -307,6 +349,12 @@ describe("shared schemas", () => {
       })
     ).toThrow()
 
+    expect(() =>
+      agentPromotionDraftSchema.parse({
+        ...draft,
+        editedFields: ["nativeTools"],
+      })
+    ).toThrow()
     expect(() =>
       agentPromotionDraftSchema.parse({ ...draft, name: "" })
     ).toThrow()
@@ -443,6 +491,7 @@ describe("shared schemas", () => {
         version: 1,
         systemPrompt: "Answer with citations.",
         model: "gpt-4o-mini",
+        nativeTools: ["webSearch"],
         createdAt: now,
       },
       toolGrantCount: 2,

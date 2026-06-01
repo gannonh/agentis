@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
+import { nativeToolsSchema } from "./native-tools.js"
 export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 
 const nonEmptyString = z.string().min(1)
@@ -255,6 +256,7 @@ export const agentConfigurationVersionSummarySchema = z.object({
   systemPrompt: z.string(),
   model: z.string(),
   maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
+  nativeTools: nativeToolsSchema,
   createdAt: z.string(),
 })
 
@@ -330,6 +332,7 @@ export const createAgentRequestSchema = z.object({
   systemPrompt: nonEmptyString,
   model: z.string().optional(),
   toolGrants: agentToolGrantInputListSchema.optional(),
+  nativeTools: nativeToolsSchema.optional(),
 })
 
 export const updateAgentRequestSchema = z
@@ -340,6 +343,7 @@ export const updateAgentRequestSchema = z
     model: nonEmptyString.optional(),
     maxCostPerRunUsd: nonNegativeNumber.nullable().optional(),
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
+    nativeTools: nativeToolsSchema.optional(),
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one agent edit field is required.",
@@ -413,6 +417,7 @@ export const updateAgentPromotionDraftRequestSchema = z
     systemPrompt: nonEmptyString.optional(),
     model: nonEmptyString.optional(),
     toolGrants: z.array(agentToolGrantInputSchema).optional(),
+    nativeTools: nativeToolsSchema.optional(),
     intelligence: updateAgentPromotionDraftIntelligenceSchema.optional(),
   })
   .strict()
@@ -569,7 +574,8 @@ export const createSavedMemoryRequestSchema = z.object({
   pinnedToContext: z.boolean().optional().default(false),
 })
 
-export const updateSavedMemoryRequestSchema = createSavedMemoryRequestSchema.partial()
+export const updateSavedMemoryRequestSchema =
+  createSavedMemoryRequestSchema.partial()
 
 export const memoriesListResponseSchema = z.object({
   categories: z.array(savedMemoryCategorySchema),
@@ -856,13 +862,21 @@ export type CreateFollowUpResponse = z.infer<
 export type ProjectStatus = z.infer<typeof projectStatusSchema>
 export type Project = z.infer<typeof projectSchema>
 export type ProjectMemory = z.infer<typeof projectMemorySchema>
-export type SavedMemoryCategoryKey = z.infer<typeof savedMemoryCategoryKeySchema>
-export type SavedMemoryCategoryName = z.infer<typeof savedMemoryCategoryNameSchema>
+export type SavedMemoryCategoryKey = z.infer<
+  typeof savedMemoryCategoryKeySchema
+>
+export type SavedMemoryCategoryName = z.infer<
+  typeof savedMemoryCategoryNameSchema
+>
 export type SavedMemoryCategory = z.infer<typeof savedMemoryCategorySchema>
 export type SavedMemorySource = z.infer<typeof savedMemorySourceSchema>
 export type SavedMemory = z.infer<typeof savedMemorySchema>
-export type CreateSavedMemoryRequest = z.infer<typeof createSavedMemoryRequestSchema>
-export type UpdateSavedMemoryRequest = z.infer<typeof updateSavedMemoryRequestSchema>
+export type CreateSavedMemoryRequest = z.infer<
+  typeof createSavedMemoryRequestSchema
+>
+export type UpdateSavedMemoryRequest = z.infer<
+  typeof updateSavedMemoryRequestSchema
+>
 export type MemoriesListResponse = z.infer<typeof memoriesListResponseSchema>
 export type ProjectContextSummary = z.infer<typeof projectContextSummarySchema>
 export type CreateProjectRequest = z.infer<typeof createProjectRequestSchema>

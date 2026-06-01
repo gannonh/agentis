@@ -31,15 +31,19 @@ import {
   WebhookIcon,
   ZapIcon,
 } from "@hugeicons/core-free-icons"
-import type {
-  AgentDetailInformation,
-  AgentDetailResponse,
-  IntegrationToolkit,
-  UpdateAgentRequest,
+import {
+  WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
+  type AgentDetailInformation,
+  type AgentDetailResponse,
+  type IntegrationToolkit,
+  type NativeToolPermissionId,
+  type UpdateAgentRequest,
 } from "@workspace/shared"
 import { useIntegrations } from "@/hooks/use-integrations"
 
 type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
+
+const WEB_SEARCH_CAPABILITY = WEB_SEARCH_NATIVE_TOOL_CAPABILITY
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -594,107 +598,139 @@ export function AgentSkillsTab() {
   )
 }
 
-const TOOL_GROUPS = [
+type ToolGroupItem = {
+  title: string
+  description: string
+  icon: typeof Search01Icon
+  nativeToolId?: NativeToolPermissionId
+}
+
+const TOOL_GROUPS: Array<{ label: string; items: ToolGroupItem[] }> = [
   {
     label: "Execution",
     items: [
-      [
-        "Script",
-        "Run Python/JS code in an isolated container.",
-        ComputerTerminal01Icon,
-      ],
-      [
-        "Full VM",
-        "Persistent virtual machine. Install packages, save files, and run jobs.",
-        ServerStack01Icon,
-      ],
+      {
+        title: "Script",
+        description: "Run Python/JS code in an isolated container.",
+        icon: ComputerTerminal01Icon,
+      },
+      {
+        title: "Full VM",
+        description:
+          "Persistent virtual machine. Install packages, save files, and run jobs.",
+        icon: ServerStack01Icon,
+      },
     ],
   },
   {
     label: "Research",
     items: [
-      ["Exa", "Enable Exa.ai semantic search and related tools.", AiSearchIcon],
-      [
-        "Search",
-        "Search the web for information using SDK web search.",
-        Search01Icon,
-      ],
-      [
-        "Browser",
-        "Control a real browser with AI-powered automation.",
-        BrowserIcon,
-      ],
-      [
-        "Find Similar",
-        "Find pages semantically similar to a given URL.",
-        Link03Icon,
-      ],
-      [
-        "Exa Answer",
-        "Get direct answers to questions with source citations.",
-        ChatIcon,
-      ],
-      [
-        "Exa Research",
-        "Deep multi-source research with structured output.",
-        Database01Icon,
-      ],
+      {
+        title: "Exa",
+        description: "Enable Exa.ai semantic search and related tools.",
+        icon: AiSearchIcon,
+      },
+      {
+        title: WEB_SEARCH_CAPABILITY.label,
+        description: WEB_SEARCH_CAPABILITY.description,
+        icon: Search01Icon,
+        nativeToolId: WEB_SEARCH_CAPABILITY.id,
+      },
+      {
+        title: "Browser",
+        description: "Control a real browser with AI-powered automation.",
+        icon: BrowserIcon,
+      },
+      {
+        title: "Find Similar",
+        description: "Find pages semantically similar to a given URL.",
+        icon: Link03Icon,
+      },
+      {
+        title: "Exa Answer",
+        description: "Get direct answers to questions with source citations.",
+        icon: ChatIcon,
+      },
+      {
+        title: "Exa Research",
+        description: "Deep multi-source research with structured output.",
+        icon: Database01Icon,
+      },
     ],
   },
   {
     label: "Data",
     items: [
-      [
-        "Tables",
-        "Create, update, and query structured data tables.",
-        TableIcon,
-      ],
-      ["Documents", "Create and update persistent documents.", File02Icon],
+      {
+        title: "Tables",
+        description: "Create, update, and query structured data tables.",
+        icon: TableIcon,
+      },
+      {
+        title: "Documents",
+        description: "Create and update persistent documents.",
+        icon: File02Icon,
+      },
     ],
   },
   {
     label: "Interactive",
     items: [
-      [
-        "Webpages & Slides",
-        "Generate styled webpages and slide presentations.",
-        Globe02Icon,
-      ],
-      [
-        "Slides",
-        "Create slide presentations for delivery.",
-        Presentation01Icon,
-      ],
+      {
+        title: "Webpages & Slides",
+        description: "Generate styled webpages and slide presentations.",
+        icon: Globe02Icon,
+      },
+      {
+        title: "Slides",
+        description: "Create slide presentations for delivery.",
+        icon: Presentation01Icon,
+      },
     ],
   },
   {
     label: "Media",
     items: [
-      ["Images", "Generate and edit images.", Image02Icon],
-      ["Video", "Generate short video clips with native audio.", Video01Icon],
-      ["Audio", "Generate speech or multi-speaker dialogue.", Mic01Icon],
-      [
-        "Maps",
-        "Geocoding, places search, directions, and distance calculations.",
-        MapsIcon,
-      ],
+      {
+        title: "Images",
+        description: "Generate and edit images.",
+        icon: Image02Icon,
+      },
+      {
+        title: "Video",
+        description: "Generate short video clips with native audio.",
+        icon: Video01Icon,
+      },
+      {
+        title: "Audio",
+        description: "Generate speech or multi-speaker dialogue.",
+        icon: Mic01Icon,
+      },
+      {
+        title: "Maps",
+        description:
+          "Geocoding, places search, directions, and distance calculations.",
+        icon: MapsIcon,
+      },
     ],
   },
-] as const
+]
 
 function ToolCard({
   title,
   description,
   icon,
-  checked = true,
+  checked,
+  onCheckedChange,
 }: {
   title: string
   description: string
-  icon: (typeof TOOL_GROUPS)[number]["items"][number][2]
-  checked?: boolean
+  icon: ToolGroupItem["icon"]
+  checked: boolean
+  onCheckedChange?: (checked: boolean) => void
 }) {
-  return (
-    <div className="flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3">
+  const content = (
+    <>
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <HugeiconsIcon icon={icon} className="size-4" strokeWidth={2} />
       </span>
@@ -707,7 +743,32 @@ function ToolCard({
           {description}
         </span>
       </span>
-    </div>
+    </>
+  )
+
+  if (!onCheckedChange) {
+    return (
+      <div className="flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3">
+        <span
+          aria-hidden
+          className="mt-1 size-3.5 rounded-full bg-muted-foreground/30"
+        />
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <label className="flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border border-border bg-card/70 p-3 hover:bg-muted/40">
+      <input
+        type="checkbox"
+        className="mt-1"
+        aria-label={title}
+        checked={checked}
+        onChange={(event) => onCheckedChange(event.target.checked)}
+      />
+      {content}
+    </label>
   )
 }
 
@@ -768,12 +829,18 @@ export function AgentToolsTab({
   const [selectedToolkits, setSelectedToolkits] = useState(
     new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
   )
+  const [selectedNativeTools, setSelectedNativeTools] = useState<
+    Set<NativeToolPermissionId>
+  >(new Set(detail.agent.currentConfigurationVersion.nativeTools))
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     setSelectedToolkits(
       new Set(detail.toolGrants.map((grant) => grant.toolkitSlug))
+    )
+    setSelectedNativeTools(
+      new Set(detail.agent.currentConfigurationVersion.nativeTools)
     )
   }, [detail])
 
@@ -784,6 +851,21 @@ export function AgentToolsTab({
         next.add(toolkitSlug)
       } else {
         next.delete(toolkitSlug)
+      }
+      return next
+    })
+  }
+
+  function setNativeToolSelected(
+    toolId: NativeToolPermissionId,
+    checked: boolean
+  ) {
+    setSelectedNativeTools((current) => {
+      const next = new Set(current)
+      if (checked) {
+        next.add(toolId)
+      } else {
+        next.delete(toolId)
       }
       return next
     })
@@ -800,6 +882,7 @@ export function AgentToolsTab({
           .map((toolkit) =>
             toToolGrantInput(toolkit.slug, grantedBySlug.get(toolkit.slug))
           ),
+        nativeTools: [...selectedNativeTools].sort(),
       })
       setStatus("Tools saved")
     } catch (error) {
@@ -877,23 +960,35 @@ export function AgentToolsTab({
           <h2 id="tools-heading" className="text-sm font-medium">
             Tools
           </h2>
-          <Badge variant="secondary">19 active</Badge>
+          <Badge variant="secondary">
+            {selectedNativeTools.size + selectedToolkits.size} active
+          </Badge>
         </div>
-        {/* TODO: replace this static tool catalog with the server-backed native tool registry. */}
         {TOOL_GROUPS.map((group) => (
           <div key={group.label} className="flex flex-col gap-2">
             <h3 className="text-xs font-medium text-muted-foreground">
               {group.label}
             </h3>
             <div className="grid gap-2 sm:grid-cols-2">
-              {group.items.map(([title, description, icon]) => (
-                <ToolCard
-                  key={title}
-                  title={title}
-                  description={description}
-                  icon={icon}
-                />
-              ))}
+              {group.items.map((item) => {
+                const nativeToolId = item.nativeToolId
+                return (
+                  <ToolCard
+                    key={item.title}
+                    title={item.title}
+                    description={item.description}
+                    icon={item.icon}
+                    checked={
+                      nativeToolId ? selectedNativeTools.has(nativeToolId) : false
+                    }
+                    onCheckedChange={
+                      nativeToolId
+                        ? (checked) => setNativeToolSelected(nativeToolId, checked)
+                        : undefined
+                    }
+                  />
+                )
+              })}
             </div>
           </div>
         ))}

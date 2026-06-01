@@ -1,6 +1,12 @@
 import { streamText, type LanguageModel } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
-import type { Message, MessagePart, Run, Thread } from "@workspace/shared"
+import type {
+  Message,
+  MessagePart,
+  Run,
+  SearchWebOutput,
+  Thread,
+} from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import {
   CURATED_COMPOSIO_TOOLS,
@@ -8,13 +14,17 @@ import {
 } from "../composio/tool-catalog.js"
 import { isRunTimelineDebugEnabled, type AppConfig } from "../config.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
+import type { WebSearchService } from "../research/web-search-service.js"
 import type { Repositories } from "../repositories/index.js"
 import { nowIso } from "../lib/ids.js"
 import type { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
 import type { WorkspaceExecutionService } from "../workspaces/workspace-execution-service.js"
 import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
 import type { WorkspaceHandle } from "../workspaces/workspace-service.js"
-import { composioToolNameToToolkit, formatToolStepTitle } from "./run-tool-labels.js"
+import {
+  composioToolNameToToolkit,
+  formatToolStepTitle,
+} from "./run-tool-labels.js"
 import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
 
 export type RunExecutorMocksDeps = {
@@ -23,6 +33,7 @@ export type RunExecutorMocksDeps = {
   services: ComposioServices
   editService: WorkspaceEditService
   executionService: WorkspaceExecutionService
+  webSearchService: WebSearchService
 }
 
 function createTimelineDebugStep(
@@ -66,6 +77,151 @@ function mockTextStream(summaryText: string) {
   })
 }
 
+function inferSearchQuery(prompt: string): string {
+  const normalized = prompt
+    .replace(/\b(search|look up|find)\b/gi, " ")
+    .replace(/\b(the )?web\b/gi, " ")
+    .replace(/\b(for|about|current|latest)\b/gi, " ")
+    .replace(/[^\p{L}\p{N}\s.-]/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+
+  return normalized || prompt.trim()
+}
+
+function formatMockWebSearchSummary(toolOutput: SearchWebOutput): string {
+  const firstResult = toolOutput.results[0]
+  if (!firstResult) {
+    return `Found ${toolOutput.resultCount} web results.`
+  }
+
+  return `Found ${toolOutput.resultCount} web results. Top source: [${firstResult.title}](${firstResult.url}).`
+}
+
+export async function executeMockNativeWebSearchStream(
+  deps: RunExecutorMocksDeps,
+  runId: string,
+  run: Run,
+  threadMessages: Message[],
+  latestUserPrompt: string
+) {
+  const thread = deps.repos.threads.getById(run.threadId)
+  if (!thread) throw new Error("Thread not found")
+
+  const assistantMessage = deps.repos.messages.create({
+    threadId: run.threadId,
+    role: "assistant",
+    parts: [{ type: "text", text: "" }],
+    status: "streaming",
+  })
+
+  deps.repos.runs.updateStatus(runId, "running")
+  deps.repos.steps.create({
+    runId,
+    type: "running",
+    status: "running",
+    title: "Running",
+  })
+
+  const toolName = "searchWeb" as const
+  const toolCallId = `mock-native-search-${runId}`
+  const toolInput = { query: inferSearchQuery(latestUserPrompt) }
+  let toolOutput: SearchWebOutput
+  try {
+    toolOutput = await deps.webSearchService.search(toolInput)
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Web search failed"
+    deps.repos.messages.updatePartsAndStatus(
+      assistantMessage.id,
+      [{ type: "text", text: message }],
+      "failed"
+    )
+    deps.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: message,
+    })
+    deps.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Web search failed",
+      payload: { provider: "native", toolName, toolCallId, message },
+    })
+    deps.repos.threads.touch(run.threadId, { status: "failed" })
+    throw error
+  }
+  const summaryText = formatMockWebSearchSummary(toolOutput)
+  const assistantParts: MessagePart[] = [
+    { type: "text", text: summaryText },
+    { type: "tool-call", toolCallId, toolName, input: toolInput },
+    { type: "tool-result", toolCallId, toolName, output: toolOutput },
+  ]
+
+  deps.repos.steps.create({
+    runId,
+    type: "tool-call",
+    status: "completed",
+    title: formatToolStepTitle({ toolName, curated: false }),
+    payload:
+      formatNativeToolRunStepPayload({
+        toolCallId,
+        toolName,
+        input: toolInput,
+      }) ?? undefined,
+  })
+  deps.repos.steps.create({
+    runId,
+    type: "tool-result",
+    status: "completed",
+    title: formatToolStepTitle({ toolName, curated: false }),
+    payload:
+      formatNativeToolRunStepPayload({
+        toolCallId,
+        toolName,
+        input: toolInput,
+        output: toolOutput,
+      }) ?? undefined,
+  })
+
+  deps.repos.messages.updatePartsAndStatus(
+    assistantMessage.id,
+    assistantParts,
+    "completed"
+  )
+  const usage = { totalTokens: 0 }
+  deps.repos.runs.updateStatus(runId, "completed", {
+    finishedAt: nowIso(),
+    usage,
+  })
+  createTimelineDebugStep(deps, runId, {
+    status: "completed",
+    title: "Debug: model output",
+    payload: {
+      provider: "debug",
+      kind: "model-output",
+      assistantParts,
+      usage,
+    },
+  })
+  deps.repos.steps.create({
+    runId,
+    type: "completed",
+    status: "completed",
+    title: "Completed",
+  })
+  deps.repos.threads.touch(run.threadId)
+
+  const result = streamText({
+    model: mockTextStream(summaryText) as LanguageModel,
+    messages: toModelMessages(threadMessages),
+  })
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: toUiMessages(threadMessages),
+  })
+}
+
 export async function executeMockNativeWorkspaceStream(
   deps: RunExecutorMocksDeps,
   runId: string,
@@ -98,8 +254,10 @@ export async function executeMockNativeWorkspaceStream(
     ? "searchWorkspaceFiles"
     : "listWorkspaceFiles"
   const nativeQuery =
-    latestUserPrompt.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/)[0] ??
-    "workspace"
+    latestUserPrompt
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .trim()
+      .split(/\s+/)[0] ?? "workspace"
   const toolInput = shouldSearchWorkspace
     ? { query: nativeQuery }
     : { path: "", recursive: false }

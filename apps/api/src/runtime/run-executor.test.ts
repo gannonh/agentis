@@ -3,7 +3,8 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
-import { threads } from "../db/schema.js"
+import { runs, threads } from "../db/schema.js"
+import { WebSearchService } from "../research/web-search-service.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 import {
   buildRunSystemPrompt,
@@ -204,6 +205,261 @@ describe("run executor composio bridge", () => {
       ])
     )
   }, 10_000)
+
+  it("persists native web search evidence in mock runtime", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Search the web for Agentis launch news" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const steps = context.repos.steps.listByRunId(run.id)
+    expect(steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Native: searchWeb",
+          type: "tool-result",
+          status: "completed",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "searchWeb",
+            input: expect.objectContaining({
+              query: "Agentis launch news",
+            }),
+            output: expect.objectContaining({
+              provider: "mock",
+              resultCount: 5,
+              results: expect.arrayContaining([
+                expect.objectContaining({
+                  title: expect.stringContaining("Agentis launch news"),
+                  url: expect.stringMatching(/^https:\/\//),
+                }),
+              ]),
+            }),
+          }),
+        }),
+      ])
+    )
+    const assistant = context.repos.messages
+      .listByThreadId(context.repos.runs.getById(run.id)!.threadId)
+      .find((message) => message.role === "assistant")
+    expect(messageText(assistant?.parts ?? [])).toContain("Mock result 1")
+    expect(messageText(assistant?.parts ?? [])).toContain("https://example.com")
+  }, 10_000)
+
+  it("exposes web search for default custom-agent native permissions", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Search the web for Agentis news." }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Debug: model input",
+          payload: expect.objectContaining({
+            tools: expect.arrayContaining(["searchWeb"]),
+          }),
+        }),
+      ])
+    )
+  }, 10_000)
+
+  it("omits web search for non-search prompts", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Answer with citations.",
+      model: "gpt-4o-mini",
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize this workspace" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const debugInput = context.repos.steps
+      .listByRunId(run.id)
+      .find((step) => step.title === "Debug: model input")
+    expect(debugInput?.payload).toMatchObject({
+      tools: expect.not.arrayContaining(["searchWeb"]),
+    })
+  }, 10_000)
+
+  it("omits web search for custom-agent configurations without native permission", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "No Search Agent",
+      systemPrompt: "Answer without web search.",
+      model: "gpt-4o-mini",
+      nativeTools: [],
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Say hello for debug inspection." }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const debugInput = context.repos.steps
+      .listByRunId(run.id)
+      .find((step) => step.title === "Debug: model input")
+    expect(debugInput?.payload).toMatchObject({
+      tools: expect.not.arrayContaining(["searchWeb"]),
+    })
+  }, 10_000)
+
+  it("uses current custom-agent native tools when a legacy run has no version snapshot", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "No Search Agent",
+      systemPrompt: "Answer without web search.",
+      model: "gpt-4o-mini",
+      nativeTools: [],
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Search the web for Agentis news." }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+    context.db
+      .update(runs)
+      .set({ agentConfigurationVersionId: null })
+      .where(eq(runs.id, run.id))
+      .run()
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const debugInput = context.repos.steps
+      .listByRunId(run.id)
+      .find((step) => step.title === "Debug: model input")
+    expect(debugInput?.payload).toMatchObject({
+      tools: expect.not.arrayContaining(["searchWeb"]),
+    })
+  }, 10_000)
+
+  it("fails mock web search runs when the search provider rejects", async () => {
+    const { app, context } = createMockRuntimeApp()
+    vi.spyOn(WebSearchService.prototype, "search").mockRejectedValueOnce(
+      new Error("Search exploded")
+    )
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Search the web for Agentis news" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+
+    expect(stream.status).toBe(400)
+    expect(context.repos.runs.getById(run.id)).toMatchObject({
+      status: "failed",
+      errorSummary: "Search exploded",
+    })
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "error",
+          status: "failed",
+          title: "Web search failed",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "searchWeb",
+            message: "Search exploded",
+          }),
+        }),
+      ])
+    )
+  })
+
+  it("fails fast when permitted web search has no configured provider credentials", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(
+      ctx.repos,
+      {
+        ...ctx.config,
+        mockRuntime: false,
+        nodeEnv: "development",
+        webSearchProvider: "vercel-gateway",
+        aiGatewayApiKey: undefined,
+      },
+      services
+    )
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Search the web for current AI news" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+
+    expect(stream.status).toBe(400)
+    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+      status: "failed",
+      errorSummary: "Web search provider is not configured",
+    })
+    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "error",
+          status: "failed",
+          title: "Web search unavailable",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "searchWeb",
+            code: "web_search_unavailable",
+          }),
+        }),
+      ])
+    )
+  })
 
   it("removes assistant claims while workspace mutations are pending approval", () => {
     const parts = suppressTextForPendingApproval([

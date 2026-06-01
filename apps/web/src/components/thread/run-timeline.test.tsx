@@ -159,13 +159,60 @@ describe("RunTimeline", () => {
       />
     )
 
-    expect(screen.getByText("Native")).toBeInTheDocument()
-    expect(screen.getByText(/readWorkspaceFile/)).toBeInTheDocument()
+    expect(screen.getByText(/Native · readWorkspaceFile/)).toBeInTheDocument()
     expect(screen.getByText(/workspace_agentis/)).toBeInTheDocument()
     expect(screen.getByText(/notes.md/)).toBeInTheDocument()
     expect(screen.getByText(/truncated/)).toBeInTheDocument()
     expect(
       screen.queryByText(/This full content should stay out/)
+    ).not.toBeInTheDocument()
+  })
+
+  it("renders safe web search source evidence", () => {
+    render(
+      <RunTimeline
+        run={run}
+        steps={[
+          step({
+            provider: "native",
+            toolName: "searchWeb",
+            input: { query: "Agentis launch news" },
+            output: {
+              query: "Agentis launch news",
+              provider: "mock",
+              resultCount: 3,
+              truncated: true,
+              results: [
+                {
+                  title: "Agentis launch update",
+                  url: "https://example.com/agentis-launch",
+                  source: "example.com",
+                },
+                {
+                  title: "Agent tooling notes",
+                  url: "https://docs.example.com/tooling",
+                  source: "docs.example.com",
+                },
+                {
+                  title: "Unsafe source",
+                  url: "javascript:alert(1)",
+                  source: "evil.example",
+                },
+              ],
+            },
+          }),
+        ]}
+      />
+    )
+
+    expect(screen.getByText(/Native · searchWeb/)).toBeInTheDocument()
+    expect(screen.getByText("Query: Agentis launch news")).toBeInTheDocument()
+    expect(screen.getByText("mock · 3 results · truncated")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Agentis launch update/ }))
+      .toHaveAttribute("href", "https://example.com/agentis-launch")
+    expect(screen.getByText(/docs\.example\.com/)).toBeInTheDocument()
+    expect(
+      screen.queryByRole("link", { name: /Unsafe source/ })
     ).not.toBeInTheDocument()
   })
 

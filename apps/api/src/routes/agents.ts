@@ -70,6 +70,7 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
         description: body.description,
         systemPrompt: body.systemPrompt,
         model: body.model ?? config.defaultModel,
+        nativeTools: body.nativeTools,
       },
       resolvedGrants.grants
     )

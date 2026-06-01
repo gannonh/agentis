@@ -43,6 +43,11 @@ export type AppConfig = {
   sandboxChangedFilesLimit: number
   sandboxCommandDenyPatterns: string[]
   sandboxContainerImage: string
+  webSearchProvider: "vercel-gateway" | "mock"
+  webSearchBackend: "perplexity" | "parallel"
+  webSearchMaxResults: number
+  webSearchMaxSnippetChars: number
+  aiGatewayApiKey: string | undefined
 }
 
 function parseToolkitVersions(raw: string | undefined): Record<string, string> {
@@ -161,7 +166,31 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter(Boolean),
     sandboxContainerImage:
       env.AGENTIS_SANDBOX_CONTAINER_IMAGE ?? "agentis-sandbox:local",
+    webSearchProvider:
+      env.AGENTIS_WEB_SEARCH_PROVIDER === "mock"
+        ? "mock"
+        : "vercel-gateway",
+    webSearchBackend:
+      env.AGENTIS_WEB_SEARCH_BACKEND === "parallel"
+        ? "parallel"
+        : "perplexity",
+    webSearchMaxResults: clampNumber(
+      Number(env.AGENTIS_WEB_SEARCH_MAX_RESULTS ?? 5),
+      1,
+      10
+    ),
+    webSearchMaxSnippetChars: clampNumber(
+      Number(env.AGENTIS_WEB_SEARCH_MAX_SNIPPET_CHARS ?? 500),
+      1,
+      1000
+    ),
+    aiGatewayApiKey: env.AI_GATEWAY_API_KEY?.trim() || undefined,
   }
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min
+  return Math.min(max, Math.max(min, Math.trunc(value)))
 }
 
 export function isRuntimeAvailable(config: AppConfig) {
@@ -181,6 +210,17 @@ export function isComposioAvailable(config: AppConfig) {
   if (!config.composioApiKey?.trim()) return false
   if (!config.composioRedirectBaseUrl?.trim()) return false
   return true
+}
+
+export function resolveWebSearchProviderName(config: AppConfig): string {
+  if (config.mockRuntime) return "mock"
+  return config.webSearchProvider
+}
+
+export function isWebSearchProviderAvailable(config: AppConfig): boolean {
+  if (config.mockRuntime) return true
+  if (config.webSearchProvider === "mock") return true
+  return Boolean(config.aiGatewayApiKey?.trim())
 }
 
 export function getComposioUnavailableReason(

@@ -42,9 +42,9 @@ Acceptance:
 
 ### ✅ V2: Safe file edits
 
-Spec: `[docs/specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md](specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)`
+Spec: `[docs/specs/_done/2026-05-30-agent-native-tooling-v2-safe-file-edits.md](_done/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)`
 
-Plan: `[.cursor/plans/V2 Safe File Edits-c58edf88.plan.md](../.cursor/plans/V2%20Safe%20File%20Edits-c58edf88.plan.md)`
+Plan: `[.cursor/plans/_done/V2 Safe File Edits-c58edf88.plan.md](../../.cursor/plans/_done/V2%20Safe%20File%20Edits-c58edf88.plan.md)`
 
 Status: V2 vertical slice implemented for local demo and verification.
 
@@ -60,9 +60,9 @@ Scope:
 
 ### ✅ V3: Sandboxed execution
 
-Plan: `[.cursor/plans/V3 Sandboxed Execution-eda6664c.plan.md](../.cursor/plans/V3%20Sandboxed%20Execution-eda6664c.plan.md)`
+Plan: `[.cursor/plans/_done/V3 Sandboxed Execution-eda6664c.plan.md](../../.cursor/plans/_done/V3%20Sandboxed%20Execution-eda6664c.plan.md)`
 
-Decision record: `[docs/adr/0001-sandboxed-workspace-execution.md](adr/0001-sandboxed-workspace-execution.md)`
+Decision record: `[docs/adr/0001-sandboxed-workspace-execution.md](../adr/0001-sandboxed-workspace-execution.md)`
 
 Status: V3 vertical slice implemented for local demo and verification.
 
@@ -90,7 +90,7 @@ Scope:
   compatible local examples; ArcBox is future-watch/experimental only and is not
   currently supported.
 
-### V4: Hyperagent capability parity expansion
+### ⏳ V4: Hyperagent capability parity expansion
 
 Goal: adopt or provide equivalents for the remaining Hyperagent native tool inventory.
 
@@ -108,6 +108,20 @@ Notes:
 - This is big scope. Each category could span multiple milestones. 
 - scope 1 tool per epic/PR (e.g., web search)
 - recommend sequencing: 1 tool per category to start
+
+#### V4.1: Web Search
+
+Spec: `docs/specs/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
+
+V4.1 implemented the first research slice: provider-neutral native web search.
+Agentis exposes the model-visible `searchWeb` runtime tool behind the
+agent-owned `webSearch` native permission, normalizes provider output into a
+bounded Agentis contract, and renders search evidence in the run timeline.
+Production/live use is backed by Vercel AI Gateway search configuration;
+mock-runtime use resolves through a deterministic mock provider for automated
+tests and local wiring.
+
+---
 
 ## Current state
 
@@ -392,7 +406,7 @@ This inventory records the native tooling in Hyperagent, the platform Agentis is
 ### Research
 
 - **Exa:** Enable Exa.ai semantic search and related tools.
-- **Search:** Search the web for information using SDK web search. Supports native and Exa-backed modes.
+- **Search:** Implemented in V4.1 as Agentis-native `searchWeb`, backed by a provider-neutral web search boundary with Vercel AI Gateway and mock providers. Exa-backed search remains deferred.
 - **Browser:** Control a real browser with AI-powered automation. Click, type, scroll, and take screenshots. Persistent sessions are still an explicit capability question.
 - **Find Similar:** Find pages semantically similar to a given URL. Useful for competitive analysis and content curation.
 - **Exa Answer:** Get direct answers to questions with source citations.
@@ -587,7 +601,7 @@ Candidate updates:
 1. **V1: Workspace-backed read-only tools**: selected-agent workspace flow and read-only file tools are implemented.
 2. **V2: Safe file edits**: mutating workspace tools with approval and audit metadata are implemented.
 3. **V3: Sandboxed execution**: bounded command/script execution with local-process and optional local-container backends is implemented.
-4. **V4: Capability parity expansion**: adopt or provide equivalents for the remaining Hyperagent tools by category.
+4. **V4: Capability parity expansion**: V4.1 web search is implemented; remaining Hyperagent tools stay category-scoped follow-ups.
 
 ## Reference files
 

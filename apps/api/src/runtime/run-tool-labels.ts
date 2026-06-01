@@ -1,4 +1,4 @@
-import { isNativeWorkspaceToolName } from "../native-tools/native-tool-payload.js"
+import { isNativeToolName } from "../native-tools/native-tool-payload.js"
 
 export function composioToolNameToToolkit(toolName: string): string | undefined {
   if (!toolName.startsWith("composio_")) return undefined
@@ -14,7 +14,7 @@ export function formatToolStepTitle(input: {
   if (input.toolName === "createWorkspaceFile") return "Create workspace file"
   if (input.toolName === "replaceInWorkspaceFile") return "Replace in workspace file"
   if (input.toolName === "applyWorkspacePatch") return "Apply workspace patch"
-  if (isNativeWorkspaceToolName(input.toolName)) {
+  if (isNativeToolName(input.toolName)) {
     return `Native: ${input.toolName}`
   }
   if (input.toolkitSlug && input.curated) {

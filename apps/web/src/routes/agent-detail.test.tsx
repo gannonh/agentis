@@ -143,6 +143,7 @@ function apiAgentDetail({
       systemPrompt: "Research carefully.",
       model: "gpt-4o-mini",
       maxCostPerRunUsd: null,
+      nativeTools: ["webSearch"],
       createdAt: now,
     },
     toolGrantCount: toolGrants?.length ?? 1,
@@ -704,6 +705,43 @@ describe("AgentDetailPage", () => {
     expect(screen.getByRole("heading", { name: "Access" })).toBeInTheDocument()
   })
 
+  it("counts both native tools and integration grants in the Tools badge", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+
+    expect(screen.getByText("2 active")).toBeInTheDocument()
+  })
+
+  it("renders catalog-only tools as static cards instead of toggles", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+
+    expect(screen.getByText("Browser").closest("label")).toBeNull()
+    expect(screen.getByRole("checkbox", { name: "Search" })).toBeInTheDocument()
+  })
+
   it("saves API-backed tool grants from the Tools tab", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
@@ -726,6 +764,50 @@ describe("AgentDetailPage", () => {
 
     expect(updateAgent).toHaveBeenCalledWith("agent_created", {
       toolGrants: [],
+      nativeTools: ["webSearch"],
+    })
+  })
+
+  it("saves Search as a native tool permission from the Tools tab", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
+    )
+    vi.mocked(updateAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        agent: {
+          toolGrantCount: 0,
+          currentConfigurationVersion: {
+            id: "version_created_2",
+            agentId: "agent_created",
+            version: 2,
+            systemPrompt: "Research carefully.",
+            model: "gpt-4o-mini",
+            maxCostPerRunUsd: null,
+            nativeTools: [],
+            createdAt: new Date().toISOString(),
+          },
+        },
+        toolGrants: [],
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+    await user.click(screen.getByRole("checkbox", { name: "Search" }))
+    await user.click(screen.getByRole("button", { name: "Save tools" }))
+
+    expect(updateAgent).toHaveBeenCalledWith("agent_created", {
+      toolGrants: [],
+      nativeTools: [],
     })
   })
 
@@ -766,6 +848,7 @@ describe("AgentDetailPage", () => {
 
     expect(updateAgent).toHaveBeenCalledWith("agent_created", {
       toolGrants: [{ toolkitSlug: "slack" }],
+      nativeTools: ["webSearch"],
     })
     expect(await screen.findByText("Tools saved")).toBeInTheDocument()
   })

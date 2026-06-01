@@ -1,5 +1,9 @@
 # Agent native tooling V4.1: provider-neutral web search
 
+## Status
+
+Implemented.
+
 ## Goal
 
 Add the first V4 capability parity slice by giving Agentis agents the native
@@ -15,7 +19,7 @@ documents, tables, or media tooling.
 
 ## Source of truth
 
-- Roadmap: `docs/agent-native-tooling.md`, especially V4 and the Hyperagent
+- Roadmap: `docs/specs/agent-native-tooling.md`, especially V4 and the Hyperagent
   research inventory.
 - Existing native runtime plumbing:
   - `apps/api/src/runtime/run-executor.ts`
@@ -337,7 +341,7 @@ that is worse than provider/tool-native citation behavior.
   the existing Connected apps section in `apps/web/src/routes/agent-create.tsx`,
   even before the future screen-by-screen create walkthrough exists.
 - Add focused API and web tests.
-- Update `docs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
+- Update `docs/specs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
   depending on Build completion.
 
 ## Acceptance criteria
@@ -412,11 +416,23 @@ not a reason to substitute mock evidence.
 - Exa-specific semantic search, Exa Answer, Exa Research, and Exa Websets.
 - Thread search.
 - Research tables, persistent documents, or shared datasets.
-- Native tool grants/policy UI.
+- Full native tool registry and policy UI beyond the V4.1 Search permission control.
 - Full page crawling or transcript rendering of full source content.
 - OpenAI-native web search as the default product boundary.
 
-## Build handoff
+## Build completion report
+
+- Spec path: `docs/specs/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
+- Base SHA: `7f3f75a3`
+- Tasks completed: provider-neutral `searchWeb` contract/config/provider boundary, versioned `webSearch` native tool permission, runtime registration/preflight/mock flow, bounded native run-step evidence, timeline rendering, agent create/detail Search controls, docs/env updates.
+- Files changed: shared schemas, API config/repositories/runtime/native tool/research modules, DB migration, web agent create/detail/timeline surfaces, focused tests, `.env.example`, and `docs/specs/agent-native-tooling.md`.
+- Verification run: `pnpm --filter api test`, `pnpm --filter web test`, `pnpm typecheck && pnpm build && pnpm lint`.
+- Review gates: single-agent TDD red/green checks, spec compliance self-review, code quality self-review.
+- Approved deviations: none.
+- Known follow-up issues: real-service UAT still requires valid Vercel AI Gateway credentials.
+- Independent subagent review: unavailable; single-agent path used.
+
+## Original build handoff
 
 Approved scope: implement V4.1 as provider-neutral native web search with one
 public Agentis tool, `searchWeb`, backed first by Vercel AI Gateway search if the
@@ -426,6 +442,6 @@ timeline evidence.
 Non-goals: do not add browser automation, Exa deep research, documents, tables,
 media tools, or native tool grant UI in this slice.
 
-First Build task: inspect the installed `ai` package and Gateway exports in this
+Original first Build task: inspect the installed `ai` package and Gateway exports in this
 repo, then choose the smallest gateway-backed provider path that preserves the
 Agentis-owned `searchWeb` contract.

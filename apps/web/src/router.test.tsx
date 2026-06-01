@@ -21,6 +21,7 @@ const apiAgent: AgentListItem = {
     version: 1,
     systemPrompt: "Answer with citations.",
     model: "gpt-4o-mini",
+    nativeTools: ["webSearch"],
     createdAt: "2026-05-28T00:00:00.000Z",
   },
   toolGrantCount: 0,

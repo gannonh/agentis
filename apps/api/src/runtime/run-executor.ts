@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai"
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
-import type { MessagePart, Run } from "@workspace/shared"
+import { GENERIC_AGENTIS_AGENT_ID, type MessagePart, type Run } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import { ComposioRemediationError } from "../composio/tool-execution-service.js"
 import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
@@ -11,6 +11,11 @@ import { ArtifactService } from "../artifacts/artifact-service.js"
 import { createArtifactTool } from "../artifacts/artifact-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
+import { resolveNativeToolsForRun } from "../native-tools/native-tool-permissions.js"
+import { resolveNativeRuntimeCapabilities } from "../native-tools/native-tool-capability-catalog.js"
+import { buildWebSearchTools } from "../native-tools/web-search-tools.js"
+import { WebSearchError } from "../research/web-search-provider.js"
+import { WebSearchService } from "../research/web-search-service.js"
 import { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
 import { WorkspaceExecutionService } from "../workspaces/workspace-execution-service.js"
 import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
@@ -37,6 +42,7 @@ import {
 import { nowIso } from "../lib/ids.js"
 import {
   executeMockComposioStream,
+  executeMockNativeWebSearchStream,
   executeMockNativeWorkspaceExecutionStream,
   executeMockNativeWorkspaceMutationStream,
   executeMockNativeWorkspaceStream,
@@ -50,7 +56,10 @@ import {
   toModelMessages,
   toUiMessages,
 } from "./run-message-adapters.js"
-import { composioToolNameToToolkit, formatToolStepTitle } from "./run-tool-labels.js"
+import {
+  composioToolNameToToolkit,
+  formatToolStepTitle,
+} from "./run-tool-labels.js"
 
 export { formatToolStepTitle } from "./run-tool-labels.js"
 export { suppressTextForPendingApproval } from "./run-message-adapters.js"
@@ -91,6 +100,21 @@ function wantsGeneratedArtifact(prompt: string) {
   return ARTIFACT_PROMPT_PATTERN.test(prompt)
 }
 
+function toolStepStatus(input: {
+  error?: string
+  pendingApproval: boolean
+}): "failed" | "pending" | "completed" {
+  if (input.error) return "failed"
+  if (input.pendingApproval) return "pending"
+  return "completed"
+}
+
+function toolErrorCode(error: unknown): string | undefined {
+  if (error instanceof WorkspaceError) return error.code
+  if (error instanceof WebSearchError) return error.code
+  return undefined
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
@@ -120,7 +144,9 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 
   return Object.fromEntries(
     Object.entries(value)
-      .map(([key, entry]) => [key, sanitizeJsonValue(entry, depth + 1)] as const)
+      .map(
+        ([key, entry]) => [key, sanitizeJsonValue(entry, depth + 1)] as const
+      )
       .filter(([, entry]) => entry !== undefined)
   )
 }
@@ -182,6 +208,7 @@ export class RunExecutor {
   private readonly workspaceEditService: WorkspaceEditService
   private readonly workspaceExecutionService: WorkspaceExecutionService
   private readonly workspaceApproval: WorkspaceToolApprovalCoordinator
+  private readonly webSearchService: WebSearchService
 
   constructor(
     private readonly repos: Repositories,
@@ -189,6 +216,7 @@ export class RunExecutor {
     private readonly services: ComposioServices,
     private readonly artifactService: ArtifactService
   ) {
+    this.webSearchService = new WebSearchService(config)
     this.contextService = new ProjectContextService(repos, config)
     this.workspaceEditService = new WorkspaceEditService(repos.workspaceEdits)
     this.workspaceExecutionService = new WorkspaceExecutionService(
@@ -210,6 +238,7 @@ export class RunExecutor {
       services: this.services,
       editService: this.workspaceEditService,
       executionService: this.workspaceExecutionService,
+      webSearchService: this.webSearchService,
     }
   }
 
@@ -282,7 +311,9 @@ export class RunExecutor {
       ? this.repos.agents.getConfigurationVersionById(
           run.agentConfigurationVersionId
         )
-      : null
+      : run.agentId && run.agentId !== GENERIC_AGENTIS_AGENT_ID
+        ? this.repos.agents.getCurrentConfigurationSnapshot(run.agentId)
+        : null
     if (run.agentConfigurationVersionId && !agentConfiguration) {
       const message =
         "Agent configuration version not found: " +
@@ -301,6 +332,26 @@ export class RunExecutor {
       this.repos.threads.touch(run.threadId, { status: "failed" })
       throw new Error(message)
     }
+    const permittedNativeToolIds = resolveNativeToolsForRun({
+      agentId: run.agentId,
+      agentConfiguration,
+    })
+    const nativeRuntimeCapabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds,
+      providerAvailability: { webSearch: this.webSearchService.isAvailable() },
+      latestUserPrompt,
+      buildTools: {
+        webSearch: () => buildWebSearchTools(this.webSearchService),
+      },
+    })
+    if (nativeRuntimeCapabilities.webSearch.unavailableError) {
+      return this.failWithWebSearchError(
+        runId,
+        run.threadId,
+        nativeRuntimeCapabilities.webSearch.unavailableError
+      )
+    }
+
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
       this.contextService.buildSystemPromptBlock(projectContext)
@@ -332,11 +383,15 @@ export class RunExecutor {
           memoryContribution.promptSection.body
         )
       : null
-    const runtimeSystemPrompt = [systemPrompt, memoryPrompt]
+    const runtimeSystemPrompt = [
+      systemPrompt,
+      ...nativeRuntimeCapabilities.systemPromptSections,
+      memoryPrompt,
+    ]
       .filter((section): section is string => Boolean(section))
       .join("\n\n")
 
-    const nativeTools = buildWorkspaceNativeTools({
+    const workspaceNativeTools = buildWorkspaceNativeTools({
       handle: workspaceHandle,
       editService: this.workspaceEditService,
       executionService: this.workspaceExecutionService,
@@ -344,11 +399,13 @@ export class RunExecutor {
       runId,
       threadMode: thread.mode,
     })
+    const webSearchTools = nativeRuntimeCapabilities.runtimeTools
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
     )
     const runtimeTools = {
-      ...nativeTools,
+      ...workspaceNativeTools,
+      ...webSearchTools,
       getWorkspaceSummary: getWorkspaceSummaryTool,
       createArtifact: createArtifactTool(this.artifactService, {
         runId,
@@ -409,6 +466,20 @@ export class RunExecutor {
 
     if (
       this.config.mockRuntime &&
+      nativeRuntimeCapabilities.webSearch.enabled &&
+      nativeRuntimeCapabilities.webSearch.requested
+    ) {
+      return executeMockNativeWebSearchStream(
+        this.mockDeps(),
+        runId,
+        run,
+        threadMessages,
+        latestUserPrompt
+      )
+    }
+
+    if (
+      this.config.mockRuntime &&
       /\b(write|create|edit|patch|replace)\b.*\b(file|workspace)\b|\b(file|workspace)\b.*\b(write|create|edit|patch|replace)\b/i.test(
         latestUserPrompt
       )
@@ -424,7 +495,12 @@ export class RunExecutor {
       )
     }
 
-    if (this.config.mockRuntime && /\bfiles?\b|workspace file|read .*file|search .*file/i.test(latestUserPrompt)) {
+    if (
+      this.config.mockRuntime &&
+      /\bfiles?\b|workspace file|read .*file|search .*file/i.test(
+        latestUserPrompt
+      )
+    ) {
       return executeMockNativeWorkspaceStream(
         this.mockDeps(),
         runId,
@@ -513,7 +589,10 @@ export class RunExecutor {
       if (!stepId) return
 
       const pendingApproval = isPendingApprovalOutput(input.toolOutput)
-      const status = input.error ? "failed" : pendingApproval ? "pending" : "completed"
+      const status = toolStepStatus({
+        error: input.error,
+        pendingApproval,
+      })
       this.repos.steps.update(stepId, {
         status,
         title: formatToolStepTitle({
@@ -756,10 +835,11 @@ export class RunExecutor {
               : typeof part.error === "string"
                 ? part.error
                 : "Tool execution failed"
-          const code =
-            part.error instanceof WorkspaceError ? part.error.code : undefined
+          const code = toolErrorCode(part.error)
           const details =
-            part.error instanceof WorkspaceError ? part.error.details : undefined
+            part.error instanceof WorkspaceError
+              ? part.error.details
+              : undefined
           finalizeToolStep(part.toolCallId, part.toolName, {
             toolInput: part.input,
             error: message,
@@ -793,7 +873,9 @@ export class RunExecutor {
         clearAbortController(runId)
         const hasPendingApproval = hasPendingApprovalInParts(assistantParts)
         for (const stepId of toolStepIds.values()) {
-          this.repos.steps.update(stepId, { status: hasPendingApproval ? "pending" : "failed" })
+          this.repos.steps.update(stepId, {
+            status: hasPendingApproval ? "pending" : "failed",
+          })
         }
         toolStepIds.clear()
         if (hasPendingApproval) {
@@ -814,10 +896,14 @@ export class RunExecutor {
           completionTokens: totalUsage.outputTokens,
           totalTokens: totalUsage.totalTokens,
         }
-        this.repos.runs.updateStatus(runId, hasPendingApproval ? "tool-calling" : "completed", {
-          finishedAt: hasPendingApproval ? undefined : nowIso(),
-          usage,
-        })
+        this.repos.runs.updateStatus(
+          runId,
+          hasPendingApproval ? "tool-calling" : "completed",
+          {
+            finishedAt: hasPendingApproval ? undefined : nowIso(),
+            usage,
+          }
+        )
         this.createTimelineDebugStep(runId, {
           status: "completed",
           title: "Debug: model output",
@@ -928,8 +1014,11 @@ export class RunExecutor {
     error: unknown
   ): never {
     const message =
-      error instanceof Error ? error.message : "Workspace could not be resolved."
-    const code = error instanceof WorkspaceError ? error.code : "workspace_error"
+      error instanceof Error
+        ? error.message
+        : "Workspace could not be resolved."
+    const code =
+      error instanceof WorkspaceError ? error.code : "workspace_error"
     this.repos.messages.create({
       threadId,
       role: "assistant",
@@ -953,6 +1042,37 @@ export class RunExecutor {
     })
     this.repos.threads.touch(threadId, { status: "failed" })
     throw new Error(message)
+  }
+
+  private failWithWebSearchError(
+    runId: string,
+    threadId: string,
+    error: WebSearchError
+  ): never {
+    this.repos.messages.create({
+      threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: error.message }],
+      status: "failed",
+    })
+    this.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: error.message,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Web search unavailable",
+      payload: {
+        provider: "native",
+        toolName: "searchWeb",
+        code: error.code,
+        error: error.message,
+      },
+    })
+    this.repos.threads.touch(threadId, { status: "failed" })
+    throw new Error(error.message)
   }
 
   private failWithRemediation(
