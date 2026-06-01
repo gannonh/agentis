@@ -1,6 +1,14 @@
 import { z } from "zod"
 
 const nonEmptyString = z.string().min(1)
+const trimmedNonEmptyString = z.string().trim().min(1)
+const httpUrl = z
+  .string()
+  .url()
+  .refine(
+    (value) => value.startsWith("http://") || value.startsWith("https://"),
+    "URL must use http or https"
+  )
 
 export const NATIVE_TOOL_PERMISSION_IDS = ["webSearch"] as const
 
@@ -17,15 +25,15 @@ export const DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS: NativeToolPermissionId[] = [
 export const searchWebRecencySchema = z.enum(["day", "week", "month", "year"])
 
 export const searchWebInputSchema = z.object({
-  query: nonEmptyString.max(500),
+  query: trimmedNonEmptyString.max(500),
   maxResults: z.number().int().positive().max(10).optional(),
-  domains: z.array(nonEmptyString.max(253)).max(20).optional(),
+  domains: z.array(trimmedNonEmptyString.max(253)).max(20).optional(),
   recency: searchWebRecencySchema.optional(),
 })
 
 export const searchWebResultSchema = z.object({
-  title: nonEmptyString,
-  url: nonEmptyString.url(),
+  title: trimmedNonEmptyString,
+  url: httpUrl,
   snippet: z.string().max(1000).optional(),
   source: z.string().max(200).optional(),
   publishedAt: z.string().max(100).optional(),

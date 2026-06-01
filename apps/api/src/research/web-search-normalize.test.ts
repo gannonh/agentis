@@ -34,6 +34,48 @@ describe("web search normalization", () => {
     expect(output.results[0]?.source).toBe("example.com")
   })
 
+  it("rejects unsafe urls and invalid normalized fields", () => {
+    expect(() =>
+      normalizeSearchResults({
+        query: "latest ai news",
+        provider: "mock",
+        rawResults: [
+          { title: "Unsafe link", url: "javascript:alert(1)" },
+        ],
+        maxResults: 5,
+        maxSnippetChars: 100,
+      })
+    ).toThrow(/trustworthy/)
+
+    expect(() =>
+      normalizeSearchResults({
+        query: "latest ai news",
+        provider: "mock",
+        rawResults: [
+          {
+            title: "   ",
+            url: "https://example.com/story",
+            source: "x".repeat(300),
+          },
+        ],
+        maxResults: 5,
+        maxSnippetChars: 100,
+      })
+    ).toThrow(/trustworthy/)
+  })
+
+  it("fails when provider output is missing a results array", () => {
+    expect(() =>
+      normalizeSearchResults({
+        query: "latest ai news",
+        provider: "mock",
+        rawResults: undefined as never,
+        maxResults: 5,
+        maxSnippetChars: 100,
+      })
+    ).toThrow(/results array/)
+  })
+
   it("fails normalization when no trustworthy results remain", () => {
     expect(() =>
       normalizeSearchResults({

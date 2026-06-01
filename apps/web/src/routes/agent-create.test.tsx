@@ -134,6 +134,34 @@ describe("AgentCreatePage", () => {
     expect(navigate).toHaveBeenCalledWith("/agents/agent_test")
   })
 
+  it("creates an agent without Search when the built-in capability is unchecked", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <AgentCreatePage />
+      </MemoryRouter>
+    )
+
+    await user.type(screen.getByLabelText(/^name/i), "No Search Agent")
+    await user.type(
+      screen.getByLabelText(/^instructions/i),
+      "Answer without web search."
+    )
+    await user.click(screen.getByRole("checkbox", { name: /Search/ }))
+    await user.click(screen.getByRole("button", { name: /create agent/i }))
+
+    await waitFor(() => {
+      expect(createAgent).toHaveBeenCalledWith({
+        name: "No Search Agent",
+        description: undefined,
+        model: "gpt-4o-mini",
+        systemPrompt: "Answer without web search.",
+        toolGrants: [],
+        nativeTools: [],
+      })
+    })
+  })
+
   it("shows creation errors without implementation jargon", async () => {
     vi.mocked(createAgent).mockRejectedValueOnce(
       new Error(

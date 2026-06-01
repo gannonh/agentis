@@ -414,6 +414,7 @@ export class AgentPromotionService {
           input.draftUpdates?.model ??
           draft.model ??
           this.config.defaultModel,
+        nativeTools: input.nativeTools,
         ...sourceSnapshot,
       },
       resolvedGrants.grants

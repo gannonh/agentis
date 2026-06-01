@@ -48,9 +48,9 @@ docs/              # Product docs, roadmap, UI comps
 
 ## Documentation
 
-- [MVP roadmap](docs/agentis-prd-roadmap.md)
+- [MVP roadmap](docs/specs/agentis-prd-roadmap.md)
 - [Product overview](docs/overview.md)
-- [Agent native tooling](docs/agent-native-tooling.md)
+- [Agent native tooling](docs/specs/agent-native-tooling.md)
 - [Design system](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
 

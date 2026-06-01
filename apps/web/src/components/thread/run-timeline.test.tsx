@@ -168,7 +168,7 @@ describe("RunTimeline", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("renders web search source evidence", () => {
+  it("renders safe web search source evidence", () => {
     render(
       <RunTimeline
         run={run}
@@ -180,7 +180,7 @@ describe("RunTimeline", () => {
             output: {
               query: "Agentis launch news",
               provider: "mock",
-              resultCount: 2,
+              resultCount: 3,
               truncated: true,
               results: [
                 {
@@ -193,6 +193,11 @@ describe("RunTimeline", () => {
                   url: "https://docs.example.com/tooling",
                   source: "docs.example.com",
                 },
+                {
+                  title: "Unsafe source",
+                  url: "javascript:alert(1)",
+                  source: "evil.example",
+                },
               ],
             },
           }),
@@ -202,10 +207,13 @@ describe("RunTimeline", () => {
 
     expect(screen.getByText(/Native · searchWeb/)).toBeInTheDocument()
     expect(screen.getByText("Query: Agentis launch news")).toBeInTheDocument()
-    expect(screen.getByText("mock · 2 results · truncated")).toBeInTheDocument()
+    expect(screen.getByText("mock · 3 results · truncated")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: /Agentis launch update/ }))
       .toHaveAttribute("href", "https://example.com/agentis-launch")
     expect(screen.getByText(/docs\.example\.com/)).toBeInTheDocument()
+    expect(
+      screen.queryByRole("link", { name: /Unsafe source/ })
+    ).not.toBeInTheDocument()
   })
 
   it("renders workspace execution stdout stderr duration and changed files", () => {

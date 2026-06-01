@@ -42,9 +42,9 @@ Acceptance:
 
 ### ✅ V2: Safe file edits
 
-Spec: `[docs/specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md](specs/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)`
+Spec: `[docs/specs/_done/2026-05-30-agent-native-tooling-v2-safe-file-edits.md](_done/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)`
 
-Plan: `[.cursor/plans/V2 Safe File Edits-c58edf88.plan.md](../.cursor/plans/V2%20Safe%20File%20Edits-c58edf88.plan.md)`
+Plan: `[.cursor/plans/_done/V2 Safe File Edits-c58edf88.plan.md](../../.cursor/plans/_done/V2%20Safe%20File%20Edits-c58edf88.plan.md)`
 
 Status: V2 vertical slice implemented for local demo and verification.
 
@@ -60,9 +60,9 @@ Scope:
 
 ### ✅ V3: Sandboxed execution
 
-Plan: `[.cursor/plans/V3 Sandboxed Execution-eda6664c.plan.md](../.cursor/plans/V3%20Sandboxed%20Execution-eda6664c.plan.md)`
+Plan: `[.cursor/plans/_done/V3 Sandboxed Execution-eda6664c.plan.md](../../.cursor/plans/_done/V3%20Sandboxed%20Execution-eda6664c.plan.md)`
 
-Decision record: `[docs/adr/0001-sandboxed-workspace-execution.md](adr/0001-sandboxed-workspace-execution.md)`
+Decision record: `[docs/adr/0001-sandboxed-workspace-execution.md](../adr/0001-sandboxed-workspace-execution.md)`
 
 Status: V3 vertical slice implemented for local demo and verification.
 

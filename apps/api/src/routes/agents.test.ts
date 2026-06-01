@@ -247,6 +247,32 @@ describe("agent routes", () => {
     expect(body.configurationVersions[0]?.nativeTools).toEqual(["webSearch"])
   })
 
+  it("preserves explicit native web search opt-out on agent creation", async () => {
+    ctx = createTestContext()
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request("/api/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "No Search Agent",
+        systemPrompt: "Answer without web search.",
+        model: "gpt-4o-mini",
+        nativeTools: [],
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      agent: {
+        currentConfigurationVersion: { nativeTools: string[] }
+      }
+      configurationVersions: { nativeTools: string[] }[]
+    }
+    expect(body.agent.currentConfigurationVersion.nativeTools).toEqual([])
+    expect(body.configurationVersions[0]?.nativeTools).toEqual([])
+  })
+
   it("creates a configuration version for native-tools-only edits", async () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({

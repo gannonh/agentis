@@ -1,4 +1,8 @@
-import type { SearchWebInput, SearchWebOutput } from "@workspace/shared"
+import {
+  searchWebOutputSchema,
+  type SearchWebInput,
+  type SearchWebOutput,
+} from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 
 type RawSearchResult = {
@@ -13,9 +17,16 @@ type RawSearchResult = {
 
 type NormalizedSearchResult = SearchWebOutput["results"][number]
 
-function truncateSnippet(value: string, maxChars: number): string {
+function truncateString(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value
   return `${value.slice(0, maxChars)}…`
+}
+
+function trimOptionalString(value: unknown, maxChars: number): string | undefined {
+  if (typeof value !== "string") return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  return truncateString(trimmed, maxChars)
 }
 
 function domainFromUrl(url: string): string | undefined {
@@ -31,31 +42,39 @@ function firstString(...values: unknown[]): string | undefined {
 }
 
 function normalizeSearchResult(
-  raw: RawSearchResult,
+  raw: unknown,
   maxSnippetChars: number
 ): NormalizedSearchResult | null {
-  if (typeof raw.title !== "string" || typeof raw.url !== "string") {
+  if (typeof raw !== "object" || raw === null) return null
+  const record = raw as RawSearchResult
+  if (typeof record.title !== "string" || typeof record.url !== "string") {
     return null
   }
 
+  const title = record.title.trim()
+  if (!title) return null
+
+  let url: URL
   try {
-    new URL(raw.url)
+    url = new URL(record.url)
   } catch {
     return null
   }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null
 
-  const snippet =
-    typeof raw.snippet === "string"
-      ? truncateSnippet(raw.snippet, maxSnippetChars)
-      : undefined
-  const source = firstString(raw.source) ?? domainFromUrl(raw.url)
+  const snippet = trimOptionalString(record.snippet, maxSnippetChars)
+  const source =
+    trimOptionalString(record.source, 200) ?? domainFromUrl(record.url)
 
   return {
-    title: raw.title.trim(),
-    url: raw.url,
+    title,
+    url: record.url,
     snippet,
     source,
-    publishedAt: firstString(raw.publishedAt, raw.date, raw.lastUpdated),
+    publishedAt: trimOptionalString(
+      firstString(record.publishedAt, record.date, record.lastUpdated),
+      100
+    ),
   }
 }
 
@@ -79,11 +98,15 @@ export function boundSearchInput(
 export function normalizeSearchResults(input: {
   query: string
   provider: string
-  rawResults: RawSearchResult[]
+  rawResults: unknown[]
   maxResults: number
   maxSnippetChars: number
   metadata?: Record<string, unknown>
 }): SearchWebOutput {
+  if (!Array.isArray(input.rawResults)) {
+    throw new Error("Gateway search output did not include a results array")
+  }
+
   const results: NormalizedSearchResult[] = []
   for (const raw of input.rawResults) {
     if (results.length >= input.maxResults) break
@@ -95,12 +118,12 @@ export function normalizeSearchResults(input: {
     throw new Error("No trustworthy search results after normalization")
   }
 
-  return {
+  return searchWebOutputSchema.parse({
     query: input.query,
     provider: input.provider,
     results,
     resultCount: results.length,
     truncated: input.rawResults.length > results.length,
     metadata: input.metadata,
-  }
+  })
 }

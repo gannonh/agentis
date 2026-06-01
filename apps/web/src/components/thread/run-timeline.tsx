@@ -142,6 +142,13 @@ function formatWebSearchSource(result: unknown): WebSearchSource | null {
   const record = getRecord(result)
   if (!record || typeof record.url !== "string") return null
 
+  try {
+    const url = new URL(record.url)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
+  } catch {
+    return null
+  }
+
   return {
     title: typeof record.title === "string" ? record.title : "Untitled source",
     url: record.url,

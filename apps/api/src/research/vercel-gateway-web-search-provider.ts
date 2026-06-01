@@ -21,7 +21,7 @@ type PerplexitySearchResponse = {
   id?: string
 }
 
-type PerplexitySearchError = {
+type GatewaySearchError = {
   error: string
   message: string
   statusCode?: number
@@ -37,13 +37,31 @@ type ParallelSearchResponse = {
   searchId?: string
 }
 
-function isPerplexityError(value: unknown): value is PerplexitySearchError {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "error" in value &&
-    "message" in value
-  )
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function isGatewaySearchError(value: unknown): value is GatewaySearchError {
+  return isObject(value) && "error" in value && "message" in value
+}
+
+function readGatewayResults(output: unknown): unknown[] {
+  if (isGatewaySearchError(output)) {
+    throw new WebSearchError("web_search_failed", output.message)
+  }
+  if (!isObject(output)) {
+    throw new WebSearchError(
+      "web_search_normalization_failed",
+      "Gateway search output was not an object"
+    )
+  }
+  if (!Array.isArray(output.results)) {
+    throw new WebSearchError(
+      "web_search_normalization_failed",
+      "Gateway search output did not include a results array"
+    )
+  }
+  return output.results
 }
 
 function mapGatewayFailure(error: unknown): WebSearchError {
@@ -125,17 +143,11 @@ export function createVercelGatewayWebSearchProvider(
           )
         }
 
-        if (isPerplexityError(toolResult.output)) {
-          throw new WebSearchError(
-            "web_search_failed",
-            toolResult.output.message
-          )
-        }
-
+        const gatewayResults = readGatewayResults(toolResult.output)
         const rawResults =
           config.webSearchBackend === "parallel"
-            ? mapParallelResults(toolResult.output as ParallelSearchResponse)
-            : ((toolResult.output as PerplexitySearchResponse).results ?? [])
+            ? mapParallelResults(gatewayResults)
+            : gatewayResults
 
         return normalizeSearchResults({
           query: bounded.query,
@@ -164,11 +176,14 @@ export function createVercelGatewayWebSearchProvider(
   }
 }
 
-function mapParallelResults(response: ParallelSearchResponse) {
-  return (response.results ?? []).map((result) => ({
-    title: result.title,
-    url: result.url,
-    snippet: result.excerpt,
-    publishedAt: result.publishDate ?? undefined,
-  }))
+function mapParallelResults(results: unknown[]) {
+  return results.map((result) => {
+    if (!isObject(result)) return {}
+    return {
+      title: result.title,
+      url: result.url,
+      snippet: result.excerpt,
+      publishedAt: result.publishDate ?? undefined,
+    }
+  })
 }
