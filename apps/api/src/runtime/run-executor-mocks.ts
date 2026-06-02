@@ -79,6 +79,55 @@ function mockTextStream(summaryText: string) {
   })
 }
 
+export function createDefaultMockLanguageModel(
+  mockDocumentSuffix: string
+): LanguageModel {
+  return new MockLanguageModelV2({
+    doStream: async () => ({
+      stream: new ReadableStream({
+        start(controller) {
+          const baseChunks = [
+            "Hello ",
+            "from ",
+            "Agentis ",
+            "mock ",
+            "runtime.",
+          ]
+          const suffixChunks = mockDocumentSuffix
+            ? (mockDocumentSuffix.match(/.{1,24}/g) ?? [])
+            : []
+          const chunks = [...baseChunks, ...suffixChunks]
+          controller.enqueue({ type: "text-start", id: "t1" })
+          let index = 0
+          const timer = setInterval(() => {
+            if (index < chunks.length) {
+              controller.enqueue({
+                type: "text-delta",
+                id: "t1",
+                delta: chunks[index]!,
+              })
+              index += 1
+              return
+            }
+            clearInterval(timer)
+            controller.enqueue({ type: "text-end", id: "t1" })
+            controller.enqueue({
+              type: "finish",
+              finishReason: "stop",
+              usage: {
+                inputTokens: 1,
+                outputTokens: chunks.join("").length,
+                totalTokens: 1 + chunks.join("").length,
+              },
+            })
+            controller.close()
+          }, 900)
+        },
+      }),
+    }),
+  })
+}
+
 function inferSearchQuery(prompt: string): string {
   const normalized = prompt
     .replace(/\b(search|look up|find)\b/gi, " ")
@@ -132,8 +181,7 @@ export async function executeMockNativeWebSearchStream(
   try {
     toolOutput = await deps.webSearchService.search(toolInput)
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Web search failed"
+    const message = error instanceof Error ? error.message : "Web search failed"
     deps.repos.messages.updatePartsAndStatus(
       assistantMessage.id,
       [{ type: "text", text: message }],

@@ -1,5 +1,4 @@
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai"
-import { MockLanguageModelV2 } from "ai/test"
 import {
   GENERIC_AGENTIS_AGENT_ID,
   type MessagePart,
@@ -44,6 +43,7 @@ import {
 } from "./run-context.js"
 import { nowIso } from "../lib/ids.js"
 import {
+  createDefaultMockLanguageModel,
   executeMockComposioStream,
   executeMockNativeWebSearchStream,
   executeMockNativeWorkspaceExecutionStream,
@@ -425,7 +425,7 @@ export class RunExecutor {
     }
     const modelMessages = toModelMessages(threadMessages)
     const liveModel = this.config.mockRuntime
-      ? undefined
+      ? null
       : createGatewayLanguageModel(this.config, run.model)
     this.createTimelineDebugStep(runId, {
       status: "completed",
@@ -638,52 +638,8 @@ export class RunExecutor {
         })
       : ""
 
-    const model: LanguageModel = this.config.mockRuntime
-      ? new MockLanguageModelV2({
-          doStream: async () => ({
-            stream: new ReadableStream({
-              start(controller) {
-                const baseChunks = [
-                  "Hello ",
-                  "from ",
-                  "Agentis ",
-                  "mock ",
-                  "runtime.",
-                ]
-                const suffixChunks = mockDocumentSuffix
-                  ? (mockDocumentSuffix.match(/.{1,24}/g) ?? [])
-                  : []
-                const chunks = [...baseChunks, ...suffixChunks]
-                controller.enqueue({ type: "text-start", id: "t1" })
-                let index = 0
-                const timer = setInterval(() => {
-                  if (index < chunks.length) {
-                    controller.enqueue({
-                      type: "text-delta",
-                      id: "t1",
-                      delta: chunks[index]!,
-                    })
-                    index += 1
-                    return
-                  }
-                  clearInterval(timer)
-                  controller.enqueue({ type: "text-end", id: "t1" })
-                  controller.enqueue({
-                    type: "finish",
-                    finishReason: "stop",
-                    usage: {
-                      inputTokens: 1,
-                      outputTokens: chunks.join("").length,
-                      totalTokens: 1 + chunks.join("").length,
-                    },
-                  })
-                  controller.close()
-                }, 900)
-              },
-            }),
-          }),
-        })
-      : liveModel!
+    const model: LanguageModel =
+      liveModel ?? createDefaultMockLanguageModel(mockDocumentSuffix)
 
     const result = streamText({
       model,

@@ -1,4 +1,4 @@
-import { DEFAULT_OPENAI_MODEL } from "@workspace/shared"
+import { DEFAULT_GATEWAY_MODEL } from "@workspace/shared"
 import { toAppToolkitSlug } from "./composio/toolkit-slugs.js"
 import { FEATURED_TOOLKIT_SLUGS } from "./repositories/integration-seeds.js"
 
@@ -108,7 +108,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port,
     databaseUrl: env.DATABASE_URL ?? "./data/agentis.db",
     nodeEnv,
-    defaultModel: DEFAULT_OPENAI_MODEL,
+    defaultModel: DEFAULT_GATEWAY_MODEL,
     mockRuntime: env.AGENTIS_MOCK_RUNTIME === "1",
     composioApiKey: env.COMPOSIO_API_KEY,
     composioRedirectBaseUrl: env.COMPOSIO_REDIRECT_BASE_URL,
@@ -193,7 +193,9 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.trunc(value)))
 }
 
-export function isRuntimeAvailable(config: AppConfig) {
+export function isRuntimeAvailable(
+  config: Pick<AppConfig, "aiGatewayApiKey" | "mockRuntime">
+) {
   return Boolean(config.aiGatewayApiKey) || config.mockRuntime
 }
 

@@ -31,12 +31,13 @@ import {
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input"
 import {
-  DEFAULT_OPENAI_MODEL,
+  DEFAULT_GATEWAY_MODEL,
+  type IntegrationToolkit,
   type RuntimeHealth,
   type ThreadMode,
+  type ToolAccessGrant,
 } from "@workspace/shared"
 import type { ChatStatus } from "ai"
-import type { IntegrationToolkit, ToolAccessGrant } from "@workspace/shared"
 import { ToolAccessPicker } from "@/components/thread/tool-access-picker"
 
 function MenuItemText({
@@ -299,7 +300,7 @@ export function ThreadPromptComposer({
               </DropdownMenuContent>
             </DropdownMenu>
             <span className="hidden text-xs text-muted-foreground sm:inline">
-              {health.model ?? DEFAULT_OPENAI_MODEL}
+              {health.model ?? DEFAULT_GATEWAY_MODEL}
             </span>
             <PromptInputSubmit
               status={submitStatus}

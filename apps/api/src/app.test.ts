@@ -434,19 +434,13 @@ describe("config", () => {
 
   it("detects runtime availability from Gateway key or mock mode", () => {
     expect(
-      isRuntimeAvailable({ aiGatewayApiKey: "x", mockRuntime: false } as never)
+      isRuntimeAvailable({ aiGatewayApiKey: "x", mockRuntime: false })
     ).toBe(true)
     expect(
-      isRuntimeAvailable({
-        aiGatewayApiKey: undefined,
-        mockRuntime: true,
-      } as never)
+      isRuntimeAvailable({ aiGatewayApiKey: undefined, mockRuntime: true })
     ).toBe(true)
     expect(
-      isRuntimeAvailable({
-        aiGatewayApiKey: undefined,
-        mockRuntime: false,
-      } as never)
+      isRuntimeAvailable({ aiGatewayApiKey: undefined, mockRuntime: false })
     ).toBe(false)
   })
 })
