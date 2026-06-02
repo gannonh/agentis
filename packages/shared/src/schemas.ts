@@ -707,6 +707,7 @@ export const documentVersionSummarySchema = documentVersionSchema.pick({
 export const documentDetailResponseSchema = z.object({
   document: documentPublicSchema,
   content: z.string().nullable(),
+  contentTruncated: z.boolean().optional(),
   versions: z.array(documentVersionSummarySchema),
 })
 

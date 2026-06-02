@@ -34,6 +34,9 @@ export class LocalDocumentStorage {
   }
 
   private resolveStorageKey(storageKey: string) {
+    if (/^[a-zA-Z]:[\\/]/.test(storageKey) || storageKey.startsWith("\\\\")) {
+      throw new Error("Invalid document storage key")
+    }
     const normalized = normalize(storageKey)
     if (normalized.startsWith("..") || normalized.startsWith("/")) {
       throw new Error("Invalid document storage key")

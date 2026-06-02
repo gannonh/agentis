@@ -48,8 +48,7 @@ export function buildDocumentTools(
           visibilityScope: input.visibilityScope,
           tags: input.tags,
           changeSummary: input.changeSummary,
-          projectId:
-            input.visibilityScope === "project" ? context.projectId : undefined,
+          projectId: context.projectId,
           threadId: context.threadId,
           runId: context.runId,
         })

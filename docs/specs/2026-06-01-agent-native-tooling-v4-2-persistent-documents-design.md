@@ -21,15 +21,15 @@ This is a Data-category V4 slice. It targets Hyperagent-style persistent documen
 
 There is one primitive: Document.
 
-V4.2 must not leave two concepts where one is product-facing and another is backend-facing. The final active codebase must use document naming throughout. The legacy document term must be removed from active source, tests, docs, schemas, routes, services, repositories, storage helpers, UI copy, fixtures, and runtime tool names.
+V4.2 must not leave two concepts where one is product-facing and another is backend-facing. The final active codebase must use document naming throughout. The legacy artifact term must be removed from active source, tests, docs, schemas, routes, services, repositories, storage helpers, UI copy, fixtures, and runtime tool names.
 
 Acceptance check after Build:
 
 ```bash
-rg -i "<legacy document term>" apps packages docs
+rg -i "<legacy artifact term>" apps packages docs
 ```
 
-must return zero hits after replacing `<legacy document term>` with the current non-document term. Build may use that search during the migration, but the final committed active code/docs should not contain the legacy term.
+must return zero hits after replacing `<legacy artifact term>` with `document`. Build may use that search during the migration, but the final committed active code/docs should not contain the legacy term.
 
 ## Current state
 

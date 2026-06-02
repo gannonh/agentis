@@ -51,6 +51,50 @@ describe("document routes", () => {
     expect(download.status).toBe(200)
     expect(download.headers.get("content-type")).toContain("text")
     expect(await download.text()).toContain("Brief")
+
+    const detail = await app.request(`/api/documents/${document.id}/detail`)
+    expect(detail.status).toBe(200)
+    const detailBody = (await detail.json()) as {
+      content: string
+      contentTruncated?: boolean
+      versions: { version: number }[]
+    }
+    expect(detailBody.content).toContain("Brief")
+    expect(detailBody.contentTruncated).toBe(false)
+    expect(detailBody.versions).toHaveLength(1)
+  })
+
+  it("truncates large text previews on the detail endpoint", async () => {
+    ctx = createTestContext()
+    ctx.config.documentPreviewMaxChars = 20
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const form = new FormData()
+    form.set("title", "Long brief")
+    form.set("documentType", "markdown")
+    form.set(
+      "file",
+      new File(["# Long brief\n\n" + "x".repeat(200)], "long.md", {
+        type: "text/markdown",
+      })
+    )
+
+    const uploaded = await app.request("/api/documents", {
+      method: "POST",
+      body: form,
+    })
+    expect(uploaded.status).toBe(201)
+    const document = (await uploaded.json()) as { id: string }
+
+    const detail = await app.request(`/api/documents/${document.id}/detail`)
+    expect(detail.status).toBe(200)
+    const detailBody = (await detail.json()) as {
+      content: string
+      contentTruncated?: boolean
+    }
+    expect(detailBody.content).toHaveLength(20)
+    expect(detailBody.contentTruncated).toBe(true)
   })
 
   it("uploads documents without owner as global documents", async () => {

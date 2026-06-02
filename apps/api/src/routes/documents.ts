@@ -128,12 +128,22 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
         (result.status ?? 500) as 404 | 500
       )
     }
-    const previewContent = result.document.mimeType.startsWith("text/")
-      ? result.data.toString("utf8")
-      : null
+    let previewContent: string | null = null
+    let contentTruncated = false
+    if (result.document.mimeType.startsWith("text/")) {
+      const fullText = result.data.toString("utf8")
+      const maxChars = config.documentPreviewMaxChars
+      if (fullText.length > maxChars) {
+        previewContent = fullText.slice(0, maxChars)
+        contentTruncated = true
+      } else {
+        previewContent = fullText
+      }
+    }
     return c.json({
       document: toPublicDocument(result.document),
       content: previewContent,
+      contentTruncated,
       versions: repos.documents.listVersions(documentId).map((version) => ({
         id: version.id,
         version: version.version,

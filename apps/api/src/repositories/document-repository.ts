@@ -21,6 +21,15 @@ export type DocumentListFilters = {
   source?: DocumentSource
 }
 
+function defaultVisibilityScope(input: {
+  projectId?: string | null
+  threadId?: string | null
+}): DocumentVisibilityScope {
+  if (input.projectId) return "project"
+  if (input.threadId) return "thread"
+  return "global"
+}
+
 export class DocumentRepository {
   constructor(private readonly db: AppDatabase) {}
 
@@ -58,7 +67,12 @@ export class DocumentRepository {
       storageKey: input.storageKey,
       previewText: input.previewText ?? null,
       metadataJson: input.metadata ? JSON.stringify(input.metadata) : null,
-      visibilityScope: input.visibilityScope ?? "thread",
+      visibilityScope:
+        input.visibilityScope ??
+        defaultVisibilityScope({
+          projectId: input.projectId,
+          threadId: input.threadId,
+        }),
       projectId: input.projectId ?? null,
       projectNameSnapshot: input.projectNameSnapshot ?? null,
       threadId: input.threadId ?? null,
@@ -114,7 +128,12 @@ export class DocumentRepository {
       storageKey: input.storageKey,
       previewText: input.previewText ?? null,
       metadataJson: input.metadata ? JSON.stringify(input.metadata) : null,
-      visibilityScope: input.visibilityScope ?? "thread",
+      visibilityScope:
+        input.visibilityScope ??
+        defaultVisibilityScope({
+          projectId: input.projectId,
+          threadId: input.threadId,
+        }),
       projectId: input.projectId ?? null,
       projectNameSnapshot: input.projectNameSnapshot ?? null,
       threadId: input.threadId ?? null,
@@ -312,8 +331,7 @@ export class DocumentRepository {
           like(documents.projectNameSnapshot, pattern),
           like(documents.threadTitleSnapshot, pattern),
           like(documents.agentNameSnapshot, pattern),
-          like(documents.previewText, pattern),
-          like(documents.documentType, pattern)
+          like(documents.previewText, pattern)
         )!
       )
     }

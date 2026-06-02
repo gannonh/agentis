@@ -125,6 +125,20 @@ function uploadVisibilityScope(input: {
   return "global"
 }
 
+function truncateUtf8ToBytes(
+  text: string,
+  maxBytes: number
+): { text: string; truncated: boolean } {
+  if (Buffer.byteLength(text, "utf8") <= maxBytes) {
+    return { text, truncated: false }
+  }
+  let end = text.length
+  while (end > 0 && Buffer.byteLength(text.slice(0, end), "utf8") > maxBytes) {
+    end -= 1
+  }
+  return { text: text.slice(0, end), truncated: true }
+}
+
 function isNodeErrorCode(error: unknown, code: string) {
   return (
     typeof error === "object" &&
@@ -160,7 +174,7 @@ export class DocumentService {
     if (!input.content.trim()) {
       return {
         ok: false,
-        code: "document_too_large",
+        code: "document_content_required",
         message: "Document content is required",
         status: 400,
       }
@@ -399,6 +413,7 @@ export class DocumentService {
     documentId: string
     version?: number
     maxChars?: number
+    maxBytes?: number
     runContext: DocumentRunContext
   }):
     | DocumentResult<{
@@ -438,6 +453,14 @@ export class DocumentService {
         status: 404,
       }
     }
+    if (document.contentFormat === "binary") {
+      return documentError(
+        "document_not_readable",
+        "Binary documents cannot be read as text",
+        400
+      )
+    }
+
     const storageKey = version?.contentStorageKey ?? document.storageKey
     let content: string
     try {
@@ -449,9 +472,18 @@ export class DocumentService {
       })
     }
 
-    const maxChars = input.maxChars ?? 32_000
-    const truncated = content.length > maxChars
-    const bounded = truncated ? content.slice(0, maxChars) : content
+    let maxChars = input.maxChars ?? 32_000
+    let truncated = false
+    let bounded = content
+    if (input.maxBytes != null) {
+      const limited = truncateUtf8ToBytes(content, input.maxBytes)
+      bounded = limited.text
+      truncated = limited.truncated
+      maxChars = bounded.length
+    } else if (content.length > maxChars) {
+      truncated = true
+      bounded = content.slice(0, maxChars)
+    }
     return {
       ok: true,
       document,
@@ -560,18 +592,37 @@ export class DocumentService {
       | DocumentResult<{ content: string; section: MarkdownSection }>
       | DocumentError
   ): DocumentResult<DocumentSectionChange> | DocumentError {
-    const read = this.readDocument({
-      documentId: input.documentId,
-      maxChars: this.config.documentMaxUploadBytes,
-      runContext: input.runContext,
-    })
-    if (!read.ok) return read
-    if (read.document.documentType !== "markdown") {
+    const document = this.repos.documents.getById(input.documentId)
+    if (!document) return documentNotFoundError()
+    if (!this.canAccess(document, input.runContext)) {
+      return {
+        ok: false,
+        code: "document_not_accessible",
+        message: "Document is not accessible from this run",
+        status: 403,
+      }
+    }
+    if (document.documentType !== "markdown") {
       return {
         ok: false,
         code: "document_not_markdown",
         message: "Document is not markdown",
         status: 400,
+      }
+    }
+
+    const read = this.readDocument({
+      documentId: input.documentId,
+      maxBytes: this.config.documentMaxUploadBytes,
+      runContext: input.runContext,
+    })
+    if (!read.ok) return read
+    if (read.truncated) {
+      return {
+        ok: false,
+        code: "document_too_large",
+        message: "Document exceeds maximum editable size",
+        status: 413,
       }
     }
     const changed = change(read.content)

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { inArray, or, sql } from "drizzle-orm"
@@ -9,6 +10,7 @@ import {
   agentPromotionDrafts,
   agents,
   documents,
+  documentVersions,
   integrationConnections,
   messages,
   projectMemories,
@@ -21,6 +23,7 @@ import {
   workspaces,
 } from "../db/schema.js"
 import { LocalDocumentStorage } from "../documents/local-document-storage.js"
+import { createId } from "../lib/ids.js"
 import {
   RICH_WORKSPACE,
   RICH_WORKSPACE_NO_INTEGRATIONS,
@@ -479,20 +482,52 @@ export class TestingSeedRepository {
       })
       tx.insert(runSteps).values(stepRows).run()
 
+      const seededDocuments = documentRows.map((document) => {
+        const contentFormat =
+          document.documentType === "markdown"
+            ? "markdown"
+            : document.mimeType.startsWith("text/")
+              ? "text"
+              : "binary"
+        const base = {
+          ...document,
+          contentFormat,
+          visibilityScope: document.projectId ? "project" : "global",
+        } as const
+        if (document.documentType !== "markdown") {
+          return { document: base, version: null as null }
+        }
+        const body =
+          documentBodies[document.storageKey] ?? document.previewText ?? ""
+        const versionId = createId("document_version")
+        return {
+          document: {
+            ...base,
+            currentVersionId: versionId,
+            currentVersion: 1,
+          },
+          version: {
+            id: versionId,
+            documentId: document.id,
+            version: 1,
+            contentHash: createHash("sha256").update(body).digest("hex"),
+            contentStorageKey: document.storageKey,
+            changeSummary: "Seeded initial version",
+            createdByRunId: document.runId,
+            createdByThreadId: document.threadId,
+            createdAt: document.createdAt,
+          },
+        }
+      })
       tx.insert(documents)
-        .values(
-          documentRows.map((document) => ({
-            ...document,
-            contentFormat:
-              document.documentType === "markdown"
-                ? "markdown"
-                : document.mimeType.startsWith("text/")
-                  ? "text"
-                  : "binary",
-            visibilityScope: document.projectId ? "project" : "global",
-          }))
-        )
+        .values(seededDocuments.map((entry) => entry.document))
         .run()
+      const documentVersionRows = seededDocuments
+        .map((entry) => entry.version)
+        .filter((version): version is NonNullable<typeof version> => version != null)
+      if (documentVersionRows.length > 0) {
+        tx.insert(documentVersions).values(documentVersionRows).run()
+      }
       tx.insert(savedMemories).values(savedMemoryRows).run()
     })
   }

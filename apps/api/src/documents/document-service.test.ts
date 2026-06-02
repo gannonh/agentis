@@ -3,6 +3,25 @@ import { createTestContext } from "../test/setup.js"
 import { DocumentService } from "./document-service.js"
 
 describe("DocumentService", () => {
+  it("returns a distinct error code when markdown content is empty", () => {
+    const ctx = createTestContext()
+    const service = new DocumentService(ctx.repos, ctx.config)
+
+    expect(
+      service.createMarkdownDocument({
+        title: "Empty",
+        content: "   ",
+        visibilityScope: "global",
+      })
+    ).toMatchObject({
+      ok: false,
+      code: "document_content_required",
+      status: 400,
+    })
+
+    ctx.cleanup()
+  })
+
   it("creates markdown documents with version 1 and a section outline", () => {
     const ctx = createTestContext()
     const project = ctx.repos.projects.create({ name: "Launch" })

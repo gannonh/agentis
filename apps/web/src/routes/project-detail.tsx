@@ -240,7 +240,7 @@ export function ProjectDetailPage() {
                   className="mr-1.5 size-3.5"
                   strokeWidth={2}
                 />
-                Document ({documentDocuments.length})
+                Documents ({documentDocuments.length})
               </TabsTrigger>
               <TabsTrigger value="files" className="rounded-full px-4">
                 <HugeiconsIcon
