@@ -37,7 +37,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Invocations: start with thread invocation, then add scheduled and Slack or webhook invocation.
 - Learning: skills, memories, and rubrics as reviewable suggestions from prior runs.
 - Command Center: roster, recent runs, quality, cost, active operations, and pending improvements.
-- Library: durable document collection with search and download.
+- Library: durable document collection with search, Type/Source/Scope filters, detail preview, version history, and download.
 
 ## MVP non-goals
 
@@ -61,7 +61,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Memory: persisted fact or preference scoped globally, by project, or by agent.
 - Rubric: evaluation criteria for scored runs.
 - Evaluation: model-generated score and feedback tied to a run and rubric.
-- Document: file, document, webpage, data table, image, or other run output.
+- Document: durable Library primitive for uploaded files and agent-generated markdown, webpage, table, image, video, slides, or other run output. Document visibility is thread, project, or global; agent association is provenance, not a visibility scope.
 
 ## Roadmap (⚠️ warning out of date)
 
@@ -137,8 +137,8 @@ Deliverables:
 - Project create/edit flow with name, description, and goals.
 - Project selector in the composer and thread metadata.
 - Context assembly that injects project goals and selected project memories into runs.
-- Document model with upload, generated output registration, download, and basic preview metadata.
-- Library screen with search, filters, document cards, and project/thread provenance.
+- Document model with upload, generated output registration, markdown versioning, download, and preview metadata.
+- Library screen with search, Type/Source/Scope filters, document cards, detail preview, version history, and project/thread/agent provenance.
 - Basic file storage abstraction for local self-hosted deployments.
 
 Acceptance:
@@ -146,7 +146,7 @@ Acceptance:
 - User can create a project and start a thread inside it.
 - Project goals are included in the run context and visible from the thread.
 - A run can create at least one durable document and link it to the thread, project, and library.
-- User can browse, search, and download documents from the Library.
+- User can browse, search, filter, preview, and download documents from the Library.
 - Deleting or archiving a project preserves clear document ownership rules.
 
 ### M05: Agent Creation and Configuration ✅
@@ -283,7 +283,7 @@ Acceptance:
 3. Create a project with goals.
 4. Connect GitHub or Slack from Integrations.
 5. Start a thread in the project and grant the connected tool.
-6. Run a task that calls the tool and produces an document.
+6. Run a task that calls the tool and produces a document.
 7. Promote the successful thread into an agent.
 8. Attach a rubric and run the agent again.
 9. Trigger the agent through a schedule, Slack, or webhook.

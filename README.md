@@ -51,6 +51,7 @@ docs/              # Product docs, roadmap, UI comps
 - [MVP roadmap](docs/specs/agentis-prd-roadmap.md)
 - [Product overview](docs/overview.md)
 - [Agent native tooling](docs/specs/agent-native-tooling.md)
+- [Architecture decisions](docs/adr/)
 - [Design system](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
 

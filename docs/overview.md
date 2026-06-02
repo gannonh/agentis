@@ -98,7 +98,7 @@ The system also surfaces suggested improvements (prompt adjustments, new skills,
 
 ## Library
 
-The Library collects every deliverable produced across all your threads and agent runs (webpages, images, videos, documents, data tables, and other documents) in one place. Browse, search, download, or publish anything with a shareable URL.
+The Library collects durable documents produced across threads, projects, uploads, and agent runs in one place. Browse with Type, Source, and Scope filters, search by document or provenance, preview markdown versions, and download files. Document scope is global, project, or thread; agent association is shown as source/provenance.
 
 ## Integrations
 
