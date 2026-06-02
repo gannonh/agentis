@@ -24,15 +24,32 @@ afterEach(() => {
 })
 
 describe("Gateway model resolution", () => {
-  it("keeps Gateway model ids unchanged", () => {
+  it("keeps valid Gateway model ids unchanged", () => {
     expect(resolveGatewayModelId("openai/gpt-4o-mini")).toBe(
       "openai/gpt-4o-mini"
     )
   })
 
+  it("rejects malformed prefixed Gateway model ids", () => {
+    for (const modelId of [
+      "openai/",
+      "/gpt-4o-mini",
+      "openai/gpt-4o-mini/extra",
+    ]) {
+      expect(() => resolveGatewayModelId(modelId)).toThrow(
+        "Gateway model ids must use provider/model format"
+      )
+    }
+  })
+
   it("maps legacy OpenAI model ids to Gateway ids", () => {
     expect(resolveGatewayModelId("gpt-4o-mini")).toBe("openai/gpt-4o-mini")
     expect(resolveGatewayModelId("gpt-4.1-mini")).toBe("openai/gpt-4.1-mini")
+    expect(resolveGatewayModelId("gpt-4o")).toBe("openai/gpt-4o")
+    expect(resolveGatewayModelId("gpt-4")).toBe("openai/gpt-4")
+    expect(resolveGatewayModelId("gpt-3.5-turbo")).toBe(
+      "openai/gpt-3.5-turbo"
+    )
   })
 
   it("rejects empty model ids", () => {

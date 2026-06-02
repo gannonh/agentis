@@ -32,7 +32,7 @@ SELECT
   'Agentis',
   'General Agentis assistant.',
   'You are Agentis, a helpful workspace assistant. Be concise.',
-  'openai/gpt-4o-mini',
+  'gpt-4o-mini',
   NULL,
   NULL,
   NULL,
@@ -56,7 +56,7 @@ SELECT
   'agent_agentis',
   1,
   'You are Agentis, a helpful workspace assistant. Be concise.',
-  'openai/gpt-4o-mini',
+  'gpt-4o-mini',
   NULL,
   '[]',
   '2026-05-29T00:00:00.000Z'

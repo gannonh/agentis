@@ -6,6 +6,8 @@ import type { AgentListItem, MemoriesListResponse } from "@workspace/shared"
 import { router } from "@/router"
 
 const ORIGINAL_TZ = process.env.TZ
+// Memory routing tests chain several user events and API-backed rerenders on CI.
+const MEMORY_INTERACTION_TIMEOUT_MS = 30_000
 
 const apiAgent: AgentListItem = {
   id: "agent_api_research",
@@ -299,7 +301,7 @@ describe("router", () => {
     expect(
       screen.getByRole("menuitemradio", { name: /Preference \(1\)/i })
     ).toBeInTheDocument()
-  }, 30_000)
+  }, MEMORY_INTERACTION_TIMEOUT_MS)
 
   it("filters memories through the category menu and keeps empty categories visible", async () => {
     const user = userEvent.setup()
@@ -355,7 +357,7 @@ describe("router", () => {
     expect(
       screen.getByRole("button", { name: /People \(0\)/i })
     ).toBeInTheDocument()
-  }, 30_000)
+  }, MEMORY_INTERACTION_TIMEOUT_MS)
 
   it("filters memories by global scope and individual agents", async () => {
     const user = userEvent.setup()
@@ -646,7 +648,7 @@ describe("router", () => {
       screen.getAllByText("API Research Agent").length
     ).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Pinned to context")).toBeInTheDocument()
-  }, 30_000)
+  }, MEMORY_INTERACTION_TIMEOUT_MS)
 
   it("renders not found for unknown paths", async () => {
     const memoryRouter = createMemoryRouter(router.routes, {

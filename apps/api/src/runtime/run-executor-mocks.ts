@@ -83,48 +83,65 @@ export function createDefaultMockLanguageModel(
   mockDocumentSuffix: string
 ): LanguageModel {
   return new MockLanguageModelV2({
-    doStream: async () => ({
-      stream: new ReadableStream({
-        start(controller) {
-          const baseChunks = [
-            "Hello ",
-            "from ",
-            "Agentis ",
-            "mock ",
-            "runtime.",
-          ]
-          const suffixChunks = mockDocumentSuffix
-            ? (mockDocumentSuffix.match(/.{1,24}/g) ?? [])
-            : []
-          const chunks = [...baseChunks, ...suffixChunks]
-          controller.enqueue({ type: "text-start", id: "t1" })
-          let index = 0
-          const timer = setInterval(() => {
-            if (index < chunks.length) {
+    doStream: async () => {
+      let closed = false
+      let timer: ReturnType<typeof setInterval> | undefined
+      const clearTimer = () => {
+        if (timer !== undefined) {
+          clearInterval(timer)
+          timer = undefined
+        }
+      }
+
+      return {
+        stream: new ReadableStream({
+          cancel() {
+            closed = true
+            clearTimer()
+          },
+          start(controller) {
+            const baseChunks = [
+              "Hello ",
+              "from ",
+              "Agentis ",
+              "mock ",
+              "runtime.",
+            ]
+            const suffixChunks = mockDocumentSuffix
+              ? (mockDocumentSuffix.match(/.{1,24}/g) ?? [])
+              : []
+            const chunks = [...baseChunks, ...suffixChunks]
+            controller.enqueue({ type: "text-start", id: "t1" })
+            let index = 0
+            timer = setInterval(() => {
+              if (closed) return
+              if (index < chunks.length) {
+                controller.enqueue({
+                  type: "text-delta",
+                  id: "t1",
+                  delta: chunks[index]!,
+                })
+                index += 1
+                return
+              }
+              closed = true
+              clearTimer()
+              controller.enqueue({ type: "text-end", id: "t1" })
               controller.enqueue({
-                type: "text-delta",
-                id: "t1",
-                delta: chunks[index]!,
+                type: "finish",
+                finishReason: "stop",
+                usage: {
+                  inputTokens: 1,
+                  outputTokens: chunks.join("").length,
+                  totalTokens: 1 + chunks.join("").length,
+                },
               })
-              index += 1
-              return
-            }
-            clearInterval(timer)
-            controller.enqueue({ type: "text-end", id: "t1" })
-            controller.enqueue({
-              type: "finish",
-              finishReason: "stop",
-              usage: {
-                inputTokens: 1,
-                outputTokens: chunks.join("").length,
-                totalTokens: 1 + chunks.join("").length,
-              },
-            })
-            controller.close()
-          }, 900)
-        },
-      }),
-    }),
+              controller.close()
+            }, 900)
+          },
+        }),
+      }
+    },
   })
 }
 

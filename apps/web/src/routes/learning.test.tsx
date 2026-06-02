@@ -9,6 +9,9 @@ import type { LearningCandidate } from "@/fixtures/schema"
 import { LearningPage } from "./learning"
 import { MemoriesPage } from "./memories"
 
+// This test exercises async thread, memory, and agent scope rerenders on CI.
+const LEARNING_SCOPE_INTERACTION_TIMEOUT_MS = 30_000
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -281,7 +284,7 @@ describe("LearningPage", () => {
     expect(
       screen.queryByRole("option", { name: "Unassigned agent" })
     ).not.toBeInTheDocument()
-  }, 30_000)
+  }, LEARNING_SCOPE_INTERACTION_TIMEOUT_MS)
 
   it("renders learning dashboard aligned with comp", () => {
     const { container } = render(
