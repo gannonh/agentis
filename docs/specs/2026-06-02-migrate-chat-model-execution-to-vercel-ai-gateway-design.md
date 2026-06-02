@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved
+Implemented
 
 ## Goal
 
@@ -247,3 +247,84 @@ Approved direction:
 - Preserve existing stream and tool behavior.
 
 Build should implement the phases above, keep edits surgical, and verify the acceptance criteria with focused tests plus project quality commands. If the installed AI SDK Gateway API differs from this spec's suggested helper shape, Build may adjust the helper implementation while preserving the runtime boundary and acceptance criteria.
+
+## Build completion report
+
+- Spec path: `docs/specs/2026-06-02-migrate-chat-model-execution-to-vercel-ai-gateway-design.md`
+- Base SHA: `9aa30b14a595d07ec993ff4f8cf0ea1921bc65be`
+- Final implementation SHA: `cbc4490f03ade84d1ac1023e1fcd70419e7c7f66`
+- Independent subagent review: used for spec compliance, code quality, and final whole-branch review.
+
+### Tasks completed
+
+1. Gateway runtime model execution
+   - Added Gateway model resolution in `apps/api/src/runtime/gateway-model.ts`.
+   - Replaced direct OpenAI provider construction in `RunExecutor`.
+   - Runtime availability now depends on `AI_GATEWAY_API_KEY` or mock runtime.
+   - Live model ids validate before run/message streaming state mutates.
+   - Removed the direct `@ai-sdk/openai` dependency.
+2. Defaults, seeds, and tests
+   - Updated default, seed, migration, and agent setup model ids to `openai/gpt-4o-mini` or other Gateway-compatible ids.
+   - Kept runtime normalization for known legacy ids: `gpt-4o-mini` and `gpt-4.1-mini`.
+   - Added focused Gateway model, runtime health, missing credential, invalid model, and UI copy tests.
+3. UI and docs
+   - Updated thread composer missing-key copy to `AI_GATEWAY_API_KEY`.
+   - Updated `.env.example`, `apps/api/.env.example`, `README.md`, `CONTRIBUTING.md`, and `AGENTS.md` for the Gateway credential path.
+4. Review and verification
+   - Spec compliance review passed.
+   - Code quality review passed after fixing model validation order and agent setup model id consistency.
+   - Final whole-branch review returned Ready.
+
+### Files changed
+
+- `apps/api/src/runtime/gateway-model.ts`
+- `apps/api/src/runtime/gateway-model.test.ts`
+- `apps/api/src/runtime/run-executor.ts`
+- `apps/api/src/runtime/run-executor.test.ts`
+- `apps/api/src/config.ts`
+- `apps/api/src/config.test.ts`
+- `apps/api/src/app.test.ts`
+- `apps/api/src/test/setup.ts`
+- `apps/api/src/repositories/testing-seed-data.ts`
+- `apps/api/drizzle/0021_agent_workspaces.sql`
+- `apps/api/package.json`
+- `packages/shared/src/schemas.ts`
+- `apps/web/src/components/thread/thread-prompt-composer.tsx`
+- `apps/web/src/components/thread/thread-prompt-composer.test.tsx`
+- `apps/web/src/components/agents/agent-setup-fields.tsx`
+- `apps/web/src/routes/agent-create.tsx`
+- `apps/web/src/routes/agent-create.test.tsx`
+- `apps/web/src/routes/agent-detail.test.tsx`
+- `apps/web/src/router.test.tsx`
+- `.env.example`
+- `apps/api/.env.example`
+- `README.md`
+- `CONTRIBUTING.md`
+- `AGENTS.md`
+- `pnpm-lock.yaml`
+
+### Verification run
+
+Passed:
+
+```bash
+pnpm --filter api test -- src/config.test.ts src/config.web-search.test.ts src/app.test.ts src/runtime/run-executor.test.ts src/runtime/gateway-model.test.ts
+pnpm --filter web test -- src/components/thread/thread-prompt-composer.test.tsx src/routes/agent-create.test.tsx
+pnpm --filter web test -- src/routes/agent-detail.test.tsx -t "shows comp-aligned editable agent tabs"
+pnpm --filter web test -- src/router.test.tsx -t "updates category counts"
+pnpm --filter api test -- src/db/migrations.test.ts
+pnpm typecheck
+pnpm build && pnpm lint && pnpm test:coverage
+```
+
+Notes:
+
+- The first `pnpm test:coverage` attempt timed out in two existing long-running web tests under coverage. Both tests passed individually. Their per-test timeouts were raised from 10s to 30s, then `pnpm build && pnpm lint && pnpm test:coverage` passed.
+
+### Approved deviations
+
+None.
+
+### Known follow-up issues
+
+- `DEFAULT_OPENAI_MODEL` still carries its historical name while holding a Gateway-compatible id. This remains a naming cleanup, not a runtime fallback.
