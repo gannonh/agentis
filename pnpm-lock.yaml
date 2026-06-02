@@ -26,9 +26,6 @@ importers:
 
   apps/api:
     dependencies:
-      '@ai-sdk/openai':
-        specifier: ^2.0.0
-        version: 2.0.106(zod@3.25.76)
       '@composio/core':
         specifier: ^0.10.0
         version: 0.10.0(zod@3.25.76)
@@ -362,12 +359,6 @@ packages:
 
   '@ai-sdk/gateway@2.0.91':
     resolution: {integrity: sha512-w0qAUeqOM0Qgppb1+QACNCz+LQnbHTWcyhEg4NtcCPtGzdE6/4yWjJV4faeigW+YltiB/kjPfJjF/fX3nr3BsA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/openai@2.0.106':
-    resolution: {integrity: sha512-EFC0rpo1wfe4HIz5KZCE72edP2J7fOeR7wPXzjCDljaTRB1wectKDIKRLowpU4F0mbcJ+XScAsoYNPK/Z20aVQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5856,12 +5847,6 @@ snapshots:
       '@ai-sdk/provider': 2.0.3
       '@ai-sdk/provider-utils': 3.0.25(zod@3.25.76)
       '@vercel/oidc': 3.1.0
-      zod: 3.25.76
-
-  '@ai-sdk/openai@2.0.106(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.3
-      '@ai-sdk/provider-utils': 3.0.25(zod@3.25.76)
       zod: 3.25.76
 
   '@ai-sdk/provider-utils@3.0.25(zod@3.25.76)':

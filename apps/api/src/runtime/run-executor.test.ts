@@ -451,6 +451,38 @@ describe("run executor composio bridge", () => {
     })
   })
 
+  it("validates live Gateway model ids before mutating run state", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      mockRuntime: false,
+      nodeEnv: "development",
+      aiGatewayApiKey: "gateway-key",
+    }, services)
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize workspace status" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+    ctx.db.update(runs).set({ model: "claude-sonnet-4" }).where(eq(runs.id, run.id)).run()
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    const body = (await stream.json()) as { error: string }
+
+    expect(stream.status).toBe(400)
+    expect(body.error).toBe("Gateway model ids must include a provider prefix")
+    expect(ctx.repos.runs.getById(run.id)).toMatchObject({
+      status: "queued",
+      errorSummary: undefined,
+    })
+    expect(ctx.repos.messages.listByThreadId(ctx.repos.runs.getById(run.id)!.threadId))
+      .toHaveLength(1)
+  })
+
   it("removes assistant claims while workspace mutations are pending approval", () => {
     const parts = suppressTextForPendingApproval([
       { type: "text", text: "The file has been created successfully." },

@@ -420,6 +420,9 @@ export class RunExecutor {
       ...composioTools,
     }
     const modelMessages = toModelMessages(threadMessages)
+    const liveModel = this.config.mockRuntime
+      ? undefined
+      : createGatewayLanguageModel(this.config, run.model)
     this.createTimelineDebugStep(runId, {
       status: "completed",
       title: "Debug: model input",
@@ -674,7 +677,7 @@ export class RunExecutor {
             }),
           }),
         })
-      : createGatewayLanguageModel(this.config, run.model)
+      : liveModel!
 
     const result = streamText({
       model,
