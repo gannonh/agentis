@@ -49,7 +49,7 @@ function MenuItemText({
   return (
     <span className="flex min-w-0 flex-col gap-0.5">
       <span>{title}</span>
-      <span className="text-muted-foreground text-[0.68rem] leading-snug">
+      <span className="text-[0.68rem] leading-snug text-muted-foreground">
         {description}
       </span>
     </span>
@@ -97,7 +97,9 @@ export function ThreadPromptComposer({
         : "Agent runtime is unavailable. Start the API with pnpm dev."
   }
 
-  const submitStatus: ChatStatus | undefined = submitting ? "submitted" : undefined
+  const submitStatus: ChatStatus | undefined = submitting
+    ? "submitted"
+    : undefined
   const modeLabel = mode === "plan" ? "Plan" : "Execute"
   const executeBehaviorLabel = executeBehavior === "auto" ? "Auto" : "Ask"
   const modeAriaLabel =
@@ -108,7 +110,7 @@ export function ThreadPromptComposer({
   return (
     <div className="flex w-full flex-col gap-2">
       {blockedReason ? (
-        <p className="text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
+        <p className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
           {blockedReason}
         </p>
       ) : null}
@@ -146,7 +148,11 @@ export function ThreadPromptComposer({
               tooltip="Attachments are not available in M02"
               aria-label="Add attachment (unavailable in M02)"
             >
-              <HugeiconsIcon icon={Add01Icon} className="size-4" strokeWidth={2} />
+              <HugeiconsIcon
+                icon={Add01Icon}
+                className="size-4"
+                strokeWidth={2}
+              />
             </PromptInputButton>
           </PromptInputTools>
 
@@ -167,11 +173,22 @@ export function ThreadPromptComposer({
                 <span className="text-muted-foreground">Mode</span>
                 <span>{modeLabel}</span>
                 {mode === "agent" ? (
-                  <span className="text-muted-foreground">· {executeBehaviorLabel}</span>
+                  <span className="text-muted-foreground">
+                    · {executeBehaviorLabel}
+                  </span>
                 ) : null}
-                <HugeiconsIcon icon={ArrowDown01Icon} data-icon="inline-end" strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={ArrowDown01Icon}
+                  data-icon="inline-end"
+                  strokeWidth={2}
+                />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" sideOffset={8} className="w-72">
+              <DropdownMenuContent
+                align="end"
+                side="top"
+                sideOffset={8}
+                className="w-72"
+              >
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Mode</DropdownMenuLabel>
                   <DropdownMenuCheckboxItem
@@ -180,7 +197,11 @@ export function ThreadPromptComposer({
                       if (checked) onModeChange("plan")
                     }}
                   >
-                    <HugeiconsIcon icon={AiIdeaIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={AiIdeaIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     <MenuItemText
                       title="Plan"
                       description="Draft the approach and request approval before workspace edits."
@@ -192,7 +213,11 @@ export function ThreadPromptComposer({
                       if (checked) onModeChange("agent")
                     }}
                   >
-                    <HugeiconsIcon icon={FlashIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={FlashIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     <MenuItemText
                       title="Execute"
                       description="Run the task using the selected execution behavior."
@@ -210,7 +235,11 @@ export function ThreadPromptComposer({
                       onModeChange("agent")
                     }}
                   >
-                    <HugeiconsIcon icon={FlashIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={FlashIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     <MenuItemText
                       title="Auto"
                       description="Apply allowed changes without stopping for each tool."
@@ -220,7 +249,11 @@ export function ThreadPromptComposer({
                     checked={mode === "agent" && executeBehavior === "ask"}
                     disabled
                   >
-                    <HugeiconsIcon icon={AiSecurityIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={AiSecurityIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     <MenuItemText
                       title="Ask first"
                       description="Approval-gated execute mode. Coming soon."
@@ -231,25 +264,41 @@ export function ThreadPromptComposer({
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   <DropdownMenuItem disabled>
-                    <HugeiconsIcon icon={BulbIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={BulbIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     Suggest learnings
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>
-                    <HugeiconsIcon icon={CheckListIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={CheckListIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     Build skill
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>
-                    <HugeiconsIcon icon={ChatFeedbackIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={ChatFeedbackIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     Give feedback
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>
-                    <HugeiconsIcon icon={ChartEvaluationIcon} strokeWidth={2} aria-hidden />
+                    <HugeiconsIcon
+                      icon={ChartEvaluationIcon}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     Run evaluation
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className="text-muted-foreground hidden text-xs sm:inline">
+            <span className="hidden text-xs text-muted-foreground sm:inline">
               {health.model ?? DEFAULT_OPENAI_MODEL}
             </span>
             <PromptInputSubmit

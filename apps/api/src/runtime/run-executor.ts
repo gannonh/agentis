@@ -1,6 +1,10 @@
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
-import { GENERIC_AGENTIS_AGENT_ID, type MessagePart, type Run } from "@workspace/shared"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  type MessagePart,
+  type Run,
+} from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import { ComposioRemediationError } from "../composio/tool-execution-service.js"
 import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"

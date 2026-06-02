@@ -30,7 +30,10 @@ export function AgentSetupFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2 sm:col-span-2">
           <label className="text-sm font-medium" htmlFor={nameId}>
-            Name <span className="text-destructive" aria-hidden>*</span>
+            Name{" "}
+            <span className="text-destructive" aria-hidden>
+              *
+            </span>
           </label>
           <Input
             id={nameId}
@@ -68,7 +71,7 @@ export function AgentSetupFields({
           {modelHelp ? (
             <p
               id={modelHelpId}
-              className="text-muted-foreground text-xs leading-relaxed"
+              className="text-xs leading-relaxed text-muted-foreground"
             >
               {modelHelp}
             </p>
@@ -78,10 +81,13 @@ export function AgentSetupFields({
 
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium" htmlFor={systemPromptId}>
-          Instructions <span className="text-destructive" aria-hidden>*</span>
+          Instructions{" "}
+          <span className="text-destructive" aria-hidden>
+            *
+          </span>
         </label>
         {systemPromptHelp ? (
-          <p className="text-muted-foreground text-xs leading-relaxed">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             {systemPromptHelp}
           </p>
         ) : null}

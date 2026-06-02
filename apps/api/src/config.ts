@@ -142,7 +142,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     workspaceWriteMaxBytes: Number(
       env.AGENTIS_WORKSPACE_WRITE_MAX_BYTES ?? 262_144
     ),
-    workspaceWriteDenyPrefixes: (env.AGENTIS_WORKSPACE_WRITE_DENY_PREFIXES ?? "")
+    workspaceWriteDenyPrefixes: (
+      env.AGENTIS_WORKSPACE_WRITE_DENY_PREFIXES ?? ""
+    )
       .split(",")
       .map((prefix) => prefix.trim())
       .filter(Boolean),
@@ -169,13 +171,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     sandboxContainerImage:
       env.AGENTIS_SANDBOX_CONTAINER_IMAGE ?? "agentis-sandbox:local",
     webSearchProvider:
-      env.AGENTIS_WEB_SEARCH_PROVIDER === "mock"
-        ? "mock"
-        : "vercel-gateway",
+      env.AGENTIS_WEB_SEARCH_PROVIDER === "mock" ? "mock" : "vercel-gateway",
     webSearchBackend:
-      env.AGENTIS_WEB_SEARCH_BACKEND === "parallel"
-        ? "parallel"
-        : "perplexity",
+      env.AGENTIS_WEB_SEARCH_BACKEND === "parallel" ? "parallel" : "perplexity",
     webSearchMaxResults: clampNumber(
       Number(env.AGENTIS_WEB_SEARCH_MAX_RESULTS ?? 5),
       1,

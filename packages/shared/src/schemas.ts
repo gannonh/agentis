@@ -631,7 +631,11 @@ export const documentVisibilityScopeSchema = z.enum([
 
 export const documentSourceSchema = z.enum(["user", "agent"])
 
-export const documentContentFormatSchema = z.enum(["markdown", "text", "binary"])
+export const documentContentFormatSchema = z.enum([
+  "markdown",
+  "text",
+  "binary",
+])
 
 const documentBaseSchema = z.object({
   id: nonEmptyString,
@@ -659,7 +663,11 @@ const documentBaseSchema = z.object({
 })
 
 function validateDocumentScope(
-  document: { visibilityScope: z.infer<typeof documentVisibilityScopeSchema>; threadId?: string | null; projectId?: string | null },
+  document: {
+    visibilityScope: z.infer<typeof documentVisibilityScopeSchema>
+    threadId?: string | null
+    projectId?: string | null
+  },
   ctx: z.RefinementCtx
 ) {
   if (document.visibilityScope === "thread" && !document.threadId) {
@@ -678,7 +686,9 @@ function validateDocumentScope(
   }
 }
 
-export const documentSchema = documentBaseSchema.superRefine(validateDocumentScope)
+export const documentSchema = documentBaseSchema.superRefine(
+  validateDocumentScope
+)
 
 export const documentVersionSchema = z.object({
   id: nonEmptyString,
@@ -955,13 +965,19 @@ export type UpdateProjectMemoryRequest = z.infer<
   typeof updateProjectMemoryRequestSchema
 >
 export type DocumentType = z.infer<typeof documentTypeSchema>
-export type DocumentVisibilityScope = z.infer<typeof documentVisibilityScopeSchema>
+export type DocumentVisibilityScope = z.infer<
+  typeof documentVisibilityScopeSchema
+>
 export type DocumentSource = z.infer<typeof documentSourceSchema>
 export type Document = z.infer<typeof documentSchema>
 export type DocumentVersion = z.infer<typeof documentVersionSchema>
 export type DocumentPublic = z.infer<typeof documentPublicSchema>
-export type DocumentVersionSummary = z.infer<typeof documentVersionSummarySchema>
-export type DocumentDetailResponse = z.infer<typeof documentDetailResponseSchema>
+export type DocumentVersionSummary = z.infer<
+  typeof documentVersionSummarySchema
+>
+export type DocumentDetailResponse = z.infer<
+  typeof documentDetailResponseSchema
+>
 export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>
 export type ThreadDetail = z.infer<typeof threadDetailSchema>
 export type ThreadListItem = z.infer<typeof threadListItemSchema>

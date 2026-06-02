@@ -55,7 +55,9 @@ describe("ThreadPromptComposer", () => {
     )
 
     expect(screen.getByRole("button", { name: /plan/i })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /plan first/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /plan first/i })
+    ).not.toBeInTheDocument()
 
     rerender(
       <ThreadPromptComposer
@@ -78,15 +80,31 @@ describe("ThreadPromptComposer", () => {
     await user.click(screen.getByRole("button", { name: /mode execute auto/i }))
 
     expect(await screen.findByText("Execute behavior")).toBeInTheDocument()
-    expect(screen.getByRole("menuitemcheckbox", { name: /plandraft/i })).toHaveAttribute("aria-checked", "false")
-    expect(screen.getByRole("menuitemcheckbox", { name: /executerun/i })).toHaveAttribute("aria-checked", "true")
-    expect(screen.getByRole("menuitemcheckbox", { name: /autoapply/i })).toHaveAttribute("aria-checked", "true")
-    expect(screen.getByRole("menuitemcheckbox", { name: /ask firstapproval/i })).toHaveAttribute("aria-checked", "false")
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: /plandraft/i })
+    ).toHaveAttribute("aria-checked", "false")
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: /executerun/i })
+    ).toHaveAttribute("aria-checked", "true")
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: /autoapply/i })
+    ).toHaveAttribute("aria-checked", "true")
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: /ask firstapproval/i })
+    ).toHaveAttribute("aria-checked", "false")
     expect(screen.getByText("Actions")).toBeInTheDocument()
-    expect(screen.getByRole("menuitem", { name: /suggest learnings/i })).toHaveAttribute("data-disabled")
-    expect(screen.getByRole("menuitem", { name: /build skill/i })).toHaveAttribute("data-disabled")
-    expect(screen.getByRole("menuitem", { name: /give feedback/i })).toHaveAttribute("data-disabled")
-    expect(screen.getByRole("menuitem", { name: /run evaluation/i })).toHaveAttribute("data-disabled")
+    expect(
+      screen.getByRole("menuitem", { name: /suggest learnings/i })
+    ).toHaveAttribute("data-disabled")
+    expect(
+      screen.getByRole("menuitem", { name: /build skill/i })
+    ).toHaveAttribute("data-disabled")
+    expect(
+      screen.getByRole("menuitem", { name: /give feedback/i })
+    ).toHaveAttribute("data-disabled")
+    expect(
+      screen.getByRole("menuitem", { name: /run evaluation/i })
+    ).toHaveAttribute("data-disabled")
   })
 
   it("keeps the mode menu available after a submitted turn settles", async () => {
@@ -95,7 +113,9 @@ describe("ThreadPromptComposer", () => {
     renderComposer({ mode: "agent", submitting: false, onModeChange })
 
     await user.click(screen.getByRole("button", { name: /mode execute auto/i }))
-    await user.click(await screen.findByRole("menuitemcheckbox", { name: /plandraft/i }))
+    await user.click(
+      await screen.findByRole("menuitemcheckbox", { name: /plandraft/i })
+    )
 
     expect(onModeChange).toHaveBeenCalledWith("plan")
   })

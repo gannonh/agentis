@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { createGatewayLanguageModel, resolveGatewayModelId } from "./gateway-model.js"
+import {
+  createGatewayLanguageModel,
+  resolveGatewayModelId,
+} from "./gateway-model.js"
 import { loadConfig } from "../config.js"
 
 const aiMocks = vi.hoisted(() => {
@@ -48,9 +51,14 @@ describe("Gateway model resolution", () => {
       "gpt-4o-mini"
     )
 
-    expect(aiMocks.createGateway).toHaveBeenCalledWith({ apiKey: "gateway-key" })
+    expect(aiMocks.createGateway).toHaveBeenCalledWith({
+      apiKey: "gateway-key",
+    })
     expect(aiMocks.gateway).toHaveBeenCalledWith("openai/gpt-4o-mini")
-    expect(model).toEqual({ provider: "gateway", modelId: "openai/gpt-4o-mini" })
+    expect(model).toEqual({
+      provider: "gateway",
+      modelId: "openai/gpt-4o-mini",
+    })
   })
 
   it("fails loudly when Gateway credentials are missing", () => {
