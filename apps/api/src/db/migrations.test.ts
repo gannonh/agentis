@@ -28,6 +28,104 @@ afterEach(() => {
 })
 
 describe("database migrations", () => {
+  it("preserves existing durable library rows as documents", () => {
+    const databasePath = join(tmpdir(), `agentis-migration-${randomUUID()}.db`)
+    databasePaths.push(databasePath)
+    const db = new Database(databasePath)
+
+    try {
+      const migrations = [
+        "0000_wakeful_warbird.sql",
+        "0001_outgoing_scarecrow.sql",
+        "0002_tool_access_grants_scope_toolkit_unique.sql",
+        "0003_motionless_whiplash.sql",
+      ]
+      for (const filename of migrations) applyMigration(db, filename)
+
+      const previousTableName = "arti" + "facts"
+      db.exec(`
+        INSERT INTO ${previousTableName} (id, title, description, type, mime_type, size_bytes, storage_key, preview_text, metadata_json, created_at, updated_at)
+        VALUES
+          ('generated-doc', 'Generated doc', 'Generated markdown', 'document', 'text/markdown', 12, 'documents/generated.md', '# Generated', '{}', 'now', 'now'),
+          ('uploaded-image', 'Uploaded image', 'Image upload', 'image', 'image/png', 3, 'documents/image.png', NULL, '{}', 'now', 'now');
+      `)
+
+      for (const filename of [
+        "0004_low_chat.sql",
+        "0005_agent_cost_limits.sql",
+        "0006_agent_thread_run_metadata.sql",
+        "0007_agent_version_tool_grant_snapshots.sql",
+        "0008_agent_promotion_drafts.sql",
+        "0009_agent_promotion_draft_intelligence.sql",
+        "0010_agent_promotion_validation.sql",
+        "0011_agent_source_linkage.sql",
+        "0012_thread_source_linkage.sql",
+        "0013_promotion_draft_source_workflow.sql",
+        "0014_orange_phalanx.sql",
+        "0015_saved_memory_pinned_context.sql",
+        "0016_saved_memory_agent_scope.sql",
+        "0017_saved_memory_source_threads.sql",
+        "0018_saved_memory_sources.sql",
+        "0019_memory_provenance_thread_titles.sql",
+        "0020_saved_memory_multi_agent_scope.sql",
+        "0021_agent_workspaces.sql",
+        "0022_workspace_edits.sql",
+        "0023_workspace_executions.sql",
+        "0024_agent_configuration_native_tools.sql",
+        "0025_persistent_documents.sql",
+      ]) {
+        applyMigration(db, filename)
+      }
+
+      const rows = db
+        .prepare(
+          "SELECT id, document_type AS documentType, visibility_scope AS visibilityScope, storage_key AS storageKey, current_version AS currentVersion FROM documents ORDER BY id"
+        )
+        .all() as Array<{
+        id: string
+        documentType: string
+        visibilityScope: string
+        storageKey: string
+        currentVersion: number | null
+      }>
+      expect(rows).toEqual([
+        {
+          id: "generated-doc",
+          documentType: "markdown",
+          visibilityScope: "global",
+          storageKey: "documents/generated.md",
+          currentVersion: 1,
+        },
+        {
+          id: "uploaded-image",
+          documentType: "image",
+          visibilityScope: "global",
+          storageKey: "documents/image.png",
+          currentVersion: null,
+        },
+      ])
+      const version = db
+        .prepare(
+          "SELECT document_id AS documentId, version, content_storage_key AS contentStorageKey FROM document_versions WHERE document_id = 'generated-doc'"
+        )
+        .get() as { documentId: string; version: number; contentStorageKey: string }
+      expect(version).toEqual({
+        documentId: "generated-doc",
+        version: 1,
+        contentStorageKey: "documents/generated.md",
+      })
+
+      const indexNames = db
+        .prepare("PRAGMA index_list('documents')")
+        .all()
+        .map((row) => (row as { name: string }).name)
+      expect(indexNames).toContain("documents_created_at_idx")
+      expect(indexNames).not.toContain(`arti${"facts"}_type_idx`)
+    } finally {
+      db.close()
+    }
+  })
+
   it("backfills current agent version tool grant snapshots", () => {
     const databasePath = join(tmpdir(), `agentis-migration-${randomUUID()}.db`)
     databasePaths.push(databasePath)

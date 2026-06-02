@@ -1,7 +1,46 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  BrowserIcon,
+  BubbleChatIcon,
+  CloudUploadIcon,
+  File01Icon,
+  FilterHorizontalIcon,
+  Folder01Icon,
+  FolderLibraryIcon,
+  Globe02Icon,
+  Image01Icon,
+  Presentation01Icon,
+  Robot01Icon,
+  TableIcon,
+  TextAlignLeftIcon,
+  UserIcon,
+  Video01Icon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { useSearchParams } from "react-router"
-import type { ArtifactPublic as Artifact, ArtifactType, Project } from "@workspace/shared"
+import {
+  documentTypeSchema,
+  type AgentListItem,
+  type DocumentDetailResponse,
+  type DocumentPublic as Document,
+  type DocumentSource,
+  type DocumentType,
+  type DocumentVisibilityScope,
+  type Project,
+  type ThreadListItem,
+} from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
 import {
   Card,
   CardContent,
@@ -23,50 +62,150 @@ import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 import { formatRelativeTime } from "@/fixtures"
+import { listThreads } from "@/lib/api/client"
+import { listAgents } from "@/lib/api/agents-client"
 import {
-  artifactDownloadUrl,
-  listArtifacts,
+  downloadDocumentFile,
+  getDocumentDetail,
+  listDocuments,
   listProjects,
-  uploadArtifact,
+  uploadDocument,
 } from "@/lib/api/projects-client"
-import { ApiError } from "@/lib/api/client"
 
-const ARTIFACT_TYPES: ArtifactType[] = [
-  "document",
-  "webpage",
-  "image",
-  "video",
-  "table",
-  "slides",
-  "other",
-]
+const DOCUMENT_TYPES = documentTypeSchema.options
+const AGENT_SOURCE_PREFIX = "agent:"
+const PROJECT_SCOPE_PREFIX = "project:"
+
+type DocumentSourceFilter = "" | "user" | "agent" | `agent:${string}`
+type DocumentScopeFilter =
+  | ""
+  | DocumentVisibilityScope
+  | "project"
+  | `project:${string}`
+
+function sourceFilters(value: DocumentSourceFilter): {
+  source?: DocumentSource
+  agentId?: string
+} {
+  if (value === "user") return { source: "user" }
+  if (value === "agent") return { source: "agent" }
+  if (value.startsWith(AGENT_SOURCE_PREFIX)) {
+    return { source: "agent", agentId: value.slice(AGENT_SOURCE_PREFIX.length) }
+  }
+  return {}
+}
+
+function scopeFilters(
+  value: DocumentScopeFilter,
+  threadId: string
+): {
+  visibilityScope?: DocumentVisibilityScope
+  projectId?: string
+  threadId?: string
+} {
+  if (value === "global") return { visibilityScope: "global" }
+  if (value === "project") return { visibilityScope: "project" }
+  if (value.startsWith(PROJECT_SCOPE_PREFIX)) {
+    return {
+      visibilityScope: "project",
+      projectId: value.slice(PROJECT_SCOPE_PREFIX.length),
+    }
+  }
+  if (value === "thread") {
+    return {
+      visibilityScope: "thread",
+      threadId: threadId || undefined,
+    }
+  }
+  return {}
+}
+
+function MenuIcon({ icon }: { icon: IconSvgElement }) {
+  return (
+    <HugeiconsIcon
+      icon={icon}
+      className="size-3.5"
+      strokeWidth={2}
+      aria-hidden
+    />
+  )
+}
+
+function sourceLabel(value: DocumentSourceFilter, agents: AgentListItem[]) {
+  if (value === "user") return "User uploads"
+  if (value === "agent") return "Agent generated"
+  if (value.startsWith(AGENT_SOURCE_PREFIX)) {
+    const agentId = value.slice(AGENT_SOURCE_PREFIX.length)
+    return agents.find((agent) => agent.id === agentId)?.name ?? "Agent"
+  }
+  return "Any source"
+}
+
+const DOCUMENT_TYPE_ICONS: Record<DocumentType, IconSvgElement> = {
+  markdown: TextAlignLeftIcon,
+  webpage: BrowserIcon,
+  image: Image01Icon,
+  video: Video01Icon,
+  table: TableIcon,
+  slides: Presentation01Icon,
+  other: File01Icon,
+}
+
+function typeLabel(value: DocumentType | "") {
+  return value || "All types"
+}
+
+function scopeLabel(value: DocumentScopeFilter, projects: Project[]) {
+  if (value === "global") return "Global"
+  if (value === "project") return "All projects"
+  if (value === "thread") return "Threads"
+  if (value.startsWith(PROJECT_SCOPE_PREFIX)) {
+    const projectId = value.slice(PROJECT_SCOPE_PREFIX.length)
+    return (
+      projects.find((project) => project.id === projectId)?.name ?? "Project"
+    )
+  }
+  return "Any scope"
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
 
 export function LibraryPage() {
   const [searchParams] = useSearchParams()
-  const [artifacts, setArtifacts] = useState<Artifact[]>([])
+  const initialProjectId = searchParams.get("projectId") ?? ""
+  const [documents, setDocuments] = useState<Document[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [agents, setAgents] = useState<AgentListItem[]>([])
+  const [threads, setThreads] = useState<ThreadListItem[]>([])
   const [query, setQuery] = useState("")
-  const [typeFilter, setTypeFilter] = useState<ArtifactType | "">("")
-  const [projectFilter, setProjectFilter] = useState(
-    () => searchParams.get("projectId") ?? ""
+  const [typeFilter, setTypeFilter] = useState<DocumentType | "">("")
+  const [sourceFilter, setSourceFilter] = useState<DocumentSourceFilter>("")
+  const [scopeFilter, setScopeFilter] = useState<DocumentScopeFilter>(
+    initialProjectId ? `${PROJECT_SCOPE_PREFIX}${initialProjectId}` : ""
   )
+  const [threadSearch, setThreadSearch] = useState("")
+  const [threadFilter, setThreadFilter] = useState("")
   const loadGeneration = useRef(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadTitle, setUploadTitle] = useState("")
-  const [uploadType, setUploadType] = useState<ArtifactType>("document")
+  const [uploadType, setUploadType] = useState<DocumentType>("markdown")
   const [uploadProjectId, setUploadProjectId] = useState("")
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [downloadErrors, setDownloadErrors] = useState<Record<string, string>>(
     {}
   )
+  const [detail, setDetail] = useState<DocumentDetailResponse | null>(null)
+  const selectedDocumentId = searchParams.get("documentId")
 
   useEffect(() => {
     const projectId = searchParams.get("projectId")
     if (projectId) {
-      setProjectFilter(projectId)
+      setScopeFilter(`${PROJECT_SCOPE_PREFIX}${projectId}`)
     }
   }, [searchParams])
 
@@ -75,28 +214,32 @@ export function LibraryPage() {
     setLoading(true)
     setError(null)
     try {
-      const [artifactList, projectList] = await Promise.all([
-        listArtifacts({
-          query: query.trim() || undefined,
-          type: typeFilter || undefined,
-          projectId: projectFilter || undefined,
-        }),
-        listProjects(true),
-      ])
+      const [documentList, projectList, agentList, threadList] =
+        await Promise.all([
+          listDocuments({
+            query: query.trim() || undefined,
+            documentType: typeFilter || undefined,
+            ...sourceFilters(sourceFilter),
+            ...scopeFilters(scopeFilter, threadFilter),
+          }),
+          listProjects(true),
+          listAgents(),
+          listThreads(),
+        ])
       if (generation !== loadGeneration.current) return
-      setArtifacts(artifactList)
+      setDocuments(documentList)
       setProjects(projectList)
+      setAgents(agentList)
+      setThreads(threadList)
     } catch (loadError) {
       if (generation !== loadGeneration.current) return
-      setError(
-        loadError instanceof Error ? loadError.message : "Failed to load library"
-      )
+      setError(errorMessage(loadError, "Failed to load library"))
     } finally {
       if (generation === loadGeneration.current) {
         setLoading(false)
       }
     }
-  }, [query, typeFilter, projectFilter])
+  }, [query, typeFilter, sourceFilter, scopeFilter, threadFilter])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -105,11 +248,21 @@ export function LibraryPage() {
     return () => clearTimeout(timer)
   }, [load])
 
-  const hasFilters = Boolean(query || typeFilter || projectFilter)
+  const hasFilters = Boolean(
+    query || typeFilter || sourceFilter || scopeFilter || threadFilter
+  )
+
+  const threadOptions = useMemo(() => {
+    const term = threadSearch.trim().toLowerCase()
+    const filtered = term
+      ? threads.filter((thread) => thread.title.toLowerCase().includes(term))
+      : threads
+    return filtered.slice(0, 25)
+  }, [threadSearch, threads])
 
   const filteredEmpty = useMemo(
-    () => !loading && artifacts.length === 0 && hasFilters,
-    [artifacts.length, hasFilters, loading]
+    () => !loading && documents.length === 0 && hasFilters,
+    [documents.length, hasFilters, loading]
   )
 
   const handleUpload = async () => {
@@ -117,9 +270,9 @@ export function LibraryPage() {
     setUploading(true)
     setError(null)
     try {
-      await uploadArtifact({
+      await uploadDocument({
         title: uploadTitle.trim(),
-        type: uploadType,
+        documentType: uploadType,
         file: uploadFile,
         projectId: uploadProjectId || undefined,
       })
@@ -129,51 +282,47 @@ export function LibraryPage() {
       setUploadProjectId("")
       await load()
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Failed to upload artifact"
-      )
+      setError(errorMessage(uploadError, "Failed to upload document"))
     } finally {
       setUploading(false)
     }
   }
 
-  const handleDownload = async (artifact: Artifact) => {
+  useEffect(() => {
+    if (!selectedDocumentId) {
+      setDetail(null)
+      return
+    }
+    let cancelled = false
+    setDetail(null)
+    setError(null)
+    getDocumentDetail(selectedDocumentId)
+      .then((nextDetail) => {
+        if (!cancelled) setDetail(nextDetail)
+      })
+      .catch((detailError) => {
+        if (!cancelled) {
+          setError(errorMessage(detailError, "Failed to load document detail"))
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedDocumentId])
+
+  const handleDownload = async (libraryDocument: Document) => {
     try {
-      const response = await fetch(artifactDownloadUrl(artifact.id))
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new ApiError(
-          typeof data === "object" &&
-            data !== null &&
-            "error" in data &&
-            typeof data.error === "string"
-            ? data.error
-            : "Download failed",
-          response.status
-        )
-      }
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement("a")
-      anchor.href = url
-      anchor.download = artifact.title
-      anchor.click()
-      URL.revokeObjectURL(url)
+      await downloadDocumentFile(libraryDocument)
       setDownloadErrors((current) => {
         const next = { ...current }
-        delete next[artifact.id]
+        delete next[libraryDocument.id]
         return next
       })
     } catch (downloadError) {
-      const message =
-        downloadError instanceof Error
-          ? downloadError.message
-          : "Download failed"
+      const message = errorMessage(downloadError, "Download failed")
       setDownloadErrors((current) => ({
         ...current,
-        [artifact.id]: message,
+        [libraryDocument.id]: message,
       }))
     }
   }
@@ -186,11 +335,11 @@ export function LibraryPage() {
         actions={
           <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
             <DialogTrigger render={<Button size="sm" />}>
-              Upload artifact
+              Upload document
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Upload artifact</DialogTitle>
+                <DialogTitle>Upload document</DialogTitle>
               </DialogHeader>
               <div className="flex flex-col gap-3 py-2">
                 <Input
@@ -199,20 +348,20 @@ export function LibraryPage() {
                   onChange={(e) => setUploadTitle(e.target.value)}
                 />
                 <select
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                   value={uploadType}
                   onChange={(e) =>
-                    setUploadType(e.target.value as ArtifactType)
+                    setUploadType(e.target.value as DocumentType)
                   }
                 >
-                  {ARTIFACT_TYPES.map((type) => (
+                  {DOCUMENT_TYPES.map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>
                   ))}
                 </select>
                 <select
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                   value={uploadProjectId}
                   onChange={(e) => setUploadProjectId(e.target.value)}
                 >
@@ -243,41 +392,215 @@ export function LibraryPage() {
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Input
-          placeholder="Search artifacts…"
-          className="max-w-md"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search artifacts"
-        />
-        <select
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-          value={typeFilter}
-          onChange={(e) =>
-            setTypeFilter(e.target.value as ArtifactType | "")
-          }
-          aria-label="Filter by type"
-        >
-          <option value="">All types</option>
-          {ARTIFACT_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-        <select
-          className="border-input bg-background h-9 min-w-40 rounded-md border px-3 text-sm"
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          aria-label="Filter by project"
-        >
-          <option value="">All projects</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
+        <div className="hidden text-muted-foreground sm:flex" aria-hidden>
+          <HugeiconsIcon
+            icon={FilterHorizontalIcon}
+            className="size-4"
+            strokeWidth={2}
+          />
+        </div>
+        <div className="relative w-full sm:max-w-md">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <Input
+            placeholder="Search documents…"
+            className="pl-7"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search documents"
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                className="w-full justify-between sm:w-40"
+                aria-label="Filter by type"
+              />
+            }
+          >
+            <span className="truncate capitalize">{typeLabel(typeFilter)}</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-44">
+            <DropdownMenuRadioGroup
+              value={typeFilter || "all"}
+              onValueChange={(value) =>
+                setTypeFilter(value === "all" ? "" : (value as DocumentType))
+              }
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Type</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="all">
+                  <MenuIcon icon={FolderLibraryIcon} />
+                  All types
+                </DropdownMenuRadioItem>
+                {DOCUMENT_TYPES.map((type) => (
+                  <DropdownMenuRadioItem key={type} value={type}>
+                    <MenuIcon icon={DOCUMENT_TYPE_ICONS[type]} />
+                    <span className="capitalize">{type}</span>
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                className="w-full justify-between sm:w-48"
+                aria-label="Filter by source"
+              />
+            }
+          >
+            <span className="truncate">
+              {sourceLabel(sourceFilter, agents)}
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuRadioGroup
+              value={sourceFilter || "all"}
+              onValueChange={(value) =>
+                setSourceFilter(
+                  value === "all" ? "" : (value as DocumentSourceFilter)
+                )
+              }
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Source</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="all">
+                  <MenuIcon icon={FolderLibraryIcon} />
+                  Any source
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="user">
+                  <MenuIcon icon={CloudUploadIcon} />
+                  User uploads
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="agent">
+                  <MenuIcon icon={Robot01Icon} />
+                  Agent generated
+                </DropdownMenuRadioItem>
+              </DropdownMenuGroup>
+              {agents.length ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Agents</DropdownMenuLabel>
+                    {agents.map((agent) => (
+                      <DropdownMenuRadioItem
+                        key={agent.id}
+                        value={`${AGENT_SOURCE_PREFIX}${agent.id}`}
+                      >
+                        <MenuIcon icon={UserIcon} />
+                        {agent.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </>
+              ) : null}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                className="w-full justify-between sm:w-48"
+                aria-label="Filter by scope"
+              />
+            }
+          >
+            <span className="truncate">
+              {scopeLabel(scopeFilter, projects)}
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuRadioGroup
+              value={scopeFilter || "all"}
+              onValueChange={(value) => {
+                setScopeFilter(
+                  value === "all" ? "" : (value as DocumentScopeFilter)
+                )
+                setThreadSearch("")
+                setThreadFilter("")
+              }}
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Scope</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="all">
+                  <MenuIcon icon={FolderLibraryIcon} />
+                  Any scope
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="global">
+                  <MenuIcon icon={Globe02Icon} />
+                  Global
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="project">
+                  <MenuIcon icon={Folder01Icon} />
+                  All projects
+                </DropdownMenuRadioItem>
+              </DropdownMenuGroup>
+              {projects.length ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Projects</DropdownMenuLabel>
+                    {projects.map((project) => (
+                      <DropdownMenuRadioItem
+                        key={project.id}
+                        value={`${PROJECT_SCOPE_PREFIX}${project.id}`}
+                      >
+                        <MenuIcon icon={Folder01Icon} />
+                        {project.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </>
+              ) : null}
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuRadioItem value="thread">
+                  <MenuIcon icon={BubbleChatIcon} />
+                  Threads
+                </DropdownMenuRadioItem>
+              </DropdownMenuGroup>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {scopeFilter === "thread" ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              placeholder="Search threads…"
+              className="max-w-48"
+              value={threadSearch}
+              onChange={(e) => {
+                setThreadSearch(e.target.value)
+                setThreadFilter("")
+              }}
+              aria-label="Search threads"
+            />
+            <select
+              className="h-9 min-w-48 rounded-md border border-input bg-background px-3 text-sm"
+              value={threadFilter}
+              onChange={(e) => setThreadFilter(e.target.value)}
+              aria-label="Filter by thread"
+            >
+              <option value="">Any thread</option>
+              {threadOptions.map((thread) => (
+                <option key={thread.id} value={thread.id}>
+                  {thread.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         {hasFilters ? (
           <Button
             variant="ghost"
@@ -285,7 +608,10 @@ export function LibraryPage() {
             onClick={() => {
               setQuery("")
               setTypeFilter("")
-              setProjectFilter("")
+              setSourceFilter("")
+              setScopeFilter("")
+              setThreadSearch("")
+              setThreadFilter("")
             }}
           >
             Reset filters
@@ -293,73 +619,105 @@ export function LibraryPage() {
         ) : null}
       </div>
 
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading artifacts…</p>
+        <p className="text-sm text-muted-foreground">Loading documents…</p>
       ) : null}
 
-      {!loading && artifacts.length === 0 && !hasFilters ? (
+      {!loading && documents.length === 0 && !hasFilters ? (
         <EmptyState
-          title="No artifacts yet"
+          title="No documents yet"
           description="Upload a file or ask an agent to create a document in a project thread."
         />
       ) : null}
 
       {filteredEmpty ? (
         <EmptyState
-          title="No matching artifacts"
+          title="No matching documents"
           description="Try adjusting search or filters."
         />
       ) : null}
 
+      {detail ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{detail.document.title}</CardTitle>
+            <CardDescription>
+              {detail.document.documentType} · {detail.document.visibilityScope}{" "}
+              · version {detail.document.currentVersion ?? "—"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {detail.content ? (
+              <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
+                {detail.content}
+              </pre>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No text preview available.
+              </p>
+            )}
+            <div className="text-xs text-muted-foreground">
+              Versions:{" "}
+              {detail.versions
+                .map((version) => `v${version.version}`)
+                .join(", ") || "none"}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {artifacts.map((artifact) => (
-          <Card key={artifact.id}>
+        {documents.map((document) => (
+          <Card key={document.id}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-sm leading-snug">
-                  {artifact.title}
+                  {document.title}
                 </CardTitle>
-                <Badge variant="outline" className="shrink-0 text-xs capitalize">
-                  {artifact.type}
+                <Badge
+                  variant="outline"
+                  className="shrink-0 text-xs capitalize"
+                >
+                  {document.documentType} · {document.visibilityScope}
                 </Badge>
               </div>
               <CardDescription className="text-xs">
                 {[
-                  artifact.projectNameSnapshot,
-                  artifact.threadTitleSnapshot,
-                  artifact.agentNameSnapshot,
+                  document.projectNameSnapshot,
+                  document.threadTitleSnapshot,
+                  document.agentNameSnapshot,
                 ]
                   .filter(Boolean)
                   .join(" · ") || "Workspace"}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 pt-0">
-              {artifact.previewText ? (
-                <p className="text-muted-foreground line-clamp-3 text-xs">
-                  {artifact.previewText}
+              {document.previewText ? (
+                <p className="line-clamp-3 text-xs text-muted-foreground">
+                  {document.previewText}
                 </p>
               ) : (
-                <p className="text-muted-foreground text-xs">
-                  {artifact.mimeType} · {(artifact.sizeBytes / 1024).toFixed(1)}{" "}
+                <p className="text-xs text-muted-foreground">
+                  {document.mimeType} · {(document.sizeBytes / 1024).toFixed(1)}{" "}
                   KB
                 </p>
               )}
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">
-                  {formatRelativeTime(artifact.createdAt)}
+                <span className="text-xs text-muted-foreground">
+                  {formatRelativeTime(document.updatedAt)}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => void handleDownload(artifact)}
+                  onClick={() => void handleDownload(document)}
                 >
                   Download
                 </Button>
               </div>
-              {downloadErrors[artifact.id] ? (
-                <p className="text-destructive text-xs">
-                  {downloadErrors[artifact.id]}
+              {downloadErrors[document.id] ? (
+                <p className="text-xs text-destructive">
+                  {downloadErrors[document.id]}
                 </p>
               ) : null}
             </CardContent>

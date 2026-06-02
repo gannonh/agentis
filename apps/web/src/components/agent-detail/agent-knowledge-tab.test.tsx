@@ -95,7 +95,7 @@ describe("AgentKnowledgeTab", () => {
       "Add one to give this agent persistent context.",
       "No context files added yet. Attach reference files when this capability is available.",
       "0 items",
-      "No library artifacts yet",
+      "No library documents yet",
     ]) {
       expect(screen.getByText(text)).toBeInTheDocument()
     }
@@ -125,10 +125,10 @@ describe("AgentKnowledgeTab", () => {
             totalCount: 1,
             items: [
               {
-                id: "artifact_notes",
+                id: "document_notes",
                 title: "Research notes",
                 description: null,
-                type: "document",
+                documentType: "markdown",
                 mimeType: "text/markdown",
                 sizeBytes: 42,
                 previewText: "Summary",
@@ -153,7 +153,7 @@ describe("AgentKnowledgeTab", () => {
     for (const text of [
       "1 item",
       "Research notes",
-      "document · text/markdown",
+      "markdown · text/markdown",
       "From Test Created Research Agent",
     ]) {
       expect(library.getByText(text)).toBeInTheDocument()

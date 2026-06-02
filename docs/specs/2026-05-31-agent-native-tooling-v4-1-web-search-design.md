@@ -96,7 +96,7 @@ bounded source list, truncation flag, and error code when applicable. It should
 not persist full page contents or unbounded excerpts.
 
 If the selected Gateway/search path supplies structured citation annotations or
-provider-native citation artifacts, preserve them in bounded normalized metadata
+provider-native citation records, preserve them in bounded normalized metadata
 where useful. Keep `results[]` as the stable Agentis-owned contract so the UI,
 repository, and tests do not depend on provider-specific citation fields.
 
@@ -172,7 +172,7 @@ Apply hard safety caps regardless of requested input or env values:
 - `maxResults`: default 5, hard cap 10.
 - `snippet`: default 500 characters per result, hard cap 1,000 characters per
   result.
-- `metadata`: bounded citation/search artifacts only.
+- `metadata`: bounded citation/search records only.
 - Full page contents must not be fetched or persisted in V4.1.
 
 Credential configuration should follow the verified Vercel AI Gateway mechanism

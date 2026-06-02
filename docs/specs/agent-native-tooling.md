@@ -125,13 +125,14 @@ tests and local wiring.
 
 Spec: `docs/specs/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
 
-V4.2 plans the first Data-category slice: persistent markdown documents.
-Agentis will use one durable Library primitive named Document across product,
-API, backend, shared schemas, runtime tools, tests, and docs. Documents support
-thread, project, and global visibility, version history, find/read/create tools,
-and targeted markdown section updates. The Build phase must complete the domain
-rename atomically so active code and documentation do not retain the prior
-Library primitive terminology.
+Decision record: `docs/adr/0003-persistent-documents-library-primitive.md`
+
+V4.2 implemented the first Data-category slice: persistent markdown documents.
+Agentis uses one durable Library primitive named Document across product, API,
+backend, shared schemas, runtime tools, tests, and docs. Documents support
+thread, project, and global visibility, version history, find/read/create/update
+runtime tools, targeted markdown section updates, real download paths, and
+Library Type, Source, and Scope filters.
 
 ---
 
@@ -250,26 +251,29 @@ File: `apps/api/src/runtime/get-workspace-summary.ts`
 
 Returns a static/demo summary of the Agentis workspace. It is useful as an M02-era runtime smoke test, but it does not inspect real workspace state or files.
 
-#### `createArtifact`
+#### Document tools
 
-File: `apps/api/src/artifacts/artifact-tool.ts`
+File: `apps/api/src/documents/document-tool.ts`
 
-Lets the model create a durable text artifact linked to the current run, thread, project, and Library.
+Lets the model create, find, read, and update durable markdown documents linked to the current run, thread, project, and Library.
 
 Supporting files:
 
-- `apps/api/src/artifacts/artifact-service.ts`
-- `apps/api/src/artifacts/local-artifact-storage.ts`
-- `apps/api/src/repositories/artifact-repository.ts`
-- `apps/api/src/routes/artifacts.ts`
+- `apps/api/src/documents/document-service.ts`
+- `apps/api/src/documents/local-document-storage.ts`
+- `apps/api/src/repositories/document-repository.ts`
+- `apps/api/src/routes/documents.ts`
 
 Implemented behavior:
 
-- Accepts title, type, filename, content, description, and preview text.
-- Writes generated content to local artifact storage under `AGENTIS_STORAGE_ROOT`.
-- Persists artifact metadata in SQLite.
-- Links generated artifacts to provenance where available.
-- Logs artifact creation in the run timeline.
+- Exposes `createDocument`, `findDocuments`, `readDocument`, `updateDocumentSection`, and `appendDocumentSection`.
+- Creates version 1 for markdown documents and new versions for section updates or appended content.
+- Enforces thread, project, and global visibility in document reads and searches.
+- Writes generated content and markdown versions to local document storage under `AGENTIS_STORAGE_ROOT`.
+- Persists document metadata and version metadata in SQLite.
+- Links documents to run, thread, project, and agent provenance where available.
+- Returns `viewPath` and `downloadPath` so agent replies can link to real Library views and markdown downloads.
+- Logs document creation, search, read, and update actions in the run timeline with bounded payloads.
 
 ### Native context assembly
 
@@ -303,7 +307,7 @@ boundary. Local-container execution improves local isolation with Docker runtime
 
 controls, but production-grade sandboxing remains future work.
 
-The artifact storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents.
+The document storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents.
 
 ## Existing tool and persistence model
 
@@ -387,7 +391,7 @@ Agentis should model workspace ownership through agents, not projects.
 - Mental model: an agent's home.
 - Owns many threads or sessions.
 - Has one storage/runtime backend.
-- Initially backed by a filesystem directory with durable files, local SQLite data, artifacts, and a process runtime for code or commands.
+- Initially backed by a filesystem directory with durable files, local SQLite data, documents, and a process runtime for code or commands.
 - Later backed by pluggable production storage/runtime implementations such as containers, VMs, Cloudflare, Postgres, object storage, or external sandbox providers.
 - Persists with the agent lifecycle. Archiving an agent archives its workspace.
 
@@ -481,7 +485,7 @@ AGENTIS_STORAGE_ROOT/
   workspaces/
     {workspaceId}/
       files/
-      artifacts/
+      documents/
       runtime/
       workspace.sqlite
 ```
@@ -598,8 +602,8 @@ Candidate updates:
 
 ## Open product questions
 
-- Should native file tooling operate on workspace files, uploaded Library artifacts, Git repositories, or all three?
-- Should file edits create new artifacts, modify workspace files, or both depending on tool choice?
+- Should native file tooling operate on workspace files, uploaded Library documents, Git repositories, or all three?
+- Should file edits create new documents, modify workspace files, or both depending on tool choice?
 - Should native tools be grantable per thread and agent like Composio tools?
 - Should every native tool call be replayable or exportable for audit?
 - Should agent-created files be versioned?
@@ -619,9 +623,9 @@ Candidate updates:
 
 - `apps/api/src/runtime/run-executor.ts`
 - `apps/api/src/runtime/get-workspace-summary.ts`
-- `apps/api/src/artifacts/artifact-tool.ts`
-- `apps/api/src/artifacts/artifact-service.ts`
-- `apps/api/src/artifacts/local-artifact-storage.ts`
+- `apps/api/src/documents/document-tool.ts`
+- `apps/api/src/documents/document-service.ts`
+- `apps/api/src/documents/local-document-storage.ts`
 - `apps/api/src/runtime/run-context.ts`
 - `apps/api/src/native-tools/execution-workspace-tools.ts`
 - `apps/api/src/workspaces/workspace-execution-service.ts`

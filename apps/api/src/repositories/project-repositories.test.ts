@@ -66,9 +66,9 @@ describe("project repositories", () => {
     ctx.cleanup()
   })
 
-  it("creates and filters artifacts", () => {
+  it("creates and filters documents", () => {
     const ctx = createTestContext()
-    const project = ctx.repos.projects.create({ name: "Artifacts" })
+    const project = ctx.repos.projects.create({ name: "Documents" })
     const thread = ctx.repos.threads.create({
       title: "Thread",
       model: "gpt-4o-mini",
@@ -76,12 +76,12 @@ describe("project repositories", () => {
       projectId: project.id,
     })
 
-    const artifact = ctx.repos.artifacts.create({
+    const document = ctx.repos.documents.create({
       title: "Q2 Brief",
-      type: "document",
+      documentType: "markdown",
       mimeType: "text/plain",
       sizeBytes: 120,
-      storageKey: "artifacts/test.txt",
+      storageKey: "documents/test.txt",
       previewText: "Summary",
       projectId: project.id,
       projectNameSnapshot: project.name,
@@ -89,15 +89,15 @@ describe("project repositories", () => {
       threadTitleSnapshot: thread.title,
     })
 
-    expect(ctx.repos.artifacts.getById(artifact.id)?.title).toBe("Q2 Brief")
+    expect(ctx.repos.documents.getById(document.id)?.title).toBe("Q2 Brief")
 
-    const byQuery = ctx.repos.artifacts.list({ query: "Brief" })
+    const byQuery = ctx.repos.documents.list({ query: "Brief" })
     expect(byQuery).toHaveLength(1)
 
-    const byProject = ctx.repos.artifacts.list({ projectId: project.id })
+    const byProject = ctx.repos.documents.list({ projectId: project.id })
     expect(byProject).toHaveLength(1)
 
-    const byType = ctx.repos.artifacts.list({ type: "document" })
+    const byType = ctx.repos.documents.list({ documentType: "markdown" })
     expect(byType).toHaveLength(1)
 
     ctx.cleanup()

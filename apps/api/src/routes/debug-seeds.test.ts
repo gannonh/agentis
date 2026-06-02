@@ -51,7 +51,7 @@ describe("debug seed routes", () => {
       agents: 5,
       projects: 2,
       threads: 5,
-      artifacts: 6,
+      documents: 6,
       savedMemories: 8,
       integrationConnections: 5,
     })
@@ -194,7 +194,7 @@ describe("debug seed routes", () => {
       agents: 5,
       projects: 2,
       threads: 5,
-      artifacts: 6,
+      documents: 6,
       savedMemories: 8,
       integrationConnections: 0,
     })
@@ -244,7 +244,7 @@ describe("debug seed routes", () => {
     ])
     expect(ctx.repos.threads.list()).toHaveLength(0)
     expect(ctx.repos.projects.list({ includeArchived: true })).toHaveLength(0)
-    expect(ctx.repos.artifacts.list()).toHaveLength(0)
+    expect(ctx.repos.documents.list()).toHaveLength(0)
     expect(
       ctx.repos.savedMemories
         .list()
@@ -308,7 +308,7 @@ describe("debug seed routes", () => {
         agents: 0,
         projects: 0,
         threads: 0,
-        artifacts: 0,
+        documents: 0,
         savedMemories: 0,
         projectMemories: 0,
         integrationConnections: 0,
@@ -317,7 +317,7 @@ describe("debug seed routes", () => {
     expect(ctx.repos.agents.list()).toHaveLength(0)
     expect(ctx.repos.threads.list()).toHaveLength(0)
     expect(ctx.repos.projects.list({ includeArchived: true })).toHaveLength(0)
-    expect(ctx.repos.artifacts.list()).toHaveLength(0)
+    expect(ctx.repos.documents.list()).toHaveLength(0)
     expect(ctx.repos.savedMemories.list().memories).toHaveLength(0)
     expect(ctx.repos.integrationConnections.listByUserId()).toHaveLength(0)
     expect(ctx.repos.integrationToolkits.listFeatured()).toHaveLength(5)

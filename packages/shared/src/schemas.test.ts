@@ -3,8 +3,9 @@ import {
   agentDetailInformationSchema,
   agentDetailResponseSchema,
   agentListItemSchema,
-  artifactSchema,
-  artifactTypeSchema,
+  documentDetailResponseSchema,
+  documentSchema,
+  documentTypeSchema,
   connectIntegrationResponseSchema,
   createAgentRequestSchema,
   createSavedMemoryRequestSchema,
@@ -568,21 +569,23 @@ describe("shared schemas", () => {
           updatedAt: now,
           lastRunStatus: "completed",
           summary: "Checked the repository",
-          artifactCount: 1,
+          documentCount: 1,
         },
       ],
       library: {
         totalCount: 1,
         items: [
           {
-            id: "artifact-1",
+            id: "document-1",
             title: "Research notes",
             description: null,
-            type: "document",
+            documentType: "markdown",
+            contentFormat: "markdown",
             mimeType: "text/markdown",
             sizeBytes: 42,
             previewText: "Notes",
             metadata: null,
+            visibilityScope: "thread",
             projectId: null,
             projectNameSnapshot: null,
             threadId: "thread-1",
@@ -623,14 +626,14 @@ describe("shared schemas", () => {
     expect(populated.library.totalCount).toBe(1)
     expect(() =>
       agentDetailInformationSchema.parse({
-        recentThreads: [{ ...populated.recentThreads[0], artifactCount: -1 }],
+        recentThreads: [{ ...populated.recentThreads[0], documentCount: -1 }],
         library: { items: [], totalCount: 0 },
         memories: { agent: [], global: [] },
       })
     ).toThrow()
     expect(() =>
       agentDetailInformationSchema.parse({
-        recentThreads: [{ ...populated.recentThreads[0], artifactCount: 1.5 }],
+        recentThreads: [{ ...populated.recentThreads[0], documentCount: 1.5 }],
         library: { items: [], totalCount: 0 },
         memories: { agent: [], global: [] },
       })
@@ -704,7 +707,7 @@ describe("shared schemas", () => {
     expect(grants.grants).toHaveLength(1)
   })
 
-  it("parses project, memory, context, and artifact payloads", () => {
+  it("parses project, memory, context, and document payloads", () => {
     const now = new Date().toISOString()
     const project = projectSchema.parse({
       id: "project-1",
@@ -832,18 +835,36 @@ describe("shared schemas", () => {
     })
     expect(context.enabledMemoryCount).toBe(1)
 
-    const artifact = artifactSchema.parse({
-      id: "artifact-1",
+    const document = documentSchema.parse({
+      id: "document-1",
       title: "Brief",
-      type: "document",
+      documentType: "markdown",
+      contentFormat: "markdown",
       mimeType: "text/plain",
       sizeBytes: 10,
       storageKey: "key",
+      visibilityScope: "global",
       createdAt: now,
       updatedAt: now,
     })
-    expect(artifact.type).toBe("document")
-    expect(() => artifactTypeSchema.parse("folder")).toThrow()
+    expect(document.documentType).toBe("markdown")
+    expect(() =>
+      documentSchema.parse({
+        ...document,
+        visibilityScope: "project",
+        projectId: null,
+      })
+    ).toThrow()
+    expect(() =>
+      documentSchema.parse({ ...document, sizeBytes: -1 })
+    ).toThrow()
+    const documentDetail = documentDetailResponseSchema.parse({
+      document,
+      content: "# Brief",
+      versions: [{ id: "version-1", version: 1, createdAt: now }],
+    })
+    expect(documentDetail.versions[0]?.version).toBe(1)
+    expect(() => documentTypeSchema.parse("folder")).toThrow()
 
     const detail = threadDetailSchema.parse({
       thread: {

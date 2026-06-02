@@ -20,7 +20,7 @@ const richDataset = {
   id: "rich-agent-workspace",
   name: "Rich agent workspace",
   description:
-    "Seeds five pre-built agents with projects, threads, memories, artifacts, and varied tool access for manual and e2e testing.",
+    "Seeds five pre-built agents with projects, threads, memories, documents, and varied tool access for manual and e2e testing.",
 }
 
 const seedResult = {
@@ -29,7 +29,7 @@ const seedResult = {
     agents: 5,
     projects: 2,
     threads: 5,
-    artifacts: 6,
+    documents: 6,
     savedMemories: 8,
     projectMemories: 4,
     integrationConnections: 5,
@@ -41,7 +41,7 @@ const deleteAllResult = {
     agents: 0,
     projects: 0,
     threads: 0,
-    artifacts: 0,
+    documents: 0,
     savedMemories: 0,
     projectMemories: 0,
     integrationConnections: 0,
@@ -73,7 +73,7 @@ it("lists debug datasets and seeds the rich workspace scenario", async () => {
   })
   expect(screen.getByText("Seeded Rich agent workspace.")).toBeInTheDocument()
   expect(screen.getByText("5 agents")).toBeInTheDocument()
-  expect(screen.getByText("6 artifacts")).toBeInTheDocument()
+  expect(screen.getByText("6 documents")).toBeInTheDocument()
 })
 
 it("deletes the selected debug dataset", async () => {

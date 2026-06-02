@@ -30,7 +30,7 @@ function formatCounts(counts: DebugSeedCounts): string[] {
     `${counts.agents} agents`,
     `${counts.projects} projects`,
     `${counts.threads} threads`,
-    `${counts.artifacts} artifacts`,
+    `${counts.documents} documents`,
     `${counts.savedMemories} saved memories`,
     `${counts.integrationConnections} integrations`,
   ]

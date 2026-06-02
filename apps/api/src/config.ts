@@ -25,8 +25,8 @@ export type AppConfig = {
   mockComposio: boolean
   webAppOrigin: string
   storageRoot: string
-  artifactMaxUploadBytes: number
-  artifactPreviewMaxChars: number
+  documentMaxUploadBytes: number
+  documentPreviewMaxChars: number
   projectGoalsMaxChars: number
   projectMemoryMaxChars: number
   workspaceListLimit: number
@@ -119,11 +119,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     mockComposio: env.AGENTIS_MOCK_COMPOSIO === "1",
     webAppOrigin: env.AGENTIS_WEB_ORIGIN ?? "http://127.0.0.1:5177",
     storageRoot: env.AGENTIS_STORAGE_ROOT ?? "./data/storage",
-    artifactMaxUploadBytes: Number(
-      env.AGENTIS_ARTIFACT_MAX_UPLOAD_BYTES ?? 10_485_760
+    documentMaxUploadBytes: Number(
+      env.AGENTIS_DOCUMENT_MAX_UPLOAD_BYTES ??
+        env.AGENTIS_ARTIFACT_MAX_UPLOAD_BYTES ??
+        10_485_760
     ),
-    artifactPreviewMaxChars: Number(
-      env.AGENTIS_ARTIFACT_PREVIEW_MAX_CHARS ?? 2_000
+    documentPreviewMaxChars: Number(
+      env.AGENTIS_DOCUMENT_PREVIEW_MAX_CHARS ??
+        env.AGENTIS_ARTIFACT_PREVIEW_MAX_CHARS ??
+        2_000
     ),
     projectGoalsMaxChars: Number(env.AGENTIS_PROJECT_GOALS_MAX_CHARS ?? 4_000),
     projectMemoryMaxChars: Number(

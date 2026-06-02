@@ -12,7 +12,7 @@ export type DebugSeedCounts = {
   agents: number
   projects: number
   threads: number
-  artifacts: number
+  documents: number
   savedMemories: number
   projectMemories: number
   integrationConnections: number

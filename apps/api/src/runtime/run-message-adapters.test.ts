@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest"
 import type { Message } from "@workspace/shared"
-import { toModelMessages } from "./run-message-adapters.js"
+import {
+  normalizeAssistantText,
+  toModelMessages,
+} from "./run-message-adapters.js"
 
 describe("run message adapters", () => {
+  it("normalizes placeholder document links in assistant text", () => {
+    expect(
+      normalizeAssistantText(
+        "Download [the document](https://yourworkspaceurl/library?documentId=document_123) or view https://yourworkspaceurl/library?documentId=document_123"
+      )
+    ).toBe(
+      "Download [the document](/api/documents/document_123/download) or view /api/documents/document_123/download"
+    )
+  })
+
   it("includes tool errors in model messages for retry context", () => {
     const messages: Message[] = [
       {

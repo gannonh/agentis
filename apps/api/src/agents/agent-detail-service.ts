@@ -2,7 +2,7 @@ import {
   agentDetailResponseSchema,
   type AgentDetailResponse,
 } from "@workspace/shared"
-import { toPublicArtifact } from "../lib/public-artifacts.js"
+import { toPublicDocument } from "../lib/public-documents.js"
 import type { Repositories } from "../repositories/index.js"
 
 export function buildAgentDetail(
@@ -12,11 +12,11 @@ export function buildAgentDetail(
   const agent = repos.agents.getById(agentId)
   if (!agent) return null
 
-  const libraryItems = repos.artifacts.list({ agentId }).map(toPublicArtifact)
+  const libraryItems = repos.documents.list({ agentId }).map(toPublicDocument)
   const threads = repos.threads.listByAgentId(agentId, { limit: 10 })
   const threadIds = threads.map((thread) => thread.id)
   const latestRuns = repos.runs.listLatestByThreadIds(threadIds)
-  const artifactCounts = repos.artifacts.countByThreadIds(threadIds)
+  const documentCounts = repos.documents.countByThreadIds(threadIds)
   const recentThreads = threads.map((thread) => ({
     id: thread.id,
     title: thread.title,
@@ -26,7 +26,7 @@ export function buildAgentDetail(
     createdAt: thread.createdAt,
     updatedAt: thread.updatedAt,
     lastRunStatus: latestRuns.get(thread.id)?.status,
-    artifactCount: artifactCounts.get(thread.id) ?? 0,
+    documentCount: documentCounts.get(thread.id) ?? 0,
   }))
 
   const memories = repos.savedMemories.listForAgent(agentId)

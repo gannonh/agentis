@@ -90,20 +90,20 @@ function apiThreadSummary(
     createdAt: now,
     updatedAt: now,
     lastRunStatus: "completed",
-    artifactCount: 1,
+    documentCount: 1,
     ...overrides,
   }
 }
 
-function apiArtifactSummary(
+function apiDocumentSummary(
   overrides: Partial<AgentLibraryItemSummary> = {}
 ): AgentLibraryItemSummary {
   const now = new Date().toISOString()
   return {
-    id: "artifact_notes",
+    id: "document_notes",
     title: "Research notes",
     description: null,
-    type: "document",
+    documentType: "markdown",
     mimeType: "text/markdown",
     sizeBytes: 42,
     previewText: "Summary",
@@ -298,7 +298,7 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Test Created Research Agent")).toBeInTheDocument()
     expect(screen.getByText(/Latest run: completed/)).toBeInTheDocument()
-    expect(screen.getByText(/1 artifact available/)).toBeInTheDocument()
+    expect(screen.getByText(/1 document available/)).toBeInTheDocument()
 
     await user.click(screen.getByRole("tab", { name: "Activity" }))
     expect(
@@ -306,7 +306,7 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Test Created Research Agent")).toBeInTheDocument()
     expect(
-      screen.getByText("1 artifact available from this thread.")
+      screen.getByText("1 document available from this thread.")
     ).toBeInTheDocument()
     expect(
       screen.queryByText("AI Automation Consulting Lead Strategy")
@@ -344,7 +344,7 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText(/No activity yet/)).toBeInTheDocument()
   })
 
-  it("renders API-backed library artifacts inside Knowledge", async () => {
+  it("renders API-backed library documents inside Knowledge", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(
       apiAgentDetail({
@@ -352,7 +352,7 @@ describe("AgentDetailPage", () => {
           recentThreads: [],
           library: {
             totalCount: 1,
-            items: [apiArtifactSummary()],
+            items: [apiDocumentSummary()],
           },
         },
       })
@@ -380,7 +380,7 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("1 item")).toBeInTheDocument()
     expect(screen.getByText("Research notes")).toBeInTheDocument()
-    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
+    expect(screen.getByText("markdown · text/markdown")).toBeInTheDocument()
     expect(
       screen.getByText("From Test Created Research Agent")
     ).toBeInTheDocument()
@@ -394,7 +394,7 @@ describe("AgentDetailPage", () => {
           recentThreads: [],
           library: {
             totalCount: 1,
-            items: [apiArtifactSummary()],
+            items: [apiDocumentSummary()],
           },
         },
       })
@@ -426,7 +426,7 @@ describe("AgentDetailPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Configure library" }))
     expect(screen.getByText("Research notes")).toBeInTheDocument()
-    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
+    expect(screen.getByText("markdown · text/markdown")).toBeInTheDocument()
     expect(document.body).not.toHaveTextContent(
       /AI Automation Consulting Lead Strategy|fixture|mock/i
     )
@@ -595,7 +595,7 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
     expect(screen.getByText("0 items")).toBeInTheDocument()
-    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
+    expect(screen.getByText("No library documents yet")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Configure tools" }))
     expect(screen.getByRole("tab", { name: "Tools" })).toHaveAttribute(
@@ -622,7 +622,7 @@ describe("AgentDetailPage", () => {
       "aria-selected",
       "true"
     )
-    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
+    expect(screen.getByText("No library documents yet")).toBeInTheDocument()
   }, 10_000)
 
   it("shows API save errors on editable model fields", async () => {

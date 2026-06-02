@@ -65,4 +65,14 @@ describe("config", () => {
 
     expect(config.composioToolkitVersions["google-drive"]).toBe("20260602_00")
   })
+
+  it("falls back to legacy artifact document limit env vars", () => {
+    const config = loadConfig({
+      AGENTIS_ARTIFACT_MAX_UPLOAD_BYTES: "2048",
+      AGENTIS_ARTIFACT_PREVIEW_MAX_CHARS: "128",
+    })
+
+    expect(config.documentMaxUploadBytes).toBe(2048)
+    expect(config.documentPreviewMaxChars).toBe(128)
+  })
 })

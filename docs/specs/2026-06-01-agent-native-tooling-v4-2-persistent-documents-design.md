@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for user review.
+Implemented.
 
 ## Goal
 
@@ -13,6 +13,7 @@ This is a Data-category V4 slice. It targets Hyperagent-style persistent documen
 ## Source of truth
 
 - Roadmap: `docs/specs/agent-native-tooling.md`, V4 Data category.
+- Decision record: `docs/adr/0003-persistent-documents-library-primitive.md`.
 - Product reference: Hyperagent Documents described as persistent, section-based, versioned markdown files that can be thread, project, or global scoped.
 - Existing Agentis Library and generated Library item implementation should be renamed and evolved into Documents rather than split into a second primitive.
 
@@ -20,15 +21,15 @@ This is a Data-category V4 slice. It targets Hyperagent-style persistent documen
 
 There is one primitive: Document.
 
-V4.2 must not leave two concepts where one is product-facing and another is backend-facing. The final active codebase must use document naming throughout. The legacy asset term must be removed from active source, tests, docs, schemas, routes, services, repositories, storage helpers, UI copy, fixtures, and runtime tool names.
+V4.2 must not leave two concepts where one is product-facing and another is backend-facing. The final active codebase must use document naming throughout. The legacy artifact term must be removed from active source, tests, docs, schemas, routes, services, repositories, storage helpers, UI copy, fixtures, and runtime tool names.
 
 Acceptance check after Build:
 
 ```bash
-rg -i "<legacy asset term>" apps packages docs
+rg -i "<legacy artifact term>" apps packages docs
 ```
 
-must return zero hits after replacing `<legacy asset term>` with the current non-document term. Build may use that search during the migration, but the final committed active code/docs should not contain the legacy term.
+must return zero hits after replacing `<legacy artifact term>` with `document`. Build may use that search during the migration, but the final committed active code/docs should not contain the legacy term.
 
 ## Current state
 
@@ -170,6 +171,7 @@ Output:
 - `visibilityScope`
 - `currentVersion`
 - `viewPath`
+- `downloadPath`
 - `previewText`
 
 Behavior:
@@ -193,7 +195,7 @@ Inputs:
 
 Output:
 
-- bounded result list with id, title, description, scope, project/thread provenance, updated time, preview, and current version.
+- bounded result list with id, title, description, scope, project/thread provenance, updated time, preview, current version, `viewPath`, and `downloadPath`.
 
 Behavior:
 
@@ -212,7 +214,7 @@ Inputs:
 
 Output:
 
-- metadata
+- metadata, including `viewPath` and `downloadPath`
 - markdown content, bounded by configured max chars
 - truncation metadata
 - section outline
@@ -241,6 +243,8 @@ Output:
 - `previousVersion`
 - `currentVersion`
 - updated section metadata
+- `viewPath`
+- `downloadPath`
 - preview text
 
 Behavior:
@@ -270,6 +274,8 @@ Output:
 - `previousVersion`
 - `currentVersion`
 - appended section metadata
+- `viewPath`
+- `downloadPath`
 - preview text
 
 Behavior:
@@ -291,6 +297,7 @@ Guidance should include:
 - Create a new document only when no suitable accessible document exists or the user asks for a new one.
 - Ask for scope when the requested visibility is unclear and broader than the current thread.
 - Do not guess during section updates. If a section target is ambiguous, ask or return an error.
+- Use returned `viewPath` and `downloadPath` values for document links. Use `downloadPath` for markdown downloads, and do not invent placeholder hostnames.
 
 ## UI requirements
 
@@ -299,6 +306,9 @@ Guidance should include:
 - Rename active Library copy to documents.
 - List documents with title, scope, source/provenance, type/format, and updated time.
 - Search and filter documents.
+- Provide Type, Source, and Scope filters with grouped dropdown menus.
+- Source filters distinguish user uploads from agent-generated documents and can narrow to a specific associated agent.
+- Scope filters support global, project, and thread documents. The thread selector appears only after thread scope is active and uses searchable recent thread options.
 - Show global, project, and thread scope clearly.
 - Keep upload support if still needed, but upload copy should use document terminology.
 
@@ -392,6 +402,7 @@ V4.2 is accepted when all of the following are true:
    - Agent association is stored as provenance, not as an access boundary.
 7. Library and project UI support documents.
    - Library lists documents with title, scope, source/provenance, type or format, and updated time.
+   - Library provides Type, Source, and Scope filters. Thread selection appears only after thread scope is selected.
    - Document detail shows markdown content, metadata, version history, and download/export.
    - Project Documents tab shows project-scoped documents and document-language empty states.
 8. Run timeline evidence is useful and bounded.
@@ -399,6 +410,7 @@ V4.2 is accepted when all of the following are true:
    - Timeline payloads do not store unbounded markdown content.
 9. End-to-end behavior is demonstrated.
    - A user can create a global markdown document in one thread, start a different agent/thread, find and read the document, update a section, and see the updated version in Library.
+   - Inline agent-provided download links resolve to `/api/documents/:documentId/download` and return the markdown file.
 
 ## Verification
 
@@ -429,14 +441,17 @@ Required E2E flow:
 3. Find and read the global document.
 4. Update one section.
 5. Confirm the Library shows the updated document and current version.
+6. Confirm Library card download and any assistant-provided inline markdown download link return the document file.
+
+UAT evidence should use real services with `AGENTIS_MOCK_RUNTIME=0` and `AGENTIS_MOCK_COMPOSIO=0`. If credentials are unavailable, record that as a blocker instead of using mock-backed acceptance evidence.
 
 Final terminology check:
 
 ```bash
-rg -i "<legacy asset term>" apps packages docs
+rg -i "<legacy document term>" apps packages docs
 ```
 
-must return zero hits after replacing `<legacy asset term>` with the current non-document term.
+must return zero hits after replacing `<legacy document term>` with the current non-document term.
 
 ## Risks and mitigations
 

@@ -7,7 +7,7 @@ export function SearchPage() {
     <PageLayout variant="focused">
       <PageHeader
         title="Search"
-        description="Find threads, agents, artifacts, and learnings across your workspace."
+        description="Find threads, agents, documents, and learnings across your workspace."
       />
       <EmptyState
         title="Search is coming soon"

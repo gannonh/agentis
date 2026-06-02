@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import type { ArtifactPublic as Artifact, Project, ThreadListItem } from "@workspace/shared"
+import type { DocumentPublic as Document, Project, ThreadListItem } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
   DropdownMenu,
@@ -26,20 +26,20 @@ import { AddThreadDialog } from "@/components/projects/add-thread-dialog"
 import {
   isProjectDocument,
   isProjectFile,
-} from "@/components/projects/project-artifact-groups"
-import { ProjectArtifactsPanel } from "@/components/projects/project-artifacts-panel"
+} from "@/components/projects/project-document-groups"
+import { ProjectDocumentsPanel } from "@/components/projects/project-documents-panel"
 import { ProjectEditSheet } from "@/components/projects/project-edit-sheet"
 import { ProjectThreadsPanel } from "@/components/projects/project-threads-panel"
 import { PageLayout } from "@/components/shell/page-layout"
 import { listThreads } from "@/lib/api/client"
-import { getProject, listArtifacts } from "@/lib/api/projects-client"
+import { getProject, listDocuments } from "@/lib/api/projects-client"
 
 export function ProjectDetailPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [project, setProject] = useState<Project | null>(null)
   const [threads, setThreads] = useState<ThreadListItem[]>([])
-  const [artifacts, setArtifacts] = useState<Artifact[]>([])
+  const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
@@ -51,16 +51,16 @@ export function ProjectDetailPage() {
     setError(null)
     setProject(null)
     setThreads([])
-    setArtifacts([])
+    setDocuments([])
     try {
-      const [loadedProject, allThreads, projectArtifacts] = await Promise.all([
+      const [loadedProject, allThreads, projectDocuments] = await Promise.all([
         getProject(projectId),
         listThreads(),
-        listArtifacts({ projectId }),
+        listDocuments({ projectId }),
       ])
       setProject(loadedProject)
       setThreads(allThreads.filter((thread) => thread.projectId === projectId))
-      setArtifacts(projectArtifacts)
+      setDocuments(projectDocuments)
     } catch (loadError) {
       setError(
         loadError instanceof Error ? loadError.message : "Failed to load project"
@@ -74,13 +74,13 @@ export function ProjectDetailPage() {
     void load()
   }, [load])
 
-  const documentArtifacts = useMemo(
-    () => artifacts.filter(isProjectDocument),
-    [artifacts]
+  const documentDocuments = useMemo(
+    () => documents.filter(isProjectDocument),
+    [documents]
   )
-  const fileArtifacts = useMemo(
-    () => artifacts.filter(isProjectFile),
-    [artifacts]
+  const fileDocuments = useMemo(
+    () => documents.filter(isProjectFile),
+    [documents]
   )
 
   if (!projectId) {
@@ -240,7 +240,7 @@ export function ProjectDetailPage() {
                   className="mr-1.5 size-3.5"
                   strokeWidth={2}
                 />
-                Document ({documentArtifacts.length})
+                Documents ({documentDocuments.length})
               </TabsTrigger>
               <TabsTrigger value="files" className="rounded-full px-4">
                 <HugeiconsIcon
@@ -248,7 +248,7 @@ export function ProjectDetailPage() {
                   className="mr-1.5 size-3.5"
                   strokeWidth={2}
                 />
-                Files ({fileArtifacts.length})
+                Files ({fileDocuments.length})
               </TabsTrigger>
             </TabsList>
 
@@ -256,15 +256,15 @@ export function ProjectDetailPage() {
               <ProjectThreadsPanel threads={threads} />
             </TabsContent>
             <TabsContent value="documents" className="pt-6">
-              <ProjectArtifactsPanel
-                artifacts={documentArtifacts}
+              <ProjectDocumentsPanel
+                documents={documentDocuments}
                 title="Documents"
                 emptyMessage="No documents in this project yet."
               />
             </TabsContent>
             <TabsContent value="files" className="pt-6">
-              <ProjectArtifactsPanel
-                artifacts={fileArtifacts}
+              <ProjectDocumentsPanel
+                documents={fileDocuments}
                 title="Files"
                 emptyMessage="No files in this project yet."
               />
