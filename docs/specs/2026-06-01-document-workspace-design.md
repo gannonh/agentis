@@ -137,6 +137,7 @@ Library:
 Thread provenance:
 
 - Document-related run timeline entries should expose an `Open document` action when their payload includes a `documentId`.
+- Do not parse generic timeline payloads ad hoc in the route. Add a typed document action projection for timeline entries and let the thread surface render that projection.
 - Assistant-provided view links should use the new workspace route once the route exists.
 - Existing download links should continue to use `/api/documents/:documentId/download`.
 
@@ -273,6 +274,8 @@ Route wiring:
 
 These candidates came from the Documents architecture review and should guide the Build phase for issue #399. They are not separate prerequisites for opening the current V4.2 PR. Apply them where they reduce implementation spread while building the workspace.
 
+Treat the first two candidates as part of the workspace build, not follow-up cleanup. The content/version module belongs in Phase 1 before route work grows around it. The navigation/action module should be implemented alongside entry points so Library, provenance thread, project context, runtime tool output, and workspace links share one path policy.
+
 ### 1. Deepen the Document content/version module
 
 Files:
@@ -285,7 +288,7 @@ Files:
 
 Problem: current detail behavior uses download behavior, decodes text in the route, reads versions directly from the repository, and does not yet expose selected-version or truncation data for the workspace.
 
-Solution: put current detail, historical detail, current download, and full markdown replacement behind the Document domain module. Keep storage, truncation, selected version, current version, text/binary handling, and stale edit checks behind that seam.
+Solution: put current detail, historical detail, current download, and full markdown replacement behind the Document domain module. Keep storage, truncation, selected version, current version, text/binary handling, and stale edit checks behind that seam. This is a Phase 1 requirement because the workspace route should consume the deepened Document module rather than assembling version and truncation rules itself.
 
 Benefits:
 
@@ -307,7 +310,7 @@ Files:
 
 Problem: real `viewPath` and `downloadPath` knowledge spans runtime tool output, web download helpers, Library cards, project panels, and planned thread timeline links.
 
-Solution: keep one Document path/action policy per environment so Library, project context, thread provenance, runtime tool outputs, and the workspace use the same open/download behavior.
+Solution: keep one Document path/action policy per environment so Library, project context, thread provenance, runtime tool outputs, and the workspace use the same open/download behavior. Connect this to the shared `documentWorkspacePath(documentId)` helper and keep `downloadPath` generation with the same policy.
 
 Benefits:
 
@@ -408,6 +411,7 @@ Manual UAT:
 ### Phase 1: API and shared contracts
 
 - Extend shared schemas for detail-by-version and edit request/response.
+- Deepen the Document content/version module before adding workspace route callers.
 - Add service method for full markdown content replacement with `baseVersion` conflict protection.
 - Extend document detail route to accept `version`.
 - Add content update route.
@@ -432,9 +436,9 @@ Manual UAT:
 
 - Link Library cards and detail preview to the workspace.
 - Link project Documents panel entries to the workspace.
-- Link document-related run timeline entries to the workspace when `documentId` exists.
+- Link document-related run timeline entries to the workspace when `documentId` exists through a typed document action projection.
 - Update document tool `viewPath` to `/documents/:documentId` after the route ships.
-- Preserve download paths.
+- Preserve download paths through the shared Document path/action policy.
 
 ### Phase 5: Verification and UAT
 
