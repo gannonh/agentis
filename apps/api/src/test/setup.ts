@@ -28,8 +28,7 @@ export function createTestContext() {
     port: 3001,
     databaseUrl,
     nodeEnv: "test",
-    openAiApiKey: "test-key",
-    defaultModel: "gpt-4o-mini",
+    defaultModel: "openai/gpt-4o-mini",
     mockRuntime: false,
     composioApiKey: undefined,
     composioRedirectBaseUrl: "http://127.0.0.1:3001",
@@ -60,7 +59,7 @@ export function createTestContext() {
     webSearchBackend: "perplexity",
     webSearchMaxResults: 5,
     webSearchMaxSnippetChars: 500,
-    aiGatewayApiKey: undefined,
+    aiGatewayApiKey: "test-gateway-key",
   }
   const repos = createRepositories(db, config)
 

@@ -808,7 +808,7 @@ export const abortRunResponseSchema = z.object({
   run: runSchema,
 })
 
-export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+export const DEFAULT_OPENAI_MODEL = "openai/gpt-4o-mini"
 
 export type RunStatus = z.infer<typeof runStatusSchema>
 export type ThreadStatus = z.infer<typeof threadStatusSchema>

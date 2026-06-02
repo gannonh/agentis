@@ -1,4 +1,3 @@
-import { createOpenAI } from "@ai-sdk/openai"
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai"
 import { MockLanguageModelV2 } from "ai/test"
 import { GENERIC_AGENTIS_AGENT_ID, type MessagePart, type Run } from "@workspace/shared"
@@ -56,6 +55,7 @@ import {
   toModelMessages,
   toUiMessages,
 } from "./run-message-adapters.js"
+import { createGatewayLanguageModel } from "./gateway-model.js"
 import { createMockDocumentRunSuffix } from "./mock-document-run.js"
 import {
   composioToolNameToToolkit,
@@ -261,8 +261,8 @@ export class RunExecutor {
     if (!run) {
       throw new Error("Run not found")
     }
-    if (!this.config.openAiApiKey && !this.config.mockRuntime) {
-      throw new Error("OPENAI_API_KEY is not configured")
+    if (!this.config.aiGatewayApiKey && !this.config.mockRuntime) {
+      throw new Error("AI_GATEWAY_API_KEY is not configured")
     }
     if (run.status !== "queued") {
       throw new Error(`Run is not streamable: ${run.status}`)
@@ -674,7 +674,7 @@ export class RunExecutor {
             }),
           }),
         })
-      : createOpenAI({ apiKey: this.config.openAiApiKey! })(run.model)
+      : createGatewayLanguageModel(this.config, run.model)
 
     const result = streamText({
       model,

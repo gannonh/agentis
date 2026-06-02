@@ -418,7 +418,7 @@ describe("run executor composio bridge", () => {
     )
   })
 
-  it("fails fast when permitted web search has no configured provider credentials", async () => {
+  it("fails fast when live Gateway credentials are missing", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
     const app = createApp(
@@ -427,7 +427,6 @@ describe("run executor composio bridge", () => {
         ...ctx.config,
         mockRuntime: false,
         nodeEnv: "development",
-        webSearchProvider: "vercel-gateway",
         aiGatewayApiKey: undefined,
       },
       services
@@ -442,26 +441,14 @@ describe("run executor composio bridge", () => {
     const stream = await app.request(`/api/runs/${run.id}/stream`, {
       method: "POST",
     })
+    const body = (await stream.json()) as { error: string }
 
     expect(stream.status).toBe(400)
+    expect(body.error).toBe("AI_GATEWAY_API_KEY is not configured")
     expect(ctx.repos.runs.getById(run.id)).toMatchObject({
-      status: "failed",
-      errorSummary: "Web search provider is not configured",
+      status: "queued",
+      errorSummary: undefined,
     })
-    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "error",
-          status: "failed",
-          title: "Web search unavailable",
-          payload: expect.objectContaining({
-            provider: "native",
-            toolName: "searchWeb",
-            code: "web_search_unavailable",
-          }),
-        }),
-      ])
-    )
   })
 
   it("removes assistant claims while workspace mutations are pending approval", () => {

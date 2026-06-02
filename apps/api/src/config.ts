@@ -15,7 +15,6 @@ export type AppConfig = {
   port: number
   databaseUrl: string
   nodeEnv: string
-  openAiApiKey: string | undefined
   defaultModel: string
   mockRuntime: boolean
   composioApiKey: string | undefined
@@ -109,7 +108,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port,
     databaseUrl: env.DATABASE_URL ?? "./data/agentis.db",
     nodeEnv,
-    openAiApiKey: env.OPENAI_API_KEY,
     defaultModel: DEFAULT_OPENAI_MODEL,
     mockRuntime: env.AGENTIS_MOCK_RUNTIME === "1",
     composioApiKey: env.COMPOSIO_API_KEY,
@@ -198,7 +196,7 @@ function clampNumber(value: number, min: number, max: number): number {
 }
 
 export function isRuntimeAvailable(config: AppConfig) {
-  return Boolean(config.openAiApiKey) || config.mockRuntime
+  return Boolean(config.aiGatewayApiKey) || config.mockRuntime
 }
 
 export function isDebugSeedsEnabled(config: AppConfig) {
