@@ -60,11 +60,13 @@ function mockTextStream(summaryText: string) {
     doStream: async () => ({
       stream: new ReadableStream({
         start(controller) {
+          controller.enqueue({ type: "text-start", id: "t1" })
           controller.enqueue({
             type: "text-delta",
             id: "t1",
             delta: summaryText,
           })
+          controller.enqueue({ type: "text-end", id: "t1" })
           controller.enqueue({
             type: "finish",
             finishReason: "stop",

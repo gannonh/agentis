@@ -650,6 +650,7 @@ export class RunExecutor {
                   ? (mockDocumentSuffix.match(/.{1,24}/g) ?? [])
                   : []
                 const chunks = [...baseChunks, ...suffixChunks]
+                controller.enqueue({ type: "text-start", id: "t1" })
                 let index = 0
                 const timer = setInterval(() => {
                   if (index < chunks.length) {
@@ -662,6 +663,7 @@ export class RunExecutor {
                     return
                   }
                   clearInterval(timer)
+                  controller.enqueue({ type: "text-end", id: "t1" })
                   controller.enqueue({
                     type: "finish",
                     finishReason: "stop",
