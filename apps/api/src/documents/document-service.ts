@@ -32,7 +32,12 @@ type DocumentProvenance = {
 }
 
 type DocumentResult<T> = { ok: true } & T
-type DocumentError = { ok: false; code: string; message: string; status?: number }
+type DocumentError = {
+  ok: false
+  code: string
+  message: string
+  status?: number
+}
 
 function inferMimeType(filename: string, fallback?: string) {
   if (fallback?.trim()) return fallback
@@ -74,6 +79,38 @@ function currentVersion(document: Document) {
   return document.currentVersion ?? 0
 }
 
+const SCOPE_SORT_ORDER: Record<DocumentVisibilityScope, number> = {
+  global: 0,
+  project: 1,
+  thread: 2,
+}
+
+function documentNotFoundError(): DocumentError {
+  return {
+    ok: false,
+    code: "document_not_found",
+    message: "Document not found",
+    status: 404,
+  }
+}
+
+function generatedVisibilityScope(input: {
+  visibilityScope?: DocumentVisibilityScope
+  projectId?: string
+}): DocumentVisibilityScope {
+  if (input.visibilityScope) return input.visibilityScope
+  return input.projectId ? "project" : "thread"
+}
+
+function uploadVisibilityScope(input: {
+  projectId?: string
+  threadId?: string
+}): DocumentVisibilityScope {
+  if (input.projectId) return "project"
+  if (input.threadId) return "thread"
+  return "global"
+}
+
 function isNodeErrorCode(error: unknown, code: string) {
   return (
     typeof error === "object" &&
@@ -103,7 +140,9 @@ export class DocumentService {
     runId?: string
     tags?: string[]
     changeSummary?: string
-  }): DocumentResult<{ document: Document; currentVersion: number }> | DocumentError {
+  }):
+    | DocumentResult<{ document: Document; currentVersion: number }>
+    | DocumentError {
     if (!input.content.trim()) {
       return {
         ok: false,
@@ -159,7 +198,10 @@ export class DocumentService {
         mimeType: "text/markdown",
         sizeBytes: data.byteLength,
         storageKey,
-        previewText: buildPreviewText(input.content, this.config.documentPreviewMaxChars),
+        previewText: buildPreviewText(
+          input.content,
+          this.config.documentPreviewMaxChars
+        ),
         metadata: input.tags?.length ? { tags: input.tags } : undefined,
         visibilityScope: input.visibilityScope,
         projectId: input.projectId,
@@ -202,7 +244,7 @@ export class DocumentService {
       title: input.title,
       description: input.description,
       content: input.content,
-      visibilityScope: input.visibilityScope ?? (input.projectId ? "project" : "thread"),
+      visibilityScope: generatedVisibilityScope(input),
       projectId: input.projectId,
       threadId: input.threadId,
       runId: input.runId,
@@ -239,11 +281,10 @@ export class DocumentService {
     const textContent = mimeType.startsWith("text/")
       ? input.data.toString("utf8")
       : ""
-    const visibilityScope: DocumentVisibilityScope = input.projectId
-      ? "project"
-      : provenanceResult.provenance.threadId
-        ? "thread"
-        : "global"
+    const visibilityScope = uploadVisibilityScope({
+      projectId: input.projectId,
+      threadId: provenanceResult.provenance.threadId,
+    })
     const scopeError = this.validateScope(visibilityScope, {
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
@@ -251,9 +292,10 @@ export class DocumentService {
     if (scopeError) return scopeError
 
     const documentId = createId("document")
-    const storageKey = input.documentType === "markdown"
-      ? this.storage.createVersionStorageKey(documentId, 1)
-      : this.storage.createStorageKey(input.filename)
+    const storageKey =
+      input.documentType === "markdown"
+        ? this.storage.createVersionStorageKey(documentId, 1)
+        : this.storage.createStorageKey(input.filename)
     try {
       this.storage.write(storageKey, input.data)
     } catch (error) {
@@ -287,15 +329,16 @@ export class DocumentService {
         projectId: input.projectId,
         ...provenanceResult.provenance,
       }
-      const document = input.documentType === "markdown"
-        ? this.repos.documents.createWithInitialVersion({
-            ...baseDocument,
-            contentHash: contentHash(input.data),
-            contentStorageKey: storageKey,
-            changeSummary: "Uploaded document",
-            createdByThreadId: provenanceResult.provenance.threadId,
-          }).document
-        : this.repos.documents.create(baseDocument)
+      const document =
+        input.documentType === "markdown"
+          ? this.repos.documents.createWithInitialVersion({
+              ...baseDocument,
+              contentHash: contentHash(input.data),
+              contentStorageKey: storageKey,
+              changeSummary: "Uploaded document",
+              createdByThreadId: provenanceResult.provenance.threadId,
+            }).document
+          : this.repos.documents.create(baseDocument)
       return { ok: true, document }
     } catch (error) {
       this.deleteStoredDocument(storageKey)
@@ -330,10 +373,11 @@ export class DocumentService {
         projectId: input.projectId,
       })
       .filter((document) => this.canAccess(document, input.runContext))
-      .sort((left, right) => {
-        const scopeOrder = { global: 0, project: 1, thread: 2 }
-        return scopeOrder[left.visibilityScope] - scopeOrder[right.visibilityScope]
-      })
+      .sort(
+        (left, right) =>
+          SCOPE_SORT_ORDER[left.visibilityScope] -
+          SCOPE_SORT_ORDER[right.visibilityScope]
+      )
       .slice(0, limit)
   }
 
@@ -353,9 +397,7 @@ export class DocumentService {
       }>
     | DocumentError {
     const document = this.repos.documents.getById(input.documentId)
-    if (!document) {
-      return { ok: false, code: "document_not_found", message: "Document not found", status: 404 }
-    }
+    if (!document) return documentNotFoundError()
     if (!this.canAccess(document, input.runContext)) {
       return {
         ok: false,
@@ -402,7 +444,10 @@ export class DocumentService {
       content: bounded,
       truncated,
       maxChars,
-      outline: document.documentType === "markdown" ? parseMarkdownSections(content) : [],
+      outline:
+        document.documentType === "markdown"
+          ? parseMarkdownSections(content)
+          : [],
       currentVersion: currentVersion(document),
     }
   }
@@ -413,13 +458,24 @@ export class DocumentService {
     content: string
     changeSummary?: string
     runContext: DocumentRunContext
-  }): DocumentResult<{ document: Document; previousVersion: number; currentVersion: number; section: MarkdownSection }> | DocumentError {
+  }):
+    | DocumentResult<{
+        document: Document
+        previousVersion: number
+        currentVersion: number
+        section: MarkdownSection
+      }>
+    | DocumentError {
     return this.changeMarkdownDocument(input, (content) => {
       const section = this.findSection(content, input.sectionPath)
       if (!section.ok) return section
       return {
         ok: true,
-        content: replaceMarkdownSectionContent(content, section.section, input.content),
+        content: replaceMarkdownSectionContent(
+          content,
+          section.section,
+          input.content
+        ),
         section: section.section,
       }
     })
@@ -432,7 +488,14 @@ export class DocumentService {
     content: string
     changeSummary?: string
     runContext: DocumentRunContext
-  }): DocumentResult<{ document: Document; previousVersion: number; currentVersion: number; section: MarkdownSection }> | DocumentError {
+  }):
+    | DocumentResult<{
+        document: Document
+        previousVersion: number
+        currentVersion: number
+        section: MarkdownSection
+      }>
+    | DocumentError {
     return this.changeMarkdownDocument(input, (content) => {
       let parent: MarkdownSection | undefined
       if (input.parentSectionPath) {
@@ -465,15 +528,17 @@ export class DocumentService {
     })
   }
 
-  getDownload(documentId: string):
-    | DocumentResult<{ document: Document; data: Buffer }>
-    | DocumentError {
+  getDownload(
+    documentId: string
+  ): DocumentResult<{ document: Document; data: Buffer }> | DocumentError {
     const document = this.repos.documents.getById(documentId)
-    if (!document) {
-      return { ok: false, code: "document_not_found", message: "Document not found", status: 404 }
-    }
+    if (!document) return documentNotFoundError()
     try {
-      return { ok: true, document, data: this.storage.read(document.storageKey) }
+      return {
+        ok: true,
+        document,
+        data: this.storage.read(document.storageKey),
+      }
     } catch (error) {
       return this.storageReadError(error, {
         documentId: document.id,
@@ -494,7 +559,14 @@ export class DocumentService {
     ) =>
       | DocumentResult<{ content: string; section: MarkdownSection }>
       | DocumentError
-  ): DocumentResult<{ document: Document; previousVersion: number; currentVersion: number; section: MarkdownSection }> | DocumentError {
+  ):
+    | DocumentResult<{
+        document: Document
+        previousVersion: number
+        currentVersion: number
+        section: MarkdownSection
+      }>
+    | DocumentError {
     const read = this.readDocument({
       documentId: input.documentId,
       maxChars: this.config.documentMaxUploadBytes,
@@ -523,7 +595,10 @@ export class DocumentService {
 
     const previousVersion = read.currentVersion
     const nextVersion = previousVersion + 1
-    const storageKey = this.storage.createVersionStorageKey(read.document.id, nextVersion)
+    const storageKey = this.storage.createVersionStorageKey(
+      read.document.id,
+      nextVersion
+    )
     try {
       this.storage.write(storageKey, data)
       const document = this.repos.documents.updateWithVersion({
@@ -535,11 +610,12 @@ export class DocumentService {
         createdByRunId: input.runContext.runId,
         createdByThreadId: input.runContext.threadId,
         sizeBytes: data.byteLength,
-        previewText: buildPreviewText(changed.content, this.config.documentPreviewMaxChars),
+        previewText: buildPreviewText(
+          changed.content,
+          this.config.documentPreviewMaxChars
+        ),
       })
-      if (!document) {
-        return { ok: false, code: "document_not_found", message: "Document not found", status: 404 }
-      }
+      if (!document) return documentNotFoundError()
       return {
         ok: true,
         document,
@@ -616,7 +692,10 @@ export class DocumentService {
     try {
       this.storage.delete(storageKey)
     } catch (error) {
-      console.error("Failed to clean up document storage", { error, storageKey })
+      console.error("Failed to clean up document storage", {
+        error,
+        storageKey,
+      })
     }
   }
 
@@ -646,7 +725,9 @@ export class DocumentService {
   private canAccess(document: Document, context: DocumentRunContext) {
     if (document.visibilityScope === "global") return true
     if (document.visibilityScope === "project") {
-      return Boolean(document.projectId && document.projectId === context.projectId)
+      return Boolean(
+        document.projectId && document.projectId === context.projectId
+      )
     }
     return Boolean(document.threadId && document.threadId === context.threadId)
   }
@@ -696,7 +777,8 @@ export class DocumentService {
         projectNameSnapshot: project?.name,
         threadTitleSnapshot: thread?.title,
         agentId: agentId ?? undefined,
-        agentNameSnapshot: thread?.agentNameSnapshot ?? agent?.name ?? undefined,
+        agentNameSnapshot:
+          thread?.agentNameSnapshot ?? agent?.name ?? undefined,
       },
     }
   }

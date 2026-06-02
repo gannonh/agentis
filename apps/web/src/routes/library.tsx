@@ -73,6 +73,8 @@ import {
 } from "@/lib/api/projects-client"
 
 const DOCUMENT_TYPES = documentTypeSchema.options
+const AGENT_SOURCE_PREFIX = "agent:"
+const PROJECT_SCOPE_PREFIX = "project:"
 
 type DocumentSourceFilter = "" | "user" | "agent" | `agent:${string}`
 type DocumentScopeFilter =
@@ -87,8 +89,8 @@ function sourceFilters(value: DocumentSourceFilter): {
 } {
   if (value === "user") return { source: "user" }
   if (value === "agent") return { source: "agent" }
-  if (value.startsWith("agent:")) {
-    return { source: "agent", agentId: value.slice("agent:".length) }
+  if (value.startsWith(AGENT_SOURCE_PREFIX)) {
+    return { source: "agent", agentId: value.slice(AGENT_SOURCE_PREFIX.length) }
   }
   return {}
 }
@@ -103,10 +105,10 @@ function scopeFilters(
 } {
   if (value === "global") return { visibilityScope: "global" }
   if (value === "project") return { visibilityScope: "project" }
-  if (value.startsWith("project:")) {
+  if (value.startsWith(PROJECT_SCOPE_PREFIX)) {
     return {
       visibilityScope: "project",
-      projectId: value.slice("project:".length),
+      projectId: value.slice(PROJECT_SCOPE_PREFIX.length),
     }
   }
   if (value === "thread") {
@@ -119,14 +121,21 @@ function scopeFilters(
 }
 
 function MenuIcon({ icon }: { icon: IconSvgElement }) {
-  return <HugeiconsIcon icon={icon} className="size-3.5" strokeWidth={2} aria-hidden />
+  return (
+    <HugeiconsIcon
+      icon={icon}
+      className="size-3.5"
+      strokeWidth={2}
+      aria-hidden
+    />
+  )
 }
 
 function sourceLabel(value: DocumentSourceFilter, agents: AgentListItem[]) {
   if (value === "user") return "User uploads"
   if (value === "agent") return "Agent generated"
-  if (value.startsWith("agent:")) {
-    const agentId = value.slice("agent:".length)
+  if (value.startsWith(AGENT_SOURCE_PREFIX)) {
+    const agentId = value.slice(AGENT_SOURCE_PREFIX.length)
     return agents.find((agent) => agent.id === agentId)?.name ?? "Agent"
   }
   return "Any source"
@@ -150,11 +159,17 @@ function scopeLabel(value: DocumentScopeFilter, projects: Project[]) {
   if (value === "global") return "Global"
   if (value === "project") return "All projects"
   if (value === "thread") return "Threads"
-  if (value.startsWith("project:")) {
-    const projectId = value.slice("project:".length)
-    return projects.find((project) => project.id === projectId)?.name ?? "Project"
+  if (value.startsWith(PROJECT_SCOPE_PREFIX)) {
+    const projectId = value.slice(PROJECT_SCOPE_PREFIX.length)
+    return (
+      projects.find((project) => project.id === projectId)?.name ?? "Project"
+    )
   }
   return "Any scope"
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
 }
 
 export function LibraryPage() {
@@ -168,7 +183,7 @@ export function LibraryPage() {
   const [typeFilter, setTypeFilter] = useState<DocumentType | "">("")
   const [sourceFilter, setSourceFilter] = useState<DocumentSourceFilter>("")
   const [scopeFilter, setScopeFilter] = useState<DocumentScopeFilter>(
-    initialProjectId ? `project:${initialProjectId}` : ""
+    initialProjectId ? `${PROJECT_SCOPE_PREFIX}${initialProjectId}` : ""
   )
   const [threadSearch, setThreadSearch] = useState("")
   const [threadFilter, setThreadFilter] = useState("")
@@ -190,7 +205,7 @@ export function LibraryPage() {
   useEffect(() => {
     const projectId = searchParams.get("projectId")
     if (projectId) {
-      setScopeFilter(`project:${projectId}`)
+      setScopeFilter(`${PROJECT_SCOPE_PREFIX}${projectId}`)
     }
   }, [searchParams])
 
@@ -199,17 +214,18 @@ export function LibraryPage() {
     setLoading(true)
     setError(null)
     try {
-      const [documentList, projectList, agentList, threadList] = await Promise.all([
-        listDocuments({
-          query: query.trim() || undefined,
-          documentType: typeFilter || undefined,
-          ...sourceFilters(sourceFilter),
-          ...scopeFilters(scopeFilter, threadFilter),
-        }),
-        listProjects(true),
-        listAgents(),
-        listThreads(),
-      ])
+      const [documentList, projectList, agentList, threadList] =
+        await Promise.all([
+          listDocuments({
+            query: query.trim() || undefined,
+            documentType: typeFilter || undefined,
+            ...sourceFilters(sourceFilter),
+            ...scopeFilters(scopeFilter, threadFilter),
+          }),
+          listProjects(true),
+          listAgents(),
+          listThreads(),
+        ])
       if (generation !== loadGeneration.current) return
       setDocuments(documentList)
       setProjects(projectList)
@@ -217,9 +233,7 @@ export function LibraryPage() {
       setThreads(threadList)
     } catch (loadError) {
       if (generation !== loadGeneration.current) return
-      setError(
-        loadError instanceof Error ? loadError.message : "Failed to load library"
-      )
+      setError(errorMessage(loadError, "Failed to load library"))
     } finally {
       if (generation === loadGeneration.current) {
         setLoading(false)
@@ -268,11 +282,7 @@ export function LibraryPage() {
       setUploadProjectId("")
       await load()
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Failed to upload document"
-      )
+      setError(errorMessage(uploadError, "Failed to upload document"))
     } finally {
       setUploading(false)
     }
@@ -292,11 +302,7 @@ export function LibraryPage() {
       })
       .catch((detailError) => {
         if (!cancelled) {
-          setError(
-            detailError instanceof Error
-              ? detailError.message
-              : "Failed to load document detail"
-          )
+          setError(errorMessage(detailError, "Failed to load document detail"))
         }
       })
     return () => {
@@ -313,10 +319,7 @@ export function LibraryPage() {
         return next
       })
     } catch (downloadError) {
-      const message =
-        downloadError instanceof Error
-          ? downloadError.message
-          : "Download failed"
+      const message = errorMessage(downloadError, "Download failed")
       setDownloadErrors((current) => ({
         ...current,
         [libraryDocument.id]: message,
@@ -345,7 +348,7 @@ export function LibraryPage() {
                   onChange={(e) => setUploadTitle(e.target.value)}
                 />
                 <select
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                   value={uploadType}
                   onChange={(e) =>
                     setUploadType(e.target.value as DocumentType)
@@ -358,7 +361,7 @@ export function LibraryPage() {
                   ))}
                 </select>
                 <select
-                  className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                   value={uploadProjectId}
                   onChange={(e) => setUploadProjectId(e.target.value)}
                 >
@@ -390,7 +393,11 @@ export function LibraryPage() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="hidden text-muted-foreground sm:flex" aria-hidden>
-          <HugeiconsIcon icon={FilterHorizontalIcon} className="size-4" strokeWidth={2} />
+          <HugeiconsIcon
+            icon={FilterHorizontalIcon}
+            className="size-4"
+            strokeWidth={2}
+          />
         </div>
         <div className="relative w-full sm:max-w-md">
           <HugeiconsIcon
@@ -452,7 +459,9 @@ export function LibraryPage() {
               />
             }
           >
-            <span className="truncate">{sourceLabel(sourceFilter, agents)}</span>
+            <span className="truncate">
+              {sourceLabel(sourceFilter, agents)}
+            </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">
             <DropdownMenuRadioGroup
@@ -486,7 +495,7 @@ export function LibraryPage() {
                     {agents.map((agent) => (
                       <DropdownMenuRadioItem
                         key={agent.id}
-                        value={`agent:${agent.id}`}
+                        value={`${AGENT_SOURCE_PREFIX}${agent.id}`}
                       >
                         <MenuIcon icon={UserIcon} />
                         {agent.name}
@@ -508,7 +517,9 @@ export function LibraryPage() {
               />
             }
           >
-            <span className="truncate">{scopeLabel(scopeFilter, projects)}</span>
+            <span className="truncate">
+              {scopeLabel(scopeFilter, projects)}
+            </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">
             <DropdownMenuRadioGroup
@@ -544,7 +555,7 @@ export function LibraryPage() {
                     {projects.map((project) => (
                       <DropdownMenuRadioItem
                         key={project.id}
-                        value={`project:${project.id}`}
+                        value={`${PROJECT_SCOPE_PREFIX}${project.id}`}
                       >
                         <MenuIcon icon={Folder01Icon} />
                         {project.name}
@@ -576,7 +587,7 @@ export function LibraryPage() {
               aria-label="Search threads"
             />
             <select
-              className="border-input bg-background h-9 min-w-48 rounded-md border px-3 text-sm"
+              className="h-9 min-w-48 rounded-md border border-input bg-background px-3 text-sm"
               value={threadFilter}
               onChange={(e) => setThreadFilter(e.target.value)}
               aria-label="Filter by thread"
@@ -608,9 +619,9 @@ export function LibraryPage() {
         ) : null}
       </div>
 
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading documents…</p>
+        <p className="text-sm text-muted-foreground">Loading documents…</p>
       ) : null}
 
       {!loading && documents.length === 0 && !hasFilters ? (
@@ -632,19 +643,25 @@ export function LibraryPage() {
           <CardHeader>
             <CardTitle>{detail.document.title}</CardTitle>
             <CardDescription>
-              {detail.document.documentType} · {detail.document.visibilityScope} · version {detail.document.currentVersion ?? "—"}
+              {detail.document.documentType} · {detail.document.visibilityScope}{" "}
+              · version {detail.document.currentVersion ?? "—"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {detail.content ? (
-              <pre className="bg-muted max-h-96 overflow-auto rounded-md p-3 text-xs whitespace-pre-wrap">
+              <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
                 {detail.content}
               </pre>
             ) : (
-              <p className="text-muted-foreground text-sm">No text preview available.</p>
+              <p className="text-sm text-muted-foreground">
+                No text preview available.
+              </p>
             )}
-            <div className="text-muted-foreground text-xs">
-              Versions: {detail.versions.map((version) => `v${version.version}`).join(", ") || "none"}
+            <div className="text-xs text-muted-foreground">
+              Versions:{" "}
+              {detail.versions
+                .map((version) => `v${version.version}`)
+                .join(", ") || "none"}
             </div>
           </CardContent>
         </Card>
@@ -658,7 +675,10 @@ export function LibraryPage() {
                 <CardTitle className="text-sm leading-snug">
                   {document.title}
                 </CardTitle>
-                <Badge variant="outline" className="shrink-0 text-xs capitalize">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 text-xs capitalize"
+                >
                   {document.documentType} · {document.visibilityScope}
                 </Badge>
               </div>
@@ -674,17 +694,17 @@ export function LibraryPage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-3 pt-0">
               {document.previewText ? (
-                <p className="text-muted-foreground line-clamp-3 text-xs">
+                <p className="line-clamp-3 text-xs text-muted-foreground">
                   {document.previewText}
                 </p>
               ) : (
-                <p className="text-muted-foreground text-xs">
+                <p className="text-xs text-muted-foreground">
                   {document.mimeType} · {(document.sizeBytes / 1024).toFixed(1)}{" "}
                   KB
                 </p>
               )}
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">
+                <span className="text-xs text-muted-foreground">
                   {formatRelativeTime(document.updatedAt)}
                 </span>
                 <Button
@@ -696,7 +716,7 @@ export function LibraryPage() {
                 </Button>
               </div>
               {downloadErrors[document.id] ? (
-                <p className="text-destructive text-xs">
+                <p className="text-xs text-destructive">
                   {downloadErrors[document.id]}
                 </p>
               ) : null}
