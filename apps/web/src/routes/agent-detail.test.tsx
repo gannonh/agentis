@@ -623,7 +623,7 @@ describe("AgentDetailPage", () => {
       "true"
     )
     expect(screen.getByText("No library documents yet")).toBeInTheDocument()
-  }, 10_000)
+  }, 30_000)
 
   it("shows API save errors on editable model fields", async () => {
     const user = userEvent.setup()

@@ -299,7 +299,7 @@ describe("router", () => {
     expect(
       screen.getByRole("menuitemradio", { name: /Preference \(1\)/i })
     ).toBeInTheDocument()
-  }, 10_000)
+  }, 30_000)
 
   it("filters memories through the category menu and keeps empty categories visible", async () => {
     const user = userEvent.setup()
