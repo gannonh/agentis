@@ -56,6 +56,13 @@ export function replaceMarkdownSectionContent(
   return `${prefix}${normalized}${suffix ? `\n\n${suffix}` : ""}`
 }
 
+function subtreeEnd(markdown: string, parent: MarkdownSection) {
+  const nextSiblingOrAncestor = parseMarkdownSections(markdown).find(
+    (section) => section.start > parent.start && section.level <= parent.level
+  )
+  return nextSiblingOrAncestor?.start ?? markdown.length
+}
+
 export function appendMarkdownSection(input: {
   markdown: string
   parent?: MarkdownSection
@@ -72,7 +79,8 @@ export function appendMarkdownSection(input: {
   const block = `${heading}\n\n${content}`
   if (!input.parent) return `${input.markdown.trimEnd()}\n\n${block}\n`
 
-  const prefix = input.markdown.slice(0, input.parent.end).trimEnd()
-  const suffix = input.markdown.slice(input.parent.end).trimStart()
+  const insertAt = subtreeEnd(input.markdown, input.parent)
+  const prefix = input.markdown.slice(0, insertAt).trimEnd()
+  const suffix = input.markdown.slice(insertAt).trimStart()
   return `${prefix}\n\n${block}${suffix ? `\n\n${suffix}` : ""}\n`
 }

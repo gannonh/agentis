@@ -629,15 +629,17 @@ export const documentVisibilityScopeSchema = z.enum([
   "global",
 ])
 
-export const documentSchema = z.object({
-  id: z.string(),
-  title: z.string(),
+export const documentContentFormatSchema = z.enum(["markdown", "text", "binary"])
+
+const documentBaseSchema = z.object({
+  id: nonEmptyString,
+  title: nonEmptyString,
   description: z.string().nullable().optional(),
   documentType: documentTypeSchema,
-  contentFormat: z.string(),
-  mimeType: z.string(),
-  sizeBytes: z.number(),
-  storageKey: z.string(),
+  contentFormat: documentContentFormatSchema,
+  mimeType: nonEmptyString,
+  sizeBytes: nonNegativeInteger,
+  storageKey: nonEmptyString,
   previewText: z.string().nullable().optional(),
   metadata: z.record(z.unknown()).nullable().optional(),
   visibilityScope: documentVisibilityScopeSchema,
@@ -649,25 +651,62 @@ export const documentSchema = z.object({
   agentId: z.string().nullable().optional(),
   agentNameSnapshot: z.string().nullable().optional(),
   currentVersionId: z.string().nullable().optional(),
-  currentVersion: z.number().nullable().optional(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+  currentVersion: z.number().int().positive().nullable().optional(),
+  createdAt: nonEmptyString,
+  updatedAt: nonEmptyString,
 })
 
+function validateDocumentScope(
+  document: { visibilityScope: z.infer<typeof documentVisibilityScopeSchema>; threadId?: string | null; projectId?: string | null },
+  ctx: z.RefinementCtx
+) {
+  if (document.visibilityScope === "thread" && !document.threadId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["threadId"],
+      message: "Thread-scoped documents require threadId",
+    })
+  }
+  if (document.visibilityScope === "project" && !document.projectId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["projectId"],
+      message: "Project-scoped documents require projectId",
+    })
+  }
+}
+
+export const documentSchema = documentBaseSchema.superRefine(validateDocumentScope)
+
 export const documentVersionSchema = z.object({
-  id: z.string(),
-  documentId: z.string(),
-  version: z.number(),
-  contentHash: z.string(),
-  contentStorageKey: z.string(),
+  id: nonEmptyString,
+  documentId: nonEmptyString,
+  version: z.number().int().positive(),
+  contentHash: nonEmptyString,
+  contentStorageKey: nonEmptyString,
   changeSummary: z.string().nullable().optional(),
   createdByRunId: z.string().nullable().optional(),
   createdByThreadId: z.string().nullable().optional(),
-  createdAt: z.string(),
+  createdAt: nonEmptyString,
 })
 
 /** API responses omit internal storage paths. */
-export const documentPublicSchema = documentSchema.omit({ storageKey: true })
+export const documentPublicSchema = documentBaseSchema
+  .omit({ storageKey: true })
+  .superRefine(validateDocumentScope)
+
+export const documentVersionSummarySchema = documentVersionSchema.pick({
+  id: true,
+  version: true,
+  changeSummary: true,
+  createdAt: true,
+})
+
+export const documentDetailResponseSchema = z.object({
+  document: documentPublicSchema,
+  content: z.string().nullable(),
+  versions: z.array(documentVersionSummarySchema),
+})
 
 export const listDocumentsQuerySchema = z.object({
   query: z.string().optional(),
@@ -915,6 +954,8 @@ export type DocumentVisibilityScope = z.infer<typeof documentVisibilityScopeSche
 export type Document = z.infer<typeof documentSchema>
 export type DocumentVersion = z.infer<typeof documentVersionSchema>
 export type DocumentPublic = z.infer<typeof documentPublicSchema>
+export type DocumentVersionSummary = z.infer<typeof documentVersionSummarySchema>
+export type DocumentDetailResponse = z.infer<typeof documentDetailResponseSchema>
 export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>
 export type ThreadDetail = z.infer<typeof threadDetailSchema>
 export type ThreadListItem = z.infer<typeof threadListItemSchema>

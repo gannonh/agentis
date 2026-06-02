@@ -7,6 +7,7 @@ import type {
   DocumentVisibilityScope,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
+import { createId } from "../lib/ids.js"
 import type { Repositories } from "../repositories/index.js"
 import { LocalDocumentStorage } from "./local-document-storage.js"
 import {
@@ -73,6 +74,15 @@ function currentVersion(document: Document) {
   return document.currentVersion ?? 0
 }
 
+function isNodeErrorCode(error: unknown, code: string) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === code
+  )
+}
+
 export class DocumentService {
   private readonly storage: LocalDocumentStorage
 
@@ -119,10 +129,18 @@ export class DocumentService {
     })
     if (!provenanceResult.ok) return provenanceResult
 
-    const storageKey = this.storage.createStorageKey(`${input.title}.md`)
+    const scopeError = this.validateScope(input.visibilityScope, {
+      projectId: input.projectId,
+      threadId: provenanceResult.provenance.threadId,
+    })
+    if (scopeError) return scopeError
+
+    const documentId = createId("document")
+    const storageKey = this.storage.createVersionStorageKey(documentId, 1)
     try {
       this.storage.write(storageKey, data)
-    } catch {
+    } catch (error) {
+      console.error("Failed to store document content", { error, documentId })
       return {
         ok: false,
         code: "document_storage_failed",
@@ -132,7 +150,8 @@ export class DocumentService {
     }
 
     try {
-      const document = this.repos.documents.create({
+      const { document } = this.repos.documents.createWithInitialVersion({
+        id: documentId,
         title: input.title,
         description: input.description,
         documentType: "markdown",
@@ -146,29 +165,20 @@ export class DocumentService {
         projectId: input.projectId,
         runId: input.runId,
         ...provenanceResult.provenance,
-      })
-      const versionStorageKey = this.storage.createVersionStorageKey(document.id, 1)
-      this.storage.write(versionStorageKey, data)
-      const version = this.repos.documents.createVersion({
-        documentId: document.id,
-        version: 1,
         contentHash: contentHash(data),
-        contentStorageKey: versionStorageKey,
+        contentStorageKey: storageKey,
         changeSummary: input.changeSummary ?? "Created document",
         createdByRunId: input.runId,
         createdByThreadId: provenanceResult.provenance.threadId,
       })
-      const updated = this.repos.documents.updateCurrentVersion({
-        documentId: document.id,
-        versionId: version.id,
-        version: 1,
+      return { ok: true, document, currentVersion: 1 }
+    } catch (error) {
+      this.deleteStoredDocument(storageKey)
+      console.error("Failed to persist document metadata", {
+        error,
+        documentId,
         storageKey,
-        sizeBytes: data.byteLength,
-        previewText: buildPreviewText(input.content, this.config.documentPreviewMaxChars),
       })
-      return { ok: true, document: updated ?? document, currentVersion: 1 }
-    } catch {
-      this.storage.delete(storageKey)
       return {
         ok: false,
         code: "document_storage_failed",
@@ -181,7 +191,6 @@ export class DocumentService {
   registerGenerated(input: {
     title: string
     description?: string
-    filename?: string
     content: string
     visibilityScope?: DocumentVisibilityScope
     projectId?: string
@@ -226,10 +235,33 @@ export class DocumentService {
     })
     if (!provenanceResult.ok) return provenanceResult
 
-    const storageKey = this.storage.createStorageKey(input.filename)
+    const mimeType = inferMimeType(input.filename, input.mimeType)
+    const textContent = mimeType.startsWith("text/")
+      ? input.data.toString("utf8")
+      : ""
+    const visibilityScope: DocumentVisibilityScope = input.projectId
+      ? "project"
+      : provenanceResult.provenance.threadId
+        ? "thread"
+        : "global"
+    const scopeError = this.validateScope(visibilityScope, {
+      projectId: input.projectId,
+      threadId: provenanceResult.provenance.threadId,
+    })
+    if (scopeError) return scopeError
+
+    const documentId = createId("document")
+    const storageKey = input.documentType === "markdown"
+      ? this.storage.createVersionStorageKey(documentId, 1)
+      : this.storage.createStorageKey(input.filename)
     try {
       this.storage.write(storageKey, input.data)
-    } catch {
+    } catch (error) {
+      console.error("Failed to store uploaded document", {
+        error,
+        documentId,
+        storageKey,
+      })
       return {
         ok: false,
         code: "document_storage_failed",
@@ -238,12 +270,9 @@ export class DocumentService {
       }
     }
 
-    const mimeType = inferMimeType(input.filename, input.mimeType)
-    const textContent = mimeType.startsWith("text/")
-      ? input.data.toString("utf8")
-      : ""
     try {
-      const document = this.repos.documents.create({
+      const baseDocument = {
+        id: documentId,
         title: input.title,
         description: input.description,
         documentType: input.documentType,
@@ -254,13 +283,27 @@ export class DocumentService {
         previewText:
           input.previewText ??
           buildPreviewText(textContent, this.config.documentPreviewMaxChars),
-        visibilityScope: input.projectId ? "project" : "thread",
+        visibilityScope,
         projectId: input.projectId,
         ...provenanceResult.provenance,
-      })
+      }
+      const document = input.documentType === "markdown"
+        ? this.repos.documents.createWithInitialVersion({
+            ...baseDocument,
+            contentHash: contentHash(input.data),
+            contentStorageKey: storageKey,
+            changeSummary: "Uploaded document",
+            createdByThreadId: provenanceResult.provenance.threadId,
+          }).document
+        : this.repos.documents.create(baseDocument)
       return { ok: true, document }
-    } catch {
-      this.storage.delete(storageKey)
+    } catch (error) {
+      this.deleteStoredDocument(storageKey)
+      console.error("Failed to persist uploaded document metadata", {
+        error,
+        documentId,
+        storageKey,
+      })
       return {
         ok: false,
         code: "document_storage_failed",
@@ -343,13 +386,11 @@ export class DocumentService {
     let content: string
     try {
       content = this.storage.read(storageKey).toString("utf8")
-    } catch {
-      return {
-        ok: false,
-        code: "document_blob_missing",
-        message: "Stored document content is missing",
-        status: 404,
-      }
+    } catch (error) {
+      return this.storageReadError(error, {
+        documentId: document.id,
+        storageKey,
+      })
     }
 
     const maxChars = input.maxChars ?? 32_000
@@ -433,13 +474,11 @@ export class DocumentService {
     }
     try {
       return { ok: true, document, data: this.storage.read(document.storageKey) }
-    } catch {
-      return {
-        ok: false,
-        code: "document_blob_missing",
-        message: "Stored document content is missing",
-        status: 404,
-      }
+    } catch (error) {
+      return this.storageReadError(error, {
+        documentId: document.id,
+        storageKey: document.storageKey,
+      })
     }
   }
 
@@ -487,8 +526,7 @@ export class DocumentService {
     const storageKey = this.storage.createVersionStorageKey(read.document.id, nextVersion)
     try {
       this.storage.write(storageKey, data)
-      this.storage.write(read.document.storageKey, data)
-      const version = this.repos.documents.createVersion({
+      const document = this.repos.documents.updateWithVersion({
         documentId: read.document.id,
         version: nextVersion,
         contentHash: contentHash(data),
@@ -496,12 +534,6 @@ export class DocumentService {
         changeSummary: input.changeSummary ?? "Updated document",
         createdByRunId: input.runContext.runId,
         createdByThreadId: input.runContext.threadId,
-      })
-      const document = this.repos.documents.updateCurrentVersion({
-        documentId: read.document.id,
-        versionId: version.id,
-        version: nextVersion,
-        storageKey: read.document.storageKey,
         sizeBytes: data.byteLength,
         previewText: buildPreviewText(changed.content, this.config.documentPreviewMaxChars),
       })
@@ -515,7 +547,14 @@ export class DocumentService {
         currentVersion: nextVersion,
         section: changed.section,
       }
-    } catch {
+    } catch (error) {
+      this.deleteStoredDocument(storageKey)
+      console.error("Failed to update document content", {
+        error,
+        documentId: read.document.id,
+        version: nextVersion,
+        storageKey,
+      })
       return {
         ok: false,
         code: "document_storage_failed",
@@ -550,6 +589,58 @@ export class DocumentService {
       }
     }
     return { ok: true, section: matches[0]! }
+  }
+
+  private storageReadError(
+    error: unknown,
+    context: { documentId: string; storageKey: string }
+  ): DocumentError {
+    if (isNodeErrorCode(error, "ENOENT")) {
+      return {
+        ok: false,
+        code: "document_blob_missing",
+        message: "Stored document content is missing",
+        status: 404,
+      }
+    }
+    console.error("Failed to read document content", { error, ...context })
+    return {
+      ok: false,
+      code: "document_storage_failed",
+      message: "Failed to read stored document content",
+      status: 500,
+    }
+  }
+
+  private deleteStoredDocument(storageKey: string) {
+    try {
+      this.storage.delete(storageKey)
+    } catch (error) {
+      console.error("Failed to clean up document storage", { error, storageKey })
+    }
+  }
+
+  private validateScope(
+    visibilityScope: DocumentVisibilityScope,
+    input: { projectId?: string; threadId?: string }
+  ): DocumentError | null {
+    if (visibilityScope === "project" && !input.projectId) {
+      return {
+        ok: false,
+        code: "invalid_document_scope",
+        message: "Project-scoped documents require a project",
+        status: 400,
+      }
+    }
+    if (visibilityScope === "thread" && !input.threadId) {
+      return {
+        ok: false,
+        code: "invalid_document_scope",
+        message: "Thread-scoped documents require a thread",
+        status: 400,
+      }
+    }
+    return null
   }
 
   private canAccess(document: Document, context: DocumentRunContext) {

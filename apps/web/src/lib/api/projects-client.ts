@@ -1,4 +1,5 @@
 import {
+  documentDetailResponseSchema,
   documentPublicSchema,
   documentTypeSchema,
   createProjectMemoryRequestSchema,
@@ -7,8 +8,10 @@ import {
   projectSchema,
   updateProjectMemoryRequestSchema,
   updateProjectRequestSchema,
+  type DocumentDetailResponse,
   type DocumentPublic as Document,
   type DocumentType,
+  type DocumentVisibilityScope,
   type CreateProjectMemoryRequest,
   type CreateProjectRequest,
   type Project,
@@ -50,6 +53,18 @@ function parseArray<T>(schema: { parse: (data: unknown) => T }, data: unknown): 
     throw new ApiError("Invalid response", 500)
   }
   return data.map((item) => schema.parse(item))
+}
+
+function apiErrorMessage(data: unknown, fallback: string): string {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    "error" in data &&
+    typeof data.error === "string"
+  ) {
+    return data.error
+  }
+  return fallback
 }
 
 export async function listProjects(includeArchived = false): Promise<Project[]> {
@@ -176,6 +191,7 @@ export async function deleteProjectMemory(
 export type DocumentListFilters = {
   query?: string
   documentType?: DocumentType
+  visibilityScope?: DocumentVisibilityScope
   projectId?: string
   threadId?: string
 }
@@ -186,6 +202,9 @@ export async function listDocuments(
   const params = new URLSearchParams()
   if (filters.query) params.set("query", filters.query)
   if (filters.documentType) params.set("documentType", filters.documentType)
+  if (filters.visibilityScope) {
+    params.set("visibilityScope", filters.visibilityScope)
+  }
   if (filters.projectId) params.set("projectId", filters.projectId)
   if (filters.threadId) params.set("threadId", filters.threadId)
   const query = params.toString()
@@ -194,14 +213,10 @@ export async function listDocuments(
   )
   if (!response.ok) {
     const data = await response.json().catch(() => ({}))
-    const message =
-      typeof data === "object" &&
-      data !== null &&
-      "error" in data &&
-      typeof data.error === "string"
-        ? data.error
-        : response.statusText
-    throw new ApiError(message, response.status)
+    throw new ApiError(
+      apiErrorMessage(data, response.statusText),
+      response.status
+    )
   }
   return parseArray(documentPublicSchema, await response.json())
 }
@@ -230,6 +245,28 @@ export async function uploadDocument(input: {
   return parseJson(response, documentPublicSchema)
 }
 
+export async function getDocumentDetail(
+  documentId: string
+): Promise<DocumentDetailResponse> {
+  const response = await fetch(`${API_BASE}/api/documents/${documentId}/detail`)
+  return parseJson(response, documentDetailResponseSchema)
+}
+
 export function documentDownloadUrl(documentId: string) {
   return `${API_BASE}/api/documents/${documentId}/download`
+}
+
+export async function downloadDocumentFile(document: Document): Promise<void> {
+  const response = await fetch(documentDownloadUrl(document.id))
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new ApiError(apiErrorMessage(data, "Download failed"), response.status)
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const anchor = window.document.createElement("a")
+  anchor.href = url
+  anchor.download = document.title
+  anchor.click()
+  URL.revokeObjectURL(url)
 }

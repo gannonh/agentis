@@ -35,8 +35,13 @@ describe("document routes", () => {
     const document = (await uploaded.json()) as {
       id: string
       projectNameSnapshot?: string
+      currentVersion?: number
+      visibilityScope?: string
     }
     expect(document.projectNameSnapshot).toBe("Docs")
+    expect(document.currentVersion).toBe(1)
+    expect(document.visibilityScope).toBe("project")
+    expect(ctx.repos.documents.listVersions(document.id)).toHaveLength(1)
 
     const listed = await app.request("/api/documents?query=Brief")
     const listBody = (await listed.json()) as { id: string }[]
@@ -46,6 +51,31 @@ describe("document routes", () => {
     expect(download.status).toBe(200)
     expect(download.headers.get("content-type")).toContain("text")
     expect(await download.text()).toContain("Brief")
+  })
+
+  it("uploads documents without owner as global documents", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const form = new FormData()
+    form.set("title", "Global notes")
+    form.set("documentType", "markdown")
+    form.set(
+      "file",
+      new File(["# Global"], "global.md", { type: "text/markdown" })
+    )
+
+    const uploaded = await app.request("/api/documents", {
+      method: "POST",
+      body: form,
+    })
+
+    expect(uploaded.status).toBe(201)
+    expect(await uploaded.json()).toMatchObject({
+      title: "Global notes",
+      visibilityScope: "global",
+      currentVersion: 1,
+    })
   })
 
   it("returns 400 for invalid list query parameters", async () => {
@@ -81,7 +111,6 @@ describe("document routes", () => {
 
     const generated = documentService.registerGenerated({
       title: "Research notes",
-      filename: "research-notes.md",
       content: "# Research notes",
       runId: createdThread.run.id,
     })
@@ -107,7 +136,32 @@ describe("document routes", () => {
     ])
   })
 
-  it("rejects uploads when thread provenance is missing", () => {
+  it("rejects uploads when thread provenance is missing", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const form = new FormData()
+    form.set("title", "Orphan notes")
+    form.set("documentType", "markdown")
+    form.set("threadId", "missing-thread")
+    form.set(
+      "file",
+      new File(["# Orphan"], "orphan-notes.md", { type: "text/markdown" })
+    )
+
+    const response = await app.request("/api/documents", {
+      method: "POST",
+      body: form,
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "invalid_document_provenance",
+    })
+    expect(ctx.repos.documents.count()).toBe(0)
+  })
+
+  it("rejects uploads in the service when thread provenance is missing", () => {
     ctx = createTestContext()
     const documentService = new DocumentService(ctx.repos, ctx.config)
 
@@ -160,7 +214,6 @@ describe("document routes", () => {
 
     const generated = documentService.registerGenerated({
       title: "Mismatched notes",
-      filename: "mismatched-notes.md",
       content: "# Mismatch",
       runId: firstThread.run.id,
       threadId: secondThread.thread.id,

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { createTestContext } from "../test/setup.js"
 import { DocumentService } from "./document-service.js"
 
@@ -125,6 +125,56 @@ describe("DocumentService", () => {
     ctx.cleanup()
   })
 
+  it("uploads markdown documents with version 1 and global scope by default", () => {
+    const ctx = createTestContext()
+    const service = new DocumentService(ctx.repos, ctx.config)
+
+    const uploaded = service.upload({
+      title: "Uploaded playbook",
+      documentType: "markdown",
+      filename: "playbook.md",
+      data: Buffer.from("# Uploaded\n\nInitial content"),
+    })
+
+    expect(uploaded).toMatchObject({ ok: true })
+    if (!uploaded.ok) return
+    expect(uploaded.document).toMatchObject({
+      visibilityScope: "global",
+      currentVersion: 1,
+      contentFormat: "markdown",
+    })
+    expect(ctx.repos.documents.listVersions(uploaded.document.id)).toHaveLength(1)
+    expect(
+      service.readDocument({
+        documentId: uploaded.document.id,
+        runContext: { threadId: "any-thread" },
+      })
+    ).toMatchObject({ ok: true, currentVersion: 1 })
+    ctx.cleanup()
+  })
+
+  it("rejects document scopes without required owners", () => {
+    const ctx = createTestContext()
+    const service = new DocumentService(ctx.repos, ctx.config)
+
+    expect(
+      service.createMarkdownDocument({
+        title: "Project orphan",
+        content: "# Orphan",
+        visibilityScope: "project",
+      })
+    ).toMatchObject({ ok: false, code: "invalid_document_scope" })
+    expect(
+      service.createMarkdownDocument({
+        title: "Thread orphan",
+        content: "# Orphan",
+        visibilityScope: "thread",
+      })
+    ).toMatchObject({ ok: false, code: "invalid_document_scope" })
+    expect(ctx.repos.documents.count()).toBe(0)
+    ctx.cleanup()
+  })
+
   it("updates one markdown section and appends sections with new versions", () => {
     const ctx = createTestContext()
     const createdThread = ctx.repos.threads.createWithInitialRun({
@@ -171,7 +221,129 @@ describe("DocumentService", () => {
     if (!read.ok) return
     expect(read.content).toContain("## Steps\n\nNew steps")
     expect(read.content).toContain("## Follow-up\n\nFollow-up notes")
+    expect(read.content.indexOf("## Steps")).toBeLessThan(
+      read.content.indexOf("## Follow-up")
+    )
     expect(ctx.repos.documents.listVersions(created.document.id)).toHaveLength(3)
+    ctx.cleanup()
+  })
+
+  it("reads bounded content, missing versions, and older versions", () => {
+    const ctx = createTestContext()
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Versioned doc",
+      prompt: "Create notes",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const created = service.createMarkdownDocument({
+      title: "Versioned",
+      content: `# Versioned\n\n${"A".repeat(100)}`,
+      visibilityScope: "thread",
+      threadId: createdThread.thread.id,
+      runId: createdThread.run.id,
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    const truncated = service.readDocument({
+      documentId: created.document.id,
+      maxChars: 20,
+      runContext: { threadId: createdThread.thread.id },
+    })
+    expect(truncated).toMatchObject({ ok: true, truncated: true, maxChars: 20 })
+    if (!truncated.ok) return
+    expect(truncated.content).toHaveLength(20)
+
+    expect(
+      service.readDocument({
+        documentId: created.document.id,
+        version: 99,
+        runContext: { threadId: createdThread.thread.id },
+      })
+    ).toMatchObject({ ok: false, code: "document_version_not_found" })
+
+    const updated = service.appendDocumentSection({
+      documentId: created.document.id,
+      heading: "Next",
+      content: "New content",
+      runContext: { threadId: createdThread.thread.id },
+    })
+    expect(updated).toMatchObject({ ok: true, currentVersion: 2 })
+    const versionOne = service.readDocument({
+      documentId: created.document.id,
+      version: 1,
+      runContext: { threadId: createdThread.thread.id },
+    })
+    expect(versionOne).toMatchObject({ ok: true, currentVersion: 2 })
+    if (!versionOne.ok) return
+    expect(versionOne.content).not.toContain("New content")
+    ctx.cleanup()
+  })
+
+  it("does not leave metadata or content divergence when version persistence fails", () => {
+    const ctx = createTestContext()
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Rollback doc",
+      prompt: "Create notes",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const createWithInitialVersion = vi
+      .spyOn(ctx.repos.documents, "createWithInitialVersion")
+      .mockImplementationOnce(() => {
+        throw new Error("database unavailable")
+      })
+
+    expect(
+      service.createMarkdownDocument({
+        title: "Rollback",
+        content: "# Rollback",
+        visibilityScope: "thread",
+        threadId: createdThread.thread.id,
+        runId: createdThread.run.id,
+      })
+    ).toMatchObject({ ok: false, code: "document_storage_failed" })
+    expect(ctx.repos.documents.count()).toBe(0)
+    createWithInitialVersion.mockRestore()
+
+    const created = service.createMarkdownDocument({
+      title: "Rollback",
+      content: "# Rollback\n\nOriginal",
+      visibilityScope: "thread",
+      threadId: createdThread.thread.id,
+      runId: createdThread.run.id,
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    vi.spyOn(ctx.repos.documents, "updateWithVersion").mockImplementationOnce(
+      () => {
+        throw new Error("database unavailable")
+      }
+    )
+    expect(
+      service.appendDocumentSection({
+        documentId: created.document.id,
+        heading: "Failed",
+        content: "Should not persist",
+        runContext: { threadId: createdThread.thread.id },
+      })
+    ).toMatchObject({ ok: false, code: "document_storage_failed" })
+
+    const read = service.readDocument({
+      documentId: created.document.id,
+      runContext: { threadId: createdThread.thread.id },
+    })
+    expect(read).toMatchObject({ ok: true, currentVersion: 1 })
+    if (!read.ok) return
+    expect(read.content).toContain("Original")
+    expect(read.content).not.toContain("Should not persist")
+    expect(ctx.repos.documents.listVersions(created.document.id)).toHaveLength(1)
+    consoleError.mockRestore()
     ctx.cleanup()
   })
 

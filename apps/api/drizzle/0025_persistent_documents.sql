@@ -60,11 +60,17 @@ UPDATE `documents`
 SET `current_version_id` = 'document_version_' || `id`,
 `current_version` = 1
 WHERE `document_type` = 'markdown';--> statement-breakpoint
+DROP INDEX IF EXISTS `artifacts_type_idx`;--> statement-breakpoint
+DROP INDEX IF EXISTS `artifacts_project_id_idx`;--> statement-breakpoint
+DROP INDEX IF EXISTS `artifacts_thread_id_idx`;--> statement-breakpoint
+DROP INDEX IF EXISTS `artifacts_run_id_idx`;--> statement-breakpoint
+DROP INDEX IF EXISTS `artifacts_created_at_idx`;--> statement-breakpoint
 CREATE INDEX `documents_type_idx` ON `documents` (`document_type`);--> statement-breakpoint
 CREATE INDEX `documents_visibility_scope_idx` ON `documents` (`visibility_scope`);--> statement-breakpoint
 CREATE INDEX `documents_project_id_idx` ON `documents` (`project_id`);--> statement-breakpoint
 CREATE INDEX `documents_thread_id_idx` ON `documents` (`thread_id`);--> statement-breakpoint
 CREATE INDEX `documents_run_id_idx` ON `documents` (`run_id`);--> statement-breakpoint
+CREATE INDEX `documents_created_at_idx` ON `documents` (`created_at`);--> statement-breakpoint
 CREATE INDEX `documents_updated_at_idx` ON `documents` (`updated_at`);--> statement-breakpoint
 CREATE INDEX `document_versions_document_id_idx` ON `document_versions` (`document_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `document_versions_document_version_unique` ON `document_versions` (`document_id`,`version`);

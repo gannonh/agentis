@@ -97,10 +97,10 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
     })
 
     if (!result.ok) {
-      if (result.code === "document_too_large") {
-        return c.json({ error: result.message, code: result.code }, 413)
-      }
-      return c.json({ error: result.message, code: result.code }, 500)
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 500) as 400 | 413 | 500
+      )
     }
 
     return c.json(toPublicDocument(result.document), 201)
@@ -121,8 +121,10 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
     const documentId = c.req.param("documentId")
     const result = documentService.getDownload(documentId)
     if (!result.ok) {
-      const status = result.status === 404 ? 404 : (500 as const)
-      return c.json({ error: result.message, code: result.code }, status)
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 500) as 404 | 500
+      )
     }
     const previewContent = result.document.mimeType.startsWith("text/")
       ? result.data.toString("utf8")
@@ -142,8 +144,10 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
   app.get("/:documentId/download", (c) => {
     const result = documentService.getDownload(c.req.param("documentId"))
     if (!result.ok) {
-      const status = result.status === 404 ? 404 : (500 as const)
-      return c.json({ error: result.message, code: result.code }, status)
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 500) as 404 | 500
+      )
     }
     const filename =
       result.document.title.replace(/[^\w.-]+/g, "_") || "document"

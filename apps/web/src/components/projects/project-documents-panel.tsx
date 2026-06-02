@@ -5,8 +5,7 @@ import { Input } from "@workspace/ui/components/input"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon } from "@hugeicons/core-free-icons"
 import { formatRelativeTime } from "@/fixtures"
-import { documentDownloadUrl } from "@/lib/api/projects-client"
-import { ApiError } from "@/lib/api/client"
+import { downloadDocumentFile } from "@/lib/api/projects-client"
 
 type ProjectDocumentsPanelProps = {
   documents: Document[]
@@ -37,26 +36,7 @@ export function ProjectDocumentsPanel({
 
   const handleDownload = async (projectDocument: Document) => {
     try {
-      const response = await fetch(documentDownloadUrl(projectDocument.id))
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new ApiError(
-          typeof data === "object" &&
-            data !== null &&
-            "error" in data &&
-            typeof data.error === "string"
-            ? data.error
-            : "Download failed",
-          response.status
-        )
-      }
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const anchor = window.document.createElement("a")
-      anchor.href = url
-      anchor.download = projectDocument.title
-      anchor.click()
-      URL.revokeObjectURL(url)
+      await downloadDocumentFile(projectDocument)
       setDownloadErrors((current) => {
         const next = { ...current }
         delete next[projectDocument.id]
@@ -109,7 +89,7 @@ export function ProjectDocumentsPanel({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{document.title}</p>
                 <p className="text-muted-foreground text-xs capitalize">
-                  {document.documentType} · {formatRelativeTime(document.createdAt)}
+                  {document.documentType} · {formatRelativeTime(document.updatedAt)}
                   {document.threadTitleSnapshot
                     ? ` · ${document.threadTitleSnapshot}`
                     : ""}

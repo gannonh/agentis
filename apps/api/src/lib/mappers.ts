@@ -193,7 +193,7 @@ export function mapDocument(row: DocumentRow): Document {
     title: row.title,
     description: row.description ?? undefined,
     documentType: row.documentType as Document["documentType"],
-    contentFormat: row.contentFormat,
+    contentFormat: row.contentFormat as Document["contentFormat"],
     mimeType: row.mimeType,
     sizeBytes: row.sizeBytes,
     storageKey: row.storageKey,

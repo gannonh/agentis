@@ -6,8 +6,6 @@ import {
 } from "@workspace/shared"
 import type { DocumentService } from "./document-service.js"
 
-const runContextSchema = z.object({}).optional()
-
 export function buildDocumentTools(
   documentService: DocumentService,
   context: {
@@ -70,7 +68,6 @@ export function buildDocumentTools(
         documentType: documentTypeSchema.optional(),
         projectId: z.string().optional(),
         limit: z.number().int().positive().max(50).optional(),
-        runContext: runContextSchema,
       }),
       execute: async (input) => {
         const documents = documentService.findDocuments({
@@ -109,7 +106,6 @@ export function buildDocumentTools(
       inputSchema: z.object({
         documentId: z.string().min(1),
         version: z.number().int().positive().optional(),
-        runContext: runContextSchema,
       }),
       execute: async (input) => {
         const result = documentService.readDocument({
@@ -154,7 +150,6 @@ export function buildDocumentTools(
         sectionPath: z.string().min(1),
         content: z.string().min(1),
         changeSummary: z.string().optional(),
-        runContext: runContextSchema,
       }),
       execute: async (input) => {
         const result = documentService.updateDocumentSection({
@@ -186,7 +181,6 @@ export function buildDocumentTools(
         parentSectionPath: z.string().optional(),
         content: z.string().min(1),
         changeSummary: z.string().optional(),
-        runContext: runContextSchema,
       }),
       execute: async (input) => {
         const result = documentService.appendDocumentSection({

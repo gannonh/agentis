@@ -73,6 +73,81 @@ export class DocumentRepository {
     return mapDocument(row)
   }
 
+  createWithInitialVersion(input: {
+    id?: string
+    versionId?: string
+    title: string
+    description?: string
+    documentType: DocumentType
+    contentFormat?: string
+    mimeType: string
+    sizeBytes: number
+    storageKey: string
+    previewText?: string
+    metadata?: Record<string, unknown>
+    visibilityScope?: DocumentVisibilityScope
+    projectId?: string
+    projectNameSnapshot?: string
+    threadId?: string
+    threadTitleSnapshot?: string
+    runId?: string
+    agentId?: string
+    agentNameSnapshot?: string
+    contentHash: string
+    contentStorageKey: string
+    changeSummary?: string
+    createdByRunId?: string
+    createdByThreadId?: string
+  }): { document: Document; version: DocumentVersion } {
+    const now = nowIso()
+    const versionId = input.versionId ?? createId("document_version")
+    const documentRow = {
+      id: input.id ?? createId("document"),
+      title: input.title,
+      description: input.description ?? null,
+      documentType: input.documentType,
+      contentFormat: input.contentFormat ?? (input.documentType === "markdown" ? "markdown" : "binary"),
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      storageKey: input.storageKey,
+      previewText: input.previewText ?? null,
+      metadataJson: input.metadata ? JSON.stringify(input.metadata) : null,
+      visibilityScope: input.visibilityScope ?? "thread",
+      projectId: input.projectId ?? null,
+      projectNameSnapshot: input.projectNameSnapshot ?? null,
+      threadId: input.threadId ?? null,
+      threadTitleSnapshot: input.threadTitleSnapshot ?? null,
+      runId: input.runId ?? null,
+      agentId: input.agentId ?? null,
+      agentNameSnapshot: input.agentNameSnapshot ?? null,
+      currentVersionId: versionId,
+      currentVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const versionRow = {
+      id: versionId,
+      documentId: documentRow.id,
+      version: 1,
+      contentHash: input.contentHash,
+      contentStorageKey: input.contentStorageKey,
+      changeSummary: input.changeSummary ?? null,
+      createdByRunId: input.createdByRunId ?? null,
+      createdByThreadId: input.createdByThreadId ?? null,
+      createdAt: now,
+    }
+
+    this.db.transaction((tx) => {
+      tx.insert(documents).values(documentRow).run()
+      tx.insert(documentVersions).values(versionRow).run()
+    })
+
+    return {
+      document: mapDocument(documentRow),
+      version: mapDocumentVersion(versionRow),
+    }
+  }
+
   createVersion(input: {
     id?: string
     documentId: string
@@ -119,6 +194,54 @@ export class DocumentRepository {
       .where(eq(documents.id, input.documentId))
       .run()
     return this.getById(input.documentId)
+  }
+
+  updateWithVersion(input: {
+    documentId: string
+    version: number
+    versionId?: string
+    contentHash: string
+    contentStorageKey: string
+    changeSummary?: string
+    createdByRunId?: string
+    createdByThreadId?: string
+    sizeBytes: number
+    previewText?: string
+  }): Document | null {
+    const versionRow = {
+      id: input.versionId ?? createId("document_version"),
+      documentId: input.documentId,
+      version: input.version,
+      contentHash: input.contentHash,
+      contentStorageKey: input.contentStorageKey,
+      changeSummary: input.changeSummary ?? null,
+      createdByRunId: input.createdByRunId ?? null,
+      createdByThreadId: input.createdByThreadId ?? null,
+      createdAt: nowIso(),
+    }
+    let row: typeof documents.$inferSelect | undefined
+
+    this.db.transaction((tx) => {
+      tx.insert(documentVersions).values(versionRow).run()
+      tx.update(documents)
+        .set({
+          currentVersionId: versionRow.id,
+          currentVersion: input.version,
+          storageKey: input.contentStorageKey,
+          sizeBytes: input.sizeBytes,
+          previewText: input.previewText ?? null,
+          updatedAt: nowIso(),
+        })
+        .where(eq(documents.id, input.documentId))
+        .run()
+      row = tx
+        .select()
+        .from(documents)
+        .where(eq(documents.id, input.documentId))
+        .get()
+    })
+
+    return row ? mapDocument(row) : null
   }
 
   getById(id: string): Document | null {

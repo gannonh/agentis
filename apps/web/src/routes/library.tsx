@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "react-router"
-import type { DocumentPublic as Document, DocumentType, Project } from "@workspace/shared"
+import {
+  documentTypeSchema,
+  type DocumentDetailResponse,
+  type DocumentPublic as Document,
+  type DocumentType,
+  type Project,
+} from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -24,45 +30,14 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 import { formatRelativeTime } from "@/fixtures"
 import {
-  documentDownloadUrl,
+  downloadDocumentFile,
+  getDocumentDetail,
   listDocuments,
   listProjects,
   uploadDocument,
 } from "@/lib/api/projects-client"
-import { ApiError } from "@/lib/api/client"
 
-const DOCUMENT_TYPES: DocumentType[] = [
-  "markdown",
-  "webpage",
-  "image",
-  "video",
-  "table",
-  "slides",
-  "other",
-]
-
-type DocumentDetail = {
-  document: Document
-  content: string | null
-  versions: Array<{
-    id: string
-    version: number
-    changeSummary?: string
-    createdAt: string
-  }>
-}
-
-function apiErrorMessage(data: unknown, fallback: string): string {
-  if (
-    typeof data === "object" &&
-    data !== null &&
-    "error" in data &&
-    typeof data.error === "string"
-  ) {
-    return data.error
-  }
-  return fallback
-}
+const DOCUMENT_TYPES = documentTypeSchema.options
 
 export function LibraryPage() {
   const [searchParams] = useSearchParams()
@@ -85,7 +60,7 @@ export function LibraryPage() {
   const [downloadErrors, setDownloadErrors] = useState<Record<string, string>>(
     {}
   )
-  const [detail, setDetail] = useState<DocumentDetail | null>(null)
+  const [detail, setDetail] = useState<DocumentDetailResponse | null>(null)
   const selectedDocumentId = searchParams.get("documentId")
 
   useEffect(() => {
@@ -172,11 +147,7 @@ export function LibraryPage() {
     let cancelled = false
     setDetail(null)
     setError(null)
-    fetch(`/api/documents/${selectedDocumentId}/detail`)
-      .then((response) => {
-        if (!response.ok) throw new Error("Failed to load document detail")
-        return response.json() as Promise<DocumentDetail>
-      })
+    getDocumentDetail(selectedDocumentId)
       .then((nextDetail) => {
         if (!cancelled) setDetail(nextDetail)
       })
@@ -196,21 +167,7 @@ export function LibraryPage() {
 
   const handleDownload = async (libraryDocument: Document) => {
     try {
-      const response = await fetch(documentDownloadUrl(libraryDocument.id))
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new ApiError(
-          apiErrorMessage(data, "Download failed"),
-          response.status
-        )
-      }
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const anchor = window.document.createElement("a")
-      anchor.href = url
-      anchor.download = libraryDocument.title
-      anchor.click()
-      URL.revokeObjectURL(url)
+      await downloadDocumentFile(libraryDocument)
       setDownloadErrors((current) => {
         const next = { ...current }
         delete next[libraryDocument.id]
@@ -394,7 +351,7 @@ export function LibraryPage() {
                   {document.title}
                 </CardTitle>
                 <Badge variant="outline" className="shrink-0 text-xs capitalize">
-                  {document.documentType}
+                  {document.documentType} · {document.visibilityScope}
                 </Badge>
               </div>
               <CardDescription className="text-xs">
@@ -420,7 +377,7 @@ export function LibraryPage() {
               )}
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground text-xs">
-                  {formatRelativeTime(document.createdAt)}
+                  {formatRelativeTime(document.updatedAt)}
                 </span>
                 <Button
                   variant="outline"

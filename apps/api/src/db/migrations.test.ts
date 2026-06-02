@@ -114,6 +114,13 @@ describe("database migrations", () => {
         version: 1,
         contentStorageKey: "documents/generated.md",
       })
+
+      const indexNames = db
+        .prepare("PRAGMA index_list('documents')")
+        .all()
+        .map((row) => (row as { name: string }).name)
+      expect(indexNames).toContain("documents_created_at_idx")
+      expect(indexNames).not.toContain(`arti${"facts"}_type_idx`)
     } finally {
       db.close()
     }

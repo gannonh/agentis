@@ -14,11 +14,14 @@ vi.mock("@/lib/api/projects-client", () => ({
       storageKey: "documents/test.txt",
       projectNameSnapshot: "Launch",
       createdAt: new Date().toISOString(),
+      visibilityScope: "global",
       updatedAt: new Date().toISOString(),
     },
   ]),
   listProjects: vi.fn().mockResolvedValue([]),
   uploadDocument: vi.fn(),
+  getDocumentDetail: vi.fn(),
+  downloadDocumentFile: vi.fn(),
   documentDownloadUrl: (id: string) => `/api/documents/${id}/download`,
 }))
 

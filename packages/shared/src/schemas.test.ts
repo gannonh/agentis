@@ -3,6 +3,7 @@ import {
   agentDetailInformationSchema,
   agentDetailResponseSchema,
   agentListItemSchema,
+  documentDetailResponseSchema,
   documentSchema,
   documentTypeSchema,
   connectIntegrationResponseSchema,
@@ -847,6 +848,22 @@ describe("shared schemas", () => {
       updatedAt: now,
     })
     expect(document.documentType).toBe("markdown")
+    expect(() =>
+      documentSchema.parse({
+        ...document,
+        visibilityScope: "project",
+        projectId: null,
+      })
+    ).toThrow()
+    expect(() =>
+      documentSchema.parse({ ...document, sizeBytes: -1 })
+    ).toThrow()
+    const documentDetail = documentDetailResponseSchema.parse({
+      document,
+      content: "# Brief",
+      versions: [{ id: "version-1", version: 1, createdAt: now }],
+    })
+    expect(documentDetail.versions[0]?.version).toBe(1)
     expect(() => documentTypeSchema.parse("folder")).toThrow()
 
     const detail = threadDetailSchema.parse({
