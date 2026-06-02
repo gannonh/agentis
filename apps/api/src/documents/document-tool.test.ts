@@ -48,6 +48,10 @@ describe("document runtime tools", () => {
       currentVersion: 1,
     })
     const documentId = (created as { documentId: string }).documentId
+    expect(created).toMatchObject({
+      viewPath: `/library?documentId=${documentId}`,
+      downloadPath: `/api/documents/${documentId}/download`,
+    })
 
     const otherService = new DocumentService(ctx.repos, ctx.config)
     const otherTools = buildDocumentTools(otherService, {
@@ -74,6 +78,8 @@ describe("document runtime tools", () => {
           id: documentId,
           title: "Runtime playbook",
           visibilityScope: "project",
+          viewPath: `/library?documentId=${documentId}`,
+          downloadPath: `/api/documents/${documentId}/download`,
         },
       ],
     })
@@ -88,6 +94,8 @@ describe("document runtime tools", () => {
       previousVersion: 1,
       currentVersion: 2,
       sectionPath: "Runtime playbook > Steps",
+      viewPath: `/library?documentId=${documentId}`,
+      downloadPath: `/api/documents/${documentId}/download`,
     })
 
     const appended = await executeTool(tools.appendDocumentSection, {
@@ -100,11 +108,18 @@ describe("document runtime tools", () => {
       previousVersion: 2,
       currentVersion: 3,
       sectionPath: "Risks",
+      viewPath: `/library?documentId=${documentId}`,
+      downloadPath: `/api/documents/${documentId}/download`,
     })
 
     const read = await executeTool(tools.readDocument, { documentId })
     expect(read).toMatchObject({
-      metadata: { id: documentId, currentVersion: 3 },
+      metadata: {
+        id: documentId,
+        currentVersion: 3,
+        viewPath: `/library?documentId=${documentId}`,
+        downloadPath: `/api/documents/${documentId}/download`,
+      },
       truncated: false,
       sectionOutline: expect.arrayContaining([
         { heading: "Steps", level: 2, path: "Runtime playbook > Steps" },

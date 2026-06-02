@@ -57,6 +57,8 @@ describe("run executor composio bridge", () => {
     expect(systemPrompt).toContain("You are Agentis")
     expect(systemPrompt).toContain("createDocument")
     expect(systemPrompt).toContain("durable document")
+    expect(systemPrompt).toContain("downloadPath")
+    expect(systemPrompt).toContain("Never invent hostnames")
     expect(systemPrompt).not.toContain("## Platform requirements")
   })
 
@@ -73,6 +75,7 @@ describe("run executor composio bridge", () => {
     expect(systemPrompt).toContain("createDocument")
     expect(systemPrompt).toContain("durable document")
     expect(systemPrompt).toContain("instead of asking for schema fields")
+    expect(systemPrompt).toContain("Use downloadPath for markdown downloads")
     expect(systemPrompt).toContain("## Project context\nWorkspace: Research")
     expect(systemPrompt.indexOf("## Agent instructions")).toBeLessThan(
       systemPrompt.indexOf("## Platform requirements")

@@ -66,7 +66,7 @@ export { formatToolStepTitle } from "./run-tool-labels.js"
 export { suppressTextForPendingApproval } from "./run-message-adapters.js"
 
 const PLATFORM_SYSTEM_PROMPT =
-  "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createDocument when the user asks for a durable document, brief, report, notes, playbook, or library item. If the request has enough context to create useful content, choose a concise title and content instead of asking for schema fields. Search and read relevant documents before updating durable knowledge."
+  "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createDocument when the user asks for a durable document, brief, report, notes, playbook, or library item. If the request has enough context to create useful content, choose a concise title and content instead of asking for schema fields. Search and read relevant documents before updating durable knowledge. For document links, use only the exact relative viewPath or downloadPath returned by document tools. Use downloadPath for markdown downloads. Never invent hostnames or placeholder URLs such as yourworkspaceurl."
 
 function formatSystemPromptSection(title: string, body?: string | null) {
   const trimmed = body?.trim()

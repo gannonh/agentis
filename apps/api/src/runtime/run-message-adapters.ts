@@ -10,9 +10,23 @@ export function getTextFromParts(parts: MessagePart[]) {
     .join("")
 }
 
+export function normalizeAssistantText(text: string) {
+  return text
+    .replace(
+      /\[([^\]]+)\]\(https?:\/\/yourworkspaceurl\/library\?documentId=([\w-]+)[^)]*\)/gi,
+      "[$1](/api/documents/$2/download)"
+    )
+    .replace(
+      /https?:\/\/yourworkspaceurl\/library\?documentId=([\w-]+)[^\s)\]]*/gi,
+      "/api/documents/$1/download"
+    )
+    .replace(/https?:\/\/yourworkspaceurl(\/[^\s)\]]*)/gi, "$1")
+}
+
 export function setTextPart(parts: MessagePart[], text: string): MessagePart[] {
   const nonText = parts.filter((part) => part.type !== "text")
-  return text ? [{ type: "text", text }, ...nonText] : nonText
+  const normalizedText = normalizeAssistantText(text)
+  return normalizedText ? [{ type: "text", text: normalizedText }, ...nonText] : nonText
 }
 
 function renderToolSummary(output: unknown): string {

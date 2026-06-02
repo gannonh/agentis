@@ -6,6 +6,13 @@ import {
 } from "@workspace/shared"
 import type { DocumentService } from "./document-service.js"
 
+function documentLinks(documentId: string) {
+  return {
+    viewPath: `/library?documentId=${documentId}`,
+    downloadPath: `/api/documents/${documentId}/download`,
+  }
+}
+
 export function buildDocumentTools(
   documentService: DocumentService,
   context: {
@@ -52,7 +59,7 @@ export function buildDocumentTools(
           title: result.document.title,
           visibilityScope: result.document.visibilityScope,
           currentVersion: result.currentVersion,
-          viewPath: `/library?documentId=${result.document.id}`,
+          ...documentLinks(result.document.id),
           previewText: result.document.previewText,
         }
         context.onEvidence?.(`Document created: ${result.document.title}`, payload)
@@ -91,6 +98,7 @@ export function buildDocumentTools(
           updatedAt: document.updatedAt,
           previewText: document.previewText,
           currentVersion: document.currentVersion,
+          ...documentLinks(document.id),
         }))
         context.onEvidence?.("Searched documents", {
           query: input.query,
@@ -122,6 +130,7 @@ export function buildDocumentTools(
             visibilityScope: result.document.visibilityScope,
             documentType: result.document.documentType,
             currentVersion: result.currentVersion,
+            ...documentLinks(result.document.id),
           },
           content: result.content,
           truncated: result.truncated,
@@ -166,6 +175,7 @@ export function buildDocumentTools(
           previousVersion: result.previousVersion,
           currentVersion: result.currentVersion,
           sectionPath: result.section.path,
+          ...documentLinks(result.document.id),
           previewText: result.document.previewText,
         }
         context.onEvidence?.(`Updated document section: ${result.document.title}`, payload)
@@ -198,6 +208,7 @@ export function buildDocumentTools(
           previousVersion: result.previousVersion,
           currentVersion: result.currentVersion,
           sectionPath: result.section.path,
+          ...documentLinks(result.document.id),
           previewText: result.document.previewText,
         }
         context.onEvidence?.(`Appended document section: ${result.document.title}`, payload)
