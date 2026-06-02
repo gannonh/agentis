@@ -36,6 +36,12 @@ describe("Gateway model resolution", () => {
     expect(() => resolveGatewayModelId("   ")).toThrow("Model id is required")
   })
 
+  it("rejects unsupported unprefixed model ids", () => {
+    expect(() => resolveGatewayModelId("claude-sonnet-4")).toThrow(
+      "Gateway model ids must include a provider prefix"
+    )
+  })
+
   it("creates Gateway language models with the Gateway credential", () => {
     const model = createGatewayLanguageModel(
       loadConfig({ AI_GATEWAY_API_KEY: "gateway-key" }),

@@ -14,7 +14,7 @@ export function resolveGatewayModelId(modelId: string): string {
   if (LEGACY_OPENAI_MODEL_IDS.has(trimmed)) {
     return `openai/${trimmed}`
   }
-  return trimmed
+  throw new Error("Gateway model ids must include a provider prefix")
 }
 
 export function createGatewayLanguageModel(
