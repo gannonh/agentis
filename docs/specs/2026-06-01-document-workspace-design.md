@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft for user review.
+Approved
 
 ## Goal
 
@@ -269,6 +269,97 @@ Route wiring:
 - Add `/documents/:documentId` to `apps/web/src/router.tsx`.
 - Update existing document links to use a shared `documentWorkspacePath(documentId)` helper.
 
+## Architecture deepening candidates
+
+These candidates came from the Documents architecture review and should guide the Build phase for issue #399. They are not separate prerequisites for opening the current V4.2 PR. Apply them where they reduce implementation spread while building the workspace.
+
+### 1. Deepen the Document content/version module
+
+Files:
+
+- `packages/shared/src/schemas.ts`
+- `apps/api/src/routes/documents.ts`
+- `apps/api/src/documents/document-service.ts`
+- `apps/api/src/repositories/document-repository.ts`
+- `apps/web/src/lib/api/projects-client.ts`
+
+Problem: current detail behavior uses download behavior, decodes text in the route, reads versions directly from the repository, and does not yet expose selected-version or truncation data for the workspace.
+
+Solution: put current detail, historical detail, current download, and full markdown replacement behind the Document domain module. Keep storage, truncation, selected version, current version, text/binary handling, and stale edit checks behind that seam.
+
+Benefits:
+
+- Locality: version and truncation rules live in one module.
+- Leverage: Library, runtime, and workspace share content behavior.
+- Tests: current, historical, and stale-edit paths can be verified through one interface.
+
+Recommendation strength: Strong.
+
+### 2. Deepen the Document navigation/action module
+
+Files:
+
+- `apps/api/src/documents/document-tool.ts`
+- `apps/web/src/lib/api/projects-client.ts`
+- `apps/web/src/routes/library.tsx`
+- `apps/web/src/components/projects/project-documents-panel.tsx`
+- `apps/web/src/components/thread/run-timeline.tsx`
+
+Problem: real `viewPath` and `downloadPath` knowledge spans runtime tool output, web download helpers, Library cards, project panels, and planned thread timeline links.
+
+Solution: keep one Document path/action policy per environment so Library, project context, thread provenance, runtime tool outputs, and the workspace use the same open/download behavior.
+
+Benefits:
+
+- Locality: real paths change once.
+- Leverage: Library, project context, thread provenance, and workspace share action behavior.
+- Tests: path policy and open/download actions can be verified directly.
+
+Recommendation strength: Strong.
+
+### 3. Deepen the Document filter/query module
+
+Files:
+
+- `packages/shared/src/schemas.ts`
+- `apps/web/src/routes/library.tsx`
+- `apps/web/src/lib/api/projects-client.ts`
+- `apps/api/src/routes/documents.ts`
+- `apps/api/src/repositories/document-repository.ts`
+
+Problem: Source and Scope semantics sit across UI tokens, labels, query conversion, HTTP query parsing, and repository conditions.
+
+Solution: centralize filter meaning from UI choice through route query through repository selection. Encode Source as provenance and visibility scope as thread/project/global while hiding UI token strings and persistence predicates from callers.
+
+Benefits:
+
+- Locality: Source/Scope invariants live once.
+- Leverage: Library and future workspace discovery use one filter model.
+- Tests: filter behavior can be verified without rendering the whole Library route.
+
+Recommendation strength: Strong.
+
+### 4. Split Document contracts and the Document web adapter out of broad modules
+
+Files:
+
+- `packages/shared/src/schemas.ts`
+- `apps/web/src/lib/api/projects-client.ts`
+- `apps/web/src/routes/library.tsx`
+- `apps/web/src/components/projects/project-documents-panel.tsx`
+
+Problem: Document contracts sit inside a broad shared schemas module, and Document transport currently lives behind a Project-named web client seam.
+
+Solution: create Document-named modules for Document contracts and Document web transport while preserving existing exports as needed for compatibility.
+
+Benefits:
+
+- Locality: Document contracts and transport behavior sit together.
+- Leverage: workspace route adds fewer imports and less route code.
+- Tests: Document client and contract behavior get focused test seams.
+
+Recommendation strength: Worth exploring.
+
 ## Testing and verification
 
 Unit and component tests:
@@ -363,4 +454,4 @@ Manual UAT:
 
 Build the dedicated document workspace as a follow-on to V4.2. Keep the scope to raw markdown editing, version viewing, Source/Scope metadata, Download, and entry points from Library, provenance thread, and project context. Do not add rich text editing, publishing, collaboration, or scope-changing controls in this slice.
 
-The first implementation should prefer small, tested additions to the existing document service/API and shared frontend components under a new document workspace route. Acceptance is gated by the criteria above and the verification commands in this spec.
+Use the architecture deepening candidates to keep the Build phase from spreading document content/version, navigation/action, and filter/query rules across Library, thread provenance, project context, and workspace callers. Acceptance is gated by the criteria above and the verification commands in this spec.
