@@ -1,0 +1,366 @@
+# Document workspace: rich view, edit, and actions surface
+
+## Status
+
+Draft for user review.
+
+## Goal
+
+Create a rich Document workspace for viewing, editing, versioning, and acting on persistent Documents. The workspace must be reachable from the Library, from the source/provenance thread, and from project context when a document is project-scoped or otherwise associated with that project.
+
+This is a follow-on to V4.2 persistent documents. V4.2 established the durable `Document` primitive, versioned markdown storage, document tools, filters, detail preview, and downloads. This spec defines the first dedicated surface for working with those documents after creation.
+
+## Source of truth
+
+- Persistent document spec: `docs/specs/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
+- Document primitive ADR: `docs/adr/0003-persistent-documents-library-primitive.md`
+- Current route: `apps/web/src/routes/library.tsx`
+- Current project documents panel: `apps/web/src/components/projects/project-documents-panel.tsx`
+- Current runtime evidence/timeline surface: `apps/web/src/components/thread/run-timeline.tsx`
+- Current API route: `apps/api/src/routes/documents.ts`
+- Current document domain service: `apps/api/src/documents/document-service.ts`
+
+## Current state
+
+Implemented today:
+
+- Library cards with search, Type, Source, and Scope filters.
+- Document upload and download.
+- Compact Library detail preview via `?documentId=...`.
+- API detail endpoint with current text content and version summaries.
+- Versioned markdown storage for agent-created and uploaded markdown documents.
+- Runtime document tools that create, find, read, update sections, append sections, and return `viewPath`/`downloadPath`.
+- Project Documents panels that list project-related documents and support download.
+- Run timeline evidence for document tool calls.
+
+Gaps:
+
+- No dedicated route for opening a document as a first-class workspace.
+- No rendered markdown preview versus raw markdown/code view toggle.
+- No user-facing full-document markdown editor.
+- No user-facing way to inspect prior version content.
+- No consistent entry point from Library, provenance thread, and project context into a shared document surface.
+- No rich action rail for Source, Scope, Version History, and Download.
+
+## Product direction
+
+Use a dedicated document workspace as the primary surface, with links from Library, threads, and projects.
+
+Preferred route:
+
+```text
+/documents/:documentId
+```
+
+The route may render as a full page or as a full-screen overlay/modal when opened from another surface. The implementation should keep the URL stable so users can open the document in a new tab and share the route within the local workspace.
+
+Recommended presentation:
+
+- Main document canvas for Preview, Markdown/code, and Edit states.
+- Right rail for actions and metadata.
+- Header with document title, type, scope, source/provenance, current version, and updated time.
+- Close/back behavior when launched from Library, thread, or project context.
+
+The user-provided visual direction shows a full-screen overlay on top of the Library, with the document content centered and an action rail on the right. Treat that as directional guidance, not a pixel-locked mock.
+
+## Scope
+
+### Included
+
+- Dedicated document workspace route.
+- Entry points from:
+  - Library card/detail preview.
+  - Thread provenance/timeline surfaces when a document was created, read, or updated in that thread.
+  - Project Documents/context surfaces when a document is project-scoped or has project provenance.
+- Preview and Markdown/code views for markdown documents.
+- Full-document markdown editor for markdown documents.
+- Save action that creates a new document version.
+- Version history list.
+- Ability to view prior version content without changing the current version.
+- Source and Scope display.
+- Download action from the workspace.
+- Non-markdown read-only handling.
+
+### Out of scope
+
+- Collaborative editing.
+- Rich text/WYSIWYG editing.
+- Section-specific editing UI.
+- Commenting, review, or approvals on documents.
+- Publish/share to public URLs.
+- Changing visibility scope in the first workspace slice.
+- Per-agent visibility. Agent association remains provenance and filtering metadata.
+- Binary preview beyond basic metadata and download.
+
+## Acceptance criteria
+
+1. A user can open the same document workspace from Library, the provenance thread, and applicable project context.
+2. The document workspace displays document title, type, source/provenance, scope, current version, updated time, and a download action.
+3. Markdown documents support both rendered Preview and Markdown/code views.
+4. A user can edit markdown content in a markdown editor and save it as a new version.
+5. Saving an edit increments the document version, updates the preview/content shown in the workspace, and leaves prior versions available in version history.
+6. Version history lists available versions and lets a user view prior version content without changing the current version.
+7. Download works from the document workspace and returns the current document file.
+8. Thread, project, and global scope are displayed clearly; source/provenance is displayed separately from scope.
+9. Non-markdown or non-text documents show metadata, source/scope, version history when available, and download, with editing disabled and a clear read-only explanation.
+10. Tests cover route loading, Library entry point, thread entry point, project entry point, markdown edit/save, prior version viewing, non-markdown read-only state, and download link behavior.
+
+## UX design
+
+### Workspace shell
+
+The document workspace should use the existing Agentis workbench style from `DESIGN.md`: restrained dark/light surfaces, IBM Plex Sans, functional blue only for active or selected states, and no decorative chrome.
+
+Suggested layout:
+
+```text
+┌───────────────────────────────────────────────────────────────┬─────────────────────┐
+│ Header: title, type, current version, updated time             │ Source & Scope       │
+├───────────────────────────────────────────────────────────────┤ Actions             │
+│ Tabs: Preview | Markdown                                      │ - Download           │
+│                                                               │ - Open in new tab    │
+│ Main document canvas                                          │ Version History     │
+│ - Rendered markdown preview                                   │ - v3 current         │
+│ - Raw markdown/code view                                      │ - v2                │
+│ - Markdown editor when editing                                │ - v1                │
+└───────────────────────────────────────────────────────────────┴─────────────────────┘
+```
+
+### Entry points
+
+Library:
+
+- Add `Open` or `View` action on each document card.
+- Compact detail preview should link to `/documents/:documentId`.
+- Keep existing Download action.
+
+Thread provenance:
+
+- Document-related run timeline entries should expose an `Open document` action when their payload includes a `documentId`.
+- Assistant-provided view links should use the new workspace route once the route exists.
+- Existing download links should continue to use `/api/documents/:documentId/download`.
+
+Project context:
+
+- Project Documents panels should expose `Open document` next to Download.
+- Project thread/context surfaces that summarize document counts should link to the relevant project Documents section or directly to the document when a single document is referenced.
+
+### Preview and code views
+
+Preview view:
+
+- Render markdown content with existing UI typography and table support.
+- Show a bounded empty state for empty markdown.
+- If content is too large to load fully, show truncation state and disable editing unless the API can return full content safely.
+
+Markdown/code view:
+
+- Display raw markdown in a monospaced, copyable view.
+- Preserve whitespace.
+- Avoid executing HTML or script content embedded in markdown.
+
+### Editing
+
+First slice editing is raw markdown editing only.
+
+- The edit action opens a markdown editor seeded with current version content.
+- Save requires non-empty content and a change from the loaded content.
+- Save sends a change summary. If the UI does not collect one, use a deterministic default such as `Updated in document workspace`.
+- Successful save creates a new version and reloads current detail.
+- Failed save leaves the editor content intact and shows the service error.
+
+Conflict handling for first slice:
+
+- Include the loaded version number in the save request.
+- If the current version changed before save, reject with a conflict and ask the user to reload before saving.
+- Do not silently overwrite a newer version.
+
+### Version history
+
+- Show version number, timestamp, and change summary.
+- Mark the current version.
+- Selecting a previous version changes the canvas into read-only historical viewing mode.
+- Historical viewing mode clearly states that the user is viewing an older version.
+- Editing starts from the current version only in the first slice.
+
+### Source and Scope
+
+Source/provenance display should include available values:
+
+- User upload or agent generated.
+- Agent name snapshot.
+- Source thread title.
+- Project name snapshot.
+- Run id only if needed for troubleshooting or a developer detail section.
+
+Scope display should include exactly one visibility scope:
+
+- Global.
+- Project.
+- Thread.
+
+Do not label an agent as a scope.
+
+## API design
+
+Keep the existing `/api/documents/:documentId/download` route for downloads.
+
+Extend detail/read behavior so the workspace can fetch current and historical content:
+
+```text
+GET /api/documents/:documentId/detail?version=<number>
+```
+
+Response should include:
+
+- `document`
+- `content`
+- `selectedVersion`
+- `currentVersion`
+- `versions`
+- `truncated` when applicable
+
+Add a workspace edit endpoint for full markdown replacement:
+
+```text
+PATCH /api/documents/:documentId/content
+```
+
+Request:
+
+- `content`: full markdown content.
+- `baseVersion`: version the user edited from.
+- `changeSummary`: optional string.
+
+Behavior:
+
+- Only markdown documents can be edited.
+- `baseVersion` must match the current version.
+- Size limits must reuse existing document upload/update limits.
+- Save creates a new version through the document domain service.
+- The response returns updated document metadata and the new version number.
+
+Recommended service addition:
+
+- Add `updateDocumentContent` to `DocumentService` rather than implementing version writes directly in the route.
+- Reuse existing storage, hash, preview, and `updateWithVersion` behavior.
+
+## Frontend architecture
+
+Suggested components:
+
+- `apps/web/src/routes/document-workspace.tsx`
+  - Route loader/state owner.
+  - Reads `documentId` from route params.
+  - Handles version selection, mode selection, edit state, save, and download.
+- `apps/web/src/components/documents/document-workspace-shell.tsx`
+  - Layout and high-level composition.
+- `apps/web/src/components/documents/document-viewer.tsx`
+  - Preview and markdown/code display.
+- `apps/web/src/components/documents/document-editor.tsx`
+  - Markdown edit form.
+- `apps/web/src/components/documents/document-side-panel.tsx`
+  - Source, Scope, actions, and version history.
+- `apps/web/src/lib/api/projects-client.ts`
+  - Shared API client functions for detail by version, content update, workspace URL, and download.
+
+Route wiring:
+
+- Add `/documents/:documentId` to `apps/web/src/router.tsx`.
+- Update existing document links to use a shared `documentWorkspacePath(documentId)` helper.
+
+## Testing and verification
+
+Unit and component tests:
+
+- Shared schemas for updated detail response and edit request/response.
+- API route tests for:
+  - detail current version.
+  - detail prior version.
+  - markdown edit success.
+  - conflict on stale `baseVersion`.
+  - non-markdown edit rejection.
+  - download unchanged.
+- Web route tests for:
+  - rendering metadata and source/scope.
+  - preview and markdown/code tabs.
+  - edit/save flow.
+  - version selection.
+  - non-markdown read-only state.
+  - Library, thread timeline, and project panel links.
+
+Command-level verification:
+
+```bash
+pnpm --filter @workspace/shared test
+pnpm --filter api test -- documents
+pnpm --filter web test -- library document project-detail
+pnpm typecheck
+pnpm lint
+pnpm build
+```
+
+Manual UAT:
+
+1. Create a global markdown document from a thread.
+2. Open it from the thread timeline or assistant view link.
+3. Confirm Preview and Markdown views render the same content appropriately.
+4. Edit markdown and save.
+5. Confirm version increments.
+6. Select the previous version and confirm it is read-only.
+7. Open the same document from Library.
+8. If project-associated, open it from the project Documents panel.
+9. Download from the workspace and confirm the file contains current content.
+
+## Implementation phases
+
+### Phase 1: API and shared contracts
+
+- Extend shared schemas for detail-by-version and edit request/response.
+- Add service method for full markdown content replacement with `baseVersion` conflict protection.
+- Extend document detail route to accept `version`.
+- Add content update route.
+- Cover API and shared schemas with tests.
+
+### Phase 2: Document workspace route
+
+- Add `/documents/:documentId` route.
+- Build workspace shell, viewer, side panel, and download action.
+- Support current and historical version reads.
+- Add preview and markdown/code tabs.
+- Add non-markdown read-only state.
+
+### Phase 3: Markdown editing
+
+- Add markdown editor state and save flow.
+- Enforce changed content and current-version editing.
+- Handle stale version conflicts and service errors.
+- Refresh detail after save.
+
+### Phase 4: Entry points
+
+- Link Library cards and detail preview to the workspace.
+- Link project Documents panel entries to the workspace.
+- Link document-related run timeline entries to the workspace when `documentId` exists.
+- Update document tool `viewPath` to `/documents/:documentId` after the route ships.
+- Preserve download paths.
+
+### Phase 5: Verification and UAT
+
+- Run targeted tests and full typecheck/lint/build.
+- Add or update E2E coverage if the route becomes part of M04/V4 acceptance.
+- Capture manual UAT evidence for Library, thread, project, edit, version history, and download.
+
+## Risks and mitigations
+
+- Large markdown documents can create slow render/edit loops. Mitigate with existing max content limits, truncation metadata, and edit disabled for truncated content.
+- Stale edits can overwrite newer agent updates. Mitigate with `baseVersion` conflict checks.
+- Thread and project entry points can drift if each builds custom links. Mitigate with one shared path helper.
+- Markdown rendering can introduce unsafe HTML. Mitigate by using a safe renderer configuration or plain text fallback until a renderer is verified.
+- The current Library route is already doing list, filters, upload, detail, and download. Keep the new workspace components separate and reduce Library to browse/open responsibilities where possible.
+
+## Build handoff
+
+Build the dedicated document workspace as a follow-on to V4.2. Keep the scope to raw markdown editing, version viewing, Source/Scope metadata, Download, and entry points from Library, provenance thread, and project context. Do not add rich text editing, publishing, collaboration, or scope-changing controls in this slice.
+
+The first implementation should prefer small, tested additions to the existing document service/API and shared frontend components under a new document workspace route. Acceptance is gated by the criteria above and the verification commands in this spec.
