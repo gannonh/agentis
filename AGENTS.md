@@ -32,18 +32,20 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Routes
 
-| Path | Screen |
-| ------------------ | ------------------------- |
-| `/threads/new` | New thread home (default) |
-| `/threads/:threadId` | Thread session (API-backed) |
-| `/command-center` | Command Center |
-| `/agents/:agentId` | Agent detail |
-| `/learning` | Learning dashboard |
-| `/integrations` | Integrations catalog |
-| `/projects/new` | Create project (API-backed) |
+
+| Path                   | Screen                          |
+| ---------------------- | ------------------------------- |
+| `/threads/new`         | New thread home (default)       |
+| `/threads/:threadId`   | Thread session (API-backed)     |
+| `/command-center`      | Command Center                  |
+| `/agents/:agentId`     | Agent detail                    |
+| `/learning`            | Learning dashboard              |
+| `/integrations`        | Integrations catalog            |
+| `/projects/new`        | Create project (API-backed)     |
 | `/projects/:projectId` | Edit project, memories, archive |
-| `/library` | Document library (API-backed) |
-| `/search` | Search placeholder |
+| `/library`             | Document library (API-backed)   |
+| `/search`              | Search placeholder              |
+
 
 ## Commands
 
@@ -58,12 +60,14 @@ pnpm test:e2e
 
 Agentis uses a **two-layer** UI setup. Do not duplicate primitives or hand-roll registry components when an install path exists.
 
-| Layer | Location | Purpose |
-| ----- | -------- | ------- |
-| Shared primitives | `packages/ui/src/components/` | shadcn/ui building blocks used across the app (button, sidebar, dialog, input-group, …). Styles: `packages/ui/src/styles/globals.css`. |
-| App & AI surfaces | `apps/web/src/components/` | Product-specific UI. **AI Elements** live under `apps/web/src/components/ai-elements/` (conversation, message, prompt-input). |
 
-**Config:** [`apps/web/components.json`](apps/web/components.json) drives installs. The `ui` alias points at `@workspace/ui/components`, so registry installs often **update `packages/ui`** (and sometimes `globals.css`), not only `apps/web`.
+| Layer                 | Location                      | Purpose                                                                                                                                |
+| --------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared primitives     | `packages/ui/src/components/` | shadcn/ui building blocks used across the app (button, sidebar, dialog, input-group, …). Styles: `packages/ui/src/styles/globals.css`. |
+| App &amp; AI surfaces | `apps/web/src/components/`    | Product-specific UI. **AI Elements** live under `apps/web/src/components/ai-elements/` (conversation, message, prompt-input).          |
+
+
+**Config:** `[apps/web/components.json](apps/web/components.json)` drives installs. The `ui` alias points at `@workspace/ui/components`, so registry installs often **update `packages/ui`** (and sometimes `globals.css`), not only `apps/web`.
 
 ### Adding shadcn/ui primitives
 
@@ -103,11 +107,11 @@ After install:
 
 ### App integration notes
 
-- `TooltipProvider` wraps the shell in [`apps/web/src/layouts/app-shell.tsx`](apps/web/src/layouts/app-shell.tsx).
-- Thread composer uses `PromptInput`’s `onSubmit({ text, files })` API via [`thread-prompt-composer.tsx`](apps/web/src/components/thread/thread-prompt-composer.tsx) — not a custom textarea-only form.
+- `TooltipProvider` wraps the shell in `[apps/web/src/layouts/app-shell.tsx](apps/web/src/layouts/app-shell.tsx)`.
+- Thread composer uses `PromptInput`’s `onSubmit({ text, files })` API via `[thread-prompt-composer.tsx](apps/web/src/components/thread/thread-prompt-composer.tsx)` — not a custom textarea-only form.
 - Vite resolves `@/` to `apps/web/src`; shared UI imports use `@workspace/ui/components/...`.
 
-## M02 local runtime
+## Local runtime
 
 1. Set `OPENAI_API_KEY` in the repo root `.env` (see `.env.example`). The API loads that file on startup; `apps/api/.env` is optional for overrides.
 2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API.
@@ -136,3 +140,4 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 - Keep commits atomic: stage only files changed for the current change set and do not mix unrelated work.
 - Use Conventional Commits syntax: `<type>(<scope>): <imperative summary>`.
 - Never use `git push --no-verify` or other hook-skipping flags unless the user explicitly requests it. If a pre-push hook fails, fix the underlying issue and push again.
+
