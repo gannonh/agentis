@@ -252,7 +252,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 
 - Spec path: `docs/specs/2026-06-02-migrate-chat-model-execution-to-vercel-ai-gateway-design.md`
 - Base SHA: `9aa30b14a595d07ec993ff4f8cf0ea1921bc65be`
-- Final implementation SHA: `7a473cd0`
+- Final implementation SHA: `102e3c5a`
 - Independent subagent review: used for spec compliance, code quality, and final whole-branch review.
 
 ### Tasks completed
@@ -262,6 +262,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
    - Replaced direct OpenAI provider construction in `RunExecutor`.
    - Runtime availability now depends on `AI_GATEWAY_API_KEY` or mock runtime.
    - Live model ids validate before run/message streaming state mutates.
+   - Mock streams emit complete `text-start` / `text-delta` / `text-end` parts.
    - Removed the direct `@ai-sdk/openai` dependency.
 2. Defaults, seeds, and tests
    - Updated default, seed, migration, and agent setup model ids to `openai/gpt-4o-mini` or other Gateway-compatible ids.
@@ -336,7 +337,7 @@ None.
 - Runtime health checks: passed for missing Gateway key and mock-runtime availability.
 - UI missing-credential copy: passed via browser screenshot of `/threads/new` showing `AI_GATEWAY_API_KEY` guidance.
 - Focused tests: passed.
-- Forced full quality gate: passed with no Turbo cache after extending existing long-running coverage test timeouts.
+- Forced full quality gate: passed with no Turbo cache after extending existing long-running coverage test timeouts and fixing mock text stream part boundaries.
 - Final evidence review: completed by subagent with no blocking acceptance gaps.
 
 Final command evidence:
@@ -349,4 +350,5 @@ TURBO_FORCE=1 pnpm typecheck
 TURBO_FORCE=1 pnpm build
 TURBO_FORCE=1 pnpm lint
 TURBO_FORCE=1 pnpm test:coverage
+# clean mock stream UAT: mock-stream-clean-final
 ```
