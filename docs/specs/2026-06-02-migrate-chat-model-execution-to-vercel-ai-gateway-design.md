@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft, pending written spec review
+Approved
 
 ## Goal
 
