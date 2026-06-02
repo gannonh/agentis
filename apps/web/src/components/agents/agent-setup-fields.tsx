@@ -62,7 +62,7 @@ export function AgentSetupFields({
             id={modelId}
             value={value.model}
             onChange={(event) => onChange({ model: event.target.value })}
-            placeholder="gpt-4o-mini"
+            placeholder="openai/gpt-4o-mini"
             aria-describedby={modelHelp ? modelHelpId : undefined}
           />
           {modelHelp ? (

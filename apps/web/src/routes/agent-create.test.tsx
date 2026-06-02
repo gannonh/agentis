@@ -92,6 +92,7 @@ describe("AgentCreatePage", () => {
         "Tell the agent how to help, what to focus on, and which connected apps it can use."
       )
     ).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("openai/gpt-4o-mini")).toBeInTheDocument()
 
     await user.type(screen.getByLabelText(/^name/i), "Research Agent")
     await user.type(
@@ -99,7 +100,7 @@ describe("AgentCreatePage", () => {
       "Finds source-backed answers"
     )
     await user.clear(screen.getByLabelText(/^answer engine/i))
-    await user.type(screen.getByLabelText(/^answer engine/i), "gpt-4o-mini")
+    await user.type(screen.getByLabelText(/^answer engine/i), "openai/gpt-4o-mini")
     expect(screen.getByPlaceholderText(/Main job:/i)).toBeInTheDocument()
     await user.type(
       screen.getByLabelText(/^instructions/i),
@@ -125,7 +126,7 @@ describe("AgentCreatePage", () => {
       expect(createAgent).toHaveBeenCalledWith({
         name: "Research Agent",
         description: "Finds source-backed answers",
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         systemPrompt: "Answer with citations.",
         toolGrants: [{ toolkitSlug: "github" }],
         nativeTools: ["webSearch"],
