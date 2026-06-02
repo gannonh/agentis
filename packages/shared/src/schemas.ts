@@ -629,6 +629,8 @@ export const documentVisibilityScopeSchema = z.enum([
   "global",
 ])
 
+export const documentSourceSchema = z.enum(["user", "agent"])
+
 export const documentContentFormatSchema = z.enum(["markdown", "text", "binary"])
 
 const documentBaseSchema = z.object({
@@ -714,6 +716,8 @@ export const listDocumentsQuerySchema = z.object({
   visibilityScope: documentVisibilityScopeSchema.optional(),
   projectId: z.string().optional(),
   threadId: z.string().optional(),
+  source: documentSourceSchema.optional(),
+  agentId: z.string().optional(),
 })
 
 export const threadDetailSchema = z.object({
@@ -951,6 +955,7 @@ export type UpdateProjectMemoryRequest = z.infer<
 >
 export type DocumentType = z.infer<typeof documentTypeSchema>
 export type DocumentVisibilityScope = z.infer<typeof documentVisibilityScopeSchema>
+export type DocumentSource = z.infer<typeof documentSourceSchema>
 export type Document = z.infer<typeof documentSchema>
 export type DocumentVersion = z.infer<typeof documentVersionSchema>
 export type DocumentPublic = z.infer<typeof documentPublicSchema>

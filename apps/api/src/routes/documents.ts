@@ -16,6 +16,8 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
       visibilityScope: c.req.query("visibilityScope"),
       projectId: c.req.query("projectId"),
       threadId: c.req.query("threadId"),
+      source: c.req.query("source"),
+      agentId: c.req.query("agentId"),
     })
     if (!parsed.success) {
       return c.json(

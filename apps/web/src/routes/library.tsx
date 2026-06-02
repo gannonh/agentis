@@ -2,10 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "react-router"
 import {
   documentTypeSchema,
+  type AgentListItem,
   type DocumentDetailResponse,
   type DocumentPublic as Document,
+  type DocumentSource,
   type DocumentType,
+  type DocumentVisibilityScope,
   type Project,
+  type ThreadListItem,
 } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -29,6 +33,8 @@ import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
 import { formatRelativeTime } from "@/fixtures"
+import { listThreads } from "@/lib/api/client"
+import { listAgents } from "@/lib/api/agents-client"
 import {
   downloadDocumentFile,
   getDocumentDetail,
@@ -39,15 +45,65 @@ import {
 
 const DOCUMENT_TYPES = documentTypeSchema.options
 
+type DocumentSourceFilter = "" | "user" | "agent" | `agent:${string}`
+type DocumentScopeFilter =
+  | ""
+  | DocumentVisibilityScope
+  | "project"
+  | `project:${string}`
+
+function sourceFilters(value: DocumentSourceFilter): {
+  source?: DocumentSource
+  agentId?: string
+} {
+  if (value === "user") return { source: "user" }
+  if (value === "agent") return { source: "agent" }
+  if (value.startsWith("agent:")) {
+    return { source: "agent", agentId: value.slice("agent:".length) }
+  }
+  return {}
+}
+
+function scopeFilters(
+  value: DocumentScopeFilter,
+  threadId: string
+): {
+  visibilityScope?: DocumentVisibilityScope
+  projectId?: string
+  threadId?: string
+} {
+  if (value === "global") return { visibilityScope: "global" }
+  if (value === "project") return { visibilityScope: "project" }
+  if (value.startsWith("project:")) {
+    return {
+      visibilityScope: "project",
+      projectId: value.slice("project:".length),
+    }
+  }
+  if (value === "thread") {
+    return {
+      visibilityScope: "thread",
+      threadId: threadId || undefined,
+    }
+  }
+  return {}
+}
+
 export function LibraryPage() {
   const [searchParams] = useSearchParams()
+  const initialProjectId = searchParams.get("projectId") ?? ""
   const [documents, setDocuments] = useState<Document[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [agents, setAgents] = useState<AgentListItem[]>([])
+  const [threads, setThreads] = useState<ThreadListItem[]>([])
   const [query, setQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<DocumentType | "">("")
-  const [projectFilter, setProjectFilter] = useState(
-    () => searchParams.get("projectId") ?? ""
+  const [sourceFilter, setSourceFilter] = useState<DocumentSourceFilter>("")
+  const [scopeFilter, setScopeFilter] = useState<DocumentScopeFilter>(
+    initialProjectId ? `project:${initialProjectId}` : ""
   )
+  const [threadSearch, setThreadSearch] = useState("")
+  const [threadFilter, setThreadFilter] = useState("")
   const loadGeneration = useRef(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -66,7 +122,7 @@ export function LibraryPage() {
   useEffect(() => {
     const projectId = searchParams.get("projectId")
     if (projectId) {
-      setProjectFilter(projectId)
+      setScopeFilter(`project:${projectId}`)
     }
   }, [searchParams])
 
@@ -75,17 +131,22 @@ export function LibraryPage() {
     setLoading(true)
     setError(null)
     try {
-      const [documentList, projectList] = await Promise.all([
+      const [documentList, projectList, agentList, threadList] = await Promise.all([
         listDocuments({
           query: query.trim() || undefined,
           documentType: typeFilter || undefined,
-          projectId: projectFilter || undefined,
+          ...sourceFilters(sourceFilter),
+          ...scopeFilters(scopeFilter, threadFilter),
         }),
         listProjects(true),
+        listAgents(),
+        listThreads(),
       ])
       if (generation !== loadGeneration.current) return
       setDocuments(documentList)
       setProjects(projectList)
+      setAgents(agentList)
+      setThreads(threadList)
     } catch (loadError) {
       if (generation !== loadGeneration.current) return
       setError(
@@ -96,7 +157,7 @@ export function LibraryPage() {
         setLoading(false)
       }
     }
-  }, [query, typeFilter, projectFilter])
+  }, [query, typeFilter, sourceFilter, scopeFilter, threadFilter])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -105,7 +166,17 @@ export function LibraryPage() {
     return () => clearTimeout(timer)
   }, [load])
 
-  const hasFilters = Boolean(query || typeFilter || projectFilter)
+  const hasFilters = Boolean(
+    query || typeFilter || sourceFilter || scopeFilter || threadFilter
+  )
+
+  const threadOptions = useMemo(() => {
+    const term = threadSearch.trim().toLowerCase()
+    const filtered = term
+      ? threads.filter((thread) => thread.title.toLowerCase().includes(term))
+      : threads
+    return filtered.slice(0, 25)
+  }, [threadSearch, threads])
 
   const filteredEmpty = useMemo(
     () => !loading && documents.length === 0 && hasFilters,
@@ -274,17 +345,77 @@ export function LibraryPage() {
         </select>
         <select
           className="border-input bg-background h-9 min-w-40 rounded-md border px-3 text-sm"
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          aria-label="Filter by project"
+          value={sourceFilter}
+          onChange={(e) =>
+            setSourceFilter(e.target.value as DocumentSourceFilter)
+          }
+          aria-label="Filter by source"
         >
-          <option value="">All projects</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
+          <option value="">Any source</option>
+          <option value="user">User uploads</option>
+          <option value="agent">Agent generated</option>
+          {agents.length ? (
+            <optgroup label="Agents">
+              {agents.map((agent) => (
+                <option key={agent.id} value={`agent:${agent.id}`}>
+                  {agent.name}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
         </select>
+        <select
+          className="border-input bg-background h-9 min-w-40 rounded-md border px-3 text-sm"
+          value={scopeFilter}
+          onChange={(e) => {
+            const value = e.target.value as DocumentScopeFilter
+            setScopeFilter(value)
+            setThreadSearch("")
+            setThreadFilter("")
+          }}
+          aria-label="Filter by scope"
+        >
+          <option value="">Any scope</option>
+          <option value="global">Global</option>
+          <option value="project">All projects</option>
+          {projects.length ? (
+            <optgroup label="Projects">
+              {projects.map((project) => (
+                <option key={project.id} value={`project:${project.id}`}>
+                  {project.name}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+          <option value="thread">Thread</option>
+        </select>
+        {scopeFilter === "thread" ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              placeholder="Search threads…"
+              className="max-w-48"
+              value={threadSearch}
+              onChange={(e) => {
+                setThreadSearch(e.target.value)
+                setThreadFilter("")
+              }}
+              aria-label="Search threads"
+            />
+            <select
+              className="border-input bg-background h-9 min-w-48 rounded-md border px-3 text-sm"
+              value={threadFilter}
+              onChange={(e) => setThreadFilter(e.target.value)}
+              aria-label="Filter by thread"
+            >
+              <option value="">Any thread</option>
+              {threadOptions.map((thread) => (
+                <option key={thread.id} value={thread.id}>
+                  {thread.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         {hasFilters ? (
           <Button
             variant="ghost"
@@ -292,7 +423,10 @@ export function LibraryPage() {
             onClick={() => {
               setQuery("")
               setTypeFilter("")
-              setProjectFilter("")
+              setSourceFilter("")
+              setScopeFilter("")
+              setThreadSearch("")
+              setThreadFilter("")
             }}
           >
             Reset filters

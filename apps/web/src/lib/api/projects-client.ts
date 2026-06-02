@@ -10,6 +10,7 @@ import {
   updateProjectRequestSchema,
   type DocumentDetailResponse,
   type DocumentPublic as Document,
+  type DocumentSource,
   type DocumentType,
   type DocumentVisibilityScope,
   type CreateProjectMemoryRequest,
@@ -194,6 +195,8 @@ export type DocumentListFilters = {
   visibilityScope?: DocumentVisibilityScope
   projectId?: string
   threadId?: string
+  source?: DocumentSource
+  agentId?: string
 }
 
 export async function listDocuments(
@@ -207,6 +210,8 @@ export async function listDocuments(
   }
   if (filters.projectId) params.set("projectId", filters.projectId)
   if (filters.threadId) params.set("threadId", filters.threadId)
+  if (filters.source) params.set("source", filters.source)
+  if (filters.agentId) params.set("agentId", filters.agentId)
   const query = params.toString()
   const response = await fetch(
     `${API_BASE}/api/documents${query ? `?${query}` : ""}`

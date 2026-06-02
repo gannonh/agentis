@@ -1,6 +1,7 @@
-import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, isNotNull, isNull, like, or, sql } from "drizzle-orm"
 import type {
   Document,
+  DocumentSource,
   DocumentType,
   DocumentVersion,
   DocumentVisibilityScope,
@@ -17,6 +18,7 @@ export type DocumentListFilters = {
   projectId?: string
   threadId?: string
   agentId?: string
+  source?: DocumentSource
 }
 
 export class DocumentRepository {
@@ -293,6 +295,12 @@ export class DocumentRepository {
     }
     if (filters.agentId) {
       conditions.push(eq(documents.agentId, filters.agentId))
+    }
+    if (filters.source === "agent") {
+      conditions.push(isNotNull(documents.runId))
+    }
+    if (filters.source === "user") {
+      conditions.push(isNull(documents.runId))
     }
     if (filters.query?.trim()) {
       const pattern = `%${filters.query.trim()}%`

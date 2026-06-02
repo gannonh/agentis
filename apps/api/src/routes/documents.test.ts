@@ -78,6 +78,76 @@ describe("document routes", () => {
     })
   })
 
+  it("filters documents by source, agent, and visibility scope", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const project = ctx.repos.projects.create({ name: "Launch" })
+    const agent = ctx.repos.agents.create({
+      name: "Docs Agent",
+      systemPrompt: "Write docs.",
+      model: "gpt-4o-mini",
+    })
+    const agentThread = ctx.repos.threads.createWithInitialRun({
+      title: "Agent evidence thread",
+      prompt: "Create report",
+      model: agent.model,
+      mode: "agent",
+      projectId: project.id,
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId: agent.currentConfigurationVersion.id,
+    })
+    const userThread = ctx.repos.threads.createWithInitialRun({
+      title: "User evidence thread",
+      prompt: "Upload report",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const generated = documentService.registerGenerated({
+      title: "Agent project report",
+      content: "# Agent project report",
+      projectId: project.id,
+      threadId: agentThread.thread.id,
+      runId: agentThread.run.id,
+    })
+    expect(generated.ok).toBe(true)
+
+    const form = new FormData()
+    form.set("title", "User thread notes")
+    form.set("documentType", "markdown")
+    form.set("threadId", userThread.thread.id)
+    form.set("file", new File(["# Notes"], "notes.md", { type: "text/markdown" }))
+    const uploaded = await app.request("/api/documents", {
+      method: "POST",
+      body: form,
+    })
+    expect(uploaded.status).toBe(201)
+
+    const byAgentSource = await app.request("/api/documents?source=agent")
+    expect((await byAgentSource.json()) as Array<{ title: string }>).toMatchObject([
+      { title: "Agent project report" },
+    ])
+
+    const bySpecificAgent = await app.request(`/api/documents?agentId=${agent.id}`)
+    expect((await bySpecificAgent.json()) as Array<{ title: string }>).toMatchObject([
+      { title: "Agent project report" },
+    ])
+
+    const byUserSource = await app.request("/api/documents?source=user")
+    expect((await byUserSource.json()) as Array<{ title: string }>).toMatchObject([
+      { title: "User thread notes" },
+    ])
+
+    const byThreadScope = await app.request(
+      `/api/documents?visibilityScope=thread&threadId=${userThread.thread.id}`
+    )
+    expect((await byThreadScope.json()) as Array<{ title: string }>).toMatchObject([
+      { title: "User thread notes" },
+    ])
+  })
+
   it("returns 400 for invalid list query parameters", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
