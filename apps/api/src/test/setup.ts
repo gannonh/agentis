@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { migrate } from "drizzle-orm/better-sqlite3/migrator"
 import { fileURLToPath } from "node:url"
+import { DEFAULT_GATEWAY_MODEL } from "@workspace/shared"
 import { createDatabase } from "../db/client.js"
 import { createRepositories } from "../repositories/index.js"
 import type { AppConfig } from "../config.js"
@@ -28,8 +29,7 @@ export function createTestContext() {
     port: 3001,
     databaseUrl,
     nodeEnv: "test",
-    openAiApiKey: "test-key",
-    defaultModel: "gpt-4o-mini",
+    defaultModel: DEFAULT_GATEWAY_MODEL,
     mockRuntime: false,
     composioApiKey: undefined,
     composioRedirectBaseUrl: "http://127.0.0.1:3001",
@@ -60,7 +60,7 @@ export function createTestContext() {
     webSearchBackend: "perplexity",
     webSearchMaxResults: 5,
     webSearchMaxSnippetChars: 500,
-    aiGatewayApiKey: undefined,
+    aiGatewayApiKey: "test-gateway-key",
   }
   const repos = createRepositories(db, config)
 

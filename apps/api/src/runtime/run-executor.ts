@@ -1,7 +1,9 @@
-import { createOpenAI } from "@ai-sdk/openai"
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai"
-import { MockLanguageModelV2 } from "ai/test"
-import { GENERIC_AGENTIS_AGENT_ID, type MessagePart, type Run } from "@workspace/shared"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  type MessagePart,
+  type Run,
+} from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import { ComposioRemediationError } from "../composio/tool-execution-service.js"
 import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
@@ -41,6 +43,7 @@ import {
 } from "./run-context.js"
 import { nowIso } from "../lib/ids.js"
 import {
+  createDefaultMockLanguageModel,
   executeMockComposioStream,
   executeMockNativeWebSearchStream,
   executeMockNativeWorkspaceExecutionStream,
@@ -56,6 +59,7 @@ import {
   toModelMessages,
   toUiMessages,
 } from "./run-message-adapters.js"
+import { createGatewayLanguageModel } from "./gateway-model.js"
 import { createMockDocumentRunSuffix } from "./mock-document-run.js"
 import {
   composioToolNameToToolkit,
@@ -261,8 +265,8 @@ export class RunExecutor {
     if (!run) {
       throw new Error("Run not found")
     }
-    if (!this.config.openAiApiKey && !this.config.mockRuntime) {
-      throw new Error("OPENAI_API_KEY is not configured")
+    if (!this.config.aiGatewayApiKey && !this.config.mockRuntime) {
+      throw new Error("AI_GATEWAY_API_KEY is not configured")
     }
     if (run.status !== "queued") {
       throw new Error(`Run is not streamable: ${run.status}`)
@@ -420,6 +424,9 @@ export class RunExecutor {
       ...composioTools,
     }
     const modelMessages = toModelMessages(threadMessages)
+    const liveModel = this.config.mockRuntime
+      ? null
+      : createGatewayLanguageModel(this.config, run.model)
     this.createTimelineDebugStep(runId, {
       status: "completed",
       title: "Debug: model input",
@@ -631,50 +638,8 @@ export class RunExecutor {
         })
       : ""
 
-    const model: LanguageModel = this.config.mockRuntime
-      ? new MockLanguageModelV2({
-          doStream: async () => ({
-            stream: new ReadableStream({
-              start(controller) {
-                const baseChunks = [
-                  "Hello ",
-                  "from ",
-                  "Agentis ",
-                  "mock ",
-                  "runtime.",
-                ]
-                const suffixChunks = mockDocumentSuffix
-                  ? (mockDocumentSuffix.match(/.{1,24}/g) ?? [])
-                  : []
-                const chunks = [...baseChunks, ...suffixChunks]
-                let index = 0
-                const timer = setInterval(() => {
-                  if (index < chunks.length) {
-                    controller.enqueue({
-                      type: "text-delta",
-                      id: "t1",
-                      delta: chunks[index]!,
-                    })
-                    index += 1
-                    return
-                  }
-                  clearInterval(timer)
-                  controller.enqueue({
-                    type: "finish",
-                    finishReason: "stop",
-                    usage: {
-                      inputTokens: 1,
-                      outputTokens: chunks.join("").length,
-                      totalTokens: 1 + chunks.join("").length,
-                    },
-                  })
-                  controller.close()
-                }, 900)
-              },
-            }),
-          }),
-        })
-      : createOpenAI({ apiKey: this.config.openAiApiKey! })(run.model)
+    const model: LanguageModel =
+      liveModel ?? createDefaultMockLanguageModel(mockDocumentSuffix)
 
     const result = streamText({
       model,

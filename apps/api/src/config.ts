@@ -1,4 +1,4 @@
-import { DEFAULT_OPENAI_MODEL } from "@workspace/shared"
+import { DEFAULT_GATEWAY_MODEL } from "@workspace/shared"
 import { toAppToolkitSlug } from "./composio/toolkit-slugs.js"
 import { FEATURED_TOOLKIT_SLUGS } from "./repositories/integration-seeds.js"
 
@@ -15,7 +15,6 @@ export type AppConfig = {
   port: number
   databaseUrl: string
   nodeEnv: string
-  openAiApiKey: string | undefined
   defaultModel: string
   mockRuntime: boolean
   composioApiKey: string | undefined
@@ -109,8 +108,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port,
     databaseUrl: env.DATABASE_URL ?? "./data/agentis.db",
     nodeEnv,
-    openAiApiKey: env.OPENAI_API_KEY,
-    defaultModel: DEFAULT_OPENAI_MODEL,
+    defaultModel: DEFAULT_GATEWAY_MODEL,
     mockRuntime: env.AGENTIS_MOCK_RUNTIME === "1",
     composioApiKey: env.COMPOSIO_API_KEY,
     composioRedirectBaseUrl: env.COMPOSIO_REDIRECT_BASE_URL,
@@ -144,7 +142,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     workspaceWriteMaxBytes: Number(
       env.AGENTIS_WORKSPACE_WRITE_MAX_BYTES ?? 262_144
     ),
-    workspaceWriteDenyPrefixes: (env.AGENTIS_WORKSPACE_WRITE_DENY_PREFIXES ?? "")
+    workspaceWriteDenyPrefixes: (
+      env.AGENTIS_WORKSPACE_WRITE_DENY_PREFIXES ?? ""
+    )
       .split(",")
       .map((prefix) => prefix.trim())
       .filter(Boolean),
@@ -171,13 +171,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     sandboxContainerImage:
       env.AGENTIS_SANDBOX_CONTAINER_IMAGE ?? "agentis-sandbox:local",
     webSearchProvider:
-      env.AGENTIS_WEB_SEARCH_PROVIDER === "mock"
-        ? "mock"
-        : "vercel-gateway",
+      env.AGENTIS_WEB_SEARCH_PROVIDER === "mock" ? "mock" : "vercel-gateway",
     webSearchBackend:
-      env.AGENTIS_WEB_SEARCH_BACKEND === "parallel"
-        ? "parallel"
-        : "perplexity",
+      env.AGENTIS_WEB_SEARCH_BACKEND === "parallel" ? "parallel" : "perplexity",
     webSearchMaxResults: clampNumber(
       Number(env.AGENTIS_WEB_SEARCH_MAX_RESULTS ?? 5),
       1,
@@ -197,8 +193,10 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.trunc(value)))
 }
 
-export function isRuntimeAvailable(config: AppConfig) {
-  return Boolean(config.openAiApiKey) || config.mockRuntime
+export function isRuntimeAvailable(
+  config: Pick<AppConfig, "aiGatewayApiKey" | "mockRuntime">
+) {
+  return Boolean(config.aiGatewayApiKey) || config.mockRuntime
 }
 
 export function isDebugSeedsEnabled(config: AppConfig) {

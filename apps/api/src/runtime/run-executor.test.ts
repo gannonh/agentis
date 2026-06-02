@@ -1,5 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
 import { join } from "node:path"
+import { eq } from "drizzle-orm"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
@@ -11,7 +12,6 @@ import {
   formatToolStepTitle,
   suppressTextForPendingApproval,
 } from "./run-executor.js"
-import { eq } from "drizzle-orm"
 
 let ctx: TestContext | undefined
 
@@ -65,7 +65,9 @@ describe("run executor composio bridge", () => {
   it("keeps platform document instructions with explicit prompt sections", () => {
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: "Answer as the configured research agent.",
-      contextSections: [{ title: "Project context", body: "Workspace: Research" }],
+      contextSections: [
+        { title: "Project context", body: "Workspace: Research" },
+      ],
     })
 
     expect(systemPrompt).toContain(
@@ -116,7 +118,11 @@ describe("run executor composio bridge", () => {
   it("persists native workspace tool evidence in mock runtime", async () => {
     const { app, context } = createMockRuntimeApp()
     const workspace = context.repos.workspaces.ensureGenericAgentisWorkspace()
-    const filesRoot = join(context.config.storageRoot, workspace.backendRef, "files")
+    const filesRoot = join(
+      context.config.storageRoot,
+      workspace.backendRef,
+      "files"
+    )
     await mkdir(filesRoot, { recursive: true })
     await writeFile(join(filesRoot, "demo.md"), "Demo workspace file")
     const created = await app.request("/api/threads", {
@@ -214,7 +220,9 @@ describe("run executor composio bridge", () => {
     const created = await app.request("/api/threads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: "Search the web for Agentis launch news" }),
+      body: JSON.stringify({
+        prompt: "Search the web for Agentis launch news",
+      }),
     })
     const { run } = (await created.json()) as { run: { id: string } }
 
@@ -418,7 +426,7 @@ describe("run executor composio bridge", () => {
     )
   })
 
-  it("fails fast when permitted web search has no configured provider credentials", async () => {
+  it("fails fast when live Gateway credentials are missing", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
     const app = createApp(
@@ -427,7 +435,6 @@ describe("run executor composio bridge", () => {
         ...ctx.config,
         mockRuntime: false,
         nodeEnv: "development",
-        webSearchProvider: "vercel-gateway",
         aiGatewayApiKey: undefined,
       },
       services
@@ -442,25 +449,55 @@ describe("run executor composio bridge", () => {
     const stream = await app.request(`/api/runs/${run.id}/stream`, {
       method: "POST",
     })
+    const body = (await stream.json()) as { error: string }
 
     expect(stream.status).toBe(400)
+    expect(body.error).toBe("AI_GATEWAY_API_KEY is not configured")
     expect(ctx.repos.runs.getById(run.id)).toMatchObject({
-      status: "failed",
-      errorSummary: "Web search provider is not configured",
+      status: "queued",
+      errorSummary: undefined,
     })
-    expect(ctx.repos.steps.listByRunId(run.id)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "error",
-          status: "failed",
-          title: "Web search unavailable",
-          payload: expect.objectContaining({
-            provider: "native",
-            toolName: "searchWeb",
-            code: "web_search_unavailable",
-          }),
-        }),
-      ])
+  })
+
+  it("validates live Gateway model ids before mutating run state", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(
+      ctx.repos,
+      {
+        ...ctx.config,
+        mockRuntime: false,
+        nodeEnv: "development",
+        aiGatewayApiKey: "gateway-key",
+      },
+      services
+    )
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize workspace status" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+    ctx.db
+      .update(runs)
+      .set({ model: "claude-sonnet-4" })
+      .where(eq(runs.id, run.id))
+      .run()
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    const body = (await stream.json()) as { error: string }
+
+    expect(stream.status).toBe(400)
+    expect(body.error).toBe("Gateway model ids must include a provider prefix")
+    const runRecord = ctx.repos.runs.getById(run.id)!
+    expect(runRecord).toMatchObject({
+      status: "queued",
+      errorSummary: undefined,
+    })
+    expect(ctx.repos.messages.listByThreadId(runRecord.threadId)).toHaveLength(
+      1
     )
   })
 
@@ -664,7 +701,9 @@ describe("run executor composio bridge", () => {
     await stream.text()
 
     expect(context.repos.threads.getById(thread.id)?.mode).toBe("plan")
-    expect(context.repos.workspaceEdits.getPendingByRunId(run.id)).toMatchObject({
+    expect(
+      context.repos.workspaceEdits.getPendingByRunId(run.id)
+    ).toMatchObject({
       status: "pending",
       approvalMode: "plan",
     })
@@ -918,7 +957,9 @@ describe("run executor composio bridge", () => {
             assistantParts: expect.arrayContaining([
               expect.objectContaining({
                 type: "text",
-                text: expect.stringContaining("Hello from Agentis mock runtime."),
+                text: expect.stringContaining(
+                  "Hello from Agentis mock runtime."
+                ),
               }),
             ]),
             usage: expect.objectContaining({ totalTokens: expect.any(Number) }),
@@ -976,7 +1017,8 @@ describe("run executor composio bridge", () => {
       model: "gpt-4o-mini",
     })
     context.repos.savedMemories.create({
-      content: "Use the beta workspace positioning when summarizing customer themes.",
+      content:
+        "Use the beta workspace positioning when summarizing customer themes.",
       category: "memory_category_organization",
       importance: "high",
       usageGuidance: "Use in customer insight synthesis.",
@@ -985,7 +1027,8 @@ describe("run executor composio bridge", () => {
       pinnedToContext: true,
     })
     context.repos.savedMemories.create({
-      content: "Cluster qualitative feedback by segment before recommending action.",
+      content:
+        "Cluster qualitative feedback by segment before recommending action.",
       category: "memory_category_domain_knowledge",
       importance: "high",
       usageGuidance: "Use for customer feedback threads.",
@@ -1022,7 +1065,9 @@ describe("run executor composio bridge", () => {
     await stream.text()
 
     const steps = context.repos.steps.listByRunId(run.id)
-    const memoryStep = steps.find((step) => step.title === "Agent memories loaded")
+    const memoryStep = steps.find(
+      (step) => step.title === "Agent memories loaded"
+    )
     expect(memoryStep?.payload).toMatchObject({
       agentMemoryCount: 1,
       globalMemoryCount: 1,
@@ -1055,10 +1100,12 @@ describe("run executor composio bridge", () => {
       }),
     })
     expect(
-      (debugInput?.payload as { systemPrompt?: string } | undefined)?.systemPrompt
+      (debugInput?.payload as { systemPrompt?: string } | undefined)
+        ?.systemPrompt
     ).not.toContain("Preserve customer language")
     expect(
-      (debugInput?.payload as { systemPrompt?: string } | undefined)?.systemPrompt
+      (debugInput?.payload as { systemPrompt?: string } | undefined)
+        ?.systemPrompt
     ).not.toContain("beta workspace positioning")
   }, 10_000)
 
@@ -1070,7 +1117,8 @@ describe("run executor composio bridge", () => {
       model: "gpt-4o-mini",
     })
     context.repos.savedMemories.create({
-      content: "Always cite customer interviews before recommending roadmap changes.",
+      content:
+        "Always cite customer interviews before recommending roadmap changes.",
       category: "memory_category_preference",
       importance: "high",
       usageGuidance: "Use during roadmap analysis.",
@@ -1089,7 +1137,8 @@ describe("run executor composio bridge", () => {
       pinnedToContext: false,
     })
     context.repos.savedMemories.create({
-      content: "Research Agent should include source quality notes in every brief.",
+      content:
+        "Research Agent should include source quality notes in every brief.",
       category: "memory_category_tools_workflows",
       importance: "high",
       usageGuidance: "Use in research briefs.",
@@ -1111,8 +1160,7 @@ describe("run executor composio bridge", () => {
     expect(stream.status).toBe(200)
     await stream.text()
 
-    const memoryStep = context.repos
-      .steps
+    const memoryStep = context.repos.steps
       .listByRunId(run.id)
       .find((step) => step.title === "Agent memories loaded")
     expect(memoryStep?.payload).toMatchObject({

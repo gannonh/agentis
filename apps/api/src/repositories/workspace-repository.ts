@@ -1,5 +1,5 @@
 import { asc, eq, isNull } from "drizzle-orm"
-import { DEFAULT_OPENAI_MODEL, type Workspace } from "@workspace/shared"
+import { DEFAULT_GATEWAY_MODEL, type Workspace } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import {
   agentConfigurationVersions,
@@ -128,7 +128,8 @@ export class WorkspaceRepository {
 
     for (const legacyThread of legacyThreads) {
       const agentId = legacyThread.agentId ?? GENERIC_AGENTIS_AGENT_ID
-      const workspace = this.getDefaultByAgentId(agentId) ??
+      const workspace =
+        this.getDefaultByAgentId(agentId) ??
         this.createWorkspaceForExistingAgent(agentId)
       this.db
         .update(threads)
@@ -155,7 +156,7 @@ export class WorkspaceRepository {
           description: "General Agentis assistant.",
           systemPrompt:
             "You are Agentis, a helpful workspace assistant. Be concise.",
-          model: DEFAULT_OPENAI_MODEL,
+          model: DEFAULT_GATEWAY_MODEL,
           maxCostPerRunUsd: null,
           sourceThreadId: null,
           sourceThreadTitle: null,
@@ -181,7 +182,7 @@ export class WorkspaceRepository {
           version: 1,
           systemPrompt:
             "You are Agentis, a helpful workspace assistant. Be concise.",
-          model: DEFAULT_OPENAI_MODEL,
+          model: DEFAULT_GATEWAY_MODEL,
           maxCostPerRunUsd: null,
           toolGrantsJson: "[]",
           nativeToolsJson: "[]",
@@ -216,6 +217,9 @@ export class WorkspaceRepository {
     if (!agent) {
       throw new Error(`Agent ${agentId} has no default workspace`)
     }
-    return this.createDefaultForAgent({ agentId: agent.id, agentName: agent.name })
+    return this.createDefaultForAgent({
+      agentId: agent.id,
+      agentName: agent.name,
+    })
   }
 }

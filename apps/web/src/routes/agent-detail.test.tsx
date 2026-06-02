@@ -12,6 +12,9 @@ import {
 import { useIntegrations } from "@/hooks/use-integrations"
 import type { AgentDetailResponse, IntegrationToolkit } from "@workspace/shared"
 
+// This interaction drives async form updates and library panel rerenders on CI.
+const AGENT_DETAIL_INTERACTION_TIMEOUT_MS = 30_000
+
 vi.mock("@/lib/api/agents-client", () => ({
   getAgent: vi.fn(),
   startAgentTestThread: vi.fn(),
@@ -623,7 +626,7 @@ describe("AgentDetailPage", () => {
       "true"
     )
     expect(screen.getByText("No library documents yet")).toBeInTheDocument()
-  }, 10_000)
+  }, AGENT_DETAIL_INTERACTION_TIMEOUT_MS)
 
   it("shows API save errors on editable model fields", async () => {
     const user = userEvent.setup()

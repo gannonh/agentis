@@ -30,7 +30,7 @@ import { cn } from "@workspace/ui/lib/utils"
 const INITIAL_FORM: AgentSetupFormState = {
   name: "",
   description: "",
-  model: "gpt-4o-mini",
+  model: "openai/gpt-4o-mini",
   systemPrompt: "",
 }
 
@@ -77,9 +77,7 @@ function ToolGrantOption({
     <label
       className={cn(
         "group relative flex min-h-24 cursor-pointer gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/40",
-        selected
-          ? "border-agent-blue/50 bg-agent-blue/10"
-          : "border-border"
+        selected ? "border-agent-blue/50 bg-agent-blue/10" : "border-border"
       )}
     >
       <input
@@ -91,10 +89,10 @@ function ToolGrantOption({
       <IntegrationMark integrationId={toolkit.slug} />
       <span className="flex min-w-0 flex-1 flex-col gap-1 pr-6">
         <span className="text-sm font-medium">{toolkit.name}</span>
-        <span className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
+        <span className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {toolkit.description}
         </span>
-        <span className="text-muted-foreground mt-auto text-xs">
+        <span className="mt-auto text-xs text-muted-foreground">
           {toolkitDetail(toolkit)}
         </span>
       </span>
@@ -119,14 +117,22 @@ function ToolGrantOption({
 export function AgentCreatePage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<AgentSetupFormState>(INITIAL_FORM)
-  const [selectedToolGrantSlugs, setSelectedToolGrantSlugs] = useState<string[]>([])
+  const [selectedToolGrantSlugs, setSelectedToolGrantSlugs] = useState<
+    string[]
+  >([])
   const [webSearchSelected, setWebSearchSelected] = useState(
     WEB_SEARCH_CAPABILITY.defaultSelected
   )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { toolkits, loading: loadingIntegrations, error: integrationsError } = useIntegrations()
-  const connectedToolkits = toolkits.filter((toolkit) => toolkit.status === "connected")
+  const {
+    toolkits,
+    loading: loadingIntegrations,
+    error: integrationsError,
+  } = useIntegrations()
+  const connectedToolkits = toolkits.filter(
+    (toolkit) => toolkit.status === "connected"
+  )
 
   const updateForm = (patch: Partial<AgentSetupFormState>) => {
     setForm((current) => ({ ...current, ...patch }))
@@ -144,7 +150,9 @@ export function AgentCreatePage() {
         description: form.description.trim() || undefined,
         model: form.model.trim() || undefined,
         systemPrompt: form.systemPrompt.trim(),
-        toolGrants: selectedToolGrantSlugs.map((toolkitSlug) => ({ toolkitSlug })),
+        toolGrants: selectedToolGrantSlugs.map((toolkitSlug) => ({
+          toolkitSlug,
+        })),
         nativeTools: webSearchSelected ? [WEB_SEARCH_CAPABILITY.id] : [],
       })
       navigate(`/agents/${encodeURIComponent(detail.agent.id)}`)
@@ -172,11 +180,12 @@ export function AgentCreatePage() {
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-base">Agent details</CardTitle>
             <CardDescription>
-              Tell the agent how to help, what to focus on, and which connected apps it can use.
+              Tell the agent how to help, what to focus on, and which connected
+              apps it can use.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-4">
-            {error ? <p className="text-destructive text-sm">{error}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
             <AgentSetupFields
               idPrefix="agent"
@@ -190,35 +199,42 @@ export function AgentCreatePage() {
             <fieldset className="flex flex-col gap-3">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <legend className="text-sm font-medium">Connected apps</legend>
-                  <p className="text-muted-foreground text-xs">
-                    Choose connected apps this agent can use while helping. Access
-                    stays limited to the apps you choose.
+                  <legend className="text-sm font-medium">
+                    Connected apps
+                  </legend>
+                  <p className="text-xs text-muted-foreground">
+                    Choose connected apps this agent can use while helping.
+                    Access stays limited to the apps you choose.
                   </p>
                 </div>
                 <Link
                   to="/integrations"
-                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs underline-offset-4 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
                   Manage connected apps
-                  <HugeiconsIcon icon={LinkSquare01Icon} className="size-3" strokeWidth={2} />
+                  <HugeiconsIcon
+                    icon={LinkSquare01Icon}
+                    className="size-3"
+                    strokeWidth={2}
+                  />
                 </Link>
               </div>
 
               {loadingIntegrations ? (
-                <p className="text-muted-foreground rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm">
+                <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
                   Loading connected apps…
                 </p>
               ) : integrationsError ? (
-                <p className="text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
-                  Connected apps are unavailable. You can create this agent and choose
-                  apps later.
+                <p className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                  Connected apps are unavailable. You can create this agent and
+                  choose apps later.
                 </p>
               ) : connectedToolkits.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center">
                   <p className="text-sm font-medium">No connected apps yet</p>
-                  <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-xs leading-relaxed">
-                    Connect apps, then return here to choose what this agent can use.
+                  <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+                    Connect apps, then return here to choose what this agent can
+                    use.
                   </p>
                 </div>
               ) : (
@@ -242,16 +258,22 @@ export function AgentCreatePage() {
             </fieldset>
 
             <fieldset className="flex flex-col gap-3">
-              <legend className="text-sm font-medium">Built-in capabilities</legend>
+              <legend className="text-sm font-medium">
+                Built-in capabilities
+              </legend>
               <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm hover:bg-muted/40">
                 <input
                   type="checkbox"
                   aria-label="Search"
                   checked={webSearchSelected}
-                  onChange={(event) => setWebSearchSelected(event.target.checked)}
+                  onChange={(event) =>
+                    setWebSearchSelected(event.target.checked)
+                  }
                 />
                 <span className="flex min-w-0 flex-col">
-                  <span className="font-medium">{WEB_SEARCH_CAPABILITY.label}</span>
+                  <span className="font-medium">
+                    {WEB_SEARCH_CAPABILITY.label}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {WEB_SEARCH_CAPABILITY.description}
                   </span>

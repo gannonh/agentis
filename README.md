@@ -17,7 +17,7 @@ cd agentis
 pnpm install
 cp .env.example .env
 cp apps/web/.env.example apps/web/.env
-# Set OPENAI_API_KEY in .env at the repo root for live model runs
+# Set AI_GATEWAY_API_KEY in .env at the repo root for live model runs and native web search
 pnpm dev
 ```
 

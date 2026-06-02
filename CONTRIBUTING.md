@@ -7,7 +7,7 @@ Thank you for your interest in contributing. Agentis is early-stage; we welcome 
 1. Fork and clone the repository.
 2. Install dependencies: `pnpm install`
 3. Copy environment samples:
-   - `cp .env.example .env` and set `OPENAI_API_KEY` at the repo root
+   - `cp .env.example .env` and set `AI_GATEWAY_API_KEY` at the repo root
    - `cp apps/web/.env.example apps/web/.env` (optional web overrides)
 4. Optional: `apps/api/.env` for API-only overrides (otherwise root `.env` is used).
 5. Start dev servers: `pnpm dev` (API on `:3101`, web on `:5177`)

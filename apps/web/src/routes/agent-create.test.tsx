@@ -38,7 +38,8 @@ vi.mock("@/hooks/use-integrations", () => ({
 const navigate = vi.fn()
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router")
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router")
   return {
     ...actual,
     useNavigate: () => navigate,
@@ -92,6 +93,9 @@ describe("AgentCreatePage", () => {
         "Tell the agent how to help, what to focus on, and which connected apps it can use."
       )
     ).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText("openai/gpt-4o-mini")
+    ).toBeInTheDocument()
 
     await user.type(screen.getByLabelText(/^name/i), "Research Agent")
     await user.type(
@@ -99,7 +103,10 @@ describe("AgentCreatePage", () => {
       "Finds source-backed answers"
     )
     await user.clear(screen.getByLabelText(/^answer engine/i))
-    await user.type(screen.getByLabelText(/^answer engine/i), "gpt-4o-mini")
+    await user.type(
+      screen.getByLabelText(/^answer engine/i),
+      "openai/gpt-4o-mini"
+    )
     expect(screen.getByPlaceholderText(/Main job:/i)).toBeInTheDocument()
     await user.type(
       screen.getByLabelText(/^instructions/i),
@@ -112,7 +119,9 @@ describe("AgentCreatePage", () => {
     expect(screen.getByText(/1 action · 1 account/)).toBeInTheDocument()
     await user.click(screen.getByRole("checkbox", { name: /GitHub/ }))
     expect(screen.getByText("Selected")).toBeInTheDocument()
-    expect(screen.queryByRole("checkbox", { name: /Linear/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("checkbox", { name: /Linear/ })
+    ).not.toBeInTheDocument()
 
     const primaryText = container.textContent ?? ""
     expect(primaryText).not.toMatch(
@@ -125,7 +134,7 @@ describe("AgentCreatePage", () => {
       expect(createAgent).toHaveBeenCalledWith({
         name: "Research Agent",
         description: "Finds source-backed answers",
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         systemPrompt: "Answer with citations.",
         toolGrants: [{ toolkitSlug: "github" }],
         nativeTools: ["webSearch"],
@@ -154,7 +163,7 @@ describe("AgentCreatePage", () => {
       expect(createAgent).toHaveBeenCalledWith({
         name: "No Search Agent",
         description: undefined,
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         systemPrompt: "Answer without web search.",
         toolGrants: [],
         nativeTools: [],

@@ -16,21 +16,24 @@ afterEach(() => {
 })
 
 describe("api routes", () => {
-  it("reports missing runtime key", async () => {
+  it("reports missing Gateway runtime key", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, {
       ...ctx.config,
-      openAiApiKey: undefined,
+      aiGatewayApiKey: undefined,
+      mockRuntime: false,
     })
 
     const response = await app.request("/api/runtime/health")
     const body = (await response.json()) as {
       available: boolean
       reason?: string
+      model?: string
     }
 
     expect(body.available).toBe(false)
     expect(body.reason).toBe("missing_api_key")
+    expect(body.model).toBe("openai/gpt-4o-mini")
   })
 
   it("creates a thread with queued run", async () => {
@@ -429,21 +432,15 @@ describe("config", () => {
     expect(config.webAppOrigin).toBe("http://127.0.0.1:5177")
   })
 
-  it("detects runtime availability from api key or mock mode", () => {
+  it("detects runtime availability from Gateway key or mock mode", () => {
     expect(
-      isRuntimeAvailable({ openAiApiKey: "x", mockRuntime: false } as never)
+      isRuntimeAvailable({ aiGatewayApiKey: "x", mockRuntime: false })
     ).toBe(true)
     expect(
-      isRuntimeAvailable({
-        openAiApiKey: undefined,
-        mockRuntime: true,
-      } as never)
+      isRuntimeAvailable({ aiGatewayApiKey: undefined, mockRuntime: true })
     ).toBe(true)
     expect(
-      isRuntimeAvailable({
-        openAiApiKey: undefined,
-        mockRuntime: false,
-      } as never)
+      isRuntimeAvailable({ aiGatewayApiKey: undefined, mockRuntime: false })
     ).toBe(false)
   })
 })

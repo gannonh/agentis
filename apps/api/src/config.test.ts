@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   isDebugSeedsEnabled,
   isRunTimelineDebugEnabled,
+  isRuntimeAvailable,
   loadConfig,
 } from "./config.js"
 
@@ -21,10 +22,24 @@ describe("config", () => {
     expect(isDebugSeedsEnabled({ ...config, nodeEnv: "development" })).toBe(
       true
     )
-    expect(isRunTimelineDebugEnabled({ ...config, nodeEnv: "production" })).toBe(
-      false
-    )
-    expect(isRunTimelineDebugEnabled({ ...config, nodeEnv: "development" })).toBe(
+    expect(
+      isRunTimelineDebugEnabled({ ...config, nodeEnv: "production" })
+    ).toBe(false)
+    expect(
+      isRunTimelineDebugEnabled({ ...config, nodeEnv: "development" })
+    ).toBe(true)
+  })
+
+  it("uses Gateway credentials for live runtime availability", () => {
+    expect(
+      isRuntimeAvailable(
+        loadConfig({ AI_GATEWAY_API_KEY: "gateway-key", OPENAI_API_KEY: "" })
+      )
+    ).toBe(true)
+    expect(
+      isRuntimeAvailable(loadConfig({ OPENAI_API_KEY: "openai-key" }))
+    ).toBe(false)
+    expect(isRuntimeAvailable(loadConfig({ AGENTIS_MOCK_RUNTIME: "1" }))).toBe(
       true
     )
   })

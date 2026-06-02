@@ -21,7 +21,7 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 ## Frontend and API
 
 - **App:** `apps/web` — Vite, React 19, React Router.
-- **API:** `apps/api` — Hono, Drizzle SQLite, OpenAI via Vercel AI SDK for thread/run lifecycle.
+- **API:** `apps/api` — Hono, Drizzle SQLite, Vercel AI Gateway via Vercel AI SDK for thread/run lifecycle.
 - **Shared types:** `packages/shared` — Zod schemas for threads, messages, runs, and API DTOs.
 - **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared primitives. See [Component management](#component-management).
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
@@ -113,9 +113,9 @@ After install:
 
 ## Local runtime
 
-1. Set `OPENAI_API_KEY` in the repo root `.env` (see `.env.example`). The API loads that file on startup; `apps/api/.env` is optional for overrides.
+1. Set `AI_GATEWAY_API_KEY` in the repo root `.env` (see `.env.example`) for live model runs and native web search. The API loads that file on startup; `apps/api/.env` is optional for overrides.
 2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API.
-3. For E2E/CI without OpenAI, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
+3. For E2E/CI without live Gateway credentials, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
 
 ## Native workspace execution
 
