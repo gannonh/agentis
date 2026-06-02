@@ -175,6 +175,43 @@ describe("DocumentService", () => {
     ctx.cleanup()
   })
 
+  it("rejects documents with invalid project or thread provenance", () => {
+    const ctx = createTestContext()
+    const project = ctx.repos.projects.create({ name: "Source project" })
+    const otherProject = ctx.repos.projects.create({ name: "Other project" })
+    const source = ctx.repos.threads.createWithInitialRun({
+      title: "Source thread",
+      prompt: "Create notes",
+      model: "gpt-4o-mini",
+      mode: "agent",
+      projectId: project.id,
+    })
+    const service = new DocumentService(ctx.repos, ctx.config)
+
+    expect(
+      service.createMarkdownDocument({
+        title: "Missing project",
+        content: "# Missing",
+        visibilityScope: "project",
+        projectId: "missing-project",
+        threadId: source.thread.id,
+      })
+    ).toMatchObject({ ok: false, code: "invalid_document_provenance" })
+
+    expect(
+      service.createMarkdownDocument({
+        title: "Mismatched project",
+        content: "# Mismatch",
+        visibilityScope: "project",
+        projectId: otherProject.id,
+        threadId: source.thread.id,
+      })
+    ).toMatchObject({ ok: false, code: "invalid_document_provenance" })
+
+    expect(ctx.repos.documents.count()).toBe(0)
+    ctx.cleanup()
+  })
+
   it("updates one markdown section and appends sections with new versions", () => {
     const ctx = createTestContext()
     const createdThread = ctx.repos.threads.createWithInitialRun({

@@ -39,6 +39,13 @@ type DocumentError = {
   status?: number
 }
 
+type DocumentSectionChange = {
+  document: Document
+  previousVersion: number
+  currentVersion: number
+  section: MarkdownSection
+}
+
 function inferMimeType(filename: string, fallback?: string) {
   if (fallback?.trim()) return fallback
   const ext = extname(filename).toLowerCase()
@@ -85,13 +92,20 @@ const SCOPE_SORT_ORDER: Record<DocumentVisibilityScope, number> = {
   thread: 2,
 }
 
+function documentError(
+  code: string,
+  message: string,
+  status: number
+): DocumentError {
+  return { ok: false, code, message, status }
+}
+
 function documentNotFoundError(): DocumentError {
-  return {
-    ok: false,
-    code: "document_not_found",
-    message: "Document not found",
-    status: 404,
-  }
+  return documentError("document_not_found", "Document not found", 404)
+}
+
+function invalidProvenanceError(message: string): DocumentError {
+  return documentError("invalid_document_provenance", message, 400)
 }
 
 function generatedVisibilityScope(input: {
@@ -458,14 +472,7 @@ export class DocumentService {
     content: string
     changeSummary?: string
     runContext: DocumentRunContext
-  }):
-    | DocumentResult<{
-        document: Document
-        previousVersion: number
-        currentVersion: number
-        section: MarkdownSection
-      }>
-    | DocumentError {
+  }): DocumentResult<DocumentSectionChange> | DocumentError {
     return this.changeMarkdownDocument(input, (content) => {
       const section = this.findSection(content, input.sectionPath)
       if (!section.ok) return section
@@ -488,14 +495,7 @@ export class DocumentService {
     content: string
     changeSummary?: string
     runContext: DocumentRunContext
-  }):
-    | DocumentResult<{
-        document: Document
-        previousVersion: number
-        currentVersion: number
-        section: MarkdownSection
-      }>
-    | DocumentError {
+  }): DocumentResult<DocumentSectionChange> | DocumentError {
     return this.changeMarkdownDocument(input, (content) => {
       let parent: MarkdownSection | undefined
       if (input.parentSectionPath) {
@@ -559,14 +559,7 @@ export class DocumentService {
     ) =>
       | DocumentResult<{ content: string; section: MarkdownSection }>
       | DocumentError
-  ):
-    | DocumentResult<{
-        document: Document
-        previousVersion: number
-        currentVersion: number
-        section: MarkdownSection
-      }>
-    | DocumentError {
+  ): DocumentResult<DocumentSectionChange> | DocumentError {
     const read = this.readDocument({
       documentId: input.documentId,
       maxChars: this.config.documentMaxUploadBytes,
@@ -740,34 +733,27 @@ export class DocumentService {
     const project = input.projectId
       ? this.repos.projects.getById(input.projectId)
       : null
+    if (input.projectId && !project) {
+      return invalidProvenanceError("Project not found for document provenance")
+    }
+
     const run = input.runId ? this.repos.runs.getById(input.runId) : null
     if (input.runId && !run) {
-      return {
-        ok: false,
-        code: "invalid_document_provenance",
-        message: "Run not found for document provenance",
-        status: 400,
-      }
+      return invalidProvenanceError("Run not found for document provenance")
     }
     if (run && input.threadId && run.threadId !== input.threadId) {
-      return {
-        ok: false,
-        code: "invalid_document_provenance",
-        message: "Document run and thread do not match",
-        status: 400,
-      }
+      return invalidProvenanceError("Document run and thread do not match")
     }
 
     const threadId = run?.threadId ?? input.threadId
     const thread = threadId ? this.repos.threads.getById(threadId) : null
     if (threadId && !thread) {
-      return {
-        ok: false,
-        code: "invalid_document_provenance",
-        message: "Thread not found for document provenance",
-        status: 400,
-      }
+      return invalidProvenanceError("Thread not found for document provenance")
     }
+    if (input.projectId && thread && thread.projectId !== input.projectId) {
+      return invalidProvenanceError("Document project and thread do not match")
+    }
+
     const agentId = run?.agentId ?? thread?.agentId
     const agent = agentId ? this.repos.agents.getById(agentId) : null
     return {
