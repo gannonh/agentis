@@ -119,17 +119,8 @@ describe("LibraryPage", () => {
     expect(mockedListAgents).toHaveBeenCalled()
     expect(mockedListThreads).toHaveBeenCalled()
 
-    await user.selectOptions(screen.getByLabelText("Filter by source"), "user")
-    await waitFor(() => {
-      expect(mockedListDocuments).toHaveBeenLastCalledWith(
-        expect.objectContaining({ source: "user" })
-      )
-    })
-
-    await user.selectOptions(
-      screen.getByLabelText("Filter by source"),
-      "agent:agent_docs"
-    )
+    await user.click(screen.getByLabelText("Filter by source"))
+    await user.click(await screen.findByRole("menuitemradio", { name: /Docs Agent/ }))
     await waitFor(() => {
       expect(mockedListDocuments).toHaveBeenLastCalledWith(
         expect.objectContaining({ source: "agent", agentId: "agent_docs" })
@@ -137,11 +128,15 @@ describe("LibraryPage", () => {
     })
 
     const scope = screen.getByLabelText("Filter by scope")
-    expect(scope).toHaveTextContent("Thread")
+    expect(scope).toHaveTextContent("Any scope")
     expect(scope).not.toHaveTextContent("Launch evidence thread")
     expect(screen.queryByLabelText("Filter by thread")).not.toBeInTheDocument()
 
-    await user.selectOptions(scope, "project:project_launch")
+    await user.click(scope)
+    expect(screen.getByRole("menu", { hidden: true })).not.toHaveTextContent(
+      "Launch evidence thread"
+    )
+    await user.click(screen.getByRole("menuitemradio", { name: /Launch/ }))
     await waitFor(() => {
       expect(mockedListDocuments).toHaveBeenLastCalledWith(
         expect.objectContaining({
@@ -153,7 +148,23 @@ describe("LibraryPage", () => {
       )
     })
 
-    await user.selectOptions(scope, "thread")
+  })
+
+  it("shows a searchable thread filter only after selecting thread scope", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <LibraryPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(mockedListDocuments).toHaveBeenCalled()
+    })
+    expect(screen.queryByLabelText("Filter by thread")).not.toBeInTheDocument()
+
+    await user.click(screen.getByLabelText("Filter by scope"))
+    await user.click(await screen.findByRole("menuitemradio", { name: /^Thread$/ }))
     expect(await screen.findByLabelText("Search threads")).toBeInTheDocument()
     expect(screen.getByLabelText("Filter by thread")).toHaveTextContent(
       "Launch evidence thread"
@@ -167,8 +178,6 @@ describe("LibraryPage", () => {
     await waitFor(() => {
       expect(mockedListDocuments).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          source: "agent",
-          agentId: "agent_docs",
           visibilityScope: "thread",
           threadId: "thread_research",
         })

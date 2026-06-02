@@ -1,4 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  BubbleChatIcon,
+  CloudUploadIcon,
+  FilterHorizontalIcon,
+  Folder01Icon,
+  FolderLibraryIcon,
+  Globe02Icon,
+  Robot01Icon,
+  Search01Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { useSearchParams } from "react-router"
 import {
   documentTypeSchema,
@@ -12,6 +24,16 @@ import {
   type ThreadListItem,
 } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
 import {
   Card,
   CardContent,
@@ -87,6 +109,31 @@ function scopeFilters(
     }
   }
   return {}
+}
+
+function MenuIcon({ icon }: { icon: IconSvgElement }) {
+  return <HugeiconsIcon icon={icon} className="size-3.5" strokeWidth={2} aria-hidden />
+}
+
+function sourceLabel(value: DocumentSourceFilter, agents: AgentListItem[]) {
+  if (value === "user") return "User uploads"
+  if (value === "agent") return "Agent generated"
+  if (value.startsWith("agent:")) {
+    const agentId = value.slice("agent:".length)
+    return agents.find((agent) => agent.id === agentId)?.name ?? "Agent"
+  }
+  return "Any source"
+}
+
+function scopeLabel(value: DocumentScopeFilter, projects: Project[]) {
+  if (value === "global") return "Global"
+  if (value === "project") return "All projects"
+  if (value === "thread") return "Thread"
+  if (value.startsWith("project:")) {
+    const projectId = value.slice("project:".length)
+    return projects.find((project) => project.id === projectId)?.name ?? "Project"
+  }
+  return "Any scope"
 }
 
 export function LibraryPage() {
@@ -321,13 +368,24 @@ export function LibraryPage() {
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Input
-          placeholder="Search documents…"
-          className="max-w-md"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search documents"
-        />
+        <div className="hidden text-muted-foreground sm:flex" aria-hidden>
+          <HugeiconsIcon icon={FilterHorizontalIcon} className="size-4" strokeWidth={2} />
+        </div>
+        <div className="relative w-full sm:max-w-md">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <Input
+            placeholder="Search documents…"
+            className="pl-7"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search documents"
+          />
+        </div>
         <select
           className="border-input bg-background h-9 rounded-md border px-3 text-sm"
           value={typeFilter}
@@ -343,52 +401,128 @@ export function LibraryPage() {
             </option>
           ))}
         </select>
-        <select
-          className="border-input bg-background h-9 min-w-40 rounded-md border px-3 text-sm"
-          value={sourceFilter}
-          onChange={(e) =>
-            setSourceFilter(e.target.value as DocumentSourceFilter)
-          }
-          aria-label="Filter by source"
-        >
-          <option value="">Any source</option>
-          <option value="user">User uploads</option>
-          <option value="agent">Agent generated</option>
-          {agents.length ? (
-            <optgroup label="Agents">
-              {agents.map((agent) => (
-                <option key={agent.id} value={`agent:${agent.id}`}>
-                  {agent.name}
-                </option>
-              ))}
-            </optgroup>
-          ) : null}
-        </select>
-        <select
-          className="border-input bg-background h-9 min-w-40 rounded-md border px-3 text-sm"
-          value={scopeFilter}
-          onChange={(e) => {
-            const value = e.target.value as DocumentScopeFilter
-            setScopeFilter(value)
-            setThreadSearch("")
-            setThreadFilter("")
-          }}
-          aria-label="Filter by scope"
-        >
-          <option value="">Any scope</option>
-          <option value="global">Global</option>
-          <option value="project">All projects</option>
-          {projects.length ? (
-            <optgroup label="Projects">
-              {projects.map((project) => (
-                <option key={project.id} value={`project:${project.id}`}>
-                  {project.name}
-                </option>
-              ))}
-            </optgroup>
-          ) : null}
-          <option value="thread">Thread</option>
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                className="w-full justify-between sm:w-48"
+                aria-label="Filter by source"
+              />
+            }
+          >
+            <span className="truncate">{sourceLabel(sourceFilter, agents)}</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuRadioGroup
+              value={sourceFilter || "all"}
+              onValueChange={(value) =>
+                setSourceFilter(
+                  value === "all" ? "" : (value as DocumentSourceFilter)
+                )
+              }
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Source</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="all">
+                  <MenuIcon icon={FolderLibraryIcon} />
+                  Any source
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="user">
+                  <MenuIcon icon={CloudUploadIcon} />
+                  User uploads
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="agent">
+                  <MenuIcon icon={Robot01Icon} />
+                  Agent generated
+                </DropdownMenuRadioItem>
+              </DropdownMenuGroup>
+              {agents.length ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Agents</DropdownMenuLabel>
+                    {agents.map((agent) => (
+                      <DropdownMenuRadioItem
+                        key={agent.id}
+                        value={`agent:${agent.id}`}
+                      >
+                        <MenuIcon icon={UserIcon} />
+                        {agent.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </>
+              ) : null}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                className="w-full justify-between sm:w-48"
+                aria-label="Filter by scope"
+              />
+            }
+          >
+            <span className="truncate">{scopeLabel(scopeFilter, projects)}</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuRadioGroup
+              value={scopeFilter || "all"}
+              onValueChange={(value) => {
+                setScopeFilter(
+                  value === "all" ? "" : (value as DocumentScopeFilter)
+                )
+                setThreadSearch("")
+                setThreadFilter("")
+              }}
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Scope</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="all">
+                  <MenuIcon icon={FolderLibraryIcon} />
+                  Any scope
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="global">
+                  <MenuIcon icon={Globe02Icon} />
+                  Global
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="project">
+                  <MenuIcon icon={Folder01Icon} />
+                  All projects
+                </DropdownMenuRadioItem>
+              </DropdownMenuGroup>
+              {projects.length ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Projects</DropdownMenuLabel>
+                    {projects.map((project) => (
+                      <DropdownMenuRadioItem
+                        key={project.id}
+                        value={`project:${project.id}`}
+                      >
+                        <MenuIcon icon={Folder01Icon} />
+                        {project.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </>
+              ) : null}
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Threads</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="thread">
+                  <MenuIcon icon={BubbleChatIcon} />
+                  Thread
+                </DropdownMenuRadioItem>
+              </DropdownMenuGroup>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         {scopeFilter === "thread" ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Input
