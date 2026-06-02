@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented
+Verified
 
 ## Goal
 
@@ -252,7 +252,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 
 - Spec path: `docs/specs/2026-06-02-migrate-chat-model-execution-to-vercel-ai-gateway-design.md`
 - Base SHA: `9aa30b14a595d07ec993ff4f8cf0ea1921bc65be`
-- Final implementation SHA: `cbc4490f03ade84d1ac1023e1fcd70419e7c7f66`
+- Final implementation SHA: `7a473cd0`
 - Independent subagent review: used for spec compliance, code quality, and final whole-branch review.
 
 ### Tasks completed
@@ -328,3 +328,25 @@ None.
 ### Known follow-up issues
 
 - `DEFAULT_OPENAI_MODEL` still carries its historical name while holding a Gateway-compatible id. This remains a naming cleanup, not a runtime fallback.
+
+## Verify completion report
+
+- Evidence directory: `uat-evidence/mixed-20260602-203501/`
+- Live Gateway stream: passed with `AI_GATEWAY_API_KEY` loaded from repo `.env` and `OPENAI_API_KEY` unset in the launched API process.
+- Runtime health checks: passed for missing Gateway key and mock-runtime availability.
+- UI missing-credential copy: passed via browser screenshot of `/threads/new` showing `AI_GATEWAY_API_KEY` guidance.
+- Focused tests: passed.
+- Forced full quality gate: passed with no Turbo cache after extending existing long-running coverage test timeouts.
+- Final evidence review: completed by subagent with no blocking acceptance gaps.
+
+Final command evidence:
+
+```bash
+pnpm --filter api test -- src/config.test.ts src/config.web-search.test.ts src/app.test.ts src/runtime/run-executor.test.ts src/runtime/gateway-model.test.ts
+pnpm --filter web test -- src/components/thread/thread-prompt-composer.test.tsx src/routes/agent-create.test.tsx
+pnpm --filter api test -- src/db/migrations.test.ts
+TURBO_FORCE=1 pnpm typecheck
+TURBO_FORCE=1 pnpm build
+TURBO_FORCE=1 pnpm lint
+TURBO_FORCE=1 pnpm test:coverage
+```
