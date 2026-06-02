@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
+  BrowserIcon,
   BubbleChatIcon,
   CloudUploadIcon,
   File01Icon,
@@ -7,9 +8,14 @@ import {
   Folder01Icon,
   FolderLibraryIcon,
   Globe02Icon,
+  Image01Icon,
+  Presentation01Icon,
   Robot01Icon,
-  Search01Icon,
+  TableIcon,
+  TextAlignLeftIcon,
   UserIcon,
+  Video01Icon,
+  Search01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { useSearchParams } from "react-router"
@@ -124,6 +130,16 @@ function sourceLabel(value: DocumentSourceFilter, agents: AgentListItem[]) {
     return agents.find((agent) => agent.id === agentId)?.name ?? "Agent"
   }
   return "Any source"
+}
+
+const DOCUMENT_TYPE_ICONS: Record<DocumentType, IconSvgElement> = {
+  markdown: TextAlignLeftIcon,
+  webpage: BrowserIcon,
+  image: Image01Icon,
+  video: Video01Icon,
+  table: TableIcon,
+  slides: Presentation01Icon,
+  other: File01Icon,
 }
 
 function typeLabel(value: DocumentType | "") {
@@ -418,7 +434,7 @@ export function LibraryPage() {
                 </DropdownMenuRadioItem>
                 {DOCUMENT_TYPES.map((type) => (
                   <DropdownMenuRadioItem key={type} value={type}>
-                    <MenuIcon icon={File01Icon} />
+                    <MenuIcon icon={DOCUMENT_TYPE_ICONS[type]} />
                     <span className="capitalize">{type}</span>
                   </DropdownMenuRadioItem>
                 ))}
