@@ -252,7 +252,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 
 - Spec path: `docs/specs/2026-06-02-migrate-chat-model-execution-to-vercel-ai-gateway-design.md`
 - Base SHA: `9aa30b14a595d07ec993ff4f8cf0ea1921bc65be`
-- Final implementation SHA: `102e3c5a`
+- Post-review implementation SHA: `159008ba`
 - Independent subagent review: used for spec compliance, code quality, and final whole-branch review.
 
 ### Tasks completed
@@ -266,11 +266,13 @@ Build should implement the phases above, keep edits surgical, and verify the acc
    - Removed the direct `@ai-sdk/openai` dependency.
 2. Defaults, seeds, and tests
    - Updated default, seed, migration, and agent setup model ids to `openai/gpt-4o-mini` or other Gateway-compatible ids.
+   - Renamed the exported default model constant to `DEFAULT_GATEWAY_MODEL` and kept `DEFAULT_OPENAI_MODEL` as a deprecated compatibility alias.
    - Kept runtime normalization for known legacy ids: `gpt-4o-mini` and `gpt-4.1-mini`.
    - Added focused Gateway model, runtime health, missing credential, invalid model, and UI copy tests.
 3. UI and docs
    - Updated thread composer missing-key copy to `AI_GATEWAY_API_KEY`.
    - Updated `.env.example`, `apps/api/.env.example`, `README.md`, `CONTRIBUTING.md`, and `AGENTS.md` for the Gateway credential path.
+   - Added `docs/adr/0004-vercel-ai-gateway-runtime-boundary.md` for the Gateway runtime boundary decision.
 4. Review and verification
    - Spec compliance review passed.
    - Code quality review passed after fixing model validation order and agent setup model id consistency.
@@ -287,6 +289,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 - `apps/api/src/app.test.ts`
 - `apps/api/src/test/setup.ts`
 - `apps/api/src/repositories/testing-seed-data.ts`
+- `apps/api/src/repositories/workspace-repository.ts`
 - `apps/api/drizzle/0021_agent_workspaces.sql`
 - `apps/api/package.json`
 - `packages/shared/src/schemas.ts`
@@ -302,6 +305,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 - `README.md`
 - `CONTRIBUTING.md`
 - `AGENTS.md`
+- `docs/adr/0004-vercel-ai-gateway-runtime-boundary.md`
 - `pnpm-lock.yaml`
 
 ### Verification run
@@ -328,7 +332,7 @@ None.
 
 ### Known follow-up issues
 
-- `DEFAULT_OPENAI_MODEL` still carries its historical name while holding a Gateway-compatible id. This remains a naming cleanup, not a runtime fallback.
+- `DEFAULT_OPENAI_MODEL` remains as a deprecated shared export for compatibility. Internal code now uses `DEFAULT_GATEWAY_MODEL`; removing the alias is a future shared API cleanup.
 
 ## Verify completion report
 
