@@ -154,7 +154,7 @@ describe("AgentCreatePage", () => {
       expect(createAgent).toHaveBeenCalledWith({
         name: "No Search Agent",
         description: undefined,
-        model: "gpt-4o-mini",
+        model: "openai/gpt-4o-mini",
         systemPrompt: "Answer without web search.",
         toolGrants: [],
         nativeTools: [],

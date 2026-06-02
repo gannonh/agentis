@@ -93,7 +93,7 @@ export function ThreadPromptComposer({
   if (!health.available) {
     blockedReason =
       health.reason === "missing_api_key"
-        ? "Add OPENAI_API_KEY to the repo root .env to enable model execution."
+        ? "Add AI_GATEWAY_API_KEY to the repo root .env to enable model execution."
         : "Agent runtime is unavailable. Start the API with pnpm dev."
   }
 

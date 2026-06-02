@@ -26,6 +26,22 @@ function renderComposer(input?: {
 }
 
 describe("ThreadPromptComposer", () => {
+  it("points missing runtime credentials to the Gateway key", () => {
+    render(
+      <ThreadPromptComposer
+        onSubmit={vi.fn()}
+        health={{ available: false, reason: "missing_api_key" }}
+        mode="plan"
+        onModeChange={vi.fn()}
+        executeBehavior="auto"
+        onExecuteBehaviorChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText(/AI_GATEWAY_API_KEY/)).toBeInTheDocument()
+    expect(screen.queryByText(/OPENAI_API_KEY/)).not.toBeInTheDocument()
+  })
+
   it("labels modes as Plan and Execute", () => {
     const { rerender } = render(
       <ThreadPromptComposer

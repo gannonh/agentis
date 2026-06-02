@@ -30,7 +30,7 @@ import { cn } from "@workspace/ui/lib/utils"
 const INITIAL_FORM: AgentSetupFormState = {
   name: "",
   description: "",
-  model: "gpt-4o-mini",
+  model: "openai/gpt-4o-mini",
   systemPrompt: "",
 }
 
