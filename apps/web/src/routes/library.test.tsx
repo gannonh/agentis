@@ -97,6 +97,7 @@ describe("LibraryPage", () => {
 
     expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
     expect(screen.getByLabelText("Search documents")).toBeEnabled()
+    expect(screen.getByLabelText("Filter by type")).toHaveTextContent("All types")
 
     await waitFor(() => {
       expect(screen.getByText("Q2 Brief")).toBeInTheDocument()
@@ -164,7 +165,7 @@ describe("LibraryPage", () => {
     expect(screen.queryByLabelText("Filter by thread")).not.toBeInTheDocument()
 
     await user.click(screen.getByLabelText("Filter by scope"))
-    await user.click(await screen.findByRole("menuitemradio", { name: /^Thread$/ }))
+    await user.click(await screen.findByRole("menuitemradio", { name: /^Threads$/ }))
     expect(await screen.findByLabelText("Search threads")).toBeInTheDocument()
     expect(screen.getByLabelText("Filter by thread")).toHaveTextContent(
       "Launch evidence thread"

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   BubbleChatIcon,
   CloudUploadIcon,
+  File01Icon,
   FilterHorizontalIcon,
   Folder01Icon,
   FolderLibraryIcon,
@@ -125,10 +126,14 @@ function sourceLabel(value: DocumentSourceFilter, agents: AgentListItem[]) {
   return "Any source"
 }
 
+function typeLabel(value: DocumentType | "") {
+  return value || "All types"
+}
+
 function scopeLabel(value: DocumentScopeFilter, projects: Project[]) {
   if (value === "global") return "Global"
   if (value === "project") return "All projects"
-  if (value === "thread") return "Thread"
+  if (value === "thread") return "Threads"
   if (value.startsWith("project:")) {
     const projectId = value.slice("project:".length)
     return projects.find((project) => project.id === projectId)?.name ?? "Project"
@@ -386,21 +391,41 @@ export function LibraryPage() {
             aria-label="Search documents"
           />
         </div>
-        <select
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-          value={typeFilter}
-          onChange={(e) =>
-            setTypeFilter(e.target.value as DocumentType | "")
-          }
-          aria-label="Filter by type"
-        >
-          <option value="">All types</option>
-          {DOCUMENT_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                className="w-full justify-between sm:w-40"
+                aria-label="Filter by type"
+              />
+            }
+          >
+            <span className="truncate capitalize">{typeLabel(typeFilter)}</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-44">
+            <DropdownMenuRadioGroup
+              value={typeFilter || "all"}
+              onValueChange={(value) =>
+                setTypeFilter(value === "all" ? "" : (value as DocumentType))
+              }
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Type</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="all">
+                  <MenuIcon icon={FolderLibraryIcon} />
+                  All types
+                </DropdownMenuRadioItem>
+                {DOCUMENT_TYPES.map((type) => (
+                  <DropdownMenuRadioItem key={type} value={type}>
+                    <MenuIcon icon={File01Icon} />
+                    <span className="capitalize">{type}</span>
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -514,10 +539,9 @@ export function LibraryPage() {
               ) : null}
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Threads</DropdownMenuLabel>
                 <DropdownMenuRadioItem value="thread">
                   <MenuIcon icon={BubbleChatIcon} />
-                  Thread
+                  Threads
                 </DropdownMenuRadioItem>
               </DropdownMenuGroup>
             </DropdownMenuRadioGroup>
