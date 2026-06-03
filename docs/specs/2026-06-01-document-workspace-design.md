@@ -12,7 +12,7 @@ This is a follow-on to V4.2 persistent documents. V4.2 established the durable `
 
 ## Source of truth
 
-- Persistent document spec: `docs/specs/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
+- Persistent document spec: `docs/specs/_done/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
 - Document primitive ADR: `docs/adr/0003-persistent-documents-library-primitive.md`
 - Current route: `apps/web/src/routes/library.tsx`
 - Current project documents panel: `apps/web/src/components/projects/project-documents-panel.tsx`
@@ -20,9 +20,9 @@ This is a follow-on to V4.2 persistent documents. V4.2 established the durable `
 - Current API route: `apps/api/src/routes/documents.ts`
 - Current document domain service: `apps/api/src/documents/document-service.ts`
 
-## Current state
+## Pre-build state
 
-Implemented today:
+Implemented before this workspace slice:
 
 - Library cards with search, Type, Source, and Scope filters.
 - Document upload and download.
@@ -78,6 +78,7 @@ The user-provided visual direction shows a full-screen overlay on top of the Lib
 - Version history list.
 - Ability to view prior version content without changing the current version.
 - Source and Scope display.
+- Visibility scope management for valid thread, project, and global assignments.
 - Download action from the workspace.
 - Non-markdown read-only handling.
 
@@ -88,7 +89,6 @@ The user-provided visual direction shows a full-screen overlay on top of the Lib
 - Section-specific editing UI.
 - Commenting, review, or approvals on documents.
 - Publish/share to public URLs.
-- Changing visibility scope in the first workspace slice.
 - Per-agent visibility. Agent association remains provenance and filtering metadata.
 - Binary preview beyond basic metadata and download.
 
@@ -103,7 +103,8 @@ The user-provided visual direction shows a full-screen overlay on top of the Lib
 7. Download works from the document workspace and returns the current document file.
 8. Thread, project, and global scope are displayed clearly; source/provenance is displayed separately from scope.
 9. Non-markdown or non-text documents show metadata, source/scope, version history when available, and download, with editing disabled and a clear read-only explanation.
-10. Tests cover route loading, Library entry point, thread entry point, project entry point, markdown edit/save, prior version viewing, non-markdown read-only state, and download link behavior.
+10. A user can change a document between valid thread, project, and global scopes without duplicating the document.
+11. Tests cover route loading, Library entry point, thread entry point, project entry point, markdown edit/save, prior version viewing, non-markdown read-only state, download link behavior, and scope changes.
 
 ## UX design
 
@@ -202,6 +203,12 @@ Scope display should include exactly one visibility scope:
 
 Do not label an agent as a scope.
 
+The implemented workspace also lets users change that visibility scope. Scope
+changes must go through the document domain service so thread/project validity,
+project snapshots, thread snapshots, and provenance separation stay consistent.
+Changing scope does not create a document version because it changes access
+metadata, not markdown content.
+
 ## API design
 
 Keep the existing `/api/documents/:documentId/download` route for downloads.
@@ -245,6 +252,23 @@ Recommended service addition:
 
 - Add `updateDocumentContent` to `DocumentService` rather than implementing version writes directly in the route.
 - Reuse existing storage, hash, preview, and `updateWithVersion` behavior.
+
+Add a workspace visibility endpoint for scope management:
+
+```text
+PATCH /api/documents/:documentId/visibility
+```
+
+Request:
+
+- `visibilityScope`: `thread`, `project`, or `global`.
+- `projectId`: required when assigning project scope if the document/run context cannot infer a valid project.
+
+Behavior:
+
+- Scope changes are metadata updates, not document versions.
+- The document domain service validates target thread/project assignment and preserves provenance snapshots separately from visibility scope.
+- The response returns updated document metadata and the previous visibility scope.
 
 ## Frontend architecture
 
@@ -432,13 +456,14 @@ Manual UAT:
 - Handle stale version conflicts and service errors.
 - Refresh detail after save.
 
-### Phase 4: Entry points
+### Phase 4: Entry points and scope management
 
 - Link Library cards and detail preview to the workspace.
 - Link project Documents panel entries to the workspace.
 - Link document-related run timeline entries to the workspace when `documentId` exists through a typed document action projection.
 - Update document tool `viewPath` to `/documents/:documentId` after the route ships.
 - Preserve download paths through the shared Document path/action policy.
+- Add workspace/API/tool support for changing visibility scope through the document service.
 
 ### Phase 5: Verification and UAT
 
@@ -456,7 +481,7 @@ Manual UAT:
 
 ## Build handoff
 
-Build the dedicated document workspace as a follow-on to V4.2. Keep the scope to raw markdown editing, version viewing, Source/Scope metadata, Download, and entry points from Library, provenance thread, and project context. Do not add rich text editing, publishing, collaboration, or scope-changing controls in this slice.
+Build the dedicated document workspace as a follow-on to V4.2. The implemented scope covers raw markdown editing, version viewing, Source/Scope metadata, Download, visibility scope management, and entry points from Library, provenance thread, and project context. Do not add rich text editing, publishing, collaboration, commenting, review workflows, or per-agent visibility in this slice.
 
 Use the architecture deepening candidates to keep the Build phase from spreading document content/version, navigation/action, and filter/query rules across Library, thread provenance, project context, and workspace callers. Acceptance is gated by the criteria above and the verification commands in this spec.
 
@@ -465,10 +490,10 @@ Use the architecture deepening candidates to keep the Build phase from spreading
 - **Spec:** `docs/specs/2026-06-01-document-workspace-design.md`
 - **Base SHA:** `f29b47cfb5d6cb994ee5dbfd18b256794099e01e`
 - **Final SHA:** `387195b6`
-- **Tasks completed:** Phase 1–5 (API/contracts, workspace route, markdown editing, entry points, verification)
-- **Key files:** `document-service.ts`, `documents.ts`, shared schemas, `document-workspace.tsx`, `components/documents/*`, `document-timeline.ts`, Library/project/timeline entry points, `document-tool.ts` view paths
+- **Tasks completed:** Phase 1–5 (API/contracts, workspace route, markdown editing, entry points, visibility scope management, verification)
+- **Key files:** `document-service.ts`, `document-scope-policy.ts`, `documents.ts`, shared schemas, `document-workspace.tsx`, `components/documents/*`, `document-timeline.ts`, Library/project/timeline entry points, `document-tool.ts` view paths/scope tool
 - **Tests run:** `@workspace/shared` (14), `api` documents (29), `web` library/document/project-detail/run-timeline/document-timeline (17) — all passed
 - **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm build` — passed
 - **Review:** Single-agent path (no subagent reviewers); TDD used for API and web tests
-- **Deviations:** Canvas tabs use button toggles instead of base-ui `Tabs` for reliable tab switching in tests and UI
+- **Deviations:** Canvas tabs use button toggles instead of base-ui `Tabs` for reliable tab switching in tests and UI; visibility scope management shipped in this branch and is now documented as in-scope implemented behavior
 - **Follow-up:** Manual UAT per spec; optional E2E extension for `/documents/:documentId`

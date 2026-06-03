@@ -37,7 +37,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Invocations: start with thread invocation, then add scheduled and Slack or webhook invocation.
 - Learning: skills, memories, and rubrics as reviewable suggestions from prior runs.
 - Command Center: roster, recent runs, quality, cost, active operations, and pending improvements.
-- Library: durable document collection with search, Type/Source/Scope filters, detail preview, version history, and download.
+- Library: durable document collection with search, Type/Source/Scope filters, detail preview, first-class document workspace, version history, markdown editing, scope management, and download.
 
 ## MVP non-goals
 
@@ -61,7 +61,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Memory: persisted fact or preference scoped globally, by project, or by agent.
 - Rubric: evaluation criteria for scored runs.
 - Evaluation: model-generated score and feedback tied to a run and rubric.
-- Document: durable Library primitive for uploaded files and agent-generated markdown, webpage, table, image, video, slides, or other run output. Document visibility is thread, project, or global; agent association is provenance, not a visibility scope.
+- Document: durable Library primitive for uploaded files and agent-generated markdown, webpage, table, image, video, slides, or other run output. Document visibility is thread, project, or global and can be managed from document workspace/tool flows when context is valid; agent association is provenance, not a visibility scope.
 
 ## Roadmap (⚠️ warning out of date)
 
@@ -138,7 +138,7 @@ Deliverables:
 - Project selector in the composer and thread metadata.
 - Context assembly that injects project goals and selected project memories into runs.
 - Document model with upload, generated output registration, markdown versioning, download, and preview metadata.
-- Library screen with search, Type/Source/Scope filters, document cards, detail preview, version history, and project/thread/agent provenance.
+- Library screen with search, Type/Source/Scope filters, document cards, detail preview, document workspace links, version history, markdown editing, scope management, and project/thread/agent provenance.
 - Basic file storage abstraction for local self-hosted deployments.
 
 Acceptance:
@@ -146,7 +146,7 @@ Acceptance:
 - User can create a project and start a thread inside it.
 - Project goals are included in the run context and visible from the thread.
 - A run can create at least one durable document and link it to the thread, project, and library.
-- User can browse, search, filter, preview, and download documents from the Library.
+- User can browse, search, filter, preview, open, edit markdown versions, manage scope, and download documents from the Library/document workspace.
 - Deleting or archiving a project preserves clear document ownership rules.
 
 ### M05: Agent Creation and Configuration ✅
@@ -191,7 +191,7 @@ Acceptance:
 - Created agent can run a follow-up task based on the source workflow.
 - Missing integration access blocks creation with clear remediation.
 
-### M07: Invocations and Deployment 
+### M07: Invocations and Deployment
 
 Goal: allow configured agents to run outside the manual thread composer through a small set of invocation paths.
 

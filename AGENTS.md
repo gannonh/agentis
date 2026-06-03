@@ -26,26 +26,25 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 - **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared primitives. See [Component management](#component-management).
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
 - **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, and Learning (not thread sessions, projects, or Library).
-- **M04/V4.2 Documents:** API-backed projects, project memories, project context on runs, local document storage (`AGENTIS_STORAGE_ROOT`), versioned markdown documents, document runtime tools, and Library upload/list/filter/detail/download.
+- **M04/V4.2 Documents:** API-backed projects, project memories, project context on runs, local document storage (`AGENTIS_STORAGE_ROOT`), versioned markdown documents, document runtime tools, Library upload/list/filter/detail/download, and the `/documents/:documentId` workspace for viewing, editing, version history, and scope management.
 - **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, and V3 sandboxed command/script execution are API-backed. See [agent-native-tooling.md](docs/specs/agent-native-tooling.md).
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
 ## Routes
 
-
-| Path                   | Screen                          |
-| ---------------------- | ------------------------------- |
-| `/threads/new`         | New thread home (default)       |
-| `/threads/:threadId`   | Thread session (API-backed)     |
-| `/command-center`      | Command Center                  |
-| `/agents/:agentId`     | Agent detail                    |
-| `/learning`            | Learning dashboard              |
-| `/integrations`        | Integrations catalog            |
-| `/projects/new`        | Create project (API-backed)     |
-| `/projects/:projectId` | Edit project, memories, archive |
-| `/library`             | Document library (API-backed)   |
-| `/search`              | Search placeholder              |
-
+| Path                     | Screen                          |
+| ------------------------ | ------------------------------- |
+| `/threads/new`           | New thread home (default)       |
+| `/threads/:threadId`     | Thread session (API-backed)     |
+| `/command-center`        | Command Center                  |
+| `/agents/:agentId`       | Agent detail                    |
+| `/learning`              | Learning dashboard              |
+| `/integrations`          | Integrations catalog            |
+| `/projects/new`          | Create project (API-backed)     |
+| `/projects/:projectId`   | Edit project, memories, archive |
+| `/library`               | Document library (API-backed)   |
+| `/documents/:documentId` | Document workspace (API-backed) |
+| `/search`                | Search placeholder              |
 
 ## Commands
 
@@ -60,12 +59,10 @@ pnpm test:e2e
 
 Agentis uses a **two-layer** UI setup. Do not duplicate primitives or hand-roll registry components when an install path exists.
 
-
 | Layer                 | Location                      | Purpose                                                                                                                                |
 | --------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Shared primitives     | `packages/ui/src/components/` | shadcn/ui building blocks used across the app (button, sidebar, dialog, input-group, …). Styles: `packages/ui/src/styles/globals.css`. |
 | App &amp; AI surfaces | `apps/web/src/components/`    | Product-specific UI. **AI Elements** live under `apps/web/src/components/ai-elements/` (conversation, message, prompt-input).          |
-
 
 **Config:** `[apps/web/components.json](apps/web/components.json)` drives installs. The `ui` alias points at `@workspace/ui/components`, so registry installs often **update `packages/ui`** (and sometimes `globals.css`), not only `apps/web`.
 
@@ -145,10 +142,10 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 
 ### Services and ports
 
-| Service | Dev (`pnpm dev`) | Playwright (`pnpm test:e2e`) |
-| ------- | ---------------- | ---------------------------- |
-| API | `3101` (`AGENTIS_API_PORT`) | `3002` (started by Playwright) |
-| Web | `5177` (`AGENTIS_WEB_PORT`) | `5175` (`dev:e2e` / `preview:e2e`) |
+| Service | Dev (`pnpm dev`)            | Playwright (`pnpm test:e2e`)       |
+| ------- | --------------------------- | ---------------------------------- |
+| API     | `3101` (`AGENTIS_API_PORT`) | `3002` (started by Playwright)     |
+| Web     | `5177` (`AGENTIS_WEB_PORT`) | `5175` (`dev:e2e` / `preview:e2e`) |
 
 No separate database or Redis process: SQLite and document files are owned by the API.
 
@@ -204,4 +201,3 @@ See [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md): `pnpm typeche
 ### Docker sandbox (optional)
 
 `AGENTIS_SANDBOX_BACKEND=local-container` needs a Docker daemon and `pnpm smoke:sandbox-container`. Default dev sandbox is `local-process` (no Docker).
-
