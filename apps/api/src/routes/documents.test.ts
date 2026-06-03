@@ -56,45 +56,42 @@ describe("document routes", () => {
     expect(detail.status).toBe(200)
     const detailBody = (await detail.json()) as {
       content: string
-      contentTruncated?: boolean
+      truncated?: boolean
+      currentVersion?: number
+      selectedVersion?: number
       versions: { version: number }[]
     }
     expect(detailBody.content).toContain("Brief")
-    expect(detailBody.contentTruncated).toBe(false)
+    expect(detailBody.truncated).toBe(false)
+    expect(detailBody.currentVersion).toBe(1)
+    expect(detailBody.selectedVersion).toBe(1)
     expect(detailBody.versions).toHaveLength(1)
   })
 
   it("truncates large text previews on the detail endpoint", async () => {
     ctx = createTestContext()
-    ctx.config.documentPreviewMaxChars = 20
     const services = createComposioServices(ctx.repos, ctx.config)
     const app = createApp(ctx.repos, ctx.config, services)
-
-    const form = new FormData()
-    form.set("title", "Long brief")
-    form.set("documentType", "markdown")
-    form.set(
-      "file",
-      new File(["# Long brief\n\n" + "x".repeat(200)], "long.md", {
-        type: "text/markdown",
-      })
-    )
-
-    const uploaded = await app.request("/api/documents", {
-      method: "POST",
-      body: form,
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const created = documentService.createMarkdownDocument({
+      title: "Long brief",
+      content: "# Long brief\n\n" + "x".repeat(200),
+      visibilityScope: "global",
     })
-    expect(uploaded.status).toBe(201)
-    const document = (await uploaded.json()) as { id: string }
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+    ctx.config.documentMaxUploadBytes = 20
 
-    const detail = await app.request(`/api/documents/${document.id}/detail`)
+    const detail = await app.request(
+      `/api/documents/${created.document.id}/detail`
+    )
     expect(detail.status).toBe(200)
     const detailBody = (await detail.json()) as {
       content: string
-      contentTruncated?: boolean
+      truncated?: boolean
     }
-    expect(detailBody.content).toHaveLength(20)
-    expect(detailBody.contentTruncated).toBe(true)
+    expect(detailBody.content.length).toBeLessThanOrEqual(20)
+    expect(detailBody.truncated).toBe(true)
   })
 
   it("uploads documents without owner as global documents", async () => {
@@ -415,5 +412,118 @@ describe("document routes", () => {
     expect(response.status).toBe(404)
     const body = (await response.json()) as { code: string }
     expect(body.code).toBe("document_blob_missing")
+  })
+
+  it("returns prior version content on detail without changing current version", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const created = documentService.createMarkdownDocument({
+      title: "Versioned brief",
+      content: "# Version 1",
+      visibilityScope: "global",
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const updated = documentService.updateDocumentContent({
+      documentId: created.document.id,
+      content: "# Version 2",
+      baseVersion: 1,
+    })
+    expect(updated.ok).toBe(true)
+
+    const detail = await app.request(
+      `/api/documents/${created.document.id}/detail?version=1`
+    )
+    expect(detail.status).toBe(200)
+    const body = (await detail.json()) as {
+      content: string
+      selectedVersion: number
+      currentVersion: number
+    }
+    expect(body.content).toContain("Version 1")
+    expect(body.selectedVersion).toBe(1)
+    expect(body.currentVersion).toBe(2)
+  })
+
+  it("updates markdown content and rejects stale baseVersion conflicts", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const created = documentService.createMarkdownDocument({
+      title: "Editable brief",
+      content: "# Original",
+      visibilityScope: "global",
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const saved = await app.request(
+      `/api/documents/${created.document.id}/content`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: "# Updated",
+          baseVersion: 1,
+          changeSummary: "Updated in document workspace",
+        }),
+      }
+    )
+    expect(saved.status).toBe(200)
+    expect(await saved.json()).toMatchObject({
+      currentVersion: 2,
+      document: { title: "Editable brief" },
+    })
+
+    const conflict = await app.request(
+      `/api/documents/${created.document.id}/content`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: "# Stale edit",
+          baseVersion: 1,
+        }),
+      }
+    )
+    expect(conflict.status).toBe(409)
+    expect(await conflict.json()).toMatchObject({
+      code: "document_version_conflict",
+    })
+  })
+
+  it("rejects markdown content updates for non-markdown documents", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const uploaded = documentService.upload({
+      title: "Image",
+      documentType: "image",
+      filename: "image.png",
+      data: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+    })
+    expect(uploaded.ok).toBe(true)
+    if (!uploaded.ok) return
+
+    const response = await app.request(
+      `/api/documents/${uploaded.document.id}/content`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: "# Not allowed",
+          baseVersion: 1,
+        }),
+      }
+    )
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "document_not_markdown",
+    })
   })
 })

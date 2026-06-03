@@ -18,7 +18,7 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
-import { useSearchParams } from "react-router"
+import { useSearchParams, Link } from "react-router"
 import {
   documentTypeSchema,
   type AgentListItem,
@@ -66,6 +66,7 @@ import { listThreads } from "@/lib/api/client"
 import { listAgents } from "@/lib/api/agents-client"
 import {
   downloadDocumentFile,
+  documentWorkspacePath,
   getDocumentDetail,
   listDocuments,
   listProjects,
@@ -663,6 +664,13 @@ export function LibraryPage() {
                 .map((version) => `v${version.version}`)
                 .join(", ") || "none"}
             </div>
+            <Button
+              render={
+                <Link to={documentWorkspacePath(detail.document.id)} />
+              }
+            >
+              Open document
+            </Button>
           </CardContent>
         </Card>
       ) : null}
@@ -703,17 +711,28 @@ export function LibraryPage() {
                   KB
                 </p>
               )}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground">
                   {formatRelativeTime(document.updatedAt)}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void handleDownload(document)}
-                >
-                  Download
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={
+                      <Link to={documentWorkspacePath(document.id)} />
+                    }
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleDownload(document)}
+                  >
+                    Download
+                  </Button>
+                </div>
               </div>
               {downloadErrors[document.id] ? (
                 <p className="text-xs text-destructive">

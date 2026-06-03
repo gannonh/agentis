@@ -2,6 +2,8 @@ import {
   documentDetailResponseSchema,
   documentPublicSchema,
   documentTypeSchema,
+  updateDocumentContentRequestSchema,
+  updateDocumentContentResponseSchema,
   createProjectMemoryRequestSchema,
   createProjectRequestSchema,
   projectMemorySchema,
@@ -13,6 +15,8 @@ import {
   type DocumentSource,
   type DocumentType,
   type DocumentVisibilityScope,
+  type UpdateDocumentContentRequest,
+  type UpdateDocumentContentResponse,
   type CreateProjectMemoryRequest,
   type CreateProjectRequest,
   type Project,
@@ -254,10 +258,35 @@ export async function uploadDocument(input: {
 }
 
 export async function getDocumentDetail(
-  documentId: string
+  documentId: string,
+  options: { version?: number } = {}
 ): Promise<DocumentDetailResponse> {
-  const response = await fetch(`${API_BASE}/api/documents/${documentId}/detail`)
+  const params = new URLSearchParams()
+  if (options.version != null) {
+    params.set("version", String(options.version))
+  }
+  const query = params.toString()
+  const response = await fetch(
+    `${API_BASE}/api/documents/${documentId}/detail${query ? `?${query}` : ""}`
+  )
   return parseJson(response, documentDetailResponseSchema)
+}
+
+export async function updateDocumentContent(
+  documentId: string,
+  body: UpdateDocumentContentRequest
+): Promise<UpdateDocumentContentResponse> {
+  const payload = updateDocumentContentRequestSchema.parse(body)
+  const response = await fetch(`${API_BASE}/api/documents/${documentId}/content`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, updateDocumentContentResponseSchema)
+}
+
+export function documentWorkspacePath(documentId: string) {
+  return `/documents/${documentId}`
 }
 
 export function documentDownloadUrl(documentId: string) {

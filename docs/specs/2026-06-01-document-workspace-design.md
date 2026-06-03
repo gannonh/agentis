@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved
+Implemented
 
 ## Goal
 
@@ -459,3 +459,16 @@ Manual UAT:
 Build the dedicated document workspace as a follow-on to V4.2. Keep the scope to raw markdown editing, version viewing, Source/Scope metadata, Download, and entry points from Library, provenance thread, and project context. Do not add rich text editing, publishing, collaboration, or scope-changing controls in this slice.
 
 Use the architecture deepening candidates to keep the Build phase from spreading document content/version, navigation/action, and filter/query rules across Library, thread provenance, project context, and workspace callers. Acceptance is gated by the criteria above and the verification commands in this spec.
+
+## Build completion report
+
+- **Spec:** `docs/specs/2026-06-01-document-workspace-design.md`
+- **Base SHA:** `f29b47cfb5d6cb994ee5dbfd18b256794099e01e`
+- **Final SHA:** (uncommitted at report time — run `git rev-parse HEAD` after commit)
+- **Tasks completed:** Phase 1–5 (API/contracts, workspace route, markdown editing, entry points, verification)
+- **Key files:** `document-service.ts`, `documents.ts`, shared schemas, `document-workspace.tsx`, `components/documents/*`, `document-timeline.ts`, Library/project/timeline entry points, `document-tool.ts` view paths
+- **Tests run:** `@workspace/shared` (14), `api` documents (29), `web` library/document/project-detail/run-timeline/document-timeline (17) — all passed
+- **Commands:** `pnpm typecheck`, `pnpm lint`, `pnpm build` — passed
+- **Review:** Single-agent path (no subagent reviewers); TDD used for API and web tests
+- **Deviations:** Canvas tabs use button toggles instead of base-ui `Tabs` for reliable tab switching in tests and UI
+- **Follow-up:** Manual UAT per spec; optional E2E extension for `/documents/:documentId`

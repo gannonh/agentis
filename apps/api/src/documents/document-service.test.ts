@@ -470,4 +470,65 @@ describe("DocumentService", () => {
     ).toMatchObject({ ok: false, code: "document_not_markdown" })
     ctx.cleanup()
   })
+
+  it("returns workspace detail with selected and current versions", () => {
+    const ctx = createTestContext()
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const created = service.createMarkdownDocument({
+      title: "Workspace doc",
+      content: "# Version 1",
+      visibilityScope: "global",
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    const updated = service.updateDocumentContent({
+      documentId: created.document.id,
+      content: "# Version 2",
+      baseVersion: 1,
+    })
+    expect(updated).toMatchObject({ ok: true, currentVersion: 2 })
+
+    const detail = service.getDocumentDetail({
+      documentId: created.document.id,
+      version: 1,
+    })
+    expect(detail).toMatchObject({
+      ok: true,
+      content: "# Version 1",
+      selectedVersion: 1,
+      currentVersion: 2,
+      truncated: false,
+    })
+    ctx.cleanup()
+  })
+
+  it("rejects stale workspace content updates", () => {
+    const ctx = createTestContext()
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const created = service.createMarkdownDocument({
+      title: "Conflict doc",
+      content: "# Version 1",
+      visibilityScope: "global",
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    expect(
+      service.updateDocumentContent({
+        documentId: created.document.id,
+        content: "# Version 2",
+        baseVersion: 1,
+      })
+    ).toMatchObject({ ok: true, currentVersion: 2 })
+
+    expect(
+      service.updateDocumentContent({
+        documentId: created.document.id,
+        content: "# Stale edit",
+        baseVersion: 1,
+      })
+    ).toMatchObject({ ok: false, code: "document_version_conflict", status: 409 })
+    ctx.cleanup()
+  })
 })

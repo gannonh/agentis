@@ -579,6 +579,259 @@ export class DocumentService {
     }
   }
 
+  getDocumentDetail(input: { documentId: string; version?: number }):
+    | DocumentResult<{
+        document: Document
+        content: string | null
+        truncated: boolean
+        selectedVersion: number | null
+        currentVersion: number | null
+        versions: DocumentVersion[]
+      }>
+    | DocumentError {
+    const document = this.repos.documents.getById(input.documentId)
+    if (!document) return documentNotFoundError()
+
+    const versions = this.repos.documents.listVersions(document.id)
+    const resolvedCurrentVersion = currentVersion(document) || null
+    const selectedVersionNumber =
+      input.version ?? resolvedCurrentVersion ?? null
+
+    if (input.version) {
+      const versionExists = versions.some(
+        (version) => version.version === input.version
+      )
+      if (!versionExists) {
+        return {
+          ok: false,
+          code: "document_version_not_found",
+          message: "Document version not found",
+          status: 404,
+        }
+      }
+    }
+
+    if (document.contentFormat === "binary") {
+      return {
+        ok: true,
+        document,
+        content: null,
+        truncated: false,
+        selectedVersion: selectedVersionNumber,
+        currentVersion: resolvedCurrentVersion,
+        versions,
+      }
+    }
+
+    let version: DocumentVersion | null = null
+    if (input.version) {
+      version = this.repos.documents.getVersion(document.id, input.version)
+    } else if (resolvedCurrentVersion) {
+      version = this.repos.documents.getVersion(
+        document.id,
+        resolvedCurrentVersion
+      )
+    }
+
+    const storageKey = version?.contentStorageKey ?? document.storageKey
+    let content: string
+    try {
+      content = this.storage.read(storageKey).toString("utf8")
+    } catch (error) {
+      return this.storageReadError(error, {
+        documentId: document.id,
+        storageKey,
+      })
+    }
+
+    const limited = truncateUtf8ToBytes(
+      content,
+      this.config.documentMaxUploadBytes
+    )
+
+    return {
+      ok: true,
+      document,
+      content: limited.text,
+      truncated: limited.truncated,
+      selectedVersion: input.version ?? resolvedCurrentVersion,
+      currentVersion: resolvedCurrentVersion,
+      versions,
+    }
+  }
+
+  updateDocumentContent(input: {
+    documentId: string
+    content: string
+    baseVersion: number
+    changeSummary?: string
+  }):
+    | DocumentResult<{ document: Document; currentVersion: number }>
+    | DocumentError {
+    if (!input.content.trim()) {
+      return {
+        ok: false,
+        code: "document_content_required",
+        message: "Document content is required",
+        status: 400,
+      }
+    }
+
+    const document = this.repos.documents.getById(input.documentId)
+    if (!document) return documentNotFoundError()
+    if (document.documentType !== "markdown") {
+      return {
+        ok: false,
+        code: "document_not_markdown",
+        message: "Document is not markdown",
+        status: 400,
+      }
+    }
+
+    const current = currentVersion(document)
+    if (!current) {
+      return {
+        ok: false,
+        code: "document_version_not_found",
+        message: "Document version not found",
+        status: 404,
+      }
+    }
+    if (input.baseVersion !== current) {
+      return {
+        ok: false,
+        code: "document_version_conflict",
+        message:
+          "Document changed since editing started. Reload and try again.",
+        status: 409,
+      }
+    }
+
+    const read = this.readDocumentContent(document.id)
+    if (!read.ok) return read
+    if (read.truncated) {
+      return {
+        ok: false,
+        code: "document_too_large",
+        message: "Document exceeds maximum editable size",
+        status: 413,
+      }
+    }
+    if (read.content === input.content) {
+      return {
+        ok: false,
+        code: "document_content_unchanged",
+        message: "Document content is unchanged",
+        status: 400,
+      }
+    }
+
+    const data = Buffer.from(input.content, "utf8")
+    if (data.byteLength > this.config.documentMaxUploadBytes) {
+      return {
+        ok: false,
+        code: "document_too_large",
+        message: "Document exceeds maximum size",
+        status: 413,
+      }
+    }
+
+    const nextVersion = current + 1
+    const storageKey = this.storage.createVersionStorageKey(
+      document.id,
+      nextVersion
+    )
+    try {
+      this.storage.write(storageKey, data)
+      const updated = this.repos.documents.updateWithVersion({
+        documentId: document.id,
+        version: nextVersion,
+        contentHash: contentHash(data),
+        contentStorageKey: storageKey,
+        changeSummary: input.changeSummary ?? "Updated in document workspace",
+        sizeBytes: data.byteLength,
+        previewText: buildPreviewText(
+          input.content,
+          this.config.documentPreviewMaxChars
+        ),
+      })
+      if (!updated) return documentNotFoundError()
+      return {
+        ok: true,
+        document: updated,
+        currentVersion: nextVersion,
+      }
+    } catch (error) {
+      this.deleteStoredDocument(storageKey)
+      console.error("Failed to update document content", {
+        error,
+        documentId: document.id,
+        version: nextVersion,
+        storageKey,
+      })
+      return {
+        ok: false,
+        code: "document_storage_failed",
+        message: "Failed to update document content",
+        status: 500,
+      }
+    }
+  }
+
+  private readDocumentContent(
+    documentId: string,
+    version?: number
+  ):
+    | DocumentResult<{ content: string; truncated: boolean; currentVersion: number }>
+    | DocumentError {
+    const document = this.repos.documents.getById(documentId)
+    if (!document) return documentNotFoundError()
+    if (document.contentFormat === "binary") {
+      return documentError(
+        "document_not_readable",
+        "Binary documents cannot be read as text",
+        400
+      )
+    }
+
+    let versionRow: DocumentVersion | null = null
+    if (version) {
+      versionRow = this.repos.documents.getVersion(documentId, version)
+      if (!versionRow) {
+        return {
+          ok: false,
+          code: "document_version_not_found",
+          message: "Document version not found",
+          status: 404,
+        }
+      }
+    } else if (document.currentVersion) {
+      versionRow = this.repos.documents.getVersion(
+        documentId,
+        document.currentVersion
+      )
+    }
+
+    const storageKey = versionRow?.contentStorageKey ?? document.storageKey
+    let content: string
+    try {
+      content = this.storage.read(storageKey).toString("utf8")
+    } catch (error) {
+      return this.storageReadError(error, { documentId, storageKey })
+    }
+
+    const limited = truncateUtf8ToBytes(
+      content,
+      this.config.documentMaxUploadBytes
+    )
+    return {
+      ok: true,
+      content: limited.text,
+      truncated: limited.truncated,
+      currentVersion: currentVersion(document),
+    }
+  }
+
   private changeMarkdownDocument(
     input: {
       documentId: string

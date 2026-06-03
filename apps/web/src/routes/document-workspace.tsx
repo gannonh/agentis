@@ -1,0 +1,225 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useNavigate, useParams } from "react-router"
+import { ApiError } from "@/lib/api/client"
+import {
+  downloadDocumentFile,
+  getDocumentDetail,
+  updateDocumentContent,
+} from "@/lib/api/projects-client"
+import { isMarkdownEditable } from "@/lib/documents/document-metadata"
+import { DocumentEditor } from "@/components/documents/document-editor"
+import { DocumentSidePanel } from "@/components/documents/document-side-panel"
+import { DocumentViewer } from "@/components/documents/document-viewer"
+import { DocumentWorkspaceShell } from "@/components/documents/document-workspace-shell"
+
+type CanvasTab = "preview" | "markdown"
+
+export function DocumentWorkspacePage() {
+  const { documentId = "" } = useParams()
+  const navigate = useNavigate()
+  const [detail, setDetail] = useState<Awaited<
+    ReturnType<typeof getDocumentDetail>
+  > | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null)
+  const [canvasTab, setCanvasTab] = useState<CanvasTab>("preview")
+  const [editing, setEditing] = useState(false)
+  const [draftContent, setDraftContent] = useState("")
+  const [loadedContent, setLoadedContent] = useState("")
+  const [loadedBaseVersion, setLoadedBaseVersion] = useState<number | null>(
+    null
+  )
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+  const hasLoadedRef = useRef(false)
+
+  const loadDetail = useCallback(
+    async (version?: number | null) => {
+      if (!documentId) return
+      const initialLoad = !hasLoadedRef.current
+      if (initialLoad) setLoading(true)
+      setError(null)
+      try {
+        const next = await getDocumentDetail(
+          documentId,
+          version == null ? {} : { version }
+        )
+        setDetail(next)
+        setSelectedVersion(next.selectedVersion ?? next.currentVersion ?? null)
+        const content = next.content ?? ""
+        setLoadedContent(content)
+        setDraftContent(content)
+        setLoadedBaseVersion(next.currentVersion ?? null)
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error ? loadError.message : "Failed to load document"
+        )
+      } finally {
+        if (initialLoad) {
+          hasLoadedRef.current = true
+          setLoading(false)
+        }
+      }
+    },
+    [documentId]
+  )
+
+  useEffect(() => {
+    hasLoadedRef.current = false
+    void loadDetail(null)
+  }, [documentId, loadDetail])
+
+  const viewingHistoricalVersion = useMemo(() => {
+    if (!detail?.currentVersion || selectedVersion == null) return false
+    return selectedVersion !== detail.currentVersion
+  }, [detail?.currentVersion, selectedVersion])
+
+  const readOnly = detail ? !isMarkdownEditable(detail.document) : false
+  const truncated = detail?.truncated === true
+
+  const handleClose = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate("/library")
+  }
+
+  const handleSelectVersion = (version: number | null) => {
+    setEditing(false)
+    setSaveError(null)
+    if (version == null || version === detail?.currentVersion) {
+      void loadDetail(null)
+      return
+    }
+    void loadDetail(version)
+  }
+
+  const handleStartEdit = () => {
+    if (readOnly || viewingHistoricalVersion || truncated) return
+    setSaveError(null)
+    setDraftContent(loadedContent)
+    setEditing(true)
+  }
+
+  const handleSave = async () => {
+    if (!detail || loadedBaseVersion == null) return
+    if (!draftContent.trim() || draftContent === loadedContent) {
+      setSaveError("Change the markdown content before saving.")
+      return
+    }
+
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await updateDocumentContent(documentId, {
+        content: draftContent,
+        baseVersion: loadedBaseVersion,
+        changeSummary: "Updated in document workspace",
+      })
+      setEditing(false)
+      await loadDetail(null)
+    } catch (saveFailure) {
+      if (
+        saveFailure instanceof ApiError &&
+        saveFailure.status === 409
+      ) {
+        setSaveError(
+          "This document changed elsewhere. Reload the current version before saving."
+        )
+        return
+      }
+      setSaveError(
+        saveFailure instanceof Error ? saveFailure.message : "Save failed"
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!detail) return
+    setDownloadError(null)
+    try {
+      await downloadDocumentFile(detail.document)
+    } catch (downloadFailure) {
+      setDownloadError(
+        downloadFailure instanceof Error
+          ? downloadFailure.message
+          : "Download failed"
+      )
+    }
+  }
+
+  if (loading && !detail) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <p className="text-muted-foreground text-sm">Loading document…</p>
+      </div>
+    )
+  }
+
+  if (error || !detail) {
+    return (
+      <div className="mx-auto flex min-h-[50vh] max-w-lg flex-col items-center justify-center gap-3 px-4 text-center">
+        <p className="text-destructive text-sm">{error ?? "Document not found"}</p>
+        <button
+          type="button"
+          className="text-primary text-sm underline-offset-4 hover:underline"
+          onClick={handleClose}
+        >
+          Go back
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <DocumentWorkspaceShell
+      document={detail.document}
+      currentVersion={detail.currentVersion ?? detail.document.currentVersion ?? null}
+      viewingHistoricalVersion={viewingHistoricalVersion}
+      readOnly={readOnly}
+      truncated={truncated}
+      onClose={handleClose}
+      canvasTab={canvasTab}
+      onCanvasTabChange={setCanvasTab}
+      editing={editing}
+      onStartEdit={handleStartEdit}
+      previewContent={
+        <DocumentViewer mode="preview" content={detail.content ?? ""} />
+      }
+      markdownContent={
+        <DocumentViewer mode="markdown" content={detail.content ?? ""} />
+      }
+      editorContent={
+        <DocumentEditor
+          value={draftContent}
+          onChange={setDraftContent}
+          onSave={() => void handleSave()}
+          onCancel={() => {
+            setEditing(false)
+            setDraftContent(loadedContent)
+            setSaveError(null)
+          }}
+          saving={saving}
+          disabled={readOnly || viewingHistoricalVersion || truncated}
+          error={saveError}
+        />
+      }
+      sidePanel={
+        <DocumentSidePanel
+          document={detail.document}
+          detail={detail}
+          selectedVersion={selectedVersion}
+          viewingHistoricalVersion={viewingHistoricalVersion}
+          onSelectVersion={handleSelectVersion}
+          onDownload={() => void handleDownload()}
+          downloadError={downloadError}
+        />
+      }
+    />
+  )
+}

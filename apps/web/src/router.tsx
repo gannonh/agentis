@@ -9,6 +9,7 @@ import { DebugSeedingPage } from "@/routes/debug-seeding"
 import { IntegrationsPage } from "@/routes/integrations"
 import { LearningPage } from "@/routes/learning"
 import { LibraryPage } from "@/routes/library"
+import { DocumentWorkspacePage } from "@/routes/document-workspace"
 import { MemoriesPage } from "@/routes/memories"
 import { NewThreadPage } from "@/routes/new-thread"
 import { ThreadDetailPage } from "@/routes/thread-detail"
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       { path: "projects/new", element: <ProjectCreatePage /> },
       { path: "projects/:projectId", element: <ProjectDetailPage /> },
       { path: "library", element: <LibraryPage /> },
+      { path: "documents/:documentId", element: <DocumentWorkspacePage /> },
       { path: "search", element: <SearchPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],

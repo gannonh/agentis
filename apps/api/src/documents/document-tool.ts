@@ -8,7 +8,7 @@ import type { DocumentService } from "./document-service.js"
 
 function documentLinks(documentId: string) {
   return {
-    viewPath: `/library?documentId=${documentId}`,
+    viewPath: `/documents/${documentId}`,
     downloadPath: `/api/documents/${documentId}/download`,
   }
 }

@@ -1,3 +1,4 @@
+import { Link } from "react-router"
 import { useMemo, useState } from "react"
 import type { DocumentPublic as Document } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
@@ -5,7 +6,10 @@ import { Input } from "@workspace/ui/components/input"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon } from "@hugeicons/core-free-icons"
 import { formatRelativeTime } from "@/fixtures"
-import { downloadDocumentFile } from "@/lib/api/projects-client"
+import {
+  documentWorkspacePath,
+  downloadDocumentFile,
+} from "@/lib/api/projects-client"
 
 type ProjectDocumentsPanelProps = {
   documents: Document[]
@@ -100,13 +104,24 @@ export function ProjectDocumentsPanel({
                   </p>
                 ) : null}
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void handleDownload(document)}
-              >
-                Download
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  render={
+                    <Link to={documentWorkspacePath(document.id)} />
+                  }
+                >
+                  Open document
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void handleDownload(document)}
+                >
+                  Download
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

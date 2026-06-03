@@ -717,8 +717,21 @@ export const documentVersionSummarySchema = documentVersionSchema.pick({
 export const documentDetailResponseSchema = z.object({
   document: documentPublicSchema,
   content: z.string().nullable(),
-  contentTruncated: z.boolean().optional(),
+  truncated: z.boolean().optional(),
+  selectedVersion: z.number().int().positive().nullable().optional(),
+  currentVersion: z.number().int().positive().nullable().optional(),
   versions: z.array(documentVersionSummarySchema),
+})
+
+export const updateDocumentContentRequestSchema = z.object({
+  content: nonEmptyString,
+  baseVersion: z.number().int().positive(),
+  changeSummary: z.string().optional(),
+})
+
+export const updateDocumentContentResponseSchema = z.object({
+  document: documentPublicSchema,
+  currentVersion: z.number().int().positive(),
 })
 
 export const listDocumentsQuerySchema = z.object({
@@ -979,6 +992,12 @@ export type DocumentVersionSummary = z.infer<
 >
 export type DocumentDetailResponse = z.infer<
   typeof documentDetailResponseSchema
+>
+export type UpdateDocumentContentRequest = z.infer<
+  typeof updateDocumentContentRequestSchema
+>
+export type UpdateDocumentContentResponse = z.infer<
+  typeof updateDocumentContentResponseSchema
 >
 export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>
 export type ThreadDetail = z.infer<typeof threadDetailSchema>

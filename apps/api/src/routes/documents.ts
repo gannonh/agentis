@@ -1,5 +1,9 @@
 import { Hono } from "hono"
-import { documentTypeSchema, listDocumentsQuerySchema } from "@workspace/shared"
+import {
+  documentTypeSchema,
+  listDocumentsQuerySchema,
+  updateDocumentContentRequestSchema,
+} from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 import { DocumentService } from "../documents/document-service.js"
@@ -121,35 +125,70 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
 
   app.get("/:documentId/detail", (c) => {
     const documentId = c.req.param("documentId")
-    const result = documentService.getDownload(documentId)
+    const versionRaw = c.req.query("version")
+    const version =
+      versionRaw && versionRaw.trim()
+        ? Number.parseInt(versionRaw, 10)
+        : undefined
+    if (versionRaw && (!Number.isInteger(version) || version! < 1)) {
+      return c.json(
+        { error: "Invalid version parameter", code: "invalid_request" },
+        400
+      )
+    }
+
+    const result = documentService.getDocumentDetail({
+      documentId,
+      version,
+    })
     if (!result.ok) {
       return c.json(
         { error: result.message, code: result.code },
-        (result.status ?? 500) as 404 | 500
+        (result.status ?? 500) as 400 | 404 | 500
       )
     }
-    let previewContent: string | null = null
-    let contentTruncated = false
-    if (result.document.mimeType.startsWith("text/")) {
-      const fullText = result.data.toString("utf8")
-      const maxChars = config.documentPreviewMaxChars
-      if (fullText.length > maxChars) {
-        previewContent = fullText.slice(0, maxChars)
-        contentTruncated = true
-      } else {
-        previewContent = fullText
-      }
-    }
+
     return c.json({
       document: toPublicDocument(result.document),
-      content: previewContent,
-      contentTruncated,
-      versions: repos.documents.listVersions(documentId).map((version) => ({
-        id: version.id,
-        version: version.version,
-        changeSummary: version.changeSummary,
-        createdAt: version.createdAt,
+      content: result.content,
+      truncated: result.truncated,
+      selectedVersion: result.selectedVersion,
+      currentVersion: result.currentVersion,
+      versions: result.versions.map((entry) => ({
+        id: entry.id,
+        version: entry.version,
+        changeSummary: entry.changeSummary,
+        createdAt: entry.createdAt,
       })),
+    })
+  })
+
+  app.patch("/:documentId/content", async (c) => {
+    const body = await c.req.json().catch(() => null)
+    const parsed = updateDocumentContentRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json(
+        { error: "Invalid request body", code: "invalid_request" },
+        400
+      )
+    }
+
+    const result = documentService.updateDocumentContent({
+      documentId: c.req.param("documentId"),
+      content: parsed.data.content,
+      baseVersion: parsed.data.baseVersion,
+      changeSummary: parsed.data.changeSummary,
+    })
+    if (!result.ok) {
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 500) as 400 | 404 | 409 | 413 | 500
+      )
+    }
+
+    return c.json({
+      document: toPublicDocument(result.document),
+      currentVersion: result.currentVersion,
     })
   })
 

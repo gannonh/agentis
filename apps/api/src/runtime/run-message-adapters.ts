@@ -14,11 +14,19 @@ export function normalizeAssistantText(text: string) {
   return text
     .replace(
       /\[([^\]]+)\]\(https?:\/\/yourworkspaceurl\/library\?documentId=([\w-]+)[^)]*\)/gi,
-      "[$1](/api/documents/$2/download)"
+      "[$1](/documents/$2)"
     )
     .replace(
       /https?:\/\/yourworkspaceurl\/library\?documentId=([\w-]+)[^\s)\]]*/gi,
-      "/api/documents/$1/download"
+      "/documents/$1"
+    )
+    .replace(
+      /\[([^\]]+)\]\(https?:\/\/yourworkspaceurl\/documents\/([\w-]+)[^)]*\)/gi,
+      "[$1](/documents/$2)"
+    )
+    .replace(
+      /https?:\/\/yourworkspaceurl\/documents\/([\w-]+)[^\s)\]]*/gi,
+      "/documents/$1"
     )
     .replace(/https?:\/\/yourworkspaceurl(\/[^\s)\]]*)/gi, "$1")
 }
