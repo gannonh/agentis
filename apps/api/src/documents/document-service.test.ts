@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 import { describe, expect, it, vi } from "vitest"
 import { createTestContext } from "../test/setup.js"
 import { DocumentService } from "./document-service.js"
@@ -137,7 +139,10 @@ describe("DocumentService", () => {
     expect(
       service
         .findDocuments({
-          runContext: { threadId: outside.thread.id, projectId: otherProject.id },
+          runContext: {
+            threadId: outside.thread.id,
+            projectId: otherProject.id,
+          },
         })
         .map((document) => document.title)
     ).toEqual(["Global shared"])
@@ -162,7 +167,9 @@ describe("DocumentService", () => {
       currentVersion: 1,
       contentFormat: "markdown",
     })
-    expect(ctx.repos.documents.listVersions(uploaded.document.id)).toHaveLength(1)
+    expect(ctx.repos.documents.listVersions(uploaded.document.id)).toHaveLength(
+      1
+    )
     expect(
       service.readDocument({
         documentId: uploaded.document.id,
@@ -257,7 +264,11 @@ describe("DocumentService", () => {
       changeSummary: "Refresh steps",
       runContext: { threadId: createdThread.thread.id },
     })
-    expect(updated).toMatchObject({ ok: true, previousVersion: 1, currentVersion: 2 })
+    expect(updated).toMatchObject({
+      ok: true,
+      previousVersion: 1,
+      currentVersion: 2,
+    })
 
     const appended = service.appendDocumentSection({
       documentId: created.document.id,
@@ -267,7 +278,11 @@ describe("DocumentService", () => {
       changeSummary: "Add follow-up",
       runContext: { threadId: createdThread.thread.id },
     })
-    expect(appended).toMatchObject({ ok: true, previousVersion: 2, currentVersion: 3 })
+    expect(appended).toMatchObject({
+      ok: true,
+      previousVersion: 2,
+      currentVersion: 3,
+    })
 
     const read = service.readDocument({
       documentId: created.document.id,
@@ -280,7 +295,9 @@ describe("DocumentService", () => {
     expect(read.content.indexOf("## Steps")).toBeLessThan(
       read.content.indexOf("## Follow-up")
     )
-    expect(ctx.repos.documents.listVersions(created.document.id)).toHaveLength(3)
+    expect(ctx.repos.documents.listVersions(created.document.id)).toHaveLength(
+      3
+    )
     ctx.cleanup()
   })
 
@@ -470,7 +487,9 @@ describe("DocumentService", () => {
     if (!read.ok) return
     expect(read.content).toContain("Original")
     expect(read.content).not.toContain("Should not persist")
-    expect(ctx.repos.documents.listVersions(created.document.id)).toHaveLength(1)
+    expect(ctx.repos.documents.listVersions(created.document.id)).toHaveLength(
+      1
+    )
     consoleError.mockRestore()
     ctx.cleanup()
   })
@@ -600,7 +619,80 @@ describe("DocumentService", () => {
         content: "# Stale edit",
         baseVersion: 1,
       })
-    ).toMatchObject({ ok: false, code: "document_version_conflict", status: 409 })
+    ).toMatchObject({
+      ok: false,
+      code: "document_version_conflict",
+      status: 409,
+    })
+    ctx.cleanup()
+  })
+
+  it("cleans up written content when version metadata update finds no document", () => {
+    const ctx = createTestContext()
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const created = service.createMarkdownDocument({
+      title: "Deleted doc",
+      content: "# Version 1",
+      visibilityScope: "global",
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    vi.spyOn(ctx.repos.documents, "updateWithVersion").mockReturnValueOnce(null)
+
+    expect(
+      service.updateDocumentContent({
+        documentId: created.document.id,
+        content: "# Version 2",
+        baseVersion: 1,
+      })
+    ).toMatchObject({ ok: false, code: "document_not_found" })
+    expect(
+      existsSync(
+        join(
+          ctx.config.storageRoot,
+          "documents",
+          created.document.id,
+          "versions",
+          "2.md"
+        )
+      )
+    ).toBe(false)
+    ctx.cleanup()
+  })
+
+  it("treats duplicate next versions as workspace content conflicts", () => {
+    const ctx = createTestContext()
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const created = service.createMarkdownDocument({
+      title: "Race doc",
+      content: "# Version 1",
+      visibilityScope: "global",
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    vi.spyOn(ctx.repos.documents, "updateWithVersion").mockImplementationOnce(
+      () => {
+        throw new Error(
+          "UNIQUE constraint failed: document_versions.document_id, document_versions.version"
+        )
+      }
+    )
+
+    expect(
+      service.updateDocumentContent({
+        documentId: created.document.id,
+        content: "# Version 2",
+        baseVersion: 1,
+      })
+    ).toMatchObject({
+      ok: false,
+      code: "document_version_conflict",
+      status: 409,
+    })
+    consoleError.mockRestore()
     ctx.cleanup()
   })
 })

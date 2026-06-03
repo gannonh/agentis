@@ -126,7 +126,9 @@ export const agentConfigurationVersions = sqliteTable(
     model: text("model").notNull(),
     maxCostPerRunUsd: real("max_cost_per_run_usd"),
     toolGrantsJson: text("tool_grants_json").notNull().default("[]"),
-    nativeToolsJson: text("native_tools_json").notNull().default("[]"),
+    nativeToolsJson: text("native_tools_json")
+      .notNull()
+      .default('["documents","webSearch"]'),
     createdAt: text("created_at").notNull(),
   },
   (table) => [
@@ -427,7 +429,9 @@ export const documentVersions = sqliteTable(
     contentStorageKey: text("content_storage_key").notNull(),
     changeSummary: text("change_summary"),
     createdByRunId: text("created_by_run_id").references(() => runs.id),
-    createdByThreadId: text("created_by_thread_id").references(() => threads.id),
+    createdByThreadId: text("created_by_thread_id").references(
+      () => threads.id
+    ),
     createdAt: text("created_at").notNull(),
   },
   (table) => [

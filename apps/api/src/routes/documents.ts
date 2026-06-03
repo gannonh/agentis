@@ -128,9 +128,7 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
     const documentId = c.req.param("documentId")
     const versionRaw = c.req.query("version")
     const version =
-      versionRaw && versionRaw.trim()
-        ? Number.parseInt(versionRaw, 10)
-        : undefined
+      versionRaw && versionRaw.trim() ? Number(versionRaw) : undefined
     if (
       versionRaw &&
       (version === undefined || !Number.isInteger(version) || version < 1)

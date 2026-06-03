@@ -117,6 +117,23 @@ function documentContentRequiredError(): DocumentError {
   )
 }
 
+function documentVersionConflictError(): DocumentError {
+  return documentError(
+    "document_version_conflict",
+    "Document changed since editing started. Reload and try again.",
+    409
+  )
+}
+
+function isDocumentVersionConflictError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message.includes("UNIQUE constraint failed") &&
+    error.message.includes("document_versions") &&
+    error.message.includes("version")
+  )
+}
+
 function documentVersionNotFoundError(): DocumentError {
   return documentError(
     "document_version_not_found",
@@ -676,13 +693,7 @@ export class DocumentService {
       return documentVersionNotFoundError()
     }
     if (input.baseVersion !== current) {
-      return {
-        ok: false,
-        code: "document_version_conflict",
-        message:
-          "Document changed since editing started. Reload and try again.",
-        status: 409,
-      }
+      return documentVersionConflictError()
     }
 
     const read = this.readDocumentContent(document.id)
@@ -723,7 +734,10 @@ export class DocumentService {
           this.config.documentPreviewMaxChars
         ),
       })
-      if (!updated) return documentNotFoundError()
+      if (!updated) {
+        this.deleteStoredDocument(storageKey)
+        return documentNotFoundError()
+      }
       return {
         ok: true,
         document: updated,
@@ -731,6 +745,9 @@ export class DocumentService {
       }
     } catch (error) {
       this.deleteStoredDocument(storageKey)
+      if (isDocumentVersionConflictError(error)) {
+        return documentVersionConflictError()
+      }
       console.error("Failed to update document content", {
         error,
         documentId: document.id,

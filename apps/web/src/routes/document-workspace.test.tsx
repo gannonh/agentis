@@ -48,7 +48,10 @@ function renderWorkspace(documentId = "document_test") {
   return render(
     <MemoryRouter initialEntries={[`/documents/${documentId}`]}>
       <Routes>
-        <Route path="/documents/:documentId" element={<DocumentWorkspacePage />} />
+        <Route
+          path="/documents/:documentId"
+          element={<DocumentWorkspacePage />}
+        />
       </Routes>
     </MemoryRouter>
   )
@@ -111,7 +114,9 @@ describe("DocumentWorkspacePage", () => {
     renderWorkspace()
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Q2 Brief" })).toBeInTheDocument()
+      expect(
+        screen.getByRole("heading", { name: "Q2 Brief" })
+      ).toBeInTheDocument()
     })
     expect(screen.getByText("Agent generated")).toBeInTheDocument()
     expect(screen.getByLabelText("Document scope")).toHaveValue("thread")
@@ -248,10 +253,57 @@ describe("DocumentWorkspacePage", () => {
         version: 1,
       })
     })
+    expect(screen.getByText(/viewing an older version/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/viewing an older version/i)
+      screen.queryByRole("button", { name: "Edit" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("keeps the workspace open when a version fetch fails", async () => {
+    const user = userEvent.setup()
+    getDocumentDetail
+      .mockResolvedValueOnce({
+        document: { ...markdownDocument, currentVersion: 2 },
+        content: "# Brief\n\nUpdated",
+        truncated: false,
+        selectedVersion: 2,
+        currentVersion: 2,
+        versions: [
+          {
+            id: "version_2",
+            version: 2,
+            changeSummary: "Updated",
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: "version_1",
+            version: 1,
+            changeSummary: "Created document",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      })
+      .mockRejectedValueOnce(new Error("Document version not found"))
+
+    renderWorkspace()
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Q2 Brief" })
+      ).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole("button", { name: "Version 1" }))
+
+    await waitFor(() => {
+      expect(screen.getByText("Document version not found")).toBeInTheDocument()
+    })
+    expect(
+      screen.getByRole("heading", { name: "Q2 Brief" })
     ).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Go back" })
+    ).not.toBeInTheDocument()
   })
 
   it("shows a project picker before applying project scope", async () => {
@@ -267,10 +319,7 @@ describe("DocumentWorkspacePage", () => {
     expect(screen.getByLabelText("Project")).toBeInTheDocument()
     expect(updateDocumentVisibility).not.toHaveBeenCalled()
 
-    await user.selectOptions(
-      screen.getByLabelText("Project"),
-      sampleProject.id
-    )
+    await user.selectOptions(screen.getByLabelText("Project"), sampleProject.id)
 
     await waitFor(() => {
       expect(updateDocumentVisibility).toHaveBeenCalledWith("document_test", {
@@ -284,11 +333,13 @@ describe("DocumentWorkspacePage", () => {
     renderWorkspace("document_image")
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Diagram" })).toBeInTheDocument()
+      expect(
+        screen.getByRole("heading", { name: "Diagram" })
+      ).toBeInTheDocument()
     })
+    expect(screen.getByText(/read-only in the workspace/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/read-only in the workspace/i)
-    ).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
+      screen.queryByRole("button", { name: "Edit" })
+    ).not.toBeInTheDocument()
   })
 })

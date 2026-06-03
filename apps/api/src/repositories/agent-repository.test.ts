@@ -56,18 +56,19 @@ describe("agent repository", () => {
         version: 2,
         systemPrompt: "Answer with citations and source quality notes.",
         model: "gpt-4.1-mini",
-        nativeToolsJson: "[]",
         createdAt: "2026-05-23T22:00:00.000Z",
       })
       .run()
 
-    expect(
-      ctx.repos.agents.getById(agent.id)?.currentConfigurationVersion
-    ).toMatchObject({
+    const currentVersion = ctx.repos.agents.getById(
+      agent.id
+    )?.currentConfigurationVersion
+    expect(currentVersion).toMatchObject({
       version: 2,
       systemPrompt: "Answer with citations and source quality notes.",
       model: "gpt-4.1-mini",
     })
+    expect(currentVersion?.nativeTools).toEqual(["documents", "webSearch"])
     expect(
       ctx.repos.agents.list()[0]?.currentConfigurationVersion.version
     ).toBe(2)

@@ -26,6 +26,7 @@ type DocumentSidePanelProps = {
   onSelectVersion: (version: number | null) => void
   onDownload: () => void
   downloadError?: string | null
+  versionError?: string | null
   projects?: Project[]
   scopeDraft?: DocumentVisibilityScope
   projectIdDraft?: string
@@ -79,6 +80,7 @@ export function DocumentSidePanel({
   onSelectVersion,
   onDownload,
   downloadError,
+  versionError,
   projects = [],
   scopeDraft,
   projectIdDraft = "",
@@ -183,6 +185,7 @@ export function DocumentSidePanel({
           </Button>
           <Button
             variant="outline"
+            nativeButton={false}
             render={<a href={workspaceUrl} target="_blank" rel="noreferrer" />}
           >
             Open in new tab
@@ -212,6 +215,9 @@ export function DocumentSidePanel({
             </Button>
           ) : null}
         </div>
+        {versionError ? (
+          <p className="text-xs text-destructive">{versionError}</p>
+        ) : null}
         {detail.versions.length ? (
           <div className="flex flex-col gap-1">
             {sortedVersions.map((version) => (

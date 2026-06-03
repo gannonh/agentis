@@ -172,4 +172,86 @@ describe("database migrations", () => {
       db.close()
     }
   })
+
+  it("backfills document native tools for legacy agent configuration snapshots", () => {
+    const databasePath = join(tmpdir(), `agentis-migration-${randomUUID()}.db`)
+    databasePaths.push(databasePath)
+    const db = new Database(databasePath)
+
+    try {
+      for (const filename of [
+        "0000_wakeful_warbird.sql",
+        "0001_outgoing_scarecrow.sql",
+        "0002_tool_access_grants_scope_toolkit_unique.sql",
+        "0003_motionless_whiplash.sql",
+        "0004_low_chat.sql",
+        "0005_agent_cost_limits.sql",
+        "0006_agent_thread_run_metadata.sql",
+        "0007_agent_version_tool_grant_snapshots.sql",
+        "0008_agent_promotion_drafts.sql",
+        "0009_agent_promotion_draft_intelligence.sql",
+        "0010_agent_promotion_validation.sql",
+        "0011_agent_source_linkage.sql",
+        "0012_thread_source_linkage.sql",
+        "0013_promotion_draft_source_workflow.sql",
+        "0014_orange_phalanx.sql",
+        "0015_saved_memory_pinned_context.sql",
+        "0016_saved_memory_agent_scope.sql",
+        "0017_saved_memory_source_threads.sql",
+        "0018_saved_memory_sources.sql",
+        "0019_memory_provenance_thread_titles.sql",
+        "0020_saved_memory_multi_agent_scope.sql",
+        "0021_agent_workspaces.sql",
+        "0022_workspace_edits.sql",
+        "0023_workspace_executions.sql",
+        "0024_agent_configuration_native_tools.sql",
+      ]) {
+        applyMigration(db, filename)
+      }
+
+      db.exec(`
+        INSERT INTO agents (id, name, system_prompt, model, created_at, updated_at)
+        VALUES
+          ('agent-web', 'Web Agent', 'Search when needed.', 'gpt-4o-mini', 'now', 'now'),
+          ('agent-none', 'Plain Agent', 'Answer plainly.', 'gpt-4o-mini', 'now', 'now'),
+          ('agent-docs', 'Docs Agent', 'Use documents.', 'gpt-4o-mini', 'now', 'now');
+
+        INSERT INTO agent_configuration_versions (id, agent_id, version, system_prompt, model, native_tools_json, created_at)
+        VALUES
+          ('version-web', 'agent-web', 1, 'Search when needed.', 'gpt-4o-mini', '["webSearch"]', 'now'),
+          ('version-none', 'agent-none', 1, 'Answer plainly.', 'gpt-4o-mini', '[]', 'now'),
+          ('version-docs', 'agent-docs', 1, 'Use documents.', 'gpt-4o-mini', '["documents","webSearch"]', 'now');
+      `)
+
+      applyMigration(db, "0027_document_native_tools_backfill.sql")
+
+      const rows = db
+        .prepare(
+          "SELECT id, native_tools_json AS nativeToolsJson FROM agent_configuration_versions WHERE id LIKE 'version-%' ORDER BY id"
+        )
+        .all() as Array<{ id: string; nativeToolsJson: string }>
+
+      expect(
+        rows.map((row) => ({
+          id: row.id,
+          nativeTools: JSON.parse(row.nativeToolsJson),
+        }))
+      ).toEqual([
+        {
+          id: "version-docs",
+          nativeTools: ["documents", "webSearch"],
+        },
+        {
+          id: "version-none",
+          nativeTools: ["documents"],
+        },
+        {
+          id: "version-web",
+          nativeTools: ["documents", "webSearch"],
+        },
+      ])
+    } finally {
+      db.close()
+    }
+  })
 })

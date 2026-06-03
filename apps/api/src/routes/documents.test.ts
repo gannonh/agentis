@@ -159,7 +159,10 @@ describe("document routes", () => {
     form.set("title", "User thread notes")
     form.set("documentType", "markdown")
     form.set("threadId", userThread.thread.id)
-    form.set("file", new File(["# Notes"], "notes.md", { type: "text/markdown" }))
+    form.set(
+      "file",
+      new File(["# Notes"], "notes.md", { type: "text/markdown" })
+    )
     const uploaded = await app.request("/api/documents", {
       method: "POST",
       body: form,
@@ -167,26 +170,28 @@ describe("document routes", () => {
     expect(uploaded.status).toBe(201)
 
     const byAgentSource = await app.request("/api/documents?source=agent")
-    expect((await byAgentSource.json()) as Array<{ title: string }>).toMatchObject([
-      { title: "Agent project report" },
-    ])
+    expect(
+      (await byAgentSource.json()) as Array<{ title: string }>
+    ).toMatchObject([{ title: "Agent project report" }])
 
-    const bySpecificAgent = await app.request(`/api/documents?agentId=${agent.id}`)
-    expect((await bySpecificAgent.json()) as Array<{ title: string }>).toMatchObject([
-      { title: "Agent project report" },
-    ])
+    const bySpecificAgent = await app.request(
+      `/api/documents?agentId=${agent.id}`
+    )
+    expect(
+      (await bySpecificAgent.json()) as Array<{ title: string }>
+    ).toMatchObject([{ title: "Agent project report" }])
 
     const byUserSource = await app.request("/api/documents?source=user")
-    expect((await byUserSource.json()) as Array<{ title: string }>).toMatchObject([
-      { title: "User thread notes" },
-    ])
+    expect(
+      (await byUserSource.json()) as Array<{ title: string }>
+    ).toMatchObject([{ title: "User thread notes" }])
 
     const byThreadScope = await app.request(
       `/api/documents?visibilityScope=thread&threadId=${userThread.thread.id}`
     )
-    expect((await byThreadScope.json()) as Array<{ title: string }>).toMatchObject([
-      { title: "User thread notes" },
-    ])
+    expect(
+      (await byThreadScope.json()) as Array<{ title: string }>
+    ).toMatchObject([{ title: "User thread notes" }])
   })
 
   it("returns 400 for invalid list query parameters", async () => {
@@ -446,6 +451,27 @@ describe("document routes", () => {
     expect(body.content).toContain("Version 1")
     expect(body.selectedVersion).toBe(1)
     expect(body.currentVersion).toBe(2)
+  })
+
+  it("rejects fractional document detail versions", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const created = documentService.createMarkdownDocument({
+      title: "Versioned brief",
+      content: "# Version 1",
+      visibilityScope: "global",
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const detail = await app.request(
+      `/api/documents/${created.document.id}/detail?version=1.5`
+    )
+
+    expect(detail.status).toBe(400)
+    expect(await detail.json()).toMatchObject({ code: "invalid_request" })
   })
 
   it("updates document visibility scope with an explicit projectId", async () => {

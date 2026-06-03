@@ -34,6 +34,7 @@ export function DocumentWorkspacePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [versionError, setVersionError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [scopeSaving, setScopeSaving] = useState(false)
@@ -50,6 +51,7 @@ export function DocumentWorkspacePage() {
       const initialLoad = !hasLoadedRef.current
       if (initialLoad) setLoading(true)
       setError(null)
+      setVersionError(null)
       try {
         const next = await getDocumentDetail(
           documentId,
@@ -62,11 +64,15 @@ export function DocumentWorkspacePage() {
         setDraftContent(content)
         setLoadedBaseVersion(next.currentVersion ?? null)
       } catch (loadError) {
-        setError(
+        const message =
           loadError instanceof Error
             ? loadError.message
             : "Failed to load document"
-        )
+        if (initialLoad) {
+          setError(message)
+        } else {
+          setVersionError(message)
+        }
       } finally {
         if (initialLoad) {
           hasLoadedRef.current = true
@@ -125,6 +131,7 @@ export function DocumentWorkspacePage() {
   const handleSelectVersion = (version: number | null) => {
     setEditing(false)
     setSaveError(null)
+    setVersionError(null)
     if (version == null || version === detail?.currentVersion) {
       void loadDetail(null)
       return
@@ -312,6 +319,7 @@ export function DocumentWorkspacePage() {
           onSelectVersion={handleSelectVersion}
           onDownload={() => void handleDownload()}
           downloadError={downloadError}
+          versionError={versionError}
           projects={projects}
           scopeDraft={scopeDraft}
           projectIdDraft={projectIdDraft}
