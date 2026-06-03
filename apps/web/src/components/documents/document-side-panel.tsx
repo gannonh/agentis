@@ -2,6 +2,8 @@ import type {
   DocumentDetailResponse,
   DocumentPublic as Document,
   DocumentVersionSummary,
+  DocumentVisibilityScope,
+  Project,
 } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
@@ -24,6 +26,13 @@ type DocumentSidePanelProps = {
   onSelectVersion: (version: number | null) => void
   onDownload: () => void
   downloadError?: string | null
+  projects?: Project[]
+  scopeDraft?: DocumentVisibilityScope
+  projectIdDraft?: string
+  onVisibilityScopeChange?: (scope: DocumentVisibilityScope) => void
+  onProjectChange?: (projectId: string) => void
+  scopeSaving?: boolean
+  scopeError?: string | null
 }
 
 function VersionButton({
@@ -68,7 +77,17 @@ export function DocumentSidePanel({
   onSelectVersion,
   onDownload,
   downloadError,
+  projects = [],
+  scopeDraft,
+  projectIdDraft = "",
+  onVisibilityScopeChange,
+  onProjectChange,
+  scopeSaving = false,
+  scopeError,
 }: DocumentSidePanelProps) {
+  const scopeValue = scopeDraft ?? document.visibilityScope
+  const showProjectPicker =
+    scopeValue === "project" && Boolean(onVisibilityScopeChange)
   const currentVersion = detail.currentVersion ?? document.currentVersion ?? null
   const workspaceUrl = documentWorkspacePath(document.id)
 
@@ -96,7 +115,54 @@ export function DocumentSidePanel({
             <dt className="text-muted-foreground text-xs uppercase tracking-wide">
               Scope
             </dt>
-            <dd>{documentScopeLabel(document)}</dd>
+            <dd>
+              {onVisibilityScopeChange ? (
+                <div className="mt-1 flex flex-col gap-2">
+                  <select
+                    aria-label="Document scope"
+                    className="border-input bg-background text-foreground w-full rounded-md border px-2 py-1.5 text-sm"
+                    value={scopeValue}
+                    disabled={scopeSaving}
+                    onChange={(event) =>
+                      onVisibilityScopeChange(
+                        event.target.value as DocumentVisibilityScope
+                      )
+                    }
+                  >
+                    <option value="thread">Thread</option>
+                    <option value="project">Project</option>
+                    <option value="global">Global</option>
+                  </select>
+                  {showProjectPicker ? (
+                    projects.length > 0 ? (
+                      <select
+                        aria-label="Project"
+                        className="border-input bg-background text-foreground w-full rounded-md border px-2 py-1.5 text-sm"
+                        value={projectIdDraft}
+                        disabled={scopeSaving}
+                        onChange={(event) => onProjectChange?.(event.target.value)}
+                      >
+                        <option value="">Select a project…</option>
+                        {projects.map((project) => (
+                          <option key={project.id} value={project.id}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="text-muted-foreground text-xs">
+                        No projects available. Create a project first.
+                      </p>
+                    )
+                  ) : null}
+                </div>
+              ) : (
+                documentScopeLabel(document)
+              )}
+              {scopeError ? (
+                <p className="text-destructive mt-1 text-xs">{scopeError}</p>
+              ) : null}
+            </dd>
           </div>
         </dl>
       </section>

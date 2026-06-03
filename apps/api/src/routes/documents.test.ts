@@ -448,6 +448,90 @@ describe("document routes", () => {
     expect(body.currentVersion).toBe(2)
   })
 
+  it("updates document visibility scope with an explicit projectId", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const project = ctx.repos.projects.create({ name: "Customer insights" })
+    const thread = ctx.repos.threads.createWithInitialRun({
+      title: "Scope thread",
+      prompt: "Create doc",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const created = documentService.createMarkdownDocument({
+      title: "Thread brief",
+      content: "# Thread brief",
+      visibilityScope: "thread",
+      threadId: thread.thread.id,
+      runId: thread.run.id,
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const response = await app.request(
+      `/api/documents/${created.document.id}/visibility`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          visibilityScope: "project",
+          projectId: project.id,
+        }),
+      }
+    )
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      previousVisibilityScope: "thread",
+      document: {
+        id: created.document.id,
+        visibilityScope: "project",
+        projectId: project.id,
+        projectNameSnapshot: "Customer insights",
+      },
+    })
+  })
+
+  it("updates document visibility scope through the API", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const thread = ctx.repos.threads.createWithInitialRun({
+      title: "Scope thread",
+      prompt: "Create doc",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const created = documentService.createMarkdownDocument({
+      title: "Scoped brief",
+      content: "# Scoped brief",
+      visibilityScope: "thread",
+      threadId: thread.thread.id,
+      runId: thread.run.id,
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const response = await app.request(
+      `/api/documents/${created.document.id}/visibility`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibilityScope: "global" }),
+      }
+    )
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      previousVisibilityScope: "thread",
+      document: {
+        id: created.document.id,
+        visibilityScope: "global",
+      },
+    })
+  })
+
   it("updates markdown content and rejects stale baseVersion conflicts", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)

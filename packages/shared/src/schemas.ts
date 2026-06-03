@@ -734,6 +734,16 @@ export const updateDocumentContentResponseSchema = z.object({
   currentVersion: z.number().int().positive(),
 })
 
+export const updateDocumentVisibilityRequestSchema = z.object({
+  visibilityScope: documentVisibilityScopeSchema,
+  projectId: z.string().optional(),
+})
+
+export const updateDocumentVisibilityResponseSchema = z.object({
+  document: documentPublicSchema,
+  previousVisibilityScope: documentVisibilityScopeSchema,
+})
+
 export const listDocumentsQuerySchema = z.object({
   query: z.string().optional(),
   documentType: documentTypeSchema.optional(),
@@ -998,6 +1008,12 @@ export type UpdateDocumentContentRequest = z.infer<
 >
 export type UpdateDocumentContentResponse = z.infer<
   typeof updateDocumentContentResponseSchema
+>
+export type UpdateDocumentVisibilityRequest = z.infer<
+  typeof updateDocumentVisibilityRequestSchema
+>
+export type UpdateDocumentVisibilityResponse = z.infer<
+  typeof updateDocumentVisibilityResponseSchema
 >
 export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>
 export type ThreadDetail = z.infer<typeof threadDetailSchema>

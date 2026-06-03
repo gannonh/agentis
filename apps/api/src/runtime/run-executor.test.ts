@@ -55,14 +55,11 @@ describe("run executor composio bridge", () => {
     const systemPrompt = buildRunSystemPrompt({})
 
     expect(systemPrompt).toContain("You are Agentis")
-    expect(systemPrompt).toContain("createDocument")
-    expect(systemPrompt).toContain("durable document")
-    expect(systemPrompt).toContain("downloadPath")
-    expect(systemPrompt).toContain("Never invent hostnames")
+    expect(systemPrompt).not.toContain("createDocument")
     expect(systemPrompt).not.toContain("## Platform requirements")
   })
 
-  it("keeps platform document instructions with explicit prompt sections", () => {
+  it("keeps platform requirements separate from document capability guidance", () => {
     const systemPrompt = buildRunSystemPrompt({
       agentPrompt: "Answer as the configured research agent.",
       contextSections: [
@@ -74,10 +71,7 @@ describe("run executor composio bridge", () => {
       "## Agent instructions\nAnswer as the configured research agent."
     )
     expect(systemPrompt).toContain("## Platform requirements")
-    expect(systemPrompt).toContain("createDocument")
-    expect(systemPrompt).toContain("durable document")
-    expect(systemPrompt).toContain("instead of asking for schema fields")
-    expect(systemPrompt).toContain("Use downloadPath for markdown downloads")
+    expect(systemPrompt).not.toContain("createDocument")
     expect(systemPrompt).toContain("## Project context\nWorkspace: Research")
     expect(systemPrompt.indexOf("## Agent instructions")).toBeLessThan(
       systemPrompt.indexOf("## Platform requirements")
@@ -323,6 +317,35 @@ describe("run executor composio bridge", () => {
       .find((step) => step.title === "Debug: model input")
     expect(debugInput?.payload).toMatchObject({
       tools: expect.not.arrayContaining(["searchWeb"]),
+    })
+  }, 10_000)
+
+  it("omits document tools for custom-agent configurations without native permission", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "No Documents Agent",
+      systemPrompt: "Answer without document tools.",
+      model: "gpt-4o-mini",
+      nativeTools: ["webSearch"],
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Say hello for debug inspection." }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const debugInput = context.repos.steps
+      .listByRunId(run.id)
+      .find((step) => step.title === "Debug: model input")
+    expect(debugInput?.payload).toMatchObject({
+      tools: expect.not.arrayContaining(["createDocument"]),
     })
   }, 10_000)
 

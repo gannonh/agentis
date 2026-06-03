@@ -6,11 +6,16 @@ import { DocumentWorkspacePage } from "@/routes/document-workspace"
 
 const getDocumentDetail = vi.fn()
 const updateDocumentContent = vi.fn()
+const updateDocumentVisibility = vi.fn()
+const listProjects = vi.fn()
 const downloadDocumentFile = vi.fn()
 
 vi.mock("@/lib/api/projects-client", () => ({
   getDocumentDetail: (...args: unknown[]) => getDocumentDetail(...args),
   updateDocumentContent: (...args: unknown[]) => updateDocumentContent(...args),
+  updateDocumentVisibility: (...args: unknown[]) =>
+    updateDocumentVisibility(...args),
+  listProjects: (...args: unknown[]) => listProjects(...args),
   downloadDocumentFile: (...args: unknown[]) => downloadDocumentFile(...args),
   documentWorkspacePath: (id: string) => `/documents/${id}`,
   documentDownloadUrl: (id: string) => `/api/documents/${id}/download`,
@@ -23,7 +28,8 @@ const markdownDocument = {
   contentFormat: "markdown" as const,
   mimeType: "text/markdown",
   sizeBytes: 120,
-  visibilityScope: "global" as const,
+  visibilityScope: "thread" as const,
+  threadId: "thread_test",
   agentNameSnapshot: "Docs Agent",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -48,8 +54,29 @@ function renderWorkspace(documentId = "document_test") {
   )
 }
 
+const sampleProject = {
+  id: "project_insights",
+  name: "Customer insights",
+  description: null,
+  goals: null,
+  status: "active" as const,
+  archivedAt: null,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+  listProjects.mockResolvedValue([sampleProject])
+  updateDocumentVisibility.mockResolvedValue({
+    document: {
+      ...markdownDocument,
+      visibilityScope: "project" as const,
+      projectId: sampleProject.id,
+      projectNameSnapshot: sampleProject.name,
+    },
+    previousVisibilityScope: "thread" as const,
+  })
   getDocumentDetail.mockImplementation((documentId: string) => {
     if (documentId === "document_image") {
       return Promise.resolve({
@@ -87,7 +114,7 @@ describe("DocumentWorkspacePage", () => {
       expect(screen.getByRole("heading", { name: "Q2 Brief" })).toBeInTheDocument()
     })
     expect(screen.getByText("Agent generated")).toBeInTheDocument()
-    expect(screen.getByText("Global")).toBeInTheDocument()
+    expect(screen.getByLabelText("Document scope")).toHaveValue("thread")
     expect(screen.getByRole("button", { name: "Download" })).toBeInTheDocument()
     expect(screen.getByText("Summary")).toBeInTheDocument()
   })
@@ -225,6 +252,32 @@ describe("DocumentWorkspacePage", () => {
       screen.getByText(/viewing an older version/i)
     ).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
+  })
+
+  it("shows a project picker before applying project scope", async () => {
+    const user = userEvent.setup()
+    renderWorkspace()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Document scope")).toBeInTheDocument()
+    })
+
+    await user.selectOptions(screen.getByLabelText("Document scope"), "project")
+
+    expect(screen.getByLabelText("Project")).toBeInTheDocument()
+    expect(updateDocumentVisibility).not.toHaveBeenCalled()
+
+    await user.selectOptions(
+      screen.getByLabelText("Project"),
+      sampleProject.id
+    )
+
+    await waitFor(() => {
+      expect(updateDocumentVisibility).toHaveBeenCalledWith("document_test", {
+        visibilityScope: "project",
+        projectId: sampleProject.id,
+      })
+    })
   })
 
   it("shows read-only state for non-markdown documents", async () => {

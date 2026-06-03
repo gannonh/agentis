@@ -224,7 +224,11 @@ describe("shared schemas", () => {
 
   it("keeps native tool permissions in their shared native-tool contract", () => {
     expect(nativeToolPermissionIdSchema.parse("webSearch")).toBe("webSearch")
-    expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual(["webSearch"])
+    expect(nativeToolPermissionIdSchema.parse("documents")).toBe("documents")
+    expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual([
+      "webSearch",
+      "documents",
+    ])
     expect(NATIVE_TOOL_CAPABILITY_CATALOG).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -232,6 +236,13 @@ describe("shared schemas", () => {
           runtimeToolName: "searchWeb",
           label: "Search",
           group: "Research",
+          defaultSelected: true,
+        }),
+        expect.objectContaining({
+          id: "documents",
+          runtimeToolName: "documents",
+          label: "Documents",
+          group: "Data",
           defaultSelected: true,
         }),
       ])

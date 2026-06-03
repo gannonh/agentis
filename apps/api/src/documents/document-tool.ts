@@ -182,6 +182,37 @@ export function buildDocumentTools(
       },
     }),
 
+    updateDocumentVisibility: tool({
+      description:
+        "Change an accessible document visibility scope to thread, project, or global without creating a duplicate document.",
+      inputSchema: z.object({
+        documentId: z.string().min(1),
+        visibilityScope: documentVisibilityScopeSchema,
+        projectId: z.string().optional(),
+      }),
+      execute: async (input) => {
+        const result = documentService.updateDocumentVisibility({
+          documentId: input.documentId,
+          visibilityScope: input.visibilityScope,
+          projectId: input.projectId,
+          runContext,
+        })
+        if (!result.ok) return { error: result.message, code: result.code }
+        const payload = {
+          documentId: result.document.id,
+          title: result.document.title,
+          previousVisibilityScope: result.previousVisibilityScope,
+          visibilityScope: result.document.visibilityScope,
+          ...documentLinks(result.document.id),
+        }
+        context.onEvidence?.(
+          `Updated document scope: ${result.document.title}`,
+          payload
+        )
+        return payload
+      },
+    }),
+
     appendDocumentSection: tool({
       description: "Append markdown content or add a section to an accessible document.",
       inputSchema: z.object({

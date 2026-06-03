@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import { cn } from "@workspace/ui/lib/utils"
 import { Input } from "@workspace/ui/components/input"
 import { Textarea } from "@workspace/ui/components/textarea"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -32,6 +33,7 @@ import {
   ZapIcon,
 } from "@hugeicons/core-free-icons"
 import {
+  DOCUMENTS_NATIVE_TOOL_CAPABILITY,
   WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
   type AgentDetailInformation,
   type AgentDetailResponse,
@@ -44,6 +46,7 @@ import { useIntegrations } from "@/hooks/use-integrations"
 type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
 
 const WEB_SEARCH_CAPABILITY = WEB_SEARCH_NATIVE_TOOL_CAPABILITY
+const DOCUMENTS_CAPABILITY = DOCUMENTS_NATIVE_TOOL_CAPABILITY
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -667,9 +670,10 @@ const TOOL_GROUPS: Array<{ label: string; items: ToolGroupItem[] }> = [
         icon: TableIcon,
       },
       {
-        title: "Documents",
-        description: "Create and update persistent documents.",
+        title: DOCUMENTS_CAPABILITY.label,
+        description: DOCUMENTS_CAPABILITY.description,
         icon: File02Icon,
+        nativeToolId: DOCUMENTS_CAPABILITY.id,
       },
     ],
   },
@@ -721,25 +725,43 @@ function ToolCard({
   description,
   icon,
   checked,
+  inactive = false,
   onCheckedChange,
 }: {
   title: string
   description: string
   icon: ToolGroupItem["icon"]
   checked: boolean
+  inactive?: boolean
   onCheckedChange?: (checked: boolean) => void
 }) {
+  const mutedTextClass = inactive ? "text-muted-foreground/45" : undefined
   const content = (
     <>
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <span
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground",
+          inactive && "bg-muted/50 text-muted-foreground/45"
+        )}
+      >
         <HugeiconsIcon icon={icon} className="size-4" strokeWidth={2} />
       </span>
       <span className="min-w-0">
-        <span className="flex items-center gap-1.5 text-sm font-medium">
+        <span
+          className={cn(
+            "flex items-center gap-1.5 text-sm font-medium",
+            mutedTextClass
+          )}
+        >
           {title}
           {checked ? <span aria-hidden>✓</span> : null}
         </span>
-        <span className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+        <span
+          className={cn(
+            "line-clamp-2 text-xs leading-relaxed text-muted-foreground",
+            mutedTextClass
+          )}
+        >
           {description}
         </span>
       </span>
@@ -748,7 +770,13 @@ function ToolCard({
 
   if (!onCheckedChange) {
     return (
-      <div className="flex min-h-16 items-start gap-3 rounded-xl border border-border bg-card/70 p-3">
+      <div
+        aria-disabled="true"
+        className={cn(
+          "flex min-h-16 items-start gap-3 rounded-xl border border-border/70 bg-card/40 p-3",
+          inactive && "opacity-90"
+        )}
+      >
         <span
           aria-hidden
           className="mt-1 size-3.5 rounded-full bg-muted-foreground/30"
@@ -759,7 +787,11 @@ function ToolCard({
   }
 
   return (
-    <label className="flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border border-border bg-card/70 p-3 hover:bg-muted/40">
+    <label
+      className={cn(
+        "flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border border-border bg-card/70 p-3 hover:bg-muted/40"
+      )}
+    >
       <input
         type="checkbox"
         className="mt-1"
@@ -972,12 +1004,14 @@ export function AgentToolsTab({
             <div className="grid gap-2 sm:grid-cols-2">
               {group.items.map((item) => {
                 const nativeToolId = item.nativeToolId
+                const wired = Boolean(nativeToolId)
                 return (
                   <ToolCard
                     key={item.title}
                     title={item.title}
                     description={item.description}
                     icon={item.icon}
+                    inactive={!wired}
                     checked={
                       nativeToolId ? selectedNativeTools.has(nativeToolId) : false
                     }

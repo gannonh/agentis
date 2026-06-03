@@ -1,15 +1,17 @@
 import { z } from "zod"
 
-export const NATIVE_TOOL_PERMISSION_IDS = ["webSearch"] as const
+export const NATIVE_TOOL_PERMISSION_IDS = ["documents", "webSearch"] as const
 
 export type NativeToolPermissionId = (typeof NATIVE_TOOL_PERMISSION_IDS)[number]
 
+export type NativeToolCapabilityGroup = "Research" | "Data"
+
 export type NativeToolCapability = {
   id: NativeToolPermissionId
-  runtimeToolName: "searchWeb"
+  runtimeToolName: "searchWeb" | "documents"
   label: string
   description: string
-  group: "Research"
+  group: NativeToolCapabilityGroup
   defaultSelected: boolean
 }
 
@@ -22,8 +24,18 @@ export const WEB_SEARCH_NATIVE_TOOL_CAPABILITY: NativeToolCapability = {
   defaultSelected: true,
 }
 
+export const DOCUMENTS_NATIVE_TOOL_CAPABILITY: NativeToolCapability = {
+  id: "documents",
+  runtimeToolName: "documents",
+  label: "Documents",
+  description: "Create and update persistent documents.",
+  group: "Data",
+  defaultSelected: true,
+}
+
 export const NATIVE_TOOL_CAPABILITY_CATALOG: NativeToolCapability[] = [
   WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
+  DOCUMENTS_NATIVE_TOOL_CAPABILITY,
 ]
 
 export const DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS: NativeToolPermissionId[] =

@@ -778,6 +778,152 @@ export class DocumentService {
     }
   }
 
+  updateDocumentVisibility(input: {
+    documentId: string
+    visibilityScope: DocumentVisibilityScope
+    projectId?: string
+    runContext?: DocumentRunContext
+  }):
+    | DocumentResult<{
+        document: Document
+        previousVisibilityScope: DocumentVisibilityScope
+      }>
+    | DocumentError {
+    const document = this.repos.documents.getById(input.documentId)
+    if (!document) return documentNotFoundError()
+
+    if (input.runContext && !this.canAccess(document, input.runContext)) {
+      return {
+        ok: false,
+        code: "document_not_accessible",
+        message: "Document is not accessible from this run",
+        status: 403,
+      }
+    }
+
+    const projectScopeChanged =
+      input.visibilityScope === "project" &&
+      input.projectId &&
+      input.projectId !== document.projectId
+
+    if (document.visibilityScope === input.visibilityScope && !projectScopeChanged) {
+      return {
+        ok: false,
+        code: "document_scope_unchanged",
+        message: "Document already uses this visibility scope",
+        status: 400,
+      }
+    }
+
+    const assignment = this.resolveVisibilityScopeAssignment(
+      document,
+      input.visibilityScope,
+      input.runContext,
+      input.projectId
+    )
+    if (!assignment.ok) return assignment
+
+    const updated = this.repos.documents.updateVisibilityScope({
+      documentId: document.id,
+      visibilityScope: input.visibilityScope,
+      projectId: assignment.projectId,
+      projectNameSnapshot: assignment.projectNameSnapshot,
+      threadId: assignment.threadId,
+      threadTitleSnapshot: assignment.threadTitleSnapshot,
+    })
+    if (!updated) return documentNotFoundError()
+
+    return {
+      ok: true,
+      document: updated,
+      previousVisibilityScope: document.visibilityScope,
+    }
+  }
+
+  private resolveVisibilityScopeAssignment(
+    document: Document,
+    visibilityScope: DocumentVisibilityScope,
+    runContext?: DocumentRunContext,
+    explicitProjectId?: string
+  ):
+    | DocumentResult<{
+        projectId: string | null
+        projectNameSnapshot: string | null
+        threadId: string | null
+        threadTitleSnapshot: string | null
+      }>
+    | DocumentError {
+    if (visibilityScope === "global") {
+      return {
+        ok: true,
+        projectId: document.projectId ?? null,
+        projectNameSnapshot: document.projectNameSnapshot ?? null,
+        threadId: document.threadId ?? null,
+        threadTitleSnapshot: document.threadTitleSnapshot ?? null,
+      }
+    }
+
+    if (visibilityScope === "thread") {
+      const threadId = runContext?.threadId ?? document.threadId
+      if (!threadId) {
+        return {
+          ok: false,
+          code: "invalid_document_scope",
+          message: "Thread-scoped documents require a thread",
+          status: 400,
+        }
+      }
+      const thread = this.repos.threads.getById(threadId)
+      if (!thread) {
+        return invalidProvenanceError("Thread not found for document scope")
+      }
+      const project = thread.projectId
+        ? this.repos.projects.getById(thread.projectId)
+        : null
+      return {
+        ok: true,
+        projectId: thread.projectId ?? null,
+        projectNameSnapshot: project?.name ?? null,
+        threadId,
+        threadTitleSnapshot: thread.title,
+      }
+    }
+
+    let projectId =
+      explicitProjectId ?? runContext?.projectId ?? document.projectId ?? undefined
+    if (!projectId) {
+      const threadId = runContext?.threadId ?? document.threadId
+      const thread = threadId ? this.repos.threads.getById(threadId) : null
+      projectId = thread?.projectId ?? undefined
+    }
+    if (!projectId) {
+      return {
+        ok: false,
+        code: "invalid_document_scope",
+        message: "Project-scoped documents require a project",
+        status: 400,
+      }
+    }
+    const project = this.repos.projects.getById(projectId)
+    if (!project) {
+      return invalidProvenanceError("Project not found for document scope")
+    }
+
+    const threadId = runContext?.threadId ?? document.threadId
+    const thread = threadId ? this.repos.threads.getById(threadId) : null
+    if (thread && thread.projectId && thread.projectId !== projectId) {
+      return invalidProvenanceError("Document project and thread do not match")
+    }
+
+    return {
+      ok: true,
+      projectId,
+      projectNameSnapshot: project.name,
+      threadId: threadId ?? null,
+      threadTitleSnapshot: thread?.title ?? document.threadTitleSnapshot ?? null,
+    }
+  }
+
   private readDocumentContent(
     documentId: string,
     version?: number

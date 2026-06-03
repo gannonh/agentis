@@ -84,6 +84,16 @@ describe("document runtime tools", () => {
       ],
     })
 
+    const scoped = await executeTool(tools.updateDocumentVisibility, {
+      documentId,
+      visibilityScope: "global",
+    })
+    expect(scoped).toMatchObject({
+      documentId,
+      previousVisibilityScope: "project",
+      visibilityScope: "global",
+    })
+
     const updated = await executeTool(tools.updateDocumentSection, {
       documentId,
       sectionPath: "Runtime playbook > Steps",
@@ -129,6 +139,7 @@ describe("document runtime tools", () => {
     expect(evidence.map((entry) => entry.title)).toEqual([
       "Document created: Runtime playbook",
       "Searched documents",
+      "Updated document scope: Runtime playbook",
       "Updated document section: Runtime playbook",
       "Appended document section: Runtime playbook",
       "Read document: Runtime playbook",

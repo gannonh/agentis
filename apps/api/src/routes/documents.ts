@@ -3,6 +3,7 @@ import {
   documentTypeSchema,
   listDocumentsQuerySchema,
   updateDocumentContentRequestSchema,
+  updateDocumentVisibilityRequestSchema,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
@@ -189,6 +190,34 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
     return c.json({
       document: toPublicDocument(result.document),
       currentVersion: result.currentVersion,
+    })
+  })
+
+  app.patch("/:documentId/visibility", async (c) => {
+    const body = await c.req.json().catch(() => null)
+    const parsed = updateDocumentVisibilityRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json(
+        { error: "Invalid request body", code: "invalid_request" },
+        400
+      )
+    }
+
+    const result = documentService.updateDocumentVisibility({
+      documentId: c.req.param("documentId"),
+      visibilityScope: parsed.data.visibilityScope,
+      projectId: parsed.data.projectId,
+    })
+    if (!result.ok) {
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 500) as 400 | 403 | 404 | 500
+      )
+    }
+
+    return c.json({
+      document: toPublicDocument(result.document),
+      previousVisibilityScope: result.previousVisibilityScope,
     })
   })
 

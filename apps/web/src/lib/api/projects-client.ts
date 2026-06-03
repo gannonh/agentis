@@ -4,6 +4,8 @@ import {
   documentTypeSchema,
   updateDocumentContentRequestSchema,
   updateDocumentContentResponseSchema,
+  updateDocumentVisibilityRequestSchema,
+  updateDocumentVisibilityResponseSchema,
   createProjectMemoryRequestSchema,
   createProjectRequestSchema,
   projectMemorySchema,
@@ -17,6 +19,8 @@ import {
   type DocumentVisibilityScope,
   type UpdateDocumentContentRequest,
   type UpdateDocumentContentResponse,
+  type UpdateDocumentVisibilityRequest,
+  type UpdateDocumentVisibilityResponse,
   type CreateProjectMemoryRequest,
   type CreateProjectRequest,
   type Project,
@@ -283,6 +287,22 @@ export async function updateDocumentContent(
     body: JSON.stringify(payload),
   })
   return parseJson(response, updateDocumentContentResponseSchema)
+}
+
+export async function updateDocumentVisibility(
+  documentId: string,
+  body: UpdateDocumentVisibilityRequest
+): Promise<UpdateDocumentVisibilityResponse> {
+  const payload = updateDocumentVisibilityRequestSchema.parse(body)
+  const response = await fetch(
+    `${API_BASE}/api/documents/${documentId}/visibility`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, updateDocumentVisibilityResponseSchema)
 }
 
 export function documentWorkspacePath(documentId: string) {

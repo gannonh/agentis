@@ -70,7 +70,7 @@ export { formatToolStepTitle } from "./run-tool-labels.js"
 export { suppressTextForPendingApproval } from "./run-message-adapters.js"
 
 const PLATFORM_SYSTEM_PROMPT =
-  "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language. Use createDocument when the user asks for a durable document, brief, report, notes, playbook, or library item. If the request has enough context to create useful content, choose a concise title and content instead of asking for schema fields. Search and read relevant documents before updating durable knowledge. For document links, use only the exact relative viewPath or downloadPath returned by document tools. Use downloadPath for markdown downloads. Never invent hostnames or placeholder URLs such as yourworkspaceurl."
+  "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language."
 
 function formatSystemPromptSection(title: string, body?: string | null) {
   const trimmed = body?.trim()
@@ -342,6 +342,21 @@ export class RunExecutor {
       latestUserPrompt,
       buildTools: {
         webSearch: () => buildWebSearchTools(this.webSearchService),
+        documents: () =>
+          buildDocumentTools(this.documentService, {
+            runId,
+            threadId: run.threadId,
+            projectId: thread.projectId ?? undefined,
+            onEvidence: (title, payload) => {
+              this.repos.steps.create({
+                runId,
+                type: "tool-result",
+                status: "completed",
+                title,
+                payload,
+              })
+            },
+          }),
       },
     })
     if (nativeRuntimeCapabilities.webSearch.unavailableError) {
@@ -399,28 +414,13 @@ export class RunExecutor {
       runId,
       threadMode: thread.mode,
     })
-    const webSearchTools = nativeRuntimeCapabilities.runtimeTools
     const composioTools = this.services.toolExecution.buildRuntimeTools(
       run.threadId
     )
     const runtimeTools = {
       ...workspaceNativeTools,
-      ...webSearchTools,
+      ...nativeRuntimeCapabilities.runtimeTools,
       getWorkspaceSummary: getWorkspaceSummaryTool,
-      ...buildDocumentTools(this.documentService, {
-        runId,
-        threadId: run.threadId,
-        projectId: thread.projectId ?? undefined,
-        onEvidence: (title, payload) => {
-          this.repos.steps.create({
-            runId,
-            type: "tool-result",
-            status: "completed",
-            title,
-            payload,
-          })
-        },
-      }),
       ...composioTools,
     }
     const modelMessages = toModelMessages(threadMessages)

@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router"
+import type { DocumentVisibilityScope, Project } from "@workspace/shared"
 import { ApiError } from "@/lib/api/client"
 import {
   downloadDocumentFile,
   getDocumentDetail,
+  listProjects,
   updateDocumentContent,
+  updateDocumentVisibility,
 } from "@/lib/api/projects-client"
 import { isMarkdownEditable } from "@/lib/documents/document-metadata"
 import { DocumentEditor } from "@/components/documents/document-editor"
@@ -33,6 +36,11 @@ export function DocumentWorkspacePage() {
   const [error, setError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [scopeSaving, setScopeSaving] = useState(false)
+  const [scopeError, setScopeError] = useState<string | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [scopeDraft, setScopeDraft] = useState<DocumentVisibilityScope>("thread")
+  const [projectIdDraft, setProjectIdDraft] = useState("")
   const hasLoadedRef = useRef(false)
 
   const loadDetail = useCallback(
@@ -70,6 +78,31 @@ export function DocumentWorkspacePage() {
     hasLoadedRef.current = false
     void loadDetail(null)
   }, [documentId, loadDetail])
+
+  useEffect(() => {
+    let cancelled = false
+    void listProjects()
+      .then((items) => {
+        if (!cancelled) setProjects(items)
+      })
+      .catch(() => {
+        if (!cancelled) setProjects([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!detail) return
+    setScopeDraft(detail.document.visibilityScope)
+    setProjectIdDraft(detail.document.projectId ?? "")
+    setScopeError(null)
+  }, [
+    detail?.document.id,
+    detail?.document.visibilityScope,
+    detail?.document.projectId,
+  ])
 
   const viewingHistoricalVersion = useMemo(() => {
     if (!detail?.currentVersion || selectedVersion == null) return false
@@ -137,6 +170,66 @@ export function DocumentWorkspacePage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const applyVisibilityScope = async (
+    visibilityScope: DocumentVisibilityScope,
+    projectId?: string
+  ) => {
+    if (!detail) return
+
+    setScopeSaving(true)
+    setScopeError(null)
+    try {
+      await updateDocumentVisibility(documentId, {
+        visibilityScope,
+        ...(visibilityScope === "project" && projectId ? { projectId } : {}),
+      })
+      await loadDetail(selectedVersion)
+    } catch (scopeFailure) {
+      setScopeError(
+        scopeFailure instanceof Error
+          ? scopeFailure.message
+          : "Failed to update document scope"
+      )
+    } finally {
+      setScopeSaving(false)
+    }
+  }
+
+  const handleVisibilityScopeChange = async (
+    visibilityScope: DocumentVisibilityScope
+  ) => {
+    if (!detail) return
+
+    setScopeDraft(visibilityScope)
+    setScopeError(null)
+
+    if (visibilityScope === "project") {
+      const resolvedProjectId =
+        detail.document.projectId ?? projectIdDraft.trim()
+      if (!resolvedProjectId) {
+        return
+      }
+      if (
+        detail.document.visibilityScope === "project" &&
+        detail.document.projectId === resolvedProjectId
+      ) {
+        return
+      }
+      await applyVisibilityScope("project", resolvedProjectId)
+      return
+    }
+
+    if (visibilityScope === detail.document.visibilityScope) return
+    await applyVisibilityScope(visibilityScope)
+  }
+
+  const handleProjectChange = async (projectId: string) => {
+    if (!projectId) return
+    setProjectIdDraft(projectId)
+    setScopeDraft("project")
+    await applyVisibilityScope("project", projectId)
   }
 
   const handleDownload = async () => {
@@ -218,6 +311,13 @@ export function DocumentWorkspacePage() {
           onSelectVersion={handleSelectVersion}
           onDownload={() => void handleDownload()}
           downloadError={downloadError}
+          projects={projects}
+          scopeDraft={scopeDraft}
+          projectIdDraft={projectIdDraft}
+          onVisibilityScopeChange={(scope) => void handleVisibilityScopeChange(scope)}
+          onProjectChange={(projectId) => void handleProjectChange(projectId)}
+          scopeSaving={scopeSaving}
+          scopeError={scopeError}
         />
       }
     />

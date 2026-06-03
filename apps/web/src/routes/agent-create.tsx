@@ -12,7 +12,8 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card"
 import {
-  WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
+  DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS,
+  NATIVE_TOOL_CAPABILITY_CATALOG,
   type IntegrationToolkit,
 } from "@workspace/shared"
 import { AgentSetupFields } from "@/components/agents/agent-setup-fields"
@@ -41,8 +42,6 @@ const SYSTEM_PROMPT_PLACEHOLDER = [
   "Apps it can use:",
   "Response style:",
 ].join("\n")
-
-const WEB_SEARCH_CAPABILITY = WEB_SEARCH_NATIVE_TOOL_CAPABILITY
 
 function formatCategory(value: string) {
   return value
@@ -120,8 +119,8 @@ export function AgentCreatePage() {
   const [selectedToolGrantSlugs, setSelectedToolGrantSlugs] = useState<
     string[]
   >([])
-  const [webSearchSelected, setWebSearchSelected] = useState(
-    WEB_SEARCH_CAPABILITY.defaultSelected
+  const [selectedNativeTools, setSelectedNativeTools] = useState(
+    () => new Set(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS)
   )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -153,7 +152,7 @@ export function AgentCreatePage() {
         toolGrants: selectedToolGrantSlugs.map((toolkitSlug) => ({
           toolkitSlug,
         })),
-        nativeTools: webSearchSelected ? [WEB_SEARCH_CAPABILITY.id] : [],
+        nativeTools: [...selectedNativeTools].sort(),
       })
       navigate(`/agents/${encodeURIComponent(detail.agent.id)}`)
     } catch (submitError) {
@@ -261,24 +260,35 @@ export function AgentCreatePage() {
               <legend className="text-sm font-medium">
                 Built-in capabilities
               </legend>
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm hover:bg-muted/40">
-                <input
-                  type="checkbox"
-                  aria-label="Search"
-                  checked={webSearchSelected}
-                  onChange={(event) =>
-                    setWebSearchSelected(event.target.checked)
-                  }
-                />
-                <span className="flex min-w-0 flex-col">
-                  <span className="font-medium">
-                    {WEB_SEARCH_CAPABILITY.label}
+              {NATIVE_TOOL_CAPABILITY_CATALOG.map((capability) => (
+                <label
+                  key={capability.id}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm hover:bg-muted/40"
+                >
+                  <input
+                    type="checkbox"
+                    aria-label={capability.label}
+                    checked={selectedNativeTools.has(capability.id)}
+                    onChange={(event) => {
+                      setSelectedNativeTools((current) => {
+                        const next = new Set(current)
+                        if (event.target.checked) {
+                          next.add(capability.id)
+                        } else {
+                          next.delete(capability.id)
+                        }
+                        return next
+                      })
+                    }}
+                  />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="font-medium">{capability.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {capability.description}
+                    </span>
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {WEB_SEARCH_CAPABILITY.description}
-                  </span>
-                </span>
-              </label>
+                </label>
+              ))}
             </fieldset>
           </CardContent>
           <CardFooter className="mt-2 flex justify-between gap-3 border-t border-border pt-4">

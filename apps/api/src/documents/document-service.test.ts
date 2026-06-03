@@ -284,6 +284,78 @@ describe("DocumentService", () => {
     ctx.cleanup()
   })
 
+  it("assigns project scope when an explicit projectId is provided", () => {
+    const ctx = createTestContext()
+    const project = ctx.repos.projects.create({ name: "Insights" })
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Scope doc",
+      prompt: "Create notes",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const created = service.createMarkdownDocument({
+      title: "Thread-only summary",
+      content: "# Thread-only summary\n\nBody",
+      visibilityScope: "thread",
+      threadId: createdThread.thread.id,
+      runId: createdThread.run.id,
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    const scoped = service.updateDocumentVisibility({
+      documentId: created.document.id,
+      visibilityScope: "project",
+      projectId: project.id,
+      runContext: { threadId: createdThread.thread.id },
+    })
+    expect(scoped).toMatchObject({
+      ok: true,
+      previousVisibilityScope: "thread",
+    })
+    if (!scoped.ok) return
+    expect(scoped.document.visibilityScope).toBe("project")
+    expect(scoped.document.projectId).toBe(project.id)
+    expect(scoped.document.projectNameSnapshot).toBe("Insights")
+    ctx.cleanup()
+  })
+
+  it("updates document visibility scope without creating a duplicate", () => {
+    const ctx = createTestContext()
+    const createdThread = ctx.repos.threads.createWithInitialRun({
+      title: "Scope doc",
+      prompt: "Create notes",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const service = new DocumentService(ctx.repos, ctx.config)
+    const created = service.createMarkdownDocument({
+      title: "Insight summary",
+      content: "# Insight summary\n\nBody",
+      visibilityScope: "thread",
+      threadId: createdThread.thread.id,
+      runId: createdThread.run.id,
+    })
+    expect(created).toMatchObject({ ok: true })
+    if (!created.ok) return
+
+    const widened = service.updateDocumentVisibility({
+      documentId: created.document.id,
+      visibilityScope: "global",
+      runContext: { threadId: createdThread.thread.id },
+    })
+    expect(widened).toMatchObject({
+      ok: true,
+      previousVisibilityScope: "thread",
+    })
+    if (!widened.ok) return
+    expect(widened.document.visibilityScope).toBe("global")
+    expect(widened.document.id).toBe(created.document.id)
+    expect(ctx.repos.documents.count()).toBe(1)
+    ctx.cleanup()
+  })
+
   it("reads bounded content, missing versions, and older versions", () => {
     const ctx = createTestContext()
     const createdThread = ctx.repos.threads.createWithInitialRun({
