@@ -1,13 +1,13 @@
 import type { DocumentPublic as Document } from "@workspace/shared"
 
-export function documentSourceLabel(document: Document) {
+export function documentSourceLabel(document: Document): string {
   if (document.agentId || document.agentNameSnapshot) {
     return "Agent generated"
   }
   return "User upload"
 }
 
-export function documentScopeLabel(document: Document) {
+export function documentScopeLabel(document: Document): string {
   switch (document.visibilityScope) {
     case "global":
       return "Global"
@@ -18,7 +18,7 @@ export function documentScopeLabel(document: Document) {
   }
 }
 
-export function documentProvenanceLines(document: Document) {
+export function documentProvenanceLines(document: Document): string[] {
   const lines: string[] = [documentSourceLabel(document)]
   if (document.agentNameSnapshot) {
     lines.push(document.agentNameSnapshot)
@@ -32,6 +32,8 @@ export function documentProvenanceLines(document: Document) {
   return lines
 }
 
-export function isMarkdownEditable(document: Document) {
-  return document.documentType === "markdown" && document.contentFormat !== "binary"
+export function isMarkdownEditable(document: Document): boolean {
+  return (
+    document.documentType === "markdown" && document.contentFormat !== "binary"
+  )
 }

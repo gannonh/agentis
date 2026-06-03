@@ -131,7 +131,10 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
       versionRaw && versionRaw.trim()
         ? Number.parseInt(versionRaw, 10)
         : undefined
-    if (versionRaw && (!Number.isInteger(version) || version! < 1)) {
+    if (
+      versionRaw &&
+      (version === undefined || !Number.isInteger(version) || version < 1)
+    ) {
       return c.json(
         { error: "Invalid version parameter", code: "invalid_request" },
         400

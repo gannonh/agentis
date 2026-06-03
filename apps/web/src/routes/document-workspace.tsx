@@ -39,7 +39,8 @@ export function DocumentWorkspacePage() {
   const [scopeSaving, setScopeSaving] = useState(false)
   const [scopeError, setScopeError] = useState<string | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
-  const [scopeDraft, setScopeDraft] = useState<DocumentVisibilityScope>("thread")
+  const [scopeDraft, setScopeDraft] =
+    useState<DocumentVisibilityScope>("thread")
   const [projectIdDraft, setProjectIdDraft] = useState("")
   const hasLoadedRef = useRef(false)
 
@@ -62,7 +63,9 @@ export function DocumentWorkspacePage() {
         setLoadedBaseVersion(next.currentVersion ?? null)
       } catch (loadError) {
         setError(
-          loadError instanceof Error ? loadError.message : "Failed to load document"
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load document"
         )
       } finally {
         if (initialLoad) {
@@ -107,6 +110,9 @@ export function DocumentWorkspacePage() {
 
   const readOnly = detail ? !isMarkdownEditable(detail.document) : false
   const truncated = detail?.truncated === true
+  const editingDisabled = readOnly || viewingHistoricalVersion || truncated
+  const currentVersion =
+    detail?.currentVersion ?? detail?.document.currentVersion ?? null
 
   const handleClose = () => {
     if (window.history.length > 1) {
@@ -127,7 +133,7 @@ export function DocumentWorkspacePage() {
   }
 
   const handleStartEdit = () => {
-    if (readOnly || viewingHistoricalVersion || truncated) return
+    if (editingDisabled) return
     setSaveError(null)
     setDraftContent(loadedContent)
     setEditing(true)
@@ -151,10 +157,7 @@ export function DocumentWorkspacePage() {
       setEditing(false)
       await loadDetail(null)
     } catch (saveFailure) {
-      if (
-        saveFailure instanceof ApiError &&
-        saveFailure.status === 409
-      ) {
+      if (saveFailure instanceof ApiError && saveFailure.status === 409) {
         setSaveError(
           "This document changed elsewhere. Reload the current version before saving."
         )
@@ -245,7 +248,7 @@ export function DocumentWorkspacePage() {
   if (loading && !detail) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground text-sm">Loading document…</p>
+        <p className="text-sm text-muted-foreground">Loading document…</p>
       </div>
     )
   }
@@ -253,10 +256,12 @@ export function DocumentWorkspacePage() {
   if (error || !detail) {
     return (
       <div className="mx-auto flex min-h-[50vh] max-w-lg flex-col items-center justify-center gap-3 px-4 text-center">
-        <p className="text-destructive text-sm">{error ?? "Document not found"}</p>
+        <p className="text-sm text-destructive">
+          {error ?? "Document not found"}
+        </p>
         <button
           type="button"
-          className="text-primary text-sm underline-offset-4 hover:underline"
+          className="text-sm text-primary underline-offset-4 hover:underline"
           onClick={handleClose}
         >
           Go back
@@ -268,7 +273,7 @@ export function DocumentWorkspacePage() {
   return (
     <DocumentWorkspaceShell
       document={detail.document}
-      currentVersion={detail.currentVersion ?? detail.document.currentVersion ?? null}
+      currentVersion={currentVersion}
       viewingHistoricalVersion={viewingHistoricalVersion}
       readOnly={readOnly}
       truncated={truncated}
@@ -294,7 +299,7 @@ export function DocumentWorkspacePage() {
             setSaveError(null)
           }}
           saving={saving}
-          disabled={readOnly || viewingHistoricalVersion || truncated}
+          disabled={editingDisabled}
           error={saveError}
         />
       }
@@ -310,7 +315,9 @@ export function DocumentWorkspacePage() {
           projects={projects}
           scopeDraft={scopeDraft}
           projectIdDraft={projectIdDraft}
-          onVisibilityScopeChange={(scope) => void handleVisibilityScopeChange(scope)}
+          onVisibilityScopeChange={(scope) =>
+            void handleVisibilityScopeChange(scope)
+          }
           onProjectChange={(projectId) => void handleProjectChange(projectId)}
           scopeSaving={scopeSaving}
           scopeError={scopeError}
