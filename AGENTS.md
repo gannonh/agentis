@@ -141,3 +141,67 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 - Use Conventional Commits syntax: `<type>(<scope>): <imperative summary>`.
 - Never use `git push --no-verify` or other hook-skipping flags unless the user explicitly requests it. If a pre-push hook fails, fix the underlying issue and push again.
 
+## Cursor Cloud specific instructions
+
+### Services and ports
+
+| Service | Dev (`pnpm dev`) | Playwright (`pnpm test:e2e`) |
+| ------- | ---------------- | ---------------------------- |
+| API | `3101` (`AGENTIS_API_PORT`) | `3002` (started by Playwright) |
+| Web | `5177` (`AGENTIS_WEB_PORT`) | `5175` (`dev:e2e` / `preview:e2e`) |
+
+No separate database or Redis process: SQLite and document files are owned by the API.
+
+### Environment files (one-time per VM)
+
+If `/workspace/.env` is missing, copy samples before starting dev:
+
+```bash
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+```
+
+For Cloud Agent verification **without** `AI_GATEWAY_API_KEY`, append mock flags to root `.env` so thread runs work:
+
+```bash
+AGENTIS_MOCK_RUNTIME=1
+AGENTIS_MOCK_COMPOSIO=1
+```
+
+Use `pnpm dev:live` only when `AI_GATEWAY_API_KEY` (and optionally Composio keys) are available.
+
+### Running dev servers
+
+`pnpm dev` is long-lived; start it in **tmux** (not a one-shot background shell):
+
+```bash
+SESSION_NAME="agentis-dev"
+tmux -f /exec-daemon/tmux.portal.conf new-session -d -s "$SESSION_NAME" -c /workspace -- "${SHELL:-bash}" -l
+tmux -f /exec-daemon/tmux.portal.conf send-keys -t "$SESSION_NAME:0.0" 'pnpm dev' C-m
+```
+
+Health check: `curl -sf http://localhost:${AGENTIS_API_PORT:-3101}/api/health` → `{"ok":true}`; open the web app on port **5177** (see `AGENTIS_WEB_PORT`).
+
+### Playwright
+
+First run on a fresh VM may need Chromium: `pnpm exec playwright install chromium`.
+
+E2E boots its **own** API/web pair on ports `3002`/`5175` with mocks; it does not require `pnpm dev` to be running (and parallel dev on `3101`/`5177` is fine).
+
+### Quick API smoke (mock runtime)
+
+```bash
+curl -sf -X POST "http://localhost:${AGENTIS_API_PORT:-3101}/api/threads" \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Say hello in one short sentence."}'
+# Then POST /api/runs/<runId>/stream for SSE completion text.
+```
+
+### Quality commands
+
+See [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md): `pnpm typecheck`, `pnpm build`, `pnpm lint`, `pnpm test:coverage`, `pnpm test:e2e`.
+
+### Docker sandbox (optional)
+
+`AGENTIS_SANDBOX_BACKEND=local-container` needs a Docker daemon and `pnpm smoke:sandbox-container`. Default dev sandbox is `local-process` (no Docker).
+
