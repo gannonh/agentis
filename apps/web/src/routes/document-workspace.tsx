@@ -98,11 +98,7 @@ export function DocumentWorkspacePage() {
     setScopeDraft(detail.document.visibilityScope)
     setProjectIdDraft(detail.document.projectId ?? "")
     setScopeError(null)
-  }, [
-    detail?.document.id,
-    detail?.document.visibilityScope,
-    detail?.document.projectId,
-  ])
+  }, [detail])
 
   const viewingHistoricalVersion = useMemo(() => {
     if (!detail?.currentVersion || selectedVersion == null) return false
