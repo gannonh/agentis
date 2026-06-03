@@ -11,25 +11,20 @@ import { createId } from "../lib/ids.js"
 import type { Repositories } from "../repositories/index.js"
 import { LocalDocumentStorage } from "./local-document-storage.js"
 import {
+  documentNotAccessibleError,
+  DocumentScopePolicy,
+  generatedVisibilityScope,
+  type DocumentRunContext,
+  uploadVisibilityScope,
+} from "./document-scope-policy.js"
+import {
   appendMarkdownSection,
   parseMarkdownSections,
   replaceMarkdownSectionContent,
   type MarkdownSection,
 } from "./markdown-sections.js"
 
-export type DocumentRunContext = {
-  threadId?: string
-  projectId?: string
-  runId?: string
-}
-
-type DocumentProvenance = {
-  threadId?: string
-  projectNameSnapshot?: string
-  threadTitleSnapshot?: string
-  agentId?: string
-  agentNameSnapshot?: string
-}
+export type { DocumentRunContext } from "./document-scope-policy.js"
 
 type DocumentResult<T> = { ok: true } & T
 type DocumentError = {
@@ -130,14 +125,6 @@ function documentVersionNotFoundError(): DocumentError {
   )
 }
 
-function documentNotAccessibleError(): DocumentError {
-  return documentError(
-    "document_not_accessible",
-    "Document is not accessible from this run",
-    403
-  )
-}
-
 function documentNotMarkdownError(): DocumentError {
   return documentError("document_not_markdown", "Document is not markdown", 400)
 }
@@ -146,14 +133,6 @@ function documentTooLargeError(
   message = "Document exceeds maximum size"
 ): DocumentError {
   return documentError("document_too_large", message, 413)
-}
-
-function invalidProvenanceError(message: string): DocumentError {
-  return documentError("invalid_document_provenance", message, 400)
-}
-
-function invalidDocumentScopeError(message: string): DocumentError {
-  return documentError("invalid_document_scope", message, 400)
 }
 
 function documentSectionNotFoundError(): DocumentError {
@@ -170,23 +149,6 @@ function documentSectionAmbiguousError(): DocumentError {
     "Document section is ambiguous",
     400
   )
-}
-
-function generatedVisibilityScope(input: {
-  visibilityScope?: DocumentVisibilityScope
-  projectId?: string
-}): DocumentVisibilityScope {
-  if (input.visibilityScope) return input.visibilityScope
-  return input.projectId ? "project" : "thread"
-}
-
-function uploadVisibilityScope(input: {
-  projectId?: string
-  threadId?: string
-}): DocumentVisibilityScope {
-  if (input.projectId) return "project"
-  if (input.threadId) return "thread"
-  return "global"
 }
 
 function truncateUtf8ToBytes(
@@ -214,12 +176,14 @@ function isNodeErrorCode(error: unknown, code: string): boolean {
 
 export class DocumentService {
   private readonly storage: LocalDocumentStorage
+  private readonly scopePolicy: DocumentScopePolicy
 
   constructor(
     private readonly repos: Repositories,
     private readonly config: AppConfig
   ) {
     this.storage = new LocalDocumentStorage(config)
+    this.scopePolicy = new DocumentScopePolicy(repos)
   }
 
   createMarkdownDocument(input: {
@@ -241,14 +205,14 @@ export class DocumentService {
       return documentTooLargeError()
     }
 
-    const provenanceResult = this.captureProvenance({
+    const provenanceResult = this.scopePolicy.captureProvenance({
       projectId: input.projectId,
       threadId: input.threadId,
       runId: input.runId,
     })
     if (!provenanceResult.ok) return provenanceResult
 
-    const scopeError = this.validateScope(input.visibilityScope, {
+    const scopeError = this.scopePolicy.validateScope(input.visibilityScope, {
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
     })
@@ -346,7 +310,7 @@ export class DocumentService {
     if (input.data.byteLength > this.config.documentMaxUploadBytes) {
       return documentTooLargeError("Document exceeds maximum upload size")
     }
-    const provenanceResult = this.captureProvenance({
+    const provenanceResult = this.scopePolicy.captureProvenance({
       projectId: input.projectId,
       threadId: input.threadId,
     })
@@ -360,7 +324,7 @@ export class DocumentService {
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
     })
-    const scopeError = this.validateScope(visibilityScope, {
+    const scopeError = this.scopePolicy.validateScope(visibilityScope, {
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
     })
@@ -447,7 +411,9 @@ export class DocumentService {
         documentType: input.documentType,
         projectId: input.projectId,
       })
-      .filter((document) => this.canAccess(document, input.runContext))
+      .filter((document) =>
+        this.scopePolicy.canAccess(document, input.runContext)
+      )
       .sort(
         (left, right) =>
           SCOPE_SORT_ORDER[left.visibilityScope] -
@@ -474,7 +440,7 @@ export class DocumentService {
     | DocumentError {
     const document = this.repos.documents.getById(input.documentId)
     if (!document) return documentNotFoundError()
-    if (!this.canAccess(document, input.runContext)) {
+    if (!this.scopePolicy.canAccess(document, input.runContext)) {
       return documentNotAccessibleError()
     }
 
@@ -794,7 +760,10 @@ export class DocumentService {
     const document = this.repos.documents.getById(input.documentId)
     if (!document) return documentNotFoundError()
 
-    if (input.runContext && !this.canAccess(document, input.runContext)) {
+    if (
+      input.runContext &&
+      !this.scopePolicy.canAccess(document, input.runContext)
+    ) {
       return documentNotAccessibleError()
     }
 
@@ -815,7 +784,7 @@ export class DocumentService {
       }
     }
 
-    const assignment = this.resolveVisibilityScopeAssignment(
+    const assignment = this.scopePolicy.resolveVisibilityScopeAssignment(
       document,
       input.visibilityScope,
       input.runContext,
@@ -837,88 +806,6 @@ export class DocumentService {
       ok: true,
       document: updated,
       previousVisibilityScope: document.visibilityScope,
-    }
-  }
-
-  private resolveVisibilityScopeAssignment(
-    document: Document,
-    visibilityScope: DocumentVisibilityScope,
-    runContext?: DocumentRunContext,
-    explicitProjectId?: string
-  ):
-    | DocumentResult<{
-        projectId: string | null
-        projectNameSnapshot: string | null
-        threadId: string | null
-        threadTitleSnapshot: string | null
-      }>
-    | DocumentError {
-    if (visibilityScope === "global") {
-      return {
-        ok: true,
-        projectId: document.projectId ?? null,
-        projectNameSnapshot: document.projectNameSnapshot ?? null,
-        threadId: document.threadId ?? null,
-        threadTitleSnapshot: document.threadTitleSnapshot ?? null,
-      }
-    }
-
-    if (visibilityScope === "thread") {
-      const threadId = runContext?.threadId ?? document.threadId
-      if (!threadId) {
-        return invalidDocumentScopeError(
-          "Thread-scoped documents require a thread"
-        )
-      }
-      const thread = this.repos.threads.getById(threadId)
-      if (!thread) {
-        return invalidProvenanceError("Thread not found for document scope")
-      }
-      const project = thread.projectId
-        ? this.repos.projects.getById(thread.projectId)
-        : null
-      return {
-        ok: true,
-        projectId: thread.projectId ?? null,
-        projectNameSnapshot: project?.name ?? null,
-        threadId,
-        threadTitleSnapshot: thread.title,
-      }
-    }
-
-    let projectId =
-      explicitProjectId ??
-      runContext?.projectId ??
-      document.projectId ??
-      undefined
-    if (!projectId) {
-      const threadId = runContext?.threadId ?? document.threadId
-      const thread = threadId ? this.repos.threads.getById(threadId) : null
-      projectId = thread?.projectId ?? undefined
-    }
-    if (!projectId) {
-      return invalidDocumentScopeError(
-        "Project-scoped documents require a project"
-      )
-    }
-    const project = this.repos.projects.getById(projectId)
-    if (!project) {
-      return invalidProvenanceError("Project not found for document scope")
-    }
-
-    const threadId = runContext?.threadId ?? document.threadId
-    const thread = threadId ? this.repos.threads.getById(threadId) : null
-    if (thread && thread.projectId && thread.projectId !== projectId) {
-      return invalidProvenanceError("Document project and thread do not match")
-    }
-
-    return {
-      ok: true,
-      projectId,
-      projectNameSnapshot: project.name,
-      threadId: threadId ?? null,
-      threadTitleSnapshot:
-        thread?.title ?? document.threadTitleSnapshot ?? null,
     }
   }
 
@@ -990,7 +877,7 @@ export class DocumentService {
   ): DocumentResult<DocumentSectionChange> | DocumentError {
     const document = this.repos.documents.getById(input.documentId)
     if (!document) return documentNotFoundError()
-    if (!this.canAccess(document, input.runContext)) {
+    if (!this.scopePolicy.canAccess(document, input.runContext)) {
       return documentNotAccessibleError()
     }
     if (document.documentType !== "markdown") {
@@ -1106,77 +993,6 @@ export class DocumentService {
         error,
         storageKey,
       })
-    }
-  }
-
-  private validateScope(
-    visibilityScope: DocumentVisibilityScope,
-    input: { projectId?: string; threadId?: string }
-  ): DocumentError | null {
-    if (visibilityScope === "project" && !input.projectId) {
-      return invalidDocumentScopeError(
-        "Project-scoped documents require a project"
-      )
-    }
-    if (visibilityScope === "thread" && !input.threadId) {
-      return invalidDocumentScopeError(
-        "Thread-scoped documents require a thread"
-      )
-    }
-    return null
-  }
-
-  private canAccess(document: Document, context: DocumentRunContext): boolean {
-    if (document.visibilityScope === "global") return true
-    if (document.visibilityScope === "project") {
-      return Boolean(
-        document.projectId && document.projectId === context.projectId
-      )
-    }
-    return Boolean(document.threadId && document.threadId === context.threadId)
-  }
-
-  private captureProvenance(input: {
-    projectId?: string
-    threadId?: string
-    runId?: string
-  }): DocumentResult<{ provenance: DocumentProvenance }> | DocumentError {
-    const project = input.projectId
-      ? this.repos.projects.getById(input.projectId)
-      : null
-    if (input.projectId && !project) {
-      return invalidProvenanceError("Project not found for document provenance")
-    }
-
-    const run = input.runId ? this.repos.runs.getById(input.runId) : null
-    if (input.runId && !run) {
-      return invalidProvenanceError("Run not found for document provenance")
-    }
-    if (run && input.threadId && run.threadId !== input.threadId) {
-      return invalidProvenanceError("Document run and thread do not match")
-    }
-
-    const threadId = run?.threadId ?? input.threadId
-    const thread = threadId ? this.repos.threads.getById(threadId) : null
-    if (threadId && !thread) {
-      return invalidProvenanceError("Thread not found for document provenance")
-    }
-    if (input.projectId && thread && thread.projectId !== input.projectId) {
-      return invalidProvenanceError("Document project and thread do not match")
-    }
-
-    const agentId = run?.agentId ?? thread?.agentId
-    const agent = agentId ? this.repos.agents.getById(agentId) : null
-    return {
-      ok: true,
-      provenance: {
-        threadId,
-        projectNameSnapshot: project?.name,
-        threadTitleSnapshot: thread?.title,
-        agentId: agentId ?? undefined,
-        agentNameSnapshot:
-          thread?.agentNameSnapshot ?? agent?.name ?? undefined,
-      },
     }
   }
 }
