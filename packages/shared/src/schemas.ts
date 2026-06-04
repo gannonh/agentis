@@ -270,6 +270,8 @@ export const runtimeHealthSchema = z.object({
   available: z.boolean(),
   reason: z.enum(["api_unavailable", "missing_api_key"]).optional(),
   model: z.string().optional(),
+  aiGatewayProvider: z.enum(["vercel", "cloudflare"]).optional(),
+  missingEnvVars: z.array(z.string()).optional(),
   composio: z
     .object({
       available: z.boolean(),

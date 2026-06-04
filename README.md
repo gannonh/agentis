@@ -17,7 +17,8 @@ cd agentis
 pnpm install
 cp .env.example .env
 cp apps/web/.env.example apps/web/.env
-# Set AI_GATEWAY_API_KEY in .env at the repo root for live model runs and native web search
+# Set AI_GATEWAY_PROVIDER plus the selected provider credentials in the repo root .env for live model runs.
+# For no-key dev search, use AGENTIS_WEB_SEARCH_PROVIDER=tavily and AGENTIS_WEB_SEARCH_BACKEND=keyless.
 pnpm dev
 ```
 

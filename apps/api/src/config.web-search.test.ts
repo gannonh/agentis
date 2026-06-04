@@ -35,16 +35,55 @@ describe("web search config", () => {
     expect(isWebSearchProviderAvailable(config)).toBe(true)
   })
 
-  it("requires gateway credentials for non-mock gateway search", () => {
+  it("requires Vercel credentials for non-mock Vercel Gateway search", () => {
     const unavailable = loadConfig({
       AGENTIS_WEB_SEARCH_PROVIDER: "vercel-gateway",
     })
     const available = loadConfig({
       AGENTIS_WEB_SEARCH_PROVIDER: "vercel-gateway",
-      AI_GATEWAY_API_KEY: "gateway-key",
+      VERCEL_AI_GATEWAY_API_KEY: "gateway-key",
     })
 
     expect(isWebSearchProviderAvailable(unavailable)).toBe(false)
     expect(isWebSearchProviderAvailable(available)).toBe(true)
+  })
+
+  it("rejects keyless backend for Vercel Gateway search", () => {
+    expect(() =>
+      loadConfig({
+        AGENTIS_WEB_SEARCH_PROVIDER: "vercel-gateway",
+        AGENTIS_WEB_SEARCH_BACKEND: "keyless",
+        VERCEL_AI_GATEWAY_API_KEY: "gateway-key",
+      })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_BACKEND/)
+  })
+
+  it("defaults Tavily search to the keyless backend without credentials", () => {
+    const config = loadConfig({
+      AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
+    })
+
+    expect(config.webSearchProvider).toBe("tavily")
+    expect(config.webSearchBackend).toBe("keyless")
+    expect(resolveWebSearchProviderName(config)).toBe("tavily")
+    expect(isWebSearchProviderAvailable(config)).toBe(true)
+  })
+
+  it("rejects credentialed gateway backends for Tavily search", () => {
+    expect(() =>
+      loadConfig({
+        AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
+        AGENTIS_WEB_SEARCH_BACKEND: "parallel",
+      })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_BACKEND/)
+  })
+
+  it("rejects invalid web search provider and backend values", () => {
+    expect(() =>
+      loadConfig({ AGENTIS_WEB_SEARCH_PROVIDER: "tavliy" })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_PROVIDER/)
+    expect(() =>
+      loadConfig({ AGENTIS_WEB_SEARCH_BACKEND: "perplexitiy" })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_BACKEND/)
   })
 })

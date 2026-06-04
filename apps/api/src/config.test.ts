@@ -30,18 +30,73 @@ describe("config", () => {
     ).toBe(true)
   })
 
-  it("uses Gateway credentials for live runtime availability", () => {
+  it("uses selected AI Gateway provider credentials for live runtime availability", () => {
     expect(
       isRuntimeAvailable(
-        loadConfig({ AI_GATEWAY_API_KEY: "gateway-key", OPENAI_API_KEY: "" })
+        loadConfig({
+          AI_GATEWAY_PROVIDER: "vercel",
+          VERCEL_AI_GATEWAY_API_KEY: "vercel-key",
+          OPENAI_API_KEY: "",
+        })
+      )
+    ).toBe(true)
+    expect(
+      isRuntimeAvailable(
+        loadConfig({
+          AI_GATEWAY_PROVIDER: "vercel",
+          AI_GATEWAY_API_KEY: "legacy-vercel-key",
+        })
+      )
+    ).toBe(true)
+    expect(
+      isRuntimeAvailable(
+        loadConfig({
+          AI_GATEWAY_PROVIDER: "cloudflare",
+          CLOUDFLARE_API_KEY: "cloudflare-key",
+          CLOUDFLARE_ACCOUNT_ID: "account-id",
+        })
       )
     ).toBe(true)
     expect(
       isRuntimeAvailable(loadConfig({ OPENAI_API_KEY: "openai-key" }))
     ).toBe(false)
+    expect(
+      isRuntimeAvailable(
+        loadConfig({
+          AI_GATEWAY_PROVIDER: "cloudflare",
+          CLOUDFLARE_API_KEY: "cloudflare-key",
+        })
+      )
+    ).toBe(false)
     expect(isRuntimeAvailable(loadConfig({ AGENTIS_MOCK_RUNTIME: "1" }))).toBe(
       true
     )
+  })
+
+  it("defaults AI Gateway provider to Vercel and parses Cloudflare fields", () => {
+    const defaultConfig = loadConfig({ AI_GATEWAY_API_KEY: "legacy-key" })
+    const cloudflareConfig = loadConfig({
+      AI_GATEWAY_PROVIDER: "cloudflare",
+      CLOUDFLARE_API_KEY: " cloudflare-key ",
+      CLOUDFLARE_ACCOUNT_ID: " account-id ",
+      CLOUDFLARE_AI_GATEWAY_ID: " default ",
+    })
+
+    expect(defaultConfig.aiGatewayProvider).toBe("vercel")
+    expect(defaultConfig.vercelAiGatewayApiKey).toBe("legacy-key")
+    expect(defaultConfig.aiGatewayApiKey).toBe("legacy-key")
+    expect(cloudflareConfig).toMatchObject({
+      aiGatewayProvider: "cloudflare",
+      cloudflareApiKey: "cloudflare-key",
+      cloudflareAccountId: "account-id",
+      cloudflareAiGatewayId: "default",
+    })
+  })
+
+  it("rejects invalid AI Gateway provider values", () => {
+    expect(() =>
+      loadConfig({ AI_GATEWAY_PROVIDER: "cloduflare" })
+    ).toThrowError(/AI_GATEWAY_PROVIDER/)
   })
 
   it("keeps default Composio toolkit versions keyed by Agentis toolkit slug", () => {

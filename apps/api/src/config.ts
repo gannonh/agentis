@@ -42,10 +42,16 @@ export type AppConfig = {
   sandboxChangedFilesLimit: number
   sandboxCommandDenyPatterns: string[]
   sandboxContainerImage: string
-  webSearchProvider: "vercel-gateway" | "mock"
-  webSearchBackend: "perplexity" | "parallel"
+  webSearchProvider: "vercel-gateway" | "tavily" | "mock"
+  webSearchBackend: "perplexity" | "parallel" | "keyless"
   webSearchMaxResults: number
   webSearchMaxSnippetChars: number
+  aiGatewayProvider: "vercel" | "cloudflare"
+  vercelAiGatewayApiKey: string | undefined
+  cloudflareApiKey: string | undefined
+  cloudflareAccountId: string | undefined
+  cloudflareAiGatewayId: string | undefined
+  /** Deprecated Vercel Gateway credential alias retained during migration. */
   aiGatewayApiKey: string | undefined
 }
 
@@ -93,6 +99,39 @@ function resolveComposioToolkitVersions(
   return { ...merged, ...normalizedFromEnv }
 }
 
+function readEnvValue(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed || undefined
+}
+
+function parseConfiguredValue<const T extends readonly string[]>(
+  value: string | undefined,
+  allowed: T,
+  defaultValue: T[number],
+  envName: string
+): T[number] {
+  const configured = readEnvValue(value)
+  if (!configured) return defaultValue
+  if (allowed.includes(configured)) return configured
+  throw new Error(`${envName} must be one of: ${allowed.join(", ")}`)
+}
+
+function assertWebSearchCombination(
+  provider: AppConfig["webSearchProvider"],
+  backend: AppConfig["webSearchBackend"]
+): void {
+  if (provider === "tavily" && backend !== "keyless") {
+    throw new Error(
+      "AGENTIS_WEB_SEARCH_BACKEND must be keyless when AGENTIS_WEB_SEARCH_PROVIDER is tavily"
+    )
+  }
+  if (provider === "vercel-gateway" && backend === "keyless") {
+    throw new Error(
+      "AGENTIS_WEB_SEARCH_BACKEND must be perplexity or parallel when AGENTIS_WEB_SEARCH_PROVIDER is vercel-gateway"
+    )
+  }
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const port = Number(env.AGENTIS_API_PORT ?? env.PORT ?? 3101)
   const nodeEnv = env.NODE_ENV ?? "production"
@@ -103,6 +142,29 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       : nodeEnv === "production"
         ? "local-container"
         : "local-process"
+
+  const vercelAiGatewayApiKey =
+    readEnvValue(env.VERCEL_AI_GATEWAY_API_KEY) ??
+    readEnvValue(env.AI_GATEWAY_API_KEY)
+  const aiGatewayProvider = parseConfiguredValue(
+    env.AI_GATEWAY_PROVIDER,
+    ["vercel", "cloudflare"] as const,
+    "vercel",
+    "AI_GATEWAY_PROVIDER"
+  )
+  const webSearchProvider = parseConfiguredValue(
+    env.AGENTIS_WEB_SEARCH_PROVIDER,
+    ["vercel-gateway", "tavily", "mock"] as const,
+    "vercel-gateway",
+    "AGENTIS_WEB_SEARCH_PROVIDER"
+  )
+  const webSearchBackend = parseConfiguredValue(
+    env.AGENTIS_WEB_SEARCH_BACKEND,
+    ["perplexity", "parallel", "keyless"] as const,
+    webSearchProvider === "tavily" ? "keyless" : "perplexity",
+    "AGENTIS_WEB_SEARCH_BACKEND"
+  )
+  assertWebSearchCombination(webSearchProvider, webSearchBackend)
 
   return {
     port,
@@ -170,10 +232,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter(Boolean),
     sandboxContainerImage:
       env.AGENTIS_SANDBOX_CONTAINER_IMAGE ?? "agentis-sandbox:local",
-    webSearchProvider:
-      env.AGENTIS_WEB_SEARCH_PROVIDER === "mock" ? "mock" : "vercel-gateway",
-    webSearchBackend:
-      env.AGENTIS_WEB_SEARCH_BACKEND === "parallel" ? "parallel" : "perplexity",
+    webSearchProvider,
+    webSearchBackend,
     webSearchMaxResults: clampNumber(
       Number(env.AGENTIS_WEB_SEARCH_MAX_RESULTS ?? 5),
       1,
@@ -184,8 +244,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       1,
       1000
     ),
-    aiGatewayApiKey: env.AI_GATEWAY_API_KEY?.trim() || undefined,
+    aiGatewayProvider,
+    vercelAiGatewayApiKey,
+    cloudflareApiKey: readEnvValue(env.CLOUDFLARE_API_KEY),
+    cloudflareAccountId: readEnvValue(env.CLOUDFLARE_ACCOUNT_ID),
+    cloudflareAiGatewayId: readEnvValue(env.CLOUDFLARE_AI_GATEWAY_ID),
+    aiGatewayApiKey: vercelAiGatewayApiKey,
   }
+}
+
+export function getRuntimeMissingEnvVars(config: AppConfig): string[] {
+  if (config.mockRuntime) return []
+  if (config.aiGatewayProvider === "cloudflare") {
+    return [
+      ...(config.cloudflareApiKey ? [] : ["CLOUDFLARE_API_KEY"]),
+      ...(config.cloudflareAccountId ? [] : ["CLOUDFLARE_ACCOUNT_ID"]),
+    ]
+  }
+  return config.vercelAiGatewayApiKey ? [] : ["VERCEL_AI_GATEWAY_API_KEY"]
+}
+
+export function formatMissingEnvVarsMessage(missingEnvVars: string[]): string {
+  return `${missingEnvVars.join(" and ")} ${
+    missingEnvVars.length === 1 ? "is" : "are"
+  } not configured`
 }
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -193,10 +275,8 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.trunc(value)))
 }
 
-export function isRuntimeAvailable(
-  config: Pick<AppConfig, "aiGatewayApiKey" | "mockRuntime">
-) {
-  return Boolean(config.aiGatewayApiKey) || config.mockRuntime
+export function isRuntimeAvailable(config: AppConfig) {
+  return getRuntimeMissingEnvVars(config).length === 0
 }
 
 export function isDebugSeedsEnabled(config: AppConfig) {
@@ -222,7 +302,16 @@ export function resolveWebSearchProviderName(config: AppConfig): string {
 export function isWebSearchProviderAvailable(config: AppConfig): boolean {
   if (config.mockRuntime) return true
   if (config.webSearchProvider === "mock") return true
-  return Boolean(config.aiGatewayApiKey?.trim())
+  if (config.webSearchProvider === "tavily") {
+    return config.webSearchBackend === "keyless"
+  }
+  if (config.webSearchProvider === "vercel-gateway") {
+    const backendSupported =
+      config.webSearchBackend === "perplexity" ||
+      config.webSearchBackend === "parallel"
+    return backendSupported && Boolean(config.vercelAiGatewayApiKey?.trim())
+  }
+  return false
 }
 
 export function getComposioUnavailableReason(

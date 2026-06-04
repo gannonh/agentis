@@ -80,12 +80,14 @@ function mapGatewayFailure(error: unknown): WebSearchError {
   return new WebSearchError("web_search_failed", message)
 }
 
-function gatewayToolName(backend: AppConfig["webSearchBackend"]): string {
+type VercelGatewaySearchBackend = "perplexity" | "parallel"
+
+function gatewayToolName(backend: VercelGatewaySearchBackend): string {
   return backend === "parallel" ? "parallel_search" : "perplexity_search"
 }
 
 function gatewayRequestId(
-  backend: AppConfig["webSearchBackend"],
+  backend: VercelGatewaySearchBackend,
   output: unknown
 ): string | undefined {
   if (backend === "parallel") {
@@ -97,25 +99,35 @@ function gatewayRequestId(
 export function createVercelGatewayWebSearchProvider(
   config: AppConfig
 ): WebSearchProvider {
-  if (!config.aiGatewayApiKey) {
+  if (
+    config.webSearchBackend !== "perplexity" &&
+    config.webSearchBackend !== "parallel"
+  ) {
+    throw new WebSearchError(
+      "web_search_provider_unsupported",
+      "Vercel Gateway web search supports only perplexity and parallel backends"
+    )
+  }
+  if (!config.vercelAiGatewayApiKey) {
     throw new WebSearchError(
       "web_search_unavailable",
-      "AI Gateway API key is not configured"
+      "VERCEL_AI_GATEWAY_API_KEY is not configured"
     )
   }
 
-  const gateway = createGateway({ apiKey: config.aiGatewayApiKey })
-  const providerName = `vercel-gateway:${config.webSearchBackend}`
+  const backend = config.webSearchBackend
+  const gateway = createGateway({ apiKey: config.vercelAiGatewayApiKey })
+  const providerName = `vercel-gateway:${backend}`
 
   return {
     name: providerName,
     async search(input: SearchWebInput) {
       const bounded = boundSearchInput(input, config)
       const maxResults = bounded.maxResults ?? config.webSearchMaxResults
-      const toolName = gatewayToolName(config.webSearchBackend)
+      const toolName = gatewayToolName(backend)
 
       try {
-        if (config.webSearchBackend === "parallel" && bounded.recency) {
+        if (backend === "parallel" && bounded.recency) {
           throw new WebSearchError(
             "web_search_provider_unsupported",
             "The parallel web search backend does not support recency filters"
@@ -123,7 +135,7 @@ export function createVercelGatewayWebSearchProvider(
         }
 
         const searchTool =
-          config.webSearchBackend === "parallel"
+          backend === "parallel"
             ? gateway.tools.parallelSearch({
                 maxResults,
                 ...(bounded.domains
@@ -158,7 +170,7 @@ export function createVercelGatewayWebSearchProvider(
 
         const gatewayResults = readGatewayResults(toolResult.output)
         const rawResults =
-          config.webSearchBackend === "parallel"
+          backend === "parallel"
             ? mapParallelResults(gatewayResults)
             : gatewayResults
 
@@ -170,10 +182,7 @@ export function createVercelGatewayWebSearchProvider(
           maxSnippetChars: config.webSearchMaxSnippetChars,
           metadata: {
             gatewayTool: toolName,
-            requestId: gatewayRequestId(
-              config.webSearchBackend,
-              toolResult.output
-            ),
+            requestId: gatewayRequestId(backend, toolResult.output),
           },
         })
       } catch (error) {

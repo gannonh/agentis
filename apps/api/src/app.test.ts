@@ -16,11 +16,15 @@ afterEach(() => {
 })
 
 describe("api routes", () => {
-  it("reports missing Gateway runtime key", async () => {
+  it("reports missing selected Gateway runtime credentials", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, {
       ...ctx.config,
+      aiGatewayProvider: "cloudflare",
       aiGatewayApiKey: undefined,
+      vercelAiGatewayApiKey: undefined,
+      cloudflareApiKey: "cloudflare-key",
+      cloudflareAccountId: undefined,
       mockRuntime: false,
     })
 
@@ -29,11 +33,15 @@ describe("api routes", () => {
       available: boolean
       reason?: string
       model?: string
+      aiGatewayProvider?: string
+      missingEnvVars?: string[]
     }
 
     expect(body.available).toBe(false)
     expect(body.reason).toBe("missing_api_key")
     expect(body.model).toBe("openai/gpt-4o-mini")
+    expect(body.aiGatewayProvider).toBe("cloudflare")
+    expect(body.missingEnvVars).toEqual(["CLOUDFLARE_ACCOUNT_ID"])
   })
 
   it("creates a thread with queued run", async () => {
@@ -432,15 +440,18 @@ describe("config", () => {
     expect(config.webAppOrigin).toBe("http://127.0.0.1:5177")
   })
 
-  it("detects runtime availability from Gateway key or mock mode", () => {
+  it("detects runtime availability from the selected Gateway provider or mock mode", () => {
     expect(
-      isRuntimeAvailable({ aiGatewayApiKey: "x", mockRuntime: false })
+      isRuntimeAvailable(
+        loadConfig({
+          AI_GATEWAY_PROVIDER: "vercel",
+          VERCEL_AI_GATEWAY_API_KEY: "x",
+        })
+      )
     ).toBe(true)
-    expect(
-      isRuntimeAvailable({ aiGatewayApiKey: undefined, mockRuntime: true })
-    ).toBe(true)
-    expect(
-      isRuntimeAvailable({ aiGatewayApiKey: undefined, mockRuntime: false })
-    ).toBe(false)
+    expect(isRuntimeAvailable(loadConfig({ AGENTIS_MOCK_RUNTIME: "1" }))).toBe(
+      true
+    )
+    expect(isRuntimeAvailable(loadConfig({}))).toBe(false)
   })
 })
