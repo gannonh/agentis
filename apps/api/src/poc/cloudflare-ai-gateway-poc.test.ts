@@ -4,9 +4,11 @@ import {
   buildCloudflareAiGatewayBaseUrl,
   buildCloudflareAiGatewayHeaders,
   buildCloudflareSearchPrompt,
+  buildTavilyKeylessHeaders,
   extractJsonObject,
   loadCloudflarePocConfig,
   normalizeCloudflareSearchPayload,
+  normalizeTavilySearchResponse,
 } from "./cloudflare-ai-gateway-poc.js"
 
 describe("Cloudflare AI Gateway POC config", () => {
@@ -83,6 +85,45 @@ describe("Cloudflare search POC normalization", () => {
           url: "https://developers.cloudflare.com/ai-gateway/",
           snippet: "Gateway docs",
           publishedAt: "2026-06-01",
+        },
+      ],
+    })
+  })
+
+  it("uses Tavily keyless mode without an API credential", () => {
+    expect(buildTavilyKeylessHeaders()).toEqual({
+      "Content-Type": "application/json",
+      "X-Tavily-Access-Mode": "keyless",
+    })
+  })
+
+  it("maps Tavily keyless results into SearchWebOutput", () => {
+    const output = normalizeTavilySearchResponse({
+      query: "agent search",
+      payload: {
+        results: [
+          {
+            title: "Agent search example",
+            url: "https://example.com/agent-search",
+            content: "Search result content optimized for LLMs.",
+            score: 0.9,
+          },
+        ],
+        request_id: "request-1",
+        usage: { credits: 1 },
+      },
+    })
+
+    expect(output).toMatchObject({
+      query: "agent search",
+      provider: "tavily:keyless",
+      resultCount: 1,
+      metadata: { requestId: "request-1", credits: 1 },
+      results: [
+        {
+          title: "Agent search example",
+          url: "https://example.com/agent-search",
+          snippet: "Search result content optimized for LLMs.",
         },
       ],
     })

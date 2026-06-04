@@ -274,17 +274,51 @@ Interpretation:
 - Cloudflare provider-native Perplexity and Parallel routes require provider-specific credentials according to the current Cloudflare docs. Those credentials are not configured in this environment.
 - Direct Exa fallback could not be verified because `EXA_API_KEY` is not configured.
 
+### Search provider follow-up
+
+Result: Tavily keyless search passed.
+
+Evidence:
+
+```bash
+pnpm --filter api exec tsx -e '<Tavily keyless search smoke>'
+```
+
+Observed output:
+
+```json
+{
+  "ok": true,
+  "provider": "tavily:keyless",
+  "resultCount": 5,
+  "first": {
+    "title": "Unified API (OpenAI compat) · Cloudflare AI Gateway docs",
+    "url": "https://developers.cloudflare.com/ai-gateway/usage/chat-completion"
+  }
+}
+```
+
+Implementation notes:
+
+- Tavily supports direct keyless `/search` requests with `X-Tavily-Access-Mode: keyless`.
+- The keyless response maps cleanly into Agentis `SearchWebOutput`: title, URL, content-as-snippet, request id, and usage metadata when present.
+- Tavily also offers a free API key tier with 1,000 credits/month when higher keyless limits are needed.
+- Parallel remains attractive for dev because its docs advertise a larger free allocation, but the direct Search API requires a Parallel API key. No `PARALLEL_API_KEY` is configured in this environment.
+
 ### Recommendation
 
 Do not replace the production runtime boundary yet.
 
-Cloudflare AI Gateway is viable for Agentis chat streaming with the Vercel AI SDK. Native web search parity is not proven. The next viable migration path is likely Cloudflare AI Gateway for chat plus a separate native search provider, such as Exa, Tavily, Perplexity, or Parallel, behind the existing `WebSearchProvider` boundary.
+Cloudflare AI Gateway is viable for Agentis chat streaming with the Vercel AI SDK. Tavily keyless proves that Agentis can support no-cost native web search through a separate provider behind the existing `WebSearchProvider` boundary.
 
-Before migrating production runtime defaults, run a follow-up search-provider POC with one of these configured credentials:
+Recommended next migration path:
 
-- `EXA_API_KEY` for direct Exa search.
-- `PERPLEXITY_API_KEY` for Cloudflare-routed or direct Perplexity Sonar.
-- `PARALLEL_API_KEY` for Cloudflare-routed or direct Parallel Search API.
+1. Use Cloudflare AI Gateway for live chat/run model execution.
+2. Use a separate `WebSearchProvider` implementation for native search.
+3. Start with Tavily for zero-setup development search.
+4. Evaluate Parallel with an API key before production selection because its free allocation and Search API shape look strong for agent search.
+
+Before migrating production runtime defaults, run a follow-up implementation plan that wires selected providers behind config flags and preserves mock runtime behavior.
 
 ### Production hosting outlook
 
@@ -316,7 +350,10 @@ Cloudflare remains directionally plausible for production hosting, but the app n
    - Added SearchWebOutput normalization tests and helper code.
    - Verified `perplexity/sonar` is not available through the tested Cloudflare OpenAI-compatible path.
    - Recorded missing provider credentials for Perplexity, Parallel, and Exa.
-4. Recommendation and hosting outlook.
+4. Tavily keyless search POC.
+   - Added Tavily keyless header, live smoke, and SearchWebOutput normalization helpers.
+   - Verified no-cost keyless Tavily search returns usable title, URL, and snippet data.
+5. Recommendation and hosting outlook.
    - Recorded evidence, recommendation, and production-hosting blockers in this spec.
 
 ### Files changed
@@ -338,10 +375,11 @@ pnpm --filter api exec tsx -e '<Cloudflare search smoke>'
 
 Results:
 
-- Focused tests: passed, 7 tests.
+- Focused tests: passed, 9 tests.
 - API typecheck: passed.
 - Cloudflare chat smoke: passed.
 - Cloudflare search smoke: blocked with `Not Found` for `perplexity/sonar`; provider credentials for Perplexity, Parallel, and Exa are unset.
+- Tavily keyless search smoke: passed with 5 normalized results.
 
 ### Review gates
 
@@ -356,5 +394,6 @@ Results:
 
 ### Known follow-up issues
 
-- Native web search migration remains unresolved until a search provider credential is configured and tested.
+- Tavily keyless is proven for no-cost development search, but production limits and key-backed operation still need a follow-up implementation plan.
+- Parallel should be tested with `PARALLEL_API_KEY` before the production search provider decision.
 - Rotate the Cloudflare token that was pasted into chat before using it outside this POC.

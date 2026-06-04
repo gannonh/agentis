@@ -18,13 +18,20 @@ type SearchPayloadInput = {
   payload: unknown
 }
 
+type TavilySearchInput = {
+  query: string
+  payload: unknown
+}
+
 type ResultLike = {
   title?: unknown
   url?: unknown
   snippet?: unknown
   excerpt?: unknown
+  excerpts?: unknown
   content?: unknown
   publishedAt?: unknown
+  publish_date?: unknown
   date?: unknown
   source?: unknown
 }
@@ -165,8 +172,37 @@ function readResults(payload: unknown): ResultLike[] {
   return payload.results.filter(isRecord)
 }
 
+function readNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined
+}
+
 function readString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined
+}
+
+function normalizeResult(result: ResultLike) {
+  const title = readString(result.title)
+  const url = readString(result.url)
+  if (!title || !url || !/^https?:\/\//.test(url)) return null
+  const excerpts = Array.isArray(result.excerpts)
+    ? result.excerpts.filter((excerpt): excerpt is string =>
+        typeof excerpt === "string"
+      )
+    : []
+  return {
+    title,
+    url,
+    snippet:
+      readString(result.snippet) ??
+      readString(result.excerpt) ??
+      (excerpts.length > 0 ? excerpts.join("\n\n") : undefined) ??
+      readString(result.content),
+    source: readString(result.source),
+    publishedAt:
+      readString(result.publishedAt) ??
+      readString(result.publish_date) ??
+      readString(result.date),
+  }
 }
 
 export function normalizeCloudflareSearchPayload({
@@ -175,21 +211,7 @@ export function normalizeCloudflareSearchPayload({
   payload,
 }: SearchPayloadInput): SearchWebOutput {
   const results = readResults(payload)
-    .map((result) => {
-      const title = readString(result.title)
-      const url = readString(result.url)
-      if (!title || !url || !/^https?:\/\//.test(url)) return null
-      return {
-        title,
-        url,
-        snippet:
-          readString(result.snippet) ??
-          readString(result.excerpt) ??
-          readString(result.content),
-        source: readString(result.source),
-        publishedAt: readString(result.publishedAt) ?? readString(result.date),
-      }
-    })
+    .map(normalizeResult)
     .filter((result): result is NonNullable<typeof result> => result !== null)
 
   return {
@@ -199,4 +221,67 @@ export function normalizeCloudflareSearchPayload({
     resultCount: results.length,
     truncated: false,
   }
+}
+
+export function buildTavilyKeylessHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "X-Tavily-Access-Mode": "keyless",
+  }
+}
+
+export function normalizeTavilySearchResponse({
+  query,
+  payload,
+}: TavilySearchInput): SearchWebOutput {
+  const results = readResults(payload)
+    .map(normalizeResult)
+    .filter((result): result is NonNullable<typeof result> => result !== null)
+
+  const metadata = isRecord(payload)
+    ? {
+        requestId: readString(payload.request_id),
+        responseTime: readString(payload.response_time),
+        credits: isRecord(payload.usage)
+          ? readNumber(payload.usage.credits)
+          : undefined,
+      }
+    : undefined
+
+  return {
+    query,
+    provider: "tavily:keyless",
+    results,
+    resultCount: results.length,
+    truncated: false,
+    metadata,
+  }
+}
+
+export async function runTavilyKeylessSearchPoc(input: {
+  query: string
+  maxResults?: number
+}): Promise<SearchWebOutput> {
+  const response = await fetch("https://api.tavily.com/search", {
+    method: "POST",
+    headers: buildTavilyKeylessHeaders(),
+    body: JSON.stringify({
+      query: input.query,
+      max_results: input.maxResults ?? 5,
+      search_depth: "basic",
+    }),
+  })
+
+  const payload = (await response.json().catch(async () => ({
+    error: await response.text(),
+  }))) as unknown
+
+  if (!response.ok) {
+    const message = isRecord(payload)
+      ? readString(payload.error) ?? readString(payload.message)
+      : undefined
+    throw new Error(message ?? `Tavily keyless search failed: ${response.status}`)
+  }
+
+  return normalizeTavilySearchResponse({ query: input.query, payload })
 }
