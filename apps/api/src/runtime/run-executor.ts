@@ -9,6 +9,7 @@ import { ComposioRemediationError } from "../composio/tool-execution-service.js"
 import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
 import type { Repositories } from "../repositories/index.js"
 import {
+  formatMissingEnvVarsMessage,
   getRuntimeMissingEnvVars,
   isRunTimelineDebugEnabled,
   type AppConfig,
@@ -271,7 +272,7 @@ export class RunExecutor {
     }
     const missingRuntimeEnv = getRuntimeMissingEnvVars(this.config)
     if (missingRuntimeEnv.length > 0) {
-      throw new Error(`${missingRuntimeEnv.join(" and ")} are not configured`)
+      throw new Error(formatMissingEnvVarsMessage(missingRuntimeEnv))
     }
     if (run.status !== "queued") {
       throw new Error(`Run is not streamable: ${run.status}`)

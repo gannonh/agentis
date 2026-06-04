@@ -1,6 +1,6 @@
 import { createGateway, type LanguageModel } from "ai"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
-import type { AppConfig } from "../config.js"
+import { formatMissingEnvVarsMessage, type AppConfig } from "../config.js"
 
 const LEGACY_OPENAI_MODEL_ID_PATTERN = /^(?:gpt-|chatgpt-|o\d(?:-|$))/
 
@@ -48,7 +48,7 @@ export function createGatewayLanguageModel(
       ...(config.cloudflareAccountId ? [] : ["CLOUDFLARE_ACCOUNT_ID"]),
     ]
     if (missing.length > 0) {
-      throw new Error(`${missing.join(" and ")} are not configured`)
+      throw new Error(formatMissingEnvVarsMessage(missing))
     }
 
     const cloudflareApiKey = config.cloudflareApiKey

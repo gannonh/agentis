@@ -247,6 +247,12 @@ export function getRuntimeMissingEnvVars(config: AppConfig): string[] {
   return config.vercelAiGatewayApiKey ? [] : ["VERCEL_AI_GATEWAY_API_KEY"]
 }
 
+export function formatMissingEnvVarsMessage(missingEnvVars: string[]): string {
+  return `${missingEnvVars.join(" and ")} ${
+    missingEnvVars.length === 1 ? "is" : "are"
+  } not configured`
+}
+
 function clampNumber(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min
   return Math.min(max, Math.max(min, Math.trunc(value)))

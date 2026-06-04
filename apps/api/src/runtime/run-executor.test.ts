@@ -459,6 +459,7 @@ describe("run executor composio bridge", () => {
         mockRuntime: false,
         nodeEnv: "development",
         aiGatewayApiKey: undefined,
+        vercelAiGatewayApiKey: undefined,
       },
       services
     )
@@ -475,7 +476,7 @@ describe("run executor composio bridge", () => {
     const body = (await stream.json()) as { error: string }
 
     expect(stream.status).toBe(400)
-    expect(body.error).toBe("AI_GATEWAY_API_KEY is not configured")
+    expect(body.error).toBe("VERCEL_AI_GATEWAY_API_KEY is not configured")
     expect(ctx.repos.runs.getById(run.id)).toMatchObject({
       status: "queued",
       errorSummary: undefined,
