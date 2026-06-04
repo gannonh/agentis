@@ -93,6 +93,12 @@ describe("config", () => {
     })
   })
 
+  it("rejects invalid AI Gateway provider values", () => {
+    expect(() =>
+      loadConfig({ AI_GATEWAY_PROVIDER: "cloduflare" })
+    ).toThrowError(/AI_GATEWAY_PROVIDER/)
+  })
+
   it("keeps default Composio toolkit versions keyed by Agentis toolkit slug", () => {
     const config = loadConfig({})
 

@@ -47,6 +47,19 @@ function mapTavilyResults(payload: TavilySearchResponse): unknown[] {
   }))
 }
 
+function buildTavilySearchBody(
+  input: SearchWebInput,
+  maxResults: number
+): Record<string, unknown> {
+  return {
+    query: input.query,
+    max_results: maxResults,
+    search_depth: "basic",
+    ...(input.domains ? { include_domains: input.domains } : {}),
+    ...(input.recency ? { time_range: input.recency } : {}),
+  }
+}
+
 export function createTavilyWebSearchProvider(
   config: AppConfig
 ): WebSearchProvider {
@@ -68,11 +81,7 @@ export function createTavilyWebSearchProvider(
           "Content-Type": "application/json",
           "X-Tavily-Access-Mode": "keyless",
         },
-        body: JSON.stringify({
-          query: bounded.query,
-          max_results: maxResults,
-          search_depth: "basic",
-        }),
+        body: JSON.stringify(buildTavilySearchBody(bounded, maxResults)),
       })
       const payload = await readJson(response)
 

@@ -59,4 +59,13 @@ describe("web search config", () => {
     expect(resolveWebSearchProviderName(config)).toBe("tavily")
     expect(isWebSearchProviderAvailable(config)).toBe(true)
   })
+
+  it("rejects invalid web search provider and backend values", () => {
+    expect(() =>
+      loadConfig({ AGENTIS_WEB_SEARCH_PROVIDER: "tavliy" })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_PROVIDER/)
+    expect(() =>
+      loadConfig({ AGENTIS_WEB_SEARCH_BACKEND: "perplexitiy" })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_BACKEND/)
+  })
 })

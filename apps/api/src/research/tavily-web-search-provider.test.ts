@@ -39,7 +39,12 @@ describe("createTavilyWebSearchProvider", () => {
       })
     )
 
-    const output = await provider.search({ query: " agent search ", maxResults: 3 })
+    const output = await provider.search({
+      query: " agent search ",
+      maxResults: 3,
+      domains: ["docs.agentis.dev"],
+      recency: "week",
+    })
 
     expect(fetch).toHaveBeenCalledWith("https://api.tavily.com/search", {
       method: "POST",
@@ -51,6 +56,8 @@ describe("createTavilyWebSearchProvider", () => {
         query: "agent search",
         max_results: 3,
         search_depth: "basic",
+        include_domains: ["docs.agentis.dev"],
+        time_range: "week",
       }),
     })
     expect(output).toMatchObject({

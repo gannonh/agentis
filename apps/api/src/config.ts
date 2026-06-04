@@ -104,6 +104,18 @@ function readEnvValue(value: string | undefined): string | undefined {
   return trimmed || undefined
 }
 
+function parseConfiguredValue<const T extends readonly string[]>(
+  value: string | undefined,
+  allowed: T,
+  defaultValue: T[number],
+  envName: string
+): T[number] {
+  const configured = readEnvValue(value)
+  if (!configured) return defaultValue
+  if (allowed.includes(configured)) return configured
+  throw new Error(`${envName} must be one of: ${allowed.join(", ")}`)
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const port = Number(env.AGENTIS_API_PORT ?? env.PORT ?? 3101)
   const nodeEnv = env.NODE_ENV ?? "production"
@@ -118,18 +130,24 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const vercelAiGatewayApiKey =
     readEnvValue(env.VERCEL_AI_GATEWAY_API_KEY) ??
     readEnvValue(env.AI_GATEWAY_API_KEY)
-  const aiGatewayProvider =
-    env.AI_GATEWAY_PROVIDER === "cloudflare" ? "cloudflare" : "vercel"
-  const webSearchProvider =
-    env.AGENTIS_WEB_SEARCH_PROVIDER === "mock" ||
-    env.AGENTIS_WEB_SEARCH_PROVIDER === "tavily"
-      ? env.AGENTIS_WEB_SEARCH_PROVIDER
-      : "vercel-gateway"
-  const webSearchBackend =
-    env.AGENTIS_WEB_SEARCH_BACKEND === "parallel" ||
-    env.AGENTIS_WEB_SEARCH_BACKEND === "keyless"
-      ? env.AGENTIS_WEB_SEARCH_BACKEND
-      : "perplexity"
+  const aiGatewayProvider = parseConfiguredValue(
+    env.AI_GATEWAY_PROVIDER,
+    ["vercel", "cloudflare"] as const,
+    "vercel",
+    "AI_GATEWAY_PROVIDER"
+  )
+  const webSearchProvider = parseConfiguredValue(
+    env.AGENTIS_WEB_SEARCH_PROVIDER,
+    ["vercel-gateway", "tavily", "mock"] as const,
+    "vercel-gateway",
+    "AGENTIS_WEB_SEARCH_PROVIDER"
+  )
+  const webSearchBackend = parseConfiguredValue(
+    env.AGENTIS_WEB_SEARCH_BACKEND,
+    ["perplexity", "parallel", "keyless"] as const,
+    "perplexity",
+    "AGENTIS_WEB_SEARCH_BACKEND"
+  )
 
   return {
     port,
