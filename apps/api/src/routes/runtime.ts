@@ -3,6 +3,7 @@ import { runtimeHealthSchema } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import {
   getComposioUnavailableReason,
+  getRuntimeMissingEnvVars,
   isComposioAvailable,
   isRuntimeAvailable,
 } from "../config.js"
@@ -12,12 +13,15 @@ export function createRuntimeRoutes(config: AppConfig) {
 
   app.get("/health", (c) => {
     const available = isRuntimeAvailable(config)
+    const missingEnvVars = getRuntimeMissingEnvVars(config)
     const composioAvailable = isComposioAvailable(config)
     const health = runtimeHealthSchema.parse({
       available,
       reason:
         available || config.mockRuntime ? undefined : "missing_api_key",
       model: config.defaultModel,
+      aiGatewayProvider: config.aiGatewayProvider,
+      missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
       composio: {
         available: composioAvailable,
         reason: composioAvailable

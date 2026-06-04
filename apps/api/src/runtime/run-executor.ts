@@ -8,7 +8,11 @@ import type { ComposioServices } from "../composio/index.js"
 import { ComposioRemediationError } from "../composio/tool-execution-service.js"
 import { CURATED_COMPOSIO_TOOLS } from "../composio/tool-catalog.js"
 import type { Repositories } from "../repositories/index.js"
-import { isRunTimelineDebugEnabled, type AppConfig } from "../config.js"
+import {
+  getRuntimeMissingEnvVars,
+  isRunTimelineDebugEnabled,
+  type AppConfig,
+} from "../config.js"
 import { DocumentService } from "../documents/document-service.js"
 import { buildDocumentTools } from "../documents/document-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
@@ -265,8 +269,9 @@ export class RunExecutor {
     if (!run) {
       throw new Error("Run not found")
     }
-    if (!this.config.aiGatewayApiKey && !this.config.mockRuntime) {
-      throw new Error("AI_GATEWAY_API_KEY is not configured")
+    const missingRuntimeEnv = getRuntimeMissingEnvVars(this.config)
+    if (missingRuntimeEnv.length > 0) {
+      throw new Error(`${missingRuntimeEnv.join(" and ")} are not configured`)
     }
     if (run.status !== "queued") {
       throw new Error(`Run is not streamable: ${run.status}`)

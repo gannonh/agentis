@@ -42,10 +42,16 @@ export type AppConfig = {
   sandboxChangedFilesLimit: number
   sandboxCommandDenyPatterns: string[]
   sandboxContainerImage: string
-  webSearchProvider: "vercel-gateway" | "mock"
-  webSearchBackend: "perplexity" | "parallel"
+  webSearchProvider: "vercel-gateway" | "tavily" | "mock"
+  webSearchBackend: "perplexity" | "parallel" | "keyless"
   webSearchMaxResults: number
   webSearchMaxSnippetChars: number
+  aiGatewayProvider: "vercel" | "cloudflare"
+  vercelAiGatewayApiKey: string | undefined
+  cloudflareApiKey: string | undefined
+  cloudflareAccountId: string | undefined
+  cloudflareAiGatewayId: string | undefined
+  /** Deprecated Vercel Gateway credential alias retained during migration. */
   aiGatewayApiKey: string | undefined
 }
 
@@ -93,6 +99,11 @@ function resolveComposioToolkitVersions(
   return { ...merged, ...normalizedFromEnv }
 }
 
+function readEnvValue(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed || undefined
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const port = Number(env.AGENTIS_API_PORT ?? env.PORT ?? 3101)
   const nodeEnv = env.NODE_ENV ?? "production"
@@ -103,6 +114,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       : nodeEnv === "production"
         ? "local-container"
         : "local-process"
+
+  const vercelAiGatewayApiKey =
+    readEnvValue(env.VERCEL_AI_GATEWAY_API_KEY) ??
+    readEnvValue(env.AI_GATEWAY_API_KEY)
+  const aiGatewayProvider =
+    env.AI_GATEWAY_PROVIDER === "cloudflare" ? "cloudflare" : "vercel"
+  const webSearchProvider =
+    env.AGENTIS_WEB_SEARCH_PROVIDER === "mock" ||
+    env.AGENTIS_WEB_SEARCH_PROVIDER === "tavily"
+      ? env.AGENTIS_WEB_SEARCH_PROVIDER
+      : "vercel-gateway"
+  const webSearchBackend =
+    env.AGENTIS_WEB_SEARCH_BACKEND === "parallel" ||
+    env.AGENTIS_WEB_SEARCH_BACKEND === "keyless"
+      ? env.AGENTIS_WEB_SEARCH_BACKEND
+      : "perplexity"
 
   return {
     port,
@@ -170,10 +197,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter(Boolean),
     sandboxContainerImage:
       env.AGENTIS_SANDBOX_CONTAINER_IMAGE ?? "agentis-sandbox:local",
-    webSearchProvider:
-      env.AGENTIS_WEB_SEARCH_PROVIDER === "mock" ? "mock" : "vercel-gateway",
-    webSearchBackend:
-      env.AGENTIS_WEB_SEARCH_BACKEND === "parallel" ? "parallel" : "perplexity",
+    webSearchProvider,
+    webSearchBackend,
     webSearchMaxResults: clampNumber(
       Number(env.AGENTIS_WEB_SEARCH_MAX_RESULTS ?? 5),
       1,
@@ -184,8 +209,24 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       1,
       1000
     ),
-    aiGatewayApiKey: env.AI_GATEWAY_API_KEY?.trim() || undefined,
+    aiGatewayProvider,
+    vercelAiGatewayApiKey,
+    cloudflareApiKey: readEnvValue(env.CLOUDFLARE_API_KEY),
+    cloudflareAccountId: readEnvValue(env.CLOUDFLARE_ACCOUNT_ID),
+    cloudflareAiGatewayId: readEnvValue(env.CLOUDFLARE_AI_GATEWAY_ID),
+    aiGatewayApiKey: vercelAiGatewayApiKey,
   }
+}
+
+export function getRuntimeMissingEnvVars(config: AppConfig): string[] {
+  if (config.mockRuntime) return []
+  if (config.aiGatewayProvider === "cloudflare") {
+    return [
+      ...(config.cloudflareApiKey ? [] : ["CLOUDFLARE_API_KEY"]),
+      ...(config.cloudflareAccountId ? [] : ["CLOUDFLARE_ACCOUNT_ID"]),
+    ]
+  }
+  return config.vercelAiGatewayApiKey ? [] : ["VERCEL_AI_GATEWAY_API_KEY"]
 }
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -193,10 +234,8 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.trunc(value)))
 }
 
-export function isRuntimeAvailable(
-  config: Pick<AppConfig, "aiGatewayApiKey" | "mockRuntime">
-) {
-  return Boolean(config.aiGatewayApiKey) || config.mockRuntime
+export function isRuntimeAvailable(config: AppConfig) {
+  return getRuntimeMissingEnvVars(config).length === 0
 }
 
 export function isDebugSeedsEnabled(config: AppConfig) {

@@ -60,6 +60,11 @@ export function createTestContext() {
     webSearchBackend: "perplexity",
     webSearchMaxResults: 5,
     webSearchMaxSnippetChars: 500,
+    aiGatewayProvider: "vercel",
+    vercelAiGatewayApiKey: "test-gateway-key",
+    cloudflareApiKey: undefined,
+    cloudflareAccountId: undefined,
+    cloudflareAiGatewayId: undefined,
     aiGatewayApiKey: "test-gateway-key",
   }
   const repos = createRepositories(db, config)
