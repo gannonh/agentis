@@ -35,16 +35,28 @@ describe("web search config", () => {
     expect(isWebSearchProviderAvailable(config)).toBe(true)
   })
 
-  it("requires gateway credentials for non-mock gateway search", () => {
+  it("requires Vercel credentials for non-mock Vercel Gateway search", () => {
     const unavailable = loadConfig({
       AGENTIS_WEB_SEARCH_PROVIDER: "vercel-gateway",
     })
     const available = loadConfig({
       AGENTIS_WEB_SEARCH_PROVIDER: "vercel-gateway",
-      AI_GATEWAY_API_KEY: "gateway-key",
+      VERCEL_AI_GATEWAY_API_KEY: "gateway-key",
     })
 
     expect(isWebSearchProviderAvailable(unavailable)).toBe(false)
     expect(isWebSearchProviderAvailable(available)).toBe(true)
+  })
+
+  it("supports Tavily keyless search without credentials", () => {
+    const config = loadConfig({
+      AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
+      AGENTIS_WEB_SEARCH_BACKEND: "keyless",
+    })
+
+    expect(config.webSearchProvider).toBe("tavily")
+    expect(config.webSearchBackend).toBe("keyless")
+    expect(resolveWebSearchProviderName(config)).toBe("tavily")
+    expect(isWebSearchProviderAvailable(config)).toBe(true)
   })
 })

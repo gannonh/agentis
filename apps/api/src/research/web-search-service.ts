@@ -5,6 +5,7 @@ import {
   type AppConfig,
 } from "../config.js"
 import { createMockWebSearchProvider } from "./mock-web-search-provider.js"
+import { createTavilyWebSearchProvider } from "./tavily-web-search-provider.js"
 import { createVercelGatewayWebSearchProvider } from "./vercel-gateway-web-search-provider.js"
 import {
   WebSearchError,
@@ -36,6 +37,11 @@ export class WebSearchService {
 
     if (this.config.mockRuntime || this.config.webSearchProvider === "mock") {
       this.provider = createMockWebSearchProvider(this.config)
+      return this.provider
+    }
+
+    if (this.config.webSearchProvider === "tavily") {
+      this.provider = createTavilyWebSearchProvider(this.config)
       return this.provider
     }
 

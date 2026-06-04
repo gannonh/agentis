@@ -261,7 +261,10 @@ export function resolveWebSearchProviderName(config: AppConfig): string {
 export function isWebSearchProviderAvailable(config: AppConfig): boolean {
   if (config.mockRuntime) return true
   if (config.webSearchProvider === "mock") return true
-  return Boolean(config.aiGatewayApiKey?.trim())
+  if (config.webSearchProvider === "tavily") {
+    return config.webSearchBackend === "keyless"
+  }
+  return Boolean(config.vercelAiGatewayApiKey?.trim())
 }
 
 export function getComposioUnavailableReason(
