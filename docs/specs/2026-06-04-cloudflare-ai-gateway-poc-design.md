@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft for review
+Implemented
 
 ## Goal
 
@@ -213,3 +213,148 @@ Do not report live success unless the request completed against Cloudflare with 
 Build should implement the POC in small, reversible slices. The first slice must prove or block Cloudflare chat streaming. The second slice must prove or block native search viability. Build must stop on Cloudflare permission, authentication, account, gateway, or billing errors and ask the user for updated access.
 
 Build should not migrate the production runtime boundary, update ADR 0004, or make Cloudflare the default runtime during this POC. The output is evidence and a recommendation, not a default runtime change.
+
+## POC results
+
+### Chat streaming
+
+Result: passed.
+
+Evidence:
+
+```bash
+pnpm --filter api exec tsx -e '<Cloudflare chat smoke>'
+```
+
+Observed output:
+
+```json
+{"ok":true,"chunks":5,"textIncludesExpected":true,"textPreview":"cloudflare-poc-ok"}
+```
+
+Implementation notes:
+
+- `CLOUDFLARE_API_KEY` is the bearer token used for Cloudflare AI Gateway REST calls.
+- `CLOUDFLARE_ACCOUNT_ID` is required for the account-scoped REST base URL.
+- The working AI SDK integration uses `@ai-sdk/openai-compatible@1.0.39` with the Cloudflare REST base URL: `https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1`.
+- The latest `@ai-sdk/openai-compatible@2.x` produced an AI SDK model spec mismatch with the repo's current `ai@5.x`, so the POC pins the compatible `1.0.39` package line.
+- Chat streaming succeeded with `openai/gpt-4.1-mini` through Cloudflare AI Gateway after Cloudflare billing/BYOK access was resolved.
+
+### Cloudflare-routed search
+
+Result: blocked for the current available credentials.
+
+Evidence:
+
+```bash
+pnpm --filter api exec tsx -e '<Cloudflare search smoke>'
+```
+
+Observed output for `perplexity/sonar` through the Cloudflare OpenAI-compatible REST endpoint:
+
+```json
+{"ok":false,"error":"Not Found"}
+```
+
+Additional credential checks:
+
+```text
+PERPLEXITY_API_KEY: unset
+PARALLEL_API_KEY: unset
+EXA_API_KEY: unset
+CLOUDFLARE_AI_GATEWAY_ID: unset
+CLOUDFLARE_GATEWAY_ID: unset
+CLOUDFLARE_GATEWAY_NAME: unset
+```
+
+Interpretation:
+
+- Cloudflare AI Gateway chat routing is viable with the current Cloudflare account token and account id.
+- The Cloudflare REST model catalog did not expose a working Perplexity `perplexity/sonar` model through the same OpenAI-compatible path used for chat.
+- Cloudflare provider-native Perplexity and Parallel routes require provider-specific credentials according to the current Cloudflare docs. Those credentials are not configured in this environment.
+- Direct Exa fallback could not be verified because `EXA_API_KEY` is not configured.
+
+### Recommendation
+
+Do not replace the production runtime boundary yet.
+
+Cloudflare AI Gateway is viable for Agentis chat streaming with the Vercel AI SDK. Native web search parity is not proven. The next viable migration path is likely Cloudflare AI Gateway for chat plus a separate native search provider, such as Exa, Tavily, Perplexity, or Parallel, behind the existing `WebSearchProvider` boundary.
+
+Before migrating production runtime defaults, run a follow-up search-provider POC with one of these configured credentials:
+
+- `EXA_API_KEY` for direct Exa search.
+- `PERPLEXITY_API_KEY` for Cloudflare-routed or direct Perplexity Sonar.
+- `PARALLEL_API_KEY` for Cloudflare-routed or direct Parallel Search API.
+
+### Production hosting outlook
+
+Cloudflare remains directionally plausible for production hosting, but the app needs separate hosting work beyond AI Gateway:
+
+- API entrypoint currently uses `@hono/node-server`; Workers needs a Worker-compatible entrypoint.
+- Database currently uses `better-sqlite3`; Workers needs D1, Hyperdrive/Postgres, or another Worker-compatible persistence plan.
+- Document storage currently uses the local filesystem; production on Cloudflare likely needs R2.
+- Native workspace command execution currently depends on local-process/local-container execution; production needs a separate sandbox execution architecture.
+- Drizzle schema and repositories need adapter review before any D1 or remote SQL migration.
+
+## Build completion report
+
+- Spec path: `docs/specs/2026-06-04-cloudflare-ai-gateway-poc-design.md`
+- Base SHA: `9b029790dec59a688b9c591e8a6b4050d61579d6`
+- Final head SHA: pending final commit
+
+### Tasks completed
+
+1. Build preflight and credential discovery.
+   - Confirmed branch: `feat/feat-cloudflare-ai-gateway-poc`.
+   - Confirmed approved spec and acceptance criteria.
+   - Verified Cloudflare account-scoped token validation with `CLOUDFLARE_ACCOUNT_ID`.
+2. Cloudflare chat streaming POC.
+   - Added isolated POC helpers under `apps/api/src/poc/`.
+   - Added `@ai-sdk/openai-compatible@1.0.39` to the API package.
+   - Verified streamed chat completion through Cloudflare AI Gateway.
+3. Cloudflare search POC.
+   - Added SearchWebOutput normalization tests and helper code.
+   - Verified `perplexity/sonar` is not available through the tested Cloudflare OpenAI-compatible path.
+   - Recorded missing provider credentials for Perplexity, Parallel, and Exa.
+4. Recommendation and hosting outlook.
+   - Recorded evidence, recommendation, and production-hosting blockers in this spec.
+
+### Files changed
+
+- `apps/api/package.json`
+- `apps/api/src/poc/cloudflare-ai-gateway-poc.ts`
+- `apps/api/src/poc/cloudflare-ai-gateway-poc.test.ts`
+- `docs/specs/2026-06-04-cloudflare-ai-gateway-poc-design.md`
+- `pnpm-lock.yaml`
+
+### Verification commands
+
+```bash
+pnpm --filter api test -- src/poc/cloudflare-ai-gateway-poc.test.ts
+pnpm --filter api typecheck
+pnpm --filter api exec tsx -e '<Cloudflare chat smoke>'
+pnpm --filter api exec tsx -e '<Cloudflare search smoke>'
+```
+
+Results:
+
+- Focused tests: passed, 7 tests.
+- API typecheck: passed.
+- Cloudflare chat smoke: passed.
+- Cloudflare search smoke: blocked with `Not Found` for `perplexity/sonar`; provider credentials for Perplexity, Parallel, and Exa are unset.
+
+### Review gates
+
+- TDD used: yes. Tests were written and observed failing before implementation.
+- Spec compliance review: passed via reviewer subagent.
+- Code quality review: passed via reviewer subagent.
+
+### Approved deviations
+
+- The spec expected Build to stop on Cloudflare permission, authentication, account, gateway, or billing errors. The initial Cloudflare token verification failed because the global token verification endpoint was wrong for this account-scoped token. The user provided the account-scoped verification path, and Build verified it before proceeding.
+- The initial chat request returned Cloudflare `402` insufficient balance/BYOK. Build stopped, the user resolved billing/BYOK access, and Build resumed after explicit instruction.
+
+### Known follow-up issues
+
+- Native web search migration remains unresolved until a search provider credential is configured and tested.
+- Rotate the Cloudflare token that was pasted into chat before using it outside this POC.
