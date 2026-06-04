@@ -281,7 +281,7 @@ Supporting files:
 
 Implemented behavior:
 
-- Exposes `createDocument`, `findDocuments`, `readDocument`, `updateDocumentSection`, and `appendDocumentSection`.
+- Exposes `createDocument`, `findDocuments`, `readDocument`, `updateDocumentSection`, `appendDocumentSection`, and `updateDocumentVisibility`.
 - Creates version 1 for markdown documents and new versions for section updates or appended content.
 - Enforces thread, project, and global visibility in document reads, searches, updates, and scope changes.
 - Writes generated content and markdown versions to local document storage under `AGENTIS_STORAGE_ROOT`.
@@ -307,11 +307,11 @@ This is not exposed as a callable tool, but it is a native agent capability.
 
 ## Current boundaries
 
-Native tooling currently includes agent-owned local workspaces, selected-agent thread creation, workspace-aware path resolution, read-only file listing, read-only file reading, read-only file search, safe text file creation/replacement/patching, bounded command and script execution, workspace action approvals, changed-file detection, native runtime tool wiring, persisted native tool evidence, and concise native timeline rendering.
+Native tooling currently includes agent-owned local workspaces, selected-agent thread creation, workspace-aware path resolution, read-only file listing, read-only file reading, read-only file search, safe text file creation/replacement/patching, bounded command and script execution, workspace action approvals, changed-file detection, native runtime tool wiring, native tool permissions for cataloged capabilities, persisted native tool evidence, and concise native timeline rendering.
 
 Native tooling does not currently include:
 
-- Native tool grants or policy controls.
+- A production-grade native tool marketplace or per-thread native tool grant UI.
 - External or production workspace storage backends.
 - Workspace copy during promotion.
 - Thread transcript rendering for tool-call or tool-result message parts.
@@ -641,7 +641,7 @@ Candidate updates:
 1. **V1: Workspace-backed read-only tools**: selected-agent workspace flow and read-only file tools are implemented.
 2. **V2: Safe file edits**: mutating workspace tools with approval and audit metadata are implemented.
 3. **V3: Sandboxed execution**: bounded command/script execution with local-process and optional local-container backends is implemented.
-4. **V4: Capability parity expansion**: V4.1 web search is implemented; remaining Hyperagent tools stay category-scoped follow-ups.
+4. **V4: Capability parity expansion**: V4.1 web search and V4.2 persistent documents/document workspace are implemented; remaining Hyperagent tools stay category-scoped follow-ups.
 
 ## Reference files
 

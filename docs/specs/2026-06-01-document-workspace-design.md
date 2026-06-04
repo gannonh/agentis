@@ -432,6 +432,8 @@ Manual UAT:
 
 ## Implementation phases
 
+Status: complete for the first document workspace slice.
+
 ### Phase 1: API and shared contracts
 
 - Extend shared schemas for detail-by-version and edit request/response.
@@ -489,7 +491,7 @@ Use the architecture deepening candidates to keep the Build phase from spreading
 
 - **Spec:** `docs/specs/2026-06-01-document-workspace-design.md`
 - **Base SHA:** `f29b47cfb5d6cb994ee5dbfd18b256794099e01e`
-- **Final SHA:** `387195b6`
+- **Implementation completion SHA:** `387195b6` before docs closeout
 - **Tasks completed:** Phase 1–5 (API/contracts, workspace route, markdown editing, entry points, visibility scope management, verification)
 - **Key files:** `document-service.ts`, `document-scope-policy.ts`, `documents.ts`, shared schemas, `document-workspace.tsx`, `components/documents/*`, `document-timeline.ts`, Library/project/timeline entry points, `document-tool.ts` view paths/scope tool
 - **Tests run:** `@workspace/shared` (14), `api` documents (29), `web` library/document/project-detail/run-timeline/document-timeline (17) — all passed
