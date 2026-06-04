@@ -110,7 +110,7 @@ After install:
 
 ## Local runtime
 
-1. Set `AI_GATEWAY_API_KEY` in the repo root `.env` (see `.env.example`) for live model runs and native web search. The API loads that file on startup; `apps/api/.env` is optional for overrides.
+1. Set `AI_GATEWAY_PROVIDER` plus selected provider credentials in the repo root `.env` (see `.env.example`) for live model runs. Use `AI_GATEWAY_PROVIDER=vercel` with `VERCEL_AI_GATEWAY_API_KEY`, or `AI_GATEWAY_PROVIDER=cloudflare` with `CLOUDFLARE_API_KEY` and `CLOUDFLARE_ACCOUNT_ID`. The API loads that file on startup; `apps/api/.env` is optional for overrides. For no-key dev search, use `AGENTIS_WEB_SEARCH_PROVIDER=tavily` and `AGENTIS_WEB_SEARCH_BACKEND=keyless`.
 2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API.
 3. For E2E/CI without live Gateway credentials, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
 
@@ -158,14 +158,14 @@ cp .env.example .env
 cp apps/web/.env.example apps/web/.env
 ```
 
-For Cloud Agent verification **without** `AI_GATEWAY_API_KEY`, append mock flags to root `.env` so thread runs work:
+For Cloud Agent verification **without** live AI Gateway credentials, append mock flags to root `.env` so thread runs work:
 
 ```bash
 AGENTIS_MOCK_RUNTIME=1
 AGENTIS_MOCK_COMPOSIO=1
 ```
 
-Use `pnpm dev:live` only when `AI_GATEWAY_API_KEY` (and optionally Composio keys) are available.
+Use `pnpm dev:live` only when selected AI Gateway credentials (and optionally Composio keys) are available.
 
 ### Running dev servers
 

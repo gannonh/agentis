@@ -26,11 +26,15 @@ function renderComposer(input?: {
 }
 
 describe("ThreadPromptComposer", () => {
-  it("points missing runtime credentials to the Gateway key", () => {
+  it("points missing Vercel runtime credentials to the Vercel Gateway key", () => {
     render(
       <ThreadPromptComposer
         onSubmit={vi.fn()}
-        health={{ available: false, reason: "missing_api_key" }}
+        health={{
+          available: false,
+          reason: "missing_api_key",
+          aiGatewayProvider: "vercel",
+        }}
         mode="plan"
         onModeChange={vi.fn()}
         executeBehavior="auto"
@@ -38,8 +42,28 @@ describe("ThreadPromptComposer", () => {
       />
     )
 
-    expect(screen.getByText(/AI_GATEWAY_API_KEY/)).toBeInTheDocument()
+    expect(screen.getByText(/VERCEL_AI_GATEWAY_API_KEY/)).toBeInTheDocument()
     expect(screen.queryByText(/OPENAI_API_KEY/)).not.toBeInTheDocument()
+  })
+
+  it("points missing Cloudflare runtime credentials to Cloudflare vars", () => {
+    render(
+      <ThreadPromptComposer
+        onSubmit={vi.fn()}
+        health={{
+          available: false,
+          reason: "missing_api_key",
+          aiGatewayProvider: "cloudflare",
+        }}
+        mode="plan"
+        onModeChange={vi.fn()}
+        executeBehavior="auto"
+        onExecuteBehaviorChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText(/CLOUDFLARE_API_KEY/)).toBeInTheDocument()
+    expect(screen.getByText(/CLOUDFLARE_ACCOUNT_ID/)).toBeInTheDocument()
   })
 
   it("labels modes as Plan and Execute", () => {

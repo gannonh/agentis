@@ -94,7 +94,9 @@ export function ThreadPromptComposer({
   if (!health.available) {
     blockedReason =
       health.reason === "missing_api_key"
-        ? "Add AI_GATEWAY_API_KEY to the repo root .env to enable model execution."
+        ? health.aiGatewayProvider === "cloudflare"
+          ? "Add CLOUDFLARE_API_KEY and CLOUDFLARE_ACCOUNT_ID to the repo root .env to enable model execution."
+          : "Add VERCEL_AI_GATEWAY_API_KEY to the repo root .env to enable model execution."
         : "Agent runtime is unavailable. Start the API with pnpm dev."
   }
 
