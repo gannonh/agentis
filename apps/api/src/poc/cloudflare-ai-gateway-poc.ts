@@ -64,11 +64,7 @@ export function loadCloudflarePocConfig(
     config: {
       apiKey,
       accountId,
-      gatewayId: readEnvValue(env, [
-        "CLOUDFLARE_AI_GATEWAY_ID",
-        "CLOUDFLARE_GATEWAY_ID",
-        "CLOUDFLARE_GATEWAY_NAME",
-      ]),
+      gatewayId: readEnvValue(env, ["CLOUDFLARE_AI_GATEWAY_ID"]),
     },
   }
 }

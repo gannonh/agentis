@@ -78,10 +78,13 @@ describe("createTavilyWebSearchProvider", () => {
 
   it("fails loudly for unsupported Tavily backends", async () => {
     const provider = createTavilyWebSearchProvider(
-      loadConfig({
-        AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
-        AGENTIS_WEB_SEARCH_BACKEND: "parallel",
-      })
+      {
+        ...loadConfig({
+          AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
+          AGENTIS_WEB_SEARCH_BACKEND: "keyless",
+        }),
+        webSearchBackend: "parallel",
+      }
     )
 
     await expect(provider.search({ query: "agent search" })).rejects.toMatchObject({
@@ -105,6 +108,26 @@ describe("createTavilyWebSearchProvider", () => {
     await expect(provider.search({ query: "agent search" })).rejects.toMatchObject({
       code: "web_search_failed",
       message: expect.stringContaining("rate limited"),
+    })
+  })
+
+  it("maps Tavily transport failures to web search errors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("network unavailable")
+      })
+    )
+    const provider = createTavilyWebSearchProvider(
+      loadConfig({
+        AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
+        AGENTIS_WEB_SEARCH_BACKEND: "keyless",
+      })
+    )
+
+    await expect(provider.search({ query: "agent search" })).rejects.toMatchObject({
+      code: "web_search_failed",
+      message: expect.stringContaining("network unavailable"),
     })
   })
 })

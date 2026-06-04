@@ -75,15 +75,24 @@ export function createTavilyWebSearchProvider(
 
       const bounded = boundSearchInput(input, config)
       const maxResults = bounded.maxResults ?? config.webSearchMaxResults
-      const response = await fetch("https://api.tavily.com/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Tavily-Access-Mode": "keyless",
-        },
-        body: JSON.stringify(buildTavilySearchBody(bounded, maxResults)),
-      })
-      const payload = await readJson(response)
+      let response: Response
+      let payload: unknown
+      try {
+        response = await fetch("https://api.tavily.com/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Tavily-Access-Mode": "keyless",
+          },
+          body: JSON.stringify(buildTavilySearchBody(bounded, maxResults)),
+        })
+        payload = await readJson(response)
+      } catch (error) {
+        throw new WebSearchError(
+          "web_search_failed",
+          error instanceof Error ? error.message : "Tavily search request failed"
+        )
+      }
 
       if (!response.ok) {
         throw new WebSearchError(

@@ -116,6 +116,22 @@ function parseConfiguredValue<const T extends readonly string[]>(
   throw new Error(`${envName} must be one of: ${allowed.join(", ")}`)
 }
 
+function assertWebSearchCombination(
+  provider: AppConfig["webSearchProvider"],
+  backend: AppConfig["webSearchBackend"]
+): void {
+  if (provider === "tavily" && backend !== "keyless") {
+    throw new Error(
+      "AGENTIS_WEB_SEARCH_BACKEND must be keyless when AGENTIS_WEB_SEARCH_PROVIDER is tavily"
+    )
+  }
+  if (provider === "vercel-gateway" && backend === "keyless") {
+    throw new Error(
+      "AGENTIS_WEB_SEARCH_BACKEND must be perplexity or parallel when AGENTIS_WEB_SEARCH_PROVIDER is vercel-gateway"
+    )
+  }
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const port = Number(env.AGENTIS_API_PORT ?? env.PORT ?? 3101)
   const nodeEnv = env.NODE_ENV ?? "production"
@@ -145,9 +161,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const webSearchBackend = parseConfiguredValue(
     env.AGENTIS_WEB_SEARCH_BACKEND,
     ["perplexity", "parallel", "keyless"] as const,
-    "perplexity",
+    webSearchProvider === "tavily" ? "keyless" : "perplexity",
     "AGENTIS_WEB_SEARCH_BACKEND"
   )
+  assertWebSearchCombination(webSearchProvider, webSearchBackend)
 
   return {
     port,
@@ -288,7 +305,13 @@ export function isWebSearchProviderAvailable(config: AppConfig): boolean {
   if (config.webSearchProvider === "tavily") {
     return config.webSearchBackend === "keyless"
   }
-  return Boolean(config.vercelAiGatewayApiKey?.trim())
+  if (config.webSearchProvider === "vercel-gateway") {
+    const backendSupported =
+      config.webSearchBackend === "perplexity" ||
+      config.webSearchBackend === "parallel"
+    return backendSupported && Boolean(config.vercelAiGatewayApiKey?.trim())
+  }
+  return false
 }
 
 export function getComposioUnavailableReason(

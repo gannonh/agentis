@@ -36,6 +36,21 @@ describe("Cloudflare AI Gateway POC config", () => {
     })
   })
 
+  it("reads the same gateway id env var as the main config", () => {
+    const result = loadCloudflarePocConfig({
+      CLOUDFLARE_API_KEY: "cloudflare-key",
+      CLOUDFLARE_ACCOUNT_ID: "account-id",
+      CLOUDFLARE_AI_GATEWAY_ID: "prod-gateway",
+      CLOUDFLARE_GATEWAY_ID: "legacy-gateway",
+      CLOUDFLARE_GATEWAY_NAME: "legacy-name",
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.config.gatewayId).toBe("prod-gateway")
+    }
+  })
+
   it("rejects empty chat streams as blocked POC evidence", () => {
     expect(() =>
       assertCloudflareChatStreamResult({ text: "", chunks: 0 })

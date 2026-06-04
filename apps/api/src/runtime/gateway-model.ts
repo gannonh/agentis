@@ -51,11 +51,8 @@ export function createGatewayLanguageModel(
       throw new Error(formatMissingEnvVarsMessage(missing))
     }
 
-    const cloudflareApiKey = config.cloudflareApiKey
-    const cloudflareAccountId = config.cloudflareAccountId
-    if (!cloudflareApiKey || !cloudflareAccountId) {
-      throw new Error("CLOUDFLARE_API_KEY and CLOUDFLARE_ACCOUNT_ID are not configured")
-    }
+    const cloudflareApiKey = config.cloudflareApiKey!
+    const cloudflareAccountId = config.cloudflareAccountId!
 
     const gateway = createOpenAICompatible({
       name: "cloudflare-ai-gateway",

@@ -48,16 +48,34 @@ describe("web search config", () => {
     expect(isWebSearchProviderAvailable(available)).toBe(true)
   })
 
-  it("supports Tavily keyless search without credentials", () => {
+  it("rejects keyless backend for Vercel Gateway search", () => {
+    expect(() =>
+      loadConfig({
+        AGENTIS_WEB_SEARCH_PROVIDER: "vercel-gateway",
+        AGENTIS_WEB_SEARCH_BACKEND: "keyless",
+        VERCEL_AI_GATEWAY_API_KEY: "gateway-key",
+      })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_BACKEND/)
+  })
+
+  it("defaults Tavily search to the keyless backend without credentials", () => {
     const config = loadConfig({
       AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
-      AGENTIS_WEB_SEARCH_BACKEND: "keyless",
     })
 
     expect(config.webSearchProvider).toBe("tavily")
     expect(config.webSearchBackend).toBe("keyless")
     expect(resolveWebSearchProviderName(config)).toBe("tavily")
     expect(isWebSearchProviderAvailable(config)).toBe(true)
+  })
+
+  it("rejects credentialed gateway backends for Tavily search", () => {
+    expect(() =>
+      loadConfig({
+        AGENTIS_WEB_SEARCH_PROVIDER: "tavily",
+        AGENTIS_WEB_SEARCH_BACKEND: "parallel",
+      })
+    ).toThrowError(/AGENTIS_WEB_SEARCH_BACKEND/)
   })
 
   it("rejects invalid web search provider and backend values", () => {
