@@ -12,7 +12,7 @@ describe("run message adapters", () => {
         "Download [the document](https://yourworkspaceurl/library?documentId=document_123) or view https://yourworkspaceurl/library?documentId=document_123"
       )
     ).toBe(
-      "Download [the document](/api/documents/document_123/download) or view /api/documents/document_123/download"
+      "Download [the document](/documents/document_123) or view /documents/document_123"
     )
   })
 

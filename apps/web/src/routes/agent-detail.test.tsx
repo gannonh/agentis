@@ -146,7 +146,7 @@ function apiAgentDetail({
       systemPrompt: "Research carefully.",
       model: "gpt-4o-mini",
       maxCostPerRunUsd: null,
-      nativeTools: ["webSearch"],
+      nativeTools: ["documents", "webSearch"],
       createdAt: now,
     },
     toolGrantCount: toolGrants?.length ?? 1,
@@ -723,10 +723,10 @@ describe("AgentDetailPage", () => {
     await screen.findByRole("heading", { name: "Created Research Agent" })
     await user.click(screen.getByRole("tab", { name: "Tools" }))
 
-    expect(screen.getByText("2 active")).toBeInTheDocument()
+    expect(screen.getByText("3 active")).toBeInTheDocument()
   })
 
-  it("renders catalog-only tools as static cards instead of toggles", async () => {
+  it("renders unwired tools as inactive static cards", async () => {
     const user = userEvent.setup()
     vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
 
@@ -741,8 +741,10 @@ describe("AgentDetailPage", () => {
     await screen.findByRole("heading", { name: "Created Research Agent" })
     await user.click(screen.getByRole("tab", { name: "Tools" }))
 
-    expect(screen.getByText("Browser").closest("label")).toBeNull()
+    const browserCard = screen.getByText("Browser").closest("[aria-disabled]")
+    expect(browserCard).toHaveAttribute("aria-disabled", "true")
     expect(screen.getByRole("checkbox", { name: "Search" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Documents" })).toBeInTheDocument()
   })
 
   it("saves API-backed tool grants from the Tools tab", async () => {
@@ -767,7 +769,7 @@ describe("AgentDetailPage", () => {
 
     expect(updateAgent).toHaveBeenCalledWith("agent_created", {
       toolGrants: [],
-      nativeTools: ["webSearch"],
+      nativeTools: ["documents", "webSearch"],
     })
   })
 
@@ -810,7 +812,7 @@ describe("AgentDetailPage", () => {
 
     expect(updateAgent).toHaveBeenCalledWith("agent_created", {
       toolGrants: [],
-      nativeTools: [],
+      nativeTools: ["documents"],
     })
   })
 
@@ -851,7 +853,7 @@ describe("AgentDetailPage", () => {
 
     expect(updateAgent).toHaveBeenCalledWith("agent_created", {
       toolGrants: [{ toolkitSlug: "slack" }],
-      nativeTools: ["webSearch"],
+      nativeTools: ["documents", "webSearch"],
     })
     expect(await screen.findByText("Tools saved")).toBeInTheDocument()
   })

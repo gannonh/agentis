@@ -76,6 +76,7 @@ vi.mock("@/lib/api/projects-client", () => ({
   getDocumentDetail: vi.fn(),
   downloadDocumentFile: vi.fn(),
   documentDownloadUrl: (id: string) => `/api/documents/${id}/download`,
+  documentWorkspacePath: (id: string) => `/documents/${id}`,
 }))
 
 const mockedListDocuments = vi.mocked(listDocuments)
@@ -102,6 +103,10 @@ describe("LibraryPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Q2 Brief")).toBeInTheDocument()
     })
+    expect(screen.getByRole("link", { name: "Open" })).toHaveAttribute(
+      "href",
+      "/documents/document_test"
+    )
     expect(screen.getByRole("button", { name: "Download" })).toBeEnabled()
   })
 

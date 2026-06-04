@@ -78,6 +78,7 @@ Scope:
 - `runWorkspaceCommand` accepts either `{ kind: "command"; command; cwd? }` or
 
   `{ kind: "script"; language: "python" | "node"; code; cwd? }`.
+
 - `plan` mode records pending execution rows and waits for user approval; `agent`
   mode runs immediately, subject to policy.
 - Execution provenance is stored in `workspace_executions` with sanitized input,
@@ -105,7 +106,7 @@ Scope candidates:
 
 Notes:
 
-- This is big scope. Each category could span multiple milestones. 
+- This is big scope. Each category could span multiple milestones.
 - scope 1 tool per epic/PR (e.g., web search)
 - recommend sequencing: 1 tool per category to start
 
@@ -123,7 +124,7 @@ tests and local wiring.
 
 #### V4.2: Persistent Documents
 
-Spec: `docs/specs/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
+Spec: `docs/specs/_done/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
 
 Decision record: `docs/adr/0003-persistent-documents-library-primitive.md`
 
@@ -133,6 +134,14 @@ backend, shared schemas, runtime tools, tests, and docs. Documents support
 thread, project, and global visibility, version history, find/read/create/update
 runtime tools, targeted markdown section updates, real download paths, and
 Library Type, Source, and Scope filters.
+
+The document workspace follow-on is implemented in
+`docs/specs/2026-06-01-document-workspace-design.md`: documents open at
+`/documents/:documentId` from Library, project context, run timeline evidence,
+and agent-returned `viewPath` values. The workspace supports rendered preview,
+markdown/code view, full markdown replacement as a new version, historical
+version viewing, download, source/provenance display, and visibility scope
+management through the document service.
 
 ---
 
@@ -196,9 +205,11 @@ Implemented behavior:
 - Exposes `createWorkspaceFile`, `replaceInWorkspaceFile`, and
 
   `applyWorkspacePatch` as text-only native workspace tools.
+
 - Reuses the workspace path jail and write deny prefixes to keep edits under
 
   `workspaces/{id}/files/`.
+
 - Records edit audit rows with before/after hashes and changed-file metadata.
 - Requires approval in `plan` mode and applies immediately in `agent` mode.
 - Renders pending, approved, denied, failed, and completed edit states in the
@@ -229,15 +240,19 @@ Implemented behavior:
 - Materializes script input under the workspace runtime tree and keeps changed
 
   file detection scoped to the workspace `files/` tree.
+
 - Captures pre/post workspace snapshots and reports created, modified, and
 
   deleted files up to configured limits.
+
 - Enforces timeout, abort propagation, stdout/stderr truncation, and optional
 
   command substring deny patterns.
+
 - Persists execution audit rows with status, approval mode, sanitized input,
 
   result summaries, changed files, and timestamps.
+
 - Requires approval in `plan` mode and executes immediately in `agent` mode.
 - Renders exit code, duration, stdout/stderr previews, timeout/abort badges,
 
@@ -255,7 +270,7 @@ Returns a static/demo summary of the Agentis workspace. It is useful as an M02-e
 
 File: `apps/api/src/documents/document-tool.ts`
 
-Lets the model create, find, read, and update durable markdown documents linked to the current run, thread, project, and Library.
+Lets the model create, find, read, update, and change visibility scope for durable markdown documents linked to the current run, thread, project, and Library.
 
 Supporting files:
 
@@ -266,13 +281,13 @@ Supporting files:
 
 Implemented behavior:
 
-- Exposes `createDocument`, `findDocuments`, `readDocument`, `updateDocumentSection`, and `appendDocumentSection`.
+- Exposes `createDocument`, `findDocuments`, `readDocument`, `updateDocumentSection`, `appendDocumentSection`, and `updateDocumentVisibility`.
 - Creates version 1 for markdown documents and new versions for section updates or appended content.
-- Enforces thread, project, and global visibility in document reads and searches.
+- Enforces thread, project, and global visibility in document reads, searches, updates, and scope changes.
 - Writes generated content and markdown versions to local document storage under `AGENTIS_STORAGE_ROOT`.
 - Persists document metadata and version metadata in SQLite.
 - Links documents to run, thread, project, and agent provenance where available.
-- Returns `viewPath` and `downloadPath` so agent replies can link to real Library views and markdown downloads.
+- Returns `viewPath` and `downloadPath` so agent replies can link to the document workspace and markdown downloads.
 - Logs document creation, search, read, and update actions in the run timeline with bounded payloads.
 
 ### Native context assembly
@@ -292,11 +307,11 @@ This is not exposed as a callable tool, but it is a native agent capability.
 
 ## Current boundaries
 
-Native tooling currently includes agent-owned local workspaces, selected-agent thread creation, workspace-aware path resolution, read-only file listing, read-only file reading, read-only file search, safe text file creation/replacement/patching, bounded command and script execution, workspace action approvals, changed-file detection, native runtime tool wiring, persisted native tool evidence, and concise native timeline rendering.
+Native tooling currently includes agent-owned local workspaces, selected-agent thread creation, workspace-aware path resolution, read-only file listing, read-only file reading, read-only file search, safe text file creation/replacement/patching, bounded command and script execution, workspace action approvals, changed-file detection, native runtime tool wiring, native tool permissions for cataloged capabilities, persisted native tool evidence, and concise native timeline rendering.
 
 Native tooling does not currently include:
 
-- Native tool grants or policy controls.
+- A production-grade native tool marketplace or per-thread native tool grant UI.
 - External or production workspace storage backends.
 - Workspace copy during promotion.
 - Thread transcript rendering for tool-call or tool-result message parts.
@@ -342,6 +357,7 @@ Current behavior:
   approval state, changed files, exit code, duration, timeout/abort flags, and
 
   bounded output summaries.
+
 - Keeps full file contents out of timeline evidence.
 - Provides a `Debug mode` toggle that shows persisted model input/output in development builds, including system prompt, messages, workspace binding, assistant parts, usage, errors, and tool metadata.
 - Keeps debug `tools` as a compact tool-name list and stores full `toolDetails` with name, description, serializable input schema details, and execution availability in development builds; production builds do not persist or expose these debug payloads.
@@ -496,7 +512,13 @@ Candidate model:
 type Workspace = {
   id: string
   agentId: string
-  backendType: "local-fs" | "container" | "vm" | "cloudflare" | "postgres" | "object-store"
+  backendType:
+    | "local-fs"
+    | "container"
+    | "vm"
+    | "cloudflare"
+    | "postgres"
+    | "object-store"
   backendRef: string
   status: "active" | "archived"
 }
@@ -583,6 +605,7 @@ Acceptance criteria:
   privilege escalation, uses a read-only root filesystem, and applies CPU,
 
   memory, PID, and `/tmp` tmpfs limits.
+
 - Run `pnpm smoke:sandbox-container` to build the local sandbox image and verify
 
   command execution, Python and Node scripts, persisted `/workspace` writes,
@@ -610,6 +633,7 @@ Candidate updates:
 - What production sandbox backend should replace or harden the local developer
 
   backends?
+
 - When converting a generic Agentis thread into a new agent, which workspace state should be copied into the new agent workspace?
 
 ## Build sequencing summary
@@ -617,7 +641,7 @@ Candidate updates:
 1. **V1: Workspace-backed read-only tools**: selected-agent workspace flow and read-only file tools are implemented.
 2. **V2: Safe file edits**: mutating workspace tools with approval and audit metadata are implemented.
 3. **V3: Sandboxed execution**: bounded command/script execution with local-process and optional local-container backends is implemented.
-4. **V4: Capability parity expansion**: V4.1 web search is implemented; remaining Hyperagent tools stay category-scoped follow-ups.
+4. **V4: Capability parity expansion**: V4.1 web search and V4.2 persistent documents/document workspace are implemented; remaining Hyperagent tools stay category-scoped follow-ups.
 
 ## Reference files
 

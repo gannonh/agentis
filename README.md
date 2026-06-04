@@ -25,15 +25,15 @@ Open [http://localhost:5177](http://localhost:5177). The Vite dev server proxies
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start API + web dev servers (Turborepo) |
-| `pnpm build` | Production build |
-| `pnpm typecheck` | TypeScript check (all packages) |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Vitest unit tests |
-| `pnpm test:coverage` | Vitest with coverage |
-| `pnpm test:e2e` | Playwright shell + thread lifecycle tests |
+| Command                        | Description                                                           |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `pnpm dev`                     | Start API + web dev servers (Turborepo)                               |
+| `pnpm build`                   | Production build                                                      |
+| `pnpm typecheck`               | TypeScript check (all packages)                                       |
+| `pnpm lint`                    | ESLint                                                                |
+| `pnpm test`                    | Vitest unit tests                                                     |
+| `pnpm test:coverage`           | Vitest with coverage                                                  |
+| `pnpm test:e2e`                | Playwright shell + thread lifecycle tests                             |
 | `pnpm smoke:sandbox-container` | Build and smoke-test the optional Docker-compatible workspace sandbox |
 
 ## Project structure
@@ -51,6 +51,7 @@ docs/              # Product docs, roadmap, UI comps
 - [MVP roadmap](docs/specs/agentis-prd-roadmap.md)
 - [Product overview](docs/overview.md)
 - [Agent native tooling](docs/specs/agent-native-tooling.md)
+- [Document workspace](docs/specs/2026-06-01-document-workspace-design.md)
 - [Architecture decisions](docs/adr/)
 - [Design system](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

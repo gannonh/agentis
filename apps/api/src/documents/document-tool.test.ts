@@ -49,7 +49,7 @@ describe("document runtime tools", () => {
     })
     const documentId = (created as { documentId: string }).documentId
     expect(created).toMatchObject({
-      viewPath: `/library?documentId=${documentId}`,
+      viewPath: `/documents/${documentId}`,
       downloadPath: `/api/documents/${documentId}/download`,
     })
 
@@ -78,10 +78,20 @@ describe("document runtime tools", () => {
           id: documentId,
           title: "Runtime playbook",
           visibilityScope: "project",
-          viewPath: `/library?documentId=${documentId}`,
+          viewPath: `/documents/${documentId}`,
           downloadPath: `/api/documents/${documentId}/download`,
         },
       ],
+    })
+
+    const scoped = await executeTool(tools.updateDocumentVisibility, {
+      documentId,
+      visibilityScope: "global",
+    })
+    expect(scoped).toMatchObject({
+      documentId,
+      previousVisibilityScope: "project",
+      visibilityScope: "global",
     })
 
     const updated = await executeTool(tools.updateDocumentSection, {
@@ -94,7 +104,7 @@ describe("document runtime tools", () => {
       previousVersion: 1,
       currentVersion: 2,
       sectionPath: "Runtime playbook > Steps",
-      viewPath: `/library?documentId=${documentId}`,
+      viewPath: `/documents/${documentId}`,
       downloadPath: `/api/documents/${documentId}/download`,
     })
 
@@ -108,7 +118,7 @@ describe("document runtime tools", () => {
       previousVersion: 2,
       currentVersion: 3,
       sectionPath: "Risks",
-      viewPath: `/library?documentId=${documentId}`,
+      viewPath: `/documents/${documentId}`,
       downloadPath: `/api/documents/${documentId}/download`,
     })
 
@@ -117,7 +127,7 @@ describe("document runtime tools", () => {
       metadata: {
         id: documentId,
         currentVersion: 3,
-        viewPath: `/library?documentId=${documentId}`,
+        viewPath: `/documents/${documentId}`,
         downloadPath: `/api/documents/${documentId}/download`,
       },
       truncated: false,
@@ -129,6 +139,7 @@ describe("document runtime tools", () => {
     expect(evidence.map((entry) => entry.title)).toEqual([
       "Document created: Runtime playbook",
       "Searched documents",
+      "Updated document scope: Runtime playbook",
       "Updated document section: Runtime playbook",
       "Appended document section: Runtime playbook",
       "Read document: Runtime playbook",

@@ -59,3 +59,15 @@ _Avoid_: Native tool, when the narrower file/workspace meaning is intended
 **Web search**:
 A native tool that lets an agent search the web for current information during a workspace-scoped run.
 _Avoid_: Search, when specificity matters
+
+**Document**:
+The durable Library primitive for uploaded files and agent-generated markdown or other run output. Documents have thread, project, or global visibility scope; agent, thread, project, and run associations are provenance metadata unless they define the selected visibility boundary.
+_Avoid_: Artifact, Library item, agent-scoped document
+
+**Document workspace**:
+The `/documents/:documentId` work surface for opening a Document from Library, run timeline provenance, or project context. It provides preview, markdown/code view, markdown editing with version history, download, source/provenance display, and visibility scope management.
+_Avoid_: Library preview, when referring to the full document route
+
+**Document visibility scope**:
+The access boundary for a Document: `thread`, `project`, or `global`. Scope can change through document workspace/API/tool flows when the target project or thread context is valid; provenance remains visible separately and should not be described as scope.
+_Avoid_: Source, provenance, agent visibility

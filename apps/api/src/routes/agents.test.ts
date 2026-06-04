@@ -242,9 +242,13 @@ describe("agent routes", () => {
       configurationVersions: { nativeTools: string[] }[]
     }
     expect(body.agent.currentConfigurationVersion.nativeTools).toEqual([
+      "documents",
       "webSearch",
     ])
-    expect(body.configurationVersions[0]?.nativeTools).toEqual(["webSearch"])
+    expect(body.configurationVersions[0]?.nativeTools).toEqual([
+      "documents",
+      "webSearch",
+    ])
   })
 
   it("preserves explicit native web search opt-out on agent creation", async () => {
@@ -306,7 +310,10 @@ describe("agent routes", () => {
       1,
       2,
     ])
-    expect(body.configurationVersions[0]?.nativeTools).toEqual(["webSearch"])
+    expect(body.configurationVersions[0]?.nativeTools).toEqual([
+      "documents",
+      "webSearch",
+    ])
     expect(body.configurationVersions[1]?.nativeTools).toEqual([])
   })
 

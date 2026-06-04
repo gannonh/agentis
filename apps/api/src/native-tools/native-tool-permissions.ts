@@ -3,7 +3,7 @@ import {
   type NativeToolPermissionId,
 } from "@workspace/shared"
 export const PLATFORM_BASIC_NATIVE_TOOL_PERMISSIONS: NativeToolPermissionId[] =
-  ["webSearch"]
+  ["documents", "webSearch"]
 
 export function resolveNativeToolsForRun(input: {
   agentId?: string | null

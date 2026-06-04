@@ -137,7 +137,7 @@ describe("AgentCreatePage", () => {
         model: "openai/gpt-4o-mini",
         systemPrompt: "Answer with citations.",
         toolGrants: [{ toolkitSlug: "github" }],
-        nativeTools: ["webSearch"],
+        nativeTools: ["documents", "webSearch"],
       })
     })
     expect(navigate).toHaveBeenCalledWith("/agents/agent_test")
@@ -166,7 +166,7 @@ describe("AgentCreatePage", () => {
         model: "openai/gpt-4o-mini",
         systemPrompt: "Answer without web search.",
         toolGrants: [],
-        nativeTools: [],
+        nativeTools: ["documents"],
       })
     })
   })

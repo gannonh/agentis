@@ -2,6 +2,10 @@ import {
   documentDetailResponseSchema,
   documentPublicSchema,
   documentTypeSchema,
+  updateDocumentContentRequestSchema,
+  updateDocumentContentResponseSchema,
+  updateDocumentVisibilityRequestSchema,
+  updateDocumentVisibilityResponseSchema,
   createProjectMemoryRequestSchema,
   createProjectRequestSchema,
   projectMemorySchema,
@@ -13,6 +17,10 @@ import {
   type DocumentSource,
   type DocumentType,
   type DocumentVisibilityScope,
+  type UpdateDocumentContentRequest,
+  type UpdateDocumentContentResponse,
+  type UpdateDocumentVisibilityRequest,
+  type UpdateDocumentVisibilityResponse,
   type CreateProjectMemoryRequest,
   type CreateProjectRequest,
   type Project,
@@ -34,6 +42,14 @@ function apiErrorMessage(data: unknown, fallback: string): string {
     return data.error
   }
   return fallback
+}
+
+async function throwResponseApiError(
+  response: Response,
+  fallback: string
+): Promise<never> {
+  const data = await response.json().catch(() => ({}))
+  throw new ApiError(apiErrorMessage(data, fallback), response.status)
 }
 
 async function parseJson<T>(
@@ -79,11 +95,7 @@ export async function listProjects(
   const query = includeArchived ? "?includeArchived=true" : ""
   const response = await fetch(`${API_BASE}/api/projects${query}`)
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new ApiError(
-      apiErrorMessage(data, response.statusText),
-      response.status
-    )
+    await throwResponseApiError(response, response.statusText)
   }
   return parseArray(projectSchema, await response.json())
 }
@@ -133,11 +145,7 @@ export async function listProjectMemories(
 ): Promise<ProjectMemory[]> {
   const response = await fetch(`${API_BASE}/api/projects/${projectId}/memories`)
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new ApiError(
-      apiErrorMessage(data, response.statusText),
-      response.status
-    )
+    await throwResponseApiError(response, response.statusText)
   }
   return parseArray(projectMemorySchema, await response.json())
 }
@@ -184,11 +192,7 @@ export async function deleteProjectMemory(
     { method: "DELETE" }
   )
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new ApiError(
-      apiErrorMessage(data, response.statusText),
-      response.status
-    )
+    await throwResponseApiError(response, response.statusText)
   }
 }
 
@@ -220,11 +224,7 @@ export async function listDocuments(
     `${API_BASE}/api/documents${query ? `?${query}` : ""}`
   )
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new ApiError(
-      apiErrorMessage(data, response.statusText),
-      response.status
-    )
+    await throwResponseApiError(response, response.statusText)
   }
   return parseArray(documentPublicSchema, await response.json())
 }
@@ -254,24 +254,64 @@ export async function uploadDocument(input: {
 }
 
 export async function getDocumentDetail(
-  documentId: string
+  documentId: string,
+  options: { version?: number } = {}
 ): Promise<DocumentDetailResponse> {
-  const response = await fetch(`${API_BASE}/api/documents/${documentId}/detail`)
+  const params = new URLSearchParams()
+  if (options.version != null) {
+    params.set("version", String(options.version))
+  }
+  const query = params.toString()
+  const response = await fetch(
+    `${API_BASE}/api/documents/${documentId}/detail${query ? `?${query}` : ""}`
+  )
   return parseJson(response, documentDetailResponseSchema)
 }
 
-export function documentDownloadUrl(documentId: string) {
+export async function updateDocumentContent(
+  documentId: string,
+  body: UpdateDocumentContentRequest
+): Promise<UpdateDocumentContentResponse> {
+  const payload = updateDocumentContentRequestSchema.parse(body)
+  const response = await fetch(
+    `${API_BASE}/api/documents/${documentId}/content`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, updateDocumentContentResponseSchema)
+}
+
+export async function updateDocumentVisibility(
+  documentId: string,
+  body: UpdateDocumentVisibilityRequest
+): Promise<UpdateDocumentVisibilityResponse> {
+  const payload = updateDocumentVisibilityRequestSchema.parse(body)
+  const response = await fetch(
+    `${API_BASE}/api/documents/${documentId}/visibility`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, updateDocumentVisibilityResponseSchema)
+}
+
+export function documentWorkspacePath(documentId: string): string {
+  return `/documents/${documentId}`
+}
+
+export function documentDownloadUrl(documentId: string): string {
   return `${API_BASE}/api/documents/${documentId}/download`
 }
 
 export async function downloadDocumentFile(document: Document): Promise<void> {
   const response = await fetch(documentDownloadUrl(document.id))
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new ApiError(
-      apiErrorMessage(data, "Download failed"),
-      response.status
-    )
+    await throwResponseApiError(response, "Download failed")
   }
   const blob = await response.blob()
   const url = URL.createObjectURL(blob)

@@ -194,6 +194,41 @@ export class DocumentRepository {
     return mapDocumentVersion(row)
   }
 
+  updateVisibilityScope(input: {
+    documentId: string
+    visibilityScope: DocumentVisibilityScope
+    projectId?: string | null
+    projectNameSnapshot?: string | null
+    threadId?: string | null
+    threadTitleSnapshot?: string | null
+  }): Document | null {
+    const existing = this.getById(input.documentId)
+    if (!existing) return null
+
+    this.db
+      .update(documents)
+      .set({
+        visibilityScope: input.visibilityScope,
+        projectId:
+          input.projectId !== undefined ? input.projectId : existing.projectId,
+        projectNameSnapshot:
+          input.projectNameSnapshot !== undefined
+            ? input.projectNameSnapshot
+            : existing.projectNameSnapshot,
+        threadId:
+          input.threadId !== undefined ? input.threadId : existing.threadId,
+        threadTitleSnapshot:
+          input.threadTitleSnapshot !== undefined
+            ? input.threadTitleSnapshot
+            : existing.threadTitleSnapshot,
+        updatedAt: nowIso(),
+      })
+      .where(eq(documents.id, input.documentId))
+      .run()
+
+    return this.getById(input.documentId)
+  }
+
   updateCurrentVersion(input: {
     documentId: string
     versionId: string

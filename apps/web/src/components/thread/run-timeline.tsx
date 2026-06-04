@@ -1,7 +1,10 @@
 import { useState } from "react"
+import { Link } from "react-router"
 import type { Run, RunStep } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
 import { cn } from "@workspace/ui/lib/utils"
+import { projectDocumentTimelineAction } from "@/lib/documents/document-timeline"
 
 const statusLabel: Record<Run["status"], string> = {
   queued: "Queued",
@@ -316,6 +319,7 @@ export function RunTimeline({
           const composio = formatComposioPayload(step)
           const native = formatNativePayload(step)
           const debug = formatDebugPayload(step)
+          const documentAction = projectDocumentTimelineAction(step)
           return (
             <li
               key={step.id}
@@ -472,6 +476,18 @@ export function RunTimeline({
               ) : null}
               {composio?.error ? (
                 <p className="mt-1 text-destructive">{composio.error}</p>
+              ) : null}
+              {documentAction ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  render={
+                    <Link to={documentAction.workspacePath} />
+                  }
+                >
+                  Open document
+                </Button>
               ) : null}
             </li>
           )

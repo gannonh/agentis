@@ -11,25 +11,20 @@ import { createId } from "../lib/ids.js"
 import type { Repositories } from "../repositories/index.js"
 import { LocalDocumentStorage } from "./local-document-storage.js"
 import {
+  documentNotAccessibleError,
+  DocumentScopePolicy,
+  generatedVisibilityScope,
+  type DocumentRunContext,
+  uploadVisibilityScope,
+} from "./document-scope-policy.js"
+import {
   appendMarkdownSection,
   parseMarkdownSections,
   replaceMarkdownSectionContent,
   type MarkdownSection,
 } from "./markdown-sections.js"
 
-export type DocumentRunContext = {
-  threadId?: string
-  projectId?: string
-  runId?: string
-}
-
-type DocumentProvenance = {
-  threadId?: string
-  projectNameSnapshot?: string
-  threadTitleSnapshot?: string
-  agentId?: string
-  agentNameSnapshot?: string
-}
+export type { DocumentRunContext } from "./document-scope-policy.js"
 
 type DocumentResult<T> = { ok: true } & T
 type DocumentError = {
@@ -46,7 +41,11 @@ type DocumentSectionChange = {
   section: MarkdownSection
 }
 
-function inferMimeType(filename: string, fallback?: string) {
+type MarkdownDocumentWriteResult =
+  | DocumentResult<{ document: Document; currentVersion: number }>
+  | DocumentError
+
+function inferMimeType(filename: string, fallback?: string): string {
   if (fallback?.trim()) return fallback
   const ext = extname(filename).toLowerCase()
   switch (ext) {
@@ -65,24 +64,30 @@ function inferMimeType(filename: string, fallback?: string) {
   }
 }
 
-function buildPreviewText(content: string, maxChars: number) {
+function buildPreviewText(
+  content: string,
+  maxChars: number
+): string | undefined {
   const trimmed = content.trim()
   if (!trimmed) return undefined
   if (trimmed.length <= maxChars) return trimmed
   return `${trimmed.slice(0, maxChars)}…`
 }
 
-function contentHash(content: Buffer | string) {
+function contentHash(content: Buffer | string): string {
   return createHash("sha256").update(content).digest("hex")
 }
 
-function contentFormatFor(documentType: DocumentType, mimeType: string) {
+function contentFormatFor(
+  documentType: DocumentType,
+  mimeType: string
+): "markdown" | "text" | "binary" {
   if (documentType === "markdown") return "markdown"
   if (mimeType.startsWith("text/")) return "text"
   return "binary"
 }
 
-function currentVersion(document: Document) {
+function currentVersion(document: Document): number {
   return document.currentVersion ?? 0
 }
 
@@ -104,25 +109,63 @@ function documentNotFoundError(): DocumentError {
   return documentError("document_not_found", "Document not found", 404)
 }
 
-function invalidProvenanceError(message: string): DocumentError {
-  return documentError("invalid_document_provenance", message, 400)
+function documentContentRequiredError(): DocumentError {
+  return documentError(
+    "document_content_required",
+    "Document content is required",
+    400
+  )
 }
 
-function generatedVisibilityScope(input: {
-  visibilityScope?: DocumentVisibilityScope
-  projectId?: string
-}): DocumentVisibilityScope {
-  if (input.visibilityScope) return input.visibilityScope
-  return input.projectId ? "project" : "thread"
+function documentVersionConflictError(): DocumentError {
+  return documentError(
+    "document_version_conflict",
+    "Document changed since editing started. Reload and try again.",
+    409
+  )
 }
 
-function uploadVisibilityScope(input: {
-  projectId?: string
-  threadId?: string
-}): DocumentVisibilityScope {
-  if (input.projectId) return "project"
-  if (input.threadId) return "thread"
-  return "global"
+function isDocumentVersionConflictError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message.includes("UNIQUE constraint failed") &&
+    error.message.includes("document_versions") &&
+    error.message.includes("version")
+  )
+}
+
+function documentVersionNotFoundError(): DocumentError {
+  return documentError(
+    "document_version_not_found",
+    "Document version not found",
+    404
+  )
+}
+
+function documentNotMarkdownError(): DocumentError {
+  return documentError("document_not_markdown", "Document is not markdown", 400)
+}
+
+function documentTooLargeError(
+  message = "Document exceeds maximum size"
+): DocumentError {
+  return documentError("document_too_large", message, 413)
+}
+
+function documentSectionNotFoundError(): DocumentError {
+  return documentError(
+    "document_section_not_found",
+    "Document section not found",
+    404
+  )
+}
+
+function documentSectionAmbiguousError(): DocumentError {
+  return documentError(
+    "document_section_ambiguous",
+    "Document section is ambiguous",
+    400
+  )
 }
 
 function truncateUtf8ToBytes(
@@ -139,7 +182,7 @@ function truncateUtf8ToBytes(
   return { text: text.slice(0, end), truncated: true }
 }
 
-function isNodeErrorCode(error: unknown, code: string) {
+function isNodeErrorCode(error: unknown, code: string): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
@@ -150,12 +193,14 @@ function isNodeErrorCode(error: unknown, code: string) {
 
 export class DocumentService {
   private readonly storage: LocalDocumentStorage
+  private readonly scopePolicy: DocumentScopePolicy
 
   constructor(
     private readonly repos: Repositories,
     private readonly config: AppConfig
   ) {
     this.storage = new LocalDocumentStorage(config)
+    this.scopePolicy = new DocumentScopePolicy(repos)
   }
 
   createMarkdownDocument(input: {
@@ -168,35 +213,23 @@ export class DocumentService {
     runId?: string
     tags?: string[]
     changeSummary?: string
-  }):
-    | DocumentResult<{ document: Document; currentVersion: number }>
-    | DocumentError {
+  }): MarkdownDocumentWriteResult {
     if (!input.content.trim()) {
-      return {
-        ok: false,
-        code: "document_content_required",
-        message: "Document content is required",
-        status: 400,
-      }
+      return documentContentRequiredError()
     }
     const data = Buffer.from(input.content, "utf8")
     if (data.byteLength > this.config.documentMaxUploadBytes) {
-      return {
-        ok: false,
-        code: "document_too_large",
-        message: "Document exceeds maximum size",
-        status: 413,
-      }
+      return documentTooLargeError()
     }
 
-    const provenanceResult = this.captureProvenance({
+    const provenanceResult = this.scopePolicy.captureProvenance({
       projectId: input.projectId,
       threadId: input.threadId,
       runId: input.runId,
     })
     if (!provenanceResult.ok) return provenanceResult
 
-    const scopeError = this.validateScope(input.visibilityScope, {
+    const scopeError = this.scopePolicy.validateScope(input.visibilityScope, {
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
     })
@@ -267,7 +300,7 @@ export class DocumentService {
     threadId?: string
     runId?: string
     changeSummary?: string
-  }) {
+  }): MarkdownDocumentWriteResult {
     return this.createMarkdownDocument({
       title: input.title,
       description: input.description,
@@ -292,14 +325,9 @@ export class DocumentService {
     threadId?: string
   }): DocumentResult<{ document: Document }> | DocumentError {
     if (input.data.byteLength > this.config.documentMaxUploadBytes) {
-      return {
-        ok: false,
-        code: "document_too_large",
-        message: "Document exceeds maximum upload size",
-        status: 413,
-      }
+      return documentTooLargeError("Document exceeds maximum upload size")
     }
-    const provenanceResult = this.captureProvenance({
+    const provenanceResult = this.scopePolicy.captureProvenance({
       projectId: input.projectId,
       threadId: input.threadId,
     })
@@ -313,7 +341,7 @@ export class DocumentService {
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
     })
-    const scopeError = this.validateScope(visibilityScope, {
+    const scopeError = this.scopePolicy.validateScope(visibilityScope, {
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
     })
@@ -400,7 +428,9 @@ export class DocumentService {
         documentType: input.documentType,
         projectId: input.projectId,
       })
-      .filter((document) => this.canAccess(document, input.runContext))
+      .filter((document) =>
+        this.scopePolicy.canAccess(document, input.runContext)
+      )
       .sort(
         (left, right) =>
           SCOPE_SORT_ORDER[left.visibilityScope] -
@@ -427,13 +457,8 @@ export class DocumentService {
     | DocumentError {
     const document = this.repos.documents.getById(input.documentId)
     if (!document) return documentNotFoundError()
-    if (!this.canAccess(document, input.runContext)) {
-      return {
-        ok: false,
-        code: "document_not_accessible",
-        message: "Document is not accessible from this run",
-        status: 403,
-      }
+    if (!this.scopePolicy.canAccess(document, input.runContext)) {
+      return documentNotAccessibleError()
     }
 
     let version: DocumentVersion | null = null
@@ -446,12 +471,7 @@ export class DocumentService {
       )
     }
     if (input.version && !version) {
-      return {
-        ok: false,
-        code: "document_version_not_found",
-        message: "Document version not found",
-        status: 404,
-      }
+      return documentVersionNotFoundError()
     }
     if (document.contentFormat === "binary") {
       return documentError(
@@ -549,12 +569,7 @@ export class DocumentService {
           outline[outline.length - 1]
       }
       if (!section) {
-        return {
-          ok: false,
-          code: "document_section_not_found",
-          message: "Document section not found",
-          status: 404,
-        }
+        return documentSectionNotFoundError()
       }
       return { ok: true, content: nextContent, section }
     })
@@ -579,6 +594,291 @@ export class DocumentService {
     }
   }
 
+  getDocumentDetail(input: { documentId: string; version?: number }):
+    | DocumentResult<{
+        document: Document
+        content: string | null
+        truncated: boolean
+        selectedVersion: number | null
+        currentVersion: number | null
+        versions: DocumentVersion[]
+      }>
+    | DocumentError {
+    const document = this.repos.documents.getById(input.documentId)
+    if (!document) return documentNotFoundError()
+
+    const versions = this.repos.documents.listVersions(document.id)
+    const resolvedCurrentVersion = currentVersion(document) || null
+    const selectedVersionNumber =
+      input.version ?? resolvedCurrentVersion ?? null
+
+    if (input.version) {
+      const versionExists = versions.some(
+        (version) => version.version === input.version
+      )
+      if (!versionExists) {
+        return documentVersionNotFoundError()
+      }
+    }
+
+    if (document.contentFormat === "binary") {
+      return {
+        ok: true,
+        document,
+        content: null,
+        truncated: false,
+        selectedVersion: selectedVersionNumber,
+        currentVersion: resolvedCurrentVersion,
+        versions,
+      }
+    }
+
+    let version: DocumentVersion | null = null
+    if (input.version) {
+      version = this.repos.documents.getVersion(document.id, input.version)
+    } else if (resolvedCurrentVersion) {
+      version = this.repos.documents.getVersion(
+        document.id,
+        resolvedCurrentVersion
+      )
+    }
+
+    const storageKey = version?.contentStorageKey ?? document.storageKey
+    let content: string
+    try {
+      content = this.storage.read(storageKey).toString("utf8")
+    } catch (error) {
+      return this.storageReadError(error, {
+        documentId: document.id,
+        storageKey,
+      })
+    }
+
+    const limited = truncateUtf8ToBytes(
+      content,
+      this.config.documentMaxUploadBytes
+    )
+
+    return {
+      ok: true,
+      document,
+      content: limited.text,
+      truncated: limited.truncated,
+      selectedVersion: input.version ?? resolvedCurrentVersion,
+      currentVersion: resolvedCurrentVersion,
+      versions,
+    }
+  }
+
+  updateDocumentContent(input: {
+    documentId: string
+    content: string
+    baseVersion: number
+    changeSummary?: string
+  }):
+    | DocumentResult<{ document: Document; currentVersion: number }>
+    | DocumentError {
+    if (!input.content.trim()) {
+      return documentContentRequiredError()
+    }
+
+    const document = this.repos.documents.getById(input.documentId)
+    if (!document) return documentNotFoundError()
+    if (document.documentType !== "markdown") {
+      return documentNotMarkdownError()
+    }
+
+    const current = currentVersion(document)
+    if (!current) {
+      return documentVersionNotFoundError()
+    }
+    if (input.baseVersion !== current) {
+      return documentVersionConflictError()
+    }
+
+    const read = this.readDocumentContent(document.id)
+    if (!read.ok) return read
+    if (read.truncated) {
+      return documentTooLargeError("Document exceeds maximum editable size")
+    }
+    if (read.content === input.content) {
+      return {
+        ok: false,
+        code: "document_content_unchanged",
+        message: "Document content is unchanged",
+        status: 400,
+      }
+    }
+
+    const data = Buffer.from(input.content, "utf8")
+    if (data.byteLength > this.config.documentMaxUploadBytes) {
+      return documentTooLargeError()
+    }
+
+    const nextVersion = current + 1
+    const storageKey = this.storage.createVersionStorageKey(
+      document.id,
+      nextVersion
+    )
+    try {
+      this.storage.write(storageKey, data)
+      const updated = this.repos.documents.updateWithVersion({
+        documentId: document.id,
+        version: nextVersion,
+        contentHash: contentHash(data),
+        contentStorageKey: storageKey,
+        changeSummary: input.changeSummary ?? "Updated in document workspace",
+        sizeBytes: data.byteLength,
+        previewText: buildPreviewText(
+          input.content,
+          this.config.documentPreviewMaxChars
+        ),
+      })
+      if (!updated) {
+        this.deleteStoredDocument(storageKey)
+        return documentNotFoundError()
+      }
+      return {
+        ok: true,
+        document: updated,
+        currentVersion: nextVersion,
+      }
+    } catch (error) {
+      this.deleteStoredDocument(storageKey)
+      if (isDocumentVersionConflictError(error)) {
+        return documentVersionConflictError()
+      }
+      console.error("Failed to update document content", {
+        error,
+        documentId: document.id,
+        version: nextVersion,
+        storageKey,
+      })
+      return {
+        ok: false,
+        code: "document_storage_failed",
+        message: "Failed to update document content",
+        status: 500,
+      }
+    }
+  }
+
+  updateDocumentVisibility(input: {
+    documentId: string
+    visibilityScope: DocumentVisibilityScope
+    projectId?: string
+    runContext?: DocumentRunContext
+  }):
+    | DocumentResult<{
+        document: Document
+        previousVisibilityScope: DocumentVisibilityScope
+      }>
+    | DocumentError {
+    const document = this.repos.documents.getById(input.documentId)
+    if (!document) return documentNotFoundError()
+
+    if (
+      input.runContext &&
+      !this.scopePolicy.canAccess(document, input.runContext)
+    ) {
+      return documentNotAccessibleError()
+    }
+
+    const projectScopeChanged =
+      input.visibilityScope === "project" &&
+      input.projectId &&
+      input.projectId !== document.projectId
+
+    if (
+      document.visibilityScope === input.visibilityScope &&
+      !projectScopeChanged
+    ) {
+      return {
+        ok: false,
+        code: "document_scope_unchanged",
+        message: "Document already uses this visibility scope",
+        status: 400,
+      }
+    }
+
+    const assignment = this.scopePolicy.resolveVisibilityScopeAssignment(
+      document,
+      input.visibilityScope,
+      input.runContext,
+      input.projectId
+    )
+    if (!assignment.ok) return assignment
+
+    const updated = this.repos.documents.updateVisibilityScope({
+      documentId: document.id,
+      visibilityScope: input.visibilityScope,
+      projectId: assignment.projectId,
+      projectNameSnapshot: assignment.projectNameSnapshot,
+      threadId: assignment.threadId,
+      threadTitleSnapshot: assignment.threadTitleSnapshot,
+    })
+    if (!updated) return documentNotFoundError()
+
+    return {
+      ok: true,
+      document: updated,
+      previousVisibilityScope: document.visibilityScope,
+    }
+  }
+
+  private readDocumentContent(
+    documentId: string,
+    version?: number
+  ):
+    | DocumentResult<{
+        content: string
+        truncated: boolean
+        currentVersion: number
+      }>
+    | DocumentError {
+    const document = this.repos.documents.getById(documentId)
+    if (!document) return documentNotFoundError()
+    if (document.contentFormat === "binary") {
+      return documentError(
+        "document_not_readable",
+        "Binary documents cannot be read as text",
+        400
+      )
+    }
+
+    let versionRow: DocumentVersion | null = null
+    if (version) {
+      versionRow = this.repos.documents.getVersion(documentId, version)
+      if (!versionRow) {
+        return documentVersionNotFoundError()
+      }
+    } else if (document.currentVersion) {
+      versionRow = this.repos.documents.getVersion(
+        documentId,
+        document.currentVersion
+      )
+    }
+
+    const storageKey = versionRow?.contentStorageKey ?? document.storageKey
+    let content: string
+    try {
+      content = this.storage.read(storageKey).toString("utf8")
+    } catch (error) {
+      return this.storageReadError(error, { documentId, storageKey })
+    }
+
+    const limited = truncateUtf8ToBytes(
+      content,
+      this.config.documentMaxUploadBytes
+    )
+    return {
+      ok: true,
+      content: limited.text,
+      truncated: limited.truncated,
+      currentVersion: currentVersion(document),
+    }
+  }
+
   private changeMarkdownDocument(
     input: {
       documentId: string
@@ -594,21 +894,11 @@ export class DocumentService {
   ): DocumentResult<DocumentSectionChange> | DocumentError {
     const document = this.repos.documents.getById(input.documentId)
     if (!document) return documentNotFoundError()
-    if (!this.canAccess(document, input.runContext)) {
-      return {
-        ok: false,
-        code: "document_not_accessible",
-        message: "Document is not accessible from this run",
-        status: 403,
-      }
+    if (!this.scopePolicy.canAccess(document, input.runContext)) {
+      return documentNotAccessibleError()
     }
     if (document.documentType !== "markdown") {
-      return {
-        ok: false,
-        code: "document_not_markdown",
-        message: "Document is not markdown",
-        status: 400,
-      }
+      return documentNotMarkdownError()
     }
 
     const read = this.readDocument({
@@ -618,23 +908,13 @@ export class DocumentService {
     })
     if (!read.ok) return read
     if (read.truncated) {
-      return {
-        ok: false,
-        code: "document_too_large",
-        message: "Document exceeds maximum editable size",
-        status: 413,
-      }
+      return documentTooLargeError("Document exceeds maximum editable size")
     }
     const changed = change(read.content)
     if (!changed.ok) return changed
     const data = Buffer.from(changed.content, "utf8")
     if (data.byteLength > this.config.documentMaxUploadBytes) {
-      return {
-        ok: false,
-        code: "document_too_large",
-        message: "Document exceeds maximum size",
-        status: 413,
-      }
+      return documentTooLargeError()
     }
 
     const previousVersion = read.currentVersion
@@ -693,20 +973,10 @@ export class DocumentService {
       (section) => section.path === target || section.heading === target
     )
     if (matches.length === 0) {
-      return {
-        ok: false,
-        code: "document_section_not_found",
-        message: "Document section not found",
-        status: 404,
-      }
+      return documentSectionNotFoundError()
     }
     if (matches.length > 1) {
-      return {
-        ok: false,
-        code: "document_section_ambiguous",
-        message: "Document section is ambiguous",
-        status: 400,
-      }
+      return documentSectionAmbiguousError()
     }
     return { ok: true, section: matches[0]! }
   }
@@ -732,7 +1002,7 @@ export class DocumentService {
     }
   }
 
-  private deleteStoredDocument(storageKey: string) {
+  private deleteStoredDocument(storageKey: string): void {
     try {
       this.storage.delete(storageKey)
     } catch (error) {
@@ -740,83 +1010,6 @@ export class DocumentService {
         error,
         storageKey,
       })
-    }
-  }
-
-  private validateScope(
-    visibilityScope: DocumentVisibilityScope,
-    input: { projectId?: string; threadId?: string }
-  ): DocumentError | null {
-    if (visibilityScope === "project" && !input.projectId) {
-      return {
-        ok: false,
-        code: "invalid_document_scope",
-        message: "Project-scoped documents require a project",
-        status: 400,
-      }
-    }
-    if (visibilityScope === "thread" && !input.threadId) {
-      return {
-        ok: false,
-        code: "invalid_document_scope",
-        message: "Thread-scoped documents require a thread",
-        status: 400,
-      }
-    }
-    return null
-  }
-
-  private canAccess(document: Document, context: DocumentRunContext) {
-    if (document.visibilityScope === "global") return true
-    if (document.visibilityScope === "project") {
-      return Boolean(
-        document.projectId && document.projectId === context.projectId
-      )
-    }
-    return Boolean(document.threadId && document.threadId === context.threadId)
-  }
-
-  private captureProvenance(input: {
-    projectId?: string
-    threadId?: string
-    runId?: string
-  }): DocumentResult<{ provenance: DocumentProvenance }> | DocumentError {
-    const project = input.projectId
-      ? this.repos.projects.getById(input.projectId)
-      : null
-    if (input.projectId && !project) {
-      return invalidProvenanceError("Project not found for document provenance")
-    }
-
-    const run = input.runId ? this.repos.runs.getById(input.runId) : null
-    if (input.runId && !run) {
-      return invalidProvenanceError("Run not found for document provenance")
-    }
-    if (run && input.threadId && run.threadId !== input.threadId) {
-      return invalidProvenanceError("Document run and thread do not match")
-    }
-
-    const threadId = run?.threadId ?? input.threadId
-    const thread = threadId ? this.repos.threads.getById(threadId) : null
-    if (threadId && !thread) {
-      return invalidProvenanceError("Thread not found for document provenance")
-    }
-    if (input.projectId && thread && thread.projectId !== input.projectId) {
-      return invalidProvenanceError("Document project and thread do not match")
-    }
-
-    const agentId = run?.agentId ?? thread?.agentId
-    const agent = agentId ? this.repos.agents.getById(agentId) : null
-    return {
-      ok: true,
-      provenance: {
-        threadId,
-        projectNameSnapshot: project?.name,
-        threadTitleSnapshot: thread?.title,
-        agentId: agentId ?? undefined,
-        agentNameSnapshot:
-          thread?.agentNameSnapshot ?? agent?.name ?? undefined,
-      },
     }
   }
 }

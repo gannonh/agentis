@@ -6,6 +6,8 @@ import {
   documentDetailResponseSchema,
   documentSchema,
   documentTypeSchema,
+  updateDocumentContentRequestSchema,
+  updateDocumentContentResponseSchema,
   connectIntegrationResponseSchema,
   createAgentRequestSchema,
   createSavedMemoryRequestSchema,
@@ -222,7 +224,11 @@ describe("shared schemas", () => {
 
   it("keeps native tool permissions in their shared native-tool contract", () => {
     expect(nativeToolPermissionIdSchema.parse("webSearch")).toBe("webSearch")
-    expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual(["webSearch"])
+    expect(nativeToolPermissionIdSchema.parse("documents")).toBe("documents")
+    expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual([
+      "webSearch",
+      "documents",
+    ])
     expect(NATIVE_TOOL_CAPABILITY_CATALOG).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -230,6 +236,13 @@ describe("shared schemas", () => {
           runtimeToolName: "searchWeb",
           label: "Search",
           group: "Research",
+          defaultSelected: true,
+        }),
+        expect.objectContaining({
+          id: "documents",
+          runtimeToolName: "documents",
+          label: "Documents",
+          group: "Data",
           defaultSelected: true,
         }),
       ])
@@ -861,10 +874,26 @@ describe("shared schemas", () => {
     const documentDetail = documentDetailResponseSchema.parse({
       document,
       content: "# Brief",
+      truncated: false,
+      selectedVersion: 1,
+      currentVersion: 1,
       versions: [{ id: "version-1", version: 1, createdAt: now }],
     })
     expect(documentDetail.versions[0]?.version).toBe(1)
+    expect(documentDetail.selectedVersion).toBe(1)
     expect(() => documentTypeSchema.parse("folder")).toThrow()
+
+    const updateRequest = updateDocumentContentRequestSchema.parse({
+      content: "# Updated",
+      baseVersion: 1,
+      changeSummary: "Updated in document workspace",
+    })
+    expect(updateRequest.baseVersion).toBe(1)
+    const updateResponse = updateDocumentContentResponseSchema.parse({
+      document,
+      currentVersion: 2,
+    })
+    expect(updateResponse.currentVersion).toBe(2)
 
     const detail = threadDetailSchema.parse({
       thread: {

@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { MemoryRouter } from "react-router"
 import type { Run, RunStep } from "@workspace/shared"
 import { RunTimeline } from "./run-timeline"
 
@@ -24,10 +25,18 @@ function step(payload: Record<string, unknown>): RunStep {
   }
 }
 
+function renderTimeline(props: { run: Run | null; steps: RunStep[] }) {
+  return render(
+    <MemoryRouter>
+      <RunTimeline {...props} />
+    </MemoryRouter>
+  )
+}
+
 describe("RunTimeline", () => {
   it("shows debug mode even when an older run has no debug payload", async () => {
     const user = userEvent.setup()
-    render(<RunTimeline run={run} steps={[step({ provider: "native" })]} />)
+    renderTimeline({ run, steps: [step({ provider: "native" })] })
 
     await user.click(screen.getByRole("button", { name: "Debug mode" }))
 
@@ -37,10 +46,9 @@ describe("RunTimeline", () => {
 
   it("keeps debug I/O hidden until debug mode is enabled", async () => {
     const user = userEvent.setup()
-    render(
-      <RunTimeline
-        run={run}
-        steps={[
+    renderTimeline({
+      run,
+      steps: [
           {
             id: "step_debug",
             runId: run.id,
@@ -81,9 +89,8 @@ describe("RunTimeline", () => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
-        ]}
-      />
-    )
+        ],
+    })
 
     expect(screen.getByRole("button", { name: "Debug mode" })).toBeInTheDocument()
     expect(screen.queryByText("Debug: model input")).not.toBeInTheDocument()
@@ -108,10 +115,9 @@ describe("RunTimeline", () => {
   })
 
   it("renders mutating workspace summaries and pending approval state", () => {
-    render(
-      <RunTimeline
-        run={run}
-        steps={[
+    renderTimeline({
+      run,
+      steps: [
           step({
             provider: "native",
             toolCallId: "tool_call_1",
@@ -127,9 +133,8 @@ describe("RunTimeline", () => {
             changedFiles: [],
             approval: { status: "pending", editId: "wedit_1" },
           }),
-        ]}
-      />
-    )
+        ],
+    })
 
     expect(screen.getByText("Pending approval")).toBeInTheDocument()
     expect(screen.getByText("Path: notes.md")).toBeInTheDocument()
@@ -138,10 +143,9 @@ describe("RunTimeline", () => {
   })
 
   it("renders native workspace tool evidence without full file contents", () => {
-    render(
-      <RunTimeline
-        run={run}
-        steps={[
+    renderTimeline({
+      run,
+      steps: [
           step({
             provider: "native",
             toolName: "readWorkspaceFile",
@@ -155,9 +159,8 @@ describe("RunTimeline", () => {
               truncated: true,
             },
           }),
-        ]}
-      />
-    )
+        ],
+    })
 
     expect(screen.getByText(/Native · readWorkspaceFile/)).toBeInTheDocument()
     expect(screen.getByText(/workspace_agentis/)).toBeInTheDocument()
@@ -169,10 +172,9 @@ describe("RunTimeline", () => {
   })
 
   it("renders safe web search source evidence", () => {
-    render(
-      <RunTimeline
-        run={run}
-        steps={[
+    renderTimeline({
+      run,
+      steps: [
           step({
             provider: "native",
             toolName: "searchWeb",
@@ -201,9 +203,8 @@ describe("RunTimeline", () => {
               ],
             },
           }),
-        ]}
-      />
-    )
+        ],
+    })
 
     expect(screen.getByText(/Native · searchWeb/)).toBeInTheDocument()
     expect(screen.getByText("Query: Agentis launch news")).toBeInTheDocument()
@@ -217,10 +218,9 @@ describe("RunTimeline", () => {
   })
 
   it("renders workspace execution stdout stderr duration and changed files", () => {
-    render(
-      <RunTimeline
-        run={run}
-        steps={[
+    renderTimeline({
+      run,
+      steps: [
           step({
             provider: "native",
             toolCallId: "tool_call_1",
@@ -243,13 +243,38 @@ describe("RunTimeline", () => {
             },
             changedFiles: [{ path: "out.txt", operation: "created" }],
           }),
-        ]}
-      />
-    )
+        ],
+    })
 
     expect(screen.getByText(/Exit 0 · 15ms/)).toBeInTheDocument()
     expect(screen.getByText("stdout")).toBeInTheDocument()
     expect(screen.getByText("hello")).toBeInTheDocument()
     expect(screen.getByText(/Changed out.txt · created/)).toBeInTheDocument()
+  })
+
+  it("links document timeline steps to the document workspace", () => {
+    renderTimeline({
+      run,
+      steps: [
+          {
+            id: "step_document",
+            runId: run.id,
+            type: "tool-result",
+            status: "completed",
+            title: "Document created: Launch brief",
+            payload: {
+              documentId: "document_123",
+              title: "Launch brief",
+              currentVersion: 1,
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+    })
+
+    expect(
+      screen.getByRole("link", { name: "Open document" })
+    ).toHaveAttribute("href", "/documents/document_123")
   })
 })
