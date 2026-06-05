@@ -43,7 +43,7 @@ test.describe("M04 projects and documents", () => {
 
     await page.goto(`/library?documentId=${document?.id}`)
     await expect(page.getByText(title).first()).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText(/markdown · global · version 2/i)).toBeVisible()
+    await expect(page.getByText(/document · global · version 2/i)).toBeVisible()
     await expect(page.locator("pre")).toContainText("cross-thread access section")
     await expect(page.getByText(/Versions: v1, v2/i)).toBeVisible()
   })
