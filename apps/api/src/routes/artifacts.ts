@@ -15,6 +15,35 @@ function artifactNotFoundResponse() {
   return { error: "Artifact not found", code: "artifact_not_found" }
 }
 
+function artifactNotMarkdownResponse() {
+  return {
+    error: "Artifact content updates require a markdown document artifact",
+    code: "artifact_not_markdown",
+  }
+}
+
+function artifactRouteError(error: { code: string; message: string }) {
+  const codeMap: Record<string, string> = {
+    document_not_found: "artifact_not_found",
+    document_not_markdown: "artifact_not_markdown",
+    document_too_large: "artifact_too_large",
+    document_version_conflict: "artifact_version_conflict",
+    invalid_document_scope: "invalid_artifact_scope",
+    invalid_document_provenance: "invalid_artifact_provenance",
+  }
+  const messageMap: Record<string, string> = {
+    document_not_found: "Artifact not found",
+    document_not_markdown:
+      "Artifact content updates require a markdown document artifact",
+  }
+  return {
+    error:
+      messageMap[error.code] ??
+      error.message.replace(/Document/g, "Artifact").replace(/document/g, "artifact"),
+    code: codeMap[error.code] ?? error.code,
+  }
+}
+
 function versionFromQuery(value: string | undefined) {
   if (!value?.trim()) return { ok: true as const, version: undefined }
   const version = Number(value)
@@ -151,15 +180,23 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
       )
     }
 
+    const artifact = repos.artifacts.getById(c.req.param("artifactId"))
+    if (!artifact) {
+      return c.json(artifactNotFoundResponse(), 404)
+    }
+    if (artifact.type !== "document" || artifact.contentFormat !== "markdown") {
+      return c.json(artifactNotMarkdownResponse(), 400)
+    }
+
     const result = documentService.updateDocumentContent({
-      documentId: c.req.param("artifactId"),
+      documentId: artifact.id,
       content: parsed.data.content,
       baseVersion: parsed.data.baseVersion,
       changeSummary: parsed.data.changeSummary,
     })
     if (!result.ok) {
       return c.json(
-        { error: result.message, code: result.code },
+        artifactRouteError(result),
         (result.status ?? 500) as 400 | 404 | 409 | 413 | 500
       )
     }
@@ -209,7 +246,7 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
     )
     if (!assignment.ok) {
       return c.json(
-        { error: assignment.message, code: assignment.code },
+        artifactRouteError(assignment),
         (assignment.status ?? 500) as 400 | 403 | 404 | 500
       )
     }

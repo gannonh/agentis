@@ -141,6 +141,64 @@ describe("artifact routes", () => {
     expect(await download.text()).toBe("# Updated artifact")
   })
 
+  it("rejects content updates for non-document artifacts with artifact errors", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const webpage = ctx.repos.artifacts.create({
+      title: "Landing page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 20,
+      storageKey: "artifacts/landing/index.html",
+      visibilityScope: "global",
+    })
+
+    const response = await app.request(`/api/artifacts/${webpage.id}/content`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: "<h1>Updated</h1>",
+        baseVersion: 1,
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "artifact_not_markdown",
+    })
+  })
+
+  it("returns artifact errors for invalid visibility scope changes", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const webpage = ctx.repos.artifacts.create({
+      title: "Landing page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 20,
+      storageKey: "artifacts/landing/index.html",
+      visibilityScope: "global",
+    })
+
+    const response = await app.request(
+      `/api/artifacts/${webpage.id}/visibility`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibilityScope: "project" }),
+      }
+    )
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "invalid_artifact_scope",
+    })
+  })
+
   it("updates non-document artifact visibility without changing artifact type", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
