@@ -44,7 +44,7 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
     const file = body.file
     const title = typeof body.title === "string" ? body.title : ""
     const documentTypeRaw = normalizeDocumentType(
-      typeof body.documentType === "string" ? body.documentType : "document"
+      typeof body.documentType === "string" ? body.documentType : undefined
     )
     const description =
       typeof body.description === "string" ? body.description : undefined

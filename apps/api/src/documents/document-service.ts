@@ -86,6 +86,20 @@ function contentFormatFor(
   return "markdown"
 }
 
+function isMarkdownUpload(filename: string, mimeType: string): boolean {
+  const normalizedMimeType = mimeType.split(";")[0]?.trim().toLowerCase()
+  const extension = extname(filename).toLowerCase()
+  if (normalizedMimeType === "text/markdown") return true
+  if (normalizedMimeType === "text/plain") return true
+  if (
+    normalizedMimeType === "application/octet-stream" &&
+    (extension === ".md" || extension === ".markdown" || extension === ".txt")
+  ) {
+    return true
+  }
+  return false
+}
+
 function currentVersion(document: Document): number {
   return document.currentVersion ?? 0
 }
@@ -333,9 +347,10 @@ export class DocumentService {
     if (!provenanceResult.ok) return provenanceResult
 
     const mimeType = inferMimeType(input.filename, input.mimeType)
-    const textContent = mimeType.startsWith("text/")
-      ? input.data.toString("utf8")
-      : ""
+    if (!isMarkdownUpload(input.filename, mimeType)) {
+      return documentNotMarkdownError()
+    }
+    const textContent = input.data.toString("utf8")
     const visibilityScope = uploadVisibilityScope({
       projectId: input.projectId,
       threadId: provenanceResult.provenance.threadId,
