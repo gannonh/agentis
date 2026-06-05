@@ -83,9 +83,27 @@ describe("static HTML validator", () => {
     }
   })
 
-  it("rejects remote module imports in script bodies", () => {
+  it("rejects all dynamic imports in script bodies", () => {
     const cases = [
       '<script type="module">import("https://cdn.example/app.js")</script>',
+      '<script type="module">import("https:" + "//cdn.example/app.js")</script>',
+      '<script type="module">import("./local-module.js")</script>',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects remote static module imports and re-exports in script bodies", () => {
+    const cases = [
       '<script type="module">import app from "https://cdn.example/app.js"</script>',
       '<script type="module">export { app } from "https://cdn.example/app.js"</script>',
     ]
@@ -114,6 +132,8 @@ describe("static HTML validator", () => {
       "<video src=\"https://cdn.example/movie.mp4\"></video>",
       "<video poster=\"https://cdn.example/poster.png\"></video>",
       "<audio src=\"https://cdn.example/audio.mp3\"></audio>",
+      "<input type=\"image\" src=\"https://cdn.example/button.png\" alt=\"Submit\">",
+      "<track src=\"https://cdn.example/captions.vtt\" kind=\"captions\">",
       "<object data=\"https://cdn.example/widget.svg\"></object>",
       "<embed src=\"https://cdn.example/widget.svg\">",
       '<svg><image href="https://cdn.example/x.png"></image></svg>',

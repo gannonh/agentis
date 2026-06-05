@@ -15,8 +15,10 @@ const EXTERNAL_RESOURCE_ATTRIBUTES: Record<string, readonly string[]> = {
   iframe: ["src"],
   image: ["href", "xlink:href"],
   img: ["src", "srcset"],
+  input: ["src"],
   object: ["data"],
   source: ["src", "srcset"],
+  track: ["src"],
   use: ["href", "xlink:href"],
   video: ["src", "poster"],
 }
@@ -103,10 +105,7 @@ function scriptBodies(html: string): string[] {
 }
 
 function scriptContainsExternalModuleImport(script: string): boolean {
-  const dynamicImportPattern = /\bimport\s*\(\s*(?:\/\*[\s\S]*?\*\/\s*)?(["'`])([^"'`]+)\1/g
-  for (const match of script.matchAll(dynamicImportPattern)) {
-    if (externalUrl(match[2] ?? "")) return true
-  }
+  if (/\bimport\s*(?:\/\*[\s\S]*?\*\/\s*)?\(/.test(script)) return true
 
   const importPattern = /\bimport\s+(?:[^"'`;]*?\s+from\s*)?(["'])([^"']+)\1/g
   for (const match of script.matchAll(importPattern)) {
