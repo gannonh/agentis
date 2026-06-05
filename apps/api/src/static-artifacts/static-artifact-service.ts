@@ -70,16 +70,13 @@ type FindStaticArtifactsOutput = {
   truncated: boolean
 }
 
+type StaticArtifactVersionMetadataSnapshot = StaticArtifactMetadata & {
+  version: number
+  createdAt: string
+}
+
 type StaticArtifactMetadataWithHistory = StaticArtifactMetadata & {
-  versionHistory?: Array<{
-    version: number
-    artifactType: StaticArtifactType
-    renderMode: StaticArtifactRenderMode
-    theme: StaticArtifactTheme
-    slideCount?: number
-    provider?: string
-    createdAt: string
-  }>
+  versionHistory?: StaticArtifactVersionMetadataSnapshot[]
 }
 
 function staticArtifactError(
@@ -230,14 +227,17 @@ function generationPath(input: {
 function buildVersionHistoryEntry(
   version: number,
   metadata: StaticArtifactMetadata
-): NonNullable<StaticArtifactMetadataWithHistory["versionHistory"]>[number] {
+): StaticArtifactVersionMetadataSnapshot {
   return {
+    ...metadata,
+    assetReferences: metadata.assetReferences.map((asset) => ({ ...asset })),
+    safetyValidationResult: {
+      ...metadata.safetyValidationResult,
+      warnings: [...metadata.safetyValidationResult.warnings],
+      errors: [...metadata.safetyValidationResult.errors],
+    },
+    generationWarnings: [...metadata.generationWarnings],
     version,
-    artifactType: metadata.artifactType,
-    renderMode: metadata.renderMode,
-    theme: metadata.theme,
-    slideCount: metadata.slideCount,
-    provider: metadata.provider,
     createdAt: nowIso(),
   }
 }

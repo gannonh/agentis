@@ -192,6 +192,101 @@ describe("StaticArtifactService", () => {
     ctx.cleanup()
   })
 
+  it("preserves all prior static artifact metadata fields in edit history", () => {
+    const { ctx, thread, run, service } = createRunContext()
+    const storage = new LocalDocumentStorage(ctx.config)
+    const storageKey = "artifacts/static-history/versions/1.html"
+    storage.write(storageKey, Buffer.from("<main>Original deck</main>", "utf8"))
+    const originalMetadata = {
+      artifactType: "slides",
+      renderMode: "html",
+      theme: "keynote",
+      bespokeStyleBriefSummary: "Use stark editorial photography and red accents.",
+      generationPath: "modelDeckHtml",
+      slideCount: 2,
+      assetReferences: [
+        {
+          assetId: "asset_hero",
+          slideIndex: 1,
+          storageKey: "artifacts/static-history/assets/hero.png",
+          mimeType: "image/png",
+          sizeBytes: 1024,
+          altText: "Launch hero image",
+        },
+      ],
+      provider: "agentis-mock",
+      providerModel: "image-model-1",
+      safetyValidationResult: {
+        status: "warning",
+        checkedAt: "2026-06-04T00:00:00.000Z",
+        warnings: ["Inline chart uses reduced motion."],
+        errors: [],
+      },
+      generationWarnings: ["Dense slide text was shortened."],
+    }
+    const { artifact: original } = ctx.repos.artifacts.createWithInitialVersion({
+      title: "Metadata-rich deck",
+      type: "slides",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 26,
+      storageKey,
+      visibilityScope: "thread",
+      threadId: thread.id,
+      runId: run.id,
+      metadata: originalMetadata,
+      contentHash: "hash_v1",
+      contentStorageKey: storageKey,
+      createdByRunId: run.id,
+      createdByThreadId: thread.id,
+    })
+
+    const edited = service.editStaticArtifact({
+      artifactId: original.id,
+      contentBrief: "Refresh the metadata-rich deck.",
+      changeSummary: "Refresh deck",
+      theme: "corporate",
+      runContext: { threadId: thread.id, runId: run.id },
+    })
+
+    expect(edited).toMatchObject({ ok: true })
+    const artifact = ctx.repos.artifacts.getById(original.id)
+    const metadata = artifact?.metadata as
+      | { versionHistory?: Array<Record<string, unknown>> }
+      | undefined
+    expect(metadata?.versionHistory?.[0]).toMatchObject({
+      version: 1,
+      artifactType: "slides",
+      renderMode: "html",
+      theme: "keynote",
+      bespokeStyleBriefSummary:
+        "Use stark editorial photography and red accents.",
+      generationPath: "modelDeckHtml",
+      slideCount: 2,
+      assetReferences: [
+        expect.objectContaining({
+          assetId: "asset_hero",
+          slideIndex: 1,
+        }),
+      ],
+      provider: "agentis-mock",
+      providerModel: "image-model-1",
+      safetyValidationResult: {
+        status: "warning",
+        checkedAt: "2026-06-04T00:00:00.000Z",
+        warnings: ["Inline chart uses reduced motion."],
+        errors: [],
+      },
+      generationWarnings: ["Dense slide text was shortened."],
+    })
+    expect(metadata?.versionHistory?.[1]).toMatchObject({
+      version: 2,
+      theme: "corporate",
+      generationPath: "modelDeckHtml",
+    })
+    ctx.cleanup()
+  })
+
   it("rejects edits for unsupported or inaccessible artifacts", () => {
     const { ctx, thread, run, service } = createRunContext()
     const other = ctx.repos.threads.createWithInitialRun({

@@ -185,4 +185,35 @@ describe("formatNativeToolRunStepPayload", () => {
     expect(JSON.stringify(payload)).not.toContain("<html>")
     expect(JSON.stringify(payload)).not.toContain("data:image")
   })
+
+  it("keeps approved static artifact failure codes and remediation in timeline payloads", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static_failed",
+      toolName: "createStaticArtifact",
+      input: {
+        title: "Visual deck",
+        artifactType: "slides",
+        renderMode: "polishedImage",
+      },
+      output: {
+        action: "failed",
+        code: "static_artifact_provider_unavailable",
+        error: "Image generation provider is not configured.",
+        remediation:
+          "Configure an image generation provider or use html render mode.",
+      },
+    })
+
+    expect(payload).toMatchObject({
+      provider: "native",
+      toolName: "createStaticArtifact",
+      output: {
+        action: "failed",
+        errorCode: "static_artifact_provider_unavailable",
+        error: "Image generation provider is not configured.",
+        remediation:
+          "Configure an image generation provider or use html render mode.",
+      },
+    })
+  })
 })

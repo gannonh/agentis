@@ -500,6 +500,12 @@ function summarizeStaticArtifactOutput(output: unknown): unknown {
     errorCode:
       typeof output.errorCode === "string"
         ? truncateText(output.errorCode, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+        : typeof output.code === "string"
+          ? truncateText(output.code, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+          : undefined,
+    error:
+      typeof output.error === "string"
+        ? truncateText(output.error, STATIC_ARTIFACT_TEXT_MAX_CHARS)
         : undefined,
     remediation:
       typeof output.remediation === "string"
