@@ -1,4 +1,6 @@
 import type {
+  Artifact,
+  ArtifactVersion,
   Document,
   DocumentVersion,
   Message,
@@ -187,13 +189,25 @@ function parseDocumentMetadata(metadataJson: string) {
   }
 }
 
-export function mapDocument(row: DocumentRow): Document {
+function artifactTypeFor(row: DocumentRow): Artifact["type"] {
+  if (row.documentType === "markdown") return "document"
+  if (row.documentType === "document") return "document"
+  if (row.documentType === "webpage") return "webpage"
+  if (row.documentType === "slides") return "slides"
+  if (row.documentType === "table") return "table"
+  if (row.documentType === "image") return "image"
+  if (row.documentType === "video") return "video"
+  if (row.documentType === "hyperapp") return "hyperapp"
+  return "other"
+}
+
+export function mapArtifact(row: DocumentRow): Artifact {
   return {
     id: row.id,
+    type: artifactTypeFor(row),
     title: row.title,
     description: row.description ?? undefined,
-    documentType: row.documentType as Document["documentType"],
-    contentFormat: row.contentFormat as Document["contentFormat"],
+    contentFormat: row.contentFormat as Artifact["contentFormat"],
     mimeType: row.mimeType,
     sizeBytes: row.sizeBytes,
     storageKey: row.storageKey,
@@ -201,7 +215,7 @@ export function mapDocument(row: DocumentRow): Document {
     metadata: row.metadataJson
       ? parseDocumentMetadata(row.metadataJson)
       : undefined,
-    visibilityScope: row.visibilityScope as Document["visibilityScope"],
+    visibilityScope: row.visibilityScope as Artifact["visibilityScope"],
     projectId: row.projectId ?? undefined,
     projectNameSnapshot: row.projectNameSnapshot ?? undefined,
     threadId: row.threadId ?? undefined,
@@ -213,6 +227,28 @@ export function mapDocument(row: DocumentRow): Document {
     currentVersion: row.currentVersion ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+  }
+}
+
+export function mapDocument(row: DocumentRow): Document {
+  return {
+    ...mapArtifact(row),
+    type: "document",
+    contentFormat: "markdown",
+  }
+}
+
+export function mapArtifactVersion(row: DocumentVersionRow): ArtifactVersion {
+  return {
+    id: row.id,
+    artifactId: row.documentId,
+    version: row.version,
+    contentHash: row.contentHash,
+    contentStorageKey: row.contentStorageKey,
+    changeSummary: row.changeSummary ?? undefined,
+    createdByRunId: row.createdByRunId ?? undefined,
+    createdByThreadId: row.createdByThreadId ?? undefined,
+    createdAt: row.createdAt,
   }
 }
 
@@ -229,7 +265,6 @@ export function mapDocumentVersion(row: DocumentVersionRow): DocumentVersion {
     createdAt: row.createdAt,
   }
 }
-
 
 export function mapRunStep(row: RunStepRow): RunStep {
   return {

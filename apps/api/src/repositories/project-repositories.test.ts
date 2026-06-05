@@ -78,7 +78,7 @@ describe("project repositories", () => {
 
     const document = ctx.repos.documents.create({
       title: "Q2 Brief",
-      documentType: "markdown",
+      documentType: "document",
       mimeType: "text/plain",
       sizeBytes: 120,
       storageKey: "documents/test.txt",
@@ -97,7 +97,7 @@ describe("project repositories", () => {
     const byProject = ctx.repos.documents.list({ projectId: project.id })
     expect(byProject).toHaveLength(1)
 
-    const byType = ctx.repos.documents.list({ documentType: "markdown" })
+    const byType = ctx.repos.documents.list({ documentType: "document" })
     expect(byType).toHaveLength(1)
 
     ctx.cleanup()

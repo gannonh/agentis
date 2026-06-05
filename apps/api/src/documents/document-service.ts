@@ -80,11 +80,10 @@ function contentHash(content: Buffer | string): string {
 
 function contentFormatFor(
   documentType: DocumentType,
-  mimeType: string
-): "markdown" | "text" | "binary" {
-  if (documentType === "markdown") return "markdown"
-  if (mimeType.startsWith("text/")) return "text"
-  return "binary"
+  _mimeType: string
+): "markdown" {
+  if (documentType === "document") return "markdown"
+  return "markdown"
 }
 
 function currentVersion(document: Document): number {
@@ -254,7 +253,7 @@ export class DocumentService {
         id: documentId,
         title: input.title,
         description: input.description,
-        documentType: "markdown",
+        documentType: "document",
         contentFormat: "markdown",
         mimeType: "text/markdown",
         sizeBytes: data.byteLength,
@@ -349,7 +348,7 @@ export class DocumentService {
 
     const documentId = createId("document")
     const storageKey =
-      input.documentType === "markdown"
+      input.documentType === "document"
         ? this.storage.createVersionStorageKey(documentId, 1)
         : this.storage.createStorageKey(input.filename)
     try {
@@ -386,7 +385,7 @@ export class DocumentService {
         ...provenanceResult.provenance,
       }
       const document =
-        input.documentType === "markdown"
+        input.documentType === "document"
           ? this.repos.documents.createWithInitialVersion({
               ...baseDocument,
               contentHash: contentHash(input.data),
@@ -473,14 +472,6 @@ export class DocumentService {
     if (input.version && !version) {
       return documentVersionNotFoundError()
     }
-    if (document.contentFormat === "binary") {
-      return documentError(
-        "document_not_readable",
-        "Binary documents cannot be read as text",
-        400
-      )
-    }
-
     const storageKey = version?.contentStorageKey ?? document.storageKey
     let content: string
     try {
@@ -511,9 +502,7 @@ export class DocumentService {
       truncated,
       maxChars,
       outline:
-        document.documentType === "markdown"
-          ? parseMarkdownSections(content)
-          : [],
+        document.type === "document" ? parseMarkdownSections(content) : [],
       currentVersion: currentVersion(document),
     }
   }
@@ -621,18 +610,6 @@ export class DocumentService {
       }
     }
 
-    if (document.contentFormat === "binary") {
-      return {
-        ok: true,
-        document,
-        content: null,
-        truncated: false,
-        selectedVersion: selectedVersionNumber,
-        currentVersion: resolvedCurrentVersion,
-        versions,
-      }
-    }
-
     let version: DocumentVersion | null = null
     if (input.version) {
       version = this.repos.documents.getVersion(document.id, input.version)
@@ -684,7 +661,7 @@ export class DocumentService {
 
     const document = this.repos.documents.getById(input.documentId)
     if (!document) return documentNotFoundError()
-    if (document.documentType !== "markdown") {
+    if (document.type !== "document") {
       return documentNotMarkdownError()
     }
 
@@ -838,13 +815,6 @@ export class DocumentService {
     | DocumentError {
     const document = this.repos.documents.getById(documentId)
     if (!document) return documentNotFoundError()
-    if (document.contentFormat === "binary") {
-      return documentError(
-        "document_not_readable",
-        "Binary documents cannot be read as text",
-        400
-      )
-    }
 
     let versionRow: DocumentVersion | null = null
     if (version) {
@@ -897,7 +867,7 @@ export class DocumentService {
     if (!this.scopePolicy.canAccess(document, input.runContext)) {
       return documentNotAccessibleError()
     }
-    if (document.documentType !== "markdown") {
+    if (document.type !== "document") {
       return documentNotMarkdownError()
     }
 

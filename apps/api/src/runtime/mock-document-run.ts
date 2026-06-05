@@ -85,7 +85,7 @@ export function createMockDocumentRunSuffix(input: {
         runContext,
         limit: 10,
       })
-      .find((document) => document.documentType === "markdown")
+      .find((document) => document.type === "document")
     if (target) {
       const updated = input.documentService.appendDocumentSection({
         documentId: target.id,

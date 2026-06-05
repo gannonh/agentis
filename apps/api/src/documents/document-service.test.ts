@@ -49,7 +49,7 @@ describe("DocumentService", () => {
     if (!created.ok) return
     expect(created.document).toMatchObject({
       title: "Launch plan",
-      documentType: "markdown",
+      type: "document",
       contentFormat: "markdown",
       visibilityScope: "project",
       currentVersion: 1,
@@ -155,7 +155,7 @@ describe("DocumentService", () => {
 
     const uploaded = service.upload({
       title: "Uploaded playbook",
-      documentType: "markdown",
+      documentType: "document",
       filename: "playbook.md",
       data: Buffer.from("# Uploaded\n\nInitial content"),
     })
@@ -542,23 +542,23 @@ describe("DocumentService", () => {
       })
     ).toMatchObject({ ok: false, code: "document_not_accessible" })
 
-    const upload = service.upload({
+    const image = ctx.repos.artifacts.create({
       title: "Image",
-      documentType: "image",
-      filename: "image.png",
-      data: Buffer.from("png"),
+      type: "image",
+      mimeType: "image/png",
+      sizeBytes: 3,
+      storageKey: "image.png",
       threadId: source.thread.id,
+      visibilityScope: "thread",
     })
-    expect(upload).toMatchObject({ ok: true })
-    if (!upload.ok) return
     expect(
       service.updateDocumentSection({
-        documentId: upload.document.id,
+        documentId: image.id,
         sectionPath: "Image",
         content: "Nope",
         runContext: { threadId: source.thread.id },
       })
-    ).toMatchObject({ ok: false, code: "document_not_markdown" })
+    ).toMatchObject({ ok: false, code: "document_not_found" })
     ctx.cleanup()
   })
 

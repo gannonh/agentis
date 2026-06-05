@@ -306,10 +306,9 @@ describe("agent routes", () => {
       version: 2,
       nativeTools: [],
     })
-    expect(body.configurationVersions.map((version) => version.version)).toEqual([
-      1,
-      2,
-    ])
+    expect(
+      body.configurationVersions.map((version) => version.version)
+    ).toEqual([1, 2])
     expect(body.configurationVersions[0]?.nativeTools).toEqual([
       "documents",
       "webSearch",
@@ -502,7 +501,7 @@ describe("agent routes", () => {
     })
     ctx.repos.documents.create({
       title: "Research notes",
-      documentType: "markdown",
+      documentType: "document",
       mimeType: "text/markdown",
       sizeBytes: 42,
       storageKey: "research-notes.md",
