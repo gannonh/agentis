@@ -8,8 +8,26 @@ export type PolishedSlideProviderAvailability =
       remediation: string
     }
 
+export type PolishedSlideGenerationInput = {
+  title: string
+  theme: string
+  slides: Array<{
+    slideIndex: number
+    title: string
+    prompt: string
+  }>
+}
+
+export type PolishedSlideGenerationResult = Array<{
+  slideIndex: number
+  data: Buffer
+  mimeType: "image/png" | "image/jpeg" | "image/webp" | "image/gif"
+  altText?: string
+}>
+
 export interface PolishedSlideProvider {
   availability(): PolishedSlideProviderAvailability
+  generateSlides?(input: PolishedSlideGenerationInput): PolishedSlideGenerationResult
 }
 
 export class UnavailablePolishedSlideProvider implements PolishedSlideProvider {

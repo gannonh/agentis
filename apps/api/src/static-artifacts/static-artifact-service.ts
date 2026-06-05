@@ -73,6 +73,11 @@ type FindStaticArtifactsOutput = {
   truncated: boolean
 }
 
+type StaticArtifactAssetWrite = {
+  storageKey: string
+  data: Buffer
+}
+
 type StaticArtifactVersionMetadataSnapshot = StaticArtifactMetadata & {
   version: number
   createdAt: string
@@ -115,6 +120,13 @@ function previewText(content: string, maxChars: number): string | undefined {
   const stripped = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
   if (!stripped) return undefined
   return stripped.length > maxChars ? `${stripped.slice(0, maxChars)}…` : stripped
+}
+
+function assetExtension(mimeType: string): string {
+  if (mimeType === "image/jpeg") return "jpg"
+  if (mimeType === "image/webp") return "webp"
+  if (mimeType === "image/gif") return "gif"
+  return "png"
 }
 
 function slideLines(contentBrief: string): string[] {
@@ -284,7 +296,12 @@ export class StaticArtifactService {
     runId?: string
     generatedHtml?: string
   }): StaticArtifactResult<StaticArtifactOutput> {
-    const prepared = this.prepareGeneratedContent(input)
+    const artifactId = createId("artifact")
+    const prepared = this.prepareGeneratedContent({
+      ...input,
+      artifactId,
+      version: 1,
+    })
     if (!prepared.ok) return prepared
 
     const provenance = this.artifactService.captureProvenance({
@@ -316,11 +333,13 @@ export class StaticArtifactService {
       )
     }
 
-    const artifactId = createId("artifact")
     const storageKey = this.storageKey(artifactId, 1, prepared.contentFormat)
     const data = Buffer.from(prepared.content, "utf8")
     try {
       this.storage.write(storageKey, data)
+      for (const asset of prepared.assetWrites) {
+        this.storage.write(asset.storageKey, asset.data)
+      }
       const metadata = {
         ...prepared.metadata,
         versionHistory: [buildVersionHistoryEntry(1, prepared.metadata)],
@@ -356,6 +375,9 @@ export class StaticArtifactService {
       }
     } catch (cause) {
       this.storage.delete(storageKey)
+      for (const asset of prepared.assetWrites) {
+        this.storage.delete(asset.storageKey)
+      }
       console.error("Failed to persist static artifact", { cause, artifactId })
       return staticArtifactError(
         "static_artifact_storage_failed",
@@ -397,6 +419,7 @@ export class StaticArtifactService {
     }
 
     const previousVersion = artifact.currentVersion ?? 0
+    const nextVersion = previousVersion + 1
     const prepared = this.prepareGeneratedContent({
       title: artifact.title,
       artifactType: existingMetadata.artifactType,
@@ -405,10 +428,10 @@ export class StaticArtifactService {
       theme: input.theme ?? existingMetadata.theme,
       bespokeStyleBrief: input.bespokeStyleBrief,
       generatedHtml: input.generatedHtml,
+      artifactId: artifact.id,
+      version: nextVersion,
     })
     if (!prepared.ok) return prepared
-
-    const nextVersion = previousVersion + 1
     const storageKey = this.storageKey(artifact.id, nextVersion, prepared.contentFormat)
     const data = Buffer.from(prepared.content, "utf8")
     const metadata = {
@@ -423,6 +446,9 @@ export class StaticArtifactService {
 
     try {
       this.storage.write(storageKey, data)
+      for (const asset of prepared.assetWrites) {
+        this.storage.write(asset.storageKey, asset.data)
+      }
       const updated = this.repos.artifacts.updateWithVersion({
         artifactId: artifact.id,
         version: nextVersion,
@@ -437,6 +463,9 @@ export class StaticArtifactService {
       })
       if (!updated) {
         this.storage.delete(storageKey)
+        for (const asset of prepared.assetWrites) {
+          this.storage.delete(asset.storageKey)
+        }
         return staticArtifactError(
           "static_artifact_not_found",
           "Static artifact not found.",
@@ -458,6 +487,9 @@ export class StaticArtifactService {
       }
     } catch (cause) {
       this.storage.delete(storageKey)
+      for (const asset of prepared.assetWrites) {
+        this.storage.delete(asset.storageKey)
+      }
       console.error("Failed to update static artifact", { cause, artifactId: artifact.id })
       return staticArtifactError(
         "static_artifact_storage_failed",
@@ -533,6 +565,8 @@ export class StaticArtifactService {
     bespokeStyleBrief?: string
     sourceData?: string
     generatedHtml?: string
+    artifactId: string
+    version: number
   }):
     | {
         ok: true
@@ -541,6 +575,7 @@ export class StaticArtifactService {
         mimeType: string
         metadata: StaticArtifactMetadata
         summary: string
+        assetWrites: StaticArtifactAssetWrite[]
       }
     | StaticArtifactError {
     const mode = validateStaticArtifactMode(input.artifactType, input.renderMode)
@@ -573,12 +608,93 @@ export class StaticArtifactService {
           availability.remediation
         )
       }
-      return staticArtifactError(
-        "static_artifact_image_generation_failed",
-        `Polished image slide generation through ${availability.provider} is not implemented in this runtime.`,
-        501,
-        "Use html renderMode for slide decks until polished image generation is implemented."
+      if (!this.polishedSlideProvider.generateSlides) {
+        return staticArtifactError(
+          "static_artifact_image_generation_failed",
+          `Polished image slide generation through ${availability.provider} is not available in this runtime.`,
+          501,
+          "Configure a polished slide provider with generation support or use html renderMode."
+        )
+      }
+
+      const slides = slideLines(input.contentBrief).map((line, index) => ({
+        slideIndex: index + 1,
+        title: index === 0 ? input.title : line,
+        prompt: line,
+      }))
+      let generatedSlides: ReturnType<NonNullable<PolishedSlideProvider["generateSlides"]>>
+      try {
+        generatedSlides = this.polishedSlideProvider.generateSlides({
+          title: input.title,
+          theme: guidance.selectedTheme.id,
+          slides,
+        })
+      } catch (cause) {
+        console.error("Failed to generate polished slide images", { cause })
+        return staticArtifactError(
+          "static_artifact_image_generation_failed",
+          "Polished image slide generation failed.",
+          502,
+          "Try again or use html renderMode for this deck."
+        )
+      }
+      if (generatedSlides.length !== slides.length) {
+        return staticArtifactError(
+          "static_artifact_image_generation_failed",
+          "Polished image slide generation returned an incomplete deck.",
+          502,
+          "Try again or use html renderMode for this deck."
+        )
+      }
+
+      const assetReferences = generatedSlides.map((slide) => ({
+        assetId: createId("static_asset"),
+        slideIndex: slide.slideIndex,
+        storageKey: `artifacts/${input.artifactId}/assets/v${input.version}/slide-${slide.slideIndex}.${assetExtension(slide.mimeType)}`,
+        mimeType: slide.mimeType,
+        sizeBytes: slide.data.byteLength,
+        altText: slide.altText,
+      }))
+      const metadata = staticArtifactMetadataSchema.parse({
+        artifactType: input.artifactType,
+        renderMode: input.renderMode,
+        theme: guidance.selectedTheme.id,
+        bespokeStyleBriefSummary: guidance.bespokeStyleBriefSummary,
+        generationPath: "polishedImageSlides",
+        slideCount: slides.length,
+        assetReferences,
+        provider: availability.provider,
+        providerModel: availability.model,
+        safetyValidationResult: {
+          status: "passed",
+          checkedAt: nowIso(),
+          warnings: [],
+          errors: [],
+        },
+        generationWarnings: [],
+      })
+      const content = JSON.stringify(
+        {
+          artifactType: input.artifactType,
+          renderMode: input.renderMode,
+          slideCount: slides.length,
+          assetReferences,
+        },
+        null,
+        2
       )
+      return {
+        ok: true,
+        content,
+        contentFormat: "manifest",
+        mimeType: "application/json",
+        metadata,
+        summary: `Created ${input.artifactType} static artifact in ${input.renderMode} mode.`,
+        assetWrites: generatedSlides.map((slide, index) => ({
+          storageKey: assetReferences[index]!.storageKey,
+          data: slide.data,
+        })),
+      }
     }
 
     let content: string
@@ -642,6 +758,7 @@ export class StaticArtifactService {
       mimeType: "text/html",
       metadata,
       summary: `Created ${input.artifactType} static artifact in ${input.renderMode} mode.`,
+      assetWrites: [],
     }
   }
 

@@ -24,6 +24,13 @@ const availablePolishedProvider: PolishedSlideProvider = {
     provider: "agentis-test-images",
     model: "mock-image-1",
   }),
+  generateSlides: (input) =>
+    input.slides.map((slide) => ({
+      slideIndex: slide.slideIndex,
+      data: Buffer.from(`image-${slide.slideIndex}`, "utf8"),
+      mimeType: "image/png",
+      altText: slide.title,
+    })),
 }
 
 describe("StaticArtifactService", () => {
@@ -366,28 +373,52 @@ describe("StaticArtifactService", () => {
     ctx.cleanup()
   })
 
-  it("returns a deliberate visible failure when polished image provider is available but generation is not implemented", () => {
+  it("persists polished image slides when the provider is available", () => {
     const { ctx, thread, run } = createRunContext()
     const service = new StaticArtifactService(ctx.repos, ctx.config, {
       polishedSlideProvider: availablePolishedProvider,
     })
 
-    expect(
-      service.createStaticArtifact({
+    const created = service.createStaticArtifact({
+      title: "Visual deck",
+      artifactType: "slides",
+      renderMode: "polishedImage",
+      contentBrief: "Open with the launch moment.\nClose with the roadmap.",
+      theme: "cinematic",
+      threadId: thread.id,
+      runId: run.id,
+    })
+
+    expect(created).toMatchObject({
+      ok: true,
+      output: {
         title: "Visual deck",
         artifactType: "slides",
         renderMode: "polishedImage",
-        contentBrief: "Three cinematic launch slides.",
-        theme: "cinematic",
-        threadId: thread.id,
-        runId: run.id,
-      })
-    ).toMatchObject({
-      ok: false,
-      code: "static_artifact_image_generation_failed",
-      remediation: expect.stringContaining("Use html renderMode"),
+        provider: "agentis-test-images",
+        slideCount: 2,
+      },
     })
-    expect(ctx.repos.artifacts.list({ type: "slides" })).toHaveLength(0)
+    if (!created.ok) throw new Error(created.message)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    expect(artifact).toMatchObject({
+      type: "slides",
+      contentFormat: "manifest",
+      mimeType: "application/json",
+      metadata: expect.objectContaining({
+        renderMode: "polishedImage",
+        provider: "agentis-test-images",
+        providerModel: "mock-image-1",
+        assetReferences: [
+          expect.objectContaining({ assetId: expect.any(String), slideIndex: 1, mimeType: "image/png" }),
+          expect.objectContaining({ assetId: expect.any(String), slideIndex: 2, mimeType: "image/png" }),
+        ],
+      }),
+    })
+    const storage = new LocalDocumentStorage(ctx.config)
+    const asset = (artifact!.metadata!.assetReferences as Array<{ storageKey: string }>)[0]
+    expect(storage.read(asset.storageKey).toString("utf8")).toBe("image-1")
+    expect(storage.read(artifact!.storageKey).toString("utf8")).toContain("assetReferences")
     ctx.cleanup()
   })
 })
