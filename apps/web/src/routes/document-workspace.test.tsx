@@ -24,7 +24,7 @@ vi.mock("@/lib/api/projects-client", () => ({
 const markdownDocument = {
   id: "document_test",
   title: "Q2 Brief",
-  documentType: "markdown" as const,
+  type: "document" as const,
   contentFormat: "markdown" as const,
   mimeType: "text/markdown",
   sizeBytes: 120,
@@ -39,7 +39,7 @@ const imageDocument = {
   ...markdownDocument,
   id: "document_image",
   title: "Diagram",
-  documentType: "image" as const,
+  type: "image" as const,
   contentFormat: "binary" as const,
   mimeType: "image/png",
 }

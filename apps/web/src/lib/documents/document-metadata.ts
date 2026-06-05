@@ -33,7 +33,5 @@ export function documentProvenanceLines(document: Document): string[] {
 }
 
 export function isMarkdownEditable(document: Document): boolean {
-  return (
-    document.documentType === "markdown" && document.contentFormat !== "binary"
-  )
+  return document.type === "document" && document.contentFormat === "markdown"
 }

@@ -19,7 +19,7 @@ describe("ProjectDocumentsPanel", () => {
             {
               id: "document_test",
               title: "Launch brief",
-              documentType: "markdown",
+              type: "document",
               contentFormat: "markdown",
               mimeType: "text/markdown",
               sizeBytes: 120,
@@ -34,7 +34,7 @@ describe("ProjectDocumentsPanel", () => {
     )
 
     expect(
-      screen.getByRole("link", { name: "Open document" })
+      screen.getByRole("button", { name: "Open document" })
     ).toHaveAttribute("href", "/documents/document_test")
   })
 })

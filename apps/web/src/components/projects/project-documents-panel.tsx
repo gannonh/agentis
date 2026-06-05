@@ -34,7 +34,7 @@ export function ProjectDocumentsPanel({
       (document) =>
         document.title.toLowerCase().includes(needle) ||
         document.description?.toLowerCase().includes(needle) ||
-        document.documentType.toLowerCase().includes(needle)
+        document.type.toLowerCase().includes(needle)
     )
   }, [documents, query])
 
@@ -93,7 +93,7 @@ export function ProjectDocumentsPanel({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{document.title}</p>
                 <p className="text-muted-foreground text-xs capitalize">
-                  {document.documentType} · {formatRelativeTime(document.updatedAt)}
+                  {document.type} · {formatRelativeTime(document.updatedAt)}
                   {document.threadTitleSnapshot
                     ? ` · ${document.threadTitleSnapshot}`
                     : ""}
@@ -108,9 +108,8 @@ export function ProjectDocumentsPanel({
                 <Button
                   size="sm"
                   variant="outline"
-                  render={
-                    <Link to={documentWorkspacePath(document.id)} />
-                  }
+                  nativeButton={false}
+                  render={<Link to={documentWorkspacePath(document.id)} />}
                 >
                   Open document
                 </Button>

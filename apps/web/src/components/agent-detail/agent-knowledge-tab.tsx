@@ -194,7 +194,7 @@ function AgentLibrarySummary({
             Library
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Documents linked to this agent and its test-thread work.
+            Artifacts linked to this agent and its test-thread work.
           </p>
         </div>
         <Badge variant="secondary">
@@ -218,7 +218,7 @@ function AgentLibrarySummary({
                 {item.title}
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                {item.documentType} · {item.mimeType}
+                {item.type} · {item.mimeType}
               </p>
               {item.threadTitleSnapshot ? (
                 <p className="mt-3 truncate text-xs text-muted-foreground">
@@ -230,9 +230,9 @@ function AgentLibrarySummary({
         </div>
       ) : (
         <div className="mt-5 flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl bg-muted/40 px-4 py-8 text-center">
-          <p className="text-sm font-medium">No library documents yet</p>
+          <p className="text-sm font-medium">No library artifacts yet</p>
           <p className="max-w-md text-sm text-muted-foreground">
-            Documents created by this agent's test threads will appear here when
+            Artifacts created by this agent's test threads will appear here when
             they are available.
           </p>
         </div>

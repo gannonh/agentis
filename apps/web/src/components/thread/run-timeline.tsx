@@ -482,9 +482,8 @@ export function RunTimeline({
                   size="sm"
                   variant="outline"
                   className="mt-2"
-                  render={
-                    <Link to={documentAction.workspacePath} />
-                  }
+                  nativeButton={false}
+                  render={<Link to={documentAction.workspacePath} />}
                 >
                   Open document
                 </Button>

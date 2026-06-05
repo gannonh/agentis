@@ -106,7 +106,8 @@ function apiDocumentSummary(
     id: "document_notes",
     title: "Research notes",
     description: null,
-    documentType: "markdown",
+    type: "document",
+    contentFormat: "markdown",
     mimeType: "text/markdown",
     sizeBytes: 42,
     previewText: "Summary",
@@ -383,7 +384,7 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("1 item")).toBeInTheDocument()
     expect(screen.getByText("Research notes")).toBeInTheDocument()
-    expect(screen.getByText("markdown · text/markdown")).toBeInTheDocument()
+    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
     expect(
       screen.getByText("From Test Created Research Agent")
     ).toBeInTheDocument()
@@ -429,7 +430,7 @@ describe("AgentDetailPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Configure library" }))
     expect(screen.getByText("Research notes")).toBeInTheDocument()
-    expect(screen.getByText("markdown · text/markdown")).toBeInTheDocument()
+    expect(screen.getByText("document · text/markdown")).toBeInTheDocument()
     expect(document.body).not.toHaveTextContent(
       /AI Automation Consulting Lead Strategy|fixture|mock/i
     )
@@ -598,7 +599,7 @@ describe("AgentDetailPage", () => {
     ).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
     expect(screen.getByText("0 items")).toBeInTheDocument()
-    expect(screen.getByText("No library documents yet")).toBeInTheDocument()
+    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Configure tools" }))
     expect(screen.getByRole("tab", { name: "Tools" })).toHaveAttribute(
@@ -625,7 +626,7 @@ describe("AgentDetailPage", () => {
       "aria-selected",
       "true"
     )
-    expect(screen.getByText("No library documents yet")).toBeInTheDocument()
+    expect(screen.getByText("No library artifacts yet")).toBeInTheDocument()
   }, AGENT_DETAIL_INTERACTION_TIMEOUT_MS)
 
   it("shows API save errors on editable model fields", async () => {
