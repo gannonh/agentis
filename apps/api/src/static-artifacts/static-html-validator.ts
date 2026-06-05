@@ -11,10 +11,13 @@ export type StaticHtmlValidationResult =
 const EXTERNAL_RESOURCE_ATTRIBUTES: Record<string, readonly string[]> = {
   audio: ["src"],
   embed: ["src"],
+  feimage: ["href", "xlink:href"],
   iframe: ["src"],
+  image: ["href", "xlink:href"],
   img: ["src", "srcset"],
   object: ["data"],
   source: ["src", "srcset"],
+  use: ["href", "xlink:href"],
   video: ["src", "poster"],
 }
 
@@ -99,9 +102,29 @@ function scriptBodies(html: string): string[] {
   )
 }
 
+function scriptContainsExternalModuleImport(script: string): boolean {
+  const dynamicImportPattern = /\bimport\s*\(\s*(?:\/\*[\s\S]*?\*\/\s*)?(["'`])([^"'`]+)\1/g
+  for (const match of script.matchAll(dynamicImportPattern)) {
+    if (externalUrl(match[2] ?? "")) return true
+  }
+
+  const importPattern = /\bimport\s+(?:[^"'`;]*?\s+from\s*)?(["'])([^"']+)\1/g
+  for (const match of script.matchAll(importPattern)) {
+    if (externalUrl(match[2] ?? "")) return true
+  }
+
+  const exportFromPattern = /\bexport\s+[^"'`;]*?\s+from\s*(["'])([^"']+)\1/g
+  for (const match of script.matchAll(exportFromPattern)) {
+    if (externalUrl(match[2] ?? "")) return true
+  }
+
+  return false
+}
+
 function includesForbiddenRuntimeAccess(html: string): boolean {
   const scripts = scriptBodies(html).join("\n")
   if (
+    scriptContainsExternalModuleImport(scripts) ||
     [
       /\bfetch\s*\(/i,
       /\bXMLHttpRequest\b/i,

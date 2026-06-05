@@ -83,7 +83,26 @@ describe("static HTML validator", () => {
     }
   })
 
-  it("rejects external resource loads in CSS and media tags", () => {
+  it("rejects remote module imports in script bodies", () => {
+    const cases = [
+      '<script type="module">import("https://cdn.example/app.js")</script>',
+      '<script type="module">import app from "https://cdn.example/app.js"</script>',
+      '<script type="module">export { app } from "https://cdn.example/app.js"</script>',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects external resource loads in CSS, media, and SVG resource tags", () => {
     const cases = [
       "<style>@import url('https://cdn.example/theme.css');</style>",
       "<style>.hero{background-image:url(https://cdn.example/hero.png)}</style>",
@@ -97,6 +116,8 @@ describe("static HTML validator", () => {
       "<audio src=\"https://cdn.example/audio.mp3\"></audio>",
       "<object data=\"https://cdn.example/widget.svg\"></object>",
       "<embed src=\"https://cdn.example/widget.svg\">",
+      '<svg><image href="https://cdn.example/x.png"></image></svg>',
+      '<svg><image xlink:href="https://cdn.example/x.png"></image></svg>',
     ]
 
     for (const html of cases) {
@@ -109,6 +130,17 @@ describe("static HTML validator", () => {
         })
       ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
     }
+  })
+
+  it("allows local anchor hrefs while rejecting resource external hrefs", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: '<main><a href="#section">Jump</a><section id="section">Local</section></main>',
+        maxBytes: 2048,
+      })
+    ).toMatchObject({ ok: true })
   })
 
   it("rejects invalid mode combinations and oversized bundles", () => {
