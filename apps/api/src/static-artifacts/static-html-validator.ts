@@ -83,6 +83,48 @@ function externalUrl(value: string): URL | null {
   }
 }
 
+type HtmlTag = {
+  name: string
+  source: string
+}
+
+function scanHtmlTags(html: string): HtmlTag[] {
+  const tags: HtmlTag[] = []
+  let index = 0
+
+  while (index < html.length) {
+    const start = html.indexOf("<", index)
+    if (start === -1) break
+
+    const next = html[start + 1]
+    if (!next || !/[a-z]/i.test(next)) {
+      index = start + 1
+      continue
+    }
+
+    let quote: '"' | "'" | null = null
+    let end = start + 1
+    while (end < html.length) {
+      const char = html[end]
+      if (quote) {
+        if (char === quote) quote = null
+      } else if (char === '"' || char === "'") {
+        quote = char
+      } else if (char === ">") {
+        break
+      }
+      end += 1
+    }
+
+    const source = html.slice(start, end < html.length ? end + 1 : html.length)
+    const name = /^<([a-z][^\s/>]*)/i.exec(source)?.[1]?.toLowerCase()
+    if (name) tags.push({ name, source })
+    index = end < html.length ? end + 1 : html.length
+  }
+
+  return tags
+}
+
 function attributePattern(attribute: string): RegExp {
   const escapedAttribute = attribute.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   return new RegExp(
@@ -104,6 +146,10 @@ function hasAttribute(tag: string, attribute: string): boolean {
   )
 }
 
+function hasInlineEventAttribute(tag: string): boolean {
+  return /(?:^|[\s<])on[a-z]+\s*=/i.test(tag)
+}
+
 function srcsetHasExternalUrl(value: string): boolean {
   return value
     .split(",")
@@ -119,12 +165,12 @@ function tagHasExternalAttribute(tag: string, attribute: string): boolean {
 }
 
 function includesExternalResourceLoad(html: string): boolean {
-  for (const [tagName, attributes] of Object.entries(EXTERNAL_RESOURCE_ATTRIBUTES)) {
-    const tagPattern = new RegExp(`<${tagName}\\b[^>]*>`, "gi")
-    for (const match of html.matchAll(tagPattern)) {
-      if (attributes.some((attribute) => tagHasExternalAttribute(match[0], attribute))) {
-        return true
-      }
+  const tags = scanHtmlTags(html)
+  for (const tag of tags) {
+    const attributes = EXTERNAL_RESOURCE_ATTRIBUTES[tag.name]
+    if (!attributes) continue
+    if (attributes.some((attribute) => tagHasExternalAttribute(tag.source, attribute))) {
+      return true
     }
   }
   return false
@@ -159,8 +205,8 @@ function includesExternalCssLoad(html: string): boolean {
   for (const match of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
     if (cssContainsExternalNetworkLoad(match[1] ?? "")) return true
   }
-  for (const match of html.matchAll(/<[a-z][^>]*>/gi)) {
-    const style = attributeValue(match[0], "style")
+  for (const tag of scanHtmlTags(html)) {
+    const style = attributeValue(tag.source, "style")
     if (style && cssContainsExternalNetworkLoad(style)) return true
   }
   return false
@@ -192,27 +238,29 @@ function hasOnlyOwnedDeckNavigationScript(input: {
 }
 
 function includesActiveNavigationBypass(html: string): boolean {
-  return Array.from(html.matchAll(/<[a-z][^>]*>/gi)).some((match) => {
-    const tag = match[0]
-    if (hasAttribute(tag, "srcdoc") || hasAttribute(tag, "ping")) return true
+  return scanHtmlTags(html).some((tag) => {
+    if (hasAttribute(tag.source, "srcdoc") || hasAttribute(tag.source, "ping")) {
+      return true
+    }
 
-    const tagName = /^<([a-z][^\s/>]*)/i.exec(tag)?.[1]?.toLowerCase()
-    if (tagName === "meta") {
-      const httpEquiv = attributeValue(tag, "http-equiv")?.trim().toLowerCase()
+    if (tag.name === "meta") {
+      const httpEquiv = attributeValue(tag.source, "http-equiv")
+        ?.trim()
+        .toLowerCase()
       if (httpEquiv === "refresh") return true
     }
 
     return ["action", "formaction"].some((attribute) => {
-      const value = attributeValue(tag, attribute)
+      const value = attributeValue(tag.source, attribute)
       return Boolean(value && (externalUrl(value) || /\/api\//i.test(value)))
     })
   })
 }
 
 function includesForbiddenRuntimeAccess(html: string): boolean {
-  return Array.from(html.matchAll(/<[a-z][^>]*>/gi)).some((match) =>
+  return scanHtmlTags(html).some((tag) =>
     ["href", "src", "action", "formaction"].some((attribute) =>
-      /\/api\//i.test(attributeValue(match[0], attribute) ?? "")
+      /\/api\//i.test(attributeValue(tag.source, attribute) ?? "")
     )
   )
 }
@@ -243,22 +291,24 @@ export function validateStaticHtml(input: {
     )
   }
 
-  if (/<script\b[^>]*\bsrc\s*=/i.test(input.html)) {
+  const tags = scanHtmlTags(input.html)
+
+  if (tags.some((tag) => tag.name === "script" && hasAttribute(tag.source, "src"))) {
     return error(
       "static_artifact_invalid_html",
       "Static HTML must not include external script tags."
     )
   }
 
-  if (/<base\b[^>]*>/i.test(input.html)) {
+  if (tags.some((tag) => tag.name === "base")) {
     return error(
       "static_artifact_invalid_html",
       "Static HTML must not include base tags."
     )
   }
 
-  for (const match of input.html.matchAll(/<link\b[^>]*>/gi)) {
-    const href = attributeValue(match[0], "href")
+  for (const tag of tags.filter((candidate) => candidate.name === "link")) {
+    const href = attributeValue(tag.source, "href")
     if (href && externalUrl(href)) {
       return error(
         "static_artifact_invalid_html",
@@ -267,7 +317,7 @@ export function validateStaticHtml(input: {
     }
   }
 
-  if (/\son[a-z]+\s*=/i.test(input.html)) {
+  if (tags.some((tag) => hasInlineEventAttribute(tag.source))) {
     return error(
       "static_artifact_invalid_html",
       "Static HTML must not include inline event handler attributes."

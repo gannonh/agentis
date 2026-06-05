@@ -107,6 +107,28 @@ describe("static HTML validator", () => {
     }
   })
 
+  it("rejects dangerous attributes after quoted tag delimiters", () => {
+    const cases = [
+      '<iframe title=">" srcdoc="<p>Hello</p>"></iframe>',
+      '<a title=">" ping="https://evil.example/p" href="#x">x</a>',
+      '<form title=">" action="https://evil.example/post"><button>Send</button></form>',
+      '<meta title=">" http-equiv="refresh" content="0;url=https://evil.example">',
+      '<img title=">" src="https://evil.example/x.png" alt="x">',
+      '<link title=">" href="https://evil.example/x.css">',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
   it("rejects external hrefs on link elements because they load network dependencies", () => {
     const cases = [
       '<link rel="preload" href="https://cdn.example/font.woff2" as="font">',
