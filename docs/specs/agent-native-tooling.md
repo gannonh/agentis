@@ -126,14 +126,9 @@ tests and local wiring.
 
 Spec: `docs/specs/_done/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
 
-Decision record: `docs/adr/0003-persistent-documents-library-primitive.md`
+Decision record: `docs/adr/0003-persistent-documents-library-primitive.md` (superseded by `docs/adr/0005-use-artifact-as-library-primitive.md` for the Library primitive decision)
 
-V4.2 implemented the first Data-category slice: persistent markdown documents.
-Agentis uses one durable Library primitive named Document across product, API,
-backend, shared schemas, runtime tools, tests, and docs. Documents support
-thread, project, and global visibility, version history, find/read/create/update
-runtime tools, targeted markdown section updates, real download paths, and
-Library Type, Source, and Scope filters.
+V4.2 implemented persistent markdown documents. That implementation currently uses Document as the durable Library primitive. The approved follow-up refactor changes the durable Library primitive to Artifact and narrows Document to the markdown-specific Artifact subtype. Documents retain thread, project, and global visibility, version history, find/read/create/update runtime tools, targeted markdown section updates, real download paths, and Library Type, Source, and Scope filters.
 
 The document workspace follow-on is implemented in
 `docs/specs/2026-06-01-document-workspace-design.md`: documents open at
@@ -322,7 +317,7 @@ boundary. Local-container execution improves local isolation with Docker runtime
 
 controls, but production-grade sandboxing remains future work.
 
-The document storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents.
+The current document storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents. The approved Artifact refactor will generalize this Library storage model so markdown documents, webpages, slides, and future artifact types share management while keeping type-specific behavior separate.
 
 ## Existing tool and persistence model
 
@@ -407,7 +402,7 @@ Agentis should model workspace ownership through agents, not projects.
 - Mental model: an agent's home.
 - Owns many threads or sessions.
 - Has one storage/runtime backend.
-- Initially backed by a filesystem directory with durable files, local SQLite data, documents, and a process runtime for code or commands.
+- Initially backed by a filesystem directory with durable files, local SQLite data, Library artifacts, and a process runtime for code or commands.
 - Later backed by pluggable production storage/runtime implementations such as containers, VMs, Cloudflare, Postgres, object storage, or external sandbox providers.
 - Persists with the agent lifecycle. Archiving an agent archives its workspace.
 
@@ -453,9 +448,10 @@ This inventory records the native tooling in Hyperagent, the platform Agentis is
 
 ### Interactive
 
-- **Webpages and Slides:** Generate styled webpages and slide presentations.
+- **Library Artifact refactor:** Approved prerequisite for interactive artifact work. Artifact becomes the durable Library primitive; Document becomes the markdown Artifact subtype; webpage, slides, and likely hyperapp become sibling Artifact types.
+- **Webpages and Slides:** Generate styled webpages and slide presentations as Artifact type `webpage` and Artifact type `slides`, not document types.
 - **Slides:** Create slide presentations. Polished mode uses AI to render each slide as a visual.
-- **HyperApps:** Create interactive HyperApps with custom UI, persistent state, and direct tool access. Supports forms, wizards, and visual tools.
+- **HyperApps:** Create interactive HyperApps with custom UI, persistent state, and direct tool access. Supports forms, wizards, and visual tools. The approved spec models HyperApps as Artifact type `hyperapp` unless Build finds a runtime/security reason for a linked subtype table.
 
 ### Media
 

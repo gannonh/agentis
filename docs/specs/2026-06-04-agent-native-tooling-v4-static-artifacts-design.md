@@ -8,19 +8,19 @@ Approved.
 
 Add the next Interactive-category V4 slice by giving Agentis agents a native capability for static generated outputs: scrollable webpages, HTML slide decks, and polished image slide decks.
 
-Hyperagent exposes overlapping Webpages-and-Slides and Slides entries. Agentis should model this as one native capability with format-specific renderers. The user-facing output is a Document with `documentType: "webpage"` or `documentType: "slides"`; the native capability owns generation mode, design guidance, validation, and timeline evidence.
+Hyperagent exposes overlapping Webpages-and-Slides and Slides entries. Agentis should model this as one native capability with format-specific renderers. The user-facing output is an Artifact with `type: "webpage"` or `type: "slides"`; the native capability owns generation mode, design guidance, validation, and timeline evidence.
 
 Static generated outputs are frozen at creation time. They may include links, static layout, embedded assets, charts, and slide navigation, but they do not have runtime Agentis tool access. Interactive tools with persistent state and direct tool access belong to the HyperApp runtime spec.
 
 ## Source of truth
 
 - Roadmap: `docs/specs/agent-native-tooling.md`, V4 Interactive category.
-- Domain language: `CONTEXT.md`, especially Document as the durable Library primitive.
-- Persistent document decision: `docs/adr/0003-persistent-documents-library-primitive.md`.
+- Domain language: `CONTEXT.md`, especially Artifact as the durable Library primitive and Document as the markdown artifact subtype.
+- Artifact primitive decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.
 - Native tool permission decision: `docs/adr/0002-version-native-tool-permissions-with-agent-configuration.md`.
 - HyperApp adjacent spec: `docs/specs/2026-06-04-agent-native-tooling-v4-hyperapps-design.md`.
 - Existing document implementation:
-  - `packages/shared/src/document-schemas.ts`
+  - `packages/shared/src/artifact-schemas.ts`
   - `apps/api/src/documents/document-service.ts`
   - `apps/api/src/documents/local-document-storage.ts`
   - `apps/api/src/repositories/document-repository.ts`
@@ -33,20 +33,24 @@ Static generated outputs are frozen at creation time. They may include links, st
 
 ## Current state
 
-Agentis already has a Document primitive with versioning, visibility scope, provenance, local storage, Library filters, detail routes, downloads, and runtime document tools. The shared document type enum already includes `webpage` and `slides`, and seeded data includes examples of each type.
+Agentis currently has a Document-centered Library implementation. The required first dependency is the Artifact domain refactor in `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`, which makes Artifact the durable Library primitive and Document the markdown-specific artifact subtype. After that refactor, webpages and slides should be sibling artifact types with shared versioning, visibility scope, provenance, local storage, Library filters, detail routes, and downloads.
 
 Agentis does not yet have:
 
 - Native runtime tools for generating webpages or slide decks.
 - A design guidance layer for webpage and deck generation.
-- Static HTML validation and preview rendering for webpage Documents.
+- Static HTML validation and preview rendering for webpage Artifacts.
 - Deck preview rendering for HTML slides.
 - Polished image slide generation or slide asset metadata.
 - Timeline cards specialized for generated webpages and slides.
 
 ## Naming decision
 
-Use **Document** for durable storage and Library surfaces. Use **static generated output** or **static artifact** only when describing the generation capability category and runtime tool behavior. Do not introduce a second top-level durable primitive that competes with Document.
+Use **Artifact** for durable storage and Library surfaces. Documents are only the markdown artifact subtype. Webpages and slides are sibling artifact types, so this spec depends on the Library Artifact domain refactor before Build.
+
+## Dependency
+
+Build is blocked on `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`. Do not implement webpages or slides as Document types. They must be Artifacts with `type = "webpage"` and `type = "slides"`, sibling to `type = "document"`.
 
 ## Product scope
 
@@ -64,8 +68,8 @@ Use **Document** for durable storage and Library surfaces. Use **static generate
   - `html` for webpages and slides.
   - `polishedImage` for slides only.
 - Agentis-owned theme presets and bespoke style brief metadata.
-- Versioned Document persistence for generated webpage and slides outputs.
-- Static-artifact metadata persisted with the Document or a companion table keyed by `documentId`.
+- Versioned Artifact persistence for generated webpage and slides outputs.
+- Static-artifact metadata persisted with the Artifact or a companion table keyed by `artifactId`.
 - Webpage preview route support for static HTML.
 - Slide deck preview route support for HTML slides and polished image slides.
 - Timeline cards with bounded metadata and stable relative links.
@@ -87,8 +91,8 @@ Use **Document** for durable storage and Library surfaces. Use **static generate
 ## Acceptance criteria
 
 1. Agents can create a static generated output through a native runtime tool with `artifactType: "webpage" | "slides"` and `renderMode: "html" | "polishedImage"`; `polishedImage` is valid only when `artifactType` is `"slides"`.
-2. Generated outputs are persisted as versioned Documents, or as Document-backed records, with provenance, visibility scope, current version, metadata, and stable relative `viewPath` values.
-3. Webpages render as scrollable static HTML Documents with no runtime Agentis tool access.
+2. Generated outputs are persisted as versioned Artifacts with `type = "webpage"` or `type = "slides"`, provenance, visibility scope, current version, metadata, and stable relative `viewPath` values.
+3. Webpages render as scrollable static HTML Artifacts with no runtime Agentis tool access.
 4. HTML slide decks render as navigable full-screen decks with keyboard navigation, slide counter, and stable preview/detail route.
 5. Polished slide decks persist one generated visual per slide, render as a navigable deck, and expose provider, cost, or unavailable errors clearly.
 6. The tool contract includes templating and design guidance: curated theme presets, format-specific constraints, and optional bespoke style briefs.
@@ -107,14 +111,14 @@ flowchart TD
   Catalog --> Tools[Static artifact tools]
   Tools --> Generator[Static generation service]
   Generator --> Design[Design guidance registry]
-  Generator --> DocumentService[Document service]
-  DocumentService --> DocumentRepo[Document repository]
-  DocumentService --> DocumentStorage[Document storage]
+  Generator --> ArtifactService[Artifact service]
+  ArtifactService --> ArtifactRepo[Artifact repository]
+  ArtifactService --> ArtifactStorage[Artifact storage]
   Generator --> Metadata[Static artifact metadata]
   Generator --> ImageProvider[Image generation provider]
   Tools --> Timeline[Native timeline payload]
   Timeline --> Card[Thread timeline card]
-  Card --> Detail[Document workspace/detail route]
+  Card --> Detail[Artifact workspace/detail route]
   Detail --> WebPreview[Static webpage preview]
   Detail --> HtmlDeck[HTML deck renderer]
   Detail --> ImageDeck[Polished image deck renderer]
@@ -129,17 +133,17 @@ Server responsibilities:
 - Generate or accept generated static bundles from the model/tool pipeline.
 - Sanitize and bound HTML/CSS/JS before persistence.
 - Orchestrate polished image generation per slide when requested.
-- Persist generated output as a Document version.
-- Persist static-artifact metadata with the Document or in a companion table keyed by `documentId`.
+- Persist generated output as an Artifact version.
+- Persist static-artifact metadata with the Artifact or in a companion table keyed by `artifactId`.
 - Normalize timeline payloads without embedding full HTML or image data.
 
 Web responsibilities:
 
 - Render specialized timeline cards for generated webpages and slides.
-- Reuse the Document workspace/detail route where possible.
-- Add static webpage preview for `documentType: "webpage"`.
-- Add deck preview for `documentType: "slides"` with `renderMode: "html"`.
-- Add image-backed deck preview for `documentType: "slides"` with `renderMode: "polishedImage"`.
+- Reuse the Artifact workspace/detail route where possible.
+- Add static webpage preview for Artifact `type: "webpage"`.
+- Add deck preview for Artifact `type: "slides"` with `renderMode: "html"`.
+- Add image-backed deck preview for Artifact `type: "slides"` with `renderMode: "polishedImage"`.
 - Show provider unavailable, invalid bundle, and missing asset states.
 
 Shared schema responsibilities:
@@ -174,7 +178,7 @@ Output:
 
 ```ts
 type CreateStaticArtifactOutput = {
-  documentId: string
+  artifactId: string
   title: string
   artifactType: "webpage" | "slides"
   renderMode: "html" | "polishedImage"
@@ -194,7 +198,7 @@ Input:
 
 ```ts
 type EditStaticArtifactInput = {
-  documentId: string
+  artifactId: string
   contentBrief: string
   changeSummary: string
   theme?: StaticArtifactTheme
@@ -206,7 +210,7 @@ Output:
 
 ```ts
 type EditStaticArtifactOutput = {
-  documentId: string
+  artifactId: string
   title: string
   artifactType: "webpage" | "slides"
   renderMode: "html" | "polishedImage"
@@ -217,7 +221,7 @@ type EditStaticArtifactOutput = {
 }
 ```
 
-`editStaticArtifact` creates a new Document version. It must reject non-static-artifact Documents and preserve prior versions.
+`editStaticArtifact` creates a new Artifact version. It must reject unsupported Artifact types and preserve prior versions.
 
 ### `findStaticArtifacts`
 
@@ -238,7 +242,7 @@ Output:
 ```ts
 type FindStaticArtifactsOutput = {
   items: Array<{
-    documentId: string
+    artifactId: string
     title: string
     artifactType: "webpage" | "slides"
     renderMode: "html" | "polishedImage"
@@ -252,7 +256,7 @@ type FindStaticArtifactsOutput = {
 }
 ```
 
-This tool supports follow-up edits and prevents agents from guessing document ids.
+This tool supports follow-up edits and prevents agents from guessing artifact ids.
 
 ## Templating and design guidance
 
@@ -341,13 +345,13 @@ Generation prompts should include artifact type, render mode, audience, purpose,
 
 ## Data model and persistence
 
-Reuse Document as the durable primitive:
+Use Artifact as the durable primitive after the artifact domain refactor:
 
-- `documentType`: `webpage` or `slides`.
-- `contentFormat`: `text` for HTML outputs, `binary` or metadata-backed text for polished slide manifests depending on current Document constraints.
+- `type`: `webpage` or `slides`.
+- `contentFormat`: `html` for HTML outputs, `manifest` or `binary` for polished slide manifests depending on the Artifact storage constraints selected during the refactor.
 - `visibilityScope`: `thread | project | global`.
-- Document versions preserve prior generated outputs and edit history.
-- `viewPath` should resolve to the Document workspace/detail route or a route nested under it.
+- Artifact versions preserve prior generated outputs and edit history.
+- `viewPath` should resolve to the Artifact workspace/detail route or a route nested under it.
 - `downloadPath` should return the persisted HTML or a manifest package when supported.
 
 Static-artifact metadata should include:
@@ -364,13 +368,13 @@ Static-artifact metadata should include:
 - `safetyValidationResult`
 - `generationWarnings`
 
-If Document metadata and version records cannot cleanly represent polished slide images, add a companion table keyed by `documentId`:
+If Artifact metadata and version records cannot cleanly represent polished slide images, add a companion table keyed by `artifactId`:
 
 - `static_artifacts`
 - `static_artifact_versions`
 - `static_artifact_assets`
 
-The companion table should not become a competing durable primitive. Document remains the item users see in Library and project context.
+The companion table should not become a competing durable primitive. Artifact remains the item users see in Library and project context.
 
 ## Safety and validation
 
@@ -412,7 +416,7 @@ Use visible, specific error codes:
 - `static_artifact_image_generation_failed`
 - `static_artifact_asset_missing`
 
-Timeline rendering should show the attempted action, title or document id when safe, artifact type, render mode, error code, and concise remediation.
+Timeline rendering should show the attempted action, title or artifact id when safe, artifact type, render mode, error code, and concise remediation.
 
 ## UI behavior
 
@@ -428,7 +432,7 @@ Thread timeline cards should show:
 - Stable relative link.
 - Error code and remediation when failed.
 
-Document workspace/detail route should support:
+Artifact workspace/detail route should support:
 
 - Static webpage preview.
 - HTML slide deck preview.
@@ -439,7 +443,7 @@ Document workspace/detail route should support:
 - Invalid or unsafe content state.
 - Provider unavailable state for polished mode.
 
-Library filtering should continue to work through existing `documentType` values.
+Library filtering should treat `document`, `webpage`, and `slides` as sibling Artifact types.
 
 ## Implementation phases
 
@@ -448,12 +452,12 @@ Library filtering should continue to work through existing `documentType` values
 Likely files:
 
 - `packages/shared/src/native-tools.ts`
-- `packages/shared/src/document-schemas.ts`
+- `packages/shared/src/artifact-schemas.ts`
 - `packages/shared/src/schemas.ts`
 - New `packages/shared/src/static-artifact-schemas.ts`
 - `apps/api/src/native-tools/native-tool-capability-catalog.ts`
 - New `apps/api/src/static-artifacts/design-guidance.ts`
-- Document metadata helpers or companion repository files if needed.
+- Artifact metadata helpers or companion repository files if needed.
 
 Build tasks:
 
@@ -479,7 +483,7 @@ Likely files:
 Build tasks:
 
 - Implement `createStaticArtifact`, `editStaticArtifact`, and `findStaticArtifacts`.
-- Persist generated outputs through Document service/versioning.
+- Persist generated outputs through Artifact service/versioning.
 - Add static HTML validation and bundle bounds.
 - Add polished image provider availability checks.
 - Normalize bounded timeline payloads.
@@ -491,7 +495,7 @@ Acceptance tie-ins: 1, 2, 5, 7, 8, 9.
 Likely files:
 
 - `apps/web/src/components/thread/run-timeline.tsx`
-- Document workspace route and components under `apps/web/src/components/documents/`.
+- Artifact workspace route and components under `apps/web/src/components/artifacts/`.
 - New components under `apps/web/src/components/static-artifacts/` if separation helps.
 - Web API clients under `apps/web/src/lib/` if needed.
 
@@ -530,7 +534,7 @@ Acceptance tie-ins: all.
 Required automated checks:
 
 - Shared schema tests for tool inputs, outputs, metadata, theme presets, and mode validation.
-- Service tests for Document-backed persistence, edit versioning, invalid modes, unsafe HTML, oversized bundles, and polished provider unavailable state.
+- Service tests for Artifact-backed persistence, edit versioning, invalid modes, unsafe HTML, oversized bundles, and polished provider unavailable state.
 - Native capability catalog tests for permission-enabled and permission-denied behavior.
 - Tool tests for create, edit, find, timeline payload summaries, and error payloads.
 - Route/component tests for webpage preview, HTML deck preview, polished image deck preview, missing assets, and provider unavailable states.
@@ -554,7 +558,7 @@ Manual UAT:
 
 1. Start the app with mock runtime enabled when live credentials are unavailable.
 2. Create or seed an agent with the `staticArtifacts` native tool permission.
-3. Ask the agent to create a themed webpage and confirm it appears as a webpage Document with a timeline card and preview route.
+3. Ask the agent to create a themed webpage and confirm it appears as a webpage Artifact with a timeline card and preview route.
 4. Ask the agent to create an HTML slide deck and confirm keyboard navigation, slide counter, version metadata, and preview route.
 5. Ask the agent to create a polished image slide deck without live image credentials and confirm a provider-unavailable failure is visible.
 6. If live image credentials are available, create a small polished slide deck and confirm one persisted visual per slide plus deck navigation.
@@ -563,7 +567,7 @@ Manual UAT:
 
 ## Risks and mitigations
 
-- The word artifact conflicts with Agentis Document language. Mitigate by keeping Document as the durable primitive and using static artifact only for capability/tool naming.
+- Artifact refactor must land first. Mitigate by blocking this spec on `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md` and verifying `webpage`/`slides` are sibling artifact types.
 - HTML generation can introduce unsafe runtime behavior. Mitigate with strict validation, bounds, CSP where available, and no Agentis runtime bridge.
 - Polished image mode depends on provider availability and cost. Mitigate with explicit availability checks, mock provider tests, and visible provider errors.
 - Slide decks and webpages can diverge into duplicated implementations. Mitigate with shared tool contracts, metadata, timeline cards, and preview shell boundaries.
@@ -583,14 +587,14 @@ Manual UAT:
 
 ## Build handoff
 
-Approved direction: unified static generated output runtime backed by Documents.
+Approved direction: unified static generated output runtime backed by Artifacts.
 
 Build should implement the smallest end-to-end slice that satisfies the acceptance criteria:
 
 1. Add `staticArtifacts` native permission and tool schemas.
 2. Add theme preset/design guidance registry.
 3. Add static generation service and HTML validation.
-4. Persist webpage and slides outputs as versioned Documents with static-artifact metadata.
+4. Persist webpage and slides outputs as versioned Artifacts with static-artifact metadata.
 5. Add polished image slide provider availability handling and mock/provider-unavailable test path.
 6. Add create, edit, and find runtime tools.
 7. Add timeline cards and preview rendering for webpage, HTML slides, and polished image slides.

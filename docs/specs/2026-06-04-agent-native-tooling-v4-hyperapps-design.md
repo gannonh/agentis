@@ -15,14 +15,14 @@ This spec targets the HyperApp artifact runtime primitive. Product-specific app 
 - Roadmap: `docs/specs/agent-native-tooling.md`, V4 Interactive category.
 - Domain language: `CONTEXT.md`.
 - Native tool permission decision: `docs/adr/0002-version-native-tool-permissions-with-agent-configuration.md`.
-- Persistent document/versioning precedent: `docs/adr/0003-persistent-documents-library-primitive.md`.
+- Artifact primitive decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.
 - Existing native runtime plumbing:
   - `apps/api/src/runtime/run-executor.ts`
   - `apps/api/src/native-tools/native-tool-capability-catalog.ts`
   - `apps/api/src/native-tools/native-tool-payload.ts`
   - `apps/api/src/repositories/run-step-repository.ts`
   - `apps/web/src/components/thread/run-timeline.tsx`
-- Existing document storage and versioning precedent:
+- Existing artifact/document storage and versioning precedent:
   - `apps/api/src/documents/document-service.ts`
   - `apps/api/src/documents/local-document-storage.ts`
   - `apps/api/src/repositories/document-repository.ts`
@@ -31,16 +31,20 @@ This spec targets the HyperApp artifact runtime primitive. Product-specific app 
 
 ## Current state
 
-Agentis already supports the core runtime path needed for this slice:
+Agentis already supports the core runtime path needed for this slice, but Build is blocked on the Artifact domain refactor in `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`:
 
 - Native tools are constructed during `RunExecutor` execution and merged into the AI SDK `streamText` tool map.
 - Tool calls and results are persisted as assistant message parts and run steps.
 - Native run-step payloads are normalized for timeline rendering.
 - Agent-scoped native tool permissions are versioned with agent configuration.
 - Web search and documents already use the native capability catalog.
-- Documents provide a useful precedent for durable records, version history, local storage, relative `viewPath` and `downloadPath` values, Library routes, and timeline evidence.
+- The Artifact refactor provides the durable Library primitive for records, version history, local storage, relative `viewPath` values, Library routes, and timeline evidence. Documents remain the markdown artifact subtype.
 
-Agentis does not yet have an interactive app artifact model, embedded app renderer, HyperApp-specific persistence, or runtime bridge exposed to app code.
+Agentis does not yet have HyperApp artifact subtype behavior, embedded app rendering, HyperApp-specific state persistence, or runtime bridge exposure to app code.
+
+## Dependency
+
+Build is blocked on `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`. HyperApps should be implemented as Artifact `type = "hyperapp"` unless Build discovers a specific runtime/security constraint that requires a separate primitive linked to an Artifact. Any separate primitive must still expose shared Library scope, provenance, versioning, and management through the Artifact layer.
 
 ## Product scope
 
@@ -48,10 +52,10 @@ Agentis does not yet have an interactive app artifact model, embedded app render
 
 - A native tool permission id for HyperApps, likely `hyperApps`.
 - Runtime tools for creating, editing, and finding HyperApps.
-- API persistence for HyperApp identity, versions, provenance, current version, and app state metadata.
+- API persistence for Artifact `type = "hyperapp"`, versions, provenance, current version, and app state metadata.
 - Local storage for app code bundles when the bundle size makes filesystem storage more appropriate than SQLite fields.
 - Thread timeline rendering for HyperApp tool calls and results.
-- A stable app detail route, likely `/hyper-apps/:hyperAppId`.
+- A stable app detail route, likely `/hyper-apps/:artifactId`.
 - A constrained embedded runtime for rendering the current app version.
 - A minimal injected `HyperApp` bridge for the first slice.
 - Permission denial, provider/runtime unavailability, invalid bundle, and storage failure handling.
@@ -70,33 +74,33 @@ Agentis does not yet have an interactive app artifact model, embedded app render
 
 ## Acceptance criteria
 
-1. Agents can create a HyperApp through a native runtime tool that stores the app definition, initial version, provenance, and ownership metadata.
-2. Agents can edit an existing HyperApp through a native runtime tool that creates a new version while preserving prior versions.
+1. Agents can create a HyperApp through a native runtime tool that stores an Artifact with `type = "hyperapp"`, the app definition, initial version, provenance, and ownership metadata.
+2. Agents can edit an existing HyperApp Artifact through a native runtime tool that creates a new Artifact version while preserving prior versions.
 3. HyperApps render in the thread timeline as interactive cards with bounded metadata and a stable app/detail link.
 4. HyperApp runtime access is gated by an agent-scoped native tool permission and fails visibly when unavailable.
 5. HyperApps can persist user or runtime state through an approved Agentis-owned persistence boundary, either a dedicated app state store or a table-backed store if table infrastructure exists by Build time.
 6. The first runtime API surface is minimal: relative Agentis API calls plus a small injected `HyperApp` bridge. Maps, agent invocation, broad table APIs, browser automation, and deep tool calls remain deferred.
 7. Build includes API, shared schema, persistence, web rendering, and tests for create, edit, render, permission denial, invalid bundle rejection, and version history.
-8. Verify can demonstrate a thread-created HyperApp, open its rendered card or detail route, edit it into a new version, and inspect previous version metadata.
+8. Verify can demonstrate a thread-created HyperApp Artifact, open its rendered card or detail route, edit it into a new version, and inspect previous version metadata.
 9. Verify can demonstrate permission denial by running without the HyperApp native tool permission and observing a visible failure path rather than silent omission.
 10. Out-of-scope capabilities are not implemented in this slice unless the user explicitly expands the approved spec.
 
 ## Architecture
 
-HyperApps should be an Agentis-owned native artifact runtime with clear server, shared schema, and web boundaries.
+HyperApps should be an Agentis-owned Artifact subtype with an interactive runtime and clear server, shared schema, and web boundaries.
 
 ```mermaid
 flowchart TD
   AgentRun[Workspace-scoped run] --> Catalog[Native capability catalog]
   Catalog --> Tools[HyperApp runtime tools]
   Tools --> Service[HyperApp service]
-  Service --> Repo[HyperApp repository]
+  Service --> ArtifactService[Artifact service]
   Service --> Storage[Local app bundle storage]
-  Repo --> DB[(SQLite)]
+  ArtifactService --> DB[(SQLite)]
   Storage --> Files[(AGENTIS_STORAGE_ROOT)]
   Tools --> Timeline[Run step payload]
   Timeline --> Card[Thread timeline HyperApp card]
-  Card --> Detail[/hyper-apps/:hyperAppId]
+  Card --> Detail[/hyper-apps/:artifactId]
   Detail --> Runtime[Embedded constrained runtime]
   Runtime --> Bridge[Injected HyperApp bridge]
   Bridge --> Api[Relative Agentis APIs]
@@ -107,13 +111,13 @@ Server responsibilities:
 - Resolve whether the current agent configuration permits HyperApp tools.
 - Build `createHyperApp`, `editHyperApp`, and `findHyperApps` only when permitted.
 - Validate bundle shape and size before persistence.
-- Persist app identity, versions, provenance, current version, and state metadata.
+- Persist HyperApps as Artifact `type = "hyperapp"` with versions, provenance, current version, and state metadata.
 - Normalize tool outputs into bounded native timeline payloads.
 - Serve detail and version API responses through relative routes.
 
 Shared schema responsibilities:
 
-- Define HyperApp records, public DTOs, version summaries, tool inputs, tool outputs, and timeline payloads.
+- Define HyperApp Artifact metadata, public DTOs, version summaries, tool inputs, tool outputs, and timeline payloads.
 - Export the native tool permission id from the shared native tool schema area.
 - Keep the model-visible tool output stable and provider-independent.
 
@@ -146,7 +150,7 @@ Expected output shape:
 
 ```ts
 type CreateHyperAppOutput = {
-  hyperAppId: string
+  artifactId: string
   title: string
   version: number
   viewPath: string
@@ -163,7 +167,7 @@ Expected input shape:
 
 ```ts
 type EditHyperAppInput = {
-  hyperAppId: string
+  artifactId: string
   bundle: HyperAppBundleInput
   changeSummary: string
 }
@@ -173,7 +177,7 @@ Expected output shape:
 
 ```ts
 type EditHyperAppOutput = {
-  hyperAppId: string
+  artifactId: string
   title: string
   version: number
   previousVersion: number
@@ -201,7 +205,7 @@ Expected output shape:
 ```ts
 type FindHyperAppsOutput = {
   items: Array<{
-    hyperAppId: string
+    artifactId: string
     title: string
     description?: string
     version: number
@@ -213,7 +217,7 @@ type FindHyperAppsOutput = {
 }
 ```
 
-This tool supports follow-up edit requests and prevents agents from guessing app ids.
+This tool supports follow-up edit requests and prevents agents from guessing artifact ids.
 
 ## Bundle model
 
@@ -239,9 +243,9 @@ Build may refine this shape if an embedded runtime library requires a different 
 
 ## Data model
 
-Add `hyper_apps`:
+Extend Artifact for HyperApps. If Artifact metadata cannot cleanly represent runtime state references, add `hyper_apps` keyed by `artifactId`:
 
-- `id`
+- `artifactId`
 - `title`
 - `description`
 - `visibilityScope`: `thread | project | global`
@@ -257,10 +261,10 @@ Add `hyper_apps`:
 - `createdAt`
 - `updatedAt`
 
-Add `hyper_app_versions`:
+Extend Artifact versions for HyperApp bundles. If needed, add `hyper_app_versions` keyed by `artifactVersionId`:
 
 - `id`
-- `hyperAppId`
+- `artifactId`
 - `version`
 - `bundleStorageKey` or bounded bundle columns
 - `bundleHash`
@@ -278,8 +282,8 @@ State persistence:
 
 Visibility:
 
-- Prefer `thread`, `project`, and `global` scope to match Document behavior when the same policy checks apply cleanly.
-- If Build finds scope policy gaps, start with thread scope and explicitly defer broader sharing.
+- Prefer `thread`, `project`, and `global` scope through the shared Artifact scope policy.
+- If Build finds Artifact scope policy gaps, start with thread scope and explicitly defer broader sharing.
 - Provenance remains separate from visibility.
 
 ## Runtime and safety
@@ -353,14 +357,14 @@ Likely files:
 - `packages/shared/src/schemas.ts`
 - New `packages/shared/src/hyper-app-schemas.ts`
 - `apps/api/src/db/schema.ts`
-- New `apps/api/src/repositories/hyper-app-repository.ts`
+- Artifact repository updates plus optional `apps/api/src/repositories/hyper-app-repository.ts` for subtype metadata
 - New `apps/api/src/hyper-apps/hyper-app-service.ts`
 - New `apps/api/src/hyper-apps/local-hyper-app-storage.ts`
 
 Build tasks:
 
 - Add shared HyperApp schemas and native permission id.
-- Add database tables and repository methods for create, version append, lookup, list, and current version resolution.
+- Add Artifact repository/service methods for create, version append, lookup, list, and current version resolution, plus HyperApp subtype metadata as needed.
 - Add local bundle storage if code bundles exceed bounded SQLite suitability.
 - Add service validation for bundle size, ownership, versioning, visibility, and state reference.
 
@@ -456,7 +460,7 @@ Manual UAT:
 2. Create or seed an agent with the HyperApp native tool permission.
 3. Ask the agent in a thread to create a small interactive HyperApp, such as a two-field calculator with saved state.
 4. Confirm the run timeline shows a HyperApp card with a stable detail link.
-5. Open `/hyper-apps/:hyperAppId` and confirm the app renders in the embedded runtime.
+5. Open `/hyper-apps/:artifactId` and confirm the app renders in the embedded runtime.
 6. Save state through the app, reload, and confirm state persists if state persistence is included in the Build.
 7. Ask the agent to edit the HyperApp.
 8. Confirm the detail route shows the new current version and previous version metadata.
@@ -467,7 +471,7 @@ Manual UAT:
 - Embedded app security can become the largest risk. Mitigate by requiring iframe sandboxing, CSP, strict bridge message validation, and no arbitrary external network access in the first slice.
 - Runtime API scope can expand quickly. Mitigate by limiting the first bridge to state and runtime metadata.
 - Versioned app code and mutable app state can blur. Mitigate with separate version and state stores.
-- Visibility policy may conflict with Document scope assumptions. Mitigate by reusing Document policy only if Build verifies it fits, otherwise ship thread scope first.
+- Visibility policy may conflict with HyperApp runtime needs. Mitigate by using the shared Artifact scope policy only if Build verifies it fits, otherwise ship thread scope first.
 - Timeline payloads may accidentally persist large code bundles. Mitigate by normalizing bounded metadata only.
 
 ## Explicitly deferred work
@@ -489,8 +493,8 @@ Approved direction: Core runtime first.
 
 Build should implement the smallest end-to-end HyperApp artifact runtime that satisfies the acceptance criteria:
 
-1. Add shared schemas and the `hyperApps` native permission id.
-2. Add persistence for HyperApps, immutable versions, and separate state metadata.
+1. Add shared schemas and the `hyperApps` native permission id after the Artifact refactor lands.
+2. Persist HyperApps as Artifact `type = "hyperapp"` with immutable versions and separate state metadata.
 3. Add API/service/repository/storage boundaries with validation and loud failures.
 4. Add runtime tools for create, edit, and find.
 5. Add bounded timeline rendering with stable links.

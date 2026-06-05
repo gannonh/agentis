@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR 0005: Use Artifact as the durable Library primitive](0005-use-artifact-as-library-primitive.md)
 
 ## Context
 

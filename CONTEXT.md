@@ -60,14 +60,22 @@ _Avoid_: Native tool, when the narrower file/workspace meaning is intended
 A native tool that lets an agent search the web for current information during a workspace-scoped run.
 _Avoid_: Search, when specificity matters
 
+**Artifact**:
+The durable Library primitive for uploaded files and agent-generated output. Artifacts have a type such as `document`, `webpage`, `slides`, `hyperapp`, `table`, `image`, `video`, or `other`; thread, project, or global visibility scope; version history; storage; and provenance metadata.
+_Avoid_: Document, when referring to Library-wide behavior or non-markdown outputs
+
+**Artifact type**:
+The subtype of a Library Artifact. `document` means a markdown Document. `webpage` and `slides` are sibling artifact types, not document types.
+_Avoid_: Document type, when describing non-markdown artifacts
+
 **Document**:
-The durable Library primitive for uploaded files and agent-generated markdown or other run output. Documents have thread, project, or global visibility scope; agent, thread, project, and run associations are provenance metadata unless they define the selected visibility boundary.
-_Avoid_: Artifact, Library item, agent-scoped document
+The markdown-specific Artifact subtype. Documents support markdown preview, markdown/code view, section updates, appends, version history, download, source/provenance display, and visibility scope management.
+_Avoid_: Artifact, when specifically referring to markdown document authoring and document runtime tools
 
-**Document workspace**:
-The `/documents/:documentId` work surface for opening a Document from Library, run timeline provenance, or project context. It provides preview, markdown/code view, markdown editing with version history, download, source/provenance display, and visibility scope management.
-_Avoid_: Library preview, when referring to the full document route
+**Artifact workspace**:
+The work surface for opening an Artifact from Library, run timeline provenance, or project context. It provides type-specific preview/edit behavior, version history, download, source/provenance display, and visibility scope management. Markdown Documents may keep the `/documents/:documentId` route as a compatibility workspace.
+_Avoid_: Library preview, when referring to the full artifact route
 
-**Document visibility scope**:
-The access boundary for a Document: `thread`, `project`, or `global`. Scope can change through document workspace/API/tool flows when the target project or thread context is valid; provenance remains visible separately and should not be described as scope.
+**Artifact visibility scope**:
+The access boundary for an Artifact: `thread`, `project`, or `global`. Scope can change through artifact workspace/API/tool flows when the target project or thread context is valid; provenance remains visible separately and should not be described as scope.
 _Avoid_: Source, provenance, agent visibility
