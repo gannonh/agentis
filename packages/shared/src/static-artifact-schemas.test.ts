@@ -147,11 +147,27 @@ describe("static artifact schemas", () => {
       assetReferences: [
         {
           assetId: "asset-1",
-          slideIndex: 0,
+          slideIndex: 1,
           storageKey: "artifacts/artifact-1/v1/slide-1.png",
           mimeType: "image/png",
           sizeBytes: 2048,
           altText: "Opening title slide",
+        },
+        {
+          assetId: "asset-2",
+          slideIndex: 2,
+          storageKey: "artifacts/artifact-1/v1/slide-2.png",
+          mimeType: "image/png",
+          sizeBytes: 2048,
+          altText: "Middle slide",
+        },
+        {
+          assetId: "asset-3",
+          slideIndex: 3,
+          storageKey: "artifacts/artifact-1/v1/slide-3.png",
+          mimeType: "image/png",
+          sizeBytes: 2048,
+          altText: "Closing slide",
         },
       ],
       provider: "mock-image-provider",
@@ -164,7 +180,9 @@ describe("static artifact schemas", () => {
       generationWarnings: ["Slide 2 text was shortened for legibility."],
     })
 
-    expect(metadata.assetReferences[0]?.slideIndex).toBe(0)
+    expect(metadata.assetReferences.map((asset) => asset.slideIndex)).toEqual([
+      1, 2, 3,
+    ])
     expect(metadata.safetyValidationResult.status).toBe("passed")
     expect(staticArtifactThemeSchema.parse("surprise")).toBe("surprise")
 
@@ -188,6 +206,16 @@ describe("static artifact schemas", () => {
         safetyValidationResult: { status: "passed" },
       }).slideCount
     ).toBe(2)
+
+    expect(
+      staticArtifactMetadataSchema.parse({
+        artifactType: "slides",
+        renderMode: "html",
+        theme: "keynote",
+        generationPath: "modelDeckHtml",
+        safetyValidationResult: { status: "passed" },
+      }).slideCount
+    ).toBeUndefined()
   })
 
   it("rejects static artifact metadata that conflicts with render mode", () => {
@@ -213,7 +241,7 @@ describe("static artifact schemas", () => {
         generationPath: "polishedImageSlides",
         slideCount: 2,
       })
-    ).toThrow(/polished image slides require at least one asset reference/i)
+    ).toThrow(/polished image slides require one asset reference per slide/i)
 
     expect(() =>
       staticArtifactMetadataSchema.parse({
@@ -223,6 +251,34 @@ describe("static artifact schemas", () => {
         generationPath: "modelDeckHtml",
       })
     ).toThrow(/HTML webpages require modelHtml generationPath/i)
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...baseMetadata,
+        artifactType: "webpage",
+        renderMode: "html",
+        generationPath: "modelHtml",
+        slideCount: 1,
+      })
+    ).toThrow(/webpage metadata must not include slideCount/i)
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...baseMetadata,
+        artifactType: "webpage",
+        renderMode: "html",
+        generationPath: "modelHtml",
+        assetReferences: [
+          {
+            assetId: "asset-1",
+            slideIndex: 1,
+            storageKey: "artifacts/artifact-1/v1/slide-1.png",
+            mimeType: "image/png",
+            sizeBytes: 2048,
+          },
+        ],
+      })
+    ).toThrow(/webpage metadata must not include asset references/i)
 
     expect(() =>
       staticArtifactMetadataSchema.parse({
@@ -239,8 +295,68 @@ describe("static artifact schemas", () => {
         artifactType: "slides",
         renderMode: "html",
         generationPath: "modelDeckHtml",
+        slideCount: 0,
       })
-    ).toThrow(/HTML slides require a positive slideCount/i)
+    ).toThrow()
+  })
+
+  it("requires polished image slide assets to cover each declared slide exactly once", () => {
+    const polishedSlides = {
+      artifactType: "slides",
+      renderMode: "polishedImage",
+      theme: "cinematic",
+      generationPath: "polishedImageSlides",
+      slideCount: 2,
+      safetyValidationResult: { status: "passed" },
+    } as const
+
+    const firstSlideAsset = {
+      assetId: "asset-1",
+      slideIndex: 1,
+      storageKey: "artifacts/artifact-1/v1/slide-1.png",
+      mimeType: "image/png",
+      sizeBytes: 2048,
+    }
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...polishedSlides,
+        assetReferences: [{ ...firstSlideAsset, slideIndex: 0 }],
+      })
+    ).toThrow(
+      /polished image slide asset indexes must be between 1 and slideCount/i
+    )
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...polishedSlides,
+        assetReferences: [
+          firstSlideAsset,
+          { ...firstSlideAsset, assetId: "asset-2" },
+        ],
+      })
+    ).toThrow(
+      /polished image slide asset indexes must not contain duplicates/i
+    )
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...polishedSlides,
+        assetReferences: [firstSlideAsset],
+      })
+    ).toThrow(/polished image slides require one asset reference per slide/i)
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...polishedSlides,
+        assetReferences: [
+          firstSlideAsset,
+          { ...firstSlideAsset, assetId: "asset-3", slideIndex: 3 },
+        ],
+      })
+    ).toThrow(
+      /polished image slide asset indexes must be between 1 and slideCount/i
+    )
   })
 
   it("requires bespoke style briefs when tool inputs select the bespoke theme", () => {

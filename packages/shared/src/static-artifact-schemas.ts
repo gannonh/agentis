@@ -136,6 +136,69 @@ function requireBespokeStyleBrief(
   }
 }
 
+function refinePolishedImageSlideAssets(
+  input: {
+    slideCount?: number
+    assetReferences: Array<z.infer<typeof staticArtifactAssetReferenceSchema>>
+  },
+  ctx: z.RefinementCtx
+) {
+  const slideCount = input.slideCount
+
+  if (!slideCount) {
+    return
+  }
+
+  if (input.assetReferences.length !== slideCount) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Polished image slides require one asset reference per slide.",
+      path: ["assetReferences"],
+    })
+  }
+
+  const seenSlideIndexes = new Set<number>()
+
+  input.assetReferences.forEach((asset, index) => {
+    if (
+      typeof asset.slideIndex !== "number" ||
+      asset.slideIndex < 1 ||
+      asset.slideIndex > slideCount
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Polished image slide asset indexes must be between 1 and slideCount.",
+        path: ["assetReferences", index, "slideIndex"],
+      })
+      return
+    }
+
+    if (seenSlideIndexes.has(asset.slideIndex)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Polished image slide asset indexes must not contain duplicates.",
+        path: ["assetReferences", index, "slideIndex"],
+      })
+      return
+    }
+
+    seenSlideIndexes.add(asset.slideIndex)
+  })
+
+  for (let slideIndex = 1; slideIndex <= slideCount; slideIndex += 1) {
+    if (!seenSlideIndexes.has(slideIndex)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Polished image slide assets must cover every slide.",
+        path: ["assetReferences"],
+      })
+      return
+    }
+  }
+}
+
 function refineStaticArtifactMetadata(
   input: {
     artifactType: z.infer<typeof staticArtifactTypeSchema>
@@ -156,6 +219,20 @@ function refineStaticArtifactMetadata(
         path: ["generationPath"],
       })
     }
+    if (input.slideCount !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Webpage metadata must not include slideCount.",
+        path: ["slideCount"],
+      })
+    }
+    if (input.assetReferences.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Webpage metadata must not include asset references.",
+        path: ["assetReferences"],
+      })
+    }
     return
   }
 
@@ -165,13 +242,6 @@ function refineStaticArtifactMetadata(
         code: z.ZodIssueCode.custom,
         message: "HTML slides require modelDeckHtml generationPath.",
         path: ["generationPath"],
-      })
-    }
-    if (!input.slideCount) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "HTML slides require a positive slideCount.",
-        path: ["slideCount"],
       })
     }
     return
@@ -193,13 +263,7 @@ function refineStaticArtifactMetadata(
         path: ["slideCount"],
       })
     }
-    if (input.assetReferences.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Polished image slides require at least one asset reference.",
-        path: ["assetReferences"],
-      })
-    }
+    refinePolishedImageSlideAssets(input, ctx)
   }
 }
 
