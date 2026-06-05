@@ -16,6 +16,8 @@ import {
 } from "../config.js"
 import { DocumentService } from "../documents/document-service.js"
 import { buildDocumentTools } from "../documents/document-tool.js"
+import { StaticArtifactService } from "../static-artifacts/static-artifact-service.js"
+import { buildStaticArtifactTools } from "../static-artifacts/static-artifact-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
 import { resolveNativeToolsForRun } from "../native-tools/native-tool-permissions.js"
@@ -214,6 +216,7 @@ export class RunExecutor {
   private readonly workspaceExecutionService: WorkspaceExecutionService
   private readonly workspaceApproval: WorkspaceToolApprovalCoordinator
   private readonly webSearchService: WebSearchService
+  private readonly staticArtifactService: StaticArtifactService
 
   constructor(
     private readonly repos: Repositories,
@@ -222,6 +225,7 @@ export class RunExecutor {
     private readonly documentService: DocumentService
   ) {
     this.webSearchService = new WebSearchService(config)
+    this.staticArtifactService = new StaticArtifactService(repos, config)
     this.contextService = new ProjectContextService(repos, config)
     this.workspaceEditService = new WorkspaceEditService(repos.workspaceEdits)
     this.workspaceExecutionService = new WorkspaceExecutionService(
@@ -350,6 +354,21 @@ export class RunExecutor {
         webSearch: () => buildWebSearchTools(this.webSearchService),
         documents: () =>
           buildDocumentTools(this.documentService, {
+            runId,
+            threadId: run.threadId,
+            projectId: thread.projectId ?? undefined,
+            onEvidence: (title, payload) => {
+              this.repos.steps.create({
+                runId,
+                type: "tool-result",
+                status: "completed",
+                title,
+                payload,
+              })
+            },
+          }),
+        staticArtifacts: () =>
+          buildStaticArtifactTools(this.staticArtifactService, {
             runId,
             threadId: run.threadId,
             projectId: thread.projectId ?? undefined,
@@ -692,11 +711,16 @@ export class RunExecutor {
                     toolSlug: curated.toolSlug,
                     toolInput: chunk.input,
                   })
-                : {
+                : (formatNativeToolRunStepPayload({
+                    toolCallId: chunk.toolCallId,
+                    toolName: chunk.toolName,
+                    workspaceId: workspaceHandle.id,
+                    input: chunk.input,
+                  }) ?? {
                     toolCallId: chunk.toolCallId,
                     toolName: chunk.toolName,
                     input: chunk.input,
-                  },
+                  }),
           })
           toolStepIds.set(chunk.toolCallId, step.id)
           assistantParts = [

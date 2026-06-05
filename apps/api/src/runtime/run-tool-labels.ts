@@ -17,6 +17,9 @@ export function formatToolStepTitle(input: {
   if (input.toolName === "updateDocumentVisibility")
     return "Update document scope"
   if (input.toolName === "appendDocumentSection") return "Append document section"
+  if (input.toolName === "createStaticArtifact") return "Create static artifact"
+  if (input.toolName === "editStaticArtifact") return "Edit static artifact"
+  if (input.toolName === "findStaticArtifacts") return "Find static artifacts"
   if (input.toolName === "createWorkspaceFile") return "Create workspace file"
   if (input.toolName === "replaceInWorkspaceFile") return "Replace in workspace file"
   if (input.toolName === "applyWorkspacePatch") return "Apply workspace patch"

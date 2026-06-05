@@ -120,6 +120,152 @@ export class ArtifactRepository {
     return mapArtifact(row)
   }
 
+  createWithInitialVersion(input: {
+    id?: string
+    versionId?: string
+    title: string
+    description?: string
+    type: ArtifactType
+    contentFormat?: Artifact["contentFormat"]
+    mimeType: string
+    sizeBytes: number
+    storageKey: string
+    previewText?: string
+    metadata?: Record<string, unknown>
+    visibilityScope?: ArtifactVisibilityScope
+    projectId?: string
+    projectNameSnapshot?: string
+    threadId?: string
+    threadTitleSnapshot?: string
+    runId?: string
+    agentId?: string
+    agentNameSnapshot?: string
+    contentHash: string
+    contentStorageKey: string
+    changeSummary?: string
+    createdByRunId?: string
+    createdByThreadId?: string
+  }): { artifact: Artifact; version: ArtifactVersion } {
+    const now = nowIso()
+    const versionId = input.versionId ?? createId("artifact_version")
+    const artifactRow = {
+      id: input.id ?? createId("artifact"),
+      title: input.title,
+      description: input.description ?? null,
+      documentType: documentTypeForArtifact(input.type),
+      contentFormat:
+        input.contentFormat ??
+        defaultContentFormat({ type: input.type, mimeType: input.mimeType }),
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      storageKey: input.storageKey,
+      previewText: input.previewText ?? null,
+      metadataJson: input.metadata ? JSON.stringify(input.metadata) : null,
+      visibilityScope:
+        input.visibilityScope ??
+        defaultVisibilityScope({
+          projectId: input.projectId,
+          threadId: input.threadId,
+        }),
+      projectId: input.projectId ?? null,
+      projectNameSnapshot: input.projectNameSnapshot ?? null,
+      threadId: input.threadId ?? null,
+      threadTitleSnapshot: input.threadTitleSnapshot ?? null,
+      runId: input.runId ?? null,
+      agentId: input.agentId ?? null,
+      agentNameSnapshot: input.agentNameSnapshot ?? null,
+      currentVersionId: versionId,
+      currentVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const versionRow = {
+      id: versionId,
+      documentId: artifactRow.id,
+      version: 1,
+      contentHash: input.contentHash,
+      contentStorageKey: input.contentStorageKey,
+      changeSummary: input.changeSummary ?? null,
+      createdByRunId: input.createdByRunId ?? null,
+      createdByThreadId: input.createdByThreadId ?? null,
+      createdAt: now,
+    }
+
+    this.db.transaction((tx) => {
+      tx.insert(documents).values(artifactRow).run()
+      tx.insert(documentVersions).values(versionRow).run()
+    })
+
+    return {
+      artifact: mapArtifact(artifactRow),
+      version: mapArtifactVersion(versionRow),
+    }
+  }
+
+  updateWithVersion(input: {
+    artifactId: string
+    version: number
+    versionId?: string
+    contentHash: string
+    contentStorageKey: string
+    changeSummary?: string
+    createdByRunId?: string
+    createdByThreadId?: string
+    sizeBytes: number
+    previewText?: string
+    metadata?: Record<string, unknown>
+  }): Artifact | null {
+    const versionRow = {
+      id: input.versionId ?? createId("artifact_version"),
+      documentId: input.artifactId,
+      version: input.version,
+      contentHash: input.contentHash,
+      contentStorageKey: input.contentStorageKey,
+      changeSummary: input.changeSummary ?? null,
+      createdByRunId: input.createdByRunId ?? null,
+      createdByThreadId: input.createdByThreadId ?? null,
+      createdAt: nowIso(),
+    }
+    let row: typeof documents.$inferSelect | undefined
+
+    this.db.transaction((tx) => {
+      tx.insert(documentVersions).values(versionRow).run()
+      tx.update(documents)
+        .set({
+          currentVersionId: versionRow.id,
+          currentVersion: input.version,
+          storageKey: input.contentStorageKey,
+          sizeBytes: input.sizeBytes,
+          previewText: input.previewText ?? null,
+          metadataJson: input.metadata ? JSON.stringify(input.metadata) : null,
+          updatedAt: nowIso(),
+        })
+        .where(eq(documents.id, input.artifactId))
+        .run()
+      row = tx
+        .select()
+        .from(documents)
+        .where(eq(documents.id, input.artifactId))
+        .get()
+    })
+
+    return row ? mapArtifact(row) : null
+  }
+
+  getVersion(artifactId: string, version: number): ArtifactVersion | null {
+    const row = this.db
+      .select()
+      .from(documentVersions)
+      .where(
+        and(
+          eq(documentVersions.documentId, artifactId),
+          eq(documentVersions.version, version)
+        )
+      )
+      .get()
+    return row ? mapArtifactVersion(row) : null
+  }
+
   getById(id: string): Artifact | null {
     const row = this.db
       .select()

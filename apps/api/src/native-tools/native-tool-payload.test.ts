@@ -135,4 +135,54 @@ describe("formatNativeToolRunStepPayload", () => {
     expect(output.results[0]?.source).toHaveLength(200)
     expect(output.metadata).toEqual({ requestId: "request-1" })
   })
+
+  it("bounds static artifact timeline payloads without HTML or images", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static",
+      toolName: "createStaticArtifact",
+      input: {
+        title: "x".repeat(400),
+        artifactType: "slides",
+        renderMode: "html",
+        contentBrief: "<html>" + "secret".repeat(1000),
+        sourceData: "raw".repeat(1000),
+      },
+      output: {
+        action: "created",
+        artifactId: "artifact_1",
+        title: "Launch deck",
+        artifactType: "slides",
+        renderMode: "html",
+        version: 1,
+        theme: "keynote",
+        slideCount: 2,
+        viewPath: "/artifacts/artifact_1",
+        html: "<html>should not persist</html>",
+        images: ["data:image/png;base64,abc"],
+      },
+    })
+
+    expect(payload).toMatchObject({
+      provider: "native",
+      toolName: "createStaticArtifact",
+      input: {
+        title: expect.any(String),
+        artifactType: "slides",
+        renderMode: "html",
+      },
+      output: {
+        action: "created",
+        artifactId: "artifact_1",
+        title: "Launch deck",
+        artifactType: "slides",
+        renderMode: "html",
+        version: 1,
+        theme: "keynote",
+        slideCount: 2,
+        viewPath: "/artifacts/artifact_1",
+      },
+    })
+    expect(JSON.stringify(payload)).not.toContain("<html>")
+    expect(JSON.stringify(payload)).not.toContain("data:image")
+  })
 })
