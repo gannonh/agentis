@@ -19,7 +19,10 @@ import type { Repositories } from "../repositories/index.js"
 import { getStaticArtifactDesignGuidance } from "./design-guidance.js"
 import type { PolishedSlideProvider } from "./polished-slide-provider.js"
 import { UnavailablePolishedSlideProvider } from "./polished-slide-provider.js"
-import { validateStaticHtml } from "./static-html-validator.js"
+import {
+  STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT,
+  validateStaticHtml,
+} from "./static-html-validator.js"
 
 export type StaticArtifactRunContext = {
   threadId?: string
@@ -203,7 +206,7 @@ ${sourceSlide}
 </main>
 <div class="counter" aria-live="polite"></div>
 <script>
-const slides=[...document.querySelectorAll('.slide')];let current=0;const counter=document.querySelector('.counter');function show(index){current=Math.max(0,Math.min(index,slides.length-1));slides.forEach((slide,i)=>slide.classList.toggle('active',i===current));counter.textContent=(current+1)+' / '+slides.length;}document.addEventListener('keydown',(event)=>{if(event.key==='ArrowRight'||event.key===' '){show(current+1)}if(event.key==='ArrowLeft'){show(current-1)}});show(0);
+${STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT}
 </script>
 </body>
 </html>`,

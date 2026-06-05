@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { validateStaticHtml } from "./static-html-validator.js"
+import {
+  STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT,
+  validateStaticHtml,
+} from "./static-html-validator.js"
 
 describe("static HTML validator", () => {
   it("accepts bounded static webpage and slide HTML", () => {
@@ -16,10 +19,21 @@ describe("static HTML validator", () => {
       validateStaticHtml({
         artifactType: "slides",
         renderMode: "html",
-        html: "<section class=\"slide\"><h1>One</h1></section><script>document.addEventListener('keydown',()=>{})</script>",
+        html: `<section class="slide"><h1>One</h1></section><script>\n${STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT}\n</script>`,
         maxBytes: 1024,
       })
     ).toMatchObject({ ok: true })
+  })
+
+  it("rejects the owned deck navigation script outside slide decks", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: `<main><h1>Launch</h1></main><script>${STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT}</script>`,
+        maxBytes: 2048,
+      })
+    ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
   })
 
   it("allows static prose that mentions Agentis API paths without executing them", () => {
@@ -36,6 +50,8 @@ describe("static HTML validator", () => {
   it("rejects unsafe runtime behavior and unapproved network dependencies", () => {
     const cases = [
       "<script src=\"https://evil.example/app.js\"></script>",
+      "<script>window['f'+'etch']('https://evil.example/data')</script>",
+      "<script>document.body.classList.add('ready')</script>",
       "<link rel=\"stylesheet\" href=\"https://evil.example/app.css\">",
       "<link rel=stylesheet href=https://evil.example/app.css>",
       "<link rel=\"preload stylesheet\" href=\"https://evil.example/app.css\">",

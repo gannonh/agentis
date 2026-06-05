@@ -8,6 +8,9 @@ export type StaticHtmlValidationResult =
   | { ok: true; warnings: string[] }
   | { ok: false; code: string; message: string; status: number }
 
+export const STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT =
+  "const slides=[...document.querySelectorAll('.slide')];let current=0;const counter=document.querySelector('.counter');function show(index){current=Math.max(0,Math.min(index,slides.length-1));slides.forEach((slide,i)=>slide.classList.toggle('active',i===current));counter.textContent=(current+1)+' / '+slides.length;}document.addEventListener('keydown',(event)=>{if(event.key==='ArrowRight'||event.key===' '){show(current+1)}if(event.key==='ArrowLeft'){show(current-1)}});show(0);"
+
 const EXTERNAL_RESOURCE_ATTRIBUTES: Record<string, readonly string[]> = {
   audio: ["src"],
   embed: ["src"],
@@ -158,41 +161,26 @@ function scriptBodies(html: string): string[] {
   )
 }
 
-function scriptContainsExternalModuleImport(script: string): boolean {
-  if (/\bimport\s*(?:\/\*[\s\S]*?\*\/\s*)?\(/.test(script)) return true
+function normalizeOwnedScript(script: string): string {
+  return decodeHtmlCharacterReferences(script).replace(/\r\n?/g, "\n").trim()
+}
 
-  const importPattern = /\bimport\s+(?:[^"'`;]*?\s+from\s*)?(["'])([^"']+)\1/g
-  for (const match of script.matchAll(importPattern)) {
-    if (externalUrl(match[2] ?? "")) return true
-  }
+function hasOnlyOwnedDeckNavigationScript(input: {
+  artifactType: StaticArtifactType
+  renderMode: StaticArtifactRenderMode
+  html: string
+}): boolean {
+  const scripts = scriptBodies(input.html)
+  if (scripts.length === 0) return true
+  if (input.artifactType !== "slides" || input.renderMode !== "html") return false
 
-  const exportFromPattern = /\bexport\s+[^"'`;]*?\s+from\s*(["'])([^"']+)\1/g
-  for (const match of script.matchAll(exportFromPattern)) {
-    if (externalUrl(match[2] ?? "")) return true
-  }
-
-  return false
+  return scripts.every(
+    (script) =>
+      normalizeOwnedScript(script) === STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT
+  )
 }
 
 function includesForbiddenRuntimeAccess(html: string): boolean {
-  const scripts = decodeHtmlCharacterReferences(scriptBodies(html).join("\n"))
-  if (
-    scriptContainsExternalModuleImport(scripts) ||
-    [
-      /\bfetch\s*\(/i,
-      /\bXMLHttpRequest\b/i,
-      /\bWebSocket\b/i,
-      /\bEventSource\b/i,
-      /\blocalStorage\b/i,
-      /\bsessionStorage\b/i,
-      /\bindexedDB\b/i,
-      /\/api\//i,
-      /\bagentis\b/i,
-    ].some((pattern) => pattern.test(scripts))
-  ) {
-    return true
-  }
-
   return Array.from(html.matchAll(/<[a-z][^>]*>/gi)).some((match) =>
     ["href", "src", "action", "formaction"].some((attribute) =>
       /\/api\//i.test(attributeValue(match[0], attribute) ?? "")
@@ -254,6 +242,13 @@ export function validateStaticHtml(input: {
     return error(
       "static_artifact_invalid_html",
       "Static HTML must not include inline event handler attributes."
+    )
+  }
+
+  if (!hasOnlyOwnedDeckNavigationScript(input)) {
+    return error(
+      "static_artifact_invalid_html",
+      "Static HTML must not include arbitrary inline scripts."
     )
   }
 
