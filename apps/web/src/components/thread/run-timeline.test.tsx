@@ -277,4 +277,76 @@ describe("RunTimeline", () => {
       screen.getByRole("button", { name: "Open document" })
     ).toHaveAttribute("href", "/documents/document_123")
   })
+
+  it("renders static artifact timeline cards without full content payloads", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "createStaticArtifact",
+          input: {
+            title: "Launch page",
+            artifactType: "webpage",
+            renderMode: "html",
+          },
+          output: {
+            action: "created",
+            artifactId: "artifact_page",
+            title: "Launch page",
+            artifactType: "webpage",
+            renderMode: "html",
+            version: 1,
+            theme: "landing",
+            viewPath: "/artifacts/artifact_page",
+            summary: "Full HTML should stay out",
+            html: "<main>full artifact html should not render</main>",
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact created")).toBeInTheDocument()
+    expect(screen.getByText("Launch page")).toBeInTheDocument()
+    expect(screen.getByText("webpage · html · v1")).toBeInTheDocument()
+    expect(screen.getByText("Theme: landing")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_page"
+    )
+    expect(screen.queryByText(/full artifact html/)).not.toBeInTheDocument()
+  })
+
+  it("renders visible static artifact failure cards with remediation", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "createStaticArtifact",
+          input: {
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+          },
+          output: {
+            action: "failed",
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+            errorCode: "static_artifact_provider_unavailable",
+            error: "Image provider is not configured.",
+            remediation: "Configure an image generation provider or use html render mode.",
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact failed")).toBeInTheDocument()
+    expect(screen.getByText("Visual deck")).toBeInTheDocument()
+    expect(screen.getByText("slides · polishedImage")).toBeInTheDocument()
+    expect(screen.getByText("static_artifact_provider_unavailable")).toBeInTheDocument()
+    expect(screen.getByText("Image provider is not configured.")).toBeInTheDocument()
+    expect(screen.getByText(/Configure an image generation provider/)).toBeInTheDocument()
+  })
 })

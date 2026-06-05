@@ -39,18 +39,10 @@ import {
   editStaticArtifactOutputSchema,
   findStaticArtifactsInputSchema,
   findStaticArtifactsOutputSchema,
-  staticArtifactAssetReferenceSchema,
-  staticArtifactErrorCodeSchema,
-  staticArtifactGenerationPathSchema,
   staticArtifactMetadataSchema,
   staticArtifactRenderModeSchema,
-  staticArtifactSafetyValidationResultSchema,
   staticArtifactThemeSchema,
   staticArtifactTypeSchema,
-  validateStaticArtifactMode,
-  webpageStaticArtifactThemeSchema,
-  slideStaticArtifactThemeSchema,
-  sharedStaticArtifactThemeSelectorSchema,
 } from "./static-artifact-schemas.js"
 export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 export {

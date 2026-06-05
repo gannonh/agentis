@@ -172,6 +172,50 @@ describe("artifact routes", () => {
     })
   })
 
+  it("serves static artifact assets by persisted asset metadata", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const storage = new LocalDocumentStorage(ctx.config)
+    storage.write("artifacts/slides/assets/slide-1.png", Buffer.from("png"))
+    const artifact = ctx.repos.artifacts.create({
+      title: "Visual deck",
+      type: "slides",
+      contentFormat: "manifest",
+      mimeType: "application/json",
+      sizeBytes: 2,
+      storageKey: "artifacts/slides/manifest.json",
+      visibilityScope: "global",
+      metadata: {
+        artifactType: "slides",
+        renderMode: "polishedImage",
+        theme: "cinematic",
+        generationPath: "polishedImageSlides",
+        slideCount: 1,
+        assetReferences: [
+          {
+            assetId: "slide_1",
+            slideIndex: 1,
+            storageKey: "artifacts/slides/assets/slide-1.png",
+            mimeType: "image/png",
+            sizeBytes: 3,
+            altText: "Opening slide",
+          },
+        ],
+        safetyValidationResult: { status: "passed", warnings: [], errors: [] },
+        generationWarnings: [],
+      },
+    })
+
+    const response = await app.request(
+      `/api/artifacts/${artifact.id}/assets/slide_1`
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("content-type")).toContain("image/png")
+    expect(await response.text()).toBe("png")
+  })
+
   it("returns artifact errors for unchanged markdown content updates", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)

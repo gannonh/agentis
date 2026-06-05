@@ -80,6 +80,7 @@ vi.mock("@/lib/api/projects-client", () => ({
   getArtifactDetail: vi.fn(),
   downloadArtifactFile: vi.fn(),
   artifactDownloadUrl: (id: string) => `/api/artifacts/${id}/download`,
+  artifactWorkspacePath: (id: string) => `/artifacts/${id}`,
   documentWorkspacePath: (id: string) => `/documents/${id}`,
 }))
 

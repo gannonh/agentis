@@ -214,6 +214,84 @@ function formatPreview(value: unknown, truncated: unknown) {
   }
 }
 
+function staticArtifactActionLabel(action: string | undefined) {
+  if (action === "created") return "Static artifact created"
+  if (action === "edited") return "Static artifact edited"
+  if (action === "found") return "Static artifacts found"
+  if (action === "failed") return "Static artifact failed"
+  return "Static artifact"
+}
+
+function stableRelativePath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined
+  return value
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined
+}
+
+function numberValue(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined
+}
+
+function formatStaticArtifactPayload(input: {
+  toolName?: string
+  input: Record<string, unknown> | null
+  output: Record<string, unknown> | null
+  error?: string
+  code?: string
+}) {
+  const isStaticTool =
+    input.toolName === "createStaticArtifact" ||
+    input.toolName === "editStaticArtifact" ||
+    input.toolName === "findStaticArtifacts"
+  if (!isStaticTool) return null
+
+  const action = stringValue(input.output?.action) ??
+    (input.error || input.code ? "failed" :
+      input.toolName === "createStaticArtifact" ? "created" :
+        input.toolName === "editStaticArtifact" ? "edited" : "found")
+  const artifactId = stringValue(input.output?.artifactId) ?? stringValue(input.input?.artifactId)
+  const title = stringValue(input.output?.title) ?? stringValue(input.input?.title) ?? artifactId
+  const artifactType = stringValue(input.output?.artifactType) ?? stringValue(input.input?.artifactType)
+  const renderMode = stringValue(input.output?.renderMode) ?? stringValue(input.input?.renderMode)
+  const version = numberValue(input.output?.version)
+  const viewPath = stableRelativePath(input.output?.viewPath)
+  const errorCode =
+    stringValue(input.output?.errorCode) ??
+    stringValue(input.output?.code) ??
+    input.code
+  const items = Array.isArray(input.output?.items)
+    ? input.output.items
+        .map((item) => getRecord(item))
+        .filter((item): item is Record<string, unknown> => Boolean(item))
+    : []
+
+  return {
+    action,
+    actionLabel: staticArtifactActionLabel(action),
+    artifactId,
+    title,
+    artifactType,
+    renderMode,
+    version,
+    previousVersion: numberValue(input.output?.previousVersion),
+    theme: stringValue(input.output?.theme),
+    designBriefSummary: stringValue(input.output?.designBriefSummary),
+    slideCount: numberValue(input.output?.slideCount),
+    provider: stringValue(input.output?.provider),
+    viewPath,
+    errorCode,
+    error: stringValue(input.output?.error) ?? input.error,
+    remediation: stringValue(input.output?.remediation),
+    resultCount: numberValue(input.output?.resultCount),
+    truncated: input.output?.truncated === true,
+    items,
+  }
+}
+
 function formatNativePayload(step: RunStep) {
   const payload = step.payload
   if (
@@ -255,6 +333,13 @@ function formatNativePayload(step: RunStep) {
     query,
     outputSummary,
     sources: toolName === "searchWeb" ? formatWebSearchSources(output) : [],
+    staticArtifact: formatStaticArtifactPayload({
+      toolName,
+      input,
+      output,
+      error: typeof record.error === "string" ? record.error : undefined,
+      code: typeof record.code === "string" ? record.code : undefined,
+    }),
     executionSummary,
     stdout,
     stderr,
@@ -376,6 +461,110 @@ export function RunTimeline({
                   {native.toolName ? ` · ${native.toolName}` : ""}
                   {native.workspaceId ? ` · ${native.workspaceId}` : ""}
                 </p>
+              ) : null}
+              {native?.staticArtifact ? (
+                <div className="mt-2 rounded-md border border-border/70 bg-background/60 p-2">
+                  <p className="font-medium">
+                    {native.staticArtifact.actionLabel}
+                  </p>
+                  {native.staticArtifact.title ? (
+                    <p className="mt-1 text-muted-foreground">
+                      {native.staticArtifact.title}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.artifactType || native.staticArtifact.renderMode ? (
+                    <p className="mt-1 text-muted-foreground">
+                      {[
+                        native.staticArtifact.artifactType,
+                        native.staticArtifact.renderMode,
+                        native.staticArtifact.version
+                          ? `v${native.staticArtifact.version}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.previousVersion ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Previous version: v{native.staticArtifact.previousVersion}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.theme ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Theme: {native.staticArtifact.theme}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.designBriefSummary ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Design brief: {native.staticArtifact.designBriefSummary}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.slideCount ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Slides: {native.staticArtifact.slideCount}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.provider ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Provider: {native.staticArtifact.provider}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.resultCount != null ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Results: {native.staticArtifact.resultCount}
+                      {native.staticArtifact.truncated ? " · truncated" : ""}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.items.length ? (
+                    <ul className="mt-2 space-y-1 text-muted-foreground">
+                      {native.staticArtifact.items.map((item, index) => {
+                        const itemPath = stableRelativePath(item.viewPath)
+                        const itemTitle = stringValue(item.title) ?? stringValue(item.artifactId) ?? "Static artifact"
+                        return (
+                          <li key={`${itemTitle}:${index}`}>
+                            {itemPath ? (
+                              <Link
+                                to={itemPath}
+                                className="text-foreground underline-offset-4 hover:underline"
+                              >
+                                {itemTitle}
+                              </Link>
+                            ) : (
+                              itemTitle
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : null}
+                  {native.staticArtifact.errorCode ? (
+                    <p className="mt-1 text-amber-700 dark:text-amber-400">
+                      {native.staticArtifact.errorCode}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.error ? (
+                    <p className="mt-1 text-destructive">
+                      {native.staticArtifact.error}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.remediation ? (
+                    <p className="mt-1 text-amber-700 dark:text-amber-400">
+                      {native.staticArtifact.remediation}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.viewPath ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      nativeButton={false}
+                      render={<Link to={native.staticArtifact.viewPath} />}
+                    >
+                      Open artifact
+                    </Button>
+                  ) : null}
+                </div>
               ) : null}
               {native?.path ? (
                 <p className="mt-1 text-muted-foreground">

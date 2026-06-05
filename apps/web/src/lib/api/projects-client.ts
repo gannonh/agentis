@@ -360,6 +360,10 @@ export function documentWorkspacePath(documentId: string): string {
   return `/documents/${documentId}`
 }
 
+export function artifactWorkspacePath(artifactId: string): string {
+  return `/artifacts/${artifactId}`
+}
+
 export function artifactDownloadUrl(artifactId: string): string {
   return `${API_BASE}/api/artifacts/${artifactId}/download`
 }

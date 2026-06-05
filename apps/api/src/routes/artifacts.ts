@@ -87,6 +87,23 @@ function artifactDownloadFilename(input: { title: string; mimeType: string }) {
   return `${basename}${extension}`
 }
 
+function staticArtifactAsset(
+  metadata: Record<string, unknown> | null | undefined,
+  assetId: string
+): { storageKey: string; mimeType: string } | null {
+  const assetReferences = metadata?.assetReferences
+  if (!Array.isArray(assetReferences)) return null
+  for (const asset of assetReferences) {
+    if (typeof asset !== "object" || asset === null) continue
+    const record = asset as Record<string, unknown>
+    if (record.assetId !== assetId) continue
+    if (typeof record.storageKey !== "string") return null
+    if (typeof record.mimeType !== "string") return null
+    return { storageKey: record.storageKey, mimeType: record.mimeType }
+  }
+  return null
+}
+
 export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
   const storage = new LocalDocumentStorage(config)
@@ -114,6 +131,40 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
         .list(parsed.data)
         .map((artifact) => toPublicArtifact(artifact))
     )
+  })
+
+  app.get("/:artifactId/assets/:assetId", (c) => {
+    const artifact = repos.artifacts.getById(c.req.param("artifactId"))
+    if (!artifact || (artifact.type !== "webpage" && artifact.type !== "slides")) {
+      return c.json(artifactNotFoundResponse(), 404)
+    }
+    const asset = staticArtifactAsset(artifact.metadata, c.req.param("assetId"))
+    if (!asset) {
+      return c.json(
+        {
+          error: "Static artifact asset missing",
+          code: "static_artifact_asset_missing",
+        },
+        404
+      )
+    }
+    try {
+      const data = storage.read(asset.storageKey)
+      return new Response(data, {
+        headers: {
+          "content-type": asset.mimeType,
+          "cache-control": "private, max-age=300",
+        },
+      })
+    } catch {
+      return c.json(
+        {
+          error: "Static artifact asset missing",
+          code: "static_artifact_asset_missing",
+        },
+        404
+      )
+    }
   })
 
   app.get("/:artifactId", (c) => {
