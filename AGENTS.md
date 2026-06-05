@@ -26,7 +26,7 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 - **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared primitives. See [Component management](#component-management).
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
 - **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, and Learning (not thread sessions, projects, or Library).
-- **M04/V4.2 Documents:** API-backed projects, project memories, project context on runs, local document storage (`AGENTIS_STORAGE_ROOT`), versioned markdown documents, document runtime tools, Library upload/list/filter/detail/download, and the `/documents/:documentId` workspace for viewing, editing, version history, and scope management.
+- **M04/V4.2 Library artifacts:** API-backed projects, project memories, project context on runs, local document storage (`AGENTIS_STORAGE_ROOT`), Artifact-backed Library upload/list/filter/detail/download, versioned markdown documents as Artifact type `document`, document runtime tools, and the `/documents/:documentId` workspace for markdown viewing, editing, version history, and scope management.
 - **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, and V3 sandboxed command/script execution are API-backed. See [agent-native-tooling.md](docs/specs/agent-native-tooling.md).
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
@@ -42,7 +42,7 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 | `/integrations`          | Integrations catalog            |
 | `/projects/new`          | Create project (API-backed)     |
 | `/projects/:projectId`   | Edit project, memories, archive |
-| `/library`               | Document library (API-backed)   |
+| `/library`               | Artifact library (API-backed)   |
 | `/documents/:documentId` | Document workspace (API-backed) |
 | `/search`                | Search placeholder              |
 

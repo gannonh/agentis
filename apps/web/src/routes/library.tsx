@@ -20,13 +20,13 @@ import {
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { useSearchParams, Link } from "react-router"
 import {
-  documentTypeSchema,
+  artifactTypeSchema,
   type AgentListItem,
-  type DocumentDetailResponse,
-  type DocumentPublic as Document,
-  type DocumentSource,
-  type DocumentType,
-  type DocumentVisibilityScope,
+  type ArtifactDetailResponse,
+  type ArtifactPublic as Artifact,
+  type ArtifactSource,
+  type ArtifactType,
+  type ArtifactVisibilityScope,
   type Project,
   type ThreadListItem,
 } from "@workspace/shared"
@@ -65,27 +65,36 @@ import { formatRelativeTime } from "@/fixtures"
 import { listThreads } from "@/lib/api/client"
 import { listAgents } from "@/lib/api/agents-client"
 import {
-  downloadDocumentFile,
+  downloadArtifactFile,
   documentWorkspacePath,
-  getDocumentDetail,
-  listDocuments,
+  getArtifactDetail,
+  listArtifacts,
   listProjects,
   uploadDocument,
 } from "@/lib/api/projects-client"
 
-const DOCUMENT_TYPES = documentTypeSchema.options
+const ARTIFACT_TYPES = artifactTypeSchema.options
 const AGENT_SOURCE_PREFIX = "agent:"
 const PROJECT_SCOPE_PREFIX = "project:"
 
-type DocumentSourceFilter = "" | "user" | "agent" | `agent:${string}`
+type ArtifactSourceFilter = "" | "user" | "agent" | `agent:${string}`
 type DocumentScopeFilter =
   | ""
-  | DocumentVisibilityScope
+  | ArtifactVisibilityScope
   | "project"
   | `project:${string}`
 
-function sourceFilters(value: DocumentSourceFilter): {
-  source?: DocumentSource
+function isMarkdownUpload(file: File) {
+  const filename = file.name.toLowerCase()
+  return (
+    file.type === "text/markdown" ||
+    filename.endsWith(".md") ||
+    filename.endsWith(".markdown")
+  )
+}
+
+function sourceFilters(value: ArtifactSourceFilter): {
+  source?: ArtifactSource
   agentId?: string
 } {
   if (value === "user") return { source: "user" }
@@ -100,7 +109,7 @@ function scopeFilters(
   value: DocumentScopeFilter,
   threadId: string
 ): {
-  visibilityScope?: DocumentVisibilityScope
+  visibilityScope?: ArtifactVisibilityScope
   projectId?: string
   threadId?: string
 } {
@@ -132,7 +141,7 @@ function MenuIcon({ icon }: { icon: IconSvgElement }) {
   )
 }
 
-function sourceLabel(value: DocumentSourceFilter, agents: AgentListItem[]) {
+function sourceLabel(value: ArtifactSourceFilter, agents: AgentListItem[]) {
   if (value === "user") return "User uploads"
   if (value === "agent") return "Agent generated"
   if (value.startsWith(AGENT_SOURCE_PREFIX)) {
@@ -142,17 +151,18 @@ function sourceLabel(value: DocumentSourceFilter, agents: AgentListItem[]) {
   return "Any source"
 }
 
-const DOCUMENT_TYPE_ICONS: Record<DocumentType, IconSvgElement> = {
-  markdown: TextAlignLeftIcon,
+const ARTIFACT_TYPE_ICONS: Record<ArtifactType, IconSvgElement> = {
+  document: TextAlignLeftIcon,
   webpage: BrowserIcon,
+  slides: Presentation01Icon,
+  hyperapp: File01Icon,
+  table: TableIcon,
   image: Image01Icon,
   video: Video01Icon,
-  table: TableIcon,
-  slides: Presentation01Icon,
   other: File01Icon,
 }
 
-function typeLabel(value: DocumentType | "") {
+function typeLabel(value: ArtifactType | "") {
   return value || "All types"
 }
 
@@ -176,13 +186,13 @@ function errorMessage(error: unknown, fallback: string): string {
 export function LibraryPage() {
   const [searchParams] = useSearchParams()
   const initialProjectId = searchParams.get("projectId") ?? ""
-  const [documents, setDocuments] = useState<Document[]>([])
+  const [artifacts, setArtifacts] = useState<Artifact[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [agents, setAgents] = useState<AgentListItem[]>([])
   const [threads, setThreads] = useState<ThreadListItem[]>([])
   const [query, setQuery] = useState("")
-  const [typeFilter, setTypeFilter] = useState<DocumentType | "">("")
-  const [sourceFilter, setSourceFilter] = useState<DocumentSourceFilter>("")
+  const [typeFilter, setTypeFilter] = useState<ArtifactType | "">("")
+  const [sourceFilter, setSourceFilter] = useState<ArtifactSourceFilter>("")
   const [scopeFilter, setScopeFilter] = useState<DocumentScopeFilter>(
     initialProjectId ? `${PROJECT_SCOPE_PREFIX}${initialProjectId}` : ""
   )
@@ -193,15 +203,15 @@ export function LibraryPage() {
   const [error, setError] = useState<string | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadTitle, setUploadTitle] = useState("")
-  const [uploadType, setUploadType] = useState<DocumentType>("markdown")
   const [uploadProjectId, setUploadProjectId] = useState("")
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [downloadErrors, setDownloadErrors] = useState<Record<string, string>>(
     {}
   )
-  const [detail, setDetail] = useState<DocumentDetailResponse | null>(null)
-  const selectedDocumentId = searchParams.get("documentId")
+  const [detail, setDetail] = useState<ArtifactDetailResponse | null>(null)
+  const selectedArtifactId =
+    searchParams.get("artifactId") ?? searchParams.get("documentId")
 
   useEffect(() => {
     const projectId = searchParams.get("projectId")
@@ -215,11 +225,11 @@ export function LibraryPage() {
     setLoading(true)
     setError(null)
     try {
-      const [documentList, projectList, agentList, threadList] =
+      const [artifactList, projectList, agentList, threadList] =
         await Promise.all([
-          listDocuments({
+          listArtifacts({
             query: query.trim() || undefined,
-            documentType: typeFilter || undefined,
+            type: typeFilter || undefined,
             ...sourceFilters(sourceFilter),
             ...scopeFilters(scopeFilter, threadFilter),
           }),
@@ -228,7 +238,7 @@ export function LibraryPage() {
           listThreads(),
         ])
       if (generation !== loadGeneration.current) return
-      setDocuments(documentList)
+      setArtifacts(artifactList)
       setProjects(projectList)
       setAgents(agentList)
       setThreads(threadList)
@@ -262,18 +272,22 @@ export function LibraryPage() {
   }, [threadSearch, threads])
 
   const filteredEmpty = useMemo(
-    () => !loading && documents.length === 0 && hasFilters,
-    [documents.length, hasFilters, loading]
+    () => !loading && artifacts.length === 0 && hasFilters,
+    [artifacts.length, hasFilters, loading]
   )
 
   const handleUpload = async () => {
     if (!uploadTitle.trim() || !uploadFile) return
+    if (!isMarkdownUpload(uploadFile)) {
+      setError("Please choose a markdown (.md or .markdown) file")
+      return
+    }
     setUploading(true)
     setError(null)
     try {
       await uploadDocument({
         title: uploadTitle.trim(),
-        documentType: uploadType,
+        documentType: "document",
         file: uploadFile,
         projectId: uploadProjectId || undefined,
       })
@@ -290,40 +304,40 @@ export function LibraryPage() {
   }
 
   useEffect(() => {
-    if (!selectedDocumentId) {
+    if (!selectedArtifactId) {
       setDetail(null)
       return
     }
     let cancelled = false
     setDetail(null)
     setError(null)
-    getDocumentDetail(selectedDocumentId)
+    getArtifactDetail(selectedArtifactId)
       .then((nextDetail) => {
         if (!cancelled) setDetail(nextDetail)
       })
       .catch((detailError) => {
         if (!cancelled) {
-          setError(errorMessage(detailError, "Failed to load document detail"))
+          setError(errorMessage(detailError, "Failed to load artifact detail"))
         }
       })
     return () => {
       cancelled = true
     }
-  }, [selectedDocumentId])
+  }, [selectedArtifactId])
 
-  const handleDownload = async (libraryDocument: Document) => {
+  const handleDownload = async (artifact: Artifact) => {
     try {
-      await downloadDocumentFile(libraryDocument)
+      await downloadArtifactFile(artifact)
       setDownloadErrors((current) => {
         const next = { ...current }
-        delete next[libraryDocument.id]
+        delete next[artifact.id]
         return next
       })
     } catch (downloadError) {
       const message = errorMessage(downloadError, "Download failed")
       setDownloadErrors((current) => ({
         ...current,
-        [libraryDocument.id]: message,
+        [artifact.id]: message,
       }))
     }
   }
@@ -336,11 +350,11 @@ export function LibraryPage() {
         actions={
           <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
             <DialogTrigger render={<Button size="sm" />}>
-              Upload document
+              Upload markdown document
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Upload document</DialogTitle>
+                <DialogTitle>Upload markdown document</DialogTitle>
               </DialogHeader>
               <div className="flex flex-col gap-3 py-2">
                 <Input
@@ -348,19 +362,6 @@ export function LibraryPage() {
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
                 />
-                <select
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  value={uploadType}
-                  onChange={(e) =>
-                    setUploadType(e.target.value as DocumentType)
-                  }
-                >
-                  {DOCUMENT_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
                 <select
                   className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                   value={uploadProjectId}
@@ -376,6 +377,7 @@ export function LibraryPage() {
                 </select>
                 <Input
                   type="file"
+                  accept=".md,.markdown,text/markdown"
                   onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
                 />
               </div>
@@ -408,11 +410,11 @@ export function LibraryPage() {
             aria-hidden
           />
           <Input
-            placeholder="Search documents…"
+            placeholder="Search artifacts…"
             className="pl-7"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search documents"
+            aria-label="Search artifacts"
           />
         </div>
         <DropdownMenu>
@@ -421,7 +423,7 @@ export function LibraryPage() {
               <Button
                 variant="outline"
                 className="w-full justify-between sm:w-40"
-                aria-label="Filter by type"
+                aria-label="Filter by artifact type"
               />
             }
           >
@@ -431,7 +433,7 @@ export function LibraryPage() {
             <DropdownMenuRadioGroup
               value={typeFilter || "all"}
               onValueChange={(value) =>
-                setTypeFilter(value === "all" ? "" : (value as DocumentType))
+                setTypeFilter(value === "all" ? "" : (value as ArtifactType))
               }
             >
               <DropdownMenuGroup>
@@ -440,9 +442,9 @@ export function LibraryPage() {
                   <MenuIcon icon={FolderLibraryIcon} />
                   All types
                 </DropdownMenuRadioItem>
-                {DOCUMENT_TYPES.map((type) => (
+                {ARTIFACT_TYPES.map((type) => (
                   <DropdownMenuRadioItem key={type} value={type}>
-                    <MenuIcon icon={DOCUMENT_TYPE_ICONS[type]} />
+                    <MenuIcon icon={ARTIFACT_TYPE_ICONS[type]} />
                     <span className="capitalize">{type}</span>
                   </DropdownMenuRadioItem>
                 ))}
@@ -469,7 +471,7 @@ export function LibraryPage() {
               value={sourceFilter || "all"}
               onValueChange={(value) =>
                 setSourceFilter(
-                  value === "all" ? "" : (value as DocumentSourceFilter)
+                  value === "all" ? "" : (value as ArtifactSourceFilter)
                 )
               }
             >
@@ -622,19 +624,19 @@ export function LibraryPage() {
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading documents…</p>
+        <p className="text-sm text-muted-foreground">Loading artifacts…</p>
       ) : null}
 
-      {!loading && documents.length === 0 && !hasFilters ? (
+      {!loading && artifacts.length === 0 && !hasFilters ? (
         <EmptyState
-          title="No documents yet"
-          description="Upload a file or ask an agent to create a document in a project thread."
+          title="No artifacts yet"
+          description="Upload a markdown document or ask an agent to create an artifact in a project thread."
         />
       ) : null}
 
       {filteredEmpty ? (
         <EmptyState
-          title="No matching documents"
+          title="No matching artifacts"
           description="Try adjusting search or filters."
         />
       ) : null}
@@ -642,10 +644,10 @@ export function LibraryPage() {
       {detail ? (
         <Card>
           <CardHeader>
-            <CardTitle>{detail.document.title}</CardTitle>
+            <CardTitle>{detail.artifact.title}</CardTitle>
             <CardDescription>
-              {detail.document.documentType} · {detail.document.visibilityScope}{" "}
-              · version {detail.document.currentVersion ?? "—"}
+              {detail.artifact.type} · {detail.artifact.visibilityScope} · version{" "}
+              {detail.artifact.currentVersion ?? "—"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -664,79 +666,81 @@ export function LibraryPage() {
                 .map((version) => `v${version.version}`)
                 .join(", ") || "none"}
             </div>
-            <Button
-              render={
-                <Link to={documentWorkspacePath(detail.document.id)} />
-              }
-            >
-              Open document
-            </Button>
+            {detail.artifact.type === "document" ? (
+              <Button
+                nativeButton={false}
+                render={<Link to={documentWorkspacePath(detail.artifact.id)} />}
+              >
+                Open document
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {documents.map((document) => (
-          <Card key={document.id}>
+        {artifacts.map((artifact) => (
+          <Card key={artifact.id}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-sm leading-snug">
-                  {document.title}
+                  {artifact.title}
                 </CardTitle>
                 <Badge
                   variant="outline"
                   className="shrink-0 text-xs capitalize"
                 >
-                  {document.documentType} · {document.visibilityScope}
+                  {artifact.type} · {artifact.visibilityScope}
                 </Badge>
               </div>
               <CardDescription className="text-xs">
                 {[
-                  document.projectNameSnapshot,
-                  document.threadTitleSnapshot,
-                  document.agentNameSnapshot,
+                  artifact.projectNameSnapshot,
+                  artifact.threadTitleSnapshot,
+                  artifact.agentNameSnapshot,
                 ]
                   .filter(Boolean)
                   .join(" · ") || "Workspace"}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 pt-0">
-              {document.previewText ? (
+              {artifact.previewText ? (
                 <p className="line-clamp-3 text-xs text-muted-foreground">
-                  {document.previewText}
+                  {artifact.previewText}
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  {document.mimeType} · {(document.sizeBytes / 1024).toFixed(1)}{" "}
+                  {artifact.mimeType} · {(artifact.sizeBytes / 1024).toFixed(1)}{" "}
                   KB
                 </p>
               )}
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground">
-                  {formatRelativeTime(document.updatedAt)}
+                  {formatRelativeTime(artifact.updatedAt)}
                 </span>
                 <div className="flex items-center gap-2">
+                  {artifact.type === "document" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={<Link to={documentWorkspacePath(artifact.id)} />}
+                    >
+                      Open
+                    </Button>
+                  ) : null}
                   <Button
                     variant="outline"
                     size="sm"
-                    render={
-                      <Link to={documentWorkspacePath(document.id)} />
-                    }
-                  >
-                    Open
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void handleDownload(document)}
+                    onClick={() => void handleDownload(artifact)}
                   >
                     Download
                   </Button>
                 </div>
               </div>
-              {downloadErrors[document.id] ? (
+              {downloadErrors[artifact.id] ? (
                 <p className="text-xs text-destructive">
-                  {downloadErrors[document.id]}
+                  {downloadErrors[artifact.id]}
                 </p>
               ) : null}
             </CardContent>

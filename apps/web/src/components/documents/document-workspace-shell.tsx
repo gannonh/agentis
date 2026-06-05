@@ -44,7 +44,7 @@ export function DocumentWorkspaceShell({
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="truncate text-lg font-medium">{document.title}</h1>
             <Badge variant="outline" className="capitalize">
-              {document.documentType}
+              {document.type}
             </Badge>
             {currentVersion ? (
               <Badge variant="outline">v{currentVersion}</Badge>

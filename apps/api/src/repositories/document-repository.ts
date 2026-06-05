@@ -1,4 +1,14 @@
-import { and, desc, eq, inArray, isNotNull, isNull, like, or, sql } from "drizzle-orm"
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  like,
+  or,
+  sql,
+} from "drizzle-orm"
 import type {
   Document,
   DocumentSource,
@@ -28,6 +38,10 @@ function defaultVisibilityScope(input: {
   if (input.projectId) return "project"
   if (input.threadId) return "thread"
   return "global"
+}
+
+function markdownDocumentTypeCondition() {
+  return inArray(documents.documentType, ["document", "markdown"])
 }
 
 export class DocumentRepository {
@@ -61,7 +75,7 @@ export class DocumentRepository {
       title: input.title,
       description: input.description ?? null,
       documentType: input.documentType,
-      contentFormat: input.contentFormat ?? (input.documentType === "markdown" ? "markdown" : "binary"),
+      contentFormat: input.contentFormat ?? "markdown",
       mimeType: input.mimeType,
       sizeBytes: input.sizeBytes,
       storageKey: input.storageKey,
@@ -122,7 +136,7 @@ export class DocumentRepository {
       title: input.title,
       description: input.description ?? null,
       documentType: input.documentType,
-      contentFormat: input.contentFormat ?? (input.documentType === "markdown" ? "markdown" : "binary"),
+      contentFormat: input.contentFormat ?? "markdown",
       mimeType: input.mimeType,
       sizeBytes: input.sizeBytes,
       storageKey: input.storageKey,
@@ -304,7 +318,7 @@ export class DocumentRepository {
     const row = this.db
       .select()
       .from(documents)
-      .where(eq(documents.id, id))
+      .where(and(eq(documents.id, id), markdownDocumentTypeCondition()))
       .get()
     return row ? mapDocument(row) : null
   }
@@ -334,10 +348,7 @@ export class DocumentRepository {
   }
 
   list(filters: DocumentListFilters = {}): Document[] {
-    const conditions = []
-    if (filters.documentType) {
-      conditions.push(eq(documents.documentType, filters.documentType))
-    }
+    const conditions = [markdownDocumentTypeCondition()]
     if (filters.visibilityScope) {
       conditions.push(eq(documents.visibilityScope, filters.visibilityScope))
     }
@@ -390,6 +401,7 @@ export class DocumentRepository {
     const row = this.db
       .select({ count: sql<number>`count(*)` })
       .from(documents)
+      .where(markdownDocumentTypeCondition())
       .get()
     return Number(row?.count ?? 0)
   }
@@ -400,7 +412,12 @@ export class DocumentRepository {
     const rows = this.db
       .select({ threadId: documents.threadId, value: sql<number>`count(*)` })
       .from(documents)
-      .where(inArray(documents.threadId, threadIds))
+      .where(
+        and(
+          inArray(documents.threadId, threadIds),
+          markdownDocumentTypeCondition()
+        )
+      )
       .groupBy(documents.threadId)
       .all()
 

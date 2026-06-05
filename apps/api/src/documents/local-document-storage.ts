@@ -1,4 +1,12 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  closeSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { dirname, join, normalize } from "node:path"
 import { randomUUID } from "node:crypto"
 import type { AppConfig } from "../config.js"
@@ -27,6 +35,17 @@ export class LocalDocumentStorage {
 
   read(storageKey: string) {
     return readFileSync(this.resolveStorageKey(storageKey))
+  }
+
+  readPrefix(storageKey: string, maxBytes: number) {
+    const fd = openSync(this.resolveStorageKey(storageKey), "r")
+    try {
+      const buffer = Buffer.alloc(maxBytes)
+      const bytesRead = readSync(fd, buffer, 0, maxBytes, 0)
+      return buffer.subarray(0, bytesRead)
+    } finally {
+      closeSync(fd)
+    }
   }
 
   delete(storageKey: string) {

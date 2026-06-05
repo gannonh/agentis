@@ -274,7 +274,7 @@ describe("RunTimeline", () => {
     })
 
     expect(
-      screen.getByRole("link", { name: "Open document" })
+      screen.getByRole("button", { name: "Open document" })
     ).toHaveAttribute("href", "/documents/document_123")
   })
 })

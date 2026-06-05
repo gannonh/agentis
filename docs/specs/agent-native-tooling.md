@@ -128,15 +128,15 @@ Spec: `docs/specs/_done/2026-06-01-agent-native-tooling-v4-2-persistent-document
 
 Decision record: `docs/adr/0003-persistent-documents-library-primitive.md` (superseded by `docs/adr/0005-use-artifact-as-library-primitive.md` for the Library primitive decision)
 
-V4.2 implemented persistent markdown documents. That implementation currently uses Document as the durable Library primitive. The approved follow-up refactor changes the durable Library primitive to Artifact and narrows Document to the markdown-specific Artifact subtype. Documents retain thread, project, and global visibility, version history, find/read/create/update runtime tools, targeted markdown section updates, real download paths, and Library Type, Source, and Scope filters.
+V4.2 implemented persistent markdown documents. The Library Artifact refactor makes Artifact the durable Library primitive and narrows Document to the markdown-specific Artifact subtype. Documents retain thread, project, and global visibility, version history, find/read/create/update runtime tools, targeted markdown section updates, real download paths, and Library Type, Source, and Scope filters.
 
 The document workspace follow-on is implemented in
-`docs/specs/2026-06-01-document-workspace-design.md`: documents open at
+`docs/specs/_done/2026-06-01-document-workspace-design.md`: markdown documents open at
 `/documents/:documentId` from Library, project context, run timeline evidence,
 and agent-returned `viewPath` values. The workspace supports rendered preview,
 markdown/code view, full markdown replacement as a new version, historical
 version viewing, download, source/provenance display, and visibility scope
-management through the document service.
+management through the Artifact-backed document service.
 
 ---
 
@@ -317,7 +317,7 @@ boundary. Local-container execution improves local isolation with Docker runtime
 
 controls, but production-grade sandboxing remains future work.
 
-The current document storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents. The approved Artifact refactor will generalize this Library storage model so markdown documents, webpages, slides, and future artifact types share management while keeping type-specific behavior separate.
+The current document storage layer is a local file-backed storage implementation, but it is not a workspace filesystem interface for agents. The Artifact-backed Library storage model lets markdown documents, webpages, slides, and future artifact types share management while keeping type-specific behavior separate.
 
 ## Existing tool and persistence model
 
@@ -448,7 +448,7 @@ This inventory records the native tooling in Hyperagent, the platform Agentis is
 
 ### Interactive
 
-- **Library Artifact refactor:** Approved prerequisite for interactive artifact work. Artifact becomes the durable Library primitive; Document becomes the markdown Artifact subtype; webpage, slides, and likely hyperapp become sibling Artifact types.
+- **Library Artifact refactor:** Landed prerequisite for interactive artifact work. Artifact is the durable Library primitive; Document is the markdown Artifact subtype; webpage, slides, and likely hyperapp are sibling Artifact types.
 - **Webpages and Slides:** Generate styled webpages and slide presentations as Artifact type `webpage` and Artifact type `slides`, not document types.
 - **Slides:** Create slide presentations. Polished mode uses AI to render each slide as a visual.
 - **HyperApps:** Create interactive HyperApps with custom UI, persistent state, and direct tool access. Supports forms, wizards, and visual tools. The approved spec models HyperApps as Artifact type `hyperapp` unless Build finds a runtime/security reason for a linked subtype table.

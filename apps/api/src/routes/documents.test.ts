@@ -205,6 +205,50 @@ describe("document routes", () => {
     expect(body.code).toBe("invalid_request")
   })
 
+  it("requires uploads through document routes to declare a markdown document type", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const form = new FormData()
+    form.set("title", "Implicit notes")
+    form.set(
+      "file",
+      new File(["# Notes"], "notes.md", { type: "text/markdown" })
+    )
+
+    const response = await app.request("/api/documents", {
+      method: "POST",
+      body: form,
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "invalid_request",
+    })
+    expect(ctx.repos.documents.count()).toBe(0)
+  })
+
+  it("rejects non-markdown uploads through document compatibility routes", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const form = new FormData()
+    form.set("title", "Logo")
+    form.set("documentType", "markdown")
+    form.set("file", new File(["png"], "logo.png", { type: "image/png" }))
+
+    const response = await app.request("/api/documents", {
+      method: "POST",
+      body: form,
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "document_not_markdown",
+    })
+    expect(ctx.repos.documents.count()).toBe(0)
+  })
+
   it("links generated test-thread documents to the owning agent detail library", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
@@ -283,7 +327,7 @@ describe("document routes", () => {
 
     const uploaded = documentService.upload({
       title: "Orphan notes",
-      documentType: "markdown",
+      documentType: "document",
       filename: "orphan-notes.md",
       data: Buffer.from("# Orphan"),
       threadId: "missing-thread",
@@ -407,7 +451,7 @@ describe("document routes", () => {
 
     const document = ctx.repos.documents.create({
       title: "Missing",
-      documentType: "markdown",
+      documentType: "document",
       mimeType: "text/plain",
       sizeBytes: 1,
       storageKey: "documents/missing.txt",
@@ -606,22 +650,21 @@ describe("document routes", () => {
     })
   })
 
-  it("rejects markdown content updates for non-markdown documents", async () => {
+  it("does not update non-document artifacts through document content routes", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
     const app = createApp(ctx.repos, ctx.config, services)
-    const documentService = new DocumentService(ctx.repos, ctx.config)
-    const uploaded = documentService.upload({
+    const artifact = ctx.repos.artifacts.create({
       title: "Image",
-      documentType: "image",
-      filename: "image.png",
-      data: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+      type: "image",
+      mimeType: "image/png",
+      sizeBytes: 4,
+      storageKey: "image.png",
+      visibilityScope: "global",
     })
-    expect(uploaded.ok).toBe(true)
-    if (!uploaded.ok) return
 
     const response = await app.request(
-      `/api/documents/${uploaded.document.id}/content`,
+      `/api/documents/${artifact.id}/content`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -631,9 +674,9 @@ describe("document routes", () => {
         }),
       }
     )
-    expect(response.status).toBe(400)
+    expect(response.status).toBe(404)
     expect(await response.json()).toMatchObject({
-      code: "document_not_markdown",
+      code: "document_not_found",
     })
   })
 })

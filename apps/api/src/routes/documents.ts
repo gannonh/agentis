@@ -10,6 +10,11 @@ import type { Repositories } from "../repositories/index.js"
 import { DocumentService } from "../documents/document-service.js"
 import { toPublicDocument } from "../lib/public-documents.js"
 
+function normalizeDocumentType(value: string | undefined) {
+  if (!value) return undefined
+  return value === "markdown" ? "document" : value
+}
+
 export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
   const documentService = new DocumentService(repos, config)
@@ -17,7 +22,7 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
   app.get("/", (c) => {
     const parsed = listDocumentsQuerySchema.safeParse({
       query: c.req.query("query"),
-      documentType: c.req.query("documentType"),
+      documentType: normalizeDocumentType(c.req.query("documentType")),
       visibilityScope: c.req.query("visibilityScope"),
       projectId: c.req.query("projectId"),
       threadId: c.req.query("threadId"),
@@ -38,8 +43,9 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
     const body = await c.req.parseBody()
     const file = body.file
     const title = typeof body.title === "string" ? body.title : ""
-    const documentTypeRaw =
-      typeof body.documentType === "string" ? body.documentType : "other"
+    const documentTypeRaw = normalizeDocumentType(
+      typeof body.documentType === "string" ? body.documentType : undefined
+    )
     const description =
       typeof body.description === "string" ? body.description : undefined
     const projectId =
@@ -208,6 +214,7 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
       documentId: c.req.param("documentId"),
       visibilityScope: parsed.data.visibilityScope,
       projectId: parsed.data.projectId,
+      threadId: parsed.data.threadId,
     })
     if (!result.ok) {
       return c.json(

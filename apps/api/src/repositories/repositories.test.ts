@@ -231,7 +231,7 @@ describe("repositories", () => {
     })
     ctx.repos.documents.create({
       title: "Agent notes",
-      documentType: "markdown",
+      documentType: "document",
       mimeType: "text/markdown",
       sizeBytes: 12,
       storageKey: "agent-notes.md",
@@ -242,7 +242,7 @@ describe("repositories", () => {
     })
     ctx.repos.documents.create({
       title: "Other notes",
-      documentType: "markdown",
+      documentType: "document",
       mimeType: "text/markdown",
       sizeBytes: 12,
       storageKey: "other-notes.md",

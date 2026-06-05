@@ -33,7 +33,7 @@ Static generated outputs are frozen at creation time. They may include links, st
 
 ## Current state
 
-Agentis currently has a Document-centered Library implementation. The required first dependency is the Artifact domain refactor in `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`, which makes Artifact the durable Library primitive and Document the markdown-specific artifact subtype. After that refactor, webpages and slides should be sibling artifact types with shared versioning, visibility scope, provenance, local storage, Library filters, detail routes, and downloads.
+Agentis has an Artifact-backed Library implementation. The completed Artifact domain refactor in `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md` makes Artifact the durable Library primitive and Document the markdown-specific artifact subtype. Webpages and slides are sibling artifact types with shared versioning, visibility scope, provenance, local storage, Library filters, detail routes, and downloads.
 
 Agentis does not yet have:
 
@@ -46,11 +46,11 @@ Agentis does not yet have:
 
 ## Naming decision
 
-Use **Artifact** for durable storage and Library surfaces. Documents are only the markdown artifact subtype. Webpages and slides are sibling artifact types, so this spec depends on the Library Artifact domain refactor before Build.
+Use **Artifact** for durable storage and Library surfaces. Documents are only the markdown artifact subtype. Webpages and slides are sibling artifact types.
 
 ## Dependency
 
-Build is blocked on `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`. Do not implement webpages or slides as Document types. They must be Artifacts with `type = "webpage"` and `type = "slides"`, sibling to `type = "document"`.
+Build must use the landed Artifact primitive from `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`. Do not implement webpages or slides as Document types. They must be Artifacts with `type = "webpage"` and `type = "slides"`, sibling to `type = "document"`.
 
 ## Product scope
 
@@ -567,7 +567,7 @@ Manual UAT:
 
 ## Risks and mitigations
 
-- Artifact refactor must land first. Mitigate by blocking this spec on `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md` and verifying `webpage`/`slides` are sibling artifact types.
+- Artifact API/type usage can drift during implementation. Mitigate by using the landed Artifact routes, shared schemas, and repository/service boundaries and verifying `webpage`/`slides` are sibling artifact types.
 - HTML generation can introduce unsafe runtime behavior. Mitigate with strict validation, bounds, CSP where available, and no Agentis runtime bridge.
 - Polished image mode depends on provider availability and cost. Mitigate with explicit availability checks, mock provider tests, and visible provider errors.
 - Slide decks and webpages can diverge into duplicated implementations. Mitigate with shared tool contracts, metadata, timeline cards, and preview shell boundaries.

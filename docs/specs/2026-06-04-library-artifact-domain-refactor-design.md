@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved.
+Verified.
 
 ## Goal
 
@@ -22,12 +22,12 @@ This refactor must happen before the static webpages/slides and HyperApp specs a
   - `apps/api/src/documents/document-tool.ts`
   - `apps/api/src/repositories/document-repository.ts`
   - `apps/api/src/routes/documents.ts`
-  - `apps/web/src/routes/document-detail.tsx`
+  - `apps/web/src/routes/document-workspace.tsx`
   - `apps/web/src/components/documents/`
 
-## Current state
+## Pre-refactor state
 
-Agentis currently uses Document as the durable Library primitive. The shared schema includes `documentType` values such as `markdown`, `webpage`, `table`, `image`, `video`, `slides`, and `other`. That model makes webpages and slides document types.
+Before this refactor, Agentis used Document as the durable Library primitive. The shared schema included `documentType` values such as `markdown`, `webpage`, `table`, `image`, `video`, `slides`, and `other`. That model made webpages and slides document types.
 
 The intended domain model is different:
 
@@ -333,3 +333,45 @@ Definition of done:
 3. Existing markdown document behavior remains intact.
 4. Webpage, slides, and HyperApp specs no longer instruct implementers to model those outputs as Document types.
 5. Tests and manual UAT prove compatibility and migration safety.
+
+## Build completion report
+
+- Spec path: `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`
+- Base SHA: `07d01aa5fb814c4ecba664148e1d42bf849c4dc5`
+- Final implementation SHA before this report: `0e98a1e0`
+- Tasks completed:
+  - Added shared Artifact schemas and narrowed markdown Document subtype schemas.
+  - Added artifact repository/service boundaries over existing document persistence.
+  - Added `/api/artifacts` list/detail/content/visibility/download routes while preserving `/api/documents/*` compatibility.
+  - Updated Library UI and related document surfaces to use artifact types and artifact terminology.
+  - Aligned static artifacts and HyperApp specs plus GitHub issues #405 and #406 to the landed Artifact primitive.
+- Files changed: shared artifact/document schemas, API artifact/document repository/service/routes/tests, web Library/document/agent surfaces/tests, active specs/docs, and issue tracker metadata.
+- Verification commands run:
+  - `pnpm typecheck` passed.
+  - `pnpm build` passed.
+  - `pnpm lint` passed.
+  - `pnpm test` passed.
+  - Targeted shared/API/web tests were run during Build for artifact schemas, artifact repository/routes, document compatibility, Library filters, document workspace, project documents, agent library summaries, and timeline document links.
+- Review gates completed: per-phase spec compliance reviews and code/docs quality reviews passed; final whole-branch review passed.
+- Approved deviations: none.
+- Known follow-up issues: static webpage/slides generation and HyperApp runtime implementation remain out of scope and tracked by #406 and #405.
+- Independent subagent review used: yes.
+
+## Verify completion report
+
+- UAT evidence: `uat-evidence/mixed-20260605-172642/`
+- Human sign-off: accepted on 2026-06-05.
+- Acceptance result: all 10 acceptance criteria passed.
+- Evidence reviewed:
+  - `uat-evidence/mixed-20260605-172642/evidence.md`
+  - `uat-evidence/mixed-20260605-172642/evidence.json`
+  - `uat-evidence/mixed-20260605-172642/screenshots/library-artifact-card.png`
+  - `uat-evidence/mixed-20260605-172642/screenshots/library-type-filter-menu.png`
+  - `uat-evidence/mixed-20260605-172642/screenshots/document-workspace-compatibility.png`
+  - `uat-evidence/mixed-20260605-172642/logs/full-quality-gate.log`
+  - `uat-evidence/mixed-20260605-172642/responses/artifact-detail-after-success.json`
+- Verification commands passed:
+  - `pnpm typecheck && pnpm build && pnpm lint && pnpm test`
+  - `node /Users/gannonhall/.agents/skills/user-acceptance/scripts/verify-evidence.mjs --evidence uat-evidence/mixed-20260605-172642`
+- Independent evidence review: passed with no required fixes.
+- Final recommendation: accepted.

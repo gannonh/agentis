@@ -2,7 +2,7 @@
 
 Agentis is an open-source, self-hosted agent workspace for teams that want long-running autonomous work, reusable agents, connected tools, and visible quality controls.
 
-This repository ships the Agentis workbench: API-backed thread sessions, projects, documents, integration grants, reusable agents, and native workspace tooling.
+This repository ships the Agentis workbench: API-backed thread sessions, projects, Library artifacts, integration grants, reusable agents, and native workspace tooling.
 
 ## Prerequisites
 
@@ -52,7 +52,7 @@ docs/              # Product docs, roadmap, UI comps
 - [MVP roadmap](docs/specs/agentis-prd-roadmap.md)
 - [Product overview](docs/overview.md)
 - [Agent native tooling](docs/specs/agent-native-tooling.md)
-- [Document workspace](docs/specs/2026-06-01-document-workspace-design.md)
+- [Document workspace](docs/specs/_done/2026-06-01-document-workspace-design.md)
 - [Architecture decisions](docs/adr/)
 - [Design system](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

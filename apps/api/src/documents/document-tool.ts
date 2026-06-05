@@ -61,13 +61,17 @@ export function buildDocumentTools(
           ...documentLinks(result.document.id),
           previewText: result.document.previewText,
         }
-        context.onEvidence?.(`Document created: ${result.document.title}`, payload)
+        context.onEvidence?.(
+          `Document created: ${result.document.title}`,
+          payload
+        )
         return payload
       },
     }),
 
     findDocuments: tool({
-      description: "Find accessible persistent documents before creating or updating durable knowledge.",
+      description:
+        "Find accessible persistent documents before creating or updating durable knowledge.",
       inputSchema: z.object({
         query: z.string().optional(),
         visibilityScope: documentVisibilityScopeSchema.optional(),
@@ -89,7 +93,7 @@ export function buildDocumentTools(
           title: document.title,
           description: document.description,
           visibilityScope: document.visibilityScope,
-          documentType: document.documentType,
+          type: document.type,
           projectId: document.projectId,
           projectNameSnapshot: document.projectNameSnapshot,
           threadId: document.threadId,
@@ -109,7 +113,8 @@ export function buildDocumentTools(
     }),
 
     readDocument: tool({
-      description: "Read an accessible persistent markdown document with bounded content and section outline.",
+      description:
+        "Read an accessible persistent markdown document with bounded content and section outline.",
       inputSchema: z.object({
         documentId: z.string().min(1),
         version: z.number().int().positive().optional(),
@@ -127,7 +132,7 @@ export function buildDocumentTools(
             title: result.document.title,
             description: result.document.description,
             visibilityScope: result.document.visibilityScope,
-            documentType: result.document.documentType,
+            type: result.document.type,
             currentVersion: result.currentVersion,
             ...documentLinks(result.document.id),
           },
@@ -152,7 +157,8 @@ export function buildDocumentTools(
     }),
 
     updateDocumentSection: tool({
-      description: "Update exactly one existing markdown section in an accessible document.",
+      description:
+        "Update exactly one existing markdown section in an accessible document.",
       inputSchema: z.object({
         documentId: z.string().min(1),
         sectionPath: z.string().min(1),
@@ -177,7 +183,10 @@ export function buildDocumentTools(
           ...documentLinks(result.document.id),
           previewText: result.document.previewText,
         }
-        context.onEvidence?.(`Updated document section: ${result.document.title}`, payload)
+        context.onEvidence?.(
+          `Updated document section: ${result.document.title}`,
+          payload
+        )
         return payload
       },
     }),
@@ -214,7 +223,8 @@ export function buildDocumentTools(
     }),
 
     appendDocumentSection: tool({
-      description: "Append markdown content or add a section to an accessible document.",
+      description:
+        "Append markdown content or add a section to an accessible document.",
       inputSchema: z.object({
         documentId: z.string().min(1),
         heading: z.string().optional(),
@@ -241,7 +251,10 @@ export function buildDocumentTools(
           ...documentLinks(result.document.id),
           previewText: result.document.previewText,
         }
-        context.onEvidence?.(`Appended document section: ${result.document.title}`, payload)
+        context.onEvidence?.(
+          `Appended document section: ${result.document.title}`,
+          payload
+        )
         return payload
       },
     }),

@@ -1,7 +1,7 @@
 import { Link } from "react-router"
 import { useMemo, useState } from "react"
 import type { DocumentPublic as Document } from "@workspace/shared"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon } from "@hugeicons/core-free-icons"
@@ -34,7 +34,7 @@ export function ProjectDocumentsPanel({
       (document) =>
         document.title.toLowerCase().includes(needle) ||
         document.description?.toLowerCase().includes(needle) ||
-        document.documentType.toLowerCase().includes(needle)
+        document.type.toLowerCase().includes(needle)
     )
   }, [documents, query])
 
@@ -93,7 +93,7 @@ export function ProjectDocumentsPanel({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{document.title}</p>
                 <p className="text-muted-foreground text-xs capitalize">
-                  {document.documentType} · {formatRelativeTime(document.updatedAt)}
+                  {document.type} · {formatRelativeTime(document.updatedAt)}
                   {document.threadTitleSnapshot
                     ? ` · ${document.threadTitleSnapshot}`
                     : ""}
@@ -105,15 +105,12 @@ export function ProjectDocumentsPanel({
                 ) : null}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  render={
-                    <Link to={documentWorkspacePath(document.id)} />
-                  }
+                <Link
+                  className={buttonVariants({ size: "sm", variant: "outline" })}
+                  to={documentWorkspacePath(document.id)}
                 >
                   Open document
-                </Button>
+                </Link>
                 <Button
                   size="sm"
                   variant="outline"

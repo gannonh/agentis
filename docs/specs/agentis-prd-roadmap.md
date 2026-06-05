@@ -37,7 +37,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Invocations: start with thread invocation, then add scheduled and Slack or webhook invocation.
 - Learning: skills, memories, and rubrics as reviewable suggestions from prior runs.
 - Command Center: roster, recent runs, quality, cost, active operations, and pending improvements.
-- Library: durable document collection with search, Type/Source/Scope filters, detail preview, first-class document workspace, version history, markdown editing, scope management, and download.
+- Library: durable artifact collection with search, Type/Source/Scope filters, detail preview, document workspace support for markdown artifacts, version history, markdown editing, scope management, and download.
 
 ## MVP non-goals
 
@@ -51,8 +51,8 @@ The MVP should let a user start work in a thread, connect tools through Composio
 ## Core domain model
 
 - Workspace: installation-level container for users, settings, providers, and connections.
-- Project: scoped context, goals, memories, threads, and documents.
-- Thread: conversational work session with messages, runs, tool calls, and documents.
+- Project: scoped context, goals, memories, threads, and artifacts.
+- Thread: conversational work session with messages, runs, tool calls, and artifacts.
 - Run: one agent execution with status, steps, usage, costs, errors, and outputs.
 - Integration connection: Composio-backed account connection with auth status and scopes.
 - Tool access grant: explicit permission for a thread or agent to use a connected integration.
@@ -131,24 +131,24 @@ Acceptance:
 
 ### M04: Projects, Context, and Documents ✅
 
-Goal: make work durable by grouping threads into projects, injecting project context, and collecting generated documents.
+Goal: make work durable by grouping threads into projects, injecting project context, and collecting generated artifacts.
 
 Deliverables:
 
 - Project create/edit flow with name, description, and goals.
 - Project selector in the composer and thread metadata.
 - Context assembly that injects project goals and selected project memories into runs.
-- Document model with upload, generated output registration, markdown versioning, download, and preview metadata.
-- Library screen with search, Type/Source/Scope filters, document cards, detail preview, document workspace links, version history, markdown editing, scope management, and project/thread/agent provenance.
+- Artifact-backed markdown document model with upload, generated output registration, markdown versioning, download, and preview metadata.
+- Library screen with search, Type/Source/Scope filters, artifact cards, detail preview, document workspace links for markdown artifacts, version history, markdown editing, scope management, and project/thread/agent provenance.
 - Basic file storage abstraction for local self-hosted deployments.
 
 Acceptance:
 
 - User can create a project and start a thread inside it.
 - Project goals are included in the run context and visible from the thread.
-- A run can create at least one durable document and link it to the thread, project, and library.
-- User can browse, search, filter, preview, open, edit markdown versions, manage scope, and download documents from the Library/document workspace.
-- Deleting or archiving a project preserves clear document ownership rules.
+- A run can create at least one durable markdown document artifact and link it to the thread, project, and Library.
+- User can browse, search, filter, preview, open, edit markdown versions, manage scope, and download artifacts from the Library/document workspace.
+- Deleting or archiving a project preserves clear artifact ownership rules.
 
 ### M05: Agent Creation and Configuration ✅
 

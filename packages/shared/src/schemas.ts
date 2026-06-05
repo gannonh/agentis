@@ -1,4 +1,20 @@
 import { z } from "zod"
+import {
+  artifactContentFormatSchema,
+  artifactDetailResponseSchema,
+  artifactPublicSchema,
+  artifactSchema,
+  artifactSourceSchema,
+  artifactTypeSchema,
+  artifactVersionSchema,
+  artifactVersionSummarySchema,
+  artifactVisibilityScopeSchema,
+  listArtifactsQuerySchema,
+  updateArtifactContentRequestSchema,
+  updateArtifactContentResponseSchema,
+  updateArtifactVisibilityRequestSchema,
+  updateArtifactVisibilityResponseSchema,
+} from "./artifact-schemas.js"
 import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
 import {
   documentDetailResponseSchema,
@@ -18,6 +34,24 @@ import {
 import { nativeToolsSchema } from "./native-tools.js"
 export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 export {
+  artifactContentFormatSchema,
+  artifactDetailResponseSchema,
+  artifactPublicSchema,
+  artifactSchema,
+  artifactSourceSchema,
+  artifactTypeSchema,
+  artifactVersionSchema,
+  artifactVersionSummarySchema,
+  artifactVisibilityScopeSchema,
+  listArtifactsQuerySchema,
+  markdownDocumentPublicSchema,
+  markdownDocumentSchema,
+  updateArtifactContentRequestSchema,
+  updateArtifactContentResponseSchema,
+  updateArtifactVisibilityRequestSchema,
+  updateArtifactVisibilityResponseSchema,
+} from "./artifact-schemas.js"
+export {
   documentContentFormatSchema,
   documentDetailResponseSchema,
   documentPublicSchema,
@@ -27,6 +61,7 @@ export {
   documentVersionSchema,
   documentVersionSummarySchema,
   documentVisibilityScopeSchema,
+  legacyDocumentTypeSchema,
   listDocumentsQuerySchema,
   updateDocumentContentRequestSchema,
   updateDocumentContentResponseSchema,
@@ -676,7 +711,7 @@ export const agentRecentThreadSummarySchema = threadListItemSchema
   .extend({ documentCount: nonNegativeInteger })
 
 export const agentLibrarySummarySchema = z.object({
-  items: z.array(documentPublicSchema),
+  items: z.array(artifactPublicSchema),
   totalCount: nonNegativeInteger,
 })
 
@@ -881,6 +916,34 @@ export type CreateProjectMemoryRequest = z.infer<
 export type UpdateProjectMemoryRequest = z.infer<
   typeof updateProjectMemoryRequestSchema
 >
+export type ArtifactType = z.infer<typeof artifactTypeSchema>
+export type ArtifactContentFormat = z.infer<typeof artifactContentFormatSchema>
+export type ArtifactVisibilityScope = z.infer<
+  typeof artifactVisibilityScopeSchema
+>
+export type ArtifactSource = z.infer<typeof artifactSourceSchema>
+export type Artifact = z.infer<typeof artifactSchema>
+export type ArtifactVersion = z.infer<typeof artifactVersionSchema>
+export type ArtifactPublic = z.infer<typeof artifactPublicSchema>
+export type ArtifactVersionSummary = z.infer<
+  typeof artifactVersionSummarySchema
+>
+export type ArtifactDetailResponse = z.infer<
+  typeof artifactDetailResponseSchema
+>
+export type UpdateArtifactContentRequest = z.infer<
+  typeof updateArtifactContentRequestSchema
+>
+export type UpdateArtifactContentResponse = z.infer<
+  typeof updateArtifactContentResponseSchema
+>
+export type UpdateArtifactVisibilityRequest = z.infer<
+  typeof updateArtifactVisibilityRequestSchema
+>
+export type UpdateArtifactVisibilityResponse = z.infer<
+  typeof updateArtifactVisibilityResponseSchema
+>
+export type ListArtifactsQuery = z.infer<typeof listArtifactsQuerySchema>
 export type DocumentType = z.infer<typeof documentTypeSchema>
 export type DocumentVisibilityScope = z.infer<
   typeof documentVisibilityScopeSchema

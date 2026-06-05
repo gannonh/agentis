@@ -1,10 +1,14 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { listThreads } from "@/lib/api/client"
 import { listAgents } from "@/lib/api/agents-client"
-import { listDocuments, listProjects } from "@/lib/api/projects-client"
+import {
+  listArtifacts,
+  listProjects,
+  uploadDocument,
+} from "@/lib/api/projects-client"
 import { LibraryPage } from "./library"
 
 vi.mock("@/lib/api/client", () => ({
@@ -48,14 +52,14 @@ vi.mock("@/lib/api/agents-client", () => ({
 }))
 
 vi.mock("@/lib/api/projects-client", () => ({
-  listDocuments: vi.fn().mockResolvedValue([
+  listArtifacts: vi.fn().mockResolvedValue([
     {
       id: "document_test",
+      type: "document",
       title: "Q2 Brief",
-      documentType: "markdown",
-      mimeType: "text/plain",
+      contentFormat: "markdown",
+      mimeType: "text/markdown",
       sizeBytes: 120,
-      storageKey: "documents/test.txt",
       projectNameSnapshot: "Launch",
       createdAt: new Date().toISOString(),
       visibilityScope: "global",
@@ -73,23 +77,24 @@ vi.mock("@/lib/api/projects-client", () => ({
     },
   ]),
   uploadDocument: vi.fn(),
-  getDocumentDetail: vi.fn(),
-  downloadDocumentFile: vi.fn(),
-  documentDownloadUrl: (id: string) => `/api/documents/${id}/download`,
+  getArtifactDetail: vi.fn(),
+  downloadArtifactFile: vi.fn(),
+  artifactDownloadUrl: (id: string) => `/api/artifacts/${id}/download`,
   documentWorkspacePath: (id: string) => `/documents/${id}`,
 }))
 
-const mockedListDocuments = vi.mocked(listDocuments)
+const mockedListArtifacts = vi.mocked(listArtifacts)
 const mockedListProjects = vi.mocked(listProjects)
 const mockedListAgents = vi.mocked(listAgents)
 const mockedListThreads = vi.mocked(listThreads)
+const mockedUploadDocument = vi.mocked(uploadDocument)
 
 beforeEach(() => {
   vi.clearAllMocks()
 })
 
 describe("LibraryPage", () => {
-  it("renders API-backed document cards", async () => {
+  it("renders API-backed artifact cards with document workspace compatibility links", async () => {
     render(
       <MemoryRouter>
         <LibraryPage />
@@ -97,20 +102,23 @@ describe("LibraryPage", () => {
     )
 
     expect(screen.getByRole("heading", { name: "Library" })).toBeInTheDocument()
-    expect(screen.getByLabelText("Search documents")).toBeEnabled()
-    expect(screen.getByLabelText("Filter by type")).toHaveTextContent("All types")
+    expect(screen.getByLabelText("Search artifacts")).toBeEnabled()
+    expect(screen.getByLabelText("Filter by artifact type")).toHaveTextContent(
+      "All types"
+    )
 
     await waitFor(() => {
       expect(screen.getByText("Q2 Brief")).toBeInTheDocument()
     })
-    expect(screen.getByRole("link", { name: "Open" })).toHaveAttribute(
+    expect(screen.getByText("document · global")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open" })).toHaveAttribute(
       "href",
       "/documents/document_test"
     )
     expect(screen.getByRole("button", { name: "Download" })).toBeEnabled()
   })
 
-  it("filters documents by source and scope without listing threads in the main scope dropdown", async () => {
+  it("uses artifact type filters for document, webpage, and slides siblings", async () => {
     const user = userEvent.setup()
     render(
       <MemoryRouter>
@@ -119,7 +127,32 @@ describe("LibraryPage", () => {
     )
 
     await waitFor(() => {
-      expect(mockedListDocuments).toHaveBeenCalled()
+      expect(mockedListArtifacts).toHaveBeenCalled()
+    })
+
+    await user.click(screen.getByLabelText("Filter by artifact type"))
+    expect(await screen.findByRole("menuitemradio", { name: /document/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitemradio", { name: /webpage/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitemradio", { name: /slides/i })).toBeInTheDocument()
+    await user.click(screen.getByRole("menuitemradio", { name: /webpage/i }))
+
+    await waitFor(() => {
+      expect(mockedListArtifacts).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: "webpage" })
+      )
+    })
+  })
+
+  it("filters artifacts by source and scope without listing threads in the main scope dropdown", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <LibraryPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(mockedListArtifacts).toHaveBeenCalled()
     })
     expect(mockedListProjects).toHaveBeenCalledWith(true)
     expect(mockedListAgents).toHaveBeenCalled()
@@ -128,7 +161,7 @@ describe("LibraryPage", () => {
     await user.click(screen.getByLabelText("Filter by source"))
     await user.click(await screen.findByRole("menuitemradio", { name: /Docs Agent/ }))
     await waitFor(() => {
-      expect(mockedListDocuments).toHaveBeenLastCalledWith(
+      expect(mockedListArtifacts).toHaveBeenLastCalledWith(
         expect.objectContaining({ source: "agent", agentId: "agent_docs" })
       )
     })
@@ -139,12 +172,14 @@ describe("LibraryPage", () => {
     expect(screen.queryByLabelText("Filter by thread")).not.toBeInTheDocument()
 
     await user.click(scope)
-    expect(screen.getByRole("menu", { hidden: true })).not.toHaveTextContent(
-      "Launch evidence thread"
+    expect(
+      screen.queryByRole("menuitemradio", { name: /Launch evidence thread/ })
+    ).not.toBeInTheDocument()
+    await user.click(
+      await screen.findByRole("menuitemradio", { name: /Launch/ })
     )
-    await user.click(screen.getByRole("menuitemradio", { name: /Launch/ }))
     await waitFor(() => {
-      expect(mockedListDocuments).toHaveBeenLastCalledWith(
+      expect(mockedListArtifacts).toHaveBeenLastCalledWith(
         expect.objectContaining({
           source: "agent",
           agentId: "agent_docs",
@@ -153,7 +188,37 @@ describe("LibraryPage", () => {
         })
       )
     })
+  })
 
+  it("rejects non-markdown uploads before calling the API", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <LibraryPage />
+      </MemoryRouter>
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: "Upload markdown document" })
+    )
+    await user.type(screen.getByPlaceholderText("Title"), "Diagram")
+    const input = document.querySelector('input[type="file"]')
+    expect(input).toBeInstanceOf(HTMLInputElement)
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File(["png"], "diagram.png", {
+            type: "image/png",
+          }),
+        ],
+      },
+    })
+    await user.click(screen.getByRole("button", { name: "Upload" }))
+
+    expect(
+      await screen.findByText(/Please choose a markdown/)
+    ).toBeInTheDocument()
+    expect(mockedUploadDocument).not.toHaveBeenCalled()
   })
 
   it("shows a searchable thread filter only after selecting thread scope", async () => {
@@ -165,12 +230,14 @@ describe("LibraryPage", () => {
     )
 
     await waitFor(() => {
-      expect(mockedListDocuments).toHaveBeenCalled()
+      expect(mockedListArtifacts).toHaveBeenCalled()
     })
     expect(screen.queryByLabelText("Filter by thread")).not.toBeInTheDocument()
 
     await user.click(screen.getByLabelText("Filter by scope"))
-    await user.click(await screen.findByRole("menuitemradio", { name: /^Threads$/ }))
+    await user.click(
+      await screen.findByRole("menuitemradio", { name: /^Threads$/ })
+    )
     expect(await screen.findByLabelText("Search threads")).toBeInTheDocument()
     expect(screen.getByLabelText("Filter by thread")).toHaveTextContent(
       "Launch evidence thread"
@@ -180,9 +247,12 @@ describe("LibraryPage", () => {
     expect(screen.getByLabelText("Filter by thread")).not.toHaveTextContent(
       "Launch evidence thread"
     )
-    await user.selectOptions(screen.getByLabelText("Filter by thread"), "thread_research")
+    await user.selectOptions(
+      screen.getByLabelText("Filter by thread"),
+      "thread_research"
+    )
     await waitFor(() => {
-      expect(mockedListDocuments).toHaveBeenLastCalledWith(
+      expect(mockedListArtifacts).toHaveBeenLastCalledWith(
         expect.objectContaining({
           visibilityScope: "thread",
           threadId: "thread_research",

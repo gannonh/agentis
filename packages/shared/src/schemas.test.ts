@@ -592,7 +592,7 @@ describe("shared schemas", () => {
             id: "document-1",
             title: "Research notes",
             description: null,
-            documentType: "markdown",
+            type: "document",
             contentFormat: "markdown",
             mimeType: "text/markdown",
             sizeBytes: 42,
@@ -851,7 +851,7 @@ describe("shared schemas", () => {
     const document = documentSchema.parse({
       id: "document-1",
       title: "Brief",
-      documentType: "markdown",
+      type: "document",
       contentFormat: "markdown",
       mimeType: "text/plain",
       sizeBytes: 10,
@@ -860,7 +860,7 @@ describe("shared schemas", () => {
       createdAt: now,
       updatedAt: now,
     })
-    expect(document.documentType).toBe("markdown")
+    expect(document.type).toBe("document")
     expect(() =>
       documentSchema.parse({
         ...document,
@@ -881,6 +881,8 @@ describe("shared schemas", () => {
     })
     expect(documentDetail.versions[0]?.version).toBe(1)
     expect(documentDetail.selectedVersion).toBe(1)
+    expect(() => documentTypeSchema.parse("webpage")).toThrow()
+    expect(() => documentTypeSchema.parse("slides")).toThrow()
     expect(() => documentTypeSchema.parse("folder")).toThrow()
 
     const updateRequest = updateDocumentContentRequestSchema.parse({
