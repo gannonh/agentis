@@ -391,6 +391,13 @@ export class RunExecutor {
         nativeRuntimeCapabilities.webSearch.unavailableError
       )
     }
+    if (nativeRuntimeCapabilities.staticArtifacts.permissionDeniedError) {
+      return this.failWithStaticArtifactPermissionDenied(
+        runId,
+        run.threadId,
+        nativeRuntimeCapabilities.staticArtifacts.permissionDeniedError
+      )
+    }
 
     const projectContext = this.contextService.assemble(thread.projectId)
     const projectContextBlock =
@@ -1013,6 +1020,38 @@ export class RunExecutor {
     })
     this.repos.threads.touch(threadId, { status: "failed" })
     throw new Error(message)
+  }
+
+  private failWithStaticArtifactPermissionDenied(
+    runId: string,
+    threadId: string,
+    error: { code: string; message: string }
+  ): never {
+    this.repos.messages.create({
+      threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: error.message }],
+      status: "failed",
+    })
+    this.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: error.message,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Static artifact permission denied",
+      payload: {
+        provider: "native",
+        toolName: "createStaticArtifact",
+        code: error.code,
+        error: error.message,
+        remediation: "Enable the staticArtifacts native tool permission for this agent.",
+      },
+    })
+    this.repos.threads.touch(threadId, { status: "failed" })
+    throw new Error(error.message)
   }
 
   private failWithWebSearchError(

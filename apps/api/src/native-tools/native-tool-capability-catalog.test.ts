@@ -100,7 +100,7 @@ describe("native tool capability catalog", () => {
     })
   })
 
-  it("omits static artifact tools when staticArtifacts is not permitted", () => {
+  it("reports visible denial when static artifact intent is not permitted", () => {
     const capabilities = resolveNativeRuntimeCapabilities({
       permittedNativeToolIds: [],
       providerAvailability: { webSearch: true },
@@ -118,7 +118,12 @@ describe("native tool capability catalog", () => {
     expect(capabilities.runtimeTools).toEqual({})
     expect(capabilities.staticArtifacts).toMatchObject({
       permitted: false,
+      requested: true,
       enabled: false,
+      permissionDeniedError: {
+        code: "static_artifact_permission_denied",
+        message: "This agent is not permitted to create static artifacts.",
+      },
     })
   })
 

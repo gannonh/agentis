@@ -23,6 +23,12 @@ export function looksLikeWebSearchIntent(prompt: string): boolean {
   )
 }
 
+export function looksLikeStaticArtifactIntent(prompt: string): boolean {
+  return /\b(static webpage|webpage|generated page|slide deck|slides|presentation|polished visual deck|visual deck)\b/i.test(
+    prompt
+  )
+}
+
 type ProviderAvailability = {
   webSearch: boolean
 }
@@ -61,7 +67,17 @@ export function resolveNativeRuntimeCapabilities(input: {
   const staticArtifactsPermitted = input.permittedNativeToolIds.includes(
     STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY.id
   )
+  const staticArtifactsRequested = looksLikeStaticArtifactIntent(
+    input.latestUserPrompt
+  )
   const staticArtifactsEnabled = staticArtifactsPermitted
+  const staticArtifactsPermissionDeniedError =
+    staticArtifactsRequested && !staticArtifactsPermitted
+      ? {
+          code: "static_artifact_permission_denied",
+          message: "This agent is not permitted to create static artifacts.",
+        }
+      : undefined
 
   const runtimeTools: ToolSet = {
     ...(webSearchEnabled && input.buildTools?.webSearch
@@ -96,7 +112,9 @@ export function resolveNativeRuntimeCapabilities(input: {
     },
     staticArtifacts: {
       permitted: staticArtifactsPermitted,
+      requested: staticArtifactsRequested,
       enabled: staticArtifactsEnabled,
+      permissionDeniedError: staticArtifactsPermissionDeniedError,
     },
   }
 }
