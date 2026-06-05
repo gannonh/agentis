@@ -139,6 +139,41 @@ export class ArtifactRepository {
       .map(mapArtifactVersion)
   }
 
+  updateVisibilityScope(input: {
+    artifactId: string
+    visibilityScope: ArtifactVisibilityScope
+    projectId?: string | null
+    projectNameSnapshot?: string | null
+    threadId?: string | null
+    threadTitleSnapshot?: string | null
+  }): Artifact | null {
+    const existing = this.getById(input.artifactId)
+    if (!existing) return null
+
+    this.db
+      .update(documents)
+      .set({
+        visibilityScope: input.visibilityScope,
+        projectId:
+          input.projectId !== undefined ? input.projectId : existing.projectId,
+        projectNameSnapshot:
+          input.projectNameSnapshot !== undefined
+            ? input.projectNameSnapshot
+            : existing.projectNameSnapshot,
+        threadId:
+          input.threadId !== undefined ? input.threadId : existing.threadId,
+        threadTitleSnapshot:
+          input.threadTitleSnapshot !== undefined
+            ? input.threadTitleSnapshot
+            : existing.threadTitleSnapshot,
+        updatedAt: nowIso(),
+      })
+      .where(eq(documents.id, input.artifactId))
+      .run()
+
+    return this.getById(input.artifactId)
+  }
+
   list(filters: ArtifactListFilters = {}): Artifact[] {
     const conditions = []
     if (filters.type) {

@@ -1,4 +1,7 @@
 import {
+  artifactDetailResponseSchema,
+  artifactPublicSchema,
+  artifactTypeSchema,
   documentDetailResponseSchema,
   documentPublicSchema,
   documentTypeSchema,
@@ -12,6 +15,11 @@ import {
   projectSchema,
   updateProjectMemoryRequestSchema,
   updateProjectRequestSchema,
+  type ArtifactDetailResponse,
+  type ArtifactPublic as Artifact,
+  type ArtifactSource,
+  type ArtifactType,
+  type ArtifactVisibilityScope,
   type DocumentDetailResponse,
   type DocumentPublic as Document,
   type DocumentSource,
@@ -196,6 +204,39 @@ export async function deleteProjectMemory(
   }
 }
 
+export type ArtifactListFilters = {
+  query?: string
+  type?: ArtifactType
+  visibilityScope?: ArtifactVisibilityScope
+  projectId?: string
+  threadId?: string
+  source?: ArtifactSource
+  agentId?: string
+}
+
+export async function listArtifacts(
+  filters: ArtifactListFilters = {}
+): Promise<Artifact[]> {
+  const params = new URLSearchParams()
+  if (filters.query) params.set("query", filters.query)
+  if (filters.type) params.set("type", artifactTypeSchema.parse(filters.type))
+  if (filters.visibilityScope) {
+    params.set("visibilityScope", filters.visibilityScope)
+  }
+  if (filters.projectId) params.set("projectId", filters.projectId)
+  if (filters.threadId) params.set("threadId", filters.threadId)
+  if (filters.source) params.set("source", filters.source)
+  if (filters.agentId) params.set("agentId", filters.agentId)
+  const query = params.toString()
+  const response = await fetch(
+    `${API_BASE}/api/artifacts${query ? `?${query}` : ""}`
+  )
+  if (!response.ok) {
+    await throwResponseApiError(response, response.statusText)
+  }
+  return parseArray(artifactPublicSchema, await response.json())
+}
+
 export type DocumentListFilters = {
   query?: string
   documentType?: DocumentType
@@ -253,6 +294,21 @@ export async function uploadDocument(input: {
   return parseJson(response, documentPublicSchema)
 }
 
+export async function getArtifactDetail(
+  artifactId: string,
+  options: { version?: number } = {}
+): Promise<ArtifactDetailResponse> {
+  const params = new URLSearchParams()
+  if (options.version != null) {
+    params.set("version", String(options.version))
+  }
+  const query = params.toString()
+  const response = await fetch(
+    `${API_BASE}/api/artifacts/${artifactId}/detail${query ? `?${query}` : ""}`
+  )
+  return parseJson(response, artifactDetailResponseSchema)
+}
+
 export async function getDocumentDetail(
   documentId: string,
   options: { version?: number } = {}
@@ -304,8 +360,26 @@ export function documentWorkspacePath(documentId: string): string {
   return `/documents/${documentId}`
 }
 
+export function artifactDownloadUrl(artifactId: string): string {
+  return `${API_BASE}/api/artifacts/${artifactId}/download`
+}
+
 export function documentDownloadUrl(documentId: string): string {
   return `${API_BASE}/api/documents/${documentId}/download`
+}
+
+export async function downloadArtifactFile(artifact: Artifact): Promise<void> {
+  const response = await fetch(artifactDownloadUrl(artifact.id))
+  if (!response.ok) {
+    await throwResponseApiError(response, "Download failed")
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const anchor = window.document.createElement("a")
+  anchor.href = url
+  anchor.download = artifact.title
+  anchor.click()
+  URL.revokeObjectURL(url)
 }
 
 export async function downloadDocumentFile(document: Document): Promise<void> {
