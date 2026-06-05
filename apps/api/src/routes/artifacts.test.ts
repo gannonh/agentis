@@ -141,6 +141,68 @@ describe("artifact routes", () => {
     expect(await download.text()).toBe("# Updated artifact")
   })
 
+  it("returns artifact errors for unchanged markdown content updates", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const created = documentService.createMarkdownDocument({
+      title: "Unchanged artifact",
+      content: "# Same artifact",
+      visibilityScope: "global",
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const response = await app.request(
+      `/api/artifacts/${created.document.id}/content`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: "# Same artifact",
+          baseVersion: 1,
+        }),
+      }
+    )
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "artifact_content_unchanged",
+    })
+  })
+
+  it("returns artifact errors for stale content update versions", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const documentService = new DocumentService(ctx.repos, ctx.config)
+    const created = documentService.createMarkdownDocument({
+      title: "Versioned artifact",
+      content: "# Versioned artifact",
+      visibilityScope: "global",
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const response = await app.request(
+      `/api/artifacts/${created.document.id}/content`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: "# Changed artifact",
+          baseVersion: 2,
+        }),
+      }
+    )
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({
+      code: "artifact_version_conflict",
+    })
+  })
+
   it("rejects content updates for non-document artifacts with artifact errors", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)

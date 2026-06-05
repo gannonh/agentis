@@ -25,9 +25,14 @@ function artifactNotMarkdownResponse() {
 function artifactRouteError(error: { code: string; message: string }) {
   const codeMap: Record<string, string> = {
     document_not_found: "artifact_not_found",
+    document_not_accessible: "artifact_not_accessible",
     document_not_markdown: "artifact_not_markdown",
     document_too_large: "artifact_too_large",
     document_version_conflict: "artifact_version_conflict",
+    document_version_not_found: "artifact_version_not_found",
+    document_content_required: "artifact_content_required",
+    document_content_unchanged: "artifact_content_unchanged",
+    document_storage_failed: "artifact_storage_failed",
     invalid_document_scope: "invalid_artifact_scope",
     invalid_document_provenance: "invalid_artifact_provenance",
   }
