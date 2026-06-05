@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented.
+Verified.
 
 ## Goal
 
@@ -356,3 +356,22 @@ Definition of done:
 - Approved deviations: none.
 - Known follow-up issues: static webpage/slides generation and HyperApp runtime implementation remain out of scope and tracked by #406 and #405.
 - Independent subagent review used: yes.
+
+## Verify completion report
+
+- UAT evidence: `uat-evidence/mixed-20260605-172642/`
+- Human sign-off: accepted on 2026-06-05.
+- Acceptance result: all 10 acceptance criteria passed.
+- Evidence reviewed:
+  - `uat-evidence/mixed-20260605-172642/evidence.md`
+  - `uat-evidence/mixed-20260605-172642/evidence.json`
+  - `uat-evidence/mixed-20260605-172642/screenshots/library-artifact-card.png`
+  - `uat-evidence/mixed-20260605-172642/screenshots/library-type-filter-menu.png`
+  - `uat-evidence/mixed-20260605-172642/screenshots/document-workspace-compatibility.png`
+  - `uat-evidence/mixed-20260605-172642/logs/full-quality-gate.log`
+  - `uat-evidence/mixed-20260605-172642/responses/artifact-detail-after-success.json`
+- Verification commands passed:
+  - `pnpm typecheck && pnpm build && pnpm lint && pnpm test`
+  - `node /Users/gannonhall/.agents/skills/user-acceptance/scripts/verify-evidence.mjs --evidence uat-evidence/mixed-20260605-172642`
+- Independent evidence review: passed with no required fixes.
+- Final recommendation: accepted.
