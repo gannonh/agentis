@@ -62,11 +62,17 @@ describe("DocumentService", () => {
       documentId: created.document.id,
       runContext: {
         threadId: createdThread.thread.id,
-        projectId: project.id,
+      },
+    })
+    const runRead = service.readDocument({
+      documentId: created.document.id,
+      runContext: {
+        runId: createdThread.run.id,
       },
     })
 
     expect(read).toMatchObject({ ok: true })
+    expect(runRead).toMatchObject({ ok: true })
     if (!read.ok) return
     expect(read.content).toContain("# Plan")
     expect(read.outline.map((section) => section.path)).toEqual([

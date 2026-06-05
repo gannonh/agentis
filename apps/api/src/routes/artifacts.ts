@@ -62,21 +62,15 @@ function isTextPreviewFormat(contentFormat: string) {
   )
 }
 
-function truncateUtf8ToBytes(text: string, maxBytes: number) {
-  if (Buffer.byteLength(text, "utf8") <= maxBytes) {
-    return { text, truncated: false }
+function truncateUtf8ToBytes(buffer: Buffer, maxBytes: number) {
+  if (buffer.byteLength <= maxBytes) {
+    return { text: buffer.toString("utf8"), truncated: false }
   }
-  let lo = 0
-  let hi = text.length
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1
-    if (Buffer.byteLength(text.slice(0, mid), "utf8") <= maxBytes) {
-      lo = mid
-    } else {
-      hi = mid - 1
-    }
+  let end = maxBytes
+  while (end > 0 && (buffer[end] & 0xc0) === 0x80) {
+    end -= 1
   }
-  return { text: text.slice(0, lo), truncated: true }
+  return { text: buffer.subarray(0, end).toString("utf8"), truncated: true }
 }
 
 function artifactDownloadFilename(input: { title: string; mimeType: string }) {
@@ -165,7 +159,7 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
     if (isTextPreviewFormat(artifact.contentFormat)) {
       try {
         const limited = truncateUtf8ToBytes(
-          storage.read(storageKey).toString("utf8"),
+          storage.readPrefix(storageKey, config.documentMaxUploadBytes + 1),
           config.documentMaxUploadBytes
         )
         content = limited.text
@@ -265,7 +259,8 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
       artifact,
       parsed.data.visibilityScope,
       undefined,
-      parsed.data.projectId
+      parsed.data.projectId,
+      parsed.data.threadId
     )
     if (!assignment.ok) {
       return c.json(

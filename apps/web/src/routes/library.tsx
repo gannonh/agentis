@@ -84,6 +84,15 @@ type DocumentScopeFilter =
   | "project"
   | `project:${string}`
 
+function isMarkdownUpload(file: File) {
+  const filename = file.name.toLowerCase()
+  return (
+    file.type === "text/markdown" ||
+    filename.endsWith(".md") ||
+    filename.endsWith(".markdown")
+  )
+}
+
 function sourceFilters(value: ArtifactSourceFilter): {
   source?: ArtifactSource
   agentId?: string
@@ -269,6 +278,10 @@ export function LibraryPage() {
 
   const handleUpload = async () => {
     if (!uploadTitle.trim() || !uploadFile) return
+    if (!isMarkdownUpload(uploadFile)) {
+      setError("Please choose a markdown (.md or .markdown) file")
+      return
+    }
     setUploading(true)
     setError(null)
     try {
@@ -304,7 +317,7 @@ export function LibraryPage() {
       })
       .catch((detailError) => {
         if (!cancelled) {
-          setError(errorMessage(detailError, "Failed to load document detail"))
+          setError(errorMessage(detailError, "Failed to load artifact detail"))
         }
       })
     return () => {
@@ -364,6 +377,7 @@ export function LibraryPage() {
                 </select>
                 <Input
                   type="file"
+                  accept=".md,.markdown,text/markdown"
                   onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
                 />
               </div>

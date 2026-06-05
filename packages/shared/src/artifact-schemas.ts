@@ -129,10 +129,20 @@ export const updateArtifactContentResponseSchema = z.object({
   currentVersion: positiveInteger,
 })
 
-export const updateArtifactVisibilityRequestSchema = z.object({
-  visibilityScope: artifactVisibilityScopeSchema,
-  projectId: z.string().optional(),
-})
+export const updateArtifactVisibilityRequestSchema = z
+  .object({
+    visibilityScope: artifactVisibilityScopeSchema,
+    projectId: z.string().optional(),
+    threadId: z.string().optional(),
+  })
+  .refine(
+    (input) =>
+      input.visibilityScope !== "thread" || Boolean(input.threadId?.trim()),
+    {
+      message: "Thread is required for thread visibility",
+      path: ["threadId"],
+    }
+  )
 
 export const updateArtifactVisibilityResponseSchema = z.object({
   artifact: artifactPublicSchema,

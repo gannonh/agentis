@@ -34,7 +34,7 @@ describe("ProjectDocumentsPanel", () => {
     )
 
     expect(
-      screen.getByRole("button", { name: "Open document" })
+      screen.getByRole("link", { name: "Open document" })
     ).toHaveAttribute("href", "/documents/document_test")
   })
 })

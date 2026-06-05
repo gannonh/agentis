@@ -214,6 +214,7 @@ export function createDocumentRoutes(repos: Repositories, config: AppConfig) {
       documentId: c.req.param("documentId"),
       visibilityScope: parsed.data.visibilityScope,
       projectId: parsed.data.projectId,
+      threadId: parsed.data.threadId,
     })
     if (!result.ok) {
       return c.json(

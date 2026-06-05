@@ -1,7 +1,7 @@
 import { Link } from "react-router"
 import { useMemo, useState } from "react"
 import type { DocumentPublic as Document } from "@workspace/shared"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon } from "@hugeicons/core-free-icons"
@@ -105,14 +105,12 @@ export function ProjectDocumentsPanel({
                 ) : null}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  nativeButton={false}
-                  render={<Link to={documentWorkspacePath(document.id)} />}
+                <Link
+                  className={buttonVariants({ size: "sm", variant: "outline" })}
+                  to={documentWorkspacePath(document.id)}
                 >
                   Open document
-                </Button>
+                </Link>
                 <Button
                   size="sm"
                   variant="outline"

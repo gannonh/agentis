@@ -401,6 +401,7 @@ export class DocumentRepository {
     const row = this.db
       .select({ count: sql<number>`count(*)` })
       .from(documents)
+      .where(markdownDocumentTypeCondition())
       .get()
     return Number(row?.count ?? 0)
   }

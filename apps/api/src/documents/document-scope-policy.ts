@@ -73,14 +73,16 @@ export class DocumentScopePolicy {
     artifact: Artifact,
     visibilityScope: ArtifactVisibilityScope,
     runContext?: ArtifactRunContext,
-    explicitProjectId?: string
+    explicitProjectId?: string,
+    explicitThreadId?: string
   ) {
     return mapScopeResult(
       this.artifactService.resolveVisibilityScopeAssignment(
         artifact,
         visibilityScope,
         runContext,
-        explicitProjectId
+        explicitProjectId,
+        explicitThreadId
       )
     )
   }

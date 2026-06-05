@@ -71,10 +71,20 @@ export const updateDocumentContentResponseSchema = z.object({
   currentVersion: positiveInteger,
 })
 
-export const updateDocumentVisibilityRequestSchema = z.object({
-  visibilityScope: documentVisibilityScopeSchema,
-  projectId: z.string().optional(),
-})
+export const updateDocumentVisibilityRequestSchema = z
+  .object({
+    visibilityScope: documentVisibilityScopeSchema,
+    projectId: z.string().optional(),
+    threadId: z.string().optional(),
+  })
+  .refine(
+    (input) =>
+      input.visibilityScope !== "thread" || Boolean(input.threadId?.trim()),
+    {
+      message: "Thread is required for thread visibility",
+      path: ["threadId"],
+    }
+  )
 
 export const updateDocumentVisibilityResponseSchema = z.object({
   document: documentPublicSchema,

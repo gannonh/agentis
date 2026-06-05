@@ -77,6 +77,30 @@ describe("artifact repository", () => {
     ctx.cleanup()
   })
 
+  it("keeps document counts scoped to markdown-compatible rows", () => {
+    const ctx = createTestContext()
+    ctx.repos.documents.create({
+      title: "Markdown brief",
+      documentType: "document",
+      mimeType: "text/markdown",
+      sizeBytes: 18,
+      storageKey: "documents/markdown/v1.md",
+      visibilityScope: "global",
+    })
+    ctx.repos.artifacts.create({
+      title: "Landing page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 20,
+      storageKey: "artifacts/landing/index.html",
+      visibilityScope: "global",
+    })
+
+    expect(ctx.repos.documents.count()).toBe(1)
+    ctx.cleanup()
+  })
+
   it("creates new markdown documents as document artifacts", () => {
     const ctx = createTestContext()
 

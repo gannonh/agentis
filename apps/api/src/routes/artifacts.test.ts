@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { DocumentService } from "../documents/document-service.js"
+import { LocalDocumentStorage } from "../documents/local-document-storage.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -142,6 +143,33 @@ describe("artifact routes", () => {
       'attachment; filename="Editable_artifact.md"'
     )
     expect(await download.text()).toBe("# Updated artifact")
+  })
+
+  it("truncates artifact detail previews from a bounded byte read", async () => {
+    ctx = createTestContext()
+    ctx.config.documentMaxUploadBytes = 8
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const storage = new LocalDocumentStorage(ctx.config)
+    const storageKey = "artifacts/large-preview.md"
+    storage.write(storageKey, Buffer.from("hello 😀 world", "utf8"))
+    const artifact = ctx.repos.artifacts.create({
+      title: "Large preview",
+      type: "document",
+      contentFormat: "markdown",
+      mimeType: "text/markdown",
+      sizeBytes: 16,
+      storageKey,
+      visibilityScope: "global",
+    })
+
+    const response = await app.request(`/api/artifacts/${artifact.id}/detail`)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      content: "hello ",
+      truncated: true,
+    })
   })
 
   it("returns artifact errors for unchanged markdown content updates", async () => {

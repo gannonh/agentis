@@ -68,13 +68,22 @@ export class ArtifactService {
   constructor(private readonly repos: Repositories) {}
 
   canAccess(artifact: Artifact, context: ArtifactRunContext): boolean {
+    const threadId =
+      context.threadId ??
+      (context.runId
+        ? this.repos.runs.getById(context.runId)?.threadId
+        : undefined)
+    const projectId =
+      context.projectId ??
+      (threadId
+        ? this.repos.threads.getById(threadId)?.projectId ?? undefined
+        : undefined)
+
     if (artifact.visibilityScope === "global") return true
     if (artifact.visibilityScope === "project") {
-      return Boolean(
-        artifact.projectId && artifact.projectId === context.projectId
-      )
+      return Boolean(artifact.projectId && artifact.projectId === projectId)
     }
-    return Boolean(artifact.threadId && artifact.threadId === context.threadId)
+    return Boolean(artifact.threadId && artifact.threadId === threadId)
   }
 
   validateScope(
@@ -142,7 +151,8 @@ export class ArtifactService {
     artifact: Artifact,
     visibilityScope: ArtifactVisibilityScope,
     runContext?: ArtifactRunContext,
-    explicitProjectId?: string
+    explicitProjectId?: string,
+    explicitThreadId?: string
   ):
     | ArtifactResult<{
         projectId: string | null
@@ -162,7 +172,8 @@ export class ArtifactService {
     }
 
     if (visibilityScope === "thread") {
-      const threadId = runContext?.threadId ?? artifact.threadId
+      const threadId =
+        explicitThreadId ?? runContext?.threadId ?? artifact.threadId
       if (!threadId) {
         return invalidArtifactScopeError(
           "Thread-scoped artifacts require a thread"

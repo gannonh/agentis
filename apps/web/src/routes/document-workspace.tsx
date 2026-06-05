@@ -184,12 +184,20 @@ export function DocumentWorkspacePage() {
   ) => {
     if (!detail) return
 
+    if (visibilityScope === "thread" && !detail.document.threadId) {
+      setScopeError("Thread scope requires a source thread.")
+      return
+    }
+
     setScopeSaving(true)
     setScopeError(null)
     try {
       await updateDocumentVisibility(documentId, {
         visibilityScope,
         ...(visibilityScope === "project" && projectId ? { projectId } : {}),
+        ...(visibilityScope === "thread" && detail.document.threadId
+          ? { threadId: detail.document.threadId }
+          : {}),
       })
       await loadDetail(selectedVersion)
     } catch (scopeFailure) {

@@ -12,6 +12,7 @@ import {
   updateArtifactContentResponseSchema,
   updateArtifactVisibilityRequestSchema,
   updateArtifactVisibilityResponseSchema,
+  updateDocumentVisibilityRequestSchema,
 } from "./schemas.js"
 
 describe("artifact schemas", () => {
@@ -142,6 +143,28 @@ describe("artifact schemas", () => {
         visibilityScope: "global",
       }).visibilityScope
     ).toBe("global")
+    expect(
+      updateArtifactVisibilityRequestSchema.parse({
+        visibilityScope: "thread",
+        threadId: "thread-1",
+      }).threadId
+    ).toBe("thread-1")
+    expect(() =>
+      updateArtifactVisibilityRequestSchema.parse({
+        visibilityScope: "thread",
+      })
+    ).toThrow()
+    expect(
+      updateDocumentVisibilityRequestSchema.parse({
+        visibilityScope: "thread",
+        threadId: "thread-1",
+      }).threadId
+    ).toBe("thread-1")
+    expect(() =>
+      updateDocumentVisibilityRequestSchema.parse({
+        visibilityScope: "thread",
+      })
+    ).toThrow()
     expect(
       updateArtifactVisibilityResponseSchema.parse({
         artifact,

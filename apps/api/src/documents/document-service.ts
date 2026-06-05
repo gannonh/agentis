@@ -758,6 +758,7 @@ export class DocumentService {
     documentId: string
     visibilityScope: DocumentVisibilityScope
     projectId?: string
+    threadId?: string
     runContext?: DocumentRunContext
   }):
     | DocumentResult<{
@@ -796,7 +797,8 @@ export class DocumentService {
       document,
       input.visibilityScope,
       input.runContext,
-      input.projectId
+      input.projectId,
+      input.threadId
     )
     if (!assignment.ok) return assignment
 
