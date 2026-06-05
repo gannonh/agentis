@@ -83,14 +83,25 @@ function externalUrl(value: string): URL | null {
   }
 }
 
-function attributeValue(tag: string, attribute: string): string | undefined {
-  const pattern = new RegExp(
-    `\\b${attribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`,
+function attributePattern(attribute: string): RegExp {
+  const escapedAttribute = attribute.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  return new RegExp(
+    `(?:^|[\\s<])${escapedAttribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`,
     "i"
   )
-  const match = pattern.exec(tag)
+}
+
+function attributeValue(tag: string, attribute: string): string | undefined {
+  const match = attributePattern(attribute).exec(tag)
   const value = match?.[1] ?? match?.[2] ?? match?.[3]
   return value ? decodeHtmlCharacterReferences(value) : undefined
+}
+
+function hasAttribute(tag: string, attribute: string): boolean {
+  const escapedAttribute = attribute.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  return new RegExp(`(?:^|[\\s<])${escapedAttribute}(?=[\\s=>/]|$)`, "i").test(
+    tag
+  )
 }
 
 function srcsetHasExternalUrl(value: string): boolean {
@@ -180,6 +191,24 @@ function hasOnlyOwnedDeckNavigationScript(input: {
   )
 }
 
+function includesActiveNavigationBypass(html: string): boolean {
+  return Array.from(html.matchAll(/<[a-z][^>]*>/gi)).some((match) => {
+    const tag = match[0]
+    if (hasAttribute(tag, "srcdoc") || hasAttribute(tag, "ping")) return true
+
+    const tagName = /^<([a-z][^\s/>]*)/i.exec(tag)?.[1]?.toLowerCase()
+    if (tagName === "meta") {
+      const httpEquiv = attributeValue(tag, "http-equiv")?.trim().toLowerCase()
+      if (httpEquiv === "refresh") return true
+    }
+
+    return ["action", "formaction"].some((attribute) => {
+      const value = attributeValue(tag, attribute)
+      return Boolean(value && (externalUrl(value) || /\/api\//i.test(value)))
+    })
+  })
+}
+
 function includesForbiddenRuntimeAccess(html: string): boolean {
   return Array.from(html.matchAll(/<[a-z][^>]*>/gi)).some((match) =>
     ["href", "src", "action", "formaction"].some((attribute) =>
@@ -256,6 +285,13 @@ export function validateStaticHtml(input: {
     return error(
       "static_artifact_invalid_html",
       "Static HTML must not include unapproved external network dependencies."
+    )
+  }
+
+  if (includesActiveNavigationBypass(input.html)) {
+    return error(
+      "static_artifact_invalid_html",
+      "Static HTML must not include srcdoc, meta refresh, ping, or external/API form actions."
     )
   }
 

