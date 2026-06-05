@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft, pending user review.
+Approved.
 
 ## Goal
 
