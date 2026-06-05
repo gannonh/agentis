@@ -64,6 +64,16 @@ function tagHasExternalAttribute(tag: string, attribute: string): boolean {
   return Boolean(externalUrl(value))
 }
 
+function attributeTokenListIncludes(
+  tag: string,
+  attribute: string,
+  token: string
+): boolean {
+  return (attributeValue(tag, attribute) ?? "")
+    .split(/\s+/)
+    .some((value) => value.toLowerCase() === token.toLowerCase())
+}
+
 function includesExternalResourceLoad(html: string): boolean {
   for (const [tagName, attributes] of Object.entries(EXTERNAL_RESOURCE_ATTRIBUTES)) {
     const tagPattern = new RegExp(`<${tagName}\\b[^>]*>`, "gi")
@@ -159,10 +169,9 @@ export function validateStaticHtml(input: {
     )
   }
 
-  const stylesheetLinks = input.html.matchAll(
-    /<link\b[^>]*rel\s*=\s*["']?stylesheet["']?[^>]*>/gi
-  )
-  for (const match of stylesheetLinks) {
+  for (const match of input.html.matchAll(/<link\b[^>]*>/gi)) {
+    if (!attributeTokenListIncludes(match[0], "rel", "stylesheet")) continue
+
     const href = attributeValue(match[0], "href")
     const url = href ? externalUrl(href) : null
     if (url && !APPROVED_EXTERNAL_STYLESHEET_ORIGINS.has(url.origin)) {
