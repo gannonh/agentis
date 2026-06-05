@@ -88,8 +88,9 @@ function includesExternalCssLoad(html: string): boolean {
   for (const match of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
     if (cssContainsExternalNetworkLoad(match[1] ?? "")) return true
   }
-  for (const match of html.matchAll(/\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)) {
-    if (cssContainsExternalNetworkLoad(match[1] ?? match[2] ?? "")) return true
+  for (const match of html.matchAll(/<[a-z][^>]*>/gi)) {
+    const style = attributeValue(match[0], "style")
+    if (style && cssContainsExternalNetworkLoad(style)) return true
   }
   return false
 }
@@ -118,9 +119,11 @@ function includesForbiddenRuntimeAccess(html: string): boolean {
     return true
   }
 
-  return Array.from(
-    html.matchAll(/\b(?:href|src|action)\s*=\s*["']([^"']+)["']/gi)
-  ).some((match) => /\/api\//i.test(match[1] ?? ""))
+  return Array.from(html.matchAll(/<[a-z][^>]*>/gi)).some((match) =>
+    ["href", "src", "action"].some((attribute) =>
+      /\/api\//i.test(attributeValue(match[0], attribute) ?? "")
+    )
+  )
 }
 
 export function validateStaticHtml(input: {
@@ -160,7 +163,7 @@ export function validateStaticHtml(input: {
     /<link\b[^>]*rel\s*=\s*["']?stylesheet["']?[^>]*>/gi
   )
   for (const match of stylesheetLinks) {
-    const href = /\bhref\s*=\s*["']([^"']+)["']/i.exec(match[0])?.[1]
+    const href = attributeValue(match[0], "href")
     const url = href ? externalUrl(href) : null
     if (url && !APPROVED_EXTERNAL_STYLESHEET_ORIGINS.has(url.origin)) {
       return error(

@@ -37,6 +37,8 @@ describe("static HTML validator", () => {
     const cases = [
       "<script src=\"https://evil.example/app.js\"></script>",
       "<link rel=\"stylesheet\" href=\"https://evil.example/app.css\">",
+      "<link rel=stylesheet href=https://evil.example/app.css>",
+      "<a href=/api/threads>Runtime link</a>",
       "<button onclick=\"alert(1)\">Run</button>",
       "<script>fetch('/api/threads')</script>",
       "<script>new XMLHttpRequest()</script>",
