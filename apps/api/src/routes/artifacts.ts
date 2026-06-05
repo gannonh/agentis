@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import {
   listArtifactsQuerySchema,
+  staticArtifactMetadataSchema,
   updateArtifactContentRequestSchema,
   updateArtifactVisibilityRequestSchema,
 } from "@workspace/shared"
@@ -87,19 +88,54 @@ function artifactDownloadFilename(input: { title: string; mimeType: string }) {
   return `${basename}${extension}`
 }
 
+function staticArtifactMetadataCandidates(
+  metadata: Record<string, unknown> | null | undefined
+): Record<string, unknown>[] {
+  if (!metadata) return []
+  const history = Array.isArray(metadata.versionHistory)
+    ? metadata.versionHistory.filter(
+        (entry): entry is Record<string, unknown> =>
+          typeof entry === "object" && entry !== null
+      )
+    : []
+  return [metadata, ...history]
+}
+
+function selectedStaticArtifactMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+  selectedVersion: number | null
+): Record<string, unknown> | null | undefined {
+  if (!metadata || !selectedVersion) return metadata
+  const history = staticArtifactMetadataCandidates(metadata)
+  return (
+    history.find((entry) => entry.version === selectedVersion) ?? metadata
+  )
+}
+
 function staticArtifactAsset(
   metadata: Record<string, unknown> | null | undefined,
   assetId: string
 ): { storageKey: string; mimeType: string } | null {
-  const assetReferences = metadata?.assetReferences
-  if (!Array.isArray(assetReferences)) return null
-  for (const asset of assetReferences) {
-    if (typeof asset !== "object" || asset === null) continue
-    const record = asset as Record<string, unknown>
-    if (record.assetId !== assetId) continue
-    if (typeof record.storageKey !== "string") return null
-    if (typeof record.mimeType !== "string") return null
-    return { storageKey: record.storageKey, mimeType: record.mimeType }
+  const allowedImageMimeTypes = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
+  ])
+  for (const candidate of staticArtifactMetadataCandidates(metadata)) {
+    const parsed = staticArtifactMetadataSchema.safeParse(candidate)
+    if (!parsed.success) continue
+    if (
+      parsed.data.artifactType !== "slides" ||
+      parsed.data.renderMode !== "polishedImage"
+    ) {
+      continue
+    }
+    const asset = parsed.data.assetReferences.find(
+      (reference) => reference.assetId === assetId
+    )
+    if (!asset || !allowedImageMimeTypes.has(asset.mimeType)) continue
+    return { storageKey: asset.storageKey, mimeType: asset.mimeType }
   }
   return null
 }
@@ -223,8 +259,16 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
       }
     }
 
+    const selectedMetadata = selectedStaticArtifactMetadata(
+      artifact.metadata,
+      selectedVersion
+    )
+
     return c.json({
-      artifact: toPublicArtifact(artifact),
+      artifact: toPublicArtifact({
+        ...artifact,
+        metadata: selectedMetadata ?? artifact.metadata,
+      }),
       content,
       truncated,
       selectedVersion,
