@@ -150,18 +150,29 @@ function hasInlineEventAttribute(tag: string): boolean {
   return /(?:^|[\s<])on[a-z]+\s*=/i.test(tag)
 }
 
-function srcsetHasExternalUrl(value: string): boolean {
+function isAgentisApiUrl(value: string): boolean {
+  return /\/api\//i.test(decodeHtmlCharacterReferences(value))
+}
+
+function isForbiddenResourceUrl(value: string): boolean {
+  return Boolean(externalUrl(value)) || isAgentisApiUrl(value)
+}
+
+function srcsetHasForbiddenUrl(value: string): boolean {
   return value
     .split(",")
     .map((candidate) => candidate.trim().split(/\s+/)[0] ?? "")
-    .some((candidate) => Boolean(externalUrl(candidate)))
+    .some((candidate) => isForbiddenResourceUrl(candidate))
 }
 
-function tagHasExternalAttribute(tag: string, attribute: string): boolean {
+function tagHasForbiddenResourceAttribute(
+  tag: string,
+  attribute: string
+): boolean {
   const value = attributeValue(tag, attribute)
   if (!value) return false
-  if (attribute === "srcset") return srcsetHasExternalUrl(value)
-  return Boolean(externalUrl(value))
+  if (attribute === "srcset") return srcsetHasForbiddenUrl(value)
+  return isForbiddenResourceUrl(value)
 }
 
 function includesExternalResourceLoad(html: string): boolean {
@@ -169,7 +180,11 @@ function includesExternalResourceLoad(html: string): boolean {
   for (const tag of tags) {
     const attributes = EXTERNAL_RESOURCE_ATTRIBUTES[tag.name]
     if (!attributes) continue
-    if (attributes.some((attribute) => tagHasExternalAttribute(tag.source, attribute))) {
+    if (
+      attributes.some((attribute) =>
+        tagHasForbiddenResourceAttribute(tag.source, attribute)
+      )
+    ) {
       return true
     }
   }
@@ -194,9 +209,9 @@ function decodeCssEscapes(value: string): string {
 
 function cssContainsExternalNetworkLoad(css: string): boolean {
   const decodedCss = decodeCssEscapes(decodeHtmlCharacterReferences(css))
-  if (/@import[^;]*(?:https?:)?\/\//i.test(decodedCss)) return true
+  if (/@import[^;]*(?:(?:https?:)?\/\/|\/api\/)/i.test(decodedCss)) return true
   for (const match of decodedCss.matchAll(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi)) {
-    if (externalUrl(match[2] ?? "")) return true
+    if (isForbiddenResourceUrl(match[2] ?? "")) return true
   }
   return false
 }
@@ -252,16 +267,29 @@ function includesActiveNavigationBypass(html: string): boolean {
 
     return ["action", "formaction"].some((attribute) => {
       const value = attributeValue(tag.source, attribute)
-      return Boolean(value && (externalUrl(value) || /\/api\//i.test(value)))
+      return Boolean(value && isForbiddenResourceUrl(value))
     })
   })
 }
 
 function includesForbiddenRuntimeAccess(html: string): boolean {
   return scanHtmlTags(html).some((tag) =>
-    ["href", "src", "action", "formaction"].some((attribute) =>
-      /\/api\//i.test(attributeValue(tag.source, attribute) ?? "")
-    )
+    [
+      "href",
+      "src",
+      "srcset",
+      "action",
+      "formaction",
+      "data",
+      "poster",
+      "xlink:href",
+    ].some((attribute) => {
+      const value = attributeValue(tag.source, attribute)
+      if (!value) return false
+      return attribute === "srcset"
+        ? srcsetHasForbiddenUrl(value)
+        : isAgentisApiUrl(value)
+    })
   )
 }
 

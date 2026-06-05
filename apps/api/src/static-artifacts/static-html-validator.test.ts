@@ -212,6 +212,13 @@ describe("static HTML validator", () => {
       "<embed src=\"https://cdn.example/widget.svg\">",
       '<svg><image href="https://cdn.example/x.png"></image></svg>',
       '<svg><image xlink:href="https://cdn.example/x.png"></image></svg>',
+      '<object data="/api/runs"></object>',
+      '<video poster="/api/runs"></video>',
+      '<img srcset="/local-small.png 1x, /api/runs 2x" alt="Runtime">',
+      '<svg><image href="/api/runs"></image></svg>',
+      '<style>.x{background:url(/api/runs)}</style>',
+      '<section style="background:url(/api/runs)"></section>',
+      '<style>@import url("/api/runs");</style>',
     ]
 
     for (const html of cases) {
