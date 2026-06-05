@@ -22,12 +22,12 @@ This refactor must happen before the static webpages/slides and HyperApp specs a
   - `apps/api/src/documents/document-tool.ts`
   - `apps/api/src/repositories/document-repository.ts`
   - `apps/api/src/routes/documents.ts`
-  - `apps/web/src/routes/document-detail.tsx`
+  - `apps/web/src/routes/document-workspace.tsx`
   - `apps/web/src/components/documents/`
 
-## Current state
+## Pre-refactor state
 
-Agentis currently uses Document as the durable Library primitive. The shared schema includes `documentType` values such as `markdown`, `webpage`, `table`, `image`, `video`, `slides`, and `other`. That model makes webpages and slides document types.
+Before this refactor, Agentis used Document as the durable Library primitive. The shared schema included `documentType` values such as `markdown`, `webpage`, `table`, `image`, `video`, `slides`, and `other`. That model made webpages and slides document types.
 
 The intended domain model is different:
 

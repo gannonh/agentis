@@ -131,12 +131,12 @@ Decision record: `docs/adr/0003-persistent-documents-library-primitive.md` (supe
 V4.2 implemented persistent markdown documents. The Library Artifact refactor makes Artifact the durable Library primitive and narrows Document to the markdown-specific Artifact subtype. Documents retain thread, project, and global visibility, version history, find/read/create/update runtime tools, targeted markdown section updates, real download paths, and Library Type, Source, and Scope filters.
 
 The document workspace follow-on is implemented in
-`docs/specs/2026-06-01-document-workspace-design.md`: documents open at
+`docs/specs/_done/2026-06-01-document-workspace-design.md`: markdown documents open at
 `/documents/:documentId` from Library, project context, run timeline evidence,
 and agent-returned `viewPath` values. The workspace supports rendered preview,
 markdown/code view, full markdown replacement as a new version, historical
 version viewing, download, source/provenance display, and visibility scope
-management through the document service.
+management through the Artifact-backed document service.
 
 ---
 
