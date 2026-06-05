@@ -167,5 +167,112 @@ describe("static artifact schemas", () => {
     expect(metadata.assetReferences[0]?.slideIndex).toBe(0)
     expect(metadata.safetyValidationResult.status).toBe("passed")
     expect(staticArtifactThemeSchema.parse("surprise")).toBe("surprise")
+
+    expect(
+      staticArtifactMetadataSchema.parse({
+        artifactType: "webpage",
+        renderMode: "html",
+        theme: "editorial",
+        generationPath: "modelHtml",
+        safetyValidationResult: { status: "passed" },
+      }).generationPath
+    ).toBe("modelHtml")
+
+    expect(
+      staticArtifactMetadataSchema.parse({
+        artifactType: "slides",
+        renderMode: "html",
+        theme: "keynote",
+        generationPath: "modelDeckHtml",
+        slideCount: 2,
+        safetyValidationResult: { status: "passed" },
+      }).slideCount
+    ).toBe(2)
+  })
+
+  it("rejects static artifact metadata that conflicts with render mode", () => {
+    const baseMetadata = {
+      theme: "cinematic",
+      safetyValidationResult: { status: "passed" },
+    }
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...baseMetadata,
+        artifactType: "slides",
+        renderMode: "polishedImage",
+        generationPath: "modelHtml",
+      })
+    ).toThrow(/polished image slides require polishedImageSlides generationPath/i)
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...baseMetadata,
+        artifactType: "slides",
+        renderMode: "polishedImage",
+        generationPath: "polishedImageSlides",
+        slideCount: 2,
+      })
+    ).toThrow(/polished image slides require at least one asset reference/i)
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...baseMetadata,
+        artifactType: "webpage",
+        renderMode: "html",
+        generationPath: "modelDeckHtml",
+      })
+    ).toThrow(/HTML webpages require modelHtml generationPath/i)
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...baseMetadata,
+        artifactType: "slides",
+        renderMode: "html",
+        generationPath: "modelHtml",
+      })
+    ).toThrow(/HTML slides require modelDeckHtml generationPath/i)
+
+    expect(() =>
+      staticArtifactMetadataSchema.parse({
+        ...baseMetadata,
+        artifactType: "slides",
+        renderMode: "html",
+        generationPath: "modelDeckHtml",
+      })
+    ).toThrow(/HTML slides require a positive slideCount/i)
+  })
+
+  it("requires bespoke style briefs when tool inputs select the bespoke theme", () => {
+    expect(() =>
+      createStaticArtifactInputSchema.parse({
+        title: "Bespoke page",
+        artifactType: "webpage",
+        renderMode: "html",
+        contentBrief: "Create a custom page.",
+        theme: "bespoke",
+      })
+    ).toThrow(/bespokeStyleBrief is required when theme is bespoke/i)
+
+    expect(
+      createStaticArtifactInputSchema.parse({
+        title: "Bespoke page",
+        artifactType: "webpage",
+        renderMode: "html",
+        contentBrief: "Create a custom page.",
+        theme: "bespoke",
+        bespokeStyleBrief: "Use a sparse editorial layout.",
+      }).bespokeStyleBrief
+    ).toBe("Use a sparse editorial layout.")
+
+    expect(() =>
+      editStaticArtifactInputSchema.parse({
+        artifactId: "artifact-1",
+        contentBrief: "Refresh the style.",
+        changeSummary: "Restyled",
+        theme: "bespoke",
+        bespokeStyleBrief: "   ",
+      })
+    ).toThrow(/bespokeStyleBrief is required when theme is bespoke/i)
   })
 })

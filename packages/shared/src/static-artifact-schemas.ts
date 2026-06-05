@@ -120,6 +120,89 @@ function refineStaticArtifactMode(
   }
 }
 
+function requireBespokeStyleBrief(
+  input: {
+    theme?: z.infer<typeof staticArtifactThemeSchema>
+    bespokeStyleBrief?: string
+  },
+  ctx: z.RefinementCtx
+) {
+  if (input.theme === "bespoke" && !input.bespokeStyleBrief?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "bespokeStyleBrief is required when theme is bespoke.",
+      path: ["bespokeStyleBrief"],
+    })
+  }
+}
+
+function refineStaticArtifactMetadata(
+  input: {
+    artifactType: z.infer<typeof staticArtifactTypeSchema>
+    renderMode: z.infer<typeof staticArtifactRenderModeSchema>
+    generationPath: z.infer<typeof staticArtifactGenerationPathSchema>
+    slideCount?: number
+    assetReferences: Array<z.infer<typeof staticArtifactAssetReferenceSchema>>
+  },
+  ctx: z.RefinementCtx
+) {
+  refineStaticArtifactMode(input, ctx)
+
+  if (input.artifactType === "webpage" && input.renderMode === "html") {
+    if (input.generationPath !== "modelHtml") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "HTML webpages require modelHtml generationPath.",
+        path: ["generationPath"],
+      })
+    }
+    return
+  }
+
+  if (input.artifactType === "slides" && input.renderMode === "html") {
+    if (input.generationPath !== "modelDeckHtml") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "HTML slides require modelDeckHtml generationPath.",
+        path: ["generationPath"],
+      })
+    }
+    if (!input.slideCount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "HTML slides require a positive slideCount.",
+        path: ["slideCount"],
+      })
+    }
+    return
+  }
+
+  if (input.artifactType === "slides" && input.renderMode === "polishedImage") {
+    if (input.generationPath !== "polishedImageSlides") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Polished image slides require polishedImageSlides generationPath.",
+        path: ["generationPath"],
+      })
+    }
+    if (!input.slideCount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Polished image slides require a positive slideCount.",
+        path: ["slideCount"],
+      })
+    }
+    if (input.assetReferences.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Polished image slides require at least one asset reference.",
+        path: ["assetReferences"],
+      })
+    }
+  }
+}
+
 export const staticArtifactMetadataSchema = z
   .object({
     artifactType: staticArtifactTypeSchema,
@@ -134,7 +217,7 @@ export const staticArtifactMetadataSchema = z
     safetyValidationResult: staticArtifactSafetyValidationResultSchema,
     generationWarnings: z.array(nonEmptyString).default([]),
   })
-  .superRefine(refineStaticArtifactMode)
+  .superRefine(refineStaticArtifactMetadata)
 
 export const createStaticArtifactInputSchema = z
   .object({
@@ -150,7 +233,10 @@ export const createStaticArtifactInputSchema = z
     sourceData: z.string().optional(),
     visibilityScope: artifactVisibilityScopeSchema.optional(),
   })
-  .superRefine(refineStaticArtifactMode)
+  .superRefine((input, ctx) => {
+    refineStaticArtifactMode(input, ctx)
+    requireBespokeStyleBrief(input, ctx)
+  })
 
 export const createStaticArtifactOutputSchema = z
   .object({
@@ -168,13 +254,15 @@ export const createStaticArtifactOutputSchema = z
   })
   .superRefine(refineStaticArtifactMode)
 
-export const editStaticArtifactInputSchema = z.object({
-  artifactId: nonEmptyString,
-  contentBrief: nonEmptyString,
-  changeSummary: nonEmptyString,
-  theme: staticArtifactThemeSchema.optional(),
-  bespokeStyleBrief: z.string().optional(),
-})
+export const editStaticArtifactInputSchema = z
+  .object({
+    artifactId: nonEmptyString,
+    contentBrief: nonEmptyString,
+    changeSummary: nonEmptyString,
+    theme: staticArtifactThemeSchema.optional(),
+    bespokeStyleBrief: z.string().optional(),
+  })
+  .superRefine(requireBespokeStyleBrief)
 
 export const editStaticArtifactOutputSchema = z
   .object({

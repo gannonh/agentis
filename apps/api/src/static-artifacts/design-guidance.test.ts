@@ -74,7 +74,7 @@ describe("static artifact design guidance", () => {
     expect(validateStaticArtifactTheme("slides", "keynote").ok).toBe(true)
     expect(validateStaticArtifactTheme("webpage", "keynote")).toEqual({
       ok: false,
-      code: "static_artifact_invalid_theme",
+      code: "static_artifact_invalid_type",
       message: "Theme keynote is not supported for webpage artifacts.",
     })
   })

@@ -100,7 +100,7 @@ export function validateStaticArtifactTheme(
   theme: StaticArtifactTheme
 ):
   | { ok: true }
-  | { ok: false; code: "static_artifact_invalid_theme"; message: string } {
+  | { ok: false; code: "static_artifact_invalid_type"; message: string } {
   if (
     STATIC_ARTIFACT_SHARED_THEME_SELECTORS.some(
       (descriptor) => descriptor.id === theme
@@ -120,7 +120,7 @@ export function validateStaticArtifactTheme(
 
   return {
     ok: false,
-    code: "static_artifact_invalid_theme",
+    code: "static_artifact_invalid_type",
     message: `Theme ${theme} is not supported for ${artifactType} artifacts.`,
   }
 }
