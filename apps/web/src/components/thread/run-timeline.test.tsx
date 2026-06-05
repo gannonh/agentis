@@ -317,6 +317,46 @@ describe("RunTimeline", () => {
     expect(screen.queryByText(/full artifact html/)).not.toBeInTheDocument()
   })
 
+  it("renders found static artifact item metadata", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "findStaticArtifacts",
+          input: { artifactType: "slides" },
+          output: {
+            action: "found",
+            resultCount: 1,
+            truncated: false,
+            items: [
+              {
+                artifactId: "artifact_deck",
+                title: "Sales deck",
+                artifactType: "slides",
+                renderMode: "html",
+                version: 3,
+                theme: "pitch",
+                slideCount: 7,
+                viewPath: "/artifacts/artifact_deck",
+              },
+            ],
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifacts found")).toBeInTheDocument()
+    expect(screen.getByText("Results: 1")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Sales deck" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_deck"
+    )
+    expect(screen.getByText("slides · html · v3")).toBeInTheDocument()
+    expect(screen.getByText("Theme: pitch")).toBeInTheDocument()
+    expect(screen.getByText("Slides: 7")).toBeInTheDocument()
+  })
+
   it("renders visible static artifact failure cards with remediation", () => {
     renderTimeline({
       run,

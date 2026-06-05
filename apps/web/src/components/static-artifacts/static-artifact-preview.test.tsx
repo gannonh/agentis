@@ -58,7 +58,7 @@ describe("StaticArtifactPreview", () => {
   })
 
   it("renders HTML slide decks in the owned navigation sandbox", () => {
-    const html = `<!doctype html><section class="slide active"><h1>One</h1></section><div class="counter">1 / 1</div><script>/* owned deck navigation */</script>`
+    const html = `<!doctype html><section class="slide"><h1>One</h1></section>`
     render(
       <StaticArtifactPreview
         detail={detail({
@@ -85,7 +85,13 @@ describe("StaticArtifactPreview", () => {
 
     const frame = screen.getByTitle("Sales deck HTML slide deck")
     expect(frame).toHaveAttribute("sandbox", "allow-scripts")
-    expect(frame).toHaveAttribute("srcdoc", html)
+    expect(frame).toHaveAttribute(
+      "srcdoc",
+      expect.stringContaining("data-agentis-slide-preview-shell")
+    )
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("slide-counter"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("keydown"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("<h1>One</h1>"))
     expect(screen.getByText("Keyboard navigation runs inside an isolated static preview."))
       .toBeInTheDocument()
   })

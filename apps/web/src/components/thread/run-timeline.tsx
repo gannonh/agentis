@@ -522,7 +522,7 @@ export function RunTimeline({
                         const itemPath = stableRelativePath(item.viewPath)
                         const itemTitle = stringValue(item.title) ?? stringValue(item.artifactId) ?? "Static artifact"
                         return (
-                          <li key={`${itemTitle}:${index}`}>
+                          <li key={`${itemTitle}:${index}`} className="space-y-0.5">
                             {itemPath ? (
                               <Link
                                 to={itemPath}
@@ -533,6 +533,19 @@ export function RunTimeline({
                             ) : (
                               itemTitle
                             )}
+                            <p>
+                              {[
+                                stringValue(item.artifactType),
+                                stringValue(item.renderMode),
+                                numberValue(item.version) ? `v${numberValue(item.version)}` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                            {stringValue(item.theme) ? <p>Theme: {stringValue(item.theme)}</p> : null}
+                            {numberValue(item.slideCount) ? (
+                              <p>Slides: {numberValue(item.slideCount)}</p>
+                            ) : null}
                           </li>
                         )
                       })}

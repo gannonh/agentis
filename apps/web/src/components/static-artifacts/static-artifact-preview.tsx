@@ -139,6 +139,15 @@ function PreviewIssue({ code, message }: { code: string; message: string }) {
   )
 }
 
+const HTML_SLIDE_PREVIEW_SCRIPT =
+  "const slides=[...document.querySelectorAll('.slide,[data-slide]')];let current=0;const counter=document.querySelector('[data-slide-counter]');function show(index){if(!slides.length)return;current=Math.max(0,Math.min(index,slides.length-1));slides.forEach((slide,i)=>{slide.classList.toggle('active',i===current);slide.hidden=i!==current});if(counter)counter.textContent=(current+1)+' / '+slides.length;}document.addEventListener('keydown',(event)=>{if(event.key==='ArrowRight'||event.key===' '){show(current+1)}if(event.key==='ArrowLeft'){show(current-1)}});show(0);"
+
+function htmlSlidePreviewShell(html: string) {
+  const shell = `<div data-agentis-slide-preview-shell="true" style="position:fixed;right:1rem;bottom:1rem;z-index:10;border-radius:999px;background:rgba(15,23,42,.78);color:white;padding:.35rem .65rem;font:14px system-ui,sans-serif"><span data-slide-counter class="slide-counter">1 / 1</span></div><script>${HTML_SLIDE_PREVIEW_SCRIPT}</script>`
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${shell}</body>`)
+  return `${html}${shell}`
+}
+
 function StaticHtmlFrame({
   title,
   html,
@@ -149,6 +158,7 @@ function StaticHtmlFrame({
   mode: "webpage" | "slides"
 }) {
   const isSlides = mode === "slides"
+  const srcDoc = isSlides ? htmlSlidePreviewShell(html) : html
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
@@ -158,7 +168,7 @@ function StaticHtmlFrame({
       </p>
       <iframe
         title={isSlides ? `${title} HTML slide deck` : `${title} static webpage`}
-        srcDoc={html}
+        srcDoc={srcDoc}
         sandbox={isSlides ? "allow-scripts" : ""}
         className={cn(
           "w-full rounded-lg border border-border bg-white",
