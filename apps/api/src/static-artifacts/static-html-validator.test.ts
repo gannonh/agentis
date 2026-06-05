@@ -58,6 +58,34 @@ describe("static HTML validator", () => {
     }
   })
 
+  it("rejects external resource loads in CSS and media tags", () => {
+    const cases = [
+      "<style>@import url('https://cdn.example/theme.css');</style>",
+      "<style>.hero{background-image:url(https://cdn.example/hero.png)}</style>",
+      "<section style=\"background:url('https://cdn.example/pattern.svg')\"></section>",
+      "<img src=\"https://cdn.example/photo.png\" alt=\"Remote\">",
+      "<img srcset=\"/local-small.png 1x, https://cdn.example/large.png 2x\" alt=\"Remote\">",
+      "<source srcset=\"https://cdn.example/large.webp 800w\">",
+      "<iframe src=\"https://cdn.example/embed\"></iframe>",
+      "<video src=\"https://cdn.example/movie.mp4\"></video>",
+      "<video poster=\"https://cdn.example/poster.png\"></video>",
+      "<audio src=\"https://cdn.example/audio.mp3\"></audio>",
+      "<object data=\"https://cdn.example/widget.svg\"></object>",
+      "<embed src=\"https://cdn.example/widget.svg\">",
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
   it("rejects invalid mode combinations and oversized bundles", () => {
     expect(
       validateStaticHtml({

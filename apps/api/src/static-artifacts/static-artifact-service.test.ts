@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { createTestContext } from "../test/setup.js"
 import { StaticArtifactService } from "./static-artifact-service.js"
 import { LocalDocumentStorage } from "../documents/local-document-storage.js"
+import type { PolishedSlideProvider } from "./polished-slide-provider.js"
 
 function createRunContext() {
   const ctx = createTestContext()
@@ -15,6 +16,14 @@ function createRunContext() {
   })
   const service = new StaticArtifactService(ctx.repos, ctx.config)
   return { ctx, project, thread, run, service }
+}
+
+const availablePolishedProvider: PolishedSlideProvider = {
+  availability: () => ({
+    available: true,
+    provider: "agentis-test-images",
+    model: "mock-image-1",
+  }),
 }
 
 describe("StaticArtifactService", () => {
@@ -354,6 +363,31 @@ describe("StaticArtifactService", () => {
       code: "static_artifact_provider_unavailable",
       remediation: expect.stringContaining("Configure"),
     })
+    ctx.cleanup()
+  })
+
+  it("returns a deliberate visible failure when polished image provider is available but generation is not implemented", () => {
+    const { ctx, thread, run } = createRunContext()
+    const service = new StaticArtifactService(ctx.repos, ctx.config, {
+      polishedSlideProvider: availablePolishedProvider,
+    })
+
+    expect(
+      service.createStaticArtifact({
+        title: "Visual deck",
+        artifactType: "slides",
+        renderMode: "polishedImage",
+        contentBrief: "Three cinematic launch slides.",
+        theme: "cinematic",
+        threadId: thread.id,
+        runId: run.id,
+      })
+    ).toMatchObject({
+      ok: false,
+      code: "static_artifact_image_generation_failed",
+      remediation: expect.stringContaining("Use html renderMode"),
+    })
+    expect(ctx.repos.artifacts.list({ type: "slides" })).toHaveLength(0)
     ctx.cleanup()
   })
 })

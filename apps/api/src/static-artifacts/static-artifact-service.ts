@@ -108,11 +108,6 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;")
 }
 
-function normalizeText(value: string | undefined): string | undefined {
-  const normalized = value?.replace(/\s+/g, " ").trim()
-  return normalized || undefined
-}
-
 function previewText(content: string, maxChars: number): string | undefined {
   const stripped = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
   if (!stripped) return undefined
@@ -575,6 +570,12 @@ export class StaticArtifactService {
           availability.remediation
         )
       }
+      return staticArtifactError(
+        "static_artifact_image_generation_failed",
+        `Polished image slide generation through ${availability.provider} is not implemented in this runtime.`,
+        501,
+        "Use html renderMode for slide decks until polished image generation is implemented."
+      )
     }
 
     let content: string
