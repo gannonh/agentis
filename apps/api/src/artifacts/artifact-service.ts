@@ -32,17 +32,17 @@ function artifactError(
 }
 
 function invalidProvenanceError(message: string): ArtifactError {
-  return artifactError("invalid_document_provenance", message, 400)
+  return artifactError("invalid_artifact_provenance", message, 400)
 }
 
 function invalidArtifactScopeError(message: string): ArtifactError {
-  return artifactError("invalid_document_scope", message, 400)
+  return artifactError("invalid_artifact_scope", message, 400)
 }
 
 export function artifactNotAccessibleError(): ArtifactError {
   return artifactError(
-    "document_not_accessible",
-    "Document is not accessible from this run",
+    "artifact_not_accessible",
+    "Artifact is not accessible from this run",
     403
   )
 }
@@ -83,12 +83,12 @@ export class ArtifactService {
   ): ArtifactError | null {
     if (visibilityScope === "project" && !input.projectId) {
       return invalidArtifactScopeError(
-        "Project-scoped documents require a project"
+        "Project-scoped artifacts require a project"
       )
     }
     if (visibilityScope === "thread" && !input.threadId) {
       return invalidArtifactScopeError(
-        "Thread-scoped documents require a thread"
+        "Thread-scoped artifacts require a thread"
       )
     }
     return null
@@ -103,24 +103,24 @@ export class ArtifactService {
       ? this.repos.projects.getById(input.projectId)
       : null
     if (input.projectId && !project) {
-      return invalidProvenanceError("Project not found for document provenance")
+      return invalidProvenanceError("Project not found for artifact provenance")
     }
 
     const run = input.runId ? this.repos.runs.getById(input.runId) : null
     if (input.runId && !run) {
-      return invalidProvenanceError("Run not found for document provenance")
+      return invalidProvenanceError("Run not found for artifact provenance")
     }
     if (run && input.threadId && run.threadId !== input.threadId) {
-      return invalidProvenanceError("Document run and thread do not match")
+      return invalidProvenanceError("Artifact run and thread do not match")
     }
 
     const threadId = run?.threadId ?? input.threadId
     const thread = threadId ? this.repos.threads.getById(threadId) : null
     if (threadId && !thread) {
-      return invalidProvenanceError("Thread not found for document provenance")
+      return invalidProvenanceError("Thread not found for artifact provenance")
     }
     if (input.projectId && thread && thread.projectId !== input.projectId) {
-      return invalidProvenanceError("Document project and thread do not match")
+      return invalidProvenanceError("Artifact project and thread do not match")
     }
 
     const agentId = run?.agentId ?? thread?.agentId
@@ -165,12 +165,12 @@ export class ArtifactService {
       const threadId = runContext?.threadId ?? artifact.threadId
       if (!threadId) {
         return invalidArtifactScopeError(
-          "Thread-scoped documents require a thread"
+          "Thread-scoped artifacts require a thread"
         )
       }
       const thread = this.repos.threads.getById(threadId)
       if (!thread) {
-        return invalidProvenanceError("Thread not found for document scope")
+        return invalidProvenanceError("Thread not found for artifact scope")
       }
       const project = thread.projectId
         ? this.repos.projects.getById(thread.projectId)
@@ -196,18 +196,18 @@ export class ArtifactService {
     }
     if (!projectId) {
       return invalidArtifactScopeError(
-        "Project-scoped documents require a project"
+        "Project-scoped artifacts require a project"
       )
     }
     const project = this.repos.projects.getById(projectId)
     if (!project) {
-      return invalidProvenanceError("Project not found for document scope")
+      return invalidProvenanceError("Project not found for artifact scope")
     }
 
     const threadId = runContext?.threadId ?? artifact.threadId
     const thread = threadId ? this.repos.threads.getById(threadId) : null
     if (thread && thread.projectId && thread.projectId !== projectId) {
-      return invalidProvenanceError("Document project and thread do not match")
+      return invalidProvenanceError("Artifact project and thread do not match")
     }
 
     return {

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { DocumentWorkspacePage } from "@/routes/document-workspace"
+import { ApiError } from "@/lib/api/client"
 
 const getDocumentDetail = vi.fn()
 const updateDocumentContent = vi.fn()
@@ -33,15 +34,6 @@ const markdownDocument = {
   agentNameSnapshot: "Docs Agent",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
-}
-
-const imageDocument = {
-  ...markdownDocument,
-  id: "document_image",
-  title: "Diagram",
-  type: "image" as const,
-  contentFormat: "binary" as const,
-  mimeType: "image/png",
 }
 
 function renderWorkspace(documentId = "document_test") {
@@ -82,14 +74,7 @@ beforeEach(() => {
   })
   getDocumentDetail.mockImplementation((documentId: string) => {
     if (documentId === "document_image") {
-      return Promise.resolve({
-        document: imageDocument,
-        content: null,
-        truncated: false,
-        selectedVersion: null,
-        currentVersion: null,
-        versions: [],
-      })
+      return Promise.reject(new ApiError("Document not found", 404))
     }
     return Promise.resolve({
       document: markdownDocument,
@@ -329,15 +314,13 @@ describe("DocumentWorkspacePage", () => {
     })
   })
 
-  it("shows read-only state for non-markdown documents", async () => {
+  it("shows an error for non-document artifact ids", async () => {
     renderWorkspace("document_image")
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Diagram" })
-      ).toBeInTheDocument()
+      expect(screen.getByText("Document not found")).toBeInTheDocument()
     })
-    expect(screen.getByText(/read-only in the workspace/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Go back" })).toBeInTheDocument()
     expect(
       screen.queryByRole("button", { name: "Edit" })
     ).not.toBeInTheDocument()

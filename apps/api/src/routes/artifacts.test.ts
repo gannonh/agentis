@@ -138,6 +138,9 @@ describe("artifact routes", () => {
     const download = await app.request(`/api/artifacts/${created.document.id}/download`)
     expect(download.status).toBe(200)
     expect(download.headers.get("content-type")).toContain("text/markdown")
+    expect(download.headers.get("content-disposition")).toBe(
+      'attachment; filename="Editable_artifact.md"'
+    )
     expect(await download.text()).toBe("# Updated artifact")
   })
 
@@ -257,6 +260,7 @@ describe("artifact routes", () => {
 
     expect(response.status).toBe(400)
     expect(await response.json()).toMatchObject({
+      error: "Project-scoped artifacts require a project",
       code: "invalid_artifact_scope",
     })
   })

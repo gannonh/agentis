@@ -79,10 +79,9 @@ function contentHash(content: Buffer | string): string {
 }
 
 function contentFormatFor(
-  documentType: DocumentType,
+  _documentType: DocumentType,
   _mimeType: string
 ): "markdown" {
-  if (documentType === "document") return "markdown"
   return "markdown"
 }
 

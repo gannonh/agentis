@@ -42,9 +42,7 @@ function artifactRouteError(error: { code: string; message: string }) {
       "Artifact content updates require a markdown document artifact",
   }
   return {
-    error:
-      messageMap[error.code] ??
-      error.message.replace(/Document/g, "Artifact").replace(/document/g, "artifact"),
+    error: messageMap[error.code] ?? error.message,
     code: codeMap[error.code] ?? error.code,
   }
 }
@@ -68,11 +66,31 @@ function truncateUtf8ToBytes(text: string, maxBytes: number) {
   if (Buffer.byteLength(text, "utf8") <= maxBytes) {
     return { text, truncated: false }
   }
-  let end = text.length
-  while (end > 0 && Buffer.byteLength(text.slice(0, end), "utf8") > maxBytes) {
-    end -= 1
+  let lo = 0
+  let hi = text.length
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1
+    if (Buffer.byteLength(text.slice(0, mid), "utf8") <= maxBytes) {
+      lo = mid
+    } else {
+      hi = mid - 1
+    }
   }
-  return { text: text.slice(0, end), truncated: true }
+  return { text: text.slice(0, lo), truncated: true }
+}
+
+function artifactDownloadFilename(input: { title: string; mimeType: string }) {
+  const extensionByMimeType: Record<string, string> = {
+    "text/markdown": ".md",
+    "text/html": ".html",
+    "application/json": ".json",
+    "text/plain": ".txt",
+    "text/csv": ".csv",
+  }
+  const extension = extensionByMimeType[input.mimeType] ?? ""
+  const basename = input.title.replace(/[^\w.-]+/g, "_") || "artifact"
+  if (!extension || basename.endsWith(extension)) return basename
+  return `${basename}${extension}`
 }
 
 export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
@@ -288,7 +306,7 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
         404
       )
     }
-    const filename = artifact.title.replace(/[^\w.-]+/g, "_") || "artifact"
+    const filename = artifactDownloadFilename(artifact)
     return new Response(new Uint8Array(data), {
       headers: {
         "Content-Type": artifact.mimeType,
