@@ -3,6 +3,7 @@ import { z } from "zod"
 import { describe, expect, it } from "vitest"
 import {
   DOCUMENTS_SYSTEM_PROMPT,
+  STATIC_ARTIFACTS_SYSTEM_PROMPT,
   WEB_SEARCH_SYSTEM_PROMPT,
   resolveNativeRuntimeCapabilities,
 } from "./native-tool-capability-catalog.js"
@@ -71,6 +72,53 @@ describe("native tool capability catalog", () => {
     expect(capabilities.documents).toMatchObject({
       permitted: true,
       enabled: true,
+    })
+  })
+
+  it("exposes static artifact tools and prompt guidance when staticArtifacts is permitted", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["staticArtifacts"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Create a static webpage for the launch plan.",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.systemPromptSections).toEqual([
+      STATIC_ARTIFACTS_SYSTEM_PROMPT,
+    ])
+    expect(capabilities.runtimeTools).toHaveProperty("createStaticArtifact")
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: true,
+      enabled: true,
+    })
+  })
+
+  it("omits static artifact tools when staticArtifacts is not permitted", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: [],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Create a static webpage for the launch plan.",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: false,
+      enabled: false,
     })
   })
 

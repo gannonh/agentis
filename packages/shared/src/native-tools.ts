@@ -1,6 +1,10 @@
 import { z } from "zod"
 
-export const NATIVE_TOOL_PERMISSION_IDS = ["documents", "webSearch"] as const
+export const NATIVE_TOOL_PERMISSION_IDS = [
+  "documents",
+  "webSearch",
+  "staticArtifacts",
+] as const
 
 export type NativeToolPermissionId = (typeof NATIVE_TOOL_PERMISSION_IDS)[number]
 
@@ -8,7 +12,7 @@ export type NativeToolCapabilityGroup = "Research" | "Data"
 
 export type NativeToolCapability = {
   id: NativeToolPermissionId
-  runtimeToolName: "searchWeb" | "documents"
+  runtimeToolName: "searchWeb" | "documents" | "staticArtifacts"
   label: string
   description: string
   group: NativeToolCapabilityGroup
@@ -33,9 +37,19 @@ export const DOCUMENTS_NATIVE_TOOL_CAPABILITY: NativeToolCapability = {
   defaultSelected: true,
 }
 
+export const STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY: NativeToolCapability = {
+  id: "staticArtifacts",
+  runtimeToolName: "staticArtifacts",
+  label: "Static artifacts",
+  description: "Create and update static webpages and slide decks.",
+  group: "Data",
+  defaultSelected: false,
+}
+
 export const NATIVE_TOOL_CAPABILITY_CATALOG: NativeToolCapability[] = [
   WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
   DOCUMENTS_NATIVE_TOOL_CAPABILITY,
+  STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY,
 ]
 
 export const DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS: NativeToolPermissionId[] =

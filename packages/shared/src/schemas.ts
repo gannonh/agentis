@@ -32,6 +32,26 @@ import {
   updateDocumentVisibilityResponseSchema,
 } from "./document-schemas.js"
 import { nativeToolsSchema } from "./native-tools.js"
+import {
+  createStaticArtifactInputSchema,
+  createStaticArtifactOutputSchema,
+  editStaticArtifactInputSchema,
+  editStaticArtifactOutputSchema,
+  findStaticArtifactsInputSchema,
+  findStaticArtifactsOutputSchema,
+  staticArtifactAssetReferenceSchema,
+  staticArtifactErrorCodeSchema,
+  staticArtifactGenerationPathSchema,
+  staticArtifactMetadataSchema,
+  staticArtifactRenderModeSchema,
+  staticArtifactSafetyValidationResultSchema,
+  staticArtifactThemeSchema,
+  staticArtifactTypeSchema,
+  validateStaticArtifactMode,
+  webpageStaticArtifactThemeSchema,
+  slideStaticArtifactThemeSchema,
+  sharedStaticArtifactThemeSelectorSchema,
+} from "./static-artifact-schemas.js"
 export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 export {
   artifactContentFormatSchema,
@@ -51,6 +71,26 @@ export {
   updateArtifactVisibilityRequestSchema,
   updateArtifactVisibilityResponseSchema,
 } from "./artifact-schemas.js"
+export {
+  createStaticArtifactInputSchema,
+  createStaticArtifactOutputSchema,
+  editStaticArtifactInputSchema,
+  editStaticArtifactOutputSchema,
+  findStaticArtifactsInputSchema,
+  findStaticArtifactsOutputSchema,
+  staticArtifactAssetReferenceSchema,
+  staticArtifactErrorCodeSchema,
+  staticArtifactGenerationPathSchema,
+  staticArtifactMetadataSchema,
+  staticArtifactRenderModeSchema,
+  staticArtifactSafetyValidationResultSchema,
+  staticArtifactThemeSchema,
+  staticArtifactTypeSchema,
+  validateStaticArtifactMode,
+  webpageStaticArtifactThemeSchema,
+  slideStaticArtifactThemeSchema,
+  sharedStaticArtifactThemeSelectorSchema,
+} from "./static-artifact-schemas.js"
 export {
   documentContentFormatSchema,
   documentDetailResponseSchema,
@@ -944,6 +984,30 @@ export type UpdateArtifactVisibilityResponse = z.infer<
   typeof updateArtifactVisibilityResponseSchema
 >
 export type ListArtifactsQuery = z.infer<typeof listArtifactsQuerySchema>
+export type StaticArtifactType = z.infer<typeof staticArtifactTypeSchema>
+export type StaticArtifactRenderMode = z.infer<
+  typeof staticArtifactRenderModeSchema
+>
+export type StaticArtifactTheme = z.infer<typeof staticArtifactThemeSchema>
+export type StaticArtifactMetadata = z.infer<typeof staticArtifactMetadataSchema>
+export type CreateStaticArtifactInput = z.infer<
+  typeof createStaticArtifactInputSchema
+>
+export type CreateStaticArtifactOutput = z.infer<
+  typeof createStaticArtifactOutputSchema
+>
+export type EditStaticArtifactInput = z.infer<
+  typeof editStaticArtifactInputSchema
+>
+export type EditStaticArtifactOutput = z.infer<
+  typeof editStaticArtifactOutputSchema
+>
+export type FindStaticArtifactsInput = z.infer<
+  typeof findStaticArtifactsInputSchema
+>
+export type FindStaticArtifactsOutput = z.infer<
+  typeof findStaticArtifactsOutputSchema
+>
 export type DocumentType = z.infer<typeof documentTypeSchema>
 export type DocumentVisibilityScope = z.infer<
   typeof documentVisibilityScopeSchema
