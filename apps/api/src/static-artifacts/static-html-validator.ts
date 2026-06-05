@@ -116,8 +116,24 @@ function includesExternalResourceLoad(html: string): boolean {
   return false
 }
 
+function decodeCssEscapes(value: string): string {
+  return value.replace(/\\([0-9a-f]{1,6}\s?|.)/gis, (match, escape) => {
+    const normalized = String(escape)
+    const hex = normalized.match(/^([0-9a-f]{1,6})(?:\s)?$/i)
+    if (!hex) return normalized
+
+    const codePoint = Number.parseInt(hex[1] ?? "", 16)
+    if (Number.isNaN(codePoint)) return match
+    try {
+      return String.fromCodePoint(codePoint)
+    } catch {
+      return match
+    }
+  })
+}
+
 function cssContainsExternalNetworkLoad(css: string): boolean {
-  const decodedCss = decodeHtmlCharacterReferences(css)
+  const decodedCss = decodeCssEscapes(decodeHtmlCharacterReferences(css))
   if (/@import[^;]*(?:https?:)?\/\//i.test(decodedCss)) return true
   for (const match of decodedCss.matchAll(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi)) {
     if (externalUrl(match[2] ?? "")) return true
