@@ -138,7 +138,7 @@ Deliverables:
 - Project create/edit flow with name, description, and goals.
 - Project selector in the composer and thread metadata.
 - Context assembly that injects project goals and selected project memories into runs.
-- Document model with upload, generated output registration, markdown versioning, download, and preview metadata.
+- Markdown document model with upload, generated output registration, markdown versioning, download, and preview metadata.
 - Library screen with search, Type/Source/Scope filters, document cards, detail preview, document workspace links, version history, markdown editing, scope management, and project/thread/agent provenance.
 - Basic file storage abstraction for local self-hosted deployments.
 

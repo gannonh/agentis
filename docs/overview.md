@@ -26,7 +26,7 @@ Threads are iterative. Keep chatting to refine the output, add constraints, or r
 
 - Threads persist. You can leave and come back. The full history, all generated documents, and the computing environment are still there.
 
-- Most document types (webpages, documents, slides, images, videos) can be downloaded or published directly from the thread.
+- Most artifact types (webpages, documents, slides, images, videos) can be downloaded or published directly from the thread.
 
 ## Agents
 

@@ -31,7 +31,7 @@ This spec targets the HyperApp artifact runtime primitive. Product-specific app 
 
 ## Current state
 
-Agentis already supports the core runtime path needed for this slice, but Build is blocked on the Artifact domain refactor in `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`:
+Agentis already supports the core runtime path needed for this slice, and Build must use the landed Artifact domain refactor in `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`:
 
 - Native tools are constructed during `RunExecutor` execution and merged into the AI SDK `streamText` tool map.
 - Tool calls and results are persisted as assistant message parts and run steps.
@@ -44,7 +44,7 @@ Agentis does not yet have HyperApp artifact subtype behavior, embedded app rende
 
 ## Dependency
 
-Build is blocked on `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`. HyperApps should be implemented as Artifact `type = "hyperapp"` unless Build discovers a specific runtime/security constraint that requires a separate primitive linked to an Artifact. Any separate primitive must still expose shared Library scope, provenance, versioning, and management through the Artifact layer.
+Build must use the landed Artifact primitive from `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`. HyperApps should be implemented as Artifact `type = "hyperapp"` unless Build discovers a specific runtime/security constraint that requires a separate primitive linked to an Artifact. Any separate primitive must still expose shared Library scope, provenance, versioning, and management through the Artifact layer.
 
 ## Product scope
 
@@ -493,7 +493,7 @@ Approved direction: Core runtime first.
 
 Build should implement the smallest end-to-end HyperApp artifact runtime that satisfies the acceptance criteria:
 
-1. Add shared schemas and the `hyperApps` native permission id after the Artifact refactor lands.
+1. Add shared schemas and the `hyperApps` native permission id using the landed Artifact primitive.
 2. Persist HyperApps as Artifact `type = "hyperapp"` with immutable versions and separate state metadata.
 3. Add API/service/repository/storage boundaries with validation and loud failures.
 4. Add runtime tools for create, edit, and find.
