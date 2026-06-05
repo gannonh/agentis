@@ -63,6 +63,26 @@ describe("static HTML validator", () => {
     }
   })
 
+  it("rejects external hrefs on link elements because they load network dependencies", () => {
+    const cases = [
+      '<link rel="preload" href="https://cdn.example/font.woff2" as="font">',
+      '<link rel="modulepreload" href="https://cdn.example/app.js">',
+      '<link rel="icon" href="https://cdn.example/favicon.ico">',
+      '<link rel="preconnect" href="https://cdn.example">',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
   it("rejects external resource loads in CSS and media tags", () => {
     const cases = [
       "<style>@import url('https://cdn.example/theme.css');</style>",

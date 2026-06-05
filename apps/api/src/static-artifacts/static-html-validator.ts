@@ -8,8 +8,6 @@ export type StaticHtmlValidationResult =
   | { ok: true; warnings: string[] }
   | { ok: false; code: string; message: string; status: number }
 
-const APPROVED_EXTERNAL_STYLESHEET_ORIGINS = new Set<string>()
-
 const EXTERNAL_RESOURCE_ATTRIBUTES: Record<string, readonly string[]> = {
   audio: ["src"],
   embed: ["src"],
@@ -62,16 +60,6 @@ function tagHasExternalAttribute(tag: string, attribute: string): boolean {
   if (!value) return false
   if (attribute === "srcset") return srcsetHasExternalUrl(value)
   return Boolean(externalUrl(value))
-}
-
-function attributeTokenListIncludes(
-  tag: string,
-  attribute: string,
-  token: string
-): boolean {
-  return (attributeValue(tag, attribute) ?? "")
-    .split(/\s+/)
-    .some((value) => value.toLowerCase() === token.toLowerCase())
 }
 
 function includesExternalResourceLoad(html: string): boolean {
@@ -170,14 +158,11 @@ export function validateStaticHtml(input: {
   }
 
   for (const match of input.html.matchAll(/<link\b[^>]*>/gi)) {
-    if (!attributeTokenListIncludes(match[0], "rel", "stylesheet")) continue
-
     const href = attributeValue(match[0], "href")
-    const url = href ? externalUrl(href) : null
-    if (url && !APPROVED_EXTERNAL_STYLESHEET_ORIGINS.has(url.origin)) {
+    if (href && externalUrl(href)) {
       return error(
         "static_artifact_invalid_html",
-        "Static HTML must not include unapproved external stylesheets."
+        "Static HTML must not include unapproved external network dependencies."
       )
     }
   }
