@@ -42,6 +42,7 @@ describe("static HTML validator", () => {
       "<link rel=\"alternate stylesheet\" href=\"https://evil.example/alternate.css\">",
       "<link rel='stylesheet preload' href=https://evil.example/app.css>",
       "<a href=/api/threads>Runtime link</a>",
+      "<button formaction=\"/api/runs\">Go</button>",
       "<button onclick=\"alert(1)\">Run</button>",
       "<script>fetch('/api/threads')</script>",
       "<script>new XMLHttpRequest()</script>",
@@ -69,6 +70,7 @@ describe("static HTML validator", () => {
       '<link rel="modulepreload" href="https://cdn.example/app.js">',
       '<link rel="icon" href="https://cdn.example/favicon.ico">',
       '<link rel="preconnect" href="https://cdn.example">',
+      '<link href="https&#x3a;//cdn.example/x.css">',
     ]
 
     for (const html of cases) {
@@ -124,8 +126,10 @@ describe("static HTML validator", () => {
     const cases = [
       "<style>@import url('https://cdn.example/theme.css');</style>",
       "<style>.hero{background-image:url(https://cdn.example/hero.png)}</style>",
+      "<style>.hero{background-image:url(https&#x3a;//cdn.example/hero.png)}</style>",
       "<section style=\"background:url('https://cdn.example/pattern.svg')\"></section>",
       "<img src=\"https://cdn.example/photo.png\" alt=\"Remote\">",
+      "<img src=\"https&#x3a;//cdn.example/x.png\" alt=\"Remote\">",
       "<img srcset=\"/local-small.png 1x, https://cdn.example/large.png 2x\" alt=\"Remote\">",
       "<source srcset=\"https://cdn.example/large.webp 800w\">",
       "<iframe src=\"https://cdn.example/embed\"></iframe>",
@@ -134,6 +138,7 @@ describe("static HTML validator", () => {
       "<audio src=\"https://cdn.example/audio.mp3\"></audio>",
       "<input type=\"image\" src=\"https://cdn.example/button.png\" alt=\"Submit\">",
       "<track src=\"https://cdn.example/captions.vtt\" kind=\"captions\">",
+      "<track src=\"https&#x3a;//cdn.example/c.vtt\">",
       "<object data=\"https://cdn.example/widget.svg\"></object>",
       "<embed src=\"https://cdn.example/widget.svg\">",
       '<svg><image href="https://cdn.example/x.png"></image></svg>',
@@ -161,6 +166,17 @@ describe("static HTML validator", () => {
         maxBytes: 2048,
       })
     ).toMatchObject({ ok: true })
+  })
+
+  it("rejects base tags because they can turn relative resource paths into network loads", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: '<base href="https://cdn.example/"><img src="x.png">',
+        maxBytes: 2048,
+      })
+    ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
   })
 
   it("rejects invalid mode combinations and oversized bundles", () => {

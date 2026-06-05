@@ -23,6 +23,16 @@ const EXTERNAL_RESOURCE_ATTRIBUTES: Record<string, readonly string[]> = {
   video: ["src", "poster"],
 }
 
+const URL_NAMED_CHARACTER_REFERENCES: Record<string, string> = {
+  amp: "&",
+  apos: "'",
+  colon: ":",
+  gt: ">",
+  lt: "<",
+  quot: '"',
+  sol: "/",
+}
+
 function error(
   code: string,
   message: string,
@@ -31,8 +41,34 @@ function error(
   return { ok: false, code, message, status }
 }
 
+function decodeHtmlCharacterReferences(value: string): string {
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);?/gi, (match, entity) => {
+    const normalized = String(entity).toLowerCase()
+    if (normalized.startsWith("#x")) {
+      const codePoint = Number.parseInt(normalized.slice(2), 16)
+      if (Number.isNaN(codePoint)) return match
+      try {
+        return String.fromCodePoint(codePoint)
+      } catch {
+        return match
+      }
+    }
+    if (normalized.startsWith("#")) {
+      const codePoint = Number.parseInt(normalized.slice(1), 10)
+      if (Number.isNaN(codePoint)) return match
+      try {
+        return String.fromCodePoint(codePoint)
+      } catch {
+        return match
+      }
+    }
+
+    return URL_NAMED_CHARACTER_REFERENCES[normalized] ?? match
+  })
+}
+
 function externalUrl(value: string): URL | null {
-  const trimmed = value.trim()
+  const trimmed = decodeHtmlCharacterReferences(value).trim()
   try {
     const url = trimmed.startsWith("//")
       ? new URL(`https:${trimmed}`)
@@ -50,7 +86,8 @@ function attributeValue(tag: string, attribute: string): string | undefined {
     "i"
   )
   const match = pattern.exec(tag)
-  return match?.[1] ?? match?.[2] ?? match?.[3]
+  const value = match?.[1] ?? match?.[2] ?? match?.[3]
+  return value ? decodeHtmlCharacterReferences(value) : undefined
 }
 
 function srcsetHasExternalUrl(value: string): boolean {
@@ -80,8 +117,9 @@ function includesExternalResourceLoad(html: string): boolean {
 }
 
 function cssContainsExternalNetworkLoad(css: string): boolean {
-  if (/@import[^;]*(?:https?:)?\/\//i.test(css)) return true
-  for (const match of css.matchAll(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi)) {
+  const decodedCss = decodeHtmlCharacterReferences(css)
+  if (/@import[^;]*(?:https?:)?\/\//i.test(decodedCss)) return true
+  for (const match of decodedCss.matchAll(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi)) {
     if (externalUrl(match[2] ?? "")) return true
   }
   return false
@@ -121,7 +159,7 @@ function scriptContainsExternalModuleImport(script: string): boolean {
 }
 
 function includesForbiddenRuntimeAccess(html: string): boolean {
-  const scripts = scriptBodies(html).join("\n")
+  const scripts = decodeHtmlCharacterReferences(scriptBodies(html).join("\n"))
   if (
     scriptContainsExternalModuleImport(scripts) ||
     [
@@ -140,7 +178,7 @@ function includesForbiddenRuntimeAccess(html: string): boolean {
   }
 
   return Array.from(html.matchAll(/<[a-z][^>]*>/gi)).some((match) =>
-    ["href", "src", "action"].some((attribute) =>
+    ["href", "src", "action", "formaction"].some((attribute) =>
       /\/api\//i.test(attributeValue(match[0], attribute) ?? "")
     )
   )
@@ -176,6 +214,13 @@ export function validateStaticHtml(input: {
     return error(
       "static_artifact_invalid_html",
       "Static HTML must not include external script tags."
+    )
+  }
+
+  if (/<base\b[^>]*>/i.test(input.html)) {
+    return error(
+      "static_artifact_invalid_html",
+      "Static HTML must not include base tags."
     )
   }
 
