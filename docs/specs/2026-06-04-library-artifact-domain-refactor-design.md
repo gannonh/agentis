@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved.
+Implemented.
 
 ## Goal
 
@@ -333,3 +333,26 @@ Definition of done:
 3. Existing markdown document behavior remains intact.
 4. Webpage, slides, and HyperApp specs no longer instruct implementers to model those outputs as Document types.
 5. Tests and manual UAT prove compatibility and migration safety.
+
+## Build completion report
+
+- Spec path: `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`
+- Base SHA: `07d01aa5fb814c4ecba664148e1d42bf849c4dc5`
+- Final implementation SHA before this report: `0e98a1e0`
+- Tasks completed:
+  - Added shared Artifact schemas and narrowed markdown Document subtype schemas.
+  - Added artifact repository/service boundaries over existing document persistence.
+  - Added `/api/artifacts` list/detail/content/visibility/download routes while preserving `/api/documents/*` compatibility.
+  - Updated Library UI and related document surfaces to use artifact types and artifact terminology.
+  - Aligned static artifacts and HyperApp specs plus GitHub issues #405 and #406 to the landed Artifact primitive.
+- Files changed: shared artifact/document schemas, API artifact/document repository/service/routes/tests, web Library/document/agent surfaces/tests, active specs/docs, and issue tracker metadata.
+- Verification commands run:
+  - `pnpm typecheck` passed.
+  - `pnpm build` passed.
+  - `pnpm lint` passed.
+  - `pnpm test` passed.
+  - Targeted shared/API/web tests were run during Build for artifact schemas, artifact repository/routes, document compatibility, Library filters, document workspace, project documents, agent library summaries, and timeline document links.
+- Review gates completed: per-phase spec compliance reviews and code/docs quality reviews passed; final whole-branch review passed.
+- Approved deviations: none.
+- Known follow-up issues: static webpage/slides generation and HyperApp runtime implementation remain out of scope and tracked by #406 and #405.
+- Independent subagent review used: yes.
