@@ -411,7 +411,12 @@ export class DocumentRepository {
     const rows = this.db
       .select({ threadId: documents.threadId, value: sql<number>`count(*)` })
       .from(documents)
-      .where(inArray(documents.threadId, threadIds))
+      .where(
+        and(
+          inArray(documents.threadId, threadIds),
+          markdownDocumentTypeCondition()
+        )
+      )
       .groupBy(documents.threadId)
       .all()
 

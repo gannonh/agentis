@@ -2,7 +2,7 @@ import {
   agentDetailResponseSchema,
   type AgentDetailResponse,
 } from "@workspace/shared"
-import { toPublicDocument } from "../lib/public-documents.js"
+import { toPublicArtifact } from "../lib/public-artifacts.js"
 import type { Repositories } from "../repositories/index.js"
 
 export function buildAgentDetail(
@@ -12,7 +12,7 @@ export function buildAgentDetail(
   const agent = repos.agents.getById(agentId)
   if (!agent) return null
 
-  const libraryItems = repos.documents.list({ agentId }).map(toPublicDocument)
+  const libraryItems = repos.artifacts.list({ agentId }).map(toPublicArtifact)
   const threads = repos.threads.listByAgentId(agentId, { limit: 10 })
   const threadIds = threads.map((thread) => thread.id)
   const latestRuns = repos.runs.listLatestByThreadIds(threadIds)

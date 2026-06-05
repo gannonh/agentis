@@ -512,6 +512,20 @@ describe("agent routes", () => {
       threadTitleSnapshot: createdThread.thread.title,
       runId: createdThread.run.id,
     })
+    ctx.repos.artifacts.create({
+      title: "Landing page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 512,
+      storageKey: "artifacts/landing/index.html",
+      previewText: "Rendered landing page",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      threadId: createdThread.thread.id,
+      threadTitleSnapshot: createdThread.thread.title,
+      runId: createdThread.run.id,
+    })
     const app = createAgentTestApp(ctx)
 
     const response = await app.request(`/api/agents/${agent.id}`)
@@ -528,7 +542,7 @@ describe("agent routes", () => {
         }[]
         library: {
           totalCount: number
-          items: { title: string; storageKey?: string }[]
+          items: { title: string; type: string; storageKey?: string }[]
         }
       }
     }
@@ -543,10 +557,13 @@ describe("agent routes", () => {
         documentCount: 1,
       },
     ])
-    expect(body.information.library.totalCount).toBe(1)
-    expect(body.information.library.items).toMatchObject([
-      { title: "Research notes" },
-    ])
+    expect(body.information.library.totalCount).toBe(2)
+    expect(body.information.library.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: "Research notes", type: "document" }),
+        expect.objectContaining({ title: "Landing page", type: "webpage" }),
+      ])
+    )
     expect(body.information.library.items[0]).not.toHaveProperty("storageKey")
   })
 
