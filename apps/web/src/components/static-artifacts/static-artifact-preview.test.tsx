@@ -57,8 +57,8 @@ describe("StaticArtifactPreview", () => {
     expect(screen.getByText("Scrollable static webpage preview")).toBeInTheDocument()
   })
 
-  it("renders HTML slide decks in the owned navigation sandbox", () => {
-    const html = `<!doctype html><section class="slide"><h1>One</h1></section>`
+  it("renders HTML slide decks with owned controls in the script sandbox", () => {
+    const html = `<!doctype html><section class="slide"><h1>One</h1></section><section class="slide"><h1>Two</h1></section>`
     render(
       <StaticArtifactPreview
         detail={detail({
@@ -72,7 +72,7 @@ describe("StaticArtifactPreview", () => {
               renderMode: "html",
               theme: "pitch",
               generationPath: "modelDeckHtml",
-              slideCount: 1,
+              slideCount: 2,
               assetReferences: [],
               safetyValidationResult: { status: "passed", warnings: [], errors: [] },
               generationWarnings: [],
@@ -90,9 +90,15 @@ describe("StaticArtifactPreview", () => {
       expect.stringContaining("data-agentis-slide-preview-shell")
     )
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("slide-counter"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("data-slide-prev"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("data-slide-next"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("Previous slide"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("Next slide"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("addEventListener('click'"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("keydown"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("<h1>One</h1>"))
-    expect(screen.getByText("Keyboard navigation runs inside an isolated static preview."))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("<h1>Two</h1>"))
+    expect(screen.getByText("Slide controls run inside an isolated static preview."))
       .toBeInTheDocument()
   })
 
