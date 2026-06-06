@@ -154,8 +154,20 @@ function isAgentisApiUrl(value: string): boolean {
   return /\/api\//i.test(decodeHtmlCharacterReferences(value))
 }
 
+function hasForbiddenUrlScheme(value: string): boolean {
+  const normalized = decodeHtmlCharacterReferences(value)
+    .trim()
+    .replace(/[\u0000-\u0020]+/g, "")
+  if (normalized.startsWith("//")) return true
+  return /^[a-z][a-z0-9+.-]*:/i.test(normalized)
+}
+
 function isForbiddenResourceUrl(value: string): boolean {
-  return Boolean(externalUrl(value)) || isAgentisApiUrl(value)
+  return (
+    hasForbiddenUrlScheme(value) ||
+    Boolean(externalUrl(value)) ||
+    isAgentisApiUrl(value)
+  )
 }
 
 function srcsetHasForbiddenUrl(value: string): boolean {
@@ -288,7 +300,7 @@ function includesForbiddenRuntimeAccess(html: string): boolean {
       if (!value) return false
       return attribute === "srcset"
         ? srcsetHasForbiddenUrl(value)
-        : isAgentisApiUrl(value)
+        : isForbiddenResourceUrl(value)
     })
   )
 }
