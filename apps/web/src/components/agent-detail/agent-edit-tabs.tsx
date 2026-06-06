@@ -34,6 +34,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import {
   DOCUMENTS_NATIVE_TOOL_CAPABILITY,
+  STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY,
   WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
   type AgentDetailInformation,
   type AgentDetailResponse,
@@ -47,6 +48,7 @@ type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
 
 const WEB_SEARCH_CAPABILITY = WEB_SEARCH_NATIVE_TOOL_CAPABILITY
 const DOCUMENTS_CAPABILITY = DOCUMENTS_NATIVE_TOOL_CAPABILITY
+const STATIC_ARTIFACTS_CAPABILITY = STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -682,8 +684,9 @@ const TOOL_GROUPS: Array<{ label: string; items: ToolGroupItem[] }> = [
     items: [
       {
         title: "Webpages & Slides",
-        description: "Generate styled webpages and slide presentations.",
+        description: STATIC_ARTIFACTS_CAPABILITY.description,
         icon: Globe02Icon,
+        nativeToolId: STATIC_ARTIFACTS_CAPABILITY.id,
       },
       {
         title: "Slides",

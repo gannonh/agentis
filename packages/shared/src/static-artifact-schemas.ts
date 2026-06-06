@@ -295,11 +295,19 @@ export const createStaticArtifactInputSchema = z
     theme: staticArtifactThemeSchema.optional(),
     bespokeStyleBrief: z.string().optional(),
     sourceData: z.string().optional(),
+    generatedHtml: z.string().optional(),
     visibilityScope: artifactVisibilityScopeSchema.optional(),
   })
   .superRefine((input, ctx) => {
     refineStaticArtifactMode(input, ctx)
     requireBespokeStyleBrief(input, ctx)
+    if (input.generatedHtml && input.renderMode !== "html") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "generatedHtml is only supported for html render mode.",
+        path: ["generatedHtml"],
+      })
+    }
   })
 
 export const createStaticArtifactOutputSchema = z
@@ -325,6 +333,7 @@ export const editStaticArtifactInputSchema = z
     changeSummary: nonEmptyString,
     theme: staticArtifactThemeSchema.optional(),
     bespokeStyleBrief: z.string().optional(),
+    generatedHtml: z.string().optional(),
   })
   .superRefine(requireBespokeStyleBrief)
 

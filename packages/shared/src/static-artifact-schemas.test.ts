@@ -26,6 +26,7 @@ describe("static artifact schemas", () => {
       theme: "editorial",
       bespokeStyleBrief: "Use restrained executive report styling.",
       sourceData: "Milestone A: complete.",
+      generatedHtml: "<main><h1>Launch narrative</h1></main>",
       visibilityScope: "project",
     })
 
@@ -33,6 +34,7 @@ describe("static artifact schemas", () => {
       artifactType: "webpage",
       renderMode: "html",
       theme: "editorial",
+      generatedHtml: "<main><h1>Launch narrative</h1></main>",
       visibilityScope: "project",
     })
 
@@ -120,6 +122,16 @@ describe("static artifact schemas", () => {
         contentBrief: "Create a visual page.",
       })
     ).toThrow(/polishedImage/)
+
+    expect(() =>
+      createStaticArtifactInputSchema.parse({
+        title: "Image slides",
+        artifactType: "slides",
+        renderMode: "polishedImage",
+        contentBrief: "Create visual slides.",
+        generatedHtml: "<main></main>",
+      })
+    ).toThrow(/generatedHtml/)
 
     expect(() =>
       findStaticArtifactsInputSchema.parse({
