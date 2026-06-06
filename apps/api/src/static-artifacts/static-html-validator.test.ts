@@ -51,6 +51,7 @@ describe("static HTML validator", () => {
     const cases = [
       "<script src=\"https://evil.example/app.js\"></script>",
       "<script>window['f'+'etch']('https://evil.example/data')</script>",
+      "<script>fetch('https://evil.example/data')//",
       "<script>document.body.classList.add('ready')</script>",
       "<link rel=\"stylesheet\" href=\"https://evil.example/app.css\">",
       "<link rel=stylesheet href=https://evil.example/app.css>",
@@ -200,6 +201,7 @@ describe("static HTML validator", () => {
   it("rejects external resource loads in CSS, media, and SVG resource tags", () => {
     const cases = [
       "<style>@import url('https://cdn.example/theme.css');</style>",
+      "<style>@import url('https://cdn.example/theme.css')",
       "<style>.hero{background-image:url(https://cdn.example/hero.png)}</style>",
       "<style>.hero{background-image:url(https&#x3a;//cdn.example/hero.png)}</style>",
       "<style>.hero{background-image:url(https\\3a //cdn.example/hero.png)}</style>",

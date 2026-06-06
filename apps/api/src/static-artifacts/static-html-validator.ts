@@ -235,8 +235,8 @@ function cssContainsExternalNetworkLoad(css: string): boolean {
 }
 
 function includesExternalCssLoad(html: string): boolean {
-  for (const match of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
-    if (cssContainsExternalNetworkLoad(match[1] ?? "")) return true
+  for (const css of rawTextElementBodies(html, "style")) {
+    if (cssContainsExternalNetworkLoad(css)) return true
   }
   for (const tag of scanHtmlTags(html)) {
     const style = attributeValue(tag.source, "style")
@@ -245,9 +245,26 @@ function includesExternalCssLoad(html: string): boolean {
   return false
 }
 
+function rawTextElementBodies(html: string, tagName: "script" | "style"): string[] {
+  const pattern = new RegExp(
+    `<${tagName}\\b[^>]*>([\\s\\S]*?)<\\/${tagName}>`,
+    "gi"
+  )
+  return Array.from(html.matchAll(pattern)).map((match) => match[1] ?? "")
+}
+
 function scriptBodies(html: string): string[] {
-  return Array.from(html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)).map(
-    (match) => match[1] ?? ""
+  return rawTextElementBodies(html, "script")
+}
+
+function hasUnclosedRawTextElement(
+  tags: HtmlTag[],
+  html: string,
+  tagName: "script" | "style"
+): boolean {
+  return (
+    tags.filter((candidate) => candidate.name === tagName).length !==
+    rawTextElementBodies(html, tagName).length
   )
 }
 
@@ -350,6 +367,16 @@ export function validateStaticHtml(input: {
     return error(
       "static_artifact_invalid_html",
       "Static HTML must not include base tags."
+    )
+  }
+
+  if (
+    hasUnclosedRawTextElement(tags, input.html, "script") ||
+    hasUnclosedRawTextElement(tags, input.html, "style")
+  ) {
+    return error(
+      "static_artifact_invalid_html",
+      "Static HTML must not include unclosed script or style tags."
     )
   }
 
