@@ -127,6 +127,29 @@ describe("native tool capability catalog", () => {
     })
   })
 
+  it("does not deny ordinary read-only prompts about slide or webpage content", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: [],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Summarize these slides and explain the webpage references.",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: false,
+      requested: false,
+      enabled: false,
+      permissionDeniedError: undefined,
+    })
+  })
+
   it("omits document tools when documents are not permitted", () => {
     const capabilities = resolveNativeRuntimeCapabilities({
       permittedNativeToolIds: [],

@@ -84,7 +84,7 @@ export function ArtifactWorkspacePage() {
     if (!detail) return
     setDownloadError(null)
     try {
-      await downloadArtifactFile(detail.artifact)
+      await downloadArtifactFile(detail.artifact, { version: selectedVersion })
     } catch (downloadFailure) {
       setDownloadError(
         downloadFailure instanceof Error ? downloadFailure.message : "Download failed"
@@ -179,7 +179,9 @@ export function ArtifactWorkspacePage() {
                 Download
               </Button>
               <a
-                href={artifactDownloadUrl(detail.artifact.id)}
+                href={artifactDownloadUrl(detail.artifact.id, {
+                  version: selectedVersion,
+                })}
                 className="text-xs text-muted-foreground underline-offset-4 hover:underline"
               >
                 Direct download link

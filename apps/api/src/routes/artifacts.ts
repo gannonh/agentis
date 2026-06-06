@@ -387,9 +387,28 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
     if (!artifact) {
       return c.json(artifactNotFoundResponse(), 404)
     }
+    const parsedVersion = versionFromQuery(c.req.query("version"))
+    if (!parsedVersion.ok) {
+      return c.json(
+        { error: "Invalid version parameter", code: "invalid_request" },
+        400
+      )
+    }
+    const version = parsedVersion.version
+      ? repos.artifacts
+          .listVersions(artifact.id)
+          .find((entry) => entry.version === parsedVersion.version)
+      : undefined
+    if (parsedVersion.version && !version) {
+      return c.json(
+        { error: "Artifact version not found", code: "artifact_version_not_found" },
+        404
+      )
+    }
+    const storageKey = version?.contentStorageKey ?? artifact.storageKey
     let data: Buffer
     try {
-      data = storage.read(artifact.storageKey)
+      data = storage.read(storageKey)
     } catch (error) {
       return c.json(
         { error: "Artifact content missing", code: "artifact_blob_missing" },

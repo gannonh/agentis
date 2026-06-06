@@ -24,9 +24,11 @@ export function looksLikeWebSearchIntent(prompt: string): boolean {
 }
 
 export function looksLikeStaticArtifactIntent(prompt: string): boolean {
-  return /\b(static webpage|webpage|generated page|slide deck|slides|presentation|polished visual deck|visual deck)\b/i.test(
-    prompt
-  )
+  const artifactTerm =
+    /\b(static webpage|webpage|generated page|slide deck|slides|presentation|polished visual deck|visual deck)\b/i
+  const creationOrEditAction =
+    /\b(create|make|build|generate|draft|design|produce|render|edit|update|revise|modify|polish|turn|convert)\b/i
+  return artifactTerm.test(prompt) && creationOrEditAction.test(prompt)
 }
 
 type ProviderAvailability = {

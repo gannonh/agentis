@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ArtifactWorkspacePage } from "./artifact-workspace"
@@ -10,7 +11,10 @@ vi.mock("@/lib/api/projects-client", () => ({
   getArtifactDetail: (...args: unknown[]) => getArtifactDetail(...args),
   downloadArtifactFile: (...args: unknown[]) => downloadArtifactFile(...args),
   artifactWorkspacePath: (id: string) => `/artifacts/${id}`,
-  artifactDownloadUrl: (id: string) => `/api/artifacts/${id}/download`,
+  artifactDownloadUrl: (id: string, options: { version?: number | null } = {}) =>
+    options.version == null
+      ? `/api/artifacts/${id}/download`
+      : `/api/artifacts/${id}/download?version=${options.version}`,
 }))
 
 const now = new Date().toISOString()
@@ -68,5 +72,58 @@ describe("ArtifactWorkspacePage", () => {
     expect(screen.getByText("webpage · html · landing")).toBeInTheDocument()
     expect(screen.getByTitle("Launch page static webpage")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Download" })).toBeInTheDocument()
+  })
+
+  it("downloads and links to the selected historical artifact version", async () => {
+    const user = userEvent.setup()
+    getArtifactDetail.mockResolvedValueOnce({
+      artifact: {
+        id: "webpage_launch",
+        title: "Launch page",
+        type: "webpage",
+        contentFormat: "html",
+        mimeType: "text/html",
+        sizeBytes: 42,
+        visibilityScope: "global",
+        currentVersion: 2,
+        createdAt: now,
+        updatedAt: now,
+        metadata: {
+          artifactType: "webpage",
+          renderMode: "html",
+          theme: "landing",
+          generationPath: "modelHtml",
+          assetReferences: [],
+          safetyValidationResult: { status: "passed", warnings: [], errors: [] },
+          generationWarnings: [],
+        },
+      },
+      content: "<main><h1>Launch v1</h1></main>",
+      truncated: false,
+      selectedVersion: 1,
+      currentVersion: 2,
+      versions: [
+        { id: "version_2", version: 2, createdAt: now },
+        { id: "version_1", version: 1, createdAt: now },
+      ],
+    })
+
+    renderWorkspace()
+
+    await waitFor(() => {
+      expect(getArtifactDetail).toHaveBeenCalledWith("webpage_launch", {})
+    })
+    expect(screen.getByText("Historical view")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Direct download link" })).toHaveAttribute(
+      "href",
+      "/api/artifacts/webpage_launch/download?version=1"
+    )
+
+    await user.click(screen.getByRole("button", { name: "Download" }))
+
+    expect(downloadArtifactFile).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "webpage_launch" }),
+      { version: 1 }
+    )
   })
 })

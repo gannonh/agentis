@@ -248,6 +248,39 @@ describe("artifact routes", () => {
     })
   })
 
+  it("downloads the requested artifact version content", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const storage = new LocalDocumentStorage(ctx.config)
+    storage.write("artifacts/static/v1.html", Buffer.from("<main>v1</main>"))
+    storage.write("artifacts/static/v2.html", Buffer.from("<main>v2</main>"))
+    const { artifact } = ctx.repos.artifacts.createWithInitialVersion({
+      title: "Versioned page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 15,
+      storageKey: "artifacts/static/v1.html",
+      contentHash: "v1",
+      contentStorageKey: "artifacts/static/v1.html",
+      visibilityScope: "global",
+    })
+    ctx.repos.artifacts.updateWithVersion({
+      artifactId: artifact.id,
+      version: 2,
+      contentHash: "v2",
+      contentStorageKey: "artifacts/static/v2.html",
+      sizeBytes: 15,
+    })
+
+    const response = await app.request(`/api/artifacts/${artifact.id}/download?version=1`)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("content-type")).toContain("text/html")
+    expect(await response.text()).toBe("<main>v1</main>")
+  })
+
   it("serves static artifact assets by persisted asset metadata", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
