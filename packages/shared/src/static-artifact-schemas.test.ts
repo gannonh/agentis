@@ -8,6 +8,7 @@ import {
   editStaticArtifactOutputSchema,
   findStaticArtifactsInputSchema,
   findStaticArtifactsOutputSchema,
+  readStaticArtifactOutputSchema,
   staticArtifactMetadataSchema,
   staticArtifactThemeSchema,
   validateStaticArtifactMode,
@@ -48,6 +49,7 @@ describe("static artifact schemas", () => {
         viewPath: "/artifacts/artifact-1",
         downloadPath: "/api/artifacts/artifact-1/download",
         theme: "editorial",
+        previewText: "Launch narrative",
         summary: "Created a static launch narrative webpage.",
       }).viewPath
     ).toBe("/artifacts/artifact-1")
@@ -70,9 +72,27 @@ describe("static artifact schemas", () => {
         version: 2,
         previousVersion: 1,
         viewPath: "/artifacts/artifact-1",
+        previewText: "Updated launch narrative",
         summary: "Updated the risk section.",
       }).previousVersion
     ).toBe(1)
+
+    expect(
+      readStaticArtifactOutputSchema.parse({
+        artifactId: "artifact-1",
+        title: "Launch narrative",
+        artifactType: "slides",
+        renderMode: "html",
+        version: 1,
+        viewPath: "/artifacts/artifact-1",
+        downloadPath: "/api/artifacts/artifact-1/download",
+        theme: "corporate",
+        slideCount: 2,
+        contentText: "Slide 1\nSlide 2",
+        contentTextTruncated: false,
+        summary: "Read slides static artifact content.",
+      }).contentText
+    ).toBe("Slide 1\nSlide 2")
 
     expect(
       findStaticArtifactsInputSchema.parse({

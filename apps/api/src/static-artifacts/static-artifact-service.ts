@@ -51,6 +51,7 @@ type StaticArtifactOutput = {
   theme: string
   slideCount?: number
   provider?: string
+  previewText?: string
   summary: string
 }
 
@@ -71,6 +72,21 @@ type FindStaticArtifactsOutput = {
   }>
   resultCount: number
   truncated: boolean
+}
+
+type ReadStaticArtifactOutput = {
+  artifactId: string
+  title: string
+  artifactType: StaticArtifactType
+  renderMode: StaticArtifactRenderMode
+  version: number
+  viewPath: string
+  downloadPath: string
+  theme?: string
+  slideCount?: number
+  contentText: string
+  contentTextTruncated: boolean
+  summary: string
 }
 
 type StaticArtifactAssetWrite = {
@@ -116,10 +132,64 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;")
 }
 
+const NAMED_HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  apos: "'",
+  gt: ">",
+  lt: "<",
+  nbsp: " ",
+  quot: '"',
+}
+
+function decodeHtmlEntity(match: string, entity: string): string {
+  const named = NAMED_HTML_ENTITIES[entity]
+  if (named) return named
+
+  const codePoint = entity.startsWith("#x") || entity.startsWith("#X")
+    ? Number.parseInt(entity.slice(2), 16)
+    : entity.startsWith("#")
+      ? Number.parseInt(entity.slice(1), 10)
+      : Number.NaN
+  if (!Number.isFinite(codePoint) || codePoint < 0 || codePoint > 0x10ffff) {
+    return match
+  }
+
+  try {
+    return String.fromCodePoint(codePoint)
+  } catch {
+    return match
+  }
+}
+
+function staticArtifactText(content: string): string {
+  const withoutRawText = content.replace(
+    /<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,
+    " "
+  )
+  return withoutRawText
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "\n- ")
+    .replace(/<\/(h1|h2|h3|h4|h5|h6|p|li|section)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(#(?:x[0-9a-fA-F]+|\d+)|amp|apos|gt|lt|nbsp|quot);/g, decodeHtmlEntity)
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+}
+
 function previewText(content: string, maxChars: number): string | undefined {
-  const stripped = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+  const stripped = staticArtifactText(content)
   if (!stripped) return undefined
   return stripped.length > maxChars ? `${stripped.slice(0, maxChars)}…` : stripped
+}
+
+function boundedStaticArtifactText(content: string, maxChars: number) {
+  const text = staticArtifactText(content)
+  return {
+    contentText: text.length > maxChars ? text.slice(0, maxChars) : text,
+    contentTextTruncated: text.length > maxChars,
+  }
 }
 
 function assetExtension(mimeType: string): string {
@@ -148,7 +218,7 @@ function proseTopicList(contentBrief: string): string[] {
     .replace(/\s+and\s+/gi, ", ")
   const parsed = normalized
     .split(/[,;]+/)
-    .map((topic) => sentenceCase(topic.replace(/^[-*\d.\s:]+/, "")))
+    .map(cleanSlideLine)
     .filter((topic) => topic.length > 0)
 
   return parsed.length > 1 ? parsed : []
@@ -157,7 +227,7 @@ function proseTopicList(contentBrief: string): string[] {
 function slideLines(contentBrief: string): string[] {
   const lines = contentBrief
     .split(/\r?\n+/)
-    .map((line) => line.replace(/^[-*\d.\s:]+/, "").trim())
+    .map(cleanSlideLine)
     .filter(Boolean)
   if (lines.length > 1) return lines.slice(0, 12)
   const topics = proseTopicList(contentBrief)
@@ -171,6 +241,104 @@ type SlideSection = {
   body: string[]
 }
 
+function cleanSlideLine(value: string): string {
+  return sentenceCase(
+    value
+      .trim()
+      .replace(/^[-*]\s+/, "")
+      .replace(/^\d+[.)]\s+/, "")
+      .trim()
+  )
+}
+
+function stripSlideMarker(value: string): string {
+  return value.replace(/^slide\s+\d+\s*:\s*/i, "").trim()
+}
+
+function splitInlineSlideSection(value: string): SlideSection {
+  const stripped = stripSlideMarker(value)
+  const [titlePart = "", ...bodyParts] = stripped.split(/\s+[-–—]\s+/)
+  const title = cleanSlideLine(titlePart)
+  const body = bodyParts.join(" - ").trim()
+
+  return normalizeTitleSlideSection({
+    title,
+    body: body ? [cleanSlideLine(body)] : [],
+  })
+}
+
+function normalizeTitleSlideSection(section: SlideSection): SlideSection {
+  if (/^title(?: slide)?$/i.test(section.title) && section.body[0]) {
+    return { title: section.body[0], body: section.body.slice(1) }
+  }
+  return section
+}
+
+function bodyLinesFromHtml(fragment: string): string[] {
+  return staticArtifactText(fragment)
+    .split("\n")
+    .map((line) => cleanSlideLine(line))
+    .filter((line) => line.length > 0)
+    .filter((line) => !/\s+·\s+\d+\s*\/\s*\d+$/.test(line))
+}
+
+function isDuplicateSlideLine(line: string, title: string): boolean {
+  const section = splitInlineSlideSection(line)
+  return section.title === title && section.body.length === 0
+}
+
+function slideSectionFromHtml(fragment: string, fallbackTitle: string): SlideSection {
+  const heading = /<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i.exec(fragment)
+  const titleSource = heading ? staticArtifactText(heading[1] ?? "") : fallbackTitle
+  const section = splitInlineSlideSection(titleSource || fallbackTitle)
+  const bodyFragment = heading ? fragment.replace(heading[0], "") : fragment
+  const body = bodyLinesFromHtml(bodyFragment).filter(
+    (line) => !isDuplicateSlideLine(line, section.title)
+  )
+
+  return normalizeTitleSlideSection({
+    title: section.title,
+    body: [...section.body, ...body],
+  })
+}
+
+function slideSectionsFromHtml(content: string): SlideSection[] {
+  const slideMatches = Array.from(
+    content.matchAll(
+      /<section\b[^>]*class=["'][^"']*\bslide\b[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi
+    )
+  )
+  if (slideMatches.length > 0) {
+    return slideMatches
+      .map((match, index) =>
+        slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
+      )
+      .filter((section) => section.title.length > 0)
+  }
+
+  return [slideSectionFromHtml(content, "Additional content")].filter(
+    (section) => section.title.length > 0 || section.body.length > 0
+  )
+}
+
+function isCompleteSlideDeckHtml(content: string): boolean {
+  return (
+    /data-static-artifact=["']slides["']/i.test(content) &&
+    /<section\b[^>]*class=["'][^"']*\bslide\b/i.test(content)
+  )
+}
+
+function shouldAppendSlideEdit(input: {
+  changeSummary?: string
+  contentBrief: string
+}): boolean {
+  const intent = `${input.changeSummary ?? ""}\n${input.contentBrief}`
+  if (/\b(replace|rewrite|recreate|regenerate|start over)\b/i.test(intent)) {
+    return false
+  }
+  return /\b(add|append|include|insert|additional|new slide|at the end)\b/i.test(intent)
+}
+
 function outlineParagraphs(contentBrief: string): string[][] {
   return contentBrief
     .replace(/\r\n?/g, "\n")
@@ -178,7 +346,7 @@ function outlineParagraphs(contentBrief: string): string[][] {
     .map((paragraph) =>
       paragraph
         .split("\n")
-        .map((line) => sentenceCase(line.replace(/^[-*\d.\s:]+/, "").trim()))
+        .map(cleanSlideLine)
         .filter(Boolean)
     )
     .filter((paragraph) => paragraph.length > 0)
@@ -194,19 +362,16 @@ function slideMarkerSections(contentBrief: string): SlideSection[] {
 
     const marker = /^slide\s+\d+\s*:\s*(?<title>.+)$/i.exec(line)
     if (marker?.groups?.title) {
-      if (current) sections.push(current)
-      current = {
-        title: sentenceCase(marker.groups.title.replace(/^[-*\d.\s:]+/, "").trim()),
-        body: [],
-      }
+      if (current) sections.push(normalizeTitleSlideSection(current))
+      current = splitInlineSlideSection(marker.groups.title)
       continue
     }
 
-    const normalized = sentenceCase(line.replace(/^[-*\d.\s:]+/, "").trim())
+    const normalized = cleanSlideLine(line)
     if (current) current.body.push(normalized)
   }
 
-  if (current) sections.push(current)
+  if (current) sections.push(normalizeTitleSlideSection(current))
   return sections.length > 1 && sections.some((section) => section.body.length > 0)
     ? sections.slice(0, 12)
     : []
@@ -288,38 +453,31 @@ ${sections}
 </html>`
 }
 
-function buildSlidesHtml(input: {
+function renderSlidesHtml(input: {
   title: string
-  contentBrief: string
   sourceData?: string
   theme: string
+  sections: SlideSection[]
 }): { html: string; slideCount: number } {
-  const structuredSections = outlineSlideSections(input.contentBrief)
-  const sections =
-    structuredSections.length > 0
-      ? structuredSections
-      : slideLines(input.contentBrief).map((line, index) => ({
-          title: index === 0 ? input.title : line,
-          body: index === 0 ? [line] : [],
-        }))
-  const slides = sections
+  const slides = input.sections
     .map((section, index) => {
       const body =
         section.body.length > 1
           ? `<ul>${section.body.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`
           : section.body.map((line) => `<p>${escapeHtml(line)}</p>`).join("")
+      const slideClass = section.body.length > 0 ? "content-slide" : "title-slide"
 
-      return `<section class="slide" data-slide="${index + 1}">
-<p class="eyebrow">${escapeHtml(input.theme)} · ${index + 1}/${sections.length}</p>
+      return `<section class="slide ${slideClass}" data-slide="${index + 1}">
+<p class="eyebrow">${escapeHtml(input.theme)} · ${index + 1}/${input.sections.length}</p>
 <h1>${escapeHtml(section.title)}</h1>
 ${body}
 </section>`
     })
     .join("\n")
   const sourceSlide = input.sourceData
-    ? `<section class="slide" data-slide="${sections.length + 1}"><p class="eyebrow">Source</p><pre>${escapeHtml(input.sourceData)}</pre></section>`
+    ? `<section class="slide content-slide" data-slide="${input.sections.length + 1}"><p class="eyebrow">Source</p><pre>${escapeHtml(input.sourceData)}</pre></section>`
     : ""
-  const slideCount = sections.length + (input.sourceData ? 1 : 0)
+  const slideCount = input.sections.length + (input.sourceData ? 1 : 0)
 
   return {
     slideCount,
@@ -330,7 +488,7 @@ ${body}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(input.title)}</title>
 <style>
-:root{font-family:Inter,IBM Plex Sans,system-ui,sans-serif;background:#101827;color:#f8fafc;}body{margin:0;overflow:hidden}.deck{height:100vh;display:grid}.slide{display:none;place-content:center;padding:8vw;min-height:100vh;box-sizing:border-box}.slide.active{display:grid}.eyebrow{color:#93a3b8;text-transform:uppercase;letter-spacing:.12em}h1{font-size:clamp(2.25rem,6vw,5.5rem);line-height:1;margin:0 0 24px}p,pre,li{font-size:clamp(1rem,1.8vw,1.35rem);line-height:1.5}ul{margin:0;padding-left:1.4em;max-width:880px;display:grid;gap:.65rem}.counter{position:fixed;right:24px;bottom:20px;color:#93a3b8}
+:root{font-family:Inter,IBM Plex Sans,system-ui,sans-serif;background:#101827;color:#f8fafc;}body{margin:0;overflow:hidden}.deck{height:100vh;display:grid}.slide{display:none;min-height:100vh;box-sizing:border-box;padding:clamp(48px,8vw,96px);gap:clamp(16px,2vw,28px)}.slide.active{display:grid}.title-slide{align-content:center;justify-items:start}.content-slide{align-content:center;justify-items:start}.eyebrow{color:#93a3b8;text-transform:uppercase;letter-spacing:.12em;font-size:.95rem;margin:0}.title-slide h1{font-size:clamp(2.5rem,6vw,5.5rem)}.content-slide h1{font-size:clamp(1.85rem,4vw,3.6rem);max-width:1040px}h1{line-height:1;margin:0}p,pre,li{font-size:clamp(1rem,1.8vw,1.35rem);line-height:1.5;max-width:980px}p{margin:0}ul{margin:0;padding-left:1.4em;max-width:980px;display:grid;gap:.65rem}.counter{position:fixed;right:24px;bottom:20px;color:#93a3b8}
 </style>
 </head>
 <body>
@@ -345,6 +503,72 @@ ${STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT}
 </body>
 </html>`,
   }
+}
+
+function buildSlidesHtml(input: {
+  title: string
+  contentBrief: string
+  sourceData?: string
+  theme: string
+}): { html: string; slideCount: number } {
+  const structuredSections = outlineSlideSections(input.contentBrief)
+  const sections =
+    structuredSections.length > 0
+      ? structuredSections
+      : slideLines(input.contentBrief).map((line, index) => {
+          const section = splitInlineSlideSection(line)
+          return index === 0 && section.title === line
+            ? { title: input.title, body: [cleanSlideLine(line)] }
+            : section
+        })
+
+  return renderSlidesHtml({
+    title: input.title,
+    sections,
+    sourceData: input.sourceData,
+    theme: input.theme,
+  })
+}
+
+function buildGeneratedSlidesHtml(input: {
+  title: string
+  contentBrief: string
+  changeSummary?: string
+  generatedHtml: string
+  existingContent?: string
+  sourceData?: string
+  theme: string
+}): { html: string; slideCount: number } {
+  if (isCompleteSlideDeckHtml(input.generatedHtml)) {
+    return {
+      html: input.generatedHtml,
+      slideCount: Math.max(
+        1,
+        Array.from(
+          input.generatedHtml.matchAll(/class=["'][^"']*\bslide\b/gi)
+        ).length
+      ),
+    }
+  }
+
+  const generatedSections = slideSectionsFromHtml(input.generatedHtml)
+  const existingSections =
+    input.existingContent && shouldAppendSlideEdit(input)
+      ? slideSectionsFromHtml(input.existingContent)
+      : []
+  const sections = [...existingSections, ...generatedSections]
+  const fallbackSections = sections.length > 0
+    ? sections
+    : outlineSlideSections(input.contentBrief)
+
+  return renderSlidesHtml({
+    title: input.title,
+    sections: fallbackSections.length > 0
+      ? fallbackSections
+      : [{ title: input.title, body: [cleanSlideLine(input.contentBrief)] }],
+    sourceData: input.sourceData,
+    theme: input.theme,
+  })
 }
 
 function generationPath(input: {
@@ -542,14 +766,36 @@ export class StaticArtifactService {
 
     const previousVersion = artifact.currentVersion ?? 0
     const nextVersion = previousVersion + 1
+    let existingContent: string | undefined
+    if (
+      input.generatedHtml &&
+      existingMetadata.artifactType === "slides" &&
+      existingMetadata.renderMode === "html"
+    ) {
+      try {
+        existingContent = this.storage.read(artifact.storageKey).toString("utf8")
+      } catch (cause) {
+        console.error("Failed to read existing static artifact for edit", {
+          cause,
+          artifactId: artifact.id,
+        })
+        return staticArtifactError(
+          "static_artifact_storage_failed",
+          "Failed to read existing static artifact content.",
+          500
+        )
+      }
+    }
     const prepared = this.prepareGeneratedContent({
       title: artifact.title,
       artifactType: existingMetadata.artifactType,
       renderMode: existingMetadata.renderMode,
       contentBrief: input.contentBrief,
+      changeSummary: input.changeSummary,
       theme: input.theme ?? existingMetadata.theme,
       bespokeStyleBrief: input.bespokeStyleBrief,
       generatedHtml: input.generatedHtml,
+      existingContent,
       artifactId: artifact.id,
       version: nextVersion,
     })
@@ -604,6 +850,7 @@ export class StaticArtifactService {
           previousVersion,
           version: nextVersion,
           viewPath: links(updated.id).viewPath,
+          previewText: updated.previewText ?? undefined,
           summary: `Edited ${prepared.metadata.artifactType} static artifact.`,
         },
       }
@@ -676,17 +923,68 @@ export class StaticArtifactService {
     }
   }
 
+  readStaticArtifact(input: {
+    artifactId: string
+    maxChars?: number
+    runContext: StaticArtifactRunContext
+  }): StaticArtifactResult<ReadStaticArtifactOutput> {
+    const artifact = this.repos.artifacts.getById(input.artifactId)
+    if (!artifact || !this.artifactService.canAccess(artifact, input.runContext)) {
+      return staticArtifactError(
+        "static_artifact_not_found",
+        "Static artifact not found.",
+        404
+      )
+    }
+    const metadata = parseStaticMetadata(artifact)
+    if (!metadata) {
+      return staticArtifactError(
+        "static_artifact_invalid_type",
+        "Artifact is missing static artifact metadata."
+      )
+    }
+
+    try {
+      const content = this.storage.read(artifact.storageKey).toString("utf8")
+      const maxChars = Math.min(input.maxChars ?? 4_000, 10_000)
+      return {
+        ok: true,
+        output: {
+          artifactId: artifact.id,
+          title: artifact.title,
+          artifactType: metadata.artifactType,
+          renderMode: metadata.renderMode,
+          version: artifact.currentVersion ?? 1,
+          ...links(artifact.id),
+          theme: metadata.theme,
+          slideCount: metadata.slideCount,
+          ...boundedStaticArtifactText(content, maxChars),
+          summary: `Read ${metadata.artifactType} static artifact content.`,
+        },
+      }
+    } catch (cause) {
+      console.error("Failed to read static artifact", { cause, artifactId: artifact.id })
+      return staticArtifactError(
+        "static_artifact_storage_failed",
+        "Failed to read static artifact content.",
+        500
+      )
+    }
+  }
+
   private prepareGeneratedContent(input: {
     title: string
     artifactType: StaticArtifactType
     renderMode: StaticArtifactRenderMode
     contentBrief: string
+    changeSummary?: string
     audience?: string
     purpose?: string
     theme?: StaticArtifactTheme
     bespokeStyleBrief?: string
     sourceData?: string
     generatedHtml?: string
+    existingContent?: string
     artifactId: string
     version: number
   }):
@@ -822,11 +1120,21 @@ export class StaticArtifactService {
     let content: string
     let slideCount: number | undefined
     if (input.generatedHtml) {
-      content = input.generatedHtml
-      slideCount =
-        input.artifactType === "slides"
-          ? Math.max(1, Array.from(content.matchAll(/class=["'][^"']*slide/gi)).length)
-          : undefined
+      if (input.artifactType === "slides") {
+        const slides = buildGeneratedSlidesHtml({
+          title: input.title,
+          contentBrief: input.contentBrief,
+          changeSummary: input.changeSummary,
+          generatedHtml: input.generatedHtml,
+          existingContent: input.existingContent,
+          sourceData: input.sourceData,
+          theme: guidance.selectedTheme.id,
+        })
+        content = slides.html
+        slideCount = slides.slideCount
+      } else {
+        content = input.generatedHtml
+      }
     } else if (input.artifactType === "webpage") {
       content = buildWebpageHtml({
         title: input.title,
@@ -899,6 +1207,7 @@ export class StaticArtifactService {
       theme: metadata.theme,
       slideCount: metadata.slideCount,
       provider: metadata.provider,
+      previewText: artifact.previewText ?? undefined,
       summary,
     }
   }

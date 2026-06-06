@@ -35,6 +35,7 @@ const WEB_SEARCH_METADATA_MAX_CHARS = 200
 const WEB_SEARCH_DOMAIN_LIMIT = 10
 const WEB_SEARCH_METADATA_KEYS = ["gatewayTool", "requestId"] as const
 const STATIC_ARTIFACT_TEXT_MAX_CHARS = 200
+const STATIC_ARTIFACT_CONTENT_MAX_CHARS = 2_000
 const STATIC_ARTIFACT_ITEMS_LIMIT = 10
 
 export type NativeToolRunStepPayload = {
@@ -450,6 +451,12 @@ function summarizeStaticArtifactItem(item: unknown): unknown {
 
 function summarizeStaticArtifactOutput(output: unknown): unknown {
   if (!isObject(output)) return output
+  const contentText =
+    typeof output.contentText === "string" ? output.contentText : undefined
+  const previewText =
+    typeof output.previewText === "string" ? output.previewText : undefined
+  const contentTextTruncatedByPayload =
+    contentText != null && contentText.length > STATIC_ARTIFACT_CONTENT_MAX_CHARS
   const items = Array.isArray(output.items)
     ? output.items
         .slice(0, STATIC_ARTIFACT_ITEMS_LIMIT)
@@ -496,6 +503,16 @@ function summarizeStaticArtifactOutput(output: unknown): unknown {
     viewPath:
       typeof output.viewPath === "string"
         ? truncateText(output.viewPath, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+        : undefined,
+    contentText:
+      contentText != null
+        ? truncateText(contentText, STATIC_ARTIFACT_CONTENT_MAX_CHARS)
+        : undefined,
+    contentTextTruncated:
+      output.contentTextTruncated === true || contentTextTruncatedByPayload,
+    previewText:
+      previewText != null
+        ? truncateText(previewText, STATIC_ARTIFACT_CONTENT_MAX_CHARS)
         : undefined,
     errorCode:
       typeof output.errorCode === "string"

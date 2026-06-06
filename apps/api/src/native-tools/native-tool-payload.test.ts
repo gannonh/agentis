@@ -186,6 +186,41 @@ describe("formatNativeToolRunStepPayload", () => {
     expect(JSON.stringify(payload)).not.toContain("data:image")
   })
 
+  it("preserves bounded static artifact read text without raw HTML", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static_read",
+      toolName: "readStaticArtifact",
+      input: {
+        artifactId: "artifact_1",
+      },
+      output: {
+        action: "read",
+        artifactId: "artifact_1",
+        title: "Launch deck",
+        artifactType: "slides",
+        renderMode: "html",
+        version: 1,
+        viewPath: "/artifacts/artifact_1",
+        downloadPath: "/api/artifacts/artifact_1/download",
+        contentText: `Slide 1\n${"Actual slide text ".repeat(200)}`,
+        contentTextTruncated: false,
+        html: "<section>should not persist</section>",
+      },
+    })
+
+    expect(payload).toMatchObject({
+      provider: "native",
+      toolName: "readStaticArtifact",
+      output: {
+        action: "read",
+        artifactId: "artifact_1",
+        contentText: expect.stringContaining("Actual slide text"),
+        contentTextTruncated: true,
+      },
+    })
+    expect(JSON.stringify(payload)).not.toContain("<section>")
+  })
+
   it("keeps approved static artifact failure codes and remediation in timeline payloads", () => {
     const payload = formatNativeToolRunStepPayload({
       toolCallId: "call_static_failed",

@@ -72,10 +72,23 @@ describe("static artifact runtime tools", () => {
       viewPath: `/artifacts/${artifactId}`,
     })
 
+    const read = await executeTool(tools.readStaticArtifact, {
+      artifactId,
+    })
+    expect(read).toMatchObject({
+      artifactId,
+      title: "Launch page",
+      contentText: expect.stringContaining("Add launch risks."),
+      contentTextTruncated: false,
+      viewPath: `/artifacts/${artifactId}`,
+    })
+    expect(JSON.stringify(read)).not.toContain("<main")
+
     expect(evidence.map((entry) => entry.title)).toEqual([
       "Static artifact created: Launch page",
       "Searched static artifacts",
       "Static artifact edited: Launch page",
+      "Static artifact read: Launch page",
     ])
     ctx.cleanup()
   })

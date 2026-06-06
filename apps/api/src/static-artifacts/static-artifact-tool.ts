@@ -3,6 +3,7 @@ import {
   createStaticArtifactInputSchema,
   editStaticArtifactInputSchema,
   findStaticArtifactsInputSchema,
+  readStaticArtifactInputSchema,
 } from "@workspace/shared"
 import type { StaticArtifactService } from "./static-artifact-service.js"
 
@@ -34,7 +35,7 @@ function remediationFor(code: string): string {
   }
 }
 
-function timelineOutput(action: "created" | "edited" | "found", output: unknown) {
+function timelineOutput(action: "created" | "edited" | "found" | "read", output: unknown) {
   if (typeof output !== "object" || output === null) return { action }
   return { action, ...(output as Record<string, unknown>) }
 }
@@ -112,6 +113,22 @@ export function buildStaticArtifactTools(
           items: result.output.items.slice(0, 10),
         })
         context.onEvidence?.("Searched static artifacts", payload)
+        return result.output
+      },
+    }),
+
+    readStaticArtifact: tool({
+      description:
+        "Read the exact stored text content and metadata for an accessible static artifact. Use this before answering questions about what an existing artifact actually contains.",
+      inputSchema: readStaticArtifactInputSchema,
+      execute: async (input) => {
+        const result = staticArtifactService.readStaticArtifact({
+          ...input,
+          runContext,
+        })
+        if (!result.ok) return errorPayload(result)
+        const payload = timelineOutput("read", result.output)
+        context.onEvidence?.(`Static artifact read: ${result.output.title}`, payload)
         return result.output
       },
     }),

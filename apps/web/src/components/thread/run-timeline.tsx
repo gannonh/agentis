@@ -218,6 +218,7 @@ function staticArtifactActionLabel(action: string | undefined) {
   if (action === "created") return "Static artifact created"
   if (action === "edited") return "Static artifact edited"
   if (action === "found") return "Static artifacts found"
+  if (action === "read") return "Static artifact read"
   if (action === "failed") return "Static artifact failed"
   return "Static artifact"
 }
@@ -246,13 +247,15 @@ function formatStaticArtifactPayload(input: {
   const isStaticTool =
     input.toolName === "createStaticArtifact" ||
     input.toolName === "editStaticArtifact" ||
-    input.toolName === "findStaticArtifacts"
+    input.toolName === "findStaticArtifacts" ||
+    input.toolName === "readStaticArtifact"
   if (!isStaticTool) return null
 
   const action = stringValue(input.output?.action) ??
     (input.error || input.code ? "failed" :
       input.toolName === "createStaticArtifact" ? "created" :
-        input.toolName === "editStaticArtifact" ? "edited" : "found")
+        input.toolName === "editStaticArtifact" ? "edited" :
+          input.toolName === "readStaticArtifact" ? "read" : "found")
   const artifactId = stringValue(input.output?.artifactId) ?? stringValue(input.input?.artifactId)
   const title = stringValue(input.output?.title) ?? stringValue(input.input?.title) ?? artifactId
   const artifactType = stringValue(input.output?.artifactType) ?? stringValue(input.input?.artifactType)
@@ -284,6 +287,9 @@ function formatStaticArtifactPayload(input: {
     designBriefSummary: stringValue(input.output?.designBriefSummary),
     slideCount: numberValue(input.output?.slideCount),
     provider: stringValue(input.output?.provider),
+    contentText: stringValue(input.output?.contentText),
+    contentTextTruncated: input.output?.contentTextTruncated === true,
+    previewText: stringValue(input.output?.previewText),
     viewPath,
     errorCode,
     error: stringValue(input.output?.error) ?? input.error,
@@ -511,6 +517,12 @@ export function RunTimeline({
                     <p className="mt-1 text-muted-foreground">
                       Provider: {native.staticArtifact.provider}
                     </p>
+                  ) : null}
+                  {native.staticArtifact.contentText || native.staticArtifact.previewText ? (
+                    <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
+                      {native.staticArtifact.contentText ?? native.staticArtifact.previewText}
+                      {native.staticArtifact.contentTextTruncated ? "\n..." : ""}
+                    </pre>
                   ) : null}
                   {native.staticArtifact.resultCount != null ? (
                     <p className="mt-1 text-muted-foreground">

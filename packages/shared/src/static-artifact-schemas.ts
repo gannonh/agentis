@@ -322,6 +322,7 @@ export const createStaticArtifactOutputSchema = z
     theme: nonEmptyString,
     slideCount: positiveInteger.optional(),
     provider: z.string().optional(),
+    previewText: z.string().optional(),
     summary: nonEmptyString,
   })
   .superRefine(refineStaticArtifactMode)
@@ -346,6 +347,29 @@ export const editStaticArtifactOutputSchema = z
     version: positiveInteger,
     previousVersion: positiveInteger,
     viewPath: nonEmptyString,
+    previewText: z.string().optional(),
+    summary: nonEmptyString,
+  })
+  .superRefine(refineStaticArtifactMode)
+
+export const readStaticArtifactInputSchema = z.object({
+  artifactId: nonEmptyString,
+  maxChars: positiveInteger.max(10_000).optional(),
+})
+
+export const readStaticArtifactOutputSchema = z
+  .object({
+    artifactId: nonEmptyString,
+    title: nonEmptyString,
+    artifactType: staticArtifactTypeSchema,
+    renderMode: staticArtifactRenderModeSchema,
+    version: positiveInteger,
+    viewPath: nonEmptyString,
+    downloadPath: nonEmptyString,
+    theme: nonEmptyString.optional(),
+    slideCount: positiveInteger.optional(),
+    contentText: z.string(),
+    contentTextTruncated: z.boolean(),
     summary: nonEmptyString,
   })
   .superRefine(refineStaticArtifactMode)
@@ -405,6 +429,8 @@ export type EditStaticArtifactInput = z.infer<typeof editStaticArtifactInputSche
 export type EditStaticArtifactOutput = z.infer<
   typeof editStaticArtifactOutputSchema
 >
+export type ReadStaticArtifactInput = z.infer<typeof readStaticArtifactInputSchema>
+export type ReadStaticArtifactOutput = z.infer<typeof readStaticArtifactOutputSchema>
 export type FindStaticArtifactsInput = z.infer<
   typeof findStaticArtifactsInputSchema
 >

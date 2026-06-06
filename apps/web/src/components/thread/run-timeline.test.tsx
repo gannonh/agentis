@@ -347,6 +347,39 @@ describe("RunTimeline", () => {
     )
   })
 
+  it("renders read static artifact content text", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "readStaticArtifact",
+          input: {
+            artifactId: "artifact_deck",
+          },
+          output: {
+            action: "read",
+            artifactId: "artifact_deck",
+            title: "Launch deck",
+            artifactType: "slides",
+            renderMode: "html",
+            version: 1,
+            viewPath: "/artifacts/artifact_deck",
+            contentText: "Slide 1\nLaunch deck\n\nSlide 2\nActual slide body",
+            contentTextTruncated: false,
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact read")).toBeInTheDocument()
+    expect(screen.getByText(/Actual slide body/)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_deck"
+    )
+  })
+
   it("renders found static artifact item metadata", () => {
     renderTimeline({
       run,

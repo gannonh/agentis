@@ -234,7 +234,7 @@ describe("StaticArtifactService", () => {
     const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
     const storage = new LocalDocumentStorage(ctx.config)
     const html = storage.read(artifact!.storageKey).toString("utf8")
-    expect(Array.from(html.matchAll(/class="slide"/g))).toHaveLength(7)
+    expect(Array.from(html.matchAll(/class="slide/g))).toHaveLength(7)
     expect(html).toContain("Why changelogs matter")
 
     const edited = service.editStaticArtifact({
@@ -293,7 +293,7 @@ describe("StaticArtifactService", () => {
     const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
     const storage = new LocalDocumentStorage(ctx.config)
     const html = storage.read(artifact!.storageKey).toString("utf8")
-    expect(Array.from(html.matchAll(/class="slide"/g))).toHaveLength(3)
+    expect(Array.from(html.matchAll(/class="slide/g))).toHaveLength(3)
     expect(html).toContain("<h1>What is a Changelog?</h1>")
     expect(html).toContain("<li>Definition and purpose of a changelog</li>")
     expect(html).toContain("<li>Importance for users and developers</li>")
@@ -348,6 +348,138 @@ describe("StaticArtifactService", () => {
     expect(html).toContain("<li>Tracks what has changed between versions</li>")
     expect(html).toContain("<h1>Key Components</h1>")
     expect(html).toContain("<li>Version number and release date</li>")
+    ctx.cleanup()
+  })
+
+  it("splits inline slide marker detail into slide body content", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "How to Create a Good Changelog",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief: [
+        "Slide 1: Title - How to Create a Good Changelog",
+        "Slide 2: Importance of a Good Changelog - Helps users track changes, ensures transparency, facilitates communication",
+        "Slide 3: Key Elements - Date, version, description, categories (added, changed, fixed)",
+      ].join("\n"),
+      theme: "auto",
+      threadId: thread.id,
+      runId: run.id,
+    })
+
+    expect(created).toMatchObject({
+      ok: true,
+      output: {
+        artifactType: "slides",
+        renderMode: "html",
+        slideCount: 3,
+      },
+    })
+    if (!created.ok) throw new Error(created.message)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(html).toContain('<section class="slide title-slide" data-slide="1">')
+    expect(html).toContain('<section class="slide content-slide" data-slide="2">')
+    expect(html).toContain("<h1>Importance of a Good Changelog</h1>")
+    expect(html).toContain(
+      "<p>Helps users track changes, ensures transparency, facilitates communication</p>"
+    )
+    expect(html).not.toContain(
+      "<h1>Slide 2: Importance of a Good Changelog - Helps users track changes"
+    )
+    ctx.cleanup()
+  })
+
+  it("appends partial generated slide HTML without replacing the existing deck", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "How to Create a Good Changelog",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief: [
+        "Slide 1: Title - How to Create a Good Changelog",
+        "Slide 2: Importance - Helps users track changes",
+        "Slide 3: Key Elements - Dates, versions, and categories",
+      ].join("\n"),
+      theme: "auto",
+      threadId: thread.id,
+      runId: run.id,
+    })
+    if (!created.ok) throw new Error(created.message)
+
+    const edited = service.editStaticArtifact({
+      artifactId: created.output.artifactId,
+      contentBrief: "Add examples at the end.",
+      changeSummary: "Added detailed examples at the end",
+      generatedHtml: [
+        "<h2>Slide 4: Detailed Examples of Good Changelogs</h2>",
+        "<ul>",
+        "<li><strong>Example 1: Simple Version Update</strong><br>Version 1.2.0 - 2024-06-01<br>Added: New user profile page</li>",
+        "<li><strong>Example 2: Semantic Versioning Style</strong><br>Version 2.0.0 - 2024-05-20<br>Added: Support for API v3</li>",
+        "</ul>",
+      ].join("\n"),
+      runContext: { threadId: thread.id, runId: run.id },
+    })
+
+    expect(edited).toMatchObject({
+      ok: true,
+      output: {
+        artifactId: created.output.artifactId,
+        version: 2,
+      },
+    })
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    expect(artifact?.metadata).toMatchObject({ slideCount: 4 })
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(html).toContain("<!doctype html>")
+    expect(Array.from(html.matchAll(/class="slide/g))).toHaveLength(4)
+    expect(html).toContain("<h1>Importance</h1>")
+    expect(html).toContain("<p>Helps users track changes</p>")
+    expect(html).toContain("<h1>Detailed Examples of Good Changelogs</h1>")
+    expect(html).toContain("<li>Example 1: Simple Version Update")
+    expect(html).not.toMatch(/^<h2>/)
+    ctx.cleanup()
+  })
+
+  it("reads exact stored text from static slide artifacts", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "Title-only deck",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief:
+        "Slide 1: Title\nSlide 2: R&D <beta> \"quoted\" and 'apostrophe'",
+      theme: "corporate",
+      threadId: thread.id,
+      runId: run.id,
+    })
+    if (!created.ok) throw new Error(created.message)
+
+    const read = service.readStaticArtifact({
+      artifactId: created.output.artifactId,
+      runContext: { threadId: thread.id, runId: run.id },
+    })
+
+    expect(read).toMatchObject({
+      ok: true,
+      output: {
+        artifactId: created.output.artifactId,
+        contentText: expect.stringContaining(
+          "R&D <beta> \"quoted\" and 'apostrophe'"
+        ),
+        contentTextTruncated: false,
+      },
+    })
+    if (!read.ok) throw new Error(read.message)
+    expect(read.output.contentText).not.toContain("Communicates updates clearly")
+    expect(read.output.contentText).not.toContain("&amp;")
+    expect(read.output.contentText).not.toContain("&lt;")
+    expect(read.output.contentText).not.toContain("<section")
     ctx.cleanup()
   })
 

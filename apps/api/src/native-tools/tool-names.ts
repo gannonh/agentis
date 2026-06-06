@@ -32,6 +32,7 @@ export const NATIVE_STATIC_ARTIFACT_TOOL_NAMES = [
   "createStaticArtifact",
   "editStaticArtifact",
   "findStaticArtifacts",
+  "readStaticArtifact",
 ] as const
 
 export type NativeStaticArtifactToolName =

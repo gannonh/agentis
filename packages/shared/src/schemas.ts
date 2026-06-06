@@ -39,6 +39,8 @@ import {
   editStaticArtifactOutputSchema,
   findStaticArtifactsInputSchema,
   findStaticArtifactsOutputSchema,
+  readStaticArtifactInputSchema,
+  readStaticArtifactOutputSchema,
   staticArtifactMetadataSchema,
   staticArtifactRenderModeSchema,
   staticArtifactThemeSchema,
@@ -70,6 +72,8 @@ export {
   editStaticArtifactOutputSchema,
   findStaticArtifactsInputSchema,
   findStaticArtifactsOutputSchema,
+  readStaticArtifactInputSchema,
+  readStaticArtifactOutputSchema,
   staticArtifactAssetReferenceSchema,
   staticArtifactErrorCodeSchema,
   staticArtifactGenerationPathSchema,
@@ -993,6 +997,12 @@ export type EditStaticArtifactInput = z.infer<
 >
 export type EditStaticArtifactOutput = z.infer<
   typeof editStaticArtifactOutputSchema
+>
+export type ReadStaticArtifactInput = z.infer<
+  typeof readStaticArtifactInputSchema
+>
+export type ReadStaticArtifactOutput = z.infer<
+  typeof readStaticArtifactOutputSchema
 >
 export type FindStaticArtifactsInput = z.infer<
   typeof findStaticArtifactsInputSchema
