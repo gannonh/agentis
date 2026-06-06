@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import {
   staticArtifactMetadataSchema,
   type ArtifactDetailResponse,
@@ -206,16 +206,6 @@ function PolishedImageDeck({
       ),
     [metadata]
   )
-  const assetSignature = useMemo(
-    () => assets.map((asset) => asset.assetId).join("|"),
-    [assets]
-  )
-
-  useEffect(() => {
-    setIndex(0)
-    setMissingAsset(false)
-  }, [artifactId, assetSignature])
-
   const issue = issueFromMetadata(metadata)
 
   if (issue && assets.length === 0) {
@@ -321,5 +311,15 @@ export function StaticArtifactPreview({
     )
   }
 
-  return <PolishedImageDeck artifactId={detail.artifact.id} metadata={metadata} />
+  const assetSignature = metadata.assetReferences
+    .map((asset) => asset.assetId)
+    .join("|")
+
+  return (
+    <PolishedImageDeck
+      key={`${detail.artifact.id}:${assetSignature}`}
+      artifactId={detail.artifact.id}
+      metadata={metadata}
+    />
+  )
 }
