@@ -258,7 +258,9 @@ function formatStaticArtifactPayload(input: {
   const artifactType = stringValue(input.output?.artifactType) ?? stringValue(input.input?.artifactType)
   const renderMode = stringValue(input.output?.renderMode) ?? stringValue(input.input?.renderMode)
   const version = numberValue(input.output?.version)
-  const viewPath = stableRelativePath(input.output?.viewPath)
+  const viewPath =
+    stableRelativePath(input.output?.viewPath) ??
+    (artifactId ? `/artifacts/${encodeURIComponent(artifactId)}` : undefined)
   const errorCode =
     stringValue(input.output?.errorCode) ??
     stringValue(input.output?.code) ??

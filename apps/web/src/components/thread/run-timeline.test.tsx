@@ -317,6 +317,36 @@ describe("RunTimeline", () => {
     expect(screen.queryByText(/full artifact html/)).not.toBeInTheDocument()
   })
 
+  it("derives static artifact links from artifact ids when timeline viewPath is missing", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "editStaticArtifact",
+          input: {
+            artifactId: "artifact_deck",
+          },
+          output: {
+            action: "edited",
+            artifactId: "artifact_deck",
+            title: "Launch deck",
+            artifactType: "slides",
+            renderMode: "html",
+            version: 2,
+            previousVersion: 1,
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact edited")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_deck"
+    )
+  })
+
   it("renders found static artifact item metadata", () => {
     renderTimeline({
       run,

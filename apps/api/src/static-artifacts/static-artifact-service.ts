@@ -184,7 +184,38 @@ function outlineParagraphs(contentBrief: string): string[][] {
     .filter((paragraph) => paragraph.length > 0)
 }
 
+function slideMarkerSections(contentBrief: string): SlideSection[] {
+  const sections: SlideSection[] = []
+  let current: SlideSection | null = null
+
+  for (const rawLine of contentBrief.replace(/\r\n?/g, "\n").split("\n")) {
+    const line = rawLine.trim()
+    if (!line) continue
+
+    const marker = /^slide\s+\d+\s*:\s*(?<title>.+)$/i.exec(line)
+    if (marker?.groups?.title) {
+      if (current) sections.push(current)
+      current = {
+        title: sentenceCase(marker.groups.title.replace(/^[-*\d.\s:]+/, "").trim()),
+        body: [],
+      }
+      continue
+    }
+
+    const normalized = sentenceCase(line.replace(/^[-*\d.\s:]+/, "").trim())
+    if (current) current.body.push(normalized)
+  }
+
+  if (current) sections.push(current)
+  return sections.length > 1 && sections.some((section) => section.body.length > 0)
+    ? sections.slice(0, 12)
+    : []
+}
+
 function outlineSlideSections(contentBrief: string): SlideSection[] {
+  const markedSections = slideMarkerSections(contentBrief)
+  if (markedSections.length > 0) return markedSections
+
   const paragraphs = outlineParagraphs(contentBrief)
   if (paragraphs.length < 2) return []
   const sections: SlideSection[] = []

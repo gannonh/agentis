@@ -303,6 +303,54 @@ describe("StaticArtifactService", () => {
     ctx.cleanup()
   })
 
+  it("preserves body content from slide-numbered presentation outlines", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "How to Write a Good Changelog",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief: [
+        "Slide 1: Title",
+        "",
+        "How to Write a Good Changelog",
+        "Slide 2: Purpose of a Changelog",
+        "",
+        "Communicates updates clearly to users and contributors",
+        "Tracks what has changed between versions",
+        "Helps in troubleshooting and auditing changes",
+        "Slide 3: Key Components",
+        "",
+        "Version number and release date",
+        "Clear, concise descriptions",
+      ].join("\n"),
+      theme: "corporate",
+      threadId: thread.id,
+      runId: run.id,
+    })
+
+    expect(created).toMatchObject({
+      ok: true,
+      output: {
+        artifactType: "slides",
+        renderMode: "html",
+        slideCount: 3,
+      },
+    })
+    if (!created.ok) throw new Error(created.message)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(html).toContain("<h1>Purpose of a Changelog</h1>")
+    expect(html).toContain(
+      "<li>Communicates updates clearly to users and contributors</li>"
+    )
+    expect(html).toContain("<li>Tracks what has changed between versions</li>")
+    expect(html).toContain("<h1>Key Components</h1>")
+    expect(html).toContain("<li>Version number and release date</li>")
+    ctx.cleanup()
+  })
+
   it("preserves all prior static artifact metadata fields in edit history", () => {
     const { ctx, thread, run, service } = createRunContext()
     const storage = new LocalDocumentStorage(ctx.config)
