@@ -335,19 +335,21 @@ describe("RunTimeline", () => {
             renderMode: "html",
             version: 2,
             previousVersion: 1,
+            previewText: "Slide 1\nLaunch deck\n\nSlide 2\nFull slide body",
           },
         }),
       ],
     })
 
     expect(screen.getByText("Static artifact edited")).toBeInTheDocument()
+    expect(screen.queryByText(/Full slide body/)).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
       "href",
       "/artifacts/artifact_deck"
     )
   })
 
-  it("renders read static artifact content text", () => {
+  it("renders read static artifact cards without inline content text", () => {
     renderTimeline({
       run,
       steps: [
@@ -373,7 +375,7 @@ describe("RunTimeline", () => {
     })
 
     expect(screen.getByText("Static artifact read")).toBeInTheDocument()
-    expect(screen.getByText(/Actual slide body/)).toBeInTheDocument()
+    expect(screen.queryByText(/Actual slide body/)).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
       "href",
       "/artifacts/artifact_deck"

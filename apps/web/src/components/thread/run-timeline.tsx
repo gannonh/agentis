@@ -518,12 +518,6 @@ export function RunTimeline({
                       Provider: {native.staticArtifact.provider}
                     </p>
                   ) : null}
-                  {native.staticArtifact.contentText || native.staticArtifact.previewText ? (
-                    <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">
-                      {native.staticArtifact.contentText ?? native.staticArtifact.previewText}
-                      {native.staticArtifact.contentTextTruncated ? "\n..." : ""}
-                    </pre>
-                  ) : null}
                   {native.staticArtifact.resultCount != null ? (
                     <p className="mt-1 text-muted-foreground">
                       Results: {native.staticArtifact.resultCount}
