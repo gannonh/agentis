@@ -25,15 +25,37 @@ function step(payload: Record<string, unknown>): RunStep {
   }
 }
 
-function renderTimeline(props: { run: Run | null; steps: RunStep[] }) {
+function renderTimeline(
+  props: { run: Run | null; steps: RunStep[] },
+  options: { defaultExpanded?: boolean } = { defaultExpanded: true }
+) {
   return render(
     <MemoryRouter>
-      <RunTimeline {...props} />
+      <RunTimeline {...props} defaultExpanded={options.defaultExpanded} />
     </MemoryRouter>
   )
 }
 
 describe("RunTimeline", () => {
+  it("defaults to a collapsed title-only view", async () => {
+    const user = userEvent.setup()
+    renderTimeline(
+      { run, steps: [step({ provider: "native", toolName: "listWorkspaceFiles" })] },
+      { defaultExpanded: false }
+    )
+
+    const toggle = screen.getByRole("button", { name: "Run timeline" })
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByText("Debug mode")).not.toBeInTheDocument()
+    expect(screen.queryByText("Native: listWorkspaceFiles")).not.toBeInTheDocument()
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByText("Debug mode")).toBeInTheDocument()
+    expect(screen.getByText("Native: listWorkspaceFiles")).toBeInTheDocument()
+  })
+
   it("shows debug mode even when an older run has no debug payload", async () => {
     const user = userEvent.setup()
     renderTimeline({ run, steps: [step({ provider: "native" })] })

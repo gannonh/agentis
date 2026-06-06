@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "react-router"
 import type { Run, RunStep } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
@@ -369,10 +371,13 @@ function formatNativePayload(step: RunStep) {
 export function RunTimeline({
   run,
   steps,
+  defaultExpanded = false,
 }: {
   run: Run | null
   steps: RunStep[]
+  defaultExpanded?: boolean
 }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const [debugMode, setDebugMode] = useState(false)
   if (!run) {
     return null
@@ -388,26 +393,43 @@ export function RunTimeline({
 
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-3 border-l border-border bg-card/40 p-4">
-      <div className="flex items-center justify-between gap-2">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls="run-timeline-content"
+        className="flex items-center gap-2 text-left"
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <HugeiconsIcon
+          icon={expanded ? ArrowDown01Icon : ArrowRight01Icon}
+          className="size-3.5 text-muted-foreground"
+          strokeWidth={2}
+          aria-hidden
+        />
         <h2 className="text-sm font-medium">Run timeline</h2>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-pressed={debugMode}
-            className={cn(
-              "rounded-full border px-2 py-0.5 text-[0.625rem] font-medium",
-              debugMode
-                ? "border-primary/50 bg-primary/10 text-primary"
-                : "border-border bg-input/20 text-muted-foreground"
-            )}
-            onClick={() => setDebugMode((value) => !value)}
-          >
-            Debug mode
-          </button>
-          <Badge variant="outline">{statusLabel[run.status]}</Badge>
-        </div>
-      </div>
-      <ol className="flex flex-col gap-2">
+      </button>
+      {expanded ? (
+        <div id="run-timeline-content" className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Latest run</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={debugMode}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[0.625rem] font-medium",
+                  debugMode
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "border-border bg-input/20 text-muted-foreground"
+                )}
+                onClick={() => setDebugMode((value) => !value)}
+              >
+                Debug mode
+              </button>
+              <Badge variant="outline">{statusLabel[run.status]}</Badge>
+            </div>
+          </div>
+          <ol className="flex flex-col gap-2">
         {visibleSteps.map((step) => {
           const composio = formatComposioPayload(step)
           const native = formatNativePayload(step)
@@ -702,13 +724,15 @@ export function RunTimeline({
           )
         })}
       </ol>
-      {debugMode && debugSteps.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          No debug events for this run.
-        </p>
-      ) : null}
-      {run.errorSummary ? (
-        <p className="text-xs text-destructive">{run.errorSummary}</p>
+          {debugMode && debugSteps.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No debug events for this run.
+            </p>
+          ) : null}
+          {run.errorSummary ? (
+            <p className="text-xs text-destructive">{run.errorSummary}</p>
+          ) : null}
+        </div>
       ) : null}
     </aside>
   )
