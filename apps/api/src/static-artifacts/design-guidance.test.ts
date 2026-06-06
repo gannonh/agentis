@@ -72,10 +72,14 @@ describe("static artifact design guidance", () => {
 
     expect(validateStaticArtifactTheme("webpage", "editorial").ok).toBe(true)
     expect(validateStaticArtifactTheme("slides", "keynote").ok).toBe(true)
-    expect(validateStaticArtifactTheme("webpage", "keynote")).toEqual({
-      ok: false,
-      code: "static_artifact_invalid_type",
-      message: "Theme keynote is not supported for webpage artifacts.",
-    })
+    expect(validateStaticArtifactTheme("webpage", "keynote").ok).toBe(true)
+    expect(validateStaticArtifactTheme("webpage", "corporate").ok).toBe(true)
+    expect(
+      getStaticArtifactDesignGuidance({
+        artifactType: "webpage",
+        renderMode: "html",
+        theme: "corporate",
+      }).selectedTheme.id
+    ).toBe("corporate")
   })
 })

@@ -111,8 +111,8 @@ export function validateStaticArtifactTheme(
 
   const themes =
     artifactType === "webpage"
-      ? WEBPAGE_STATIC_ARTIFACT_THEMES
-      : SLIDE_STATIC_ARTIFACT_THEMES
+      ? [...WEBPAGE_STATIC_ARTIFACT_THEMES, ...SLIDE_STATIC_ARTIFACT_THEMES]
+      : [...SLIDE_STATIC_ARTIFACT_THEMES, ...WEBPAGE_STATIC_ARTIFACT_THEMES]
 
   if (themes.some((descriptor) => descriptor.id === theme)) {
     return { ok: true }
@@ -132,8 +132,8 @@ function getThemeDescriptor(
   const descriptor = [
     ...STATIC_ARTIFACT_SHARED_THEME_SELECTORS,
     ...(artifactType === "webpage"
-      ? WEBPAGE_STATIC_ARTIFACT_THEMES
-      : SLIDE_STATIC_ARTIFACT_THEMES),
+      ? [...WEBPAGE_STATIC_ARTIFACT_THEMES, ...SLIDE_STATIC_ARTIFACT_THEMES]
+      : [...SLIDE_STATIC_ARTIFACT_THEMES, ...WEBPAGE_STATIC_ARTIFACT_THEMES]),
   ].find((candidate) => candidate.id === theme)
 
   if (!descriptor) {

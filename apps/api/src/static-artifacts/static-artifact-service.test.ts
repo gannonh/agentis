@@ -115,6 +115,41 @@ describe("StaticArtifactService", () => {
     ctx.cleanup()
   })
 
+  it("treats slide-oriented themes as non-fatal webpage style hints", () => {
+    const { ctx, project, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "Board update webpage",
+      artifactType: "webpage",
+      renderMode: "html",
+      contentBrief: "Create a webpage version of the board update.",
+      theme: "corporate",
+      visibilityScope: "project",
+      projectId: project.id,
+      threadId: thread.id,
+      runId: run.id,
+    })
+
+    expect(created).toMatchObject({
+      ok: true,
+      output: {
+        title: "Board update webpage",
+        artifactType: "webpage",
+        renderMode: "html",
+        theme: "corporate",
+      },
+    })
+
+    if (!created.ok) throw new Error(created.message)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    expect(artifact?.metadata).toMatchObject({
+      artifactType: "webpage",
+      renderMode: "html",
+      theme: "corporate",
+    })
+    ctx.cleanup()
+  })
+
   it("rejects invalid render modes, unsafe HTML, and oversized HTML visibly", () => {
     const { ctx, thread, run, service } = createRunContext()
 
