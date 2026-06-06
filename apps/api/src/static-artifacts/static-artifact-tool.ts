@@ -57,7 +57,7 @@ export function buildStaticArtifactTools(
   return {
     createStaticArtifact: tool({
       description:
-        "Create a durable static webpage or slide deck Artifact linked to the current run and Library.",
+        "Create a durable static webpage or slide deck Artifact linked to the current run and Library. For HTML slide decks, use generatedHtml when the user asks for a full presentation or detailed slide content; use contentBrief-only outlines only when outline/title slides satisfy the request.",
       inputSchema: createStaticArtifactInputSchema,
       execute: async (input) => {
         const result = staticArtifactService.createStaticArtifact({
@@ -78,7 +78,7 @@ export function buildStaticArtifactTools(
 
     editStaticArtifact: tool({
       description:
-        "Edit an existing static webpage or slide deck Artifact by creating a new version.",
+        "Edit an existing static webpage or slide deck Artifact by creating a new version. When adding detail to an HTML slide deck, provide complete generatedHtml with substantive body content on the affected slides instead of only changing contentBrief; leave title-only slides only when the user asks for an outline.",
       inputSchema: editStaticArtifactInputSchema,
       execute: async (input) => {
         const result = staticArtifactService.editStaticArtifact({

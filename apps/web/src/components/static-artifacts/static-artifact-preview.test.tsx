@@ -58,7 +58,7 @@ describe("StaticArtifactPreview", () => {
   })
 
   it("renders HTML slide decks with owned controls in the script sandbox", () => {
-    const html = `<!doctype html><section class="slide"><h1>One</h1></section><section class="slide"><h1>Two</h1></section>`
+    const html = `<!doctype html><section class="slide"><h1>One</h1></section><section class="slide"><h1>Two</h1></section><script>const slides=[...document.querySelectorAll('.slide')];</script>`
     render(
       <StaticArtifactPreview
         detail={detail({
@@ -94,6 +94,8 @@ describe("StaticArtifactPreview", () => {
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("data-slide-next"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("Previous slide"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("Next slide"))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("(()=>{const slides="))
+    expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("deckCounters"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("addEventListener('click'"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("keydown"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("<h1>One</h1>"))
