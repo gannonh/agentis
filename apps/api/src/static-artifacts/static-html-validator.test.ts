@@ -63,6 +63,8 @@ describe("static HTML validator", () => {
       '<a href="java\nscript:alert(1)">Runtime link</a>',
       '<a href="data:text/html,<script>alert(1)</script>">Runtime link</a>',
       '<a href="vbscript:msgbox(1)">Runtime link</a>',
+      '<a href="/library">Runtime link</a>',
+      '<a href="relative-page.html">Runtime link</a>',
       "<button formaction=\"/api/runs\">Go</button>",
       '<button formaction="javascript:alert(1)">Go</button>',
       "<button onclick=\"alert(1)\">Run</button>",
@@ -142,6 +144,8 @@ describe("static HTML validator", () => {
       '<link rel="icon" href="https://cdn.example/favicon.ico">',
       '<link rel="preconnect" href="https://cdn.example">',
       '<link href="https&#x3a;//cdn.example/x.css">',
+      '<link rel="stylesheet" href="/assets/index.css">',
+      '<link rel="stylesheet" href="theme.css">',
     ]
 
     for (const html of cases) {
@@ -206,11 +210,14 @@ describe("static HTML validator", () => {
       "<img src=\"https://cdn.example/photo.png\" alt=\"Remote\">",
       '<img src="data:image/svg+xml,<svg onload=alert(1)>">',
       '<img src="javascript:alert(1)" alt="Remote">',
+      '<img src="/some-app-asset.png" alt="Runtime">',
+      '<img src="local-asset.png" alt="Runtime">',
       "<img src=\"https&#x3a;//cdn.example/x.png\" alt=\"Remote\">",
       "<img srcset=\"/local-small.png 1x, https://cdn.example/large.png 2x\" alt=\"Remote\">",
       '<img srcset="/local-small.png 1x, data:image/svg+xml,<svg 2x" alt="Remote">',
       "<source srcset=\"https://cdn.example/large.webp 800w\">",
       "<iframe src=\"https://cdn.example/embed\"></iframe>",
+      '<iframe src="/library"></iframe>',
       "<video src=\"https://cdn.example/movie.mp4\"></video>",
       "<video poster=\"https://cdn.example/poster.png\"></video>",
       "<audio src=\"https://cdn.example/audio.mp3\"></audio>",

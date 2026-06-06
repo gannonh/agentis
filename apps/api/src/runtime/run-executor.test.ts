@@ -260,6 +260,54 @@ describe("run executor composio bridge", () => {
     expect(messageText(assistant?.parts ?? [])).toContain("https://example.com")
   }, 10_000)
 
+  it("persists static artifact evidence in mock runtime", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const agent = context.repos.agents.create({
+      name: "Static Artifact Agent",
+      systemPrompt: "Create static artifact outputs.",
+      model: "gpt-4o-mini",
+      nativeTools: ["documents", "webSearch", "staticArtifacts"],
+    })
+    const created = await app.request(`/api/agents/${agent.id}/test-thread`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Create a static webpage for launch notes." }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    expect(context.repos.artifacts.list({ type: "webpage" })).toEqual([
+      expect.objectContaining({
+        title: "Mock webpage",
+        type: "webpage",
+        runId: run.id,
+      }),
+    ])
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Create static artifact",
+          type: "tool-result",
+          status: "completed",
+          payload: expect.objectContaining({
+            provider: "native",
+            toolName: "createStaticArtifact",
+            output: expect.objectContaining({
+              title: "Mock webpage",
+              artifactType: "webpage",
+              renderMode: "html",
+            }),
+          }),
+        }),
+      ])
+    )
+  }, 10_000)
+
   it("exposes web search for default custom-agent native permissions", async () => {
     const { app, context } = createMockRuntimeApp()
     const agent = context.repos.agents.create({

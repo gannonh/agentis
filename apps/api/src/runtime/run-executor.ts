@@ -52,6 +52,7 @@ import { nowIso } from "../lib/ids.js"
 import {
   createDefaultMockLanguageModel,
   executeMockComposioStream,
+  executeMockNativeStaticArtifactStream,
   executeMockNativeWebSearchStream,
   executeMockNativeWorkspaceExecutionStream,
   executeMockNativeWorkspaceMutationStream,
@@ -248,6 +249,7 @@ export class RunExecutor {
       editService: this.workspaceEditService,
       executionService: this.workspaceExecutionService,
       webSearchService: this.webSearchService,
+      staticArtifactService: this.staticArtifactService,
     }
   }
 
@@ -502,6 +504,20 @@ export class RunExecutor {
       nativeRuntimeCapabilities.webSearch.requested
     ) {
       return executeMockNativeWebSearchStream(
+        this.mockDeps(),
+        runId,
+        run,
+        threadMessages,
+        latestUserPrompt
+      )
+    }
+
+    if (
+      this.config.mockRuntime &&
+      nativeRuntimeCapabilities.staticArtifacts.enabled &&
+      nativeRuntimeCapabilities.staticArtifacts.requested
+    ) {
+      return executeMockNativeStaticArtifactStream(
         this.mockDeps(),
         runId,
         run,

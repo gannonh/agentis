@@ -162,9 +162,15 @@ function hasForbiddenUrlScheme(value: string): boolean {
   return /^[a-z][a-z0-9+.-]*:/i.test(normalized)
 }
 
+function isNonFragmentRelativeUrl(value: string): boolean {
+  const normalized = decodeHtmlCharacterReferences(value).trim()
+  return Boolean(normalized && !normalized.startsWith("#") && !hasForbiddenUrlScheme(normalized))
+}
+
 function isForbiddenResourceUrl(value: string): boolean {
   return (
     hasForbiddenUrlScheme(value) ||
+    isNonFragmentRelativeUrl(value) ||
     Boolean(externalUrl(value)) ||
     isAgentisApiUrl(value)
   )

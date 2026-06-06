@@ -16,6 +16,7 @@ import { isRunTimelineDebugEnabled, type AppConfig } from "../config.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
 import type { WebSearchService } from "../research/web-search-service.js"
 import type { Repositories } from "../repositories/index.js"
+import type { StaticArtifactService } from "../static-artifacts/static-artifact-service.js"
 import { nowIso } from "../lib/ids.js"
 import type { WorkspaceEditService } from "../workspaces/workspace-edit-service.js"
 import type { WorkspaceExecutionService } from "../workspaces/workspace-execution-service.js"
@@ -34,6 +35,7 @@ export type RunExecutorMocksDeps = {
   editService: WorkspaceEditService
   executionService: WorkspaceExecutionService
   webSearchService: WebSearchService
+  staticArtifactService: StaticArtifactService
 }
 
 function createTimelineDebugStep(
@@ -164,6 +166,175 @@ function formatMockWebSearchSummary(toolOutput: SearchWebOutput): string {
   }
 
   return `Found ${toolOutput.resultCount} web results. Top source: [${firstResult.title}](${firstResult.url}).`
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+}
+
+function inferStaticArtifactType(prompt: string): "webpage" | "slides" {
+  return /\b(slide deck|slides|presentation|deck)\b/i.test(prompt)
+    ? "slides"
+    : "webpage"
+}
+
+function mockStaticArtifactHtml(input: {
+  title: string
+  contentBrief: string
+  artifactType: "webpage" | "slides"
+}) {
+  const title = escapeHtml(input.title)
+  const brief = escapeHtml(input.contentBrief)
+  if (input.artifactType === "slides") {
+    return `<main><section class="slide"><h1>${title}</h1><p>${brief}</p></section></main>`
+  }
+  return `<main><h1>${title}</h1><p>${brief}</p></main>`
+}
+
+export async function executeMockNativeStaticArtifactStream(
+  deps: RunExecutorMocksDeps,
+  runId: string,
+  run: Run,
+  threadMessages: Message[],
+  latestUserPrompt: string
+) {
+  const thread = deps.repos.threads.getById(run.threadId)
+  if (!thread) throw new Error("Thread not found")
+
+  const assistantMessage = deps.repos.messages.create({
+    threadId: run.threadId,
+    role: "assistant",
+    parts: [{ type: "text", text: "" }],
+    status: "streaming",
+  })
+
+  deps.repos.runs.updateStatus(runId, "running")
+  deps.repos.steps.create({
+    runId,
+    type: "running",
+    status: "running",
+    title: "Running",
+  })
+
+  const toolName = "createStaticArtifact" as const
+  const toolCallId = `mock-native-static-artifact-${runId}`
+  const artifactType = inferStaticArtifactType(latestUserPrompt)
+  const title = artifactType === "slides" ? "Mock slide deck" : "Mock webpage"
+  const toolInput = {
+    title,
+    artifactType,
+    renderMode: "html" as const,
+    contentBrief: latestUserPrompt.trim() || "Create a static artifact.",
+    generatedHtml: mockStaticArtifactHtml({
+      title,
+      contentBrief: latestUserPrompt.trim() || "Create a static artifact.",
+      artifactType,
+    }),
+    visibilityScope: thread.projectId ? ("project" as const) : ("thread" as const),
+  }
+
+  const result = deps.staticArtifactService.createStaticArtifact({
+    ...toolInput,
+    projectId: thread.projectId ?? undefined,
+    threadId: thread.id,
+    runId,
+  })
+  if (!result.ok) {
+    const message = result.message
+    deps.repos.messages.updatePartsAndStatus(
+      assistantMessage.id,
+      [{ type: "text", text: message }],
+      "failed"
+    )
+    deps.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: message,
+    })
+    deps.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Static artifact failed",
+      payload: { provider: "native", toolName, toolCallId, message, code: result.code },
+    })
+    deps.repos.threads.touch(run.threadId, { status: "failed" })
+    throw new Error(message)
+  }
+
+  const toolOutput = result.output
+  const summaryText = `Created ${toolOutput.artifactType} static artifact: ${toolOutput.title}.`
+  const assistantParts: MessagePart[] = [
+    { type: "text", text: summaryText },
+    { type: "tool-call", toolCallId, toolName, input: toolInput },
+    { type: "tool-result", toolCallId, toolName, output: toolOutput },
+  ]
+
+  deps.repos.steps.create({
+    runId,
+    type: "tool-call",
+    status: "completed",
+    title: formatToolStepTitle({ toolName, curated: false }),
+    payload:
+      formatNativeToolRunStepPayload({
+        toolCallId,
+        toolName,
+        input: toolInput,
+      }) ?? undefined,
+  })
+  deps.repos.steps.create({
+    runId,
+    type: "tool-result",
+    status: "completed",
+    title: formatToolStepTitle({ toolName, curated: false }),
+    payload:
+      formatNativeToolRunStepPayload({
+        toolCallId,
+        toolName,
+        input: toolInput,
+        output: toolOutput,
+      }) ?? undefined,
+  })
+
+  deps.repos.messages.updatePartsAndStatus(
+    assistantMessage.id,
+    assistantParts,
+    "completed"
+  )
+  const usage = { totalTokens: 0 }
+  deps.repos.runs.updateStatus(runId, "completed", {
+    finishedAt: nowIso(),
+    usage,
+  })
+  createTimelineDebugStep(deps, runId, {
+    status: "completed",
+    title: "Debug: model output",
+    payload: {
+      provider: "debug",
+      kind: "model-output",
+      assistantParts,
+      usage,
+    },
+  })
+  deps.repos.steps.create({
+    runId,
+    type: "completed",
+    status: "completed",
+    title: "Completed",
+  })
+  deps.repos.threads.touch(run.threadId)
+
+  const stream = streamText({
+    model: mockTextStream(summaryText) as LanguageModel,
+    messages: toModelMessages(threadMessages),
+  })
+
+  return stream.toUIMessageStreamResponse({
+    originalMessages: toUiMessages(threadMessages),
+  })
 }
 
 export async function executeMockNativeWebSearchStream(
