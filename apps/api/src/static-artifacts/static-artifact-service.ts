@@ -166,6 +166,57 @@ function slideLines(contentBrief: string): string[] {
   return [contentBrief.trim() || "Static slide"]
 }
 
+type SlideSection = {
+  title: string
+  body: string[]
+}
+
+function outlineParagraphs(contentBrief: string): string[][] {
+  return contentBrief
+    .replace(/\r\n?/g, "\n")
+    .split(/\n\s*\n+/)
+    .map((paragraph) =>
+      paragraph
+        .split("\n")
+        .map((line) => sentenceCase(line.replace(/^[-*\d.\s:]+/, "").trim()))
+        .filter(Boolean)
+    )
+    .filter((paragraph) => paragraph.length > 0)
+}
+
+function outlineSlideSections(contentBrief: string): SlideSection[] {
+  const paragraphs = outlineParagraphs(contentBrief)
+  if (paragraphs.length < 2) return []
+  const sections: SlideSection[] = []
+
+  for (let index = 0; index < paragraphs.length; index += 1) {
+    const paragraph = paragraphs[index]
+    if (!paragraph) continue
+    const next = paragraphs[index + 1]
+
+    if (/^title slide$/i.test(paragraph[0] ?? "") && next) {
+      sections.push({ title: next[0] ?? paragraph[0]!, body: next.slice(1) })
+      index += 1
+      continue
+    }
+
+    if (paragraph.length === 1 && next && next.length > 1) {
+      sections.push({ title: paragraph[0]!, body: next })
+      index += 1
+      continue
+    }
+
+    sections.push({
+      title: paragraph[0]!,
+      body: paragraph.slice(1),
+    })
+  }
+
+  return sections.length > 1 && sections.some((section) => section.body.length > 0)
+    ? sections.slice(0, 12)
+    : []
+}
+
 function buildWebpageHtml(input: {
   title: string
   contentBrief: string
@@ -212,20 +263,32 @@ function buildSlidesHtml(input: {
   sourceData?: string
   theme: string
 }): { html: string; slideCount: number } {
-  const lines = slideLines(input.contentBrief)
-  const slides = lines
-    .map(
-      (line, index) => `<section class="slide" data-slide="${index + 1}">
-<p class="eyebrow">${escapeHtml(input.theme)} · ${index + 1}/${lines.length}</p>
-<h1>${escapeHtml(index === 0 ? input.title : line)}</h1>
-${index === 0 ? `<p>${escapeHtml(line)}</p>` : ""}
+  const structuredSections = outlineSlideSections(input.contentBrief)
+  const sections =
+    structuredSections.length > 0
+      ? structuredSections
+      : slideLines(input.contentBrief).map((line, index) => ({
+          title: index === 0 ? input.title : line,
+          body: index === 0 ? [line] : [],
+        }))
+  const slides = sections
+    .map((section, index) => {
+      const body =
+        section.body.length > 1
+          ? `<ul>${section.body.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`
+          : section.body.map((line) => `<p>${escapeHtml(line)}</p>`).join("")
+
+      return `<section class="slide" data-slide="${index + 1}">
+<p class="eyebrow">${escapeHtml(input.theme)} · ${index + 1}/${sections.length}</p>
+<h1>${escapeHtml(section.title)}</h1>
+${body}
 </section>`
-    )
+    })
     .join("\n")
   const sourceSlide = input.sourceData
-    ? `<section class="slide" data-slide="${lines.length + 1}"><p class="eyebrow">Source</p><pre>${escapeHtml(input.sourceData)}</pre></section>`
+    ? `<section class="slide" data-slide="${sections.length + 1}"><p class="eyebrow">Source</p><pre>${escapeHtml(input.sourceData)}</pre></section>`
     : ""
-  const slideCount = lines.length + (input.sourceData ? 1 : 0)
+  const slideCount = sections.length + (input.sourceData ? 1 : 0)
 
   return {
     slideCount,
@@ -236,7 +299,7 @@ ${index === 0 ? `<p>${escapeHtml(line)}</p>` : ""}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(input.title)}</title>
 <style>
-:root{font-family:Inter,IBM Plex Sans,system-ui,sans-serif;background:#101827;color:#f8fafc;}body{margin:0;overflow:hidden}.deck{height:100vh;display:grid}.slide{display:none;place-content:center;padding:8vw;min-height:100vh;box-sizing:border-box}.slide.active{display:grid}.eyebrow{color:#93a3b8;text-transform:uppercase;letter-spacing:.12em}h1{font-size:clamp(2.5rem,7vw,6rem);line-height:1;margin:0 0 24px}p,pre{font-size:clamp(1rem,2vw,1.5rem);line-height:1.5}.counter{position:fixed;right:24px;bottom:20px;color:#93a3b8}
+:root{font-family:Inter,IBM Plex Sans,system-ui,sans-serif;background:#101827;color:#f8fafc;}body{margin:0;overflow:hidden}.deck{height:100vh;display:grid}.slide{display:none;place-content:center;padding:8vw;min-height:100vh;box-sizing:border-box}.slide.active{display:grid}.eyebrow{color:#93a3b8;text-transform:uppercase;letter-spacing:.12em}h1{font-size:clamp(2.25rem,6vw,5.5rem);line-height:1;margin:0 0 24px}p,pre,li{font-size:clamp(1rem,1.8vw,1.35rem);line-height:1.5}ul{margin:0;padding-left:1.4em;max-width:880px;display:grid;gap:.65rem}.counter{position:fixed;right:24px;bottom:20px;color:#93a3b8}
 </style>
 </head>
 <body>
