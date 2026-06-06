@@ -16,7 +16,18 @@ type ThreadDurableArtifactsProps = {
 
 function artifactPath(artifact: Artifact) {
   if (artifact.type === "document") return documentWorkspacePath(artifact.id)
-  return artifactWorkspacePath(artifact.id)
+  if (artifact.type === "webpage" || artifact.type === "slides") {
+    return artifactWorkspacePath(artifact.id)
+  }
+  return null
+}
+
+function artifactActionLabel(artifact: Artifact) {
+  if (artifact.type === "document") return "Open document"
+  if (artifact.type === "webpage" || artifact.type === "slides") {
+    return "Open artifact"
+  }
+  return null
 }
 
 function artifactMetadata(artifact: Artifact) {
@@ -74,7 +85,7 @@ export function ThreadDurableArtifacts({
   )
 
   return (
-    <section className="flex w-72 shrink-0 flex-col gap-3 border-l border-border bg-card/40 p-4">
+    <section className="flex w-72 shrink-0 flex-col gap-3 bg-card/40 p-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-medium">Durable artifacts</h2>
         {sortedArtifacts.length ? (
@@ -106,15 +117,17 @@ export function ThreadDurableArtifacts({
               <p className="mt-1 text-muted-foreground">
                 Updated {formatRelativeTime(artifact.updatedAt)}
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2"
-                nativeButton={false}
-                render={<Link to={artifactPath(artifact)} />}
-              >
-                Open artifact
-              </Button>
+              {artifactPath(artifact) && artifactActionLabel(artifact) ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  nativeButton={false}
+                  render={<Link to={artifactPath(artifact)!} />}
+                >
+                  {artifactActionLabel(artifact)}
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>

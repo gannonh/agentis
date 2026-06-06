@@ -917,7 +917,7 @@ export class StaticArtifactService {
       ok: true,
       output: {
         items: matches.slice(0, limit),
-        resultCount: Math.min(matches.length, limit),
+        resultCount: matches.length,
         truncated: matches.length > limit,
       },
     }
@@ -1066,6 +1066,19 @@ export class StaticArtifactService {
           "Try again or use html renderMode for this deck."
         )
       }
+      const expectedIndexes = new Set(slides.map((slide) => slide.slideIndex))
+      const seenIndexes = new Set<number>()
+      for (const slide of generatedSlides) {
+        if (!expectedIndexes.has(slide.slideIndex) || seenIndexes.has(slide.slideIndex)) {
+          return staticArtifactError(
+            "static_artifact_image_generation_failed",
+            "Polished image slide generation returned invalid slide ordering.",
+            502,
+            "Try again or use html renderMode for this deck."
+          )
+        }
+        seenIndexes.add(slide.slideIndex)
+      }
 
       const assetReferences = generatedSlides.map((slide) => ({
         assetId: createId("static_asset"),
@@ -1075,7 +1088,7 @@ export class StaticArtifactService {
         sizeBytes: slide.data.byteLength,
         altText: slide.altText,
       }))
-      const metadata = staticArtifactMetadataSchema.parse({
+      const metadataResult = staticArtifactMetadataSchema.safeParse({
         artifactType: input.artifactType,
         renderMode: input.renderMode,
         theme: guidance.selectedTheme.id,
@@ -1093,6 +1106,15 @@ export class StaticArtifactService {
         },
         generationWarnings: [],
       })
+      if (!metadataResult.success) {
+        return staticArtifactError(
+          "static_artifact_image_generation_failed",
+          "Polished image slide generation returned invalid metadata.",
+          502,
+          "Try again or use html renderMode for this deck."
+        )
+      }
+      const metadata = metadataResult.data
       const content = JSON.stringify(
         {
           artifactType: input.artifactType,
@@ -1164,7 +1186,7 @@ export class StaticArtifactService {
     })
     if (!validation.ok) return validation
 
-    const metadata = staticArtifactMetadataSchema.parse({
+    const metadataResult = staticArtifactMetadataSchema.safeParse({
       artifactType: input.artifactType,
       renderMode: input.renderMode,
       theme: guidance.selectedTheme.id,
@@ -1180,6 +1202,14 @@ export class StaticArtifactService {
       },
       generationWarnings: [],
     })
+    if (!metadataResult.success) {
+      return staticArtifactError(
+        "static_artifact_storage_failed",
+        "Failed to build static artifact metadata.",
+        500
+      )
+    }
+    const metadata = metadataResult.data
 
     return {
       ok: true,

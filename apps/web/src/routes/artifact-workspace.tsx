@@ -35,10 +35,12 @@ export function ArtifactWorkspacePage() {
   >()
   const [projectIdDraft, setProjectIdDraft] = useState("")
   const hasLoadedRef = useRef(false)
+  const detailRequestRef = useRef(0)
 
   const loadDetail = useCallback(
     async (version?: number | null) => {
       if (!artifactId) return
+      const requestId = ++detailRequestRef.current
       const initialLoad = !hasLoadedRef.current
       if (initialLoad) setLoading(true)
       setError(null)
@@ -48,15 +50,17 @@ export function ArtifactWorkspacePage() {
           artifactId,
           version == null ? {} : { version }
         )
+        if (requestId !== detailRequestRef.current) return
         setDetail(next)
         setSelectedVersion(next.selectedVersion ?? next.currentVersion ?? null)
       } catch (loadError) {
+        if (requestId !== detailRequestRef.current) return
         const message =
           loadError instanceof Error ? loadError.message : "Failed to load artifact"
         if (initialLoad) setError(message)
         else setVersionError(message)
       } finally {
-        if (initialLoad) {
+        if (initialLoad && requestId === detailRequestRef.current) {
           hasLoadedRef.current = true
           setLoading(false)
         }

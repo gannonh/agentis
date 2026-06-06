@@ -158,7 +158,7 @@ export class ArtifactRepository {
         defaultContentFormat({ type: input.type, mimeType: input.mimeType }),
       mimeType: input.mimeType,
       sizeBytes: input.sizeBytes,
-      storageKey: input.storageKey,
+      storageKey: input.contentStorageKey,
       previewText: input.previewText ?? null,
       metadataJson: input.metadata ? JSON.stringify(input.metadata) : null,
       visibilityScope:
@@ -229,6 +229,16 @@ export class ArtifactRepository {
     let row: typeof documents.$inferSelect | undefined
 
     this.db.transaction((tx) => {
+      const existing = tx
+        .select({ id: documents.id })
+        .from(documents)
+        .where(eq(documents.id, input.artifactId))
+        .get()
+      if (!existing) {
+        row = undefined
+        return
+      }
+
       tx.insert(documentVersions).values(versionRow).run()
       tx.update(documents)
         .set({

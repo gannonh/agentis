@@ -100,6 +100,7 @@ describe("StaticArtifactPreview", () => {
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("keydown"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("<h1>One</h1>"))
     expect(frame).toHaveAttribute("srcdoc", expect.stringContaining("<h1>Two</h1>"))
+    expect(frame.getAttribute("srcdoc")?.match(/<script\b/gi)).toHaveLength(1)
     expect(screen.getByText("Slide controls run inside an isolated static preview."))
       .toBeInTheDocument()
   })
@@ -155,9 +156,8 @@ describe("StaticArtifactPreview", () => {
       "/api/artifacts/slides_polished/assets/asset_intro"
     )
 
-    fireEvent.keyDown(screen.getByRole("region", { name: "Polished image slide deck" }), {
-      key: "ArrowRight",
-    })
+    const deck = screen.getByRole("region", { name: "Polished image slide deck" })
+    fireEvent.keyDown(deck, { key: "ArrowRight" })
 
     expect(screen.getByText("2 / 2")).toBeInTheDocument()
     expect(screen.getByAltText("Closing slide")).toHaveAttribute(
@@ -222,5 +222,72 @@ describe("StaticArtifactPreview", () => {
 
     fireEvent.error(screen.getByRole("img"))
     expect(screen.getByText("static_artifact_asset_missing")).toBeInTheDocument()
+  })
+
+  it("resets polished deck navigation when the asset set changes", () => {
+    const first = detail({
+      artifact: {
+        ...detail({}).artifact,
+        id: "slides_reset",
+        title: "Reset deck",
+        type: "slides",
+        contentFormat: "manifest",
+        mimeType: "application/json",
+        metadata: {
+          artifactType: "slides",
+          renderMode: "polishedImage",
+          theme: "cinematic",
+          generationPath: "polishedImageSlides",
+          slideCount: 2,
+          assetReferences: [
+            {
+              assetId: "asset_a",
+              slideIndex: 1,
+              storageKey: "hidden/a.png",
+              mimeType: "image/png",
+              sizeBytes: 10,
+            },
+            {
+              assetId: "asset_b",
+              slideIndex: 2,
+              storageKey: "hidden/b.png",
+              mimeType: "image/png",
+              sizeBytes: 10,
+            },
+          ],
+          safetyValidationResult: { status: "passed", warnings: [], errors: [] },
+          generationWarnings: [],
+        },
+      },
+      content: "{}",
+    })
+    const { rerender } = render(<StaticArtifactPreview detail={first} />)
+    const deck = screen.getByRole("region", { name: "Polished image slide deck" })
+    fireEvent.keyDown(deck, { key: "ArrowRight" })
+    expect(screen.getByText("2 / 2")).toBeInTheDocument()
+
+    rerender(
+      <StaticArtifactPreview
+        detail={detail({
+          artifact: {
+            ...first.artifact,
+            metadata: {
+              ...(first.artifact.metadata as Record<string, unknown>),
+              assetReferences: [
+                {
+                  assetId: "asset_c",
+                  slideIndex: 1,
+                  storageKey: "hidden/c.png",
+                  mimeType: "image/png",
+                  sizeBytes: 10,
+                },
+              ],
+            },
+          },
+        })}
+      />
+    )
+
+    expect(screen.getByText("1 / 1")).toBeInTheDocument()
   })
 })

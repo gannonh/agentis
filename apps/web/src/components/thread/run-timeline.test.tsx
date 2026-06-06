@@ -444,6 +444,34 @@ describe("RunTimeline", () => {
     expect(screen.getByText("Slides: 7")).toBeInTheDocument()
   })
 
+  it("labels static artifact failures when output.action is omitted", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "createStaticArtifact",
+          input: {
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+          },
+          output: {
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+            errorCode: "static_artifact_provider_unavailable",
+            error: "Image provider is not configured.",
+            remediation: "Configure an image generation provider or use html render mode.",
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact failed")).toBeInTheDocument()
+    expect(screen.queryByText("Static artifact created")).not.toBeInTheDocument()
+  })
+
   it("renders visible static artifact failure cards with remediation", () => {
     renderTimeline({
       run,

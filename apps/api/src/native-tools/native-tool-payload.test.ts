@@ -221,6 +221,32 @@ describe("formatNativeToolRunStepPayload", () => {
     expect(JSON.stringify(payload)).not.toContain("<section>")
   })
 
+  it("marks static artifact find payloads truncated when items are locally capped", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static_find",
+      toolName: "findStaticArtifacts",
+      input: { query: "launch" },
+      output: {
+        action: "found",
+        resultCount: 12,
+        truncated: false,
+        items: Array.from({ length: 12 }, (_, index) => ({
+          artifactId: `artifact_${index}`,
+          title: `Artifact ${index}`,
+          artifactType: "webpage",
+          renderMode: "html",
+          version: 1,
+          viewPath: `/artifacts/artifact_${index}`,
+          updatedAt: "2026-06-01T00:00:00.000Z",
+        })),
+      },
+    })
+
+    const output = payload?.output as { truncated?: boolean; items?: unknown[] }
+    expect(output.items).toHaveLength(10)
+    expect(output.truncated).toBe(true)
+  })
+
   it("keeps approved static artifact failure codes and remediation in timeline payloads", () => {
     const payload = formatNativeToolRunStepPayload({
       toolCallId: "call_static_failed",

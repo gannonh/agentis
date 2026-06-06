@@ -463,6 +463,9 @@ function summarizeStaticArtifactOutput(output: unknown): unknown {
         .map(summarizeStaticArtifactItem)
         .filter(Boolean)
     : undefined
+  const itemsTruncatedByPayload =
+    Array.isArray(output.items) &&
+    output.items.length > STATIC_ARTIFACT_ITEMS_LIMIT
 
   return {
     action:
@@ -530,7 +533,7 @@ function summarizeStaticArtifactOutput(output: unknown): unknown {
         : undefined,
     resultCount:
       typeof output.resultCount === "number" ? output.resultCount : undefined,
-    truncated: output.truncated === true,
+    truncated: output.truncated === true || itemsTruncatedByPayload,
     items,
   }
 }

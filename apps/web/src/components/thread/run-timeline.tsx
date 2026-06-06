@@ -253,8 +253,11 @@ function formatStaticArtifactPayload(input: {
     input.toolName === "readStaticArtifact"
   if (!isStaticTool) return null
 
+  const outputFailed =
+    stringValue(input.output?.errorCode) != null ||
+    stringValue(input.output?.error) != null
   const action = stringValue(input.output?.action) ??
-    (input.error || input.code ? "failed" :
+    (input.error || input.code || outputFailed ? "failed" :
       input.toolName === "createStaticArtifact" ? "created" :
         input.toolName === "editStaticArtifact" ? "edited" :
           input.toolName === "readStaticArtifact" ? "read" : "found")
@@ -390,13 +393,14 @@ export function RunTimeline({
   const visibleSteps = debugMode
     ? runSteps
     : runSteps.filter((step) => !formatDebugPayload(step))
+  const contentId = `run-timeline-content-${run.id}`
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-3 border-l border-border bg-card/40 p-4">
+    <aside className="flex w-72 shrink-0 flex-col gap-3 bg-card/40 p-4">
       <button
         type="button"
         aria-expanded={expanded}
-        aria-controls="run-timeline-content"
+        aria-controls={contentId}
         className="flex items-center gap-2 text-left"
         onClick={() => setExpanded((value) => !value)}
       >
@@ -409,7 +413,7 @@ export function RunTimeline({
         <h2 className="text-sm font-medium">Run timeline</h2>
       </button>
       {expanded ? (
-        <div id="run-timeline-content" className="flex flex-col gap-3">
+        <div id={contentId} className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">Latest run</span>
             <div className="flex items-center gap-2">

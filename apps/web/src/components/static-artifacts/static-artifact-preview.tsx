@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   staticArtifactMetadataSchema,
   type ArtifactDetailResponse,
@@ -142,10 +142,17 @@ function PreviewIssue({ code, message }: { code: string; message: string }) {
 const HTML_SLIDE_PREVIEW_SCRIPT =
   "(()=>{const slides=[...document.querySelectorAll('.slide')];let current=0;const counter=document.querySelector('[data-slide-counter]');const deckCounters=[...document.querySelectorAll('.counter')].filter((item)=>item!==counter);const prev=document.querySelector('[data-slide-prev]');const next=document.querySelector('[data-slide-next]');function show(index){if(!slides.length)return;current=Math.max(0,Math.min(index,slides.length-1));slides.forEach((slide,i)=>{slide.classList.toggle('active',i===current);slide.hidden=i!==current});const label=(current+1)+' / '+slides.length;if(counter)counter.textContent=label;deckCounters.forEach((item)=>{item.textContent=label});if(prev)prev.disabled=current===0;if(next)next.disabled=current===slides.length-1;}prev?.addEventListener('click',()=>show(current-1));next?.addEventListener('click',()=>show(current+1));document.addEventListener('keydown',(event)=>{if(event.key==='ArrowRight'||event.key===' '){show(current+1)}if(event.key==='ArrowLeft'){show(current-1)}});show(0);})();"
 
+function stripEmbeddedSlideScripts(html: string) {
+  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+}
+
 function htmlSlidePreviewShell(html: string) {
+  const stripped = stripEmbeddedSlideScripts(html)
   const shell = `<div data-agentis-slide-preview-shell="true" style="position:fixed;right:1rem;bottom:1rem;z-index:10;display:flex;align-items:center;gap:.4rem;border-radius:999px;background:rgba(15,23,42,.82);color:white;padding:.35rem .45rem;font:14px system-ui,sans-serif;box-shadow:0 10px 30px rgba(2,6,23,.25)"><button type="button" data-slide-prev aria-label="Previous slide" style="width:2rem;height:2rem;border:0;border-radius:999px;background:rgba(255,255,255,.12);color:white;font:18px/1 system-ui,sans-serif;cursor:pointer">&lsaquo;</button><span data-slide-counter class="slide-counter" style="min-width:3.25rem;text-align:center">1 / 1</span><button type="button" data-slide-next aria-label="Next slide" style="width:2rem;height:2rem;border:0;border-radius:999px;background:rgba(255,255,255,.12);color:white;font:18px/1 system-ui,sans-serif;cursor:pointer">&rsaquo;</button></div><script>${HTML_SLIDE_PREVIEW_SCRIPT}</script>`
-  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${shell}</body>`)
-  return `${html}${shell}`
+  if (/<\/body>/i.test(stripped)) {
+    return stripped.replace(/<\/body>/i, `${shell}</body>`)
+  }
+  return `${stripped}${shell}`
 }
 
 function StaticHtmlFrame({
@@ -199,6 +206,16 @@ function PolishedImageDeck({
       ),
     [metadata]
   )
+  const assetSignature = useMemo(
+    () => assets.map((asset) => asset.assetId).join("|"),
+    [assets]
+  )
+
+  useEffect(() => {
+    setIndex(0)
+    setMissingAsset(false)
+  }, [artifactId, assetSignature])
+
   const issue = issueFromMetadata(metadata)
 
   if (issue && assets.length === 0) {
@@ -225,8 +242,14 @@ function PolishedImageDeck({
       tabIndex={0}
       className="space-y-3 outline-none"
       onKeyDown={(event) => {
-        if (event.key === "ArrowRight" || event.key === " ") move(1)
-        if (event.key === "ArrowLeft") move(-1)
+        if (event.key === "ArrowRight" || event.key === " ") {
+          event.preventDefault()
+          move(1)
+        }
+        if (event.key === "ArrowLeft") {
+          event.preventDefault()
+          move(-1)
+        }
       }}
     >
       {missingAsset ? (

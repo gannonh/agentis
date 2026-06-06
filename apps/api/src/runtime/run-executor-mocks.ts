@@ -237,12 +237,46 @@ export async function executeMockNativeStaticArtifactStream(
     visibilityScope: thread.projectId ? ("project" as const) : ("thread" as const),
   }
 
-  const result = deps.staticArtifactService.createStaticArtifact({
-    ...toolInput,
-    projectId: thread.projectId ?? undefined,
-    threadId: thread.id,
-    runId,
-  })
+  let result:
+    | ReturnType<typeof deps.staticArtifactService.createStaticArtifact>
+    | undefined
+  try {
+    result = deps.staticArtifactService.createStaticArtifact({
+      ...toolInput,
+      projectId: thread.projectId ?? undefined,
+      threadId: thread.id,
+      runId,
+    })
+  } catch (cause) {
+    const message =
+      cause instanceof Error
+        ? cause.message
+        : "Static artifact creation failed unexpectedly."
+    deps.repos.messages.updatePartsAndStatus(
+      assistantMessage.id,
+      [{ type: "text", text: message }],
+      "failed"
+    )
+    deps.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: message,
+    })
+    deps.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Static artifact failed",
+      payload: {
+        provider: "native",
+        toolName,
+        toolCallId,
+        message,
+        code: "static_artifact_storage_failed",
+      },
+    })
+    deps.repos.threads.touch(run.threadId, { status: "failed" })
+    throw cause instanceof Error ? cause : new Error(message)
+  }
   if (!result.ok) {
     const message = result.message
     deps.repos.messages.updatePartsAndStatus(

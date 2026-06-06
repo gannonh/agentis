@@ -101,6 +101,39 @@ describe("artifact repository", () => {
     ctx.cleanup()
   })
 
+  it("persists initial artifact storageKey from contentStorageKey", () => {
+    const ctx = createTestContext()
+    const { artifact } = ctx.repos.artifacts.createWithInitialVersion({
+      title: "Launch page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 20,
+      storageKey: "artifacts/legacy/index.html",
+      contentHash: "hash_1",
+      contentStorageKey: "artifacts/landing/index.html",
+      visibilityScope: "global",
+    })
+
+    expect(artifact.storageKey).toBe("artifacts/landing/index.html")
+    ctx.cleanup()
+  })
+
+  it("returns null when updateWithVersion targets a missing artifact", () => {
+    const ctx = createTestContext()
+    const updated = ctx.repos.artifacts.updateWithVersion({
+      artifactId: "artifact_missing",
+      version: 2,
+      contentHash: "hash_2",
+      contentStorageKey: "artifacts/missing/v2.html",
+      sizeBytes: 10,
+    })
+
+    expect(updated).toBeNull()
+    expect(ctx.repos.artifacts.listVersions("artifact_missing")).toEqual([])
+    ctx.cleanup()
+  })
+
   it("creates new markdown documents as document artifacts", () => {
     const ctx = createTestContext()
 

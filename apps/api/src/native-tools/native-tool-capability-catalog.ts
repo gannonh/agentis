@@ -72,7 +72,8 @@ export function resolveNativeRuntimeCapabilities(input: {
   const staticArtifactsRequested = looksLikeStaticArtifactIntent(
     input.latestUserPrompt
   )
-  const staticArtifactsEnabled = staticArtifactsPermitted
+  const staticArtifactsEnabled =
+    staticArtifactsPermitted && staticArtifactsRequested
   const staticArtifactsPermissionDeniedError =
     staticArtifactsRequested && !staticArtifactsPermitted
       ? {

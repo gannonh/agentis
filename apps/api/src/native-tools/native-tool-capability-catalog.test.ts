@@ -172,6 +172,32 @@ describe("native tool capability catalog", () => {
     })
   })
 
+  it("keeps permitted static artifact tools inactive without static artifact intent", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["staticArtifacts"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Summarize this text",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: true,
+      requested: false,
+      enabled: false,
+    })
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.systemPromptSections).not.toContain(
+      STATIC_ARTIFACTS_SYSTEM_PROMPT
+    )
+  })
+
   it("keeps permitted available web search inactive without search intent", () => {
     const capabilities = resolveNativeRuntimeCapabilities({
       permittedNativeToolIds: ["webSearch"],
