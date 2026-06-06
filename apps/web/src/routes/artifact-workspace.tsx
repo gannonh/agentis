@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router"
-import type { ArtifactDetailResponse } from "@workspace/shared"
+import type {
+  ArtifactDetailResponse,
+  ArtifactVisibilityScope,
+  Project,
+} from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import { formatRelativeTime } from "@/fixtures"
 import {
   artifactDownloadUrl,
   downloadArtifactFile,
   getArtifactDetail,
+  listProjects,
+  updateArtifactVisibility,
 } from "@/lib/api/projects-client"
+import { ArtifactSidePanel } from "@/components/artifacts/artifact-side-panel"
 import { StaticArtifactPreview } from "@/components/static-artifacts/static-artifact-preview"
 import { staticArtifactSummary } from "@/components/static-artifacts/static-artifact-summary"
 
@@ -21,6 +27,13 @@ export function ArtifactWorkspacePage() {
   const [error, setError] = useState<string | null>(null)
   const [versionError, setVersionError] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [scopeSaving, setScopeSaving] = useState(false)
+  const [scopeError, setScopeError] = useState<string | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [scopeDraft, setScopeDraft] = useState<
+    ArtifactVisibilityScope | undefined
+  >()
+  const [projectIdDraft, setProjectIdDraft] = useState("")
   const hasLoadedRef = useRef(false)
 
   const loadDetail = useCallback(
@@ -57,6 +70,27 @@ export function ArtifactWorkspacePage() {
     void loadDetail(null)
   }, [artifactId, loadDetail])
 
+  useEffect(() => {
+    let cancelled = false
+    void listProjects()
+      .then((items) => {
+        if (!cancelled) setProjects(items)
+      })
+      .catch(() => {
+        if (!cancelled) setProjects([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!detail) return
+    setScopeDraft(detail.artifact.visibilityScope)
+    setProjectIdDraft(detail.artifact.projectId ?? "")
+    setScopeError(null)
+  }, [detail])
+
   const currentVersion = detail?.currentVersion ?? detail?.artifact.currentVersion ?? null
   const viewingHistoricalVersion = useMemo(() => {
     if (!currentVersion || selectedVersion == null) return false
@@ -78,6 +112,72 @@ export function ArtifactWorkspacePage() {
       return
     }
     void loadDetail(version)
+  }
+
+  const applyVisibilityScope = async (
+    visibilityScope: ArtifactVisibilityScope,
+    projectId?: string
+  ) => {
+    if (!detail) return
+
+    if (visibilityScope === "thread" && !detail.artifact.threadId) {
+      setScopeError("Thread scope requires a source thread.")
+      return
+    }
+
+    setScopeSaving(true)
+    setScopeError(null)
+    try {
+      await updateArtifactVisibility(artifactId, {
+        visibilityScope,
+        ...(visibilityScope === "project" && projectId ? { projectId } : {}),
+        ...(visibilityScope === "thread" && detail.artifact.threadId
+          ? { threadId: detail.artifact.threadId }
+          : {}),
+      })
+      await loadDetail(selectedVersion)
+    } catch (scopeFailure) {
+      setScopeError(
+        scopeFailure instanceof Error
+          ? scopeFailure.message
+          : "Failed to update artifact scope"
+      )
+    } finally {
+      setScopeSaving(false)
+    }
+  }
+
+  const handleVisibilityScopeChange = async (
+    visibilityScope: ArtifactVisibilityScope
+  ) => {
+    if (!detail) return
+
+    setScopeDraft(visibilityScope)
+    setScopeError(null)
+
+    if (visibilityScope === "project") {
+      const resolvedProjectId =
+        detail.artifact.projectId ?? projectIdDraft.trim()
+      if (!resolvedProjectId) return
+      if (
+        detail.artifact.visibilityScope === "project" &&
+        detail.artifact.projectId === resolvedProjectId
+      ) {
+        return
+      }
+      await applyVisibilityScope("project", resolvedProjectId)
+      return
+    }
+
+    if (visibilityScope === detail.artifact.visibilityScope) return
+    await applyVisibilityScope(visibilityScope)
+  }
+
+  const handleProjectChange = async (projectId: string) => {
+    if (!projectId) return
+    setProjectIdDraft(projectId)
+    setScopeDraft("project")
+    await applyVisibilityScope("project", projectId)
   }
 
   const handleDownload = async () => {
@@ -115,10 +215,6 @@ export function ArtifactWorkspacePage() {
     )
   }
 
-  const sortedVersions = [...detail.versions].sort(
-    (left, right) => right.version - left.version
-  )
-
   return (
     <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-background/95">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-6">
@@ -145,87 +241,30 @@ export function ArtifactWorkspacePage() {
         <main className="min-w-0 flex-1 space-y-4">
           <StaticArtifactPreview detail={detail} />
         </main>
-        <aside className="flex w-full shrink-0 flex-col gap-6 lg:w-72">
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium">Source &amp; Scope</h2>
-            <dl className="space-y-2 text-sm">
-              <div>
-                <dt className="text-xs tracking-wide text-muted-foreground uppercase">Scope</dt>
-                <dd className="capitalize">{detail.artifact.visibilityScope}</dd>
-              </div>
-              <div>
-                <dt className="text-xs tracking-wide text-muted-foreground uppercase">Updated</dt>
-                <dd>{formatRelativeTime(detail.artifact.updatedAt)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs tracking-wide text-muted-foreground uppercase">Provenance</dt>
-                <dd className="text-muted-foreground">
-                  {[
-                    detail.artifact.projectNameSnapshot,
-                    detail.artifact.threadTitleSnapshot,
-                    detail.artifact.agentNameSnapshot,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || "Workspace"}
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium">Actions</h2>
-            <div className="flex flex-col gap-2">
-              <Button variant="outline" onClick={handleDownload}>
-                Download
-              </Button>
-              <a
-                href={artifactDownloadUrl(detail.artifact.id, {
-                  version: selectedVersion,
-                })}
-                className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-              >
-                Direct download link
-              </a>
-              {downloadError ? (
-                <p className="text-xs text-destructive">{downloadError}</p>
-              ) : null}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-medium">Version history</h2>
-              {viewingHistoricalVersion ? (
-                <Button size="sm" variant="ghost" onClick={() => handleSelectVersion(null)}>
-                  Back to current
-                </Button>
-              ) : null}
-            </div>
-            {versionError ? <p className="text-xs text-destructive">{versionError}</p> : null}
-            {sortedVersions.length ? (
-              <div className="flex flex-col gap-1">
-                {sortedVersions.map((version) => (
-                  <button
-                    key={version.id}
-                    type="button"
-                    aria-label={`Version ${version.version}`}
-                    onClick={() => handleSelectVersion(version.version)}
-                    className="flex w-full flex-col gap-1 rounded-md border border-transparent px-2 py-2 text-left hover:bg-muted/60 data-[selected=true]:border-primary/40 data-[selected=true]:bg-primary/5"
-                    data-selected={version.version === selectedVersion}
-                  >
-                    <span className="text-sm font-medium">v{version.version}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatRelativeTime(version.createdAt)}
-                      {version.changeSummary ? ` · ${version.changeSummary}` : ""}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No versions recorded.</p>
-            )}
-          </section>
-        </aside>
+        <ArtifactSidePanel
+          artifact={detail.artifact}
+          versions={detail.versions}
+          currentVersion={currentVersion}
+          selectedVersion={selectedVersion}
+          viewingHistoricalVersion={viewingHistoricalVersion}
+          onSelectVersion={handleSelectVersion}
+          onDownload={() => void handleDownload()}
+          downloadUrl={artifactDownloadUrl(detail.artifact.id, {
+            version: selectedVersion,
+          })}
+          downloadError={downloadError}
+          versionError={versionError}
+          projects={projects}
+          scopeDraft={scopeDraft}
+          projectIdDraft={projectIdDraft}
+          scopeControlLabel="Artifact scope"
+          onVisibilityScopeChange={(scope) =>
+            void handleVisibilityScopeChange(scope)
+          }
+          onProjectChange={(projectId) => void handleProjectChange(projectId)}
+          scopeSaving={scopeSaving}
+          scopeError={scopeError}
+        />
       </div>
     </div>
   )

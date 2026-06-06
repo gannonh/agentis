@@ -7,6 +7,8 @@ import {
   documentTypeSchema,
   updateDocumentContentRequestSchema,
   updateDocumentContentResponseSchema,
+  updateArtifactVisibilityRequestSchema,
+  updateArtifactVisibilityResponseSchema,
   updateDocumentVisibilityRequestSchema,
   updateDocumentVisibilityResponseSchema,
   createProjectMemoryRequestSchema,
@@ -20,6 +22,8 @@ import {
   type ArtifactSource,
   type ArtifactType,
   type ArtifactVisibilityScope,
+  type UpdateArtifactVisibilityRequest,
+  type UpdateArtifactVisibilityResponse,
   type DocumentDetailResponse,
   type DocumentPublic as Document,
   type DocumentSource,
@@ -354,6 +358,22 @@ export async function updateDocumentVisibility(
     }
   )
   return parseJson(response, updateDocumentVisibilityResponseSchema)
+}
+
+export async function updateArtifactVisibility(
+  artifactId: string,
+  body: UpdateArtifactVisibilityRequest
+): Promise<UpdateArtifactVisibilityResponse> {
+  const payload = updateArtifactVisibilityRequestSchema.parse(body)
+  const response = await fetch(
+    `${API_BASE}/api/artifacts/${artifactId}/visibility`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, updateArtifactVisibilityResponseSchema)
 }
 
 export function documentWorkspacePath(documentId: string): string {

@@ -6,10 +6,15 @@ import { ArtifactWorkspacePage } from "./artifact-workspace"
 
 const getArtifactDetail = vi.fn()
 const downloadArtifactFile = vi.fn()
+const listProjects = vi.fn()
+const updateArtifactVisibility = vi.fn()
 
 vi.mock("@/lib/api/projects-client", () => ({
   getArtifactDetail: (...args: unknown[]) => getArtifactDetail(...args),
   downloadArtifactFile: (...args: unknown[]) => downloadArtifactFile(...args),
+  listProjects: (...args: unknown[]) => listProjects(...args),
+  updateArtifactVisibility: (...args: unknown[]) =>
+    updateArtifactVisibility(...args),
   artifactWorkspacePath: (id: string) => `/artifacts/${id}`,
   artifactDownloadUrl: (id: string, options: { version?: number | null } = {}) =>
     options.version == null
@@ -18,9 +23,46 @@ vi.mock("@/lib/api/projects-client", () => ({
 }))
 
 const now = new Date().toISOString()
+const sampleProject = {
+  id: "project_launch",
+  name: "Agentis Launch",
+  description: null,
+  goals: null,
+  status: "active" as const,
+  archivedAt: null,
+  createdAt: now,
+  updatedAt: now,
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
+  listProjects.mockResolvedValue([sampleProject])
+  updateArtifactVisibility.mockResolvedValue({
+    artifact: {
+      id: "webpage_launch",
+      title: "Launch page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 42,
+      visibilityScope: "project",
+      projectId: sampleProject.id,
+      projectNameSnapshot: sampleProject.name,
+      currentVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+      metadata: {
+        artifactType: "webpage",
+        renderMode: "html",
+        theme: "landing",
+        generationPath: "modelHtml",
+        assetReferences: [],
+        safetyValidationResult: { status: "passed", warnings: [], errors: [] },
+        generationWarnings: [],
+      },
+    },
+    previousVisibilityScope: "global" as const,
+  })
   getArtifactDetail.mockResolvedValue({
     artifact: {
       id: "webpage_launch",
@@ -71,6 +113,7 @@ describe("ArtifactWorkspacePage", () => {
     expect(screen.getByRole("heading", { name: "Launch page" })).toBeInTheDocument()
     expect(screen.getByText("webpage · html · landing")).toBeInTheDocument()
     expect(screen.getByTitle("Launch page static webpage")).toBeInTheDocument()
+    expect(screen.getByLabelText("Artifact scope")).toHaveValue("global")
     expect(screen.getByRole("button", { name: "Download" })).toBeInTheDocument()
   })
 
@@ -125,5 +168,28 @@ describe("ArtifactWorkspacePage", () => {
       expect.objectContaining({ id: "webpage_launch" }),
       { version: 1 }
     )
+  })
+
+  it("shows a project picker before applying project scope", async () => {
+    const user = userEvent.setup()
+    renderWorkspace()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Artifact scope")).toBeInTheDocument()
+    })
+
+    await user.selectOptions(screen.getByLabelText("Artifact scope"), "project")
+
+    expect(screen.getByLabelText("Project")).toBeInTheDocument()
+    expect(updateArtifactVisibility).not.toHaveBeenCalled()
+
+    await user.selectOptions(screen.getByLabelText("Project"), sampleProject.id)
+
+    await waitFor(() => {
+      expect(updateArtifactVisibility).toHaveBeenCalledWith("webpage_launch", {
+        visibilityScope: "project",
+        projectId: sampleProject.id,
+      })
+    })
   })
 })
