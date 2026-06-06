@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "react-router"
 import type { Run, RunStep } from "@workspace/shared"
 import { Badge } from "@workspace/ui/components/badge"
@@ -214,6 +216,95 @@ function formatPreview(value: unknown, truncated: unknown) {
   }
 }
 
+function staticArtifactActionLabel(action: string | undefined) {
+  if (action === "created") return "Static artifact created"
+  if (action === "edited") return "Static artifact edited"
+  if (action === "found") return "Static artifacts found"
+  if (action === "read") return "Static artifact read"
+  if (action === "failed") return "Static artifact failed"
+  return "Static artifact"
+}
+
+function stableRelativePath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined
+  return value
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined
+}
+
+function numberValue(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined
+}
+
+function formatStaticArtifactPayload(input: {
+  toolName?: string
+  input: Record<string, unknown> | null
+  output: Record<string, unknown> | null
+  error?: string
+  code?: string
+}) {
+  const isStaticTool =
+    input.toolName === "createStaticArtifact" ||
+    input.toolName === "editStaticArtifact" ||
+    input.toolName === "findStaticArtifacts" ||
+    input.toolName === "readStaticArtifact"
+  if (!isStaticTool) return null
+
+  const outputFailed =
+    stringValue(input.output?.errorCode) != null ||
+    stringValue(input.output?.error) != null
+  const action = stringValue(input.output?.action) ??
+    (input.error || input.code || outputFailed ? "failed" :
+      input.toolName === "createStaticArtifact" ? "created" :
+        input.toolName === "editStaticArtifact" ? "edited" :
+          input.toolName === "readStaticArtifact" ? "read" : "found")
+  const artifactId = stringValue(input.output?.artifactId) ?? stringValue(input.input?.artifactId)
+  const title = stringValue(input.output?.title) ?? stringValue(input.input?.title) ?? artifactId
+  const artifactType = stringValue(input.output?.artifactType) ?? stringValue(input.input?.artifactType)
+  const renderMode = stringValue(input.output?.renderMode) ?? stringValue(input.input?.renderMode)
+  const version = numberValue(input.output?.version)
+  const viewPath =
+    stableRelativePath(input.output?.viewPath) ??
+    (artifactId ? `/artifacts/${encodeURIComponent(artifactId)}` : undefined)
+  const errorCode =
+    stringValue(input.output?.errorCode) ??
+    stringValue(input.output?.code) ??
+    input.code
+  const items = Array.isArray(input.output?.items)
+    ? input.output.items
+        .map((item) => getRecord(item))
+        .filter((item): item is Record<string, unknown> => Boolean(item))
+    : []
+
+  return {
+    action,
+    actionLabel: staticArtifactActionLabel(action),
+    artifactId,
+    title,
+    artifactType,
+    renderMode,
+    version,
+    previousVersion: numberValue(input.output?.previousVersion),
+    theme: stringValue(input.output?.theme),
+    designBriefSummary: stringValue(input.output?.designBriefSummary),
+    slideCount: numberValue(input.output?.slideCount),
+    provider: stringValue(input.output?.provider),
+    contentText: stringValue(input.output?.contentText),
+    contentTextTruncated: input.output?.contentTextTruncated === true,
+    previewText: stringValue(input.output?.previewText),
+    viewPath,
+    errorCode,
+    error: stringValue(input.output?.error) ?? input.error,
+    remediation: stringValue(input.output?.remediation),
+    resultCount: numberValue(input.output?.resultCount),
+    truncated: input.output?.truncated === true,
+    items,
+  }
+}
+
 function formatNativePayload(step: RunStep) {
   const payload = step.payload
   if (
@@ -255,6 +346,13 @@ function formatNativePayload(step: RunStep) {
     query,
     outputSummary,
     sources: toolName === "searchWeb" ? formatWebSearchSources(output) : [],
+    staticArtifact: formatStaticArtifactPayload({
+      toolName,
+      input,
+      output,
+      error: typeof record.error === "string" ? record.error : undefined,
+      code: typeof record.code === "string" ? record.code : undefined,
+    }),
     executionSummary,
     stdout,
     stderr,
@@ -276,10 +374,13 @@ function formatNativePayload(step: RunStep) {
 export function RunTimeline({
   run,
   steps,
+  defaultExpanded = false,
 }: {
   run: Run | null
   steps: RunStep[]
+  defaultExpanded?: boolean
 }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const [debugMode, setDebugMode] = useState(false)
   if (!run) {
     return null
@@ -292,29 +393,47 @@ export function RunTimeline({
   const visibleSteps = debugMode
     ? runSteps
     : runSteps.filter((step) => !formatDebugPayload(step))
+  const contentId = `run-timeline-content-${run.id}`
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-3 border-l border-border bg-card/40 p-4">
-      <div className="flex items-center justify-between gap-2">
+    <aside className="flex w-72 shrink-0 flex-col gap-3 bg-card/40 p-4">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={contentId}
+        className="flex items-center gap-2 text-left"
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <HugeiconsIcon
+          icon={expanded ? ArrowDown01Icon : ArrowRight01Icon}
+          className="size-3.5 text-muted-foreground"
+          strokeWidth={2}
+          aria-hidden
+        />
         <h2 className="text-sm font-medium">Run timeline</h2>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-pressed={debugMode}
-            className={cn(
-              "rounded-full border px-2 py-0.5 text-[0.625rem] font-medium",
-              debugMode
-                ? "border-primary/50 bg-primary/10 text-primary"
-                : "border-border bg-input/20 text-muted-foreground"
-            )}
-            onClick={() => setDebugMode((value) => !value)}
-          >
-            Debug mode
-          </button>
-          <Badge variant="outline">{statusLabel[run.status]}</Badge>
-        </div>
-      </div>
-      <ol className="flex flex-col gap-2">
+      </button>
+      {expanded ? (
+        <div id={contentId} className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Latest run</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={debugMode}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[0.625rem] font-medium",
+                  debugMode
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "border-border bg-input/20 text-muted-foreground"
+                )}
+                onClick={() => setDebugMode((value) => !value)}
+              >
+                Debug mode
+              </button>
+              <Badge variant="outline">{statusLabel[run.status]}</Badge>
+            </div>
+          </div>
+          <ol className="flex flex-col gap-2">
         {visibleSteps.map((step) => {
           const composio = formatComposioPayload(step)
           const native = formatNativePayload(step)
@@ -376,6 +495,123 @@ export function RunTimeline({
                   {native.toolName ? ` · ${native.toolName}` : ""}
                   {native.workspaceId ? ` · ${native.workspaceId}` : ""}
                 </p>
+              ) : null}
+              {native?.staticArtifact ? (
+                <div className="mt-2 rounded-md border border-border/70 bg-background/60 p-2">
+                  <p className="font-medium">
+                    {native.staticArtifact.actionLabel}
+                  </p>
+                  {native.staticArtifact.title ? (
+                    <p className="mt-1 text-muted-foreground">
+                      {native.staticArtifact.title}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.artifactType || native.staticArtifact.renderMode ? (
+                    <p className="mt-1 text-muted-foreground">
+                      {[
+                        native.staticArtifact.artifactType,
+                        native.staticArtifact.renderMode,
+                        native.staticArtifact.version
+                          ? `v${native.staticArtifact.version}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.previousVersion ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Previous version: v{native.staticArtifact.previousVersion}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.theme ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Theme: {native.staticArtifact.theme}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.designBriefSummary ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Design brief: {native.staticArtifact.designBriefSummary}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.slideCount ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Slides: {native.staticArtifact.slideCount}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.provider ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Provider: {native.staticArtifact.provider}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.resultCount != null ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Results: {native.staticArtifact.resultCount}
+                      {native.staticArtifact.truncated ? " · truncated" : ""}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.items.length ? (
+                    <ul className="mt-2 space-y-1 text-muted-foreground">
+                      {native.staticArtifact.items.map((item, index) => {
+                        const itemPath = stableRelativePath(item.viewPath)
+                        const itemTitle = stringValue(item.title) ?? stringValue(item.artifactId) ?? "Static artifact"
+                        return (
+                          <li key={`${itemTitle}:${index}`} className="space-y-0.5">
+                            {itemPath ? (
+                              <Link
+                                to={itemPath}
+                                className="text-foreground underline-offset-4 hover:underline"
+                              >
+                                {itemTitle}
+                              </Link>
+                            ) : (
+                              itemTitle
+                            )}
+                            <p>
+                              {[
+                                stringValue(item.artifactType),
+                                stringValue(item.renderMode),
+                                numberValue(item.version) ? `v${numberValue(item.version)}` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                            {stringValue(item.theme) ? <p>Theme: {stringValue(item.theme)}</p> : null}
+                            {numberValue(item.slideCount) ? (
+                              <p>Slides: {numberValue(item.slideCount)}</p>
+                            ) : null}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : null}
+                  {native.staticArtifact.errorCode ? (
+                    <p className="mt-1 text-amber-700 dark:text-amber-400">
+                      {native.staticArtifact.errorCode}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.error ? (
+                    <p className="mt-1 text-destructive">
+                      {native.staticArtifact.error}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.remediation ? (
+                    <p className="mt-1 text-amber-700 dark:text-amber-400">
+                      {native.staticArtifact.remediation}
+                    </p>
+                  ) : null}
+                  {native.staticArtifact.viewPath ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      nativeButton={false}
+                      render={<Link to={native.staticArtifact.viewPath} />}
+                    >
+                      Open artifact
+                    </Button>
+                  ) : null}
+                </div>
               ) : null}
               {native?.path ? (
                 <p className="mt-1 text-muted-foreground">
@@ -492,13 +728,15 @@ export function RunTimeline({
           )
         })}
       </ol>
-      {debugMode && debugSteps.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          No debug events for this run.
-        </p>
-      ) : null}
-      {run.errorSummary ? (
-        <p className="text-xs text-destructive">{run.errorSummary}</p>
+          {debugMode && debugSteps.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No debug events for this run.
+            </p>
+          ) : null}
+          {run.errorSummary ? (
+            <p className="text-xs text-destructive">{run.errorSummary}</p>
+          ) : null}
+        </div>
       ) : null}
     </aside>
   )

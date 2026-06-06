@@ -6,6 +6,7 @@ import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { ThreadDetailPage } from "./thread-detail"
 import { createAgentPromotionDraft } from "@/lib/api/agents-client"
 import { decideToolApproval } from "@/lib/api/client"
+import { listArtifacts } from "@/lib/api/projects-client"
 
 const navigate = vi.fn()
 let threadStatus: "active" | "finished" | "failed" = "active"
@@ -144,6 +145,12 @@ vi.mock("@/lib/api/agents-client", () => ({
   }),
 }))
 
+vi.mock("@/lib/api/projects-client", () => ({
+  artifactWorkspacePath: (id: string) => `/artifacts/${id}`,
+  documentWorkspacePath: (id: string) => `/documents/${id}`,
+  listArtifacts: vi.fn().mockResolvedValue([]),
+}))
+
 describe("ThreadDetailPage create-agent action", () => {
   beforeEach(() => {
     navigate.mockReset()
@@ -155,6 +162,7 @@ describe("ThreadDetailPage create-agent action", () => {
     refresh.mockClear()
     vi.mocked(createAgentPromotionDraft).mockClear()
     vi.mocked(decideToolApproval).mockClear()
+    vi.mocked(listArtifacts).mockResolvedValue([])
   })
 
   it("creates an agent draft and navigates from an active thread", async () => {
@@ -328,5 +336,50 @@ describe("ThreadDetailPage create-agent action", () => {
         "This thread already uses an agent. Open that agent to adjust future runs."
       )
     ).not.toBeInTheDocument()
+  })
+
+  it("lists durable thread artifacts outside the run timeline", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        id: "artifact_deck",
+        title: "How to Create a Good Changelog",
+        type: "slides",
+        description: null,
+        contentFormat: "html",
+        mimeType: "text/html",
+        sizeBytes: 2048,
+        previewText: null,
+        metadata: null,
+        visibilityScope: "thread",
+        threadId: "thread_test",
+        threadTitleSnapshot: "Investigate support backlog",
+        projectId: null,
+        projectNameSnapshot: null,
+        runId: "run_1",
+        agentId: GENERIC_AGENTIS_AGENT_ID,
+        agentNameSnapshot: "Agentis",
+        currentVersionId: "version_1",
+        currentVersion: 2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByRole("heading", { name: "Durable artifacts" })
+    ).toBeInTheDocument()
+    expect(listArtifacts).toHaveBeenCalledWith({ threadId: "thread_test" })
+    expect(screen.getByText("How to Create a Good Changelog")).toBeInTheDocument()
+    expect(screen.getByText("slides · html · v2")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_deck"
+    )
   })
 })

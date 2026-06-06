@@ -25,15 +25,37 @@ function step(payload: Record<string, unknown>): RunStep {
   }
 }
 
-function renderTimeline(props: { run: Run | null; steps: RunStep[] }) {
+function renderTimeline(
+  props: { run: Run | null; steps: RunStep[] },
+  options: { defaultExpanded?: boolean } = { defaultExpanded: true }
+) {
   return render(
     <MemoryRouter>
-      <RunTimeline {...props} />
+      <RunTimeline {...props} defaultExpanded={options.defaultExpanded} />
     </MemoryRouter>
   )
 }
 
 describe("RunTimeline", () => {
+  it("defaults to a collapsed title-only view", async () => {
+    const user = userEvent.setup()
+    renderTimeline(
+      { run, steps: [step({ provider: "native", toolName: "listWorkspaceFiles" })] },
+      { defaultExpanded: false }
+    )
+
+    const toggle = screen.getByRole("button", { name: "Run timeline" })
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByText("Debug mode")).not.toBeInTheDocument()
+    expect(screen.queryByText("Native: listWorkspaceFiles")).not.toBeInTheDocument()
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByText("Debug mode")).toBeInTheDocument()
+    expect(screen.getByText("Native: listWorkspaceFiles")).toBeInTheDocument()
+  })
+
   it("shows debug mode even when an older run has no debug payload", async () => {
     const user = userEvent.setup()
     renderTimeline({ run, steps: [step({ provider: "native" })] })
@@ -276,5 +298,210 @@ describe("RunTimeline", () => {
     expect(
       screen.getByRole("button", { name: "Open document" })
     ).toHaveAttribute("href", "/documents/document_123")
+  })
+
+  it("renders static artifact timeline cards without full content payloads", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "createStaticArtifact",
+          input: {
+            title: "Launch page",
+            artifactType: "webpage",
+            renderMode: "html",
+          },
+          output: {
+            action: "created",
+            artifactId: "artifact_page",
+            title: "Launch page",
+            artifactType: "webpage",
+            renderMode: "html",
+            version: 1,
+            theme: "landing",
+            viewPath: "/artifacts/artifact_page",
+            summary: "Full HTML should stay out",
+            html: "<main>full artifact html should not render</main>",
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact created")).toBeInTheDocument()
+    expect(screen.getByText("Launch page")).toBeInTheDocument()
+    expect(screen.getByText("webpage · html · v1")).toBeInTheDocument()
+    expect(screen.getByText("Theme: landing")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_page"
+    )
+    expect(screen.queryByText(/full artifact html/)).not.toBeInTheDocument()
+  })
+
+  it("derives static artifact links from artifact ids when timeline viewPath is missing", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "editStaticArtifact",
+          input: {
+            artifactId: "artifact_deck",
+          },
+          output: {
+            action: "edited",
+            artifactId: "artifact_deck",
+            title: "Launch deck",
+            artifactType: "slides",
+            renderMode: "html",
+            version: 2,
+            previousVersion: 1,
+            previewText: "Slide 1\nLaunch deck\n\nSlide 2\nFull slide body",
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact edited")).toBeInTheDocument()
+    expect(screen.queryByText(/Full slide body/)).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_deck"
+    )
+  })
+
+  it("renders read static artifact cards without inline content text", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "readStaticArtifact",
+          input: {
+            artifactId: "artifact_deck",
+          },
+          output: {
+            action: "read",
+            artifactId: "artifact_deck",
+            title: "Launch deck",
+            artifactType: "slides",
+            renderMode: "html",
+            version: 1,
+            viewPath: "/artifacts/artifact_deck",
+            contentText: "Slide 1\nLaunch deck\n\nSlide 2\nActual slide body",
+            contentTextTruncated: false,
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact read")).toBeInTheDocument()
+    expect(screen.queryByText(/Actual slide body/)).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open artifact" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_deck"
+    )
+  })
+
+  it("renders found static artifact item metadata", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "findStaticArtifacts",
+          input: { artifactType: "slides" },
+          output: {
+            action: "found",
+            resultCount: 1,
+            truncated: false,
+            items: [
+              {
+                artifactId: "artifact_deck",
+                title: "Sales deck",
+                artifactType: "slides",
+                renderMode: "html",
+                version: 3,
+                theme: "pitch",
+                slideCount: 7,
+                viewPath: "/artifacts/artifact_deck",
+              },
+            ],
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifacts found")).toBeInTheDocument()
+    expect(screen.getByText("Results: 1")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Sales deck" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_deck"
+    )
+    expect(screen.getByText("slides · html · v3")).toBeInTheDocument()
+    expect(screen.getByText("Theme: pitch")).toBeInTheDocument()
+    expect(screen.getByText("Slides: 7")).toBeInTheDocument()
+  })
+
+  it("labels static artifact failures when output.action is omitted", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "createStaticArtifact",
+          input: {
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+          },
+          output: {
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+            errorCode: "static_artifact_provider_unavailable",
+            error: "Image provider is not configured.",
+            remediation: "Configure an image generation provider or use html render mode.",
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact failed")).toBeInTheDocument()
+    expect(screen.queryByText("Static artifact created")).not.toBeInTheDocument()
+  })
+
+  it("renders visible static artifact failure cards with remediation", () => {
+    renderTimeline({
+      run,
+      steps: [
+        step({
+          provider: "native",
+          toolName: "createStaticArtifact",
+          input: {
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+          },
+          output: {
+            action: "failed",
+            title: "Visual deck",
+            artifactType: "slides",
+            renderMode: "polishedImage",
+            errorCode: "static_artifact_provider_unavailable",
+            error: "Image provider is not configured.",
+            remediation: "Configure an image generation provider or use html render mode.",
+          },
+        }),
+      ],
+    })
+
+    expect(screen.getByText("Static artifact failed")).toBeInTheDocument()
+    expect(screen.getByText("Visual deck")).toBeInTheDocument()
+    expect(screen.getByText("slides · polishedImage")).toBeInTheDocument()
+    expect(screen.getByText("static_artifact_provider_unavailable")).toBeInTheDocument()
+    expect(screen.getByText("Image provider is not configured.")).toBeInTheDocument()
+    expect(screen.getByText(/Configure an image generation provider/)).toBeInTheDocument()
   })
 })

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { describe, expect, it } from "vitest"
 import {
   DOCUMENTS_SYSTEM_PROMPT,
+  STATIC_ARTIFACTS_SYSTEM_PROMPT,
   WEB_SEARCH_SYSTEM_PROMPT,
   resolveNativeRuntimeCapabilities,
 } from "./native-tool-capability-catalog.js"
@@ -74,6 +75,81 @@ describe("native tool capability catalog", () => {
     })
   })
 
+  it("exposes static artifact tools and prompt guidance when staticArtifacts is permitted", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["staticArtifacts"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Create a static webpage for the launch plan.",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.systemPromptSections).toEqual([
+      STATIC_ARTIFACTS_SYSTEM_PROMPT,
+    ])
+    expect(capabilities.runtimeTools).toHaveProperty("createStaticArtifact")
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: true,
+      enabled: true,
+    })
+  })
+
+  it("reports visible denial when static artifact intent is not permitted", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: [],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Create a static webpage for the launch plan.",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: false,
+      requested: true,
+      enabled: false,
+      permissionDeniedError: {
+        code: "static_artifact_permission_denied",
+        message: "This agent is not permitted to create static artifacts.",
+      },
+    })
+  })
+
+  it("does not deny ordinary read-only prompts about slide or webpage content", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: [],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Summarize these slides and explain the webpage references.",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: false,
+      requested: false,
+      enabled: false,
+      permissionDeniedError: undefined,
+    })
+  })
+
   it("omits document tools when documents are not permitted", () => {
     const capabilities = resolveNativeRuntimeCapabilities({
       permittedNativeToolIds: [],
@@ -94,6 +170,32 @@ describe("native tool capability catalog", () => {
       permitted: false,
       enabled: false,
     })
+  })
+
+  it("keeps permitted static artifact tools inactive without static artifact intent", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["staticArtifacts"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Summarize this text",
+      buildTools: {
+        staticArtifacts: () => ({
+          createStaticArtifact: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.staticArtifacts).toMatchObject({
+      permitted: true,
+      requested: false,
+      enabled: false,
+    })
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.systemPromptSections).not.toContain(
+      STATIC_ARTIFACTS_SYSTEM_PROMPT
+    )
   })
 
   it("keeps permitted available web search inactive without search intent", () => {

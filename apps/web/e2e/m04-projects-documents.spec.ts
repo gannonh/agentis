@@ -18,6 +18,7 @@ test.describe("M04 projects and documents", () => {
     await expect(page.getByText(/Created document/i)).toBeVisible({
       timeout: 30_000,
     })
+    await page.getByRole("button", { name: "Run timeline" }).click()
     await expect(page.getByText(`Document created: ${title}`)).toBeVisible()
 
     await page.goto("/threads/new")

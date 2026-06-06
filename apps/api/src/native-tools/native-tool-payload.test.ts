@@ -135,4 +135,146 @@ describe("formatNativeToolRunStepPayload", () => {
     expect(output.results[0]?.source).toHaveLength(200)
     expect(output.metadata).toEqual({ requestId: "request-1" })
   })
+
+  it("bounds static artifact timeline payloads without HTML or images", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static",
+      toolName: "createStaticArtifact",
+      input: {
+        title: "x".repeat(400),
+        artifactType: "slides",
+        renderMode: "html",
+        contentBrief: "<html>" + "secret".repeat(1000),
+        sourceData: "raw".repeat(1000),
+      },
+      output: {
+        action: "created",
+        artifactId: "artifact_1",
+        title: "Launch deck",
+        artifactType: "slides",
+        renderMode: "html",
+        version: 1,
+        theme: "keynote",
+        slideCount: 2,
+        viewPath: "/artifacts/artifact_1",
+        html: "<html>should not persist</html>",
+        images: ["data:image/png;base64,abc"],
+      },
+    })
+
+    expect(payload).toMatchObject({
+      provider: "native",
+      toolName: "createStaticArtifact",
+      input: {
+        title: expect.any(String),
+        artifactType: "slides",
+        renderMode: "html",
+      },
+      output: {
+        action: "created",
+        artifactId: "artifact_1",
+        title: "Launch deck",
+        artifactType: "slides",
+        renderMode: "html",
+        version: 1,
+        theme: "keynote",
+        slideCount: 2,
+        viewPath: "/artifacts/artifact_1",
+      },
+    })
+    expect(JSON.stringify(payload)).not.toContain("<html>")
+    expect(JSON.stringify(payload)).not.toContain("data:image")
+  })
+
+  it("preserves bounded static artifact read text without raw HTML", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static_read",
+      toolName: "readStaticArtifact",
+      input: {
+        artifactId: "artifact_1",
+      },
+      output: {
+        action: "read",
+        artifactId: "artifact_1",
+        title: "Launch deck",
+        artifactType: "slides",
+        renderMode: "html",
+        version: 1,
+        viewPath: "/artifacts/artifact_1",
+        downloadPath: "/api/artifacts/artifact_1/download",
+        contentText: `Slide 1\n${"Actual slide text ".repeat(200)}`,
+        contentTextTruncated: false,
+        html: "<section>should not persist</section>",
+      },
+    })
+
+    expect(payload).toMatchObject({
+      provider: "native",
+      toolName: "readStaticArtifact",
+      output: {
+        action: "read",
+        artifactId: "artifact_1",
+        contentText: expect.stringContaining("Actual slide text"),
+        contentTextTruncated: true,
+      },
+    })
+    expect(JSON.stringify(payload)).not.toContain("<section>")
+  })
+
+  it("marks static artifact find payloads truncated when items are locally capped", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static_find",
+      toolName: "findStaticArtifacts",
+      input: { query: "launch" },
+      output: {
+        action: "found",
+        resultCount: 12,
+        truncated: false,
+        items: Array.from({ length: 12 }, (_, index) => ({
+          artifactId: `artifact_${index}`,
+          title: `Artifact ${index}`,
+          artifactType: "webpage",
+          renderMode: "html",
+          version: 1,
+          viewPath: `/artifacts/artifact_${index}`,
+          updatedAt: "2026-06-01T00:00:00.000Z",
+        })),
+      },
+    })
+
+    const output = payload?.output as { truncated?: boolean; items?: unknown[] }
+    expect(output.items).toHaveLength(10)
+    expect(output.truncated).toBe(true)
+  })
+
+  it("keeps approved static artifact failure codes and remediation in timeline payloads", () => {
+    const payload = formatNativeToolRunStepPayload({
+      toolCallId: "call_static_failed",
+      toolName: "createStaticArtifact",
+      input: {
+        title: "Visual deck",
+        artifactType: "slides",
+        renderMode: "polishedImage",
+      },
+      output: {
+        action: "failed",
+        code: "static_artifact_provider_unavailable",
+        error: "Image generation provider is not configured.",
+        remediation:
+          "Configure an image generation provider or use html render mode.",
+      },
+    })
+
+    expect(payload).toMatchObject({
+      provider: "native",
+      toolName: "createStaticArtifact",
+      output: {
+        action: "failed",
+        errorCode: "static_artifact_provider_unavailable",
+        error: "Image generation provider is not configured.",
+        remediation:
+          "Configure an image generation provider or use html render mode.",
+      },
+    })
+  })
 })

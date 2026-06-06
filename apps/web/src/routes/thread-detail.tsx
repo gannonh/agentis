@@ -11,6 +11,7 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message"
 import { RunTimeline } from "@/components/thread/run-timeline"
+import { ThreadDurableArtifacts } from "@/components/thread/thread-durable-artifacts"
 import { ThreadProjectContext } from "@/components/thread/thread-project-context"
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { PageLayout } from "@/components/shell/page-layout"
@@ -401,6 +402,10 @@ export function ThreadDetailPage() {
           <div className="flex w-80 shrink-0 flex-col border-l border-border">
             <ThreadProjectContext context={detail?.projectContext} />
             <RunTimeline run={latestRun} steps={steps} />
+            <ThreadDurableArtifacts
+              threadId={threadId}
+              refreshKey={`${latestRun?.id ?? "no-run"}:${steps.length}`}
+            />
           </div>
         </div>
       </div>

@@ -65,6 +65,7 @@ import { formatRelativeTime } from "@/fixtures"
 import { listThreads } from "@/lib/api/client"
 import { listAgents } from "@/lib/api/agents-client"
 import {
+  artifactWorkspacePath,
   downloadArtifactFile,
   documentWorkspacePath,
   getArtifactDetail,
@@ -673,6 +674,13 @@ export function LibraryPage() {
               >
                 Open document
               </Button>
+            ) : detail.artifact.type === "webpage" || detail.artifact.type === "slides" ? (
+              <Button
+                nativeButton={false}
+                render={<Link to={artifactWorkspacePath(detail.artifact.id)} />}
+              >
+                Open artifact
+              </Button>
             ) : null}
           </CardContent>
         </Card>
@@ -725,6 +733,15 @@ export function LibraryPage() {
                       size="sm"
                       nativeButton={false}
                       render={<Link to={documentWorkspacePath(artifact.id)} />}
+                    >
+                      Open
+                    </Button>
+                  ) : artifact.type === "webpage" || artifact.type === "slides" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={<Link to={artifactWorkspacePath(artifact.id)} />}
                     >
                       Open
                     </Button>

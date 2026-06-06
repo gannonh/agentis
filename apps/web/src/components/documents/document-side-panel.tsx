@@ -1,22 +1,14 @@
 import type {
   DocumentDetailResponse,
   DocumentPublic as Document,
-  DocumentVersionSummary,
   DocumentVisibilityScope,
   Project,
 } from "@workspace/shared"
-import { Button } from "@workspace/ui/components/button"
-import { Badge } from "@workspace/ui/components/badge"
-import { formatRelativeTime } from "@/fixtures"
+import { ArtifactSidePanel } from "@/components/artifacts/artifact-side-panel"
 import {
   documentDownloadUrl,
   documentWorkspacePath,
 } from "@/lib/api/projects-client"
-import {
-  documentProvenanceLines,
-  documentScopeLabel,
-  documentSourceLabel,
-} from "@/lib/documents/document-metadata"
 
 type DocumentSidePanelProps = {
   document: Document
@@ -36,42 +28,6 @@ type DocumentSidePanelProps = {
   scopeError?: string | null
 }
 
-type VersionButtonProps = {
-  version: DocumentVersionSummary
-  currentVersion: number | null
-  selectedVersion: number | null
-  onSelect: (version: number) => void
-}
-
-function VersionButton({
-  version,
-  currentVersion,
-  selectedVersion,
-  onSelect,
-}: VersionButtonProps) {
-  const isCurrent = version.version === currentVersion
-  const isSelected = version.version === selectedVersion
-
-  return (
-    <button
-      type="button"
-      aria-label={`Version ${version.version}`}
-      onClick={() => onSelect(version.version)}
-      className="flex w-full flex-col gap-1 rounded-md border border-transparent px-2 py-2 text-left hover:bg-muted/60 data-[selected=true]:border-primary/40 data-[selected=true]:bg-primary/5"
-      data-selected={isSelected}
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">v{version.version}</span>
-        {isCurrent ? <Badge variant="outline">Current</Badge> : null}
-      </div>
-      <span className="text-xs text-muted-foreground">
-        {formatRelativeTime(version.createdAt)}
-        {version.changeSummary ? ` · ${version.changeSummary}` : ""}
-      </span>
-    </button>
-  )
-}
-
 export function DocumentSidePanel({
   document,
   detail,
@@ -81,159 +37,35 @@ export function DocumentSidePanel({
   onDownload,
   downloadError,
   versionError,
-  projects = [],
+  projects,
   scopeDraft,
-  projectIdDraft = "",
+  projectIdDraft,
   onVisibilityScopeChange,
   onProjectChange,
-  scopeSaving = false,
+  scopeSaving,
   scopeError,
 }: DocumentSidePanelProps) {
-  const scopeValue = scopeDraft ?? document.visibilityScope
-  const showProjectPicker =
-    scopeValue === "project" && Boolean(onVisibilityScopeChange)
-  const currentVersion =
-    detail.currentVersion ?? document.currentVersion ?? null
-  const workspaceUrl = documentWorkspacePath(document.id)
-  const provenanceDetails =
-    documentProvenanceLines(document).slice(1).join(" · ") ||
-    "No additional provenance"
-  const sortedVersions = [...detail.versions].sort(
-    (left, right) => right.version - left.version
-  )
-
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-6 lg:w-72">
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium">Source &amp; Scope</h2>
-        <dl className="space-y-2 text-sm">
-          <div>
-            <dt className="text-xs tracking-wide text-muted-foreground uppercase">
-              Source
-            </dt>
-            <dd>{documentSourceLabel(document)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs tracking-wide text-muted-foreground uppercase">
-              Provenance
-            </dt>
-            <dd className="text-muted-foreground">{provenanceDetails}</dd>
-          </div>
-          <div>
-            <dt className="text-xs tracking-wide text-muted-foreground uppercase">
-              Scope
-            </dt>
-            <dd>
-              {onVisibilityScopeChange ? (
-                <div className="mt-1 flex flex-col gap-2">
-                  <select
-                    aria-label="Document scope"
-                    className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
-                    value={scopeValue}
-                    disabled={scopeSaving}
-                    onChange={(event) =>
-                      onVisibilityScopeChange(
-                        event.target.value as DocumentVisibilityScope
-                      )
-                    }
-                  >
-                    <option value="thread">Thread</option>
-                    <option value="project">Project</option>
-                    <option value="global">Global</option>
-                  </select>
-                  {showProjectPicker ? (
-                    projects.length > 0 ? (
-                      <select
-                        aria-label="Project"
-                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
-                        value={projectIdDraft}
-                        disabled={scopeSaving}
-                        onChange={(event) =>
-                          onProjectChange?.(event.target.value)
-                        }
-                      >
-                        <option value="">Select a project…</option>
-                        {projects.map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {project.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        No projects available. Create a project first.
-                      </p>
-                    )
-                  ) : null}
-                </div>
-              ) : (
-                documentScopeLabel(document)
-              )}
-              {scopeError ? (
-                <p className="mt-1 text-xs text-destructive">{scopeError}</p>
-              ) : null}
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium">Actions</h2>
-        <div className="flex flex-col gap-2">
-          <Button variant="outline" onClick={onDownload}>
-            Download
-          </Button>
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<a href={workspaceUrl} target="_blank" rel="noreferrer" />}
-          >
-            Open in new tab
-          </Button>
-          <a
-            href={documentDownloadUrl(document.id)}
-            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Direct download link
-          </a>
-          {downloadError ? (
-            <p className="text-xs text-destructive">{downloadError}</p>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">Version history</h2>
-          {viewingHistoricalVersion ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onSelectVersion(null)}
-            >
-              Back to current
-            </Button>
-          ) : null}
-        </div>
-        {versionError ? (
-          <p className="text-xs text-destructive">{versionError}</p>
-        ) : null}
-        {detail.versions.length ? (
-          <div className="flex flex-col gap-1">
-            {sortedVersions.map((version) => (
-              <VersionButton
-                key={version.id}
-                version={version}
-                currentVersion={currentVersion}
-                selectedVersion={selectedVersion}
-                onSelect={onSelectVersion}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No versions recorded.</p>
-        )}
-      </section>
-    </aside>
+    <ArtifactSidePanel
+      artifact={document}
+      versions={detail.versions}
+      currentVersion={detail.currentVersion ?? document.currentVersion ?? null}
+      selectedVersion={selectedVersion}
+      viewingHistoricalVersion={viewingHistoricalVersion}
+      onSelectVersion={onSelectVersion}
+      onDownload={onDownload}
+      downloadUrl={documentDownloadUrl(document.id)}
+      downloadError={downloadError}
+      versionError={versionError}
+      projects={projects}
+      scopeDraft={scopeDraft}
+      projectIdDraft={projectIdDraft}
+      scopeControlLabel="Document scope"
+      onVisibilityScopeChange={onVisibilityScopeChange}
+      onProjectChange={onProjectChange}
+      scopeSaving={scopeSaving}
+      scopeError={scopeError}
+      workspaceUrl={documentWorkspacePath(document.id)}
+    />
   )
 }

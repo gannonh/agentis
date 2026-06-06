@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved.
+Implemented.
 
 ## Goal
 
@@ -601,3 +601,32 @@ Build should implement the smallest end-to-end slice that satisfies the acceptan
 8. Add tests and run required quality commands.
 
 Do not implement deferred Hyperagent parity capabilities during this Build unless the user explicitly changes the approved scope.
+
+## Build completion report
+
+- Spec path: `docs/specs/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`
+- Base SHA: `29a2f9f521c2db902eff209bc955287b112fb56d`
+- Final implementation head: `b7f4a658`
+- Tasks completed:
+  - Phase 1: schemas, permission, design guidance, metadata validation.
+  - Phase 2: runtime create/edit/find tools, Artifact persistence, HTML validation, polished image provider boundary and persistence, timeline payload summaries.
+  - Phase 3: artifact workspace route, webpage preview, HTML slide preview, polished image deck preview, timeline cards, Library links/filters.
+  - Phase 4: targeted tests, required quality commands, spec compliance review, code quality review, final branch review.
+- Files changed: shared schemas, API native capability/runtime/static artifact services/routes/tests, web static artifact previews/routes/timeline/Library tests.
+- Verification commands run:
+  - `pnpm --filter @workspace/shared test -- static-artifact schemas`
+  - `pnpm --filter api test -- static-artifact artifacts native-tool-capability-catalog native-tool-payload run-executor`
+  - `pnpm --filter web test -- static-artifact artifact-workspace run-timeline library`
+  - `pnpm typecheck`
+  - `pnpm build`
+  - `pnpm lint`
+- Review gates completed:
+  - Per-phase spec compliance reviews.
+  - Per-phase code quality reviews.
+  - Final whole-branch review against acceptance criteria.
+- Approved deviations: None.
+- Known follow-up issues:
+  - Add a full run-executor test for the static artifact permission-denied persisted run/message/step shape.
+  - Consider splitting `StaticArtifactService` when provider integration grows.
+  - Existing Vite large chunk warning remains during build.
+- Independent subagent review used: Yes.

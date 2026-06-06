@@ -7,6 +7,8 @@ import {
   documentTypeSchema,
   updateDocumentContentRequestSchema,
   updateDocumentContentResponseSchema,
+  updateArtifactVisibilityRequestSchema,
+  updateArtifactVisibilityResponseSchema,
   updateDocumentVisibilityRequestSchema,
   updateDocumentVisibilityResponseSchema,
   createProjectMemoryRequestSchema,
@@ -20,6 +22,8 @@ import {
   type ArtifactSource,
   type ArtifactType,
   type ArtifactVisibilityScope,
+  type UpdateArtifactVisibilityRequest,
+  type UpdateArtifactVisibilityResponse,
   type DocumentDetailResponse,
   type DocumentPublic as Document,
   type DocumentSource,
@@ -356,20 +360,49 @@ export async function updateDocumentVisibility(
   return parseJson(response, updateDocumentVisibilityResponseSchema)
 }
 
+export async function updateArtifactVisibility(
+  artifactId: string,
+  body: UpdateArtifactVisibilityRequest
+): Promise<UpdateArtifactVisibilityResponse> {
+  const payload = updateArtifactVisibilityRequestSchema.parse(body)
+  const response = await fetch(
+    `${API_BASE}/api/artifacts/${artifactId}/visibility`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, updateArtifactVisibilityResponseSchema)
+}
+
 export function documentWorkspacePath(documentId: string): string {
   return `/documents/${documentId}`
 }
 
-export function artifactDownloadUrl(artifactId: string): string {
-  return `${API_BASE}/api/artifacts/${artifactId}/download`
+export function artifactWorkspacePath(artifactId: string): string {
+  return `/artifacts/${artifactId}`
+}
+
+export function artifactDownloadUrl(
+  artifactId: string,
+  options: { version?: number | null } = {}
+): string {
+  const url = `${API_BASE}/api/artifacts/${artifactId}/download`
+  if (options.version == null) return url
+  const params = new URLSearchParams({ version: String(options.version) })
+  return `${url}?${params.toString()}`
 }
 
 export function documentDownloadUrl(documentId: string): string {
   return `${API_BASE}/api/documents/${documentId}/download`
 }
 
-export async function downloadArtifactFile(artifact: Artifact): Promise<void> {
-  const response = await fetch(artifactDownloadUrl(artifact.id))
+export async function downloadArtifactFile(
+  artifact: Artifact,
+  options: { version?: number | null } = {}
+): Promise<void> {
+  const response = await fetch(artifactDownloadUrl(artifact.id, options))
   if (!response.ok) {
     await throwResponseApiError(response, "Download failed")
   }

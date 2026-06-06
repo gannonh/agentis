@@ -172,6 +172,216 @@ describe("artifact routes", () => {
     })
   })
 
+  it("returns selected static artifact metadata for historical detail versions", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const storage = new LocalDocumentStorage(ctx.config)
+    storage.write("artifacts/static/v1.html", Buffer.from("<main>v1</main>"))
+    storage.write("artifacts/static/v2.html", Buffer.from("<main>v2</main>"))
+    const versionOneMetadata = {
+      artifactType: "slides",
+      renderMode: "polishedImage",
+      theme: "cinematic",
+      generationPath: "polishedImageSlides",
+      slideCount: 1,
+      provider: "mock-image",
+      assetReferences: [
+        {
+          assetId: "old_slide",
+          slideIndex: 1,
+          storageKey: "artifacts/static/old.png",
+          mimeType: "image/png",
+          sizeBytes: 3,
+        },
+      ],
+      safetyValidationResult: { status: "passed", warnings: [], errors: [] },
+      generationWarnings: [],
+    }
+    const versionTwoMetadata = {
+      ...versionOneMetadata,
+      theme: "gallery",
+      assetReferences: [
+        {
+          assetId: "new_slide",
+          slideIndex: 1,
+          storageKey: "artifacts/static/new.png",
+          mimeType: "image/png",
+          sizeBytes: 3,
+        },
+      ],
+      versionHistory: [{ version: 1, createdAt: new Date().toISOString(), ...versionOneMetadata }],
+    }
+    const { artifact } = ctx.repos.artifacts.createWithInitialVersion({
+      title: "Versioned deck",
+      type: "slides",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 15,
+      storageKey: "artifacts/static/v1.html",
+      contentHash: "v1",
+      contentStorageKey: "artifacts/static/v1.html",
+      metadata: versionOneMetadata,
+      visibilityScope: "global",
+    })
+    ctx.repos.artifacts.updateWithVersion({
+      artifactId: artifact.id,
+      version: 2,
+      contentHash: "v2",
+      contentStorageKey: "artifacts/static/v2.html",
+      sizeBytes: 15,
+      metadata: versionTwoMetadata,
+    })
+
+    const response = await app.request(`/api/artifacts/${artifact.id}/detail?version=1`)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      selectedVersion: 1,
+      content: "<main>v1</main>",
+      artifact: {
+        metadata: {
+          theme: "cinematic",
+          assetReferences: [{ assetId: "old_slide" }],
+        },
+      },
+    })
+  })
+
+  it("downloads the requested artifact version content", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const storage = new LocalDocumentStorage(ctx.config)
+    storage.write("artifacts/static/v1.html", Buffer.from("<main>v1</main>"))
+    storage.write("artifacts/static/v2.html", Buffer.from("<main>v2</main>"))
+    const { artifact } = ctx.repos.artifacts.createWithInitialVersion({
+      title: "Versioned page",
+      type: "webpage",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 15,
+      storageKey: "artifacts/static/v1.html",
+      contentHash: "v1",
+      contentStorageKey: "artifacts/static/v1.html",
+      visibilityScope: "global",
+    })
+    ctx.repos.artifacts.updateWithVersion({
+      artifactId: artifact.id,
+      version: 2,
+      contentHash: "v2",
+      contentStorageKey: "artifacts/static/v2.html",
+      sizeBytes: 15,
+    })
+
+    const response = await app.request(`/api/artifacts/${artifact.id}/download?version=1`)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("content-type")).toContain("text/html")
+    expect(await response.text()).toBe("<main>v1</main>")
+  })
+
+  it("serves static artifact assets by persisted asset metadata", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const storage = new LocalDocumentStorage(ctx.config)
+    storage.write("artifacts/slides/assets/slide-1.png", Buffer.from("png"))
+    const artifact = ctx.repos.artifacts.create({
+      title: "Visual deck",
+      type: "slides",
+      contentFormat: "manifest",
+      mimeType: "application/json",
+      sizeBytes: 2,
+      storageKey: "artifacts/slides/manifest.json",
+      visibilityScope: "global",
+      metadata: {
+        artifactType: "slides",
+        renderMode: "polishedImage",
+        theme: "cinematic",
+        generationPath: "polishedImageSlides",
+        slideCount: 1,
+        assetReferences: [
+          {
+            assetId: "slide_1",
+            slideIndex: 1,
+            storageKey: "artifacts/slides/assets/slide-1.png",
+            mimeType: "image/png",
+            sizeBytes: 3,
+            altText: "Opening slide",
+          },
+        ],
+        safetyValidationResult: { status: "passed", warnings: [], errors: [] },
+        generationWarnings: [],
+      },
+    })
+
+    const response = await app.request(
+      `/api/artifacts/${artifact.id}/assets/slide_1`
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("content-type")).toContain("image/png")
+    expect(await response.text()).toBe("png")
+  })
+
+  it("rejects static artifact assets when metadata is invalid or non-image", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const storage = new LocalDocumentStorage(ctx.config)
+    storage.write("artifacts/slides/assets/not-image.txt", Buffer.from("text"))
+    const artifact = ctx.repos.artifacts.create({
+      title: "Invalid visual deck",
+      type: "slides",
+      contentFormat: "manifest",
+      mimeType: "application/json",
+      sizeBytes: 2,
+      storageKey: "artifacts/slides/manifest.json",
+      visibilityScope: "global",
+      metadata: {
+        artifactType: "slides",
+        renderMode: "polishedImage",
+        theme: "cinematic",
+        generationPath: "polishedImageSlides",
+        slideCount: 1,
+        assetReferences: [
+          {
+            assetId: "slide_text",
+            slideIndex: 1,
+            storageKey: "artifacts/slides/assets/not-image.txt",
+            mimeType: "text/plain",
+            sizeBytes: 4,
+          },
+        ],
+        safetyValidationResult: { status: "passed", warnings: [], errors: [] },
+        generationWarnings: [],
+      },
+    })
+    const invalidMetadata = ctx.repos.artifacts.create({
+      title: "Invalid metadata",
+      type: "slides",
+      contentFormat: "manifest",
+      mimeType: "application/json",
+      sizeBytes: 2,
+      storageKey: "artifacts/slides/invalid.json",
+      visibilityScope: "global",
+      metadata: { assetReferences: [{ assetId: "slide_1", storageKey: "x", mimeType: "image/png" }] },
+    })
+
+    const nonImage = await app.request(
+      `/api/artifacts/${artifact.id}/assets/slide_text`
+    )
+    const invalid = await app.request(
+      `/api/artifacts/${invalidMetadata.id}/assets/slide_1`
+    )
+
+    expect(nonImage.status).toBe(404)
+    expect(await nonImage.json()).toMatchObject({ code: "static_artifact_asset_missing" })
+    expect(invalid.status).toBe(404)
+    expect(await invalid.json()).toMatchObject({ code: "static_artifact_asset_missing" })
+  })
+
   it("returns artifact errors for unchanged markdown content updates", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
