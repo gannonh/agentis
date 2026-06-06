@@ -129,11 +129,39 @@ function assetExtension(mimeType: string): string {
   return "png"
 }
 
+function sentenceCase(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return trimmed
+  return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`
+}
+
+function proseTopicList(contentBrief: string): string[] {
+  const match =
+    /\b(?:including|covering|covers|cover|with sections on|with slides on)\b(?<topics>[\s\S]+)/i.exec(
+      contentBrief
+    )
+  const topics = match?.groups?.topics
+  if (!topics) return []
+
+  const normalized = topics
+    .replace(/[.?!]\s*$/u, "")
+    .replace(/\s+and\s+/gi, ", ")
+  const parsed = normalized
+    .split(/[,;]+/)
+    .map((topic) => sentenceCase(topic.replace(/^[-*\d.\s:]+/, "")))
+    .filter((topic) => topic.length > 0)
+
+  return parsed.length > 1 ? parsed : []
+}
+
 function slideLines(contentBrief: string): string[] {
   const lines = contentBrief
     .split(/\r?\n+/)
     .map((line) => line.replace(/^[-*\d.\s:]+/, "").trim())
     .filter(Boolean)
+  if (lines.length > 1) return lines.slice(0, 12)
+  const topics = proseTopicList(contentBrief)
+  if (topics.length > 0) return topics.slice(0, 12)
   if (lines.length > 0) return lines.slice(0, 12)
   return [contentBrief.trim() || "Static slide"]
 }

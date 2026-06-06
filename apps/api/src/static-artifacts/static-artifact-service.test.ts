@@ -208,6 +208,52 @@ describe("StaticArtifactService", () => {
     ctx.cleanup()
   })
 
+  it("expands prose presentation briefs with listed topics into multiple slides", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "How to Write a Good Changelog",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief:
+        "Full presentation on how to write a good changelog including introduction, why changelogs matter, structure, writing tips, common mistakes, examples, and tools.",
+      theme: "corporate",
+      threadId: thread.id,
+      runId: run.id,
+    })
+
+    expect(created).toMatchObject({
+      ok: true,
+      output: {
+        artifactType: "slides",
+        renderMode: "html",
+        slideCount: 7,
+      },
+    })
+    if (!created.ok) throw new Error(created.message)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(Array.from(html.matchAll(/class="slide"/g))).toHaveLength(7)
+    expect(html).toContain("Why changelogs matter")
+
+    const edited = service.editStaticArtifact({
+      artifactId: created.output.artifactId,
+      contentBrief:
+        "Full presentation covering introduction, audience, categories, examples, release notes, automation, and review checklist.",
+      changeSummary: "Expanded deck",
+      runContext: { threadId: thread.id, runId: run.id },
+    })
+
+    expect(edited).toMatchObject({
+      ok: true,
+      output: { version: 2 },
+    })
+    const updated = ctx.repos.artifacts.getById(created.output.artifactId)
+    expect(updated?.metadata).toMatchObject({ slideCount: 7 })
+    ctx.cleanup()
+  })
+
   it("preserves all prior static artifact metadata fields in edit history", () => {
     const { ctx, thread, run, service } = createRunContext()
     const storage = new LocalDocumentStorage(ctx.config)
