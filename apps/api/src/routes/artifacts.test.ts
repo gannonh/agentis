@@ -565,4 +565,56 @@ describe("artifact routes", () => {
       content: "# Compatibility",
     })
   })
+
+  it("loads and saves App state through artifact routes", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+    const { AppService } = await import("../artifact-apps/app-service.js")
+    const appService = new AppService(ctx.repos, ctx.config)
+    const project = ctx.repos.projects.create({ name: "Apps" })
+    const { thread, run } = ctx.repos.threads.createWithInitialRun({
+      title: "App thread",
+      prompt: "Create app",
+      model: "gpt-4o-mini",
+      mode: "agent",
+      projectId: project.id,
+    })
+    const created = appService.createApp({
+      title: "Counter",
+      bundle: {
+        html: "<main></main>",
+        js: "console.log('ready')",
+      },
+      initialState: { count: 0 },
+      projectId: project.id,
+      threadId: thread.id,
+      runId: run.id,
+    })
+    expect(created.ok).toBe(true)
+    if (!created.ok) return
+
+    const loaded = await app.request(
+      `/api/artifacts/${created.output.artifactId}/app-state`
+    )
+    expect(loaded.status).toBe(200)
+    expect(await loaded.json()).toMatchObject({
+      artifactId: created.output.artifactId,
+      state: { count: 0 },
+    })
+
+    const saved = await app.request(
+      `/api/artifacts/${created.output.artifactId}/app-state`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: { count: 2 } }),
+      }
+    )
+    expect(saved.status).toBe(200)
+    expect(await saved.json()).toMatchObject({
+      artifactId: created.output.artifactId,
+      state: { count: 2 },
+    })
+  })
 })

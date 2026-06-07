@@ -1,10 +1,13 @@
 import {
+  appStateResponseSchema,
   artifactDetailResponseSchema,
   artifactPublicSchema,
   artifactTypeSchema,
   documentDetailResponseSchema,
   documentPublicSchema,
   documentTypeSchema,
+  updateAppStateRequestSchema,
+  updateAppStateResponseSchema,
   updateDocumentContentRequestSchema,
   updateDocumentContentResponseSchema,
   updateArtifactVisibilityRequestSchema,
@@ -311,6 +314,24 @@ export async function getArtifactDetail(
     `${API_BASE}/api/artifacts/${artifactId}/detail${query ? `?${query}` : ""}`
   )
   return parseJson(response, artifactDetailResponseSchema)
+}
+
+export async function getAppState(artifactId: string) {
+  const response = await fetch(`${API_BASE}/api/artifacts/${artifactId}/app-state`)
+  return parseJson(response, appStateResponseSchema)
+}
+
+export async function updateAppState(
+  artifactId: string,
+  state: Record<string, unknown>
+) {
+  const payload = updateAppStateRequestSchema.parse({ state })
+  const response = await fetch(`${API_BASE}/api/artifacts/${artifactId}/app-state`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, updateAppStateResponseSchema)
 }
 
 export async function getDocumentDetail(

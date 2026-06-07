@@ -2,6 +2,7 @@ import { tool } from "ai"
 import { z } from "zod"
 import { describe, expect, it } from "vitest"
 import {
+  APPS_SYSTEM_PROMPT,
   DOCUMENTS_SYSTEM_PROMPT,
   STATIC_ARTIFACTS_SYSTEM_PROMPT,
   WEB_SEARCH_SYSTEM_PROMPT,
@@ -222,5 +223,55 @@ describe("native tool capability catalog", () => {
     expect(capabilities.systemPromptSections).not.toContain(
       WEB_SEARCH_SYSTEM_PROMPT
     )
+  })
+
+  it("exposes app tools and prompt guidance when apps is permitted", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["apps"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Create an interactive calculator mini-app with saved state.",
+      buildTools: {
+        apps: () => ({
+          createApp: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.systemPromptSections).toEqual([APPS_SYSTEM_PROMPT])
+    expect(capabilities.runtimeTools).toHaveProperty("createApp")
+    expect(capabilities.apps).toMatchObject({
+      permitted: true,
+      enabled: true,
+    })
+  })
+
+  it("reports visible denial when app intent is not permitted", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: [],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt: "Build an interactive tracker mini-app.",
+      buildTools: {
+        apps: () => ({
+          createApp: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.apps).toMatchObject({
+      permitted: false,
+      requested: true,
+      enabled: false,
+      permissionDeniedError: {
+        code: "app_permission_denied",
+        message: "This agent is not permitted to create Apps.",
+      },
+    })
   })
 })

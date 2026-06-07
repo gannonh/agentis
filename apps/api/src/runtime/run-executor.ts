@@ -18,6 +18,8 @@ import { DocumentService } from "../documents/document-service.js"
 import { buildDocumentTools } from "../documents/document-tool.js"
 import { StaticArtifactService } from "../static-artifacts/static-artifact-service.js"
 import { buildStaticArtifactTools } from "../static-artifacts/static-artifact-tool.js"
+import { AppService } from "../artifact-apps/app-service.js"
+import { buildAppTools } from "../artifact-apps/app-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
 import { resolveNativeToolsForRun } from "../native-tools/native-tool-permissions.js"
@@ -218,6 +220,7 @@ export class RunExecutor {
   private readonly workspaceApproval: WorkspaceToolApprovalCoordinator
   private readonly webSearchService: WebSearchService
   private readonly staticArtifactService: StaticArtifactService
+  private readonly appService: AppService
 
   constructor(
     private readonly repos: Repositories,
@@ -227,6 +230,7 @@ export class RunExecutor {
   ) {
     this.webSearchService = new WebSearchService(config)
     this.staticArtifactService = new StaticArtifactService(repos, config)
+    this.appService = new AppService(repos, config)
     this.contextService = new ProjectContextService(repos, config)
     this.workspaceEditService = new WorkspaceEditService(repos.workspaceEdits)
     this.workspaceExecutionService = new WorkspaceExecutionService(
@@ -250,6 +254,7 @@ export class RunExecutor {
       executionService: this.workspaceExecutionService,
       webSearchService: this.webSearchService,
       staticArtifactService: this.staticArtifactService,
+      appService: this.appService,
     }
   }
 
@@ -384,6 +389,21 @@ export class RunExecutor {
               })
             },
           }),
+        apps: () =>
+          buildAppTools(this.appService, {
+            runId,
+            threadId: run.threadId,
+            projectId: thread.projectId ?? undefined,
+            onEvidence: (title, payload) => {
+              this.repos.steps.create({
+                runId,
+                type: "tool-result",
+                status: "completed",
+                title,
+                payload,
+              })
+            },
+          }),
       },
     })
     if (nativeRuntimeCapabilities.webSearch.unavailableError) {
@@ -398,6 +418,13 @@ export class RunExecutor {
         runId,
         run.threadId,
         nativeRuntimeCapabilities.staticArtifacts.permissionDeniedError
+      )
+    }
+    if (nativeRuntimeCapabilities.apps.permissionDeniedError) {
+      return this.failWithAppPermissionDenied(
+        runId,
+        run.threadId,
+        nativeRuntimeCapabilities.apps.permissionDeniedError
       )
     }
 
@@ -1036,6 +1063,38 @@ export class RunExecutor {
     })
     this.repos.threads.touch(threadId, { status: "failed" })
     throw new Error(message)
+  }
+
+  private failWithAppPermissionDenied(
+    runId: string,
+    threadId: string,
+    error: { code: string; message: string }
+  ): never {
+    this.repos.messages.create({
+      threadId,
+      role: "assistant",
+      parts: [{ type: "text", text: error.message }],
+      status: "failed",
+    })
+    this.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: error.message,
+    })
+    this.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "App permission denied",
+      payload: {
+        provider: "native",
+        toolName: "createApp",
+        code: error.code,
+        error: error.message,
+        remediation: "Enable the apps native tool permission for this agent.",
+      },
+    })
+    this.repos.threads.touch(threadId, { status: "failed" })
+    throw new Error(error.message)
   }
 
   private failWithStaticArtifactPermissionDenied(

@@ -1,6 +1,7 @@
 import {
   DOCUMENTS_NATIVE_TOOL_CAPABILITY,
   STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY,
+  APPS_NATIVE_TOOL_CAPABILITY,
   WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
   type NativeToolPermissionId,
 } from "@workspace/shared"
@@ -15,6 +16,17 @@ export const DOCUMENTS_SYSTEM_PROMPT =
 
 export const STATIC_ARTIFACTS_SYSTEM_PROMPT =
   "Use createStaticArtifact when the user asks for a static webpage, generated page, slide deck, presentation, or polished visual deck. Use editStaticArtifact for changes to an existing static artifact and findStaticArtifacts before editing when the artifact id is unknown. Use readStaticArtifact before answering questions about what an existing artifact actually contains, including requests for exact slide text, summaries of an artifact, or whether specific content is present. For HTML slide decks, match the requested depth: title-only or outline slides are acceptable when the user asks for an outline, but a full presentation or a request to add detail should include substantive body content on each relevant slide, preferably by providing complete generatedHtml instead of only a terse outline in contentBrief. Do not claim a deck has been expanded or detailed if the artifact still contains only slide titles. For artifact links, use only the exact relative viewPath returned by static artifact tools. Static artifacts are frozen generated outputs and must not depend on runtime Agentis tool access."
+
+export const APPS_SYSTEM_PROMPT =
+  "Use createApp when the user asks for an interactive mini-app, form, wizard, calculator, tracker, or visual tool that should run inside Agentis with mutable state. Use editApp for changes to an existing App and findApps before editing when the artifact id is unknown. For App links, use only the exact relative viewPath returned by App tools. Do not use createApp for static reports, landing pages, or slide decks; use staticArtifacts instead."
+
+export function looksLikeAppIntent(prompt: string): boolean {
+  const appTerm =
+    /\b(interactive app|mini-app|mini app|calculator|tracker|form wizard|interactive tool|mutable state app)\b/i
+  const creationOrEditAction =
+    /\b(create|make|build|generate|draft|design|edit|update|revise|modify)\b/i
+  return appTerm.test(prompt) && creationOrEditAction.test(prompt)
+}
 
 export function looksLikeWebSearchIntent(prompt: string): boolean {
   return (
@@ -39,6 +51,7 @@ type ToolBuilders = {
   webSearch?: () => ToolSet
   documents?: () => ToolSet
   staticArtifacts?: () => ToolSet
+  apps?: () => ToolSet
 }
 
 export function resolveNativeRuntimeCapabilities(input: {
@@ -82,6 +95,19 @@ export function resolveNativeRuntimeCapabilities(input: {
         }
       : undefined
 
+  const appsPermitted = input.permittedNativeToolIds.includes(
+    APPS_NATIVE_TOOL_CAPABILITY.id
+  )
+  const appsRequested = looksLikeAppIntent(input.latestUserPrompt)
+  const appsEnabled = appsPermitted && appsRequested
+  const appsPermissionDeniedError =
+    appsRequested && !appsPermitted
+      ? {
+          code: "app_permission_denied",
+          message: "This agent is not permitted to create Apps.",
+        }
+      : undefined
+
   const runtimeTools: ToolSet = {
     ...(webSearchEnabled && input.buildTools?.webSearch
       ? input.buildTools.webSearch()
@@ -92,12 +118,14 @@ export function resolveNativeRuntimeCapabilities(input: {
     ...(staticArtifactsEnabled && input.buildTools?.staticArtifacts
       ? input.buildTools.staticArtifacts()
       : {}),
+    ...(appsEnabled && input.buildTools?.apps ? input.buildTools.apps() : {}),
   }
 
   const systemPromptSections = [
     webSearchEnabled ? WEB_SEARCH_SYSTEM_PROMPT : null,
     documentsEnabled ? DOCUMENTS_SYSTEM_PROMPT : null,
     staticArtifactsEnabled ? STATIC_ARTIFACTS_SYSTEM_PROMPT : null,
+    appsEnabled ? APPS_SYSTEM_PROMPT : null,
   ].filter((section): section is string => Boolean(section))
 
   return {
@@ -118,6 +146,12 @@ export function resolveNativeRuntimeCapabilities(input: {
       requested: staticArtifactsRequested,
       enabled: staticArtifactsEnabled,
       permissionDeniedError: staticArtifactsPermissionDeniedError,
+    },
+    apps: {
+      permitted: appsPermitted,
+      requested: appsRequested,
+      enabled: appsEnabled,
+      permissionDeniedError: appsPermissionDeniedError,
     },
   }
 }

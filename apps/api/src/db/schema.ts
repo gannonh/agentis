@@ -442,3 +442,15 @@ export const documentVersions = sqliteTable(
     ),
   ]
 )
+
+export const appState = sqliteTable(
+  "app_state",
+  {
+    artifactId: text("artifact_id")
+      .primaryKey()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    stateJson: text("state_json").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("app_state_updated_at_idx").on(table.updatedAt)]
+)

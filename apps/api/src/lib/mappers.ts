@@ -197,7 +197,8 @@ function artifactTypeFor(row: DocumentRow): Artifact["type"] {
   if (row.documentType === "table") return "table"
   if (row.documentType === "image") return "image"
   if (row.documentType === "video") return "video"
-  if (row.documentType === "hyperapp") return "hyperapp"
+  if (row.documentType === "hyperapp") return "app"
+  if (row.documentType === "app") return "app"
   return "other"
 }
 

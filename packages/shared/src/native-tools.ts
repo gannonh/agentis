@@ -4,6 +4,7 @@ export const NATIVE_TOOL_PERMISSION_IDS = [
   "documents",
   "webSearch",
   "staticArtifacts",
+  "apps",
 ] as const
 
 export type NativeToolPermissionId = (typeof NATIVE_TOOL_PERMISSION_IDS)[number]
@@ -12,7 +13,7 @@ export type NativeToolCapabilityGroup = "Research" | "Data"
 
 export type NativeToolCapability = {
   id: NativeToolPermissionId
-  runtimeToolName: "searchWeb" | "documents" | "staticArtifacts"
+  runtimeToolName: "searchWeb" | "documents" | "staticArtifacts" | "apps"
   label: string
   description: string
   group: NativeToolCapabilityGroup
@@ -46,10 +47,20 @@ export const STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY: NativeToolCapability = {
   defaultSelected: false,
 }
 
+export const APPS_NATIVE_TOOL_CAPABILITY: NativeToolCapability = {
+  id: "apps",
+  runtimeToolName: "apps",
+  label: "Apps",
+  description: "Create and update interactive App artifacts with mutable state.",
+  group: "Data",
+  defaultSelected: false,
+}
+
 export const NATIVE_TOOL_CAPABILITY_CATALOG: NativeToolCapability[] = [
   WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
   DOCUMENTS_NATIVE_TOOL_CAPABILITY,
   STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY,
+  APPS_NATIVE_TOOL_CAPABILITY,
 ]
 
 export const DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS: NativeToolPermissionId[] =

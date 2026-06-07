@@ -239,6 +239,69 @@ function numberValue(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined
 }
 
+function appActionLabel(action: string | undefined) {
+  if (action === "created") return "App created"
+  if (action === "edited") return "App edited"
+  if (action === "found") return "Apps found"
+  if (action === "failed") return "App failed"
+  return "App"
+}
+
+function formatAppPayload(input: {
+  toolName?: string
+  input: Record<string, unknown> | null
+  output: Record<string, unknown> | null
+  error?: string
+  code?: string
+}) {
+  const isAppTool =
+    input.toolName === "createApp" ||
+    input.toolName === "editApp" ||
+    input.toolName === "findApps"
+  if (!isAppTool) return null
+
+  const outputFailed =
+    stringValue(input.output?.errorCode) != null ||
+    stringValue(input.output?.error) != null
+  const action = stringValue(input.output?.action) ??
+    (input.error || input.code || outputFailed ? "failed" :
+      input.toolName === "createApp" ? "created" :
+        input.toolName === "editApp" ? "edited" : "found")
+  const artifactId = stringValue(input.output?.artifactId) ?? stringValue(input.input?.artifactId)
+  const title = stringValue(input.output?.title) ?? stringValue(input.input?.title) ?? artifactId
+  const version = numberValue(input.output?.version)
+  const viewPath =
+    stableRelativePath(input.output?.viewPath) ??
+    (artifactId ? `/artifacts/${encodeURIComponent(artifactId)}` : undefined)
+  const errorCode =
+    stringValue(input.output?.errorCode) ??
+    stringValue(input.output?.code) ??
+    input.code
+  const items = Array.isArray(input.output?.items)
+    ? input.output.items
+        .map((item) => getRecord(item))
+        .filter((item): item is Record<string, unknown> => Boolean(item))
+    : []
+
+  return {
+    action,
+    actionLabel: appActionLabel(action),
+    artifactId,
+    title,
+    version,
+    previousVersion: numberValue(input.output?.previousVersion),
+    visibilityScope: stringValue(input.output?.visibilityScope),
+    changeSummary: stringValue(input.input?.changeSummary),
+    viewPath,
+    errorCode,
+    error: stringValue(input.output?.error) ?? input.error,
+    remediation: stringValue(input.output?.remediation),
+    resultCount: numberValue(input.output?.resultCount),
+    truncated: input.output?.truncated === true,
+    items,
+  }
+}
+
 function formatStaticArtifactPayload(input: {
   toolName?: string
   input: Record<string, unknown> | null
@@ -347,6 +410,13 @@ function formatNativePayload(step: RunStep) {
     outputSummary,
     sources: toolName === "searchWeb" ? formatWebSearchSources(output) : [],
     staticArtifact: formatStaticArtifactPayload({
+      toolName,
+      input,
+      output,
+      error: typeof record.error === "string" ? record.error : undefined,
+      code: typeof record.code === "string" ? record.code : undefined,
+    }),
+    app: formatAppPayload({
       toolName,
       input,
       output,
@@ -607,6 +677,99 @@ export function RunTimeline({
                       className="mt-2"
                       nativeButton={false}
                       render={<Link to={native.staticArtifact.viewPath} />}
+                    >
+                      Open artifact
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+              {native?.app ? (
+                <div className="mt-2 rounded-md border border-border/70 bg-background/60 p-2">
+                  <p className="font-medium">{native.app.actionLabel}</p>
+                  {native.app.title ? (
+                    <p className="mt-1 text-muted-foreground">{native.app.title}</p>
+                  ) : null}
+                  {native.app.version ? (
+                    <p className="mt-1 text-muted-foreground">
+                      {[
+                        "app",
+                        `v${native.app.version}`,
+                        native.app.visibilityScope,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                  {native.app.previousVersion ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Previous version: v{native.app.previousVersion}
+                    </p>
+                  ) : null}
+                  {native.app.changeSummary ? (
+                    <p className="mt-1 text-muted-foreground">
+                      {native.app.changeSummary}
+                    </p>
+                  ) : null}
+                  {native.app.resultCount != null ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Results: {native.app.resultCount}
+                      {native.app.truncated ? " · truncated" : ""}
+                    </p>
+                  ) : null}
+                  {native.app.items.length ? (
+                    <ul className="mt-2 space-y-1 text-muted-foreground">
+                      {native.app.items.map((item, index) => {
+                        const itemPath = stableRelativePath(item.viewPath)
+                        const itemTitle =
+                          stringValue(item.title) ??
+                          stringValue(item.artifactId) ??
+                          "App"
+                        return (
+                          <li key={`${itemTitle}:${index}`} className="space-y-0.5">
+                            {itemPath ? (
+                              <Link
+                                to={itemPath}
+                                className="text-foreground underline-offset-4 hover:underline"
+                              >
+                                {itemTitle}
+                              </Link>
+                            ) : (
+                              itemTitle
+                            )}
+                            <p>
+                              {[
+                                numberValue(item.version)
+                                  ? `v${numberValue(item.version)}`
+                                  : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : null}
+                  {native.app.errorCode ? (
+                    <p className="mt-1 text-amber-700 dark:text-amber-400">
+                      {native.app.errorCode}
+                    </p>
+                  ) : null}
+                  {native.app.error ? (
+                    <p className="mt-1 text-destructive">{native.app.error}</p>
+                  ) : null}
+                  {native.app.remediation ? (
+                    <p className="mt-1 text-amber-700 dark:text-amber-400">
+                      {native.app.remediation}
+                    </p>
+                  ) : null}
+                  {native.app.viewPath ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      nativeButton={false}
+                      render={<Link to={native.app.viewPath} />}
                     >
                       Open artifact
                     </Button>

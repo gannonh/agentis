@@ -228,6 +228,7 @@ describe("shared schemas", () => {
     expect(nativeToolPermissionIdSchema.parse("staticArtifacts")).toBe(
       "staticArtifacts"
     )
+    expect(nativeToolPermissionIdSchema.parse("apps")).toBe("apps")
     expect(DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS).toEqual([
       "webSearch",
       "documents",
@@ -252,6 +253,13 @@ describe("shared schemas", () => {
           id: "staticArtifacts",
           runtimeToolName: "staticArtifacts",
           label: "Static artifacts",
+          group: "Data",
+          defaultSelected: false,
+        }),
+        expect.objectContaining({
+          id: "apps",
+          runtimeToolName: "apps",
+          label: "Apps",
           group: "Data",
           defaultSelected: false,
         }),

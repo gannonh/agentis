@@ -46,6 +46,19 @@ import {
   staticArtifactThemeSchema,
   staticArtifactTypeSchema,
 } from "./static-artifact-schemas.js"
+import {
+  appBundleInputSchema,
+  appMetadataSchema,
+  appStateResponseSchema,
+  createAppInputSchema,
+  createAppOutputSchema,
+  editAppInputSchema,
+  editAppOutputSchema,
+  findAppsInputSchema,
+  findAppsOutputSchema,
+  updateAppStateRequestSchema,
+  updateAppStateResponseSchema,
+} from "./app-schemas.js"
 export { GENERIC_AGENTIS_AGENT_ID } from "./constants.js"
 export {
   artifactContentFormatSchema,
@@ -87,6 +100,21 @@ export {
   slideStaticArtifactThemeSchema,
   sharedStaticArtifactThemeSelectorSchema,
 } from "./static-artifact-schemas.js"
+export {
+  appBundleInputSchema,
+  appBundleValidationResultSchema,
+  appErrorCodeSchema,
+  appMetadataSchema,
+  appStateResponseSchema,
+  createAppInputSchema,
+  createAppOutputSchema,
+  editAppInputSchema,
+  editAppOutputSchema,
+  findAppsInputSchema,
+  findAppsOutputSchema,
+  updateAppStateRequestSchema,
+  updateAppStateResponseSchema,
+} from "./app-schemas.js"
 export {
   documentContentFormatSchema,
   documentDetailResponseSchema,
@@ -1010,6 +1038,17 @@ export type FindStaticArtifactsInput = z.infer<
 export type FindStaticArtifactsOutput = z.infer<
   typeof findStaticArtifactsOutputSchema
 >
+export type CreateAppInput = z.infer<typeof createAppInputSchema>
+export type CreateAppOutput = z.infer<typeof createAppOutputSchema>
+export type EditAppInput = z.infer<typeof editAppInputSchema>
+export type EditAppOutput = z.infer<typeof editAppOutputSchema>
+export type FindAppsInput = z.infer<typeof findAppsInputSchema>
+export type FindAppsOutput = z.infer<typeof findAppsOutputSchema>
+export type AppBundleInput = z.infer<typeof appBundleInputSchema>
+export type AppMetadata = z.infer<typeof appMetadataSchema>
+export type AppStateResponse = z.infer<typeof appStateResponseSchema>
+export type UpdateAppStateRequest = z.infer<typeof updateAppStateRequestSchema>
+export type UpdateAppStateResponse = z.infer<typeof updateAppStateResponseSchema>
 export type DocumentType = z.infer<typeof documentTypeSchema>
 export type DocumentVisibilityScope = z.infer<
   typeof documentVisibilityScopeSchema

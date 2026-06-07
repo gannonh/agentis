@@ -156,7 +156,7 @@ const ARTIFACT_TYPE_ICONS: Record<ArtifactType, IconSvgElement> = {
   document: TextAlignLeftIcon,
   webpage: BrowserIcon,
   slides: Presentation01Icon,
-  hyperapp: File01Icon,
+  app: File01Icon,
   table: TableIcon,
   image: Image01Icon,
   video: Video01Icon,
