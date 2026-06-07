@@ -10,7 +10,7 @@ Add the next Interactive-category V4 slice by giving Agentis agents a native cap
 
 Hyperagent exposes overlapping Webpages-and-Slides and Slides entries. Agentis should model this as one native capability with format-specific renderers. The user-facing output is an Artifact with `type: "webpage"` or `type: "slides"`; the native capability owns generation mode, design guidance, validation, and timeline evidence.
 
-Static generated outputs are frozen at creation time. They may include links, static layout, embedded assets, charts, and slide navigation, but they do not have runtime Agentis tool access. Interactive tools with persistent state and direct tool access belong to the HyperApp runtime spec.
+Static generated outputs are frozen at creation time. They may include links, static layout, embedded assets, charts, and slide navigation, but they do not have runtime Agentis tool access. Interactive tools with persistent state and a runtime bridge belong to the App runtime spec.
 
 ## Source of truth
 
@@ -18,7 +18,7 @@ Static generated outputs are frozen at creation time. They may include links, st
 - Domain language: `CONTEXT.md`, especially Artifact as the durable Library primitive and Document as the markdown artifact subtype.
 - Artifact primitive decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.
 - Native tool permission decision: `docs/adr/0002-version-native-tool-permissions-with-agent-configuration.md`.
-- HyperApp adjacent spec: `docs/specs/2026-06-04-agent-native-tooling-v4-hyperapps-design.md`.
+- App adjacent spec: `docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`.
 - Existing document implementation:
   - `packages/shared/src/artifact-schemas.ts`
   - `apps/api/src/documents/document-service.ts`
@@ -78,7 +78,7 @@ Build must use the landed Artifact primitive from `docs/specs/2026-06-04-library
 
 ### Out of scope
 
-- HyperApps, runtime state, and direct runtime tool access.
+- Apps, runtime state, and runtime bridge access.
 - Live data refresh after artifact creation.
 - Public sharing or anonymous access.
 - Visual editor UI.
@@ -575,7 +575,7 @@ Manual UAT:
 
 ## Explicitly deferred work
 
-- HyperApps and any runtime tool bridge.
+- Apps and any runtime tool bridge.
 - Public sharing.
 - PowerPoint, Keynote, or PDF export.
 - Visual editor UI.

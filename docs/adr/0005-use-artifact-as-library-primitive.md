@@ -13,7 +13,7 @@ The intended product model is broader:
 - The Library stores durable artifacts.
 - A markdown Document is one artifact type.
 - Webpages and slides are sibling artifact types.
-- Future outputs such as HyperApps, tables, images, videos, and other generated assets can share Library management without becoming document types.
+- Future outputs such as Apps, tables, images, videos, and other generated assets can share Library management without becoming document types.
 
 The shared management model remains correct: thread, project, and global visibility scopes; provenance; versioning; detail/preview/download; and Library filtering.
 
@@ -26,7 +26,7 @@ Use **Artifact** as the durable Library primitive.
 - `document`: markdown document.
 - `webpage`: static webpage.
 - `slides`: slide deck.
-- `hyperapp`: interactive HyperApp, pending runtime implementation validation.
+- `app`: interactive App with runtime state and bridge-backed persistence.
 - `table`, `image`, `video`, `other`: future or existing generated/uploaded output categories.
 
 Document-specific tools and UI remain, but they operate on artifacts with `type = "document"` and markdown content. Webpages and slides must be modeled as artifact sibling types, not document types.
@@ -44,7 +44,7 @@ Subtype services own subtype-specific behavior:
 
 - Document service: markdown reads, section updates, appends, and markdown workspace behavior.
 - Static artifact service: webpage/slides generation, render modes, HTML validation, slide assets, and preview metadata.
-- HyperApp service: interactive runtime bundle validation, app state references, bridge constraints, and embedded runtime rendering.
+- App service: interactive runtime bundle validation, App state references, bridge constraints, and embedded runtime rendering in the Artifact workspace.
 
 ## Consequences
 

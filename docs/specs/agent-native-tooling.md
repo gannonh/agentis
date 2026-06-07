@@ -99,7 +99,7 @@ Scope candidates:
 
 - Research tools: web search, browser, Exa, thread search.
 - Data tools: tables and persistent documents.
-- Interactive tools: webpages, slides, and HyperApp-style apps.
+- Interactive tools: webpages, slides, and Apps.
 - Media tools: images, video, audio, transcription, avatars, maps.
 
 (see `Hyperagent native tools inventory` section below)
@@ -137,6 +137,18 @@ and agent-returned `viewPath` values. The workspace supports rendered preview,
 markdown/code view, full markdown replacement as a new version, historical
 version viewing, download, source/provenance display, and visibility scope
 management through the Artifact-backed document service.
+
+#### V4.3: Static webpages and slides
+
+Spec: `docs/specs/_done/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`
+
+V4.3 implemented static generated outputs as Artifact types `webpage` and `slides` behind the `staticArtifacts` native permission. Static artifacts open in the Artifact workspace at `/artifacts/:artifactId`, use frozen HTML preview rendering, and do not expose mutable state or a runtime bridge.
+
+#### V4.4: Apps
+
+Spec: `docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`
+
+V4.4 adds interactive Apps as Artifact type `app` behind the `apps` native permission. Apps share the Artifact workspace route, version immutable code bundles separately from mutable App state, and render in a sandboxed iframe with a parent-proxied `App` bridge.
 
 ---
 
@@ -448,10 +460,10 @@ This inventory records the native tooling in Hyperagent, the platform Agentis is
 
 ### Interactive
 
-- **Library Artifact refactor:** Landed prerequisite for interactive artifact work. Artifact is the durable Library primitive; Document is the markdown Artifact subtype; webpage, slides, and likely hyperapp are sibling Artifact types.
-- **Webpages and Slides:** Generate styled webpages and slide presentations as Artifact type `webpage` and Artifact type `slides`, not document types.
+- **Library Artifact refactor:** Landed prerequisite for interactive artifact work. Artifact is the durable Library primitive; Document is the markdown Artifact subtype; webpage, slides, and `app` are sibling Artifact types.
+- **Webpages and Slides:** Implemented in V4.3 as static Artifact types `webpage` and `slides`, not document types.
 - **Slides:** Create slide presentations. Polished mode uses AI to render each slide as a visual.
-- **HyperApps:** Create interactive HyperApps with custom UI, persistent state, and direct tool access. Supports forms, wizards, and visual tools. The approved spec models HyperApps as Artifact type `hyperapp` unless Build finds a runtime/security reason for a linked subtype table.
+- **Apps:** Approved in V4.4. Create interactive Apps with custom UI, mutable state, and a constrained runtime bridge. Supports forms, wizards, calculators, and trackers. Apps are Artifact type `app`, open at `/artifacts/:artifactId`, and use the `apps` native permission with `createApp`, `editApp`, and `findApps`.
 
 ### Media
 
@@ -637,7 +649,7 @@ Candidate updates:
 1. **V1: Workspace-backed read-only tools**: selected-agent workspace flow and read-only file tools are implemented.
 2. **V2: Safe file edits**: mutating workspace tools with approval and audit metadata are implemented.
 3. **V3: Sandboxed execution**: bounded command/script execution with local-process and optional local-container backends is implemented.
-4. **V4: Capability parity expansion**: V4.1 web search and V4.2 persistent documents/document workspace are implemented; remaining Hyperagent tools stay category-scoped follow-ups.
+4. **V4: Capability parity expansion**: V4.1 web search, V4.2 persistent documents/document workspace, and V4.3 static webpages/slides are implemented; V4.4 Apps are approved; remaining Hyperagent tools stay category-scoped follow-ups.
 
 ## Reference files
 

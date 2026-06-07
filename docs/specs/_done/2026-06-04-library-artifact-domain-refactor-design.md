@@ -8,7 +8,7 @@ Verified.
 
 Refactor the Library domain so **Artifact** is the durable Library primitive and **Document** becomes the markdown-specific artifact subtype.
 
-This refactor must happen before the static webpages/slides and HyperApp specs are built. Webpages, slides, and future generated outputs should not be modeled as document types. They are sibling artifact types that share Library management, scope, provenance, versioning, preview, and download mechanisms.
+This refactor must happen before the static webpages/slides and App specs are built. Webpages, slides, and future generated outputs should not be modeled as document types. They are sibling artifact types that share Library management, scope, provenance, versioning, preview, and download mechanisms.
 
 ## Source of truth
 
@@ -35,7 +35,7 @@ The intended domain model is different:
 - `artifact.type = "document"` means a markdown document.
 - `artifact.type = "webpage"` means a static webpage artifact.
 - `artifact.type = "slides"` means a slide deck artifact.
-- Future artifact types can include `hyperapp`, `table`, `image`, `video`, and `other`.
+- Future artifact types can include `app`, `table`, `image`, `video`, and `other`.
 - All artifact types share Library management mechanisms.
 - Type-specific behavior lives in type-specific services, tools, previews, and validators.
 
@@ -64,7 +64,7 @@ The intended domain model is different:
 
 - Implementing webpage generation.
 - Implementing slides generation.
-- Implementing HyperApps.
+- Implementing Apps.
 - Adding public sharing.
 - Changing thread/project/global visibility semantics.
 - Adding fine-grained permissions beyond current scope model.
@@ -80,7 +80,7 @@ The intended domain model is different:
 6. Existing stored document rows migrate or adapt to artifact records with `type = "document"` and preserve content, versions, scope, provenance, and download paths.
 7. Library filters treat `document`, `webpage`, and `slides` as sibling artifact types.
 8. Static webpages/slides specs describe outputs as artifacts with `type = "webpage"` and `type = "slides"`, not Document types.
-9. HyperApp spec either uses `type = "hyperapp"` or explicitly records why HyperApps need a separate primitive linked to Library.
+9. App spec uses `type = "app"` as an Artifact subtype without a separate Library primitive.
 10. Verification includes targeted schema, repository/service, route, UI, migration, and document-tool compatibility tests.
 
 ## Target domain model
@@ -90,7 +90,7 @@ type ArtifactType =
   | "document"
   | "webpage"
   | "slides"
-  | "hyperapp"
+  | "app"
   | "table"
   | "image"
   | "video"
@@ -160,8 +160,8 @@ flowchart TD
   DocumentService --> ArtifactService
   StaticTools[Webpage/slides tools] --> StaticService[Static artifact subtype service]
   StaticService --> ArtifactService
-  HyperAppTools[HyperApp tools] --> HyperAppService[HyperApp subtype service]
-  HyperAppService --> ArtifactService
+  AppTools[App tools] --> AppService[App subtype service]
+  AppService --> ArtifactService
 ```
 
 Core responsibilities:
@@ -169,7 +169,7 @@ Core responsibilities:
 - Artifact service owns shared Library lifecycle, scope checks, version creation, provenance, storage references, detail/download responses, and list filters.
 - Document service owns markdown-specific operations: section updates, append section, markdown validation, and document tool prompts.
 - Static artifact service owns webpage/slides generation, HTML validation, render mode metadata, and deck assets.
-- HyperApp service owns interactive runtime validation, versions, state references, and runtime bridge constraints.
+- App service owns interactive runtime validation, versions, state references, and runtime bridge constraints.
 
 ## Migration strategy
 
@@ -268,7 +268,7 @@ Acceptance tie-ins: 4, 5, 7.
 Likely files:
 
 - `docs/specs/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`
-- `docs/specs/2026-06-04-agent-native-tooling-v4-hyperapps-design.md`
+- `docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`
 - `docs/specs/agent-native-tooling.md`
 - `docs/specs/agentis-prd-roadmap.md`
 - GitHub issues #405 and #406.
@@ -324,14 +324,14 @@ Manual UAT:
 
 ## Build handoff
 
-Build this before implementing static webpages/slides or HyperApps.
+Build this before implementing static webpages/slides or Apps.
 
 Definition of done:
 
 1. Artifact is the active durable Library primitive in docs and public DTOs.
 2. Document is the markdown artifact subtype.
 3. Existing markdown document behavior remains intact.
-4. Webpage, slides, and HyperApp specs no longer instruct implementers to model those outputs as Document types.
+4. Webpage, slides, and App specs no longer instruct implementers to model those outputs as Document types.
 5. Tests and manual UAT prove compatibility and migration safety.
 
 ## Build completion report
@@ -344,7 +344,7 @@ Definition of done:
   - Added artifact repository/service boundaries over existing document persistence.
   - Added `/api/artifacts` list/detail/content/visibility/download routes while preserving `/api/documents/*` compatibility.
   - Updated Library UI and related document surfaces to use artifact types and artifact terminology.
-  - Aligned static artifacts and HyperApp specs plus GitHub issues #405 and #406 to the landed Artifact primitive.
+  - Aligned static artifacts and App specs plus GitHub issues #405 and #406 to the landed Artifact primitive.
 - Files changed: shared artifact/document schemas, API artifact/document repository/service/routes/tests, web Library/document/agent surfaces/tests, active specs/docs, and issue tracker metadata.
 - Verification commands run:
   - `pnpm typecheck` passed.
@@ -354,7 +354,7 @@ Definition of done:
   - Targeted shared/API/web tests were run during Build for artifact schemas, artifact repository/routes, document compatibility, Library filters, document workspace, project documents, agent library summaries, and timeline document links.
 - Review gates completed: per-phase spec compliance reviews and code/docs quality reviews passed; final whole-branch review passed.
 - Approved deviations: none.
-- Known follow-up issues: static webpage/slides generation and HyperApp runtime implementation remain out of scope and tracked by #406 and #405.
+- Known follow-up issues: static webpage/slides generation and App runtime implementation remain out of scope and tracked by #406 and #405.
 - Independent subagent review used: yes.
 
 ## Verify completion report

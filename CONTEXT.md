@@ -61,19 +61,27 @@ A native tool that lets an agent search the web for current information during a
 _Avoid_: Search, when specificity matters
 
 **Artifact**:
-The durable Library primitive for uploaded files and agent-generated output. Artifacts have a type such as `document`, `webpage`, `slides`, `hyperapp`, `table`, `image`, `video`, or `other`; thread, project, or global visibility scope; version history; storage; and provenance metadata.
+The durable Library primitive for uploaded files and agent-generated output. Artifacts have a type such as `document`, `webpage`, `slides`, `app`, `table`, `image`, `video`, or `other`; thread, project, or global visibility scope; version history; storage; and provenance metadata.
 _Avoid_: Document, when referring to Library-wide behavior or non-markdown outputs
 
 **Artifact type**:
-The subtype of a Library Artifact. `document` means a markdown Document. `webpage` and `slides` are sibling artifact types, not document types.
+The subtype of a Library Artifact. `document` means a markdown Document. `webpage`, `slides`, and interactive Apps are sibling artifact types, not document types.
 _Avoid_: Document type, when describing non-markdown artifacts
+
+**App**:
+The interactive Artifact subtype for agent-created mini-apps with a JS runtime, versioned code bundles, and Agentis-owned mutable state through an approved runtime bridge. Apps open in the Artifact workspace at `/artifacts/:artifactId`. They are not static webpage Artifacts, which are frozen HTML previews without mutable state or bridge access.
+_Avoid_: HyperApp, static webpage, webpage, when describing interactive runtime apps
+
+**App state**:
+Mutable runtime data for an App, persisted separately from versioned App code bundles. State reads and writes do not create new App versions.
+_Avoid_: App version, bundle version, Artifact version
 
 **Document**:
 The markdown-specific Artifact subtype. Documents support markdown preview, markdown/code view, section updates, appends, version history, download, source/provenance display, and visibility scope management.
 _Avoid_: Artifact, when specifically referring to markdown document authoring and document runtime tools
 
 **Artifact workspace**:
-The work surface for opening an Artifact from Library, run timeline provenance, or project context. It provides type-specific preview/edit behavior, version history, download, source/provenance display, and visibility scope management. Markdown Documents may keep the `/documents/:documentId` route as a compatibility workspace.
+The work surface for opening an Artifact from Library, run timeline provenance, or project context at `/artifacts/:artifactId`. It provides type-specific preview or runtime behavior, version history, download, source/provenance display, and visibility scope management. Markdown Documents may keep the `/documents/:documentId` route as a compatibility workspace.
 _Avoid_: Library preview, when referring to the full artifact route
 
 **Artifact visibility scope**:

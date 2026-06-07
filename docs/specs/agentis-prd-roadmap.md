@@ -61,7 +61,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 - Memory: persisted fact or preference scoped globally, by project, or by agent.
 - Rubric: evaluation criteria for scored runs.
 - Evaluation: model-generated score and feedback tied to a run and rubric.
-- Artifact: durable Library primitive for uploaded files and agent-generated output. Artifact type distinguishes `document`, `webpage`, `slides`, `table`, `image`, `video`, `hyperapp`, and other outputs. Artifact visibility is thread, project, or global; agent association is provenance, not a visibility scope.
+- Artifact: durable Library primitive for uploaded files and agent-generated output. Artifact type distinguishes `document`, `webpage`, `slides`, `app`, `table`, `image`, `video`, and other outputs. Artifact visibility is thread, project, or global; agent association is provenance, not a visibility scope.
 - Document: markdown-specific Artifact subtype with markdown preview, editing, section updates, version history, download, and document runtime tools.
 
 ## Roadmap (⚠️ warning out of date)
@@ -297,7 +297,7 @@ Acceptance:
 - Self-host scope: Docker Compose only for MVP, with Kubernetes docs later.
 - Auth scope: single-user install first or small-team workspace first.
 - External invocation priority: Slack first, webhook first, or schedule first.
-- Artifact types: markdown documents and files first, with webpages/slides/images/hyperapps later as sibling Artifact types.
+- Artifact types: markdown documents and files first, with webpages/slides/apps/images later as sibling Artifact types.
 
 ## Suggested MVP cut line
 
