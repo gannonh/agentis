@@ -80,6 +80,23 @@ vi.mock("@/lib/api/projects-client", () => ({
   getArtifactDetail: vi.fn(),
   downloadArtifactFile: vi.fn(),
   artifactDownloadUrl: (id: string) => `/api/artifacts/${id}/download`,
+  artifactLaunchPath: (artifact: { id: string; type: string }) => {
+    if (artifact.type === "document") return `/documents/${artifact.id}`
+    if (
+      artifact.type === "webpage" ||
+      artifact.type === "slides" ||
+      artifact.type === "app"
+    ) {
+      return `/artifacts/${artifact.id}`
+    }
+    return null
+  },
+  artifactLaunchLabel: (type: string) => {
+    if (type === "document") return "Open document"
+    if (type === "app") return "Open app"
+    if (type === "webpage" || type === "slides") return "Open artifact"
+    return null
+  },
   artifactWorkspacePath: (id: string) => `/artifacts/${id}`,
   documentWorkspacePath: (id: string) => `/documents/${id}`,
 }))
@@ -112,11 +129,49 @@ describe("LibraryPage", () => {
       expect(screen.getByText("Q2 Brief")).toBeInTheDocument()
     })
     expect(screen.getByText("document · global")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Open" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Open document" })).toHaveAttribute(
       "href",
       "/documents/document_test"
     )
     expect(screen.getByRole("button", { name: "Download" })).toBeEnabled()
+  })
+
+  it("renders Open app launch actions for app artifact cards", async () => {
+    mockedListArtifacts.mockResolvedValueOnce([
+      {
+        id: "artifact_app",
+        type: "app",
+        title: "Simple Calculator",
+        contentFormat: "json",
+        mimeType: "application/json",
+        sizeBytes: 4096,
+        projectNameSnapshot: null,
+        threadTitleSnapshot: "Calculator thread",
+        agentNameSnapshot: "Apps Agent",
+        createdAt: new Date().toISOString(),
+        visibilityScope: "thread",
+        updatedAt: new Date().toISOString(),
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <LibraryPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText("Simple Calculator")).toBeInTheDocument()
+    })
+
+    expect(screen.getByRole("link", { name: "Simple Calculator" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_app"
+    )
+    expect(screen.getByRole("button", { name: "Open app" })).toHaveAttribute(
+      "href",
+      "/artifacts/artifact_app"
+    )
   })
 
   it("uses artifact type filters for document, webpage, and slides siblings", async () => {

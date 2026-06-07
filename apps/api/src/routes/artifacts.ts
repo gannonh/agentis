@@ -2,11 +2,13 @@ import { Hono } from "hono"
 import {
   listArtifactsQuerySchema,
   staticArtifactMetadataSchema,
+  updateAppStateRequestSchema,
   updateArtifactContentRequestSchema,
   updateArtifactVisibilityRequestSchema,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { ArtifactService } from "../artifacts/artifact-service.js"
+import { AppService } from "../artifact-apps/app-service.js"
 import { DocumentService } from "../documents/document-service.js"
 import { LocalDocumentStorage } from "../documents/local-document-storage.js"
 import { toPublicArtifact } from "../lib/public-artifacts.js"
@@ -144,6 +146,7 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
   const app = new Hono()
   const storage = new LocalDocumentStorage(config)
   const artifactService = new ArtifactService(repos)
+  const appService = new AppService(repos, config)
   const documentService = new DocumentService(repos, config)
 
   app.get("/", (c) => {
@@ -167,6 +170,48 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
         .list(parsed.data)
         .map((artifact) => toPublicArtifact(artifact))
     )
+  })
+
+  // HTTP app-state routes follow the same local API trust model as artifact detail.
+  // Agent tools enforce scope through server-side runContext.
+  app.get("/:artifactId/app-state", (c) => {
+    const artifactId = c.req.param("artifactId")
+    const result = appService.getState(artifactId)
+    if (!result.ok) {
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 404) as 404
+      )
+    }
+    return c.json({
+      artifactId,
+      state: result.output.state,
+      updatedAt: result.output.updatedAt,
+    })
+  })
+
+  app.put("/:artifactId/app-state", async (c) => {
+    const body = await c.req.json().catch(() => null)
+    const parsed = updateAppStateRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json(
+        { error: "Invalid request body", code: "invalid_request" },
+        400
+      )
+    }
+    const artifactId = c.req.param("artifactId")
+    const result = appService.setState(artifactId, parsed.data.state)
+    if (!result.ok) {
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 500) as 400 | 404 | 413 | 500
+      )
+    }
+    return c.json({
+      artifactId,
+      state: parsed.data.state,
+      updatedAt: result.output.updatedAt,
+    })
   })
 
   app.get("/:artifactId/assets/:assetId", (c) => {

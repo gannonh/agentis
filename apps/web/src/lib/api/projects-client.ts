@@ -1,10 +1,13 @@
 import {
+  appStateResponseSchema,
   artifactDetailResponseSchema,
   artifactPublicSchema,
   artifactTypeSchema,
   documentDetailResponseSchema,
   documentPublicSchema,
   documentTypeSchema,
+  updateAppStateRequestSchema,
+  updateAppStateResponseSchema,
   updateDocumentContentRequestSchema,
   updateDocumentContentResponseSchema,
   updateArtifactVisibilityRequestSchema,
@@ -313,6 +316,24 @@ export async function getArtifactDetail(
   return parseJson(response, artifactDetailResponseSchema)
 }
 
+export async function getAppState(artifactId: string) {
+  const response = await fetch(`${API_BASE}/api/artifacts/${artifactId}/app-state`)
+  return parseJson(response, appStateResponseSchema)
+}
+
+export async function updateAppState(
+  artifactId: string,
+  state: Record<string, unknown>
+) {
+  const payload = updateAppStateRequestSchema.parse({ state })
+  const response = await fetch(`${API_BASE}/api/artifacts/${artifactId}/app-state`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, updateAppStateResponseSchema)
+}
+
 export async function getDocumentDetail(
   documentId: string,
   options: { version?: number } = {}
@@ -382,6 +403,29 @@ export function documentWorkspacePath(documentId: string): string {
 
 export function artifactWorkspacePath(artifactId: string): string {
   return `/artifacts/${artifactId}`
+}
+
+export function artifactLaunchPath(
+  artifact: Pick<Artifact, "id" | "type">
+): string | null {
+  if (artifact.type === "document") {
+    return documentWorkspacePath(artifact.id)
+  }
+  if (
+    artifact.type === "webpage" ||
+    artifact.type === "slides" ||
+    artifact.type === "app"
+  ) {
+    return artifactWorkspacePath(artifact.id)
+  }
+  return null
+}
+
+export function artifactLaunchLabel(type: Artifact["type"]): string | null {
+  if (type === "document") return "Open document"
+  if (type === "app") return "Open app"
+  if (type === "webpage" || type === "slides") return "Open artifact"
+  return null
 }
 
 export function artifactDownloadUrl(

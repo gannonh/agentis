@@ -81,7 +81,7 @@ describe("artifact schemas", () => {
       "document",
       "webpage",
       "slides",
-      "hyperapp",
+      "app",
       "table",
       "image",
       "video",

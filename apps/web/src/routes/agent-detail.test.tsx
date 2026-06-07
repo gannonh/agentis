@@ -747,6 +747,7 @@ describe("AgentDetailPage", () => {
     expect(screen.getByRole("checkbox", { name: "Search" })).toBeInTheDocument()
     expect(screen.getByRole("checkbox", { name: "Documents" })).toBeInTheDocument()
     expect(screen.getByRole("checkbox", { name: "Webpages & Slides" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Apps" })).toBeInTheDocument()
   })
 
   it("saves API-backed tool grants from the Tools tab", async () => {
@@ -858,6 +859,49 @@ describe("AgentDetailPage", () => {
     expect(updateAgent).toHaveBeenCalledWith("agent_created", {
       toolGrants: [],
       nativeTools: ["documents", "staticArtifacts", "webSearch"],
+    })
+  })
+
+  it("saves apps as a native tool permission from the Tools tab", async () => {
+    const user = userEvent.setup()
+    vi.mocked(getAgent).mockResolvedValueOnce(
+      apiAgentDetail({ agent: { toolGrantCount: 0 }, toolGrants: [] })
+    )
+    vi.mocked(updateAgent).mockResolvedValueOnce(
+      apiAgentDetail({
+        agent: {
+          toolGrantCount: 0,
+          currentConfigurationVersion: {
+            id: "version_created_2",
+            agentId: "agent_created",
+            version: 2,
+            systemPrompt: "Research carefully.",
+            model: "gpt-4o-mini",
+            maxCostPerRunUsd: null,
+            nativeTools: ["apps", "documents", "webSearch"],
+            createdAt: new Date().toISOString(),
+          },
+        },
+        toolGrants: [],
+      })
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    await user.click(screen.getByRole("tab", { name: "Tools" }))
+    await user.click(screen.getByRole("checkbox", { name: "Apps" }))
+    await user.click(screen.getByRole("button", { name: "Save tools" }))
+
+    expect(updateAgent).toHaveBeenCalledWith("agent_created", {
+      toolGrants: [],
+      nativeTools: ["apps", "documents", "webSearch"],
     })
   })
 

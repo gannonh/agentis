@@ -9,6 +9,7 @@ import {
   FolderLibraryIcon,
   Globe02Icon,
   Image01Icon,
+  LayoutGridIcon,
   Presentation01Icon,
   Robot01Icon,
   TableIcon,
@@ -65,9 +66,9 @@ import { formatRelativeTime } from "@/fixtures"
 import { listThreads } from "@/lib/api/client"
 import { listAgents } from "@/lib/api/agents-client"
 import {
-  artifactWorkspacePath,
+  artifactLaunchLabel,
+  artifactLaunchPath,
   downloadArtifactFile,
-  documentWorkspacePath,
   getArtifactDetail,
   listArtifacts,
   listProjects,
@@ -156,7 +157,7 @@ const ARTIFACT_TYPE_ICONS: Record<ArtifactType, IconSvgElement> = {
   document: TextAlignLeftIcon,
   webpage: BrowserIcon,
   slides: Presentation01Icon,
-  hyperapp: File01Icon,
+  app: LayoutGridIcon,
   table: TableIcon,
   image: Image01Icon,
   video: Video01Icon,
@@ -667,32 +668,39 @@ export function LibraryPage() {
                 .map((version) => `v${version.version}`)
                 .join(", ") || "none"}
             </div>
-            {detail.artifact.type === "document" ? (
-              <Button
-                nativeButton={false}
-                render={<Link to={documentWorkspacePath(detail.artifact.id)} />}
-              >
-                Open document
-              </Button>
-            ) : detail.artifact.type === "webpage" || detail.artifact.type === "slides" ? (
-              <Button
-                nativeButton={false}
-                render={<Link to={artifactWorkspacePath(detail.artifact.id)} />}
-              >
-                Open artifact
-              </Button>
-            ) : null}
+            {(() => {
+              const launchPath = artifactLaunchPath(detail.artifact)
+              const launchLabel = artifactLaunchLabel(detail.artifact.type)
+              return launchPath && launchLabel ? (
+                <Button
+                  nativeButton={false}
+                  render={<Link to={launchPath} />}
+                >
+                  {launchLabel}
+                </Button>
+              ) : null
+            })()}
           </CardContent>
         </Card>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {artifacts.map((artifact) => (
+        {artifacts.map((artifact) => {
+          const launchPath = artifactLaunchPath(artifact)
+          const launchLabel = artifactLaunchLabel(artifact.type)
+
+          return (
           <Card key={artifact.id}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-sm leading-snug">
-                  {artifact.title}
+                  {launchPath ? (
+                    <Link to={launchPath} className="hover:underline">
+                      {artifact.title}
+                    </Link>
+                  ) : (
+                    artifact.title
+                  )}
                 </CardTitle>
                 <Badge
                   variant="outline"
@@ -727,23 +735,14 @@ export function LibraryPage() {
                   {formatRelativeTime(artifact.updatedAt)}
                 </span>
                 <div className="flex items-center gap-2">
-                  {artifact.type === "document" ? (
+                  {launchPath && launchLabel ? (
                     <Button
                       variant="outline"
                       size="sm"
                       nativeButton={false}
-                      render={<Link to={documentWorkspacePath(artifact.id)} />}
+                      render={<Link to={launchPath} />}
                     >
-                      Open
-                    </Button>
-                  ) : artifact.type === "webpage" || artifact.type === "slides" ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      nativeButton={false}
-                      render={<Link to={artifactWorkspacePath(artifact.id)} />}
-                    >
-                      Open
+                      {launchLabel}
                     </Button>
                   ) : null}
                   <Button
@@ -762,7 +761,8 @@ export function LibraryPage() {
               ) : null}
             </CardContent>
           </Card>
-        ))}
+          )
+        })}
       </div>
     </PageLayout>
   )

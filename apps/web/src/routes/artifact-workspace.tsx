@@ -15,6 +15,8 @@ import {
   updateArtifactVisibility,
 } from "@/lib/api/projects-client"
 import { ArtifactSidePanel } from "@/components/artifacts/artifact-side-panel"
+import { AppRuntimePreview } from "@/components/artifact-apps/app-runtime"
+import { appArtifactSummary } from "@/components/artifact-apps/app-summary"
 import { StaticArtifactPreview } from "@/components/static-artifacts/static-artifact-preview"
 import { staticArtifactSummary } from "@/components/static-artifacts/static-artifact-summary"
 
@@ -232,7 +234,9 @@ export function ArtifactWorkspacePage() {
             {viewingHistoricalVersion ? <Badge variant="secondary">Historical view</Badge> : null}
           </div>
           <p className="text-sm text-muted-foreground">
-            {staticArtifactSummary(detail)}
+            {detail.artifact.type === "app"
+              ? appArtifactSummary(detail)
+              : staticArtifactSummary(detail)}
             {detail.truncated ? " · Content truncated for safe loading" : ""}
           </p>
         </div>
@@ -243,7 +247,14 @@ export function ArtifactWorkspacePage() {
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-4 py-4 sm:px-6 lg:flex-row">
         <main className="min-w-0 flex-1 space-y-4">
-          <StaticArtifactPreview detail={detail} />
+          {detail.artifact.type === "app" ? (
+            <AppRuntimePreview
+              detail={detail}
+              disabled={viewingHistoricalVersion}
+            />
+          ) : (
+            <StaticArtifactPreview detail={detail} />
+          )}
         </main>
         <ArtifactSidePanel
           artifact={detail.artifact}

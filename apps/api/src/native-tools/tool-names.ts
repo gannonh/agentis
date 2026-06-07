@@ -38,9 +38,18 @@ export const NATIVE_STATIC_ARTIFACT_TOOL_NAMES = [
 export type NativeStaticArtifactToolName =
   (typeof NATIVE_STATIC_ARTIFACT_TOOL_NAMES)[number]
 
+export const NATIVE_APP_TOOL_NAMES = [
+  "createApp",
+  "editApp",
+  "findApps",
+] as const
+
+export type NativeAppToolName = (typeof NATIVE_APP_TOOL_NAMES)[number]
+
 export const NATIVE_NON_WORKSPACE_TOOL_NAMES = [
   ...NATIVE_WEB_SEARCH_TOOL_NAMES,
   ...NATIVE_STATIC_ARTIFACT_TOOL_NAMES,
+  ...NATIVE_APP_TOOL_NAMES,
 ] as const
 
 export type NativeNonWorkspaceToolName =

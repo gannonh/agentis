@@ -8,7 +8,7 @@ export const artifactTypeSchema = z.enum([
   "document",
   "webpage",
   "slides",
-  "hyperapp",
+  "app",
   "table",
   "image",
   "video",
