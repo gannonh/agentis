@@ -33,6 +33,23 @@ describe("validateAppBundle", () => {
     expect(result.code).toBe("app_bundle_too_large")
   })
 
+  it("rejects bundles when serialized JSON exceeds size limits", () => {
+    const html = "x".repeat(40)
+    const js = "y".repeat(40)
+    const maxBytes = Buffer.byteLength(
+      JSON.stringify({ html, js }),
+      "utf8"
+    )
+    const result = validateAppBundle({
+      html,
+      js,
+      maxBytes: maxBytes - 1,
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe("app_bundle_too_large")
+  })
+
   it("rejects inline event handler attributes", () => {
     const result = validateAppBundle({
       html: "<button onclick=\"alert('x')\">Go</button>",

@@ -20,10 +20,13 @@ export class AppStateRepository {
       .get()
     if (!row) return null
     try {
-      const parsed = JSON.parse(row.stateJson) as Record<string, unknown>
+      const parsed: unknown = JSON.parse(row.stateJson)
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return null
+      }
       return {
         artifactId: row.artifactId,
-        state: parsed,
+        state: parsed as Record<string, unknown>,
         updatedAt: row.updatedAt,
       }
     } catch {

@@ -321,7 +321,8 @@ export class AppService {
     limit?: number
     runContext: AppRunContext
   }): AppResult<FindAppsOutput> {
-    const limit = Math.min(input.limit ?? 10, 50)
+    const requestedLimit = input.limit ?? 10
+    const limit = Math.min(Math.max(requestedLimit, 1), 50)
     const matches = this.repos.artifacts
       .list({
         query: input.query,

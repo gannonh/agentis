@@ -48,6 +48,22 @@ describe("app srcdoc assembly", () => {
     expect(srcDoc).not.toMatch(/<header>\s*<meta http-equiv="Content-Security-Policy"/i)
   })
 
+  it("injects bundle css when html already contains a style tag", () => {
+    const srcDoc = assembleAppSrcDoc({
+      bundle: {
+        html: "<html><head><style>body { margin: 0; }</style></head><body><main></main></body></html>",
+        css: "main { color: red; }",
+        js: "console.log('ready')",
+      },
+      artifactId: "artifact_4",
+      version: 1,
+    })
+    expect(srcDoc).toContain("body { margin: 0; }")
+    expect(srcDoc).toContain("main { color: red; }")
+    expect(srcDoc).toContain('data-agentis-app-css')
+    expect(srcDoc).toContain("navigate-to 'none'")
+  })
+
   it("parses stored bundle JSON", () => {
     expect(
       parseBundle(

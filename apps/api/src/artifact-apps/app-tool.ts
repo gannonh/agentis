@@ -64,7 +64,11 @@ export function buildAppTools(
           threadId: context.threadId,
           runId: context.runId,
         })
-        if (!result.ok) return errorPayload(result)
+        if (!result.ok) {
+          const payload = errorPayload(result)
+          context.onEvidence?.("App failed", payload)
+          return payload
+        }
         const payload = timelineOutput("created", result.output)
         context.onEvidence?.(`App created: ${result.output.title}`, payload)
         return result.output
@@ -80,7 +84,11 @@ export function buildAppTools(
           ...input,
           runContext,
         })
-        if (!result.ok) return errorPayload(result)
+        if (!result.ok) {
+          const payload = errorPayload(result)
+          context.onEvidence?.("App failed", payload)
+          return payload
+        }
         const payload = timelineOutput("edited", result.output)
         context.onEvidence?.(`App edited: ${result.output.title}`, payload)
         return result.output
@@ -96,7 +104,11 @@ export function buildAppTools(
           ...input,
           runContext,
         })
-        if (!result.ok) return errorPayload(result)
+        if (!result.ok) {
+          const payload = errorPayload(result)
+          context.onEvidence?.("App failed", payload)
+          return payload
+        }
         const payload = timelineOutput("found", {
           query: input.query,
           resultCount: result.output.resultCount,

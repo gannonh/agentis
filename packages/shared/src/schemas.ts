@@ -48,6 +48,8 @@ import {
 } from "./static-artifact-schemas.js"
 import {
   appBundleInputSchema,
+  appBundleValidationResultSchema,
+  appErrorCodeSchema,
   appMetadataSchema,
   appStateResponseSchema,
   createAppInputSchema,

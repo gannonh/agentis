@@ -1,10 +1,18 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 import { createTestContext } from "../test/setup.js"
 import { LocalAppBundleStorage } from "./local-app-bundle-storage.js"
 import { AppService } from "./app-service.js"
 
+const activeContexts: Array<ReturnType<typeof createTestContext>> = []
+
+afterEach(() => {
+  for (const context of activeContexts) context.cleanup()
+  activeContexts.length = 0
+})
+
 function createRunContext() {
   const ctx = createTestContext()
+  activeContexts.push(ctx)
   const project = ctx.repos.projects.create({ name: "Apps project" })
   const { thread, run } = ctx.repos.threads.createWithInitialRun({
     title: "Apps thread",

@@ -82,8 +82,8 @@ export function validateAppBundle(input: {
     js: input.js,
   }
   const source = combinedSource(bundle)
-  const byteLength = Buffer.byteLength(source, "utf8")
-  if (byteLength > input.maxBytes) {
+  const serializedByteLength = Buffer.byteLength(JSON.stringify(bundle), "utf8")
+  if (serializedByteLength > input.maxBytes) {
     return error(
       "app_bundle_too_large",
       "App bundle exceeds the configured size limit.",

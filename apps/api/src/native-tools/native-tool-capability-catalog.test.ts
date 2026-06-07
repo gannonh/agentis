@@ -248,6 +248,62 @@ describe("native tool capability catalog", () => {
     })
   })
 
+  it.each([
+    "Create a form for onboarding new users.",
+    "Build a wizard for project setup.",
+  ])("exposes app tools when apps is permitted for %s", (latestUserPrompt) => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["apps"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt,
+      buildTools: {
+        apps: () => ({
+          createApp: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.systemPromptSections).toEqual([APPS_SYSTEM_PROMPT])
+    expect(capabilities.runtimeTools).toHaveProperty("createApp")
+    expect(capabilities.apps).toMatchObject({
+      permitted: true,
+      enabled: true,
+    })
+  })
+
+  it.each([
+    "Create a form for onboarding new users.",
+    "Build a wizard for project setup.",
+  ])("reports visible denial when app intent is not permitted for %s", (latestUserPrompt) => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: [],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt,
+      buildTools: {
+        apps: () => ({
+          createApp: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.runtimeTools).toEqual({})
+    expect(capabilities.apps).toMatchObject({
+      permitted: false,
+      requested: true,
+      enabled: false,
+      permissionDeniedError: {
+        code: "app_permission_denied",
+        message: "This agent is not permitted to create Apps.",
+      },
+    })
+  })
+
   it("reports visible denial when app intent is not permitted", () => {
     const capabilities = resolveNativeRuntimeCapabilities({
       permittedNativeToolIds: [],

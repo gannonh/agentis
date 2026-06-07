@@ -616,5 +616,14 @@ describe("artifact routes", () => {
       artifactId: created.output.artifactId,
       state: { count: 2 },
     })
+
+    const reloaded = await app.request(
+      `/api/artifacts/${created.output.artifactId}/app-state`
+    )
+    expect(reloaded.status).toBe(200)
+    expect(await reloaded.json()).toMatchObject({
+      artifactId: created.output.artifactId,
+      state: { count: 2 },
+    })
   })
 })

@@ -24,11 +24,8 @@ export class LocalAppBundleStorage {
   }
 
   read(key: string): AppBundleInput | null {
-    try {
-      return parseStoredAppBundle(this.storage.read(key).toString("utf8"))
-    } catch {
-      return null
-    }
+    const content = this.storage.read(key).toString("utf8")
+    return parseStoredAppBundle(content)
   }
 
   delete(key: string) {

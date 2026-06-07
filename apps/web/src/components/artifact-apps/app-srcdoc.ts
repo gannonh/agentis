@@ -14,6 +14,7 @@ const APP_BRIDGE_BOOTSTRAP = String.raw`(() => {
     });
   }
   window.addEventListener("message", (event) => {
+    if (event.source !== parent) return;
     const data = event.data;
     if (!data || data.channel !== "agentis-app-bridge-response") return;
     const entry = pending.get(data.requestId);
@@ -34,7 +35,9 @@ const APP_BRIDGE_BOOTSTRAP = String.raw`(() => {
 })();`
 
 const APP_RUNTIME_CSP =
-  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data: blob:; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';"
+  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data: blob:; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'; navigate-to 'none';"
+
+const BUNDLE_CSS_MARKER = "data-agentis-app-css"
 
 const CSP_META = `<meta http-equiv="Content-Security-Policy" content="${APP_RUNTIME_CSP}">`
 
@@ -75,7 +78,7 @@ function injectHeadContent(html: string, headContent: string): string {
 }
 
 function injectCssBlock(html: string, cssBlock: string): string {
-  if (!cssBlock || /<style[\s>]/i.test(html)) return html
+  if (!cssBlock || new RegExp(BUNDLE_CSS_MARKER).test(html)) return html
   return injectHeadContent(html, cssBlock)
 }
 
@@ -88,7 +91,9 @@ export function assembleAppSrcDoc(input: {
   artifactId: string
   version: number
 }): string {
-  const cssBlock = input.bundle.css ? `<style>${input.bundle.css}</style>` : ""
+  const cssBlock = input.bundle.css
+    ? `<style ${BUNDLE_CSS_MARKER}>${input.bundle.css}</style>`
+    : ""
   const bootstrap = `<script>${APP_BRIDGE_BOOTSTRAP}</script>`
   const userScript = `<script>${input.bundle.js}</script>`
 

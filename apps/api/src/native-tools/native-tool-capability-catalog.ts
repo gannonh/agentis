@@ -22,7 +22,7 @@ export const APPS_SYSTEM_PROMPT =
 
 export function looksLikeAppIntent(prompt: string): boolean {
   const appTerm =
-    /\b(interactive app|mini-app|mini app|calculator|tracker|form wizard|interactive tool|mutable state app|todo list app|quiz app|note-taking app)\b/i
+    /\b(interactive app|mini-app|mini app|calculator|tracker|form|wizard|form wizard|interactive tool|mutable state app|todo list app|quiz app|note-taking app)\b/i
   const creationOrEditAction =
     /\b(create|make|build|generate|draft|design|edit|update|revise|modify)\b/i
   return appTerm.test(prompt) && creationOrEditAction.test(prompt)
