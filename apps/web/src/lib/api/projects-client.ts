@@ -405,6 +405,29 @@ export function artifactWorkspacePath(artifactId: string): string {
   return `/artifacts/${artifactId}`
 }
 
+export function artifactLaunchPath(
+  artifact: Pick<Artifact, "id" | "type">
+): string | null {
+  if (artifact.type === "document") {
+    return documentWorkspacePath(artifact.id)
+  }
+  if (
+    artifact.type === "webpage" ||
+    artifact.type === "slides" ||
+    artifact.type === "app"
+  ) {
+    return artifactWorkspacePath(artifact.id)
+  }
+  return null
+}
+
+export function artifactLaunchLabel(type: Artifact["type"]): string | null {
+  if (type === "document") return "Open document"
+  if (type === "app") return "Open app"
+  if (type === "webpage" || type === "slides") return "Open artifact"
+  return null
+}
+
 export function artifactDownloadUrl(
   artifactId: string,
   options: { version?: number | null } = {}

@@ -4,30 +4,14 @@ import type { ArtifactPublic as Artifact } from "@workspace/shared"
 import { Button } from "@workspace/ui/components/button"
 import { formatRelativeTime } from "@/fixtures"
 import {
-  artifactWorkspacePath,
-  documentWorkspacePath,
+  artifactLaunchLabel,
+  artifactLaunchPath,
   listArtifacts,
 } from "@/lib/api/projects-client"
 
 type ThreadDurableArtifactsProps = {
   threadId: string
   refreshKey?: string
-}
-
-function artifactPath(artifact: Artifact) {
-  if (artifact.type === "document") return documentWorkspacePath(artifact.id)
-  if (artifact.type === "webpage" || artifact.type === "slides") {
-    return artifactWorkspacePath(artifact.id)
-  }
-  return null
-}
-
-function artifactActionLabel(artifact: Artifact) {
-  if (artifact.type === "document") return "Open document"
-  if (artifact.type === "webpage" || artifact.type === "slides") {
-    return "Open artifact"
-  }
-  return null
 }
 
 function artifactMetadata(artifact: Artifact) {
@@ -105,31 +89,36 @@ export function ThreadDurableArtifacts({
       ) : null}
       {sortedArtifacts.length ? (
         <ul className="flex flex-col gap-2">
-          {sortedArtifacts.map((artifact) => (
-            <li
-              key={artifact.id}
-              className="rounded-lg border border-border px-3 py-2 text-xs"
-            >
-              <p className="font-medium leading-snug">{artifact.title}</p>
-              <p className="mt-1 text-muted-foreground">
-                {artifactMetadata(artifact)}
-              </p>
-              <p className="mt-1 text-muted-foreground">
-                Updated {formatRelativeTime(artifact.updatedAt)}
-              </p>
-              {artifactPath(artifact) && artifactActionLabel(artifact) ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-2"
-                  nativeButton={false}
-                  render={<Link to={artifactPath(artifact)!} />}
-                >
-                  {artifactActionLabel(artifact)}
-                </Button>
-              ) : null}
-            </li>
-          ))}
+          {sortedArtifacts.map((artifact) => {
+            const launchPath = artifactLaunchPath(artifact)
+            const launchLabel = artifactLaunchLabel(artifact.type)
+
+            return (
+              <li
+                key={artifact.id}
+                className="rounded-lg border border-border px-3 py-2 text-xs"
+              >
+                <p className="font-medium leading-snug">{artifact.title}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {artifactMetadata(artifact)}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  Updated {formatRelativeTime(artifact.updatedAt)}
+                </p>
+                {launchPath && launchLabel ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    nativeButton={false}
+                    render={<Link to={launchPath} />}
+                  >
+                    {launchLabel}
+                  </Button>
+                ) : null}
+              </li>
+            )
+          })}
         </ul>
       ) : null}
     </section>

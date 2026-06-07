@@ -17,6 +17,7 @@ import {
   File02Icon,
   Globe02Icon,
   Image02Icon,
+  LayoutGridIcon,
   Link03Icon,
   Mail01Icon,
   MapsIcon,
@@ -33,6 +34,7 @@ import {
   ZapIcon,
 } from "@hugeicons/core-free-icons"
 import {
+  APPS_NATIVE_TOOL_CAPABILITY,
   DOCUMENTS_NATIVE_TOOL_CAPABILITY,
   STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY,
   WEB_SEARCH_NATIVE_TOOL_CAPABILITY,
@@ -49,6 +51,7 @@ type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
 const WEB_SEARCH_CAPABILITY = WEB_SEARCH_NATIVE_TOOL_CAPABILITY
 const DOCUMENTS_CAPABILITY = DOCUMENTS_NATIVE_TOOL_CAPABILITY
 const STATIC_ARTIFACTS_CAPABILITY = STATIC_ARTIFACTS_NATIVE_TOOL_CAPABILITY
+const APPS_CAPABILITY = APPS_NATIVE_TOOL_CAPABILITY
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -687,6 +690,12 @@ const TOOL_GROUPS: Array<{ label: string; items: ToolGroupItem[] }> = [
         description: STATIC_ARTIFACTS_CAPABILITY.description,
         icon: Globe02Icon,
         nativeToolId: STATIC_ARTIFACTS_CAPABILITY.id,
+      },
+      {
+        title: APPS_CAPABILITY.label,
+        description: APPS_CAPABILITY.description,
+        icon: LayoutGridIcon,
+        nativeToolId: APPS_CAPABILITY.id,
       },
       {
         title: "Slides",
