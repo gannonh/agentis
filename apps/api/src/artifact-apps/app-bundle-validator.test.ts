@@ -43,4 +43,63 @@ describe("validateAppBundle", () => {
     if (result.ok) return
     expect(result.code).toBe("app_invalid_bundle")
   })
+
+  it("rejects script tag terminators in bundle source", () => {
+    const result = validateAppBundle({
+      html: "<main></main>",
+      js: "const x = '</script>'",
+      maxBytes: 10_000,
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe("app_invalid_bundle")
+  })
+
+  it("allows common javascript handler variable names", () => {
+    const result = validateAppBundle({
+      html: "<main></main>",
+      js: "const onChange = () => {}; const onClick = () => {};",
+      maxBytes: 10_000,
+    })
+    expect(result).toEqual({ ok: true, warnings: [] })
+  })
+
+  it("rejects protocol-relative fetch URLs", () => {
+    const result = validateAppBundle({
+      html: "<main></main>",
+      js: "fetch('//example.com/data')",
+      maxBytes: 10_000,
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe("app_invalid_bundle")
+  })
+
+  it("rejects custom content security policy meta tags", () => {
+    expect(
+      validateAppBundle({
+        html: '<html><head><meta http-equiv="Content-Security-Policy" content="connect-src *"></head></html>',
+        js: "console.log('ready')",
+        maxBytes: 10_000,
+      }).ok
+    ).toBe(false)
+    expect(
+      validateAppBundle({
+        html: '<html><head><meta content="connect-src *" http-equiv="Content-Security-Policy"></head></html>',
+        js: "console.log('ready')",
+        maxBytes: 10_000,
+      }).ok
+    ).toBe(false)
+  })
+
+  it("rejects sendBeacon usage", () => {
+    const result = validateAppBundle({
+      html: "<main></main>",
+      js: "navigator.sendBeacon('https://example.com', 'x')",
+      maxBytes: 10_000,
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe("app_invalid_bundle")
+  })
 })

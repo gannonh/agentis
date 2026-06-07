@@ -34,19 +34,18 @@ export class AppStateRepository {
   upsert(artifactId: string, state: Record<string, unknown>): StoredAppState {
     const updatedAt = nowIso()
     const stateJson = JSON.stringify(state)
-    const existing = this.get(artifactId)
-    if (existing) {
-      this.db
-        .update(appState)
-        .set({ stateJson, updatedAt })
-        .where(eq(appState.artifactId, artifactId))
-        .run()
-    } else {
-      this.db
-        .insert(appState)
-        .values({ artifactId, stateJson, updatedAt })
-        .run()
-    }
+    this.db
+      .insert(appState)
+      .values({ artifactId, stateJson, updatedAt })
+      .onConflictDoUpdate({
+        target: appState.artifactId,
+        set: { stateJson, updatedAt },
+      })
+      .run()
     return { artifactId, state, updatedAt }
+  }
+
+  delete(artifactId: string): void {
+    this.db.delete(appState).where(eq(appState.artifactId, artifactId)).run()
   }
 }

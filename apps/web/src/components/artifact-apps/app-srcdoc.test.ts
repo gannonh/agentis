@@ -14,8 +14,38 @@ describe("app srcdoc assembly", () => {
       version: 1,
     })
     expect(srcDoc).toContain("data-agentis-app=\"artifact_1\"")
+    expect(srcDoc).toContain("Content-Security-Policy")
+    expect(srcDoc).toContain("connect-src 'none'")
     expect(srcDoc).toContain("window.App")
     expect(srcDoc).toContain(bundle.js)
+  })
+
+  it("injects css and csp when html has no head element", () => {
+    const srcDoc = assembleAppSrcDoc({
+      bundle: {
+        html: "<html><body><main></main></body></html>",
+        css: "main { color: red; }",
+        js: "console.log('ready')",
+      },
+      artifactId: "artifact_2",
+      version: 1,
+    })
+    expect(srcDoc).toContain("<head>")
+    expect(srcDoc).toContain("Content-Security-Policy")
+    expect(srcDoc).toContain("main { color: red; }")
+  })
+
+  it("does not treat header tags as head tags when injecting csp", () => {
+    const srcDoc = assembleAppSrcDoc({
+      bundle: {
+        html: "<html><body><header>Title</header><main></main></body></html>",
+        js: "console.log('ready')",
+      },
+      artifactId: "artifact_3",
+      version: 1,
+    })
+    expect(srcDoc).toMatch(/<head>\s*<meta http-equiv="Content-Security-Policy"/i)
+    expect(srcDoc).not.toMatch(/<header>\s*<meta http-equiv="Content-Security-Policy"/i)
   })
 
   it("parses stored bundle JSON", () => {

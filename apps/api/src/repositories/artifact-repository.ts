@@ -36,6 +36,7 @@ function documentTypeForArtifact(type: ArtifactType): string {
 
 function documentTypeFiltersForArtifact(type: ArtifactType): string[] {
   if (type === "document") return ["document", "markdown"]
+  if (type === "app") return ["app", "hyperapp"]
   return [type]
 }
 
@@ -328,6 +329,27 @@ export class ArtifactRepository {
       .run()
 
     return this.getById(input.artifactId)
+  }
+
+  deleteById(artifactId: string): boolean {
+    let deleted = false
+
+    this.db.transaction((tx) => {
+      const existing = tx
+        .select({ id: documents.id })
+        .from(documents)
+        .where(eq(documents.id, artifactId))
+        .get()
+      if (!existing) return
+
+      tx.delete(documentVersions)
+        .where(eq(documentVersions.documentId, artifactId))
+        .run()
+      tx.delete(documents).where(eq(documents.id, artifactId)).run()
+      deleted = true
+    })
+
+    return deleted
   }
 
   list(filters: ArtifactListFilters = {}): Artifact[] {

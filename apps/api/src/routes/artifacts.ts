@@ -172,16 +172,21 @@ export function createArtifactRoutes(repos: Repositories, config: AppConfig) {
     )
   })
 
+  // HTTP app-state routes follow the same local API trust model as artifact detail.
+  // Agent tools enforce scope through server-side runContext.
   app.get("/:artifactId/app-state", (c) => {
-    const artifact = repos.artifacts.getById(c.req.param("artifactId"))
-    if (!artifact || artifact.type !== "app") {
-      return c.json(artifactNotFoundResponse(), 404)
+    const artifactId = c.req.param("artifactId")
+    const result = appService.getState(artifactId)
+    if (!result.ok) {
+      return c.json(
+        { error: result.message, code: result.code },
+        (result.status ?? 404) as 404
+      )
     }
-    const stored = repos.appState.get(artifact.id)
     return c.json({
-      artifactId: artifact.id,
-      state: stored?.state ?? null,
-      updatedAt: stored?.updatedAt ?? null,
+      artifactId,
+      state: result.output.state,
+      updatedAt: result.output.updatedAt,
     })
   })
 

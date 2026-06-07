@@ -33,6 +33,11 @@ const APP_BRIDGE_BOOTSTRAP = String.raw`(() => {
   };
 })();`
 
+const APP_RUNTIME_CSP =
+  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data: blob:; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';"
+
+const CSP_META = `<meta http-equiv="Content-Security-Policy" content="${APP_RUNTIME_CSP}">`
+
 type AppBundle = {
   html: string
   css?: string
@@ -56,6 +61,28 @@ function parseBundle(content: string | null): AppBundle | null {
   }
 }
 
+function injectHeadContent(html: string, headContent: string): string {
+  if (/<head(?:\s|>)/i.test(html)) {
+    return html.replace(/<head(?:\s[^>]*)?>/i, (match) => `${match}${headContent}`)
+  }
+  if (/<html[^>]*>/i.test(html)) {
+    return html.replace(
+      /<html[^>]*>/i,
+      (match) => `${match}<head>${headContent}</head>`
+    )
+  }
+  return html
+}
+
+function injectCssBlock(html: string, cssBlock: string): string {
+  if (!cssBlock || /<style[\s>]/i.test(html)) return html
+  return injectHeadContent(html, cssBlock)
+}
+
+function ensureRuntimeCsp(html: string): string {
+  return injectHeadContent(html, CSP_META)
+}
+
 export function assembleAppSrcDoc(input: {
   bundle: AppBundle
   artifactId: string
@@ -66,10 +93,8 @@ export function assembleAppSrcDoc(input: {
   const userScript = `<script>${input.bundle.js}</script>`
 
   if (/<html[\s>]/i.test(input.bundle.html)) {
-    let html = input.bundle.html
-    if (cssBlock && !/<style[\s>]/i.test(html)) {
-      html = html.replace(/<head[^>]*>/i, (match) => `${match}${cssBlock}`)
-    }
+    let html = ensureRuntimeCsp(input.bundle.html)
+    html = injectCssBlock(html, cssBlock)
     if (/<\/body>/i.test(html)) {
       return html.replace(/<\/body>/i, `${bootstrap}${userScript}</body>`)
     }
@@ -81,6 +106,7 @@ export function assembleAppSrcDoc(input: {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${CSP_META}
 ${cssBlock}
 </head>
 <body data-agentis-app="${input.artifactId}" data-agentis-app-version="${input.version}">

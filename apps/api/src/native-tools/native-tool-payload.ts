@@ -547,12 +547,39 @@ function summarizeStaticArtifactOutput(output: unknown): unknown {
   }
 }
 
+function summarizeAppItem(item: unknown): unknown {
+  if (!isObject(item)) return null
+  return {
+    artifactId:
+      typeof item.artifactId === "string"
+        ? truncateText(item.artifactId, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+        : undefined,
+    title:
+      typeof item.title === "string"
+        ? truncateText(item.title, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+        : undefined,
+    description:
+      typeof item.description === "string"
+        ? truncateText(item.description, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+        : undefined,
+    version: typeof item.version === "number" ? item.version : undefined,
+    viewPath:
+      typeof item.viewPath === "string"
+        ? truncateText(item.viewPath, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+        : undefined,
+    updatedAt:
+      typeof item.updatedAt === "string"
+        ? truncateText(item.updatedAt, STATIC_ARTIFACT_TEXT_MAX_CHARS)
+        : undefined,
+  }
+}
+
 function summarizeAppOutput(output: unknown): unknown {
   if (!isObject(output)) return output
   const items = Array.isArray(output.items)
     ? output.items
         .slice(0, STATIC_ARTIFACT_ITEMS_LIMIT)
-        .map(summarizeStaticArtifactItem)
+        .map(summarizeAppItem)
         .filter(Boolean)
     : undefined
   const itemsTruncatedByPayload =

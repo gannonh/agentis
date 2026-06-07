@@ -14,10 +14,6 @@ const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
     message: "External stylesheets are not allowed in App bundles.",
   },
   {
-    pattern: /\bon[a-z]+\s*=/i,
-    message: "Inline event handler attributes are not allowed in App bundles.",
-  },
-  {
     pattern: /<iframe\b/i,
     message: "Iframe creation is not allowed in App bundles.",
   },
@@ -30,8 +26,24 @@ const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
     message: "External network access is not allowed in App bundles.",
   },
   {
+    pattern: /\bfetch\s*\(\s*["'`]\/\//i,
+    message: "External network access is not allowed in App bundles.",
+  },
+  {
+    pattern: /\bnavigator\.sendBeacon\b/i,
+    message: "External network access is not allowed in App bundles.",
+  },
+  {
     pattern: /\bXMLHttpRequest\b/i,
     message: "External network access is not allowed in App bundles.",
+  },
+  {
+    pattern: /<\/script\b/i,
+    message: "Script tag terminators are not allowed in App bundles.",
+  },
+  {
+    pattern: /<\/style\b/i,
+    message: "Style tag terminators are not allowed in App bundles.",
   },
 ]
 
@@ -42,6 +54,17 @@ function error(
 ): AppBundleValidationResult {
   return { ok: false, code, message, status }
 }
+
+const HTML_FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
+  {
+    pattern: /\bon[a-z]+\s*=/i,
+    message: "Inline event handler attributes are not allowed in App bundles.",
+  },
+  {
+    pattern: /<meta\b(?=[^>]*http-equiv\s*=\s*["']?content-security-policy)[^>]*>/i,
+    message: "Custom Content-Security-Policy meta tags are not allowed in App bundles.",
+  },
+]
 
 function combinedSource(bundle: AppBundleInput): string {
   return [bundle.html, bundle.css ?? "", bundle.js].join("\n")
@@ -66,6 +89,12 @@ export function validateAppBundle(input: {
       "App bundle exceeds the configured size limit.",
       413
     )
+  }
+
+  for (const rule of HTML_FORBIDDEN_PATTERNS) {
+    if (rule.pattern.test(bundle.html)) {
+      return error("app_invalid_bundle", rule.message)
+    }
   }
 
   for (const rule of FORBIDDEN_PATTERNS) {
@@ -100,75 +129,4 @@ export function parseStoredAppBundle(content: string): AppBundleInput | null {
   } catch {
     return null
   }
-}
-
-export const APP_BRIDGE_BOOTSTRAP = String.raw`(() => {
-  const pending = new Map();
-  let requestCounter = 0;
-  function request(method, payload) {
-    const requestId = "app-" + (++requestCounter);
-    return new Promise((resolve, reject) => {
-      pending.set(requestId, { resolve, reject });
-      parent.postMessage({ channel: "agentis-app-bridge", requestId, method, payload }, "*");
-      setTimeout(() => {
-        if (!pending.has(requestId)) return;
-        pending.delete(requestId);
-        reject(new Error("App bridge request timed out"));
-      }, 10000);
-    });
-  }
-  window.addEventListener("message", (event) => {
-    const data = event.data;
-    if (!data || data.channel !== "agentis-app-bridge-response") return;
-    const entry = pending.get(data.requestId);
-    if (!entry) return;
-    pending.delete(data.requestId);
-    if (data.error) entry.reject(new Error(String(data.error)));
-    else entry.resolve(data.result);
-  });
-  window.App = {
-    state: {
-      get: () => request("state.get"),
-      set: (value) => request("state.set", { value }),
-    },
-    runtime: {
-      info: () => request("runtime.info"),
-    },
-  };
-})();`
-
-export function assembleAppSrcDoc(input: {
-  bundle: AppBundleInput
-  runtimeInfo: { artifactId: string; version: number }
-}): string {
-  const cssBlock = input.bundle.css
-    ? `<style>${input.bundle.css}</style>`
-    : ""
-  const bootstrap = `<script>${APP_BRIDGE_BOOTSTRAP}</script>`
-  const userScript = `<script>${input.bundle.js}</script>`
-
-  if (/<html[\s>]/i.test(input.bundle.html)) {
-    let html = input.bundle.html
-    if (cssBlock && !/<style[\s>]/i.test(html)) {
-      html = html.replace(/<head[^>]*>/i, (match: string) => `${match}${cssBlock}`)
-    }
-    if (/<\/body>/i.test(html)) {
-      return html.replace(/<\/body>/i, `${bootstrap}${userScript}</body>`)
-    }
-    return `${html}${bootstrap}${userScript}`
-  }
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-${cssBlock}
-</head>
-<body data-agentis-app="${input.runtimeInfo.artifactId}" data-agentis-app-version="${input.runtimeInfo.version}">
-${input.bundle.html}
-${bootstrap}
-${userScript}
-</body>
-</html>`
 }

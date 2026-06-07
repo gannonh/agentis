@@ -53,7 +53,10 @@ describe("AppService", () => {
       contentFormat: "json",
       currentVersion: 1,
     })
-    expect(service.getState(created.output.artifactId)).toEqual({ count: 0 })
+    expect(service.getState(created.output.artifactId)).toMatchObject({
+      ok: true,
+      output: { state: { count: 0 } },
+    })
 
     const storage = new LocalAppBundleStorage(ctx.config)
     expect(storage.read(artifact!.storageKey)).toMatchObject({

@@ -204,7 +204,13 @@ export class AppService {
         createdByThreadId: provenance.provenance.threadId,
       })
       if (input.initialState) {
-        this.repos.appState.upsert(artifactId, input.initialState)
+        try {
+          this.repos.appState.upsert(artifactId, input.initialState)
+        } catch (stateCause) {
+          this.repos.artifacts.deleteById(artifactId)
+          this.bundleStorage.delete(storageKey)
+          throw stateCause
+        }
       }
       return {
         ok: true,
@@ -219,6 +225,7 @@ export class AppService {
       }
     } catch (cause) {
       this.bundleStorage.delete(storageKey)
+      this.repos.artifacts.deleteById(artifactId)
       console.error("Failed to persist app artifact", { cause, artifactId })
       return appError(
         "app_storage_failed",
@@ -350,20 +357,53 @@ export class AppService {
   getBundle(artifact: Artifact, version?: number): AppBundleInput | null {
     if (artifact.type !== "app") return null
     const resolvedVersion = version ?? artifact.currentVersion ?? 1
-    const versionRow = this.repos.artifacts.getVersion(artifact.id, resolvedVersion)
-    const storageKey = versionRow?.contentStorageKey ?? artifact.storageKey
-    return this.bundleStorage.read(storageKey)
+    if (version !== undefined) {
+      const versionRow = this.repos.artifacts.getVersion(artifact.id, resolvedVersion)
+      const storageKey =
+        versionRow?.contentStorageKey ??
+        (resolvedVersion === (artifact.currentVersion ?? 1)
+          ? artifact.storageKey
+          : undefined)
+      if (!storageKey) return null
+      return this.bundleStorage.read(storageKey)
+    }
+    if (!artifact.storageKey) return null
+    return this.bundleStorage.read(artifact.storageKey)
   }
 
-  getState(artifactId: string): Record<string, unknown> | null {
-    return this.repos.appState.get(artifactId)?.state ?? null
+  getState(
+    artifactId: string,
+    runContext?: AppRunContext
+  ): AppResult<{ state: Record<string, unknown> | null; updatedAt: string | null }> {
+    const artifact = this.repos.artifacts.getById(artifactId)
+    if (!artifact || artifact.type !== "app") {
+      return appError("app_not_found", "App artifact not found.", 404)
+    }
+    if (runContext && !this.artifactService.canAccess(artifact, runContext)) {
+      return appError("app_not_found", "App artifact not found.", 404)
+    }
+    const stored = this.repos.appState.get(artifactId)
+    return {
+      ok: true,
+      output: {
+        state: stored?.state ?? null,
+        updatedAt: stored?.updatedAt ?? null,
+      },
+    }
   }
 
-  setState(artifactId: string, state: Record<string, unknown>): AppResult<{ updatedAt: string }> {
+  setState(
+    artifactId: string,
+    state: Record<string, unknown>,
+    runContext?: AppRunContext
+  ): AppResult<{ updatedAt: string }> {
     const stateError = this.validateState(state)
     if (stateError) return stateError
     const artifact = this.repos.artifacts.getById(artifactId)
     if (!artifact || artifact.type !== "app") {
+      return appError("app_not_found", "App artifact not found.", 404)
+    }
+    if (runContext && !this.artifactService.canAccess(artifact, runContext)) {
       return appError("app_not_found", "App artifact not found.", 404)
     }
     const stored = this.repos.appState.upsert(artifactId, state)

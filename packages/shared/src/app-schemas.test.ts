@@ -42,7 +42,7 @@ describe("app schemas", () => {
     expect(parsed.success).toBe(true)
   })
 
-  it("validates editApp output with previousVersion", () => {
+  it("validates editApp input without previousVersion", () => {
     const parsed = editAppInputSchema.safeParse({
       artifactId: "artifact_1",
       bundle: {
