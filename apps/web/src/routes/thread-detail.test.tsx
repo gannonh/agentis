@@ -148,6 +148,23 @@ vi.mock("@/lib/api/agents-client", () => ({
 vi.mock("@/lib/api/projects-client", () => ({
   artifactWorkspacePath: (id: string) => `/artifacts/${id}`,
   documentWorkspacePath: (id: string) => `/documents/${id}`,
+  artifactLaunchPath: (artifact: { id: string; type: string }) => {
+    if (artifact.type === "document") return `/documents/${artifact.id}`
+    if (
+      artifact.type === "webpage" ||
+      artifact.type === "slides" ||
+      artifact.type === "app"
+    ) {
+      return `/artifacts/${artifact.id}`
+    }
+    return null
+  },
+  artifactLaunchLabel: (type: string) => {
+    if (type === "document") return "Open document"
+    if (type === "app") return "Open app"
+    if (type === "webpage" || type === "slides") return "Open artifact"
+    return null
+  },
   listArtifacts: vi.fn().mockResolvedValue([]),
 }))
 
