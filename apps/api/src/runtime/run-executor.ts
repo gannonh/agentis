@@ -982,18 +982,6 @@ export class RunExecutor {
       },
       onAbort: async () => {
         clearAbortController(runId)
-        if (!this.config.mockRuntime) {
-          const finalized = finalizeResearchBriefIfNeeded({
-            repos: this.repos,
-            documentService: this.documentService,
-            thread,
-            runId,
-            latestUserPrompt,
-            assistantParts,
-            documentsPermitted: nativeRuntimeCapabilities.documents.permitted,
-          })
-          assistantParts = finalized.assistantParts
-        }
         const partialText = getTextFromParts(assistantParts)
         assistantParts = setTextPart(assistantParts, partialText)
         this.persistAbortedRun(runId, run.threadId, {

@@ -171,6 +171,33 @@ describe("api routes", () => {
     expect(body.run.agentId).toBe(agent.id)
   })
 
+  it("uses the agent configuration model when create omits model", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Claude Agent",
+      systemPrompt: "Answer with citations.",
+      model: "anthropic/claude-sonnet-4.6",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Summarize workspace status",
+        agentId: agent.id,
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      thread: { model: string }
+      run: { model: string }
+    }
+    expect(body.thread.model).toBe("anthropic/claude-sonnet-4.6")
+    expect(body.run.model).toBe("anthropic/claude-sonnet-4.6")
+  })
+
   it("allows a configured web origin with a trailing slash", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, {

@@ -107,7 +107,7 @@ export function createThreadRoutes(
         title: summarizeTitle(body.prompt),
         prompt: body.prompt,
         model: resolveSelectableGatewayModel(
-          body.model ?? version.model,
+          body.model !== undefined ? body.model : version.model,
           config.aiGatewayProvider
         ),
         mode,

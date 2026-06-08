@@ -2,8 +2,10 @@ import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router"
 import {
   resolveSelectableGatewayModel,
+  type AgentListItem,
   type ThreadMode,
 } from "@workspace/shared"
+import { DEFAULT_AGENT_PICKER_ID } from "@/components/new-thread/agent-picker-options"
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { createThread } from "@/lib/api/client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
@@ -11,11 +13,13 @@ import { useProjects } from "@/hooks/use-projects"
 
 type ThreadComposerProps = {
   selectedAgentId: string
+  agents?: AgentListItem[]
   promptDraft?: { id: string; text: string; mode?: ThreadMode }
 }
 
 export function ThreadComposer({
   selectedAgentId,
+  agents = [],
   promptDraft,
 }: ThreadComposerProps) {
   const navigate = useNavigate()
@@ -28,16 +32,34 @@ export function ThreadComposer({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState<string | undefined>()
+  const [modelExplicitlyChosen, setModelExplicitlyChosen] = useState(false)
+  const isGenericAgent = selectedAgentId === DEFAULT_AGENT_PICKER_ID
+  const selectedAgent = agents.find((agent) => agent.id === selectedAgentId)
 
   useEffect(() => {
-    if (!health.aiGatewayProvider) return
-    setSelectedModel((current) =>
+    if (!health.aiGatewayProvider || modelExplicitlyChosen) return
+    const provider = health.aiGatewayProvider
+    if (!isGenericAgent && selectedAgent?.model) {
+      setSelectedModel(
+        resolveSelectableGatewayModel(selectedAgent.model, provider)
+      )
+      return
+    }
+    setSelectedModel(
       resolveSelectableGatewayModel(
-        current ?? health.defaultModel ?? health.model,
-        health.aiGatewayProvider!
+        health.defaultModel ?? health.model,
+        provider
       )
     )
-  }, [health.aiGatewayProvider, health.defaultModel, health.model])
+  }, [
+    health.aiGatewayProvider,
+    health.defaultModel,
+    health.model,
+    isGenericAgent,
+    modelExplicitlyChosen,
+    selectedAgent?.model,
+    selectedAgentId,
+  ])
 
   useEffect(() => {
     if (!promptDraft) return
@@ -45,6 +67,10 @@ export function ThreadComposer({
       setMode(promptDraft.mode)
     }
   }, [promptDraft])
+
+  useEffect(() => {
+    setModelExplicitlyChosen(false)
+  }, [selectedAgentId])
 
   useEffect(() => {
     const fromQuery = searchParams.get("projectId")
@@ -58,10 +84,13 @@ export function ThreadComposer({
     setSubmitting(true)
     setError(null)
     try {
+      const shouldSendModel = isGenericAgent || modelExplicitlyChosen
       const { thread, run } = await createThread({
         prompt: prompt.trim(),
         mode,
-        model: selectedModel ?? health.defaultModel ?? health.model,
+        ...(shouldSendModel
+          ? { model: selectedModel ?? health.defaultModel ?? health.model }
+          : {}),
         projectId: projectId || undefined,
         agentId: selectedAgentId,
       })
@@ -111,7 +140,10 @@ export function ThreadComposer({
         onExecuteBehaviorChange={setExecuteBehavior}
         submitting={submitting}
         selectedModel={selectedModel}
-        onModelChange={setSelectedModel}
+        onModelChange={(modelId) => {
+          setModelExplicitlyChosen(true)
+          setSelectedModel(modelId)
+        }}
         promptDraft={promptDraft}
       />
     </div>

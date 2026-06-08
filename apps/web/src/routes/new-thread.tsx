@@ -44,6 +44,7 @@ export function NewThreadPage() {
 
         <ThreadComposer
           selectedAgentId={effectiveSelectedAgentId}
+          agents={agents}
           promptDraft={promptDraft}
         />
 
