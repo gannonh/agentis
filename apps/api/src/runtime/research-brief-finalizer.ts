@@ -89,10 +89,15 @@ export function runHasResearchBriefDocument(
     .some((document) => document.runId === runId)
 }
 
-function hasCreateDocumentResult(parts: MessagePart[]): boolean {
-  return parts.some(
-    (part) => part.type === "tool-result" && part.toolName === "createDocument"
-  )
+function hasSuccessfulCreateDocumentResult(parts: MessagePart[]): boolean {
+  return parts.some((part) => {
+    if (part.type !== "tool-result" || part.toolName !== "createDocument") {
+      return false
+    }
+    const output = part.output
+    if (!output || typeof output !== "object") return false
+    return typeof (output as Record<string, unknown>).documentId === "string"
+  })
 }
 
 export function finalizeResearchBriefIfNeeded(input: {
@@ -102,11 +107,15 @@ export function finalizeResearchBriefIfNeeded(input: {
   runId: string
   latestUserPrompt: string
   assistantParts: MessagePart[]
+  documentsPermitted?: boolean
 }): { assistantParts: MessagePart[]; created: boolean } {
+  if (input.documentsPermitted === false) {
+    return { assistantParts: input.assistantParts, created: false }
+  }
   if (!looksLikeResearchBriefIntent(input.latestUserPrompt)) {
     return { assistantParts: input.assistantParts, created: false }
   }
-  if (hasCreateDocumentResult(input.assistantParts)) {
+  if (hasSuccessfulCreateDocumentResult(input.assistantParts)) {
     return { assistantParts: input.assistantParts, created: false }
   }
   if (runHasResearchBriefDocument(input.repos, input.runId, input.thread.id)) {
@@ -135,7 +144,12 @@ export function finalizeResearchBriefIfNeeded(input: {
   })
 
   if (!generated.ok) {
-    return { assistantParts: input.assistantParts, created: false }
+    const toolParts = input.assistantParts.filter((part) => part.type !== "text")
+    const failureText = `I searched the web but could not save the research brief to the Library: ${generated.message}`
+    return {
+      assistantParts: [{ type: "text", text: failureText }, ...toolParts],
+      created: false,
+    }
   }
 
   input.repos.steps.create({

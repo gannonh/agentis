@@ -110,6 +110,36 @@ describe("api routes", () => {
     expect(detailBody.thread.model).toBe("anthropic/claude-sonnet-4.6")
   })
 
+  it("clamps provider-incompatible follow-up models to the catalog default", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      aiGatewayProvider: "vercel",
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize workspace status" }),
+    })
+    const { thread } = (await created.json()) as { thread: { id: string } }
+
+    const followUp = await app.request(`/api/threads/${thread.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Continue with more detail",
+        model: "@cf/moonshotai/kimi-k2.6",
+      }),
+    })
+
+    expect(followUp.status).toBe(201)
+    const body = (await followUp.json()) as {
+      run: { model: string }
+    }
+    expect(body.run.model).toBe("openai/gpt-5.4-mini")
+  })
+
   it("creates a selected-agent thread with the agent workspace", async () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({

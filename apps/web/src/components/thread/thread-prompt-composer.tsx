@@ -100,7 +100,8 @@ function PromptInputDraftSync({
   useEffect(() => {
     if (!promptDraft) return
     controller.textInput.setInput(promptDraft.text)
-  }, [controller, promptDraft])
+    // Sync when quick-action draft changes, not when the prompt controller updates per keystroke.
+  }, [promptDraft])
 
   return null
 }
