@@ -260,6 +260,55 @@ describe("run executor composio bridge", () => {
     expect(messageText(assistant?.parts ?? [])).toContain("https://example.com")
   }, 10_000)
 
+  it("persists research brief documents in mock runtime", async () => {
+    const { app, context } = createMockRuntimeApp()
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt:
+          "Research AI agent adoption trends and create a markdown research brief with citations.",
+      }),
+    })
+    const { run, thread } = (await created.json()) as {
+      run: { id: string }
+      thread: { id: string }
+    }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    const documents = context.repos.documents.list({ threadId: thread.id })
+    expect(documents).toEqual([
+      expect.objectContaining({
+        title: expect.stringMatching(/Research brief/i),
+        type: "document",
+        runId: run.id,
+      }),
+    ])
+    expect(context.repos.steps.listByRunId(run.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Native: searchWeb",
+          type: "tool-result",
+          status: "completed",
+        }),
+        expect.objectContaining({
+          title: expect.stringMatching(/^Document created:/),
+          type: "tool-result",
+          status: "completed",
+        }),
+      ])
+    )
+    const assistant = context.repos.messages
+      .listByThreadId(thread.id)
+      .find((message) => message.role === "assistant")
+    expect(messageText(assistant?.parts ?? [])).toContain("Library")
+  }, 10_000)
+
   it("persists static artifact evidence in mock runtime", async () => {
     const { app, context } = createMockRuntimeApp()
     const agent = context.repos.agents.create({

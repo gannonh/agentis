@@ -4,12 +4,59 @@ import { describe, expect, it } from "vitest"
 import {
   APPS_SYSTEM_PROMPT,
   DOCUMENTS_SYSTEM_PROMPT,
+  RESEARCH_BRIEF_SYSTEM_PROMPT,
   STATIC_ARTIFACTS_SYSTEM_PROMPT,
   WEB_SEARCH_SYSTEM_PROMPT,
+  looksLikeResearchBriefIntent,
+  looksLikeWebSearchIntent,
   resolveNativeRuntimeCapabilities,
 } from "./native-tool-capability-catalog.js"
 
 describe("native tool capability catalog", () => {
+  it("treats research brief prompts as web search and document intent", () => {
+    expect(
+      looksLikeWebSearchIntent(
+        "Research how small businesses are adopting AI agents in 2026."
+      )
+    ).toBe(true)
+    expect(
+      looksLikeResearchBriefIntent(
+        "Research AI agent adoption and create a markdown research brief."
+      )
+    ).toBe(true)
+  })
+
+  it("adds research brief guidance when web search and documents are enabled", () => {
+    const capabilities = resolveNativeRuntimeCapabilities({
+      permittedNativeToolIds: ["webSearch", "documents"],
+      providerAvailability: { webSearch: true },
+      latestUserPrompt:
+        "Research AI agent adoption and create a markdown research brief.",
+      buildTools: {
+        webSearch: () => ({
+          searchWeb: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+        documents: () => ({
+          createDocument: tool({
+            inputSchema: z.object({}),
+            execute: async () => ({}),
+          }),
+        }),
+      },
+    })
+
+    expect(capabilities.systemPromptSections).toEqual([
+      WEB_SEARCH_SYSTEM_PROMPT,
+      DOCUMENTS_SYSTEM_PROMPT,
+      RESEARCH_BRIEF_SYSTEM_PROMPT,
+    ])
+    expect(capabilities.runtimeTools).toHaveProperty("searchWeb")
+    expect(capabilities.runtimeTools).toHaveProperty("createDocument")
+  })
+
   it("uses the catalog to expose permitted available web search", () => {
     const capabilities = resolveNativeRuntimeCapabilities({
       permittedNativeToolIds: ["webSearch"],

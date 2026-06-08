@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { useSearchParams } from "react-router"
+import type { ThreadMode } from "@workspace/shared"
 import { AgentPicker } from "@/components/new-thread/agent-picker"
 import { DEFAULT_AGENT_PICKER_ID } from "@/components/new-thread/agent-picker-options"
 import { QuickActions } from "@/components/new-thread/quick-actions"
+import { RESEARCH_TOPIC_PROMPT } from "@/components/new-thread/research-prompt"
 import { RecentThreadsSection } from "@/components/new-thread/recent-threads-section"
 import { ThreadComposer } from "@/components/new-thread/thread-composer"
 import { PageLayout } from "@/components/shell/page-layout"
@@ -11,6 +13,9 @@ export function NewThreadPage() {
   const [searchParams] = useSearchParams()
   const requestedAgentId = searchParams.get("agentId")
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
+  const [promptDraft, setPromptDraft] = useState<
+    { id: string; text: string; mode?: ThreadMode } | undefined
+  >()
   const { agents, loading: agentsLoading } = useAgents()
   const requestedAgentIsValid = Boolean(
     requestedAgentId &&
@@ -37,9 +42,20 @@ export function NewThreadPage() {
           agentsLoading={agentsLoading}
         />
 
-        <ThreadComposer selectedAgentId={effectiveSelectedAgentId} />
+        <ThreadComposer
+          selectedAgentId={effectiveSelectedAgentId}
+          promptDraft={promptDraft}
+        />
 
-        <QuickActions />
+        <QuickActions
+          onResearchTopic={() =>
+            setPromptDraft({
+              id: crypto.randomUUID(),
+              text: RESEARCH_TOPIC_PROMPT,
+              mode: "agent",
+            })
+          }
+        />
       </div>
 
       <RecentThreadsSection />

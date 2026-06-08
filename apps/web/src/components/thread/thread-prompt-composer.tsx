@@ -26,10 +26,13 @@ import {
   PromptInputBody,
   PromptInputButton,
   PromptInputFooter,
+  PromptInputProvider,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  usePromptInputController,
 } from "@/components/ai-elements/prompt-input"
+import { useEffect } from "react"
 import {
   DEFAULT_GATEWAY_MODEL,
   GATEWAY_MODEL_TIER_LABELS,
@@ -84,6 +87,22 @@ type ThreadPromptComposerProps = {
   onRevokeTool?: (grantId: string) => void | Promise<void>
   selectedModel?: string
   onModelChange?: (modelId: string) => void
+  promptDraft?: { id: string; text: string }
+}
+
+function PromptInputDraftSync({
+  promptDraft,
+}: {
+  promptDraft?: { id: string; text: string }
+}) {
+  const controller = usePromptInputController()
+
+  useEffect(() => {
+    if (!promptDraft) return
+    controller.textInput.setInput(promptDraft.text)
+  }, [controller, promptDraft])
+
+  return null
 }
 
 export function ThreadPromptComposer({
@@ -102,6 +121,7 @@ export function ThreadPromptComposer({
   onRevokeTool,
   selectedModel,
   onModelChange,
+  promptDraft,
 }: ThreadPromptComposerProps) {
   let blockedReason: string | null = null
   if (!health.available) {
@@ -150,21 +170,23 @@ export function ThreadPromptComposer({
         />
       ) : null}
 
-      <PromptInput
-        className="shadow-sm"
-        onSubmit={async (message) => {
-          const text = message.text.trim()
-          if (!disabled && !submitting && text) {
-            await onSubmit(text)
-          }
-        }}
-      >
-        <PromptInputBody>
-          <PromptInputTextarea
-            placeholder="What's the task?"
-            disabled={disabled || submitting}
-          />
-        </PromptInputBody>
+      <PromptInputProvider>
+        <PromptInputDraftSync promptDraft={promptDraft} />
+        <PromptInput
+          className="shadow-sm"
+          onSubmit={async (message) => {
+            const text = message.text.trim()
+            if (!disabled && !submitting && text) {
+              await onSubmit(text)
+            }
+          }}
+        >
+          <PromptInputBody>
+            <PromptInputTextarea
+              placeholder="What's the task?"
+              disabled={disabled || submitting}
+            />
+          </PromptInputBody>
 
         <PromptInputFooter>
           <PromptInputTools>
@@ -392,7 +414,8 @@ export function ThreadPromptComposer({
             />
           </div>
         </PromptInputFooter>
-      </PromptInput>
+        </PromptInput>
+      </PromptInputProvider>
     </div>
   )
 }

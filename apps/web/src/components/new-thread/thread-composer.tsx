@@ -11,9 +11,13 @@ import { useProjects } from "@/hooks/use-projects"
 
 type ThreadComposerProps = {
   selectedAgentId: string
+  promptDraft?: { id: string; text: string; mode?: ThreadMode }
 }
 
-export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
+export function ThreadComposer({
+  selectedAgentId,
+  promptDraft,
+}: ThreadComposerProps) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { health } = useRuntimeHealth()
@@ -34,6 +38,13 @@ export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
       )
     )
   }, [health.aiGatewayProvider, health.defaultModel, health.model])
+
+  useEffect(() => {
+    if (!promptDraft) return
+    if (promptDraft.mode) {
+      setMode(promptDraft.mode)
+    }
+  }, [promptDraft])
 
   useEffect(() => {
     const fromQuery = searchParams.get("projectId")
@@ -101,6 +112,7 @@ export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
         submitting={submitting}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
+        promptDraft={promptDraft}
       />
     </div>
   )

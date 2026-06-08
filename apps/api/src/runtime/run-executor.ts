@@ -23,7 +23,11 @@ import { buildAppTools } from "../artifact-apps/app-tool.js"
 import { buildWorkspaceNativeTools } from "../native-tools/index.js"
 import { formatNativeToolRunStepPayload } from "../native-tools/native-tool-payload.js"
 import { resolveNativeToolsForRun } from "../native-tools/native-tool-permissions.js"
-import { resolveNativeRuntimeCapabilities } from "../native-tools/native-tool-capability-catalog.js"
+import {
+  looksLikeResearchBriefIntent,
+  resolveNativeRuntimeCapabilities,
+} from "../native-tools/native-tool-capability-catalog.js"
+import { finalizeResearchBriefIfNeeded } from "./research-brief-finalizer.js"
 import { buildWebSearchTools } from "../native-tools/web-search-tools.js"
 import { WebSearchError } from "../research/web-search-provider.js"
 import { WebSearchService } from "../research/web-search-service.js"
@@ -55,6 +59,7 @@ import {
   createDefaultMockLanguageModel,
   executeMockComposioStream,
   executeMockNativeStaticArtifactStream,
+  executeMockResearchBriefStream,
   executeMockNativeWebSearchStream,
   executeMockNativeWorkspaceExecutionStream,
   executeMockNativeWorkspaceMutationStream,
@@ -255,6 +260,7 @@ export class RunExecutor {
       webSearchService: this.webSearchService,
       staticArtifactService: this.staticArtifactService,
       appService: this.appService,
+      documentService: this.documentService,
     }
   }
 
@@ -528,6 +534,21 @@ export class RunExecutor {
     if (
       this.config.mockRuntime &&
       nativeRuntimeCapabilities.webSearch.enabled &&
+      nativeRuntimeCapabilities.documents.enabled &&
+      looksLikeResearchBriefIntent(latestUserPrompt)
+    ) {
+      return executeMockResearchBriefStream(
+        this.mockDeps(),
+        runId,
+        run,
+        threadMessages,
+        latestUserPrompt
+      )
+    }
+
+    if (
+      this.config.mockRuntime &&
+      nativeRuntimeCapabilities.webSearch.enabled &&
       nativeRuntimeCapabilities.webSearch.requested
     ) {
       return executeMockNativeWebSearchStream(
@@ -716,12 +737,14 @@ export class RunExecutor {
     const model: LanguageModel =
       liveModel ?? createDefaultMockLanguageModel(mockDocumentSuffix)
 
+    const maxToolSteps = looksLikeResearchBriefIntent(latestUserPrompt) ? 8 : 5
+
     const result = streamText({
       model,
       system: runtimeSystemPrompt,
       messages: modelMessages,
       tools: runtimeTools,
-      stopWhen: stepCountIs(5),
+      stopWhen: stepCountIs(maxToolSteps),
       abortSignal: controller.signal,
       onChunk: async ({ chunk }) => {
         if (chunk.type === "text-delta") {
@@ -906,6 +929,17 @@ export class RunExecutor {
           if (fallback) {
             assistantParts = setTextPart(assistantParts, fallback)
           }
+        }
+        if (!hasPendingApproval && !this.config.mockRuntime) {
+          const finalized = finalizeResearchBriefIfNeeded({
+            repos: this.repos,
+            documentService: this.documentService,
+            thread,
+            runId,
+            latestUserPrompt,
+            assistantParts,
+          })
+          assistantParts = finalized.assistantParts
         }
         this.repos.messages.updatePartsAndStatus(
           assistantMessage.id,
