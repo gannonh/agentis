@@ -536,13 +536,14 @@ export function RunTimeline({
               {native?.error ? (
                 <p className="mt-1 text-destructive">{native.error}</p>
               ) : null}
-              {composio?.remediation ? (
+              {composio?.error ? (
+                <p className="mt-1 text-amber-700 dark:text-amber-400">
+                  {composio.error}
+                </p>
+              ) : composio?.remediation ? (
                 <p className="mt-1 text-amber-700 dark:text-amber-400">
                   {composio.remediation}
                 </p>
-              ) : null}
-              {composio?.error ? (
-                <p className="mt-1 text-destructive">{composio.error}</p>
               ) : null}
               {documentAction ? (
                 <Button
