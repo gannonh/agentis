@@ -7,7 +7,7 @@
 ## SHAs
 
 - Base: `0758db60a8de980b0a3666a50065ecce2ef5f698`
-- Head: pending commit on `feat/issue-410-implement-agent-native`
+- Head: `ae759bab` (merged in #411)
 
 ## Tasks completed
 

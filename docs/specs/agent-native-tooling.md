@@ -112,7 +112,7 @@ Notes:
 
 #### V4.1: Web Search
 
-Spec: `docs/specs/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
+Spec: `docs/specs/_done/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
 
 V4.1 implemented the first research slice: provider-neutral native web search.
 Agentis exposes the model-visible `searchWeb` runtime tool behind the
@@ -148,7 +148,7 @@ V4.3 implemented static generated outputs as Artifact types `webpage` and `slide
 
 Spec: `docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`
 
-V4.4 adds interactive Apps as Artifact type `app` behind the `apps` native permission. Apps share the Artifact workspace route, version immutable code bundles separately from mutable App state, and render in a sandboxed iframe with a parent-proxied `App` bridge.
+V4.4 implemented interactive Apps as Artifact type `app` behind the `apps` native permission. Apps share the Artifact workspace route at `/artifacts/:artifactId`, version immutable code bundles separately from mutable App state in a dedicated `app_state` store, and render in a sandboxed iframe with a parent-proxied `App` bridge. Runtime tools: `createApp`, `editApp`, and `findApps`.
 
 ---
 
@@ -296,6 +296,42 @@ Implemented behavior:
 - Links documents to run, thread, project, and agent provenance where available.
 - Returns `viewPath` and `downloadPath` so agent replies can link to the document workspace and markdown downloads.
 - Logs document creation, search, read, and update actions in the run timeline with bounded payloads.
+
+#### Static artifact tools
+
+Files:
+
+- `apps/api/src/static-artifacts/static-artifact-tool.ts`
+- `apps/api/src/static-artifacts/static-artifact-service.ts`
+- `apps/api/src/artifacts/artifact-service.ts`
+- `apps/api/src/routes/artifacts.ts`
+- `apps/web/src/routes/artifact-workspace.tsx`
+- `apps/web/src/components/static-artifacts/`
+
+Implemented behavior:
+
+- Exposes `createStaticArtifact`, `editStaticArtifact`, `findStaticArtifacts`, and `readStaticArtifact` behind the `staticArtifacts` native permission.
+- Persists static outputs as Artifact types `webpage` and `slides` with version history and provenance.
+- Returns `viewPath` at `/artifacts/:artifactId` for timeline cards and Library links.
+- Renders frozen HTML preview in the artifact workspace; no mutable state or runtime bridge.
+
+#### App tools
+
+Files:
+
+- `apps/api/src/artifact-apps/app-tool.ts`
+- `apps/api/src/artifact-apps/app-service.ts`
+- `apps/api/src/artifact-apps/app-state-repository.ts`
+- `apps/api/src/routes/artifacts.ts`
+- `apps/web/src/components/artifact-apps/`
+- `apps/web/src/routes/artifact-workspace.tsx`
+
+Implemented behavior:
+
+- Exposes `createApp`, `editApp`, and `findApps` behind the `apps` native permission (`defaultSelected: false`).
+- Persists Apps as Artifact type `app` with immutable code bundle versions and a separate `app_state` store for mutable runtime data.
+- Returns `viewPath` at `/artifacts/:artifactId` for timeline cards and Library links.
+- Renders Apps in a sandboxed iframe with a parent-proxied `App` bridge and App state API routes.
 
 ### Native context assembly
 
@@ -463,7 +499,7 @@ This inventory records the native tooling in Hyperagent, the platform Agentis is
 - **Library Artifact refactor:** Landed prerequisite for interactive artifact work. Artifact is the durable Library primitive; Document is the markdown Artifact subtype; webpage, slides, and `app` are sibling Artifact types.
 - **Webpages and Slides:** Implemented in V4.3 as static Artifact types `webpage` and `slides`, not document types.
 - **Slides:** Create slide presentations. Polished mode uses AI to render each slide as a visual.
-- **Apps:** Approved in V4.4. Create interactive Apps with custom UI, mutable state, and a constrained runtime bridge. Supports forms, wizards, calculators, and trackers. Apps are Artifact type `app`, open at `/artifacts/:artifactId`, and use the `apps` native permission with `createApp`, `editApp`, and `findApps`.
+- **Apps:** Implemented in V4.4. Create interactive Apps with custom UI, mutable state, and a constrained runtime bridge. Supports forms, wizards, calculators, and trackers. Apps are Artifact type `app`, open at `/artifacts/:artifactId`, and use the `apps` native permission with `createApp`, `editApp`, and `findApps`.
 
 ### Media
 
@@ -649,7 +685,7 @@ Candidate updates:
 1. **V1: Workspace-backed read-only tools**: selected-agent workspace flow and read-only file tools are implemented.
 2. **V2: Safe file edits**: mutating workspace tools with approval and audit metadata are implemented.
 3. **V3: Sandboxed execution**: bounded command/script execution with local-process and optional local-container backends is implemented.
-4. **V4: Capability parity expansion**: V4.1 web search, V4.2 persistent documents/document workspace, and V4.3 static webpages/slides are implemented; V4.4 Apps are approved; remaining Hyperagent tools stay category-scoped follow-ups.
+4. **V4: Capability parity expansion**: V4.1 web search, V4.2 persistent documents/document workspace, V4.3 static webpages/slides, and V4.4 Apps are implemented; remaining Hyperagent tools stay category-scoped follow-ups.
 
 ## Reference files
 
@@ -658,6 +694,12 @@ Candidate updates:
 - `apps/api/src/documents/document-tool.ts`
 - `apps/api/src/documents/document-service.ts`
 - `apps/api/src/documents/local-document-storage.ts`
+- `apps/api/src/static-artifacts/static-artifact-tool.ts`
+- `apps/api/src/static-artifacts/static-artifact-service.ts`
+- `apps/api/src/artifact-apps/app-tool.ts`
+- `apps/api/src/artifact-apps/app-service.ts`
+- `apps/api/src/artifacts/artifact-service.ts`
+- `apps/api/src/routes/artifacts.ts`
 - `apps/api/src/runtime/run-context.ts`
 - `apps/api/src/native-tools/execution-workspace-tools.ts`
 - `apps/api/src/workspaces/workspace-execution-service.ts`
@@ -666,5 +708,8 @@ Candidate updates:
 - `apps/api/src/composio/tool-execution-service.ts`
 - `apps/api/src/routes/tool-grants.ts`
 - `packages/shared/src/schemas.ts`
+- `packages/shared/src/artifact-schemas.ts`
+- `packages/shared/src/app-schemas.ts`
 - `apps/web/src/components/thread/run-timeline.tsx`
 - `apps/web/src/components/thread/tool-access-picker.tsx`
+- `apps/web/src/routes/artifact-workspace.tsx`

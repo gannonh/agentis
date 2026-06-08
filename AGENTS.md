@@ -26,7 +26,7 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 - **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared primitives. See [Component management](#component-management).
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`.
 - **Demo data:** `apps/web/src/fixtures/` — still used for Command Center, Agents, Integrations, and Learning (not thread sessions, projects, or Library).
-- **M04/V4.2 Library artifacts:** API-backed projects, project memories, project context on runs, local document storage (`AGENTIS_STORAGE_ROOT`), Artifact-backed Library upload/list/filter/detail/download, versioned markdown documents as Artifact type `document`, document runtime tools, and the `/documents/:documentId` workspace for markdown viewing, editing, version history, and scope management.
+- **M04/V4 Library artifacts:** API-backed projects, project memories, project context on runs, local artifact storage (`AGENTIS_STORAGE_ROOT`), Artifact-backed Library upload/list/filter/detail/download, and type-specific workspaces. Markdown documents (`document`) use `/documents/:documentId` for viewing, editing, version history, and scope management. Static webpages and slides (`webpage`, `slides`) and interactive Apps (`app`) open at `/artifacts/:artifactId` with frozen HTML preview or sandboxed App runtime, respectively. Document, static artifact, and App runtime tools are API-backed.
 - **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, and V3 sandboxed command/script execution are API-backed. See [agent-native-tooling.md](docs/specs/agent-native-tooling.md).
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
@@ -43,7 +43,8 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 | `/projects/new`          | Create project (API-backed)     |
 | `/projects/:projectId`   | Edit project, memories, archive |
 | `/library`               | Artifact library (API-backed)   |
-| `/documents/:documentId` | Document workspace (API-backed) |
+| `/artifacts/:artifactId` | Artifact workspace (API-backed; static webpages, slides, Apps) |
+| `/documents/:documentId` | Document workspace (API-backed; markdown artifacts) |
 | `/search`                | Search placeholder              |
 
 ## Commands

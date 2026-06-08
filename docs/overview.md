@@ -98,7 +98,9 @@ The system also surfaces suggested improvements (prompt adjustments, new skills,
 
 ## Library
 
-The Library collects durable artifacts produced across threads, projects, uploads, and agent runs in one place. Browse with Type, Source, and Scope filters, search by artifact or provenance, preview supported content, and download files. Markdown documents are Artifact type `document`; open one into the dedicated document workspace to inspect source and scope, switch between rendered preview and markdown/code, edit markdown as a new version, review version history, change visibility scope, and download the current file. Artifact scope is global, project, or thread; agent association is shown as source/provenance.
+The Library collects durable artifacts produced across threads, projects, uploads, and agent runs in one place. Browse with Type, Source, and Scope filters, search by artifact or provenance, preview supported content, and download files.
+
+Artifact types include `document` (markdown), `webpage`, `slides`, `app`, and other generated or uploaded outputs. Markdown documents open at `/documents/:documentId` to inspect source and scope, switch between rendered preview and markdown/code, edit markdown as a new version, review version history, change visibility scope, and download the current file. Static webpages and slides, plus interactive Apps, open at `/artifacts/:artifactId` in the artifact workspace: frozen HTML preview for static outputs, or a sandboxed App runtime with mutable state for interactive mini-apps. Artifact scope is global, project, or thread; agent association is shown as source/provenance.
 
 ## Integrations
 

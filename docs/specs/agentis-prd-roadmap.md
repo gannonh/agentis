@@ -9,9 +9,9 @@ The MVP should let a user start work in a thread, connect tools through Composio
 
 ## Current repo snapshot
 
-- Frontend base: Vite, TypeScript, React 19.
-- UI system: shadcn/ui monorepo, Tailwind 4, Hugeicons.
-- Existing app state: starter screen with one shared button component.
+- Frontend: Vite, TypeScript, React 19, React Router; shadcn/ui monorepo (`packages/ui`), Tailwind 4, Hugeicons, AI Elements for thread UI.
+- API: Hono, Drizzle SQLite, Vercel AI SDK with configurable AI Gateway (Vercel or Cloudflare).
+- Implemented surfaces: API-backed threads, projects, Library artifacts, document workspace, artifact workspace (static webpages, slides, Apps), native workspace tooling (V1–V3), web search (V4.1), and Composio integrations. Command Center, Agents, Integrations, and Learning still use fixtures/MSW stubs.
 
 ## Product goals
 
@@ -138,8 +138,8 @@ Deliverables:
 - Project create/edit flow with name, description, and goals.
 - Project selector in the composer and thread metadata.
 - Context assembly that injects project goals and selected project memories into runs.
-- Artifact-backed markdown document model with upload, generated output registration, markdown versioning, download, and preview metadata.
-- Library screen with search, Type/Source/Scope filters, artifact cards, detail preview, document workspace links for markdown artifacts, version history, markdown editing, scope management, and project/thread/agent provenance.
+- Artifact-backed Library model with upload, generated output registration, versioning, download, and preview metadata for markdown documents, static webpages, slides, and Apps.
+- Library screen with search, Type/Source/Scope filters, artifact cards, detail preview, document workspace links for markdown artifacts, artifact workspace links for static and App artifacts, version history, markdown editing, scope management, and project/thread/agent provenance.
 - Basic file storage abstraction for local self-hosted deployments.
 
 Acceptance:
@@ -292,12 +292,12 @@ Acceptance:
 
 ## Open questions
 
-- Backend stack: API framework, database, queue, object storage, and worker runtime.
-- Model support: first provider, routing interface, usage accounting, and default local or cloud options.
+- Queue and worker runtime for scheduled invocations and background jobs (API and SQLite are in place; async worker packaging is not).
+- Usage accounting and cost aggregation across AI Gateway providers.
 - Self-host scope: Docker Compose only for MVP, with Kubernetes docs later.
 - Auth scope: single-user install first or small-team workspace first.
 - External invocation priority: Slack first, webhook first, or schedule first.
-- Artifact types: markdown documents and files first, with webpages/slides/apps/images later as sibling Artifact types.
+- Remaining Artifact types: `table`, `image`, `video`, and media-generation pipelines beyond current document/static/App slices.
 
 ## Suggested MVP cut line
 
