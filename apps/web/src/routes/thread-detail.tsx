@@ -20,7 +20,12 @@ import { decideToolApproval } from "@/lib/api/client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
 import { useThreadSession } from "@/hooks/use-thread-session"
 import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
-import { GENERIC_AGENTIS_AGENT_ID, type RunStep, type ThreadMode } from "@workspace/shared"
+import {
+  GENERIC_AGENTIS_AGENT_ID,
+  resolveSelectableGatewayModel,
+  type RunStep,
+  type ThreadMode,
+} from "@workspace/shared"
 
 type ThreadAgentIndicatorProps = {
   agentHref: string | null
@@ -161,6 +166,7 @@ export function ThreadDetailPage() {
 
   const [mode, setMode] = useState<ThreadMode>("plan")
   const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
+  const [selectedModel, setSelectedModel] = useState<string | undefined>()
   const [submitting, setSubmitting] = useState(false)
   const [creatingAgentDraft, setCreatingAgentDraft] = useState(false)
   const [createAgentError, setCreateAgentError] = useState<string | null>(null)
@@ -172,6 +178,22 @@ export function ThreadDetailPage() {
       setMode(detail.thread.mode)
     }
   }, [detail?.thread.mode])
+
+  useEffect(() => {
+    if (!health.aiGatewayProvider) return
+    setSelectedModel(
+      resolveSelectableGatewayModel(
+        detail?.thread.model ?? health.defaultModel ?? health.model,
+        health.aiGatewayProvider
+      )
+    )
+  }, [
+    threadId,
+    detail?.thread.model,
+    health.aiGatewayProvider,
+    health.defaultModel,
+    health.model,
+  ])
 
   const composerDisabled = !health.available
   const owningAgentId = detail?.thread?.agentId ?? null
@@ -205,7 +227,10 @@ export function ThreadDetailPage() {
     if (!prompt.trim() || composerDisabled) return
     setSubmitting(true)
     try {
-      await submitFollowUp(prompt.trim(), mode)
+      await submitFollowUp(prompt.trim(), {
+        mode,
+        model: selectedModel ?? detail?.thread.model,
+      })
     } finally {
       setSubmitting(false)
     }
@@ -394,6 +419,8 @@ export function ThreadDetailPage() {
                   availableToolkits={availableToolkits}
                   onGrantTool={grantToolkit}
                   onRevokeTool={revokeGrant}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
                 />
               </div>
             </div>

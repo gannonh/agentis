@@ -144,10 +144,17 @@ export function useThreadSession(threadId: string | undefined) {
   }, [threadId, startQueuedRunIfNeeded, stopPolling])
 
   const submitFollowUp = useCallback(
-    async (prompt: string, mode?: ThreadMode) => {
+    async (
+      prompt: string,
+      options?: { mode?: ThreadMode; model?: string }
+    ) => {
       if (!threadId) return
       setError(null)
-      const { run } = await sendFollowUp(threadId, { prompt, mode })
+      const { run } = await sendFollowUp(threadId, {
+        prompt,
+        mode: options?.mode,
+        model: options?.model,
+      })
       await refresh()
       await drainStream(run.id)
     },

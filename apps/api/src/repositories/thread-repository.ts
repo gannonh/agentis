@@ -210,6 +210,7 @@ export class ThreadRepository {
     prompt: string
     title: string
     mode?: ThreadMode
+    model?: string
   }): FollowUpRunResult | null {
     const threadRow = this.db
       .select()
@@ -218,6 +219,7 @@ export class ThreadRepository {
       .get()
     if (!threadRow) return null
 
+    const model = input.model ?? threadRow.model
     const now = nowIso()
     const messageRow = createUserMessageRow({
       threadId: threadRow.id,
@@ -226,7 +228,7 @@ export class ThreadRepository {
     })
     const runRow = createQueuedRunRow({
       threadId: threadRow.id,
-      model: threadRow.model,
+      model,
       agentId: threadRow.agentId,
       agentConfigurationVersionId: threadRow.agentConfigurationVersionId,
       startedAt: now,
@@ -238,7 +240,12 @@ export class ThreadRepository {
       tx.insert(runs).values(runRow).run()
       tx.insert(runSteps).values(stepRow).run()
       tx.update(threads)
-        .set({ title: input.title, mode: input.mode ?? threadRow.mode, updatedAt: now })
+        .set({
+          title: input.title,
+          mode: input.mode ?? threadRow.mode,
+          model,
+          updatedAt: now,
+        })
         .where(eq(threads.id, threadRow.id))
         .run()
 

@@ -1,5 +1,8 @@
 import { Hono } from "hono"
-import { runtimeHealthSchema } from "@workspace/shared"
+import {
+  getGatewayModelsForProvider,
+  runtimeHealthSchema,
+} from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import {
   getComposioUnavailableReason,
@@ -15,11 +18,14 @@ export function createRuntimeRoutes(config: AppConfig) {
     const available = isRuntimeAvailable(config)
     const missingEnvVars = getRuntimeMissingEnvVars(config)
     const composioAvailable = isComposioAvailable(config)
+    const models = getGatewayModelsForProvider(config.aiGatewayProvider)
     const health = runtimeHealthSchema.parse({
       available,
       reason:
         available || config.mockRuntime ? undefined : "missing_api_key",
       model: config.defaultModel,
+      defaultModel: config.defaultModel,
+      models,
       aiGatewayProvider: config.aiGatewayProvider,
       missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
       composio: {

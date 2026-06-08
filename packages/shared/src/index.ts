@@ -1,4 +1,5 @@
 export { GENERIC_AGENTIS_AGENT_ID, LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
+export * from "./gateway-models.js"
 export * from "./schemas.js"
 export * from "./native-tools.js"
 export * from "./web-search.js"

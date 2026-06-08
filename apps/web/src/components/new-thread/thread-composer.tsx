@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router"
-import type { ThreadMode } from "@workspace/shared"
+import {
+  resolveSelectableGatewayModel,
+  type ThreadMode,
+} from "@workspace/shared"
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { createThread } from "@/lib/api/client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
@@ -20,6 +23,17 @@ export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
   const [projectId, setProjectId] = useState<string>("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedModel, setSelectedModel] = useState<string | undefined>()
+
+  useEffect(() => {
+    if (!health.aiGatewayProvider) return
+    setSelectedModel((current) =>
+      resolveSelectableGatewayModel(
+        current ?? health.defaultModel ?? health.model,
+        health.aiGatewayProvider!
+      )
+    )
+  }, [health.aiGatewayProvider, health.defaultModel, health.model])
 
   useEffect(() => {
     const fromQuery = searchParams.get("projectId")
@@ -36,7 +50,7 @@ export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
       const { thread, run } = await createThread({
         prompt: prompt.trim(),
         mode,
-        model: health.model,
+        model: selectedModel ?? health.defaultModel ?? health.model,
         projectId: projectId || undefined,
         agentId: selectedAgentId,
       })
@@ -85,6 +99,8 @@ export function ThreadComposer({ selectedAgentId }: ThreadComposerProps) {
         executeBehavior={executeBehavior}
         onExecuteBehaviorChange={setExecuteBehavior}
         submitting={submitting}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
       />
     </div>
   )
