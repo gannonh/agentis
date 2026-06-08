@@ -13,6 +13,7 @@ let threadStatus: "active" | "finished" | "failed" = "active"
 let threadAgentId: string | undefined = GENERIC_AGENTIS_AGENT_ID
 let threadAgentName: string | null | undefined = "Agentis"
 let includePendingApproval = false
+let includeToolResultMessage = false
 let pendingToolName = "createWorkspaceFile"
 const refresh = vi.fn()
 
@@ -103,7 +104,35 @@ vi.mock("@/hooks/use-thread-session", () => ({
             createdAt: new Date().toISOString(),
           },
         ]
-      : []
+      : includeToolResultMessage
+        ? [
+            {
+              id: "msg_assistant_doc",
+              threadId: "thread_test",
+              role: "assistant" as const,
+              parts: [
+                {
+                  type: "text" as const,
+                  text: "Saved a research brief to the Library.",
+                },
+                {
+                  type: "tool-result" as const,
+                  toolCallId: "call_doc",
+                  toolName: "createDocument",
+                  output: {
+                    documentId: "document_123",
+                    title: "Research brief: AI agents",
+                    viewPath: "/documents/document_123",
+                    currentVersion: 1,
+                    visibilityScope: "thread",
+                  },
+                },
+              ],
+              status: "completed" as const,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        : []
     return {
       detail: {
         thread: {
@@ -175,6 +204,7 @@ describe("ThreadDetailPage create-agent action", () => {
     threadAgentId = GENERIC_AGENTIS_AGENT_ID
     threadAgentName = "Agentis"
     includePendingApproval = false
+    includeToolResultMessage = false
     pendingToolName = "createWorkspaceFile"
     refresh.mockClear()
     vi.mocked(createAgentPromotionDraft).mockClear()
@@ -353,6 +383,23 @@ describe("ThreadDetailPage create-agent action", () => {
         "This thread already uses an agent. Open that agent to adjust future runs."
       )
     ).not.toBeInTheDocument()
+  })
+
+  it("renders document creation in the transcript with an open link", () => {
+    includeToolResultMessage = true
+
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("Saved a research brief to the Library.")).toBeInTheDocument()
+    expect(screen.getByText("Document created")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open document" })).toHaveAttribute(
+      "href",
+      "/documents/document_123"
+    )
   })
 
   it("lists durable thread artifacts outside the run timeline", async () => {

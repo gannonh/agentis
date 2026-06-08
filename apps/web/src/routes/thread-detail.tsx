@@ -5,11 +5,9 @@ import {
   Conversation,
   ConversationContent,
 } from "@/components/ai-elements/conversation"
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message"
+import { Message, MessageContent } from "@/components/ai-elements/message"
+import { ThreadMessageContent } from "@/components/thread/thread-message-content"
+import { messageHasVisibleContent } from "@/lib/thread/message-text"
 import { RunTimeline } from "@/components/thread/run-timeline"
 import { ThreadDurableArtifacts } from "@/components/thread/thread-durable-artifacts"
 import { ThreadProjectContext } from "@/components/thread/thread-project-context"
@@ -155,7 +153,6 @@ export function ThreadDetailPage() {
     submitFollowUp,
     abortActiveRun,
     refresh,
-    getMessageText,
   } = useThreadSession(threadId)
   const {
     grants: toolGrants,
@@ -330,21 +327,16 @@ export function ThreadDetailPage() {
                   </p>
                 ) : null}
                 {detail?.messages.map((message) => {
-                  const text = getMessageText(message)
-                  if (!text.trim() && message.status === "completed") return null
+                  if (
+                    !messageHasVisibleContent(message) &&
+                    message.status === "completed"
+                  ) {
+                    return null
+                  }
                   return (
                     <Message key={message.id} from={message.role}>
                       <MessageContent>
-                        <MessageResponse>{text}</MessageResponse>
-                        {message.status === "aborted" ? (
-                          <p className="text-muted-foreground mt-2 text-xs">Aborted</p>
-                        ) : null}
-                        {message.status === "failed" ? (
-                          <p className="text-destructive mt-2 text-xs">Failed</p>
-                        ) : null}
-                        {message.status === "streaming" ? (
-                          <p className="text-muted-foreground mt-2 text-xs">Streaming…</p>
-                        ) : null}
+                        <ThreadMessageContent message={message} />
                       </MessageContent>
                     </Message>
                   )
@@ -440,7 +432,7 @@ export function ThreadDetailPage() {
             <RunTimeline run={latestRun} steps={steps} />
             <ThreadDurableArtifacts
               threadId={threadId}
-              refreshKey={`${latestRun?.id ?? "no-run"}:${steps.length}`}
+              refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}:${steps.length}:${detail?.messages.length ?? 0}:${streaming ? "streaming" : "idle"}`}
             />
           </div>
         </div>

@@ -70,6 +70,7 @@ import {
   getTextFromParts,
   hasPendingApprovalInParts,
   setTextPart,
+  stripRedundantToolJsonText,
   suppressTextForPendingApproval,
   toModelMessages,
   toUiMessages,
@@ -924,10 +925,13 @@ export class RunExecutor {
         toolStepIds.clear()
         if (hasPendingApproval) {
           assistantParts = suppressTextForPendingApproval(assistantParts)
-        } else if (!getTextFromParts(assistantParts).trim()) {
-          const fallback = formatToolResultFallback(assistantParts)
-          if (fallback) {
-            assistantParts = setTextPart(assistantParts, fallback)
+        } else {
+          assistantParts = stripRedundantToolJsonText(assistantParts)
+          if (!getTextFromParts(assistantParts).trim()) {
+            const fallback = formatToolResultFallback(assistantParts)
+            if (fallback) {
+              assistantParts = setTextPart(assistantParts, fallback)
+            }
           }
         }
         if (!hasPendingApproval && !this.config.mockRuntime) {
