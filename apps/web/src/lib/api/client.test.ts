@@ -22,14 +22,30 @@ describe("fetchRuntimeHealth", () => {
         ok: true,
         json: async () => ({
           available: true,
-          model: "gpt-4o-mini",
+          model: "openai/gpt-5.4-mini",
+          defaultModel: "openai/gpt-5.4-mini",
+          models: [
+            {
+              id: "openai/gpt-5.4-mini",
+              label: "GPT-5.4 Mini",
+              tier: "balanced",
+            },
+          ],
         }),
       })
     )
 
     await expect(fetchRuntimeHealth()).resolves.toEqual({
       available: true,
-      model: "gpt-4o-mini",
+      model: "openai/gpt-5.4-mini",
+      defaultModel: "openai/gpt-5.4-mini",
+      models: [
+        {
+          id: "openai/gpt-5.4-mini",
+          label: "GPT-5.4 Mini",
+          tier: "balanced",
+        },
+      ],
     })
   })
 })

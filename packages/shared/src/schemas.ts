@@ -1,5 +1,9 @@
 import { z } from "zod"
 import {
+  DEFAULT_GATEWAY_MODEL,
+  gatewayModelOptionSchema,
+} from "./gateway-models.js"
+import {
   artifactContentFormatSchema,
   artifactDetailResponseSchema,
   artifactPublicSchema,
@@ -368,7 +372,10 @@ export const composioRemediationCodeSchema = z.enum([
 export const runtimeHealthSchema = z.object({
   available: z.boolean(),
   reason: z.enum(["api_unavailable", "missing_api_key"]).optional(),
+  /** @deprecated Prefer defaultModel. Kept for older clients. */
   model: z.string().optional(),
+  defaultModel: z.string().optional(),
+  models: z.array(gatewayModelOptionSchema).optional(),
   aiGatewayProvider: z.enum(["vercel", "cloudflare"]).optional(),
   missingEnvVars: z.array(z.string()).optional(),
   composio: z
@@ -579,6 +586,7 @@ export const createThreadResponseSchema = z.object({
 export const createFollowUpRequestSchema = z.object({
   prompt: nonEmptyString,
   mode: threadModeSchema.optional(),
+  model: z.string().optional(),
 })
 
 export const updateThreadRequestSchema = z.object({
@@ -832,8 +840,7 @@ export const abortRunResponseSchema = z.object({
   run: runSchema,
 })
 
-export const DEFAULT_GATEWAY_MODEL = "openai/gpt-4o-mini"
-/** @deprecated Use DEFAULT_GATEWAY_MODEL. */
+/** @deprecated Use DEFAULT_GATEWAY_MODEL from `@workspace/shared` (gateway-models). */
 export const DEFAULT_OPENAI_MODEL = DEFAULT_GATEWAY_MODEL
 
 export type RunStatus = z.infer<typeof runStatusSchema>

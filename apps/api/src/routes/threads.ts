@@ -3,6 +3,7 @@ import { z } from "zod"
 import {
   createFollowUpRequestSchema,
   createThreadRequestSchema,
+  resolveSelectableGatewayModel,
   threadDetailSchema,
   threadListItemSchema,
   threadSchema,
@@ -105,7 +106,10 @@ export function createThreadRoutes(
       const created = repos.threads.createWithInitialRun({
         title: summarizeTitle(body.prompt),
         prompt: body.prompt,
-        model: version.model,
+        model: resolveSelectableGatewayModel(
+          body.model !== undefined ? body.model : version.model,
+          config.aiGatewayProvider
+        ),
         mode,
         projectId: body.projectId,
         agentId: agent.id,
@@ -124,7 +128,10 @@ export function createThreadRoutes(
     const created = repos.threads.createWithInitialRun({
       title: summarizeTitle(body.prompt),
       prompt: body.prompt,
-      model: body.model ?? config.defaultModel,
+      model: resolveSelectableGatewayModel(
+        body.model ?? config.defaultModel,
+        config.aiGatewayProvider
+      ),
       mode,
       projectId: body.projectId,
       agentId: GENERIC_AGENTIS_AGENT_ID,
@@ -199,6 +206,10 @@ export function createThreadRoutes(
       prompt: body.prompt,
       title: summarizeTitle(body.prompt),
       mode: body.mode,
+      model:
+        body.model !== undefined
+          ? resolveSelectableGatewayModel(body.model, config.aiGatewayProvider)
+          : undefined,
     })
     if (!created) {
       return c.json({ error: "Thread not found" }, 404)

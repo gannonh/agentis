@@ -14,6 +14,12 @@ export const WEB_SEARCH_SYSTEM_PROMPT =
 export const DOCUMENTS_SYSTEM_PROMPT =
   "Use createDocument when the user asks for a durable document, brief, report, notes, playbook, or library item. If the request has enough context to create useful content, choose a concise title and content instead of asking for schema fields. Search and read relevant documents before updating durable knowledge. For document links, use only the exact relative viewPath or downloadPath returned by document tools. Use downloadPath for markdown downloads. Never invent hostnames or placeholder URLs such as yourworkspaceurl. For durable markdown Documents scoped to Thread, Project or Global, use createDocument — not createWorkspaceFile. To change scope on an existing document, use updateDocumentVisibility with the same documentId; do not create a duplicate document for scope-only requests."
 
+export const RESEARCH_BRIEF_SYSTEM_PROMPT =
+  "When the user asks you to research a topic and produce a durable brief or report, call searchWeb at most twice with focused queries, then call createDocument with a markdown brief that synthesizes the findings and cites sources inline using markdown links. Do not paste raw search JSON in chat. Prefer thread-scoped documents unless the user asks for project or global scope."
+
+const DOCUMENT_INTENT_PATTERN =
+  /\b(document|brief|report|notes|playbook|summary)\b/i
+
 export const STATIC_ARTIFACTS_SYSTEM_PROMPT =
   "Use createStaticArtifact when the user asks for a static webpage, generated page, slide deck, presentation, or polished visual deck. Use editStaticArtifact for changes to an existing static artifact and findStaticArtifacts before editing when the artifact id is unknown. Use readStaticArtifact before answering questions about what an existing artifact actually contains, including requests for exact slide text, summaries of an artifact, or whether specific content is present. For HTML slide decks, match the requested depth: title-only or outline slides are acceptable when the user asks for an outline, but a full presentation or a request to add detail should include substantive body content on each relevant slide, preferably by providing complete generatedHtml instead of only a terse outline in contentBrief. Do not claim a deck has been expanded or detailed if the artifact still contains only slide titles. For artifact links, use only the exact relative viewPath returned by static artifact tools. Static artifacts are frozen generated outputs and must not depend on runtime Agentis tool access."
 
@@ -28,11 +34,21 @@ export function looksLikeAppIntent(prompt: string): boolean {
   return appTerm.test(prompt) && creationOrEditAction.test(prompt)
 }
 
+export function looksLikeDocumentIntent(prompt: string): boolean {
+  return DOCUMENT_INTENT_PATTERN.test(prompt)
+}
+
 export function looksLikeWebSearchIntent(prompt: string): boolean {
   return (
-    /\b(search|look up|latest|current|web)\b/i.test(prompt) &&
+    /\b(search|look up|latest|current|web|research|investigate)\b/i.test(
+      prompt
+    ) &&
     !/\bfiles?\b|workspace file|read .*file|search .*file/i.test(prompt)
   )
+}
+
+export function looksLikeResearchBriefIntent(prompt: string): boolean {
+  return looksLikeWebSearchIntent(prompt) && looksLikeDocumentIntent(prompt)
 }
 
 export function looksLikeStaticArtifactIntent(prompt: string): boolean {
@@ -121,9 +137,15 @@ export function resolveNativeRuntimeCapabilities(input: {
     ...(appsEnabled && input.buildTools?.apps ? input.buildTools.apps() : {}),
   }
 
+  const researchBriefRequested = looksLikeResearchBriefIntent(
+    input.latestUserPrompt
+  )
   const systemPromptSections = [
     webSearchEnabled ? WEB_SEARCH_SYSTEM_PROMPT : null,
     documentsEnabled ? DOCUMENTS_SYSTEM_PROMPT : null,
+    webSearchEnabled && documentsEnabled && researchBriefRequested
+      ? RESEARCH_BRIEF_SYSTEM_PROMPT
+      : null,
     staticArtifactsEnabled ? STATIC_ARTIFACTS_SYSTEM_PROMPT : null,
     appsEnabled ? APPS_SYSTEM_PROMPT : null,
   ].filter((section): section is string => Boolean(section))

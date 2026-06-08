@@ -34,8 +34,26 @@ afterEach(() => {
 
 describe("Gateway model resolution", () => {
   it("keeps valid Gateway model ids unchanged", () => {
-    expect(resolveGatewayModelId("openai/gpt-4o-mini")).toBe(
-      "openai/gpt-4o-mini"
+    expect(resolveGatewayModelId("openai/gpt-5.4-mini")).toBe(
+      "openai/gpt-5.4-mini"
+    )
+    expect(resolveGatewayModelId("anthropic/claude-sonnet-4.6")).toBe(
+      "anthropic/claude-sonnet-4.6"
+    )
+  })
+
+  it("keeps Workers AI model ids unchanged", () => {
+    expect(resolveGatewayModelId("@cf/moonshotai/kimi-k2.6")).toBe(
+      "@cf/moonshotai/kimi-k2.6"
+    )
+    expect(resolveGatewayModelId("@cf/zai-org/glm-4.7-flash")).toBe(
+      "@cf/zai-org/glm-4.7-flash"
+    )
+  })
+
+  it("rejects Workers AI model ids with extra path segments", () => {
+    expect(() => resolveGatewayModelId("@cf/a/b/c")).toThrow(
+      "Workers AI model ids must use @cf/author/model format"
     )
   })
 

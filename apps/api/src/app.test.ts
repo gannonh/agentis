@@ -1,3 +1,4 @@
+import type { RuntimeHealth } from "@workspace/shared"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createApp } from "./app.js"
 import { createTestContext, type TestContext } from "./test/setup.js"
@@ -29,19 +30,20 @@ describe("api routes", () => {
     })
 
     const response = await app.request("/api/runtime/health")
-    const body = (await response.json()) as {
-      available: boolean
-      reason?: string
-      model?: string
-      aiGatewayProvider?: string
-      missingEnvVars?: string[]
-    }
+    const body = (await response.json()) as RuntimeHealth
 
     expect(body.available).toBe(false)
     expect(body.reason).toBe("missing_api_key")
-    expect(body.model).toBe("openai/gpt-4o-mini")
+    expect(body.model).toBe("openai/gpt-5.4-mini")
+    expect(body.defaultModel).toBe("openai/gpt-5.4-mini")
     expect(body.aiGatewayProvider).toBe("cloudflare")
     expect(body.missingEnvVars).toEqual(["CLOUDFLARE_ACCOUNT_ID"])
+    expect(body.models?.some((m) => m.id === "@cf/moonshotai/kimi-k2.6")).toBe(
+      true
+    )
+    expect(body.models?.some((m) => m.id === "anthropic/claude-sonnet-4.6")).toBe(
+      true
+    )
   })
 
   it("creates a thread with queued run", async () => {
@@ -70,6 +72,72 @@ describe("api routes", () => {
       status: "queued",
       agentId: GENERIC_AGENTIS_AGENT_ID,
     })
+  })
+
+  it("applies a follow-up model override to the queued run and thread", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Summarize workspace status",
+        model: "openai/gpt-5.4-mini",
+      }),
+    })
+    const { thread } = (await created.json()) as { thread: { id: string } }
+
+    const followUp = await app.request(`/api/threads/${thread.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Continue with more detail",
+        model: "anthropic/claude-sonnet-4.6",
+      }),
+    })
+
+    expect(followUp.status).toBe(201)
+    const body = (await followUp.json()) as {
+      run: { model: string }
+    }
+    expect(body.run.model).toBe("anthropic/claude-sonnet-4.6")
+
+    const detail = await app.request(`/api/threads/${thread.id}`)
+    const detailBody = (await detail.json()) as {
+      thread: { model: string }
+    }
+    expect(detailBody.thread.model).toBe("anthropic/claude-sonnet-4.6")
+  })
+
+  it("clamps provider-incompatible follow-up models to the catalog default", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, {
+      ...ctx.config,
+      aiGatewayProvider: "vercel",
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "Summarize workspace status" }),
+    })
+    const { thread } = (await created.json()) as { thread: { id: string } }
+
+    const followUp = await app.request(`/api/threads/${thread.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Continue with more detail",
+        model: "@cf/moonshotai/kimi-k2.6",
+      }),
+    })
+
+    expect(followUp.status).toBe(201)
+    const body = (await followUp.json()) as {
+      run: { model: string }
+    }
+    expect(body.run.model).toBe("openai/gpt-5.4-mini")
   })
 
   it("creates a selected-agent thread with the agent workspace", async () => {
@@ -101,6 +169,33 @@ describe("api routes", () => {
       workspaceId: workspace?.id,
     })
     expect(body.run.agentId).toBe(agent.id)
+  })
+
+  it("uses the agent configuration model when create omits model", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Claude Agent",
+      systemPrompt: "Answer with citations.",
+      model: "anthropic/claude-sonnet-4.6",
+    })
+    const app = createApp(ctx.repos, ctx.config)
+
+    const response = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Summarize workspace status",
+        agentId: agent.id,
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as {
+      thread: { model: string }
+      run: { model: string }
+    }
+    expect(body.thread.model).toBe("anthropic/claude-sonnet-4.6")
+    expect(body.run.model).toBe("anthropic/claude-sonnet-4.6")
   })
 
   it("allows a configured web origin with a trailing slash", async () => {

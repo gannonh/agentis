@@ -26,12 +26,17 @@ import {
   PromptInputBody,
   PromptInputButton,
   PromptInputFooter,
+  PromptInputProvider,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  usePromptInputController,
 } from "@/components/ai-elements/prompt-input"
+import { useEffect } from "react"
 import {
   DEFAULT_GATEWAY_MODEL,
+  GATEWAY_MODEL_TIER_LABELS,
+  type GatewayModelTier,
   type IntegrationToolkit,
   type RuntimeHealth,
   type ThreadMode,
@@ -59,6 +64,13 @@ function MenuItemText({
 
 type ExecuteBehavior = "auto" | "ask"
 
+const MODEL_TIER_ORDER: GatewayModelTier[] = [
+  "fast",
+  "balanced",
+  "capable",
+  "open",
+]
+
 type ThreadPromptComposerProps = {
   onSubmit: (prompt: string) => void | Promise<void>
   disabled?: boolean
@@ -73,6 +85,25 @@ type ThreadPromptComposerProps = {
   availableToolkits?: IntegrationToolkit[]
   onGrantTool?: (toolkitSlug: string) => void | Promise<void>
   onRevokeTool?: (grantId: string) => void | Promise<void>
+  selectedModel?: string
+  onModelChange?: (modelId: string) => void
+  promptDraft?: { id: string; text: string }
+}
+
+function PromptInputDraftSync({
+  promptDraft,
+}: {
+  promptDraft?: { id: string; text: string }
+}) {
+  const controller = usePromptInputController()
+
+  useEffect(() => {
+    if (!promptDraft) return
+    controller.textInput.setInput(promptDraft.text)
+    // Sync when quick-action draft changes, not when the prompt controller updates per keystroke.
+  }, [promptDraft])
+
+  return null
 }
 
 export function ThreadPromptComposer({
@@ -89,6 +120,9 @@ export function ThreadPromptComposer({
   availableToolkits = [],
   onGrantTool,
   onRevokeTool,
+  selectedModel,
+  onModelChange,
+  promptDraft,
 }: ThreadPromptComposerProps) {
   let blockedReason: string | null = null
   if (!health.available) {
@@ -110,6 +144,15 @@ export function ThreadPromptComposer({
       ? `Mode Execute ${executeBehavior === "auto" ? "Auto" : "Ask first"}`
       : "Mode Plan"
 
+  const modelOptions = health.models ?? []
+  const activeModelId =
+    selectedModel ?? health.defaultModel ?? health.model ?? DEFAULT_GATEWAY_MODEL
+  const activeModelLabel =
+    modelOptions.find((option) => option.id === activeModelId)?.label ??
+    activeModelId
+  const modelPickerEnabled =
+    Boolean(onModelChange) && modelOptions.length > 0 && !blockedReason
+
   return (
     <div className="flex w-full flex-col gap-2">
       {blockedReason ? (
@@ -128,21 +171,23 @@ export function ThreadPromptComposer({
         />
       ) : null}
 
-      <PromptInput
-        className="shadow-sm"
-        onSubmit={async (message) => {
-          const text = message.text.trim()
-          if (!disabled && !submitting && text) {
-            await onSubmit(text)
-          }
-        }}
-      >
-        <PromptInputBody>
-          <PromptInputTextarea
-            placeholder="What's the task?"
-            disabled={disabled || submitting}
-          />
-        </PromptInputBody>
+      <PromptInputProvider>
+        <PromptInputDraftSync promptDraft={promptDraft} />
+        <PromptInput
+          className="shadow-sm"
+          onSubmit={async (message) => {
+            const text = message.text.trim()
+            if (!disabled && !submitting && text) {
+              await onSubmit(text)
+            }
+          }}
+        >
+          <PromptInputBody>
+            <PromptInputTextarea
+              placeholder="What's the task?"
+              disabled={disabled || submitting}
+            />
+          </PromptInputBody>
 
         <PromptInputFooter>
           <PromptInputTools>
@@ -301,9 +346,68 @@ export function ThreadPromptComposer({
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className="hidden text-xs text-muted-foreground sm:inline">
-              {health.model ?? DEFAULT_GATEWAY_MODEL}
-            </span>
+            {modelPickerEnabled ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 max-w-44 gap-2 px-2.5"
+                      disabled={disabled || submitting}
+                      aria-label={`Model ${activeModelLabel}`}
+                    />
+                  }
+                >
+                  <span className="text-muted-foreground">Model</span>
+                  <span className="truncate">{activeModelLabel}</span>
+                  <HugeiconsIcon
+                    icon={ArrowDown01Icon}
+                    data-icon="inline-end"
+                    strokeWidth={2}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  side="top"
+                  sideOffset={8}
+                  className="w-80"
+                >
+                  {MODEL_TIER_ORDER.map((tier) => {
+                    const tierOptions = modelOptions.filter(
+                      (option) => option.tier === tier
+                    )
+                    if (tierOptions.length === 0) return null
+                    return (
+                      <DropdownMenuGroup key={tier}>
+                        <DropdownMenuLabel>
+                          {GATEWAY_MODEL_TIER_LABELS[tier]}
+                        </DropdownMenuLabel>
+                        {tierOptions.map((option) => (
+                          <DropdownMenuCheckboxItem
+                            key={option.id}
+                            checked={option.id === activeModelId}
+                            onCheckedChange={(checked) => {
+                              if (checked) onModelChange?.(option.id)
+                            }}
+                          >
+                            <MenuItemText
+                              title={option.label}
+                              description={option.id}
+                            />
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuGroup>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <span className="hidden text-xs text-muted-foreground sm:inline">
+                {activeModelLabel}
+              </span>
+            )}
             <PromptInputSubmit
               status={submitStatus}
               disabled={disabled || submitting}
@@ -311,7 +415,8 @@ export function ThreadPromptComposer({
             />
           </div>
         </PromptInputFooter>
-      </PromptInput>
+        </PromptInput>
+      </PromptInputProvider>
     </div>
   )
 }

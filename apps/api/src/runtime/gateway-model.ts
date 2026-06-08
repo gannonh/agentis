@@ -13,6 +13,13 @@ export function resolveGatewayModelId(modelId: string): string {
   if (!trimmed) {
     throw new Error("Model id is required")
   }
+  if (trimmed.startsWith("@cf/")) {
+    const parts = trimmed.split("/")
+    if (parts.length === 3 && parts[0] === "@cf" && parts[1] && parts[2]) {
+      return trimmed
+    }
+    throw new Error("Workers AI model ids must use @cf/author/model format")
+  }
   if (trimmed.includes("/")) {
     const parts = trimmed.split("/")
     if (parts.length === 2 && parts[0] && parts[1]) {
