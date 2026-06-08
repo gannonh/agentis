@@ -51,6 +51,12 @@ describe("Gateway model resolution", () => {
     )
   })
 
+  it("rejects Workers AI model ids with extra path segments", () => {
+    expect(() => resolveGatewayModelId("@cf/a/b/c")).toThrow(
+      "Workers AI model ids must use @cf/author/model format"
+    )
+  })
+
   it("rejects malformed prefixed Gateway model ids", () => {
     for (const modelId of [
       "openai/",

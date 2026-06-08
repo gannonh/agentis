@@ -27,6 +27,7 @@ import {
   composioToolNameToToolkit,
   formatToolStepTitle,
 } from "./run-tool-labels.js"
+import { inferResearchBriefTitle } from "./research-brief-finalizer.js"
 import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
 
 export type RunExecutorMocksDeps = {
@@ -373,17 +374,6 @@ export async function executeMockNativeStaticArtifactStream(
   })
 }
 
-function inferResearchBriefTitle(prompt: string): string {
-  const topicMatch = prompt.match(
-    /research\s+(?:how|what|why|whether)?\s*(.+?)(?:\.|,| and create|\s+then\b)/i
-  )
-  const topic = topicMatch?.[1]?.trim()
-  if (topic && topic.length <= 80) {
-    return `Research brief: ${topic}`
-  }
-  return "Research brief"
-}
-
 export async function executeMockResearchBriefStream(
   deps: RunExecutorMocksDeps,
   runId: string,
@@ -537,6 +527,7 @@ export async function executeMockResearchBriefStream(
       title: generated.document.title,
       visibilityScope: generated.document.visibilityScope,
       currentVersion: generated.currentVersion,
+      viewPath: `/documents/${generated.document.id}`,
     },
   })
 

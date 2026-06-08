@@ -36,7 +36,7 @@ function uniqueSearchResults(searches: SearchWebOutput[]) {
   return results
 }
 
-function inferResearchBriefTitle(prompt: string): string {
+export function inferResearchBriefTitle(prompt: string): string {
   const topicMatch = prompt.match(
     /research\s+(?:how|what|why|whether)?\s*(.+?)(?:\.|,| and create|\s+then\b)/i
   )

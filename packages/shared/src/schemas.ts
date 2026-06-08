@@ -1,5 +1,8 @@
 import { z } from "zod"
-import { gatewayModelOptionSchema } from "./gateway-models.js"
+import {
+  DEFAULT_GATEWAY_MODEL,
+  gatewayModelOptionSchema,
+} from "./gateway-models.js"
 import {
   artifactContentFormatSchema,
   artifactDetailResponseSchema,
@@ -837,10 +840,7 @@ export const abortRunResponseSchema = z.object({
   run: runSchema,
 })
 
-import { DEFAULT_GATEWAY_MODEL } from "./gateway-models.js"
-
-export { DEFAULT_GATEWAY_MODEL } from "./gateway-models.js"
-/** @deprecated Use DEFAULT_GATEWAY_MODEL. */
+/** @deprecated Use DEFAULT_GATEWAY_MODEL from `@workspace/shared` (gateway-models). */
 export const DEFAULT_OPENAI_MODEL = DEFAULT_GATEWAY_MODEL
 
 export type RunStatus = z.infer<typeof runStatusSchema>

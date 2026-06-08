@@ -167,6 +167,7 @@ export function ThreadDetailPage() {
   const [mode, setMode] = useState<ThreadMode>("plan")
   const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
   const [selectedModel, setSelectedModel] = useState<string | undefined>()
+  const [modelExplicitlyChosen, setModelExplicitlyChosen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [creatingAgentDraft, setCreatingAgentDraft] = useState(false)
   const [createAgentError, setCreateAgentError] = useState<string | null>(null)
@@ -180,7 +181,11 @@ export function ThreadDetailPage() {
   }, [detail?.thread.mode])
 
   useEffect(() => {
-    if (!health.aiGatewayProvider) return
+    setModelExplicitlyChosen(false)
+  }, [threadId])
+
+  useEffect(() => {
+    if (!health.aiGatewayProvider || modelExplicitlyChosen) return
     setSelectedModel(
       resolveSelectableGatewayModel(
         detail?.thread.model ?? health.defaultModel ?? health.model,
@@ -193,6 +198,7 @@ export function ThreadDetailPage() {
     health.aiGatewayProvider,
     health.defaultModel,
     health.model,
+    modelExplicitlyChosen,
   ])
 
   const composerDisabled = !health.available
@@ -420,7 +426,10 @@ export function ThreadDetailPage() {
                   onGrantTool={grantToolkit}
                   onRevokeTool={revokeGrant}
                   selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
+                  onModelChange={(modelId) => {
+                    setModelExplicitlyChosen(true)
+                    setSelectedModel(modelId)
+                  }}
                 />
               </div>
             </div>
