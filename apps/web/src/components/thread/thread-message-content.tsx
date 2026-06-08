@@ -41,7 +41,11 @@ function ToolResultCard({
       ) : null}
       {native.document ? (
         <div className="mt-2">
-          <p className="font-medium">Document created</p>
+          <p className="font-medium">
+            {native.toolName === "updateDocument"
+              ? "Document updated"
+              : "Document created"}
+          </p>
           <p className="mt-1 text-muted-foreground">{native.document.title}</p>
           {native.document.version || native.document.visibilityScope ? (
             <p className="mt-1 text-muted-foreground">

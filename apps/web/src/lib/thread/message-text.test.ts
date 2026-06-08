@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { Message } from "@workspace/shared"
+import { shouldSuppressTextForToolResults } from "@workspace/shared"
 import {
   getDisplayTranscriptText,
   getTranscriptText,
   messageHasVisibleContent,
-  shouldSuppressTextForToolResults,
 } from "./message-text"
 
 function assistantMessage(
@@ -55,6 +55,37 @@ describe("message-text", () => {
       true
     )
     expect(getDisplayTranscriptText(assistantMessage(parts))).toBe("")
+  })
+
+  it("keeps user-requested JSON summaries with tool results", () => {
+    const message = assistantMessage([
+      {
+        type: "text",
+        text: '{"summary":"Adoption is rising","sources":["https://example.com"]}',
+      },
+      {
+        type: "tool-result",
+        toolCallId: "call_1",
+        toolName: "searchWeb",
+        output: {
+          query: "ai agents",
+          provider: "tavily:keyless",
+          results: [],
+          resultCount: 0,
+          truncated: false,
+        },
+      },
+    ])
+
+    expect(getDisplayTranscriptText(message)).toBe(
+      '{"summary":"Adoption is rising","sources":["https://example.com"]}'
+    )
+  })
+
+  it("treats streaming messages as visible before tool output arrives", () => {
+    expect(messageHasVisibleContent(assistantMessage([], "streaming"))).toBe(
+      true
+    )
   })
 
   it("keeps readable assistant prose with tool results", () => {

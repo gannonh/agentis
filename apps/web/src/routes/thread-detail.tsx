@@ -432,7 +432,7 @@ export function ThreadDetailPage() {
             <RunTimeline run={latestRun} steps={steps} />
             <ThreadDurableArtifacts
               threadId={threadId}
-              refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}:${steps.length}:${detail?.messages.length ?? 0}:${streaming ? "streaming" : "idle"}`}
+              refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}:${steps.length}:${detail?.messages.length ?? 0}`}
             />
           </div>
         </div>

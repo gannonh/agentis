@@ -61,6 +61,28 @@ describe("ThreadMessageContent", () => {
     )
   })
 
+  it("labels updateDocument results as updated", () => {
+    renderMessage(
+      assistantMessage([
+        {
+          type: "tool-result",
+          toolCallId: "call_3",
+          toolName: "updateDocument",
+          output: {
+            documentId: "document_123",
+            title: "Research brief",
+            viewPath: "/documents/document_123",
+            currentVersion: 2,
+            visibilityScope: "thread",
+          },
+        },
+      ])
+    )
+
+    expect(screen.getByText("Document updated")).toBeInTheDocument()
+    expect(screen.queryByText("Document created")).not.toBeInTheDocument()
+  })
+
   it("renders createDocument with an open document link", () => {
     renderMessage(
       assistantMessage([
@@ -90,6 +112,15 @@ describe("ThreadMessageContent", () => {
       "href",
       "/documents/document_123"
     )
+  })
+
+  it("renders streaming status for empty in-flight messages", () => {
+    renderMessage({
+      ...assistantMessage([]),
+      status: "streaming",
+    })
+
+    expect(screen.getByText("Streaming…")).toBeInTheDocument()
   })
 
   it("renders failed status for empty assistant messages", () => {

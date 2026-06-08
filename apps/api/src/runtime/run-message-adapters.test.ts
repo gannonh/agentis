@@ -17,6 +17,32 @@ describe("run message adapters", () => {
     )
   })
 
+  it("preserves user-requested JSON summaries when tool results exist", () => {
+    const parts = stripRedundantToolJsonText([
+      {
+        type: "text",
+        text: '{"summary":"Adoption is rising","sources":["https://example.com"]}',
+      },
+      {
+        type: "tool-result",
+        toolCallId: "call_1",
+        toolName: "searchWeb",
+        output: {
+          query: "ai agents",
+          provider: "tavily:keyless",
+          results: [],
+          resultCount: 0,
+          truncated: false,
+        },
+      },
+    ])
+
+    expect(parts[0]).toMatchObject({
+      type: "text",
+      text: '{"summary":"Adoption is rising","sources":["https://example.com"]}',
+    })
+  })
+
   it("strips redundant provider JSON text when tool results exist", () => {
     const parts = stripRedundantToolJsonText([
       {
