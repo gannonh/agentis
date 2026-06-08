@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { Message } from "@workspace/shared"
 import {
   normalizeAssistantText,
+  stripRedundantToolJsonText,
   toModelMessages,
 } from "./run-message-adapters.js"
 
@@ -14,6 +15,57 @@ describe("run message adapters", () => {
     ).toBe(
       "Download [the document](/documents/document_123) or view /documents/document_123"
     )
+  })
+
+  it("preserves user-requested JSON summaries when tool results exist", () => {
+    const parts = stripRedundantToolJsonText([
+      {
+        type: "text",
+        text: '{"summary":"Adoption is rising","sources":["https://example.com"]}',
+      },
+      {
+        type: "tool-result",
+        toolCallId: "call_1",
+        toolName: "searchWeb",
+        output: {
+          query: "ai agents",
+          provider: "tavily:keyless",
+          results: [],
+          resultCount: 0,
+          truncated: false,
+        },
+      },
+    ])
+
+    expect(parts[0]).toMatchObject({
+      type: "text",
+      text: '{"summary":"Adoption is rising","sources":["https://example.com"]}',
+    })
+  })
+
+  it("strips redundant provider JSON text when tool results exist", () => {
+    const parts = stripRedundantToolJsonText([
+      {
+        type: "text",
+        text: '{"query":"ai agents","provider":"tavily:keyless","results":[]}',
+      },
+      {
+        type: "tool-result",
+        toolCallId: "call_1",
+        toolName: "searchWeb",
+        output: {
+          query: "ai agents",
+          provider: "tavily:keyless",
+          results: [],
+          resultCount: 0,
+          truncated: false,
+        },
+      },
+    ])
+
+    expect(parts.some((part) => part.type === "text")).toBe(false)
+    expect(parts).toHaveLength(1)
+    expect(parts[0]).toMatchObject({ type: "tool-result", toolName: "searchWeb" })
   })
 
   it("includes tool errors in model messages for retry context", () => {

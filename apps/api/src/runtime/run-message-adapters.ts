@@ -1,5 +1,9 @@
 import type { ModelMessage, UIMessage } from "ai"
-import type { Message, MessagePart } from "@workspace/shared"
+import {
+  shouldSuppressTextForToolResults,
+  type Message,
+  type MessagePart,
+} from "@workspace/shared"
 import { summarizeToolOutput } from "../composio/sanitize.js"
 import { isPendingApprovalOutput } from "../workspaces/workspace-mutation-output.js"
 
@@ -73,6 +77,14 @@ function formatToolErrorsForModel(parts: MessagePart[]) {
       )}`
     })
     .join("\n")
+}
+
+export function stripRedundantToolJsonText(parts: MessagePart[]): MessagePart[] {
+  const text = getTextFromParts(parts)
+  if (!shouldSuppressTextForToolResults(text, parts)) {
+    return parts
+  }
+  return setTextPart(parts, "")
 }
 
 export function formatToolResultFallback(parts: MessagePart[]): string | null {

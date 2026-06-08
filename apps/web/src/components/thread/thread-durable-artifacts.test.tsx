@@ -40,6 +40,32 @@ const baseArtifact = {
 }
 
 describe("ThreadDurableArtifacts", () => {
+  it("shows an Open document launch button for document artifacts", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        ...baseArtifact,
+        id: "document_123",
+        title: "Research brief: AI agents",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <ThreadDurableArtifacts threadId="thread_test" />
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText("Research brief: AI agents")).toBeInTheDocument()
+    expect(screen.getByText("document · markdown · v1")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Open document" })).toHaveAttribute(
+      "href",
+      "/documents/document_123"
+    )
+  })
+
   it("shows an Open app launch button for app artifacts", async () => {
     vi.mocked(listArtifacts).mockResolvedValueOnce([
       {
