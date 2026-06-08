@@ -82,6 +82,19 @@ describe("message-text", () => {
     )
   })
 
+  it("treats failed and aborted messages as visible without parts", () => {
+    expect(
+      messageHasVisibleContent(
+        assistantMessage([], "failed")
+      )
+    ).toBe(true)
+    expect(
+      messageHasVisibleContent(
+        assistantMessage([], "aborted")
+      )
+    ).toBe(true)
+  })
+
   it("treats tool-result-only messages as visible", () => {
     const message = assistantMessage([
       {

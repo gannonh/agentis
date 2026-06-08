@@ -1,6 +1,5 @@
 import { Link } from "react-router"
 import type { Message, MessagePart } from "@workspace/shared"
-import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { MessageResponse } from "@/components/ai-elements/message"
 import {

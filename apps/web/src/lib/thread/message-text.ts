@@ -59,6 +59,9 @@ export function getDisplayTranscriptText(message: Message): string {
 }
 
 export function messageHasVisibleContent(message: Message): boolean {
+  if (message.status === "failed" || message.status === "aborted") {
+    return true
+  }
   const text = getDisplayTranscriptText(message)
   if (text.trim()) return true
   return message.parts.some(

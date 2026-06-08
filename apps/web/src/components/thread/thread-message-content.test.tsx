@@ -92,6 +92,15 @@ describe("ThreadMessageContent", () => {
     )
   })
 
+  it("renders failed status for empty assistant messages", () => {
+    renderMessage({
+      ...assistantMessage([]),
+      status: "failed",
+    })
+
+    expect(screen.getByText("Failed")).toBeInTheDocument()
+  })
+
   it("renders readable markdown when text is not provider JSON", () => {
     renderMessage(
       assistantMessage([
