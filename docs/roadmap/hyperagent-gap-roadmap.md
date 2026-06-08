@@ -17,7 +17,7 @@
 | Surface | HyperAgent (observed) | Agentis today | Gap severity |
 | --- | --- | --- | --- |
 | New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed threads; simpler home | Medium |
-| Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; thinner artifact/tool rendering | High |
+| Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, document links in transcript, durable-artifact sidebar; inline Working Doc panel still missing | Medium–High |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
 | Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents + partial fixture merge on detail | High |
 | Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | Fixture-backed metrics and queues | High |
@@ -55,7 +55,7 @@ Slices are grouped into **waves**. Within a wave, issues are parallel-safe unles
 | ID | Slice | Issue |
 | --- | --- | --- |
 | HA-GAP-00a | Gateway model picker + research brief golden path | Shipped on `cursor/2dddaf88` |
-| HA-GAP-00b | Thread runtime UX — tool results & document creation in chat | [#412](https://github.com/gannonh/agentis/issues/412) |
+| HA-GAP-00b | Thread runtime UX — tool results & document creation in chat | Shipped in PR [#424](https://github.com/gannonh/agentis/pull/424) ([#412](https://github.com/gannonh/agentis/issues/412)) |
 | HA-GAP-00c | One Composio integration golden path (generic thread) | [#413](https://github.com/gannonh/agentis/issues/413) |
 | HA-GAP-00d | Honest UI for fixture-backed surfaces | [#414](https://github.com/gannonh/agentis/issues/414) |
 | HA-GAP-00e | Self-host docs (Cloudflare gateway + Tavily keyless) | [#415](https://github.com/gannonh/agentis/issues/415) |
@@ -242,7 +242,7 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 - [ ] Open in full workspace link.
 - [ ] Mobile: collapsible panel.
 
-**Depends on:** HA-GAP-00b (tool result rendering) recommended first.
+**Depends on:** HA-GAP-00b shipped (transcript tool cards); inline Working Doc panel remains open.
 
 ---
 

@@ -407,12 +407,27 @@ Current behavior:
 
 ### Thread transcript
 
-File: `apps/web/src/routes/thread-detail.tsx`
+Implemented files:
+
+- `apps/web/src/routes/thread-detail.tsx`
+- `apps/web/src/components/thread/thread-message-content.tsx`
+- `apps/web/src/lib/thread/native-tool-display.ts`
+- `apps/web/src/lib/thread/message-text.ts`
+- `packages/shared/src/message-text.ts`
+- `apps/api/src/runtime/run-message-adapters.ts`
 
 Current behavior:
 
-- Renders text parts from assistant and user messages.
-- Does not render tool-call or tool-result message parts directly.
+- Renders assistant and user text parts through `ThreadMessageContent`, using
+  `getDisplayTranscriptText` to suppress known raw provider JSON when matching
+  `tool-result` parts exist.
+- Renders native `tool-result` parts as human-readable cards (e.g. `searchWeb`
+  summaries, `createDocument` / `updateDocument` title + link to
+  `/documents/:documentId`).
+- Keeps detailed native tool evidence in the run timeline; transcript cards are
+  the primary legibility surface for research-brief and document-creation runs.
+- Refreshes the durable-artifacts sidebar when a run completes so new documents
+  appear without timeline drill-down.
 
 ## Composio relationship
 
