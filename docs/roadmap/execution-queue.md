@@ -29,9 +29,27 @@ Or read the table below.
 
 ---
 
+## Wave 1 — HyperAgent gap (honest operations)
+
+Source: `docs/roadmap/hyperagent-gap-roadmap.md`. **Start after Wave 0 gate** (#412–#415 complete).
+
+| # | Status | Slice | Issue | Depends on |
+|---|--------|-------|-------|------------|
+| 7 | Open | Run cost attribution API | [#417](https://github.com/gannonh/agentis/issues/417) | — |
+| 8 | Open | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) | #417 |
+| 9 | Open | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) | #417 |
+| 10 | Open | Learning dashboard API (read path) | [#420](https://github.com/gannonh/agentis/issues/420) | — |
+| 11 | Open | Post-run learning suggestions + accept/dismiss | [#421](https://github.com/gannonh/agentis/issues/421) | #420 |
+| 12 | Open | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) | #420 |
+| 13 | Open | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) | #421, #422 (partial OK) |
+
+**Parallel after Wave 0:** #417 and #420 can run in parallel. #418 and #419 can follow #417 in parallel.
+
+---
+
 ## Not this queue
 
-`docs/ideation/2026-06-08-open-ideation.md` holds **future bets** (lineage layer, Command Center live metrics, OEE, promotion lanes). Defer until the queue above is boring.
+`docs/ideation/2026-06-08-open-ideation.md` holds **future bets** (lineage layer, OEE scorecard, promotion lanes). Wave 1 supersedes the "Command Center live metrics" ideation item — see `docs/roadmap/hyperagent-gap-roadmap.md` for full gap map.
 
 ---
 
@@ -102,3 +120,4 @@ Or use Kata / `gh issue view 412` if you use that workflow.
 | Date | Change |
 |------|--------|
 | 2026-06-08 | Queue created; shipped items 1–2 from `cursor/2dddaf88`; opened #412–#415 |
+| 2026-06-08 | Wave 1 HyperAgent gap slices opened #417–#423 from `hyperagent-gap-roadmap.md` |

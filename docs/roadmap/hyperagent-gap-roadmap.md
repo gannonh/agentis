@@ -68,6 +68,20 @@ Slices are grouped into **waves**. Within a wave, issues are parallel-safe unles
 
 These slices make Agentis **truthful and inspectable** for fleet oversight — the biggest perceived gap vs HyperAgent Command Center and agent observability.
 
+| ID | Slice | Issue |
+| --- | --- | --- |
+| HA-GAP-01 | Run cost attribution API | [#417](https://github.com/gannonh/agentis/issues/417) |
+| HA-GAP-02 | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) |
+| HA-GAP-03 | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) |
+| HA-GAP-04 | Learning dashboard API (read path) | [#420](https://github.com/gannonh/agentis/issues/420) |
+| HA-GAP-05 | Post-run learning suggestions + accept/dismiss | [#421](https://github.com/gannonh/agentis/issues/421) |
+| HA-GAP-06 | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) |
+| HA-GAP-07 | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) |
+
+**Gate:** Complete Wave 0 (#412–#415) before starting Wave 1.
+
+**Max parallelism after Wave 0:** #417, #420 can start concurrently; #418 and #419 follow #417; #421–#423 follow #420.
+
 #### HA-GAP-01: Run cost attribution API
 
 **HyperAgent reference:** Agent detail → Observability → usage by model/provider (Claude, Exa, Gemini token lines); Command Center total cost; per-run cost on recent runs.
