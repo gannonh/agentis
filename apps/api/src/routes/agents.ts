@@ -8,6 +8,7 @@ import {
 import { buildAgentDetail } from "../agents/agent-detail-service.js"
 import {
   resolveRequestedAgentGrants,
+  toolkitGrantErrorMessage,
   toolkitGrantRemediation,
 } from "../agents/tool-grant-resolution.js"
 import type { AppConfig } from "../config.js"
@@ -57,7 +58,8 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     if ("error" in resolvedGrants) {
       return c.json(
         {
-          error: resolvedGrants.error,
+          error: toolkitGrantErrorMessage(resolvedGrants.error),
+          code: resolvedGrants.error,
           remediation: toolkitGrantRemediation(resolvedGrants.error),
         },
         400
@@ -120,7 +122,8 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
       if ("error" in resolvedGrants) {
         return c.json(
           {
-            error: resolvedGrants.error,
+            error: toolkitGrantErrorMessage(resolvedGrants.error),
+            code: resolvedGrants.error,
             remediation: toolkitGrantRemediation(resolvedGrants.error),
           },
           400
@@ -200,7 +203,8 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
     if (resolvedGrants && "error" in resolvedGrants) {
       return c.json(
         {
-          error: resolvedGrants.error,
+          error: toolkitGrantErrorMessage(resolvedGrants.error),
+          code: resolvedGrants.error,
           remediation: toolkitGrantRemediation(resolvedGrants.error),
         },
         400

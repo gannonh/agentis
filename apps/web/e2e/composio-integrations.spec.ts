@@ -52,7 +52,7 @@ test.describe("composio integrations", () => {
     await page.getByRole("button", { name: "Tools" }).click()
     await expect(page.getByRole("menu")).toBeVisible()
     await page.getByRole("menuitem", { name: /GitHub/i }).click()
-    await expect(page.getByText(/GitHub connected/i)).toBeVisible()
+    await expect(page.getByText(/GitHub enabled/i)).toBeVisible()
 
     await composer.fill("List my GitHub repositories")
     await page.getByRole("button", { name: /send message/i }).click()
@@ -66,7 +66,7 @@ test.describe("composio integrations", () => {
 
     const url = page.url()
     await page.reload()
-    await expect(page.getByText(/GitHub connected/i)).toBeVisible()
+    await expect(page.getByText(/GitHub enabled/i)).toBeVisible()
     await expect(page).toHaveURL(url)
   })
 

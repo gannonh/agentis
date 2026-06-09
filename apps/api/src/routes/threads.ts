@@ -15,7 +15,9 @@ import type { AppConfig } from "../config.js"
 import { DocumentService } from "../documents/document-service.js"
 import {
   resolveRequestedAgentGrants,
+  toolkitGrantErrorMessage,
   toolkitGrantRemediation,
+  type ResolvedAgentToolGrant,
 } from "../agents/tool-grant-resolution.js"
 import { summarizeTitle } from "../lib/title-summary.js"
 import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
@@ -96,7 +98,8 @@ export function createThreadRoutes(
       if ("error" in resolvedGrants) {
         return c.json(
           {
-            error: resolvedGrants.error,
+            error: toolkitGrantErrorMessage(resolvedGrants.error),
+            code: resolvedGrants.error,
             remediation: toolkitGrantRemediation(resolvedGrants.error),
           },
           400
@@ -125,6 +128,22 @@ export function createThreadRoutes(
       return c.json(created, 201)
     }
 
+    const requestedGrants = body.toolGrants ?? []
+    const resolvedGrants =
+      requestedGrants.length > 0
+        ? resolveRequestedAgentGrants(repos, requestedGrants)
+        : { grants: [] as ResolvedAgentToolGrant[] }
+    if ("error" in resolvedGrants) {
+      return c.json(
+        {
+          error: toolkitGrantErrorMessage(resolvedGrants.error),
+          code: resolvedGrants.error,
+          remediation: toolkitGrantRemediation(resolvedGrants.error),
+        },
+        400
+      )
+    }
+
     const created = repos.threads.createWithInitialRun({
       title: summarizeTitle(body.prompt),
       prompt: body.prompt,
@@ -135,6 +154,7 @@ export function createThreadRoutes(
       mode,
       projectId: body.projectId,
       agentId: GENERIC_AGENTIS_AGENT_ID,
+      toolGrants: resolvedGrants.grants,
     })
 
     return c.json(created, 201)

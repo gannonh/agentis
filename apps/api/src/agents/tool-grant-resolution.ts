@@ -6,7 +6,7 @@ export type ResolvedAgentToolGrant = {
   connectionId: string
 }
 
-type GrantResolutionError =
+export type GrantResolutionError =
   | "duplicate_toolkit_grant"
   | "toolkit_connection_mismatch"
   | "toolkit_not_connected"
@@ -14,6 +14,14 @@ type GrantResolutionError =
 type GrantResolutionResult =
   | { grants: ResolvedAgentToolGrant[] }
   | { error: GrantResolutionError }
+
+const GRANT_ERROR_MESSAGES: Record<GrantResolutionError, string> = {
+  duplicate_toolkit_grant: "Each toolkit can only be granted once.",
+  toolkit_connection_mismatch:
+    "The selected connection does not match the requested toolkit.",
+  toolkit_not_connected:
+    "Connect the toolkit from Integrations before granting it.",
+}
 
 export function resolveRequestedAgentGrants(
   repos: Repositories,
@@ -53,9 +61,13 @@ export function resolveRequestedAgentGrants(
   return { grants: resolvedGrants }
 }
 
+export function toolkitGrantErrorMessage(error: GrantResolutionError): string {
+  return GRANT_ERROR_MESSAGES[error]
+}
+
 export function toolkitGrantRemediation(
-  error: string | undefined
+  error: GrantResolutionError | undefined
 ): string | undefined {
-  if (error !== "toolkit_not_connected") return undefined
-  return "Connect the toolkit from Integrations before granting it to an agent."
+  if (!error) return undefined
+  return toolkitGrantErrorMessage(error)
 }

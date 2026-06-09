@@ -4,11 +4,13 @@ export const CURATED_COMPOSIO_TOOLS: Record<
 > = {
   github: {
     toolSlug: "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER",
-    description: "List repositories for the connected GitHub account",
+    description:
+      "List repositories for the connected GitHub account. Call this when the user asks about their GitHub repos or repositories.",
   },
   slack: {
     toolSlug: "SLACK_LIST_ALL_CHANNELS",
-    description: "List Slack channels for the connected workspace",
+    description:
+      "List Slack channels for the connected workspace. Call this when the user asks about their Slack channels.",
   },
   gmail: {
     toolSlug: "GMAIL_LIST_LABELS",

@@ -504,4 +504,32 @@ describe("RunTimeline", () => {
     expect(screen.getByText("Image provider is not configured.")).toBeInTheDocument()
     expect(screen.getByText(/Configure an image generation provider/)).toBeInTheDocument()
   })
+
+  it("shows human composio preflight guidance instead of machine remediation codes", () => {
+    renderTimeline({
+      run: { ...run, status: "failed", errorSummary: "GitHub is not connected." },
+      steps: [
+        {
+          ...step({
+            provider: "composio",
+            toolkitSlug: "github",
+            toolSlug: "preflight",
+            error:
+              "GitHub is not connected. Connect it from Integrations, then grant it to this thread.",
+            remediation: "toolkit_not_connected",
+          }),
+          type: "error",
+          status: "failed",
+          title: "Integration required",
+        },
+      ],
+    })
+
+    expect(
+      screen.getByText(
+        "GitHub is not connected. Connect it from Integrations, then grant it to this thread."
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText("toolkit_not_connected")).not.toBeInTheDocument()
+  })
 })

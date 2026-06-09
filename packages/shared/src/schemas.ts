@@ -575,6 +575,7 @@ export const createThreadRequestSchema = z.object({
   mode: threadModeSchema.optional(),
   projectId: z.string().optional(),
   agentId: z.string().optional(),
+  toolGrants: agentToolGrantInputListSchema.optional(),
 })
 
 export const createThreadResponseSchema = z.object({

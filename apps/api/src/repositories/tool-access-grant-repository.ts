@@ -87,4 +87,13 @@ export class ToolAccessGrantRepository {
     this.db.delete(toolAccessGrants).where(eq(toolAccessGrants.id, id)).run()
     return true
   }
+
+  hasAnyForConnection(connectionId: string): boolean {
+    const row = this.db
+      .select({ id: toolAccessGrants.id })
+      .from(toolAccessGrants)
+      .where(eq(toolAccessGrants.connectionId, connectionId))
+      .get()
+    return row !== undefined
+  }
 }

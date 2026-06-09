@@ -109,6 +109,109 @@ describe("run executor composio bridge", () => {
     ).toBe(true)
   })
 
+  it("returns remediation when GitHub is connected but not granted", async () => {
+    const { app, context } = createMockRuntimeApp((testContext) => {
+      testContext.repos.integrationToolkits.seedFeatured()
+      testContext.repos.integrationConnections.create({
+        toolkitSlug: "github",
+        status: "connected",
+        composioConnectedAccountId: "acct-github",
+      })
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "list my top 5 repos" }),
+    })
+    const { run } = (await created.json()) as { run: { id: string } }
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(400)
+    expect(context.repos.runs.getById(run.id)?.status).toBe("failed")
+    expect(
+      context.repos.steps.listByRunId(run.id).some(
+        (step) =>
+          step.title === "Integration required" &&
+          step.payload?.remediation === "toolkit_not_granted" &&
+          typeof step.payload?.error === "string" &&
+          step.payload.error.includes("not granted")
+      )
+    ).toBe(true)
+  })
+
+  it("creates generic threads with requested tool grants", async () => {
+    const { app, context } = createMockRuntimeApp((testContext) => {
+      testContext.repos.integrationToolkits.seedFeatured()
+      testContext.repos.integrationConnections.create({
+        toolkitSlug: "github",
+        status: "connected",
+        composioConnectedAccountId: "acct-github",
+      })
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "List my GitHub repositories",
+        toolGrants: [{ toolkitSlug: "github" }],
+      }),
+    })
+    expect(created.status).toBe(201)
+    const { thread } = (await created.json()) as { thread: { id: string } }
+    const grants = context.repos.toolAccessGrants.listByScope("thread", thread.id)
+    expect(grants).toHaveLength(1)
+    expect(grants[0]?.toolkitSlug).toBe("github")
+  })
+
+  it("executes GitHub composio tool when connected and granted", async () => {
+    const { app, context } = createMockRuntimeApp((testContext) => {
+      testContext.repos.integrationToolkits.seedFeatured()
+      testContext.repos.integrationConnections.create({
+        toolkitSlug: "github",
+        status: "connected",
+        composioConnectedAccountId: "acct-github",
+      })
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "List my GitHub repositories" }),
+    })
+    const { thread, run } = (await created.json()) as {
+      thread: { id: string }
+      run: { id: string }
+    }
+
+    const grant = await app.request(`/api/threads/${thread.id}/tool-grants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ toolkitSlug: "github" }),
+    })
+    expect(grant.status).toBe(201)
+
+    const stream = await app.request(`/api/runs/${run.id}/stream`, {
+      method: "POST",
+    })
+    expect(stream.status).toBe(200)
+    await stream.text()
+
+    expect(context.repos.runs.getById(run.id)?.status).toBe("completed")
+    expect(
+      context.repos.steps.listByRunId(run.id).some(
+        (step) =>
+          step.type === "tool-result" &&
+          step.status === "completed" &&
+          step.payload?.provider === "composio" &&
+          step.payload?.toolkitSlug === "github"
+      )
+    ).toBe(true)
+  })
+
   it("persists native workspace tool evidence in mock runtime", async () => {
     const { app, context } = createMockRuntimeApp()
     const workspace = context.repos.workspaces.ensureGenericAgentisWorkspace()

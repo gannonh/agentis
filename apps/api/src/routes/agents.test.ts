@@ -77,8 +77,9 @@ describe("agent routes", () => {
     })
 
     expect(response.status).toBe(400)
-    const body = (await response.json()) as { error: string }
-    expect(body.error).toBe("duplicate_toolkit_grant")
+    const body = (await response.json()) as { error: string; code?: string }
+    expect(body.error).toBe("Each toolkit can only be granted once.")
+    expect(body.code).toBe("duplicate_toolkit_grant")
     expect(ctx.repos.agents.list()).toHaveLength(0)
   })
 
@@ -123,9 +124,11 @@ describe("agent routes", () => {
       error: string
       remediation?: string
     }
-    expect(body.error).toBe("toolkit_not_connected")
+    expect(body.error).toBe(
+      "Connect the toolkit from Integrations before granting it."
+    )
     expect(body.remediation).toBe(
-      "Connect the toolkit from Integrations before granting it to an agent."
+      "Connect the toolkit from Integrations before granting it."
     )
   })
 
@@ -782,9 +785,11 @@ describe("agent routes", () => {
       error: string
       remediation?: string
     }
-    expect(body.error).toBe("toolkit_not_connected")
+    expect(body.error).toBe(
+      "Connect the toolkit from Integrations before granting it."
+    )
     expect(body.remediation).toBe(
-      "Connect the toolkit from Integrations before granting it to an agent."
+      "Connect the toolkit from Integrations before granting it."
     )
     expect(ctx.repos.threads.list()).toHaveLength(0)
   })

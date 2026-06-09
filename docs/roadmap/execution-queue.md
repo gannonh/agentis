@@ -21,11 +21,11 @@ Or read the table below.
 | 1 | **Shipped** | Gateway model catalog + composer picker | PR branch `cursor/2dddaf88` |
 | 2 | **Shipped** | Research golden path (web search → Library brief) + live finalizer | PR branch `cursor/2dddaf88` |
 | 3 | **Shipped** | Thread runtime UX — tool results & document creation in chat | [#412](https://github.com/gannonh/agentis/issues/412) (PR [#424](https://github.com/gannonh/agentis/pull/424)) |
-| 4 | Open | One Composio integration golden path (generic thread) | [#413](https://github.com/gannonh/agentis/issues/413) |
+| 4 | **Shipped** | One Composio integration golden path (generic thread) | [#413](https://github.com/gannonh/agentis/issues/413) (PR [#425](https://github.com/gannonh/agentis/pull/425)) — [UAT](../uat/2026-06-08-composio-github-golden-path.md) |
 | 5 | Open | Honest UI for fixture-backed surfaces | [#414](https://github.com/gannonh/agentis/issues/414) |
 | 6 | Open | Self-host docs (Cloudflare + Tavily keyless) | [#415](https://github.com/gannonh/agentis/issues/415) |
 
-**Next recommended:** [#413](https://github.com/gannonh/agentis/issues/413) (Composio integration golden path).
+**Next recommended:** [#414](https://github.com/gannonh/agentis/issues/414) (Honest UI for fixture-backed surfaces).
 
 ---
 
@@ -122,3 +122,5 @@ Or use Kata / `gh issue view 412` if you use that workflow.
 | 2026-06-08 | Queue created; shipped items 1–2 from `cursor/2dddaf88`; opened #412–#415 |
 | 2026-06-08 | Wave 1 HyperAgent gap slices opened #417–#423 from `hyperagent-gap-roadmap.md` |
 | 2026-06-08 | Shipped #412 (thread tool-result cards, document links, durable-artifact refresh) in PR #424 |
+| 2026-06-08 | Shipped #413 (Composio GitHub golden path); UAT `docs/uat/2026-06-08-composio-github-golden-path.md` |
+| 2026-06-09 | PR #425 review hardening: grant-safe integration refresh, narrower GitHub preflight heuristics, human-readable grant API errors |

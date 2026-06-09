@@ -86,7 +86,7 @@ export { formatToolStepTitle } from "./run-tool-labels.js"
 export { suppressTextForPendingApproval } from "./run-message-adapters.js"
 
 const PLATFORM_SYSTEM_PROMPT =
-  "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary when the user asks about workspace status, agents, or integrations. After calling a Composio tool, summarize the results for the user in plain language."
+  "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary only for overall workspace status, not for data inside a connected integration. When a composio_* tool is available and the user asks for that integration's data, call the matching composio_* tool instead of guessing or refusing. Examples: composio_github for repos; composio_slack for channels. After calling a Composio tool, summarize the results for the user in plain language."
 
 function formatSystemPromptSection(title: string, body?: string | null) {
   const trimmed = body?.trim()

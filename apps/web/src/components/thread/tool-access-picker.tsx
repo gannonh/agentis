@@ -90,7 +90,7 @@ export function ToolAccessPicker({
         const toolkit = availableToolkits.find((t) => t.slug === grant.toolkitSlug)
         return (
           <Badge key={grant.id} variant="secondary" className="gap-1">
-            {toolkit?.name ?? grant.toolkitSlug} connected
+            {toolkit?.name ?? grant.toolkitSlug} enabled
           </Badge>
         )
       })}

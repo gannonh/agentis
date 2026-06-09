@@ -7,9 +7,47 @@ import type { AppConfig } from "../config.js"
 import { isComposioAvailable } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 import { FEATURED_TOOLKIT_SLUGS } from "../repositories/integration-seeds.js"
-import type { ComposioClientAdapter } from "./types.js"
+import type {
+  ComposioClientAdapter,
+  ComposioConnectedAccount,
+} from "./types.js"
 import { listAvailableToolsForToolkit } from "./tool-catalog.js"
 import { toAppToolkitSlug } from "./toolkit-slugs.js"
+
+const CONNECTION_STATUS_PRIORITY: Record<ConnectionStatus, number> = {
+  connected: 0,
+  pending: 1,
+  expired: 2,
+  error: 3,
+  not_connected: 4,
+}
+
+function pickPreferredRemoteAccount(
+  accounts: ComposioConnectedAccount[]
+): ComposioConnectedAccount | null {
+  if (accounts.length === 0) return null
+  return [...accounts].sort(
+    (left, right) =>
+      CONNECTION_STATUS_PRIORITY[left.status] -
+      CONNECTION_STATUS_PRIORITY[right.status]
+  )[0]!
+}
+
+function pickRemoteAccountForConnection(
+  existing: IntegrationConnection | null,
+  accounts: ComposioConnectedAccount[]
+): ComposioConnectedAccount | null {
+  if (accounts.length === 0) return null
+
+  if (existing?.composioConnectedAccountId) {
+    const matched = accounts.find(
+      (account) => account.id === existing.composioConnectedAccountId
+    )
+    if (matched) return matched
+  }
+
+  return pickPreferredRemoteAccount(accounts)
+}
 
 function aggregateToolkitStatus(
   connections: IntegrationConnection[]
@@ -195,9 +233,71 @@ export class IntegrationService {
   }
 
   async refreshAllConnections() {
+    const remoteAccounts = await this.composio.listConnectedAccounts(
+      this.config.composioUserId
+    )
+
+    for (const toolkitSlug of FEATURED_TOOLKIT_SLUGS) {
+      const remoteForToolkit = remoteAccounts.filter(
+        (account) => account.toolkitSlug === toolkitSlug
+      )
+      const existing =
+        this.repos.integrationConnections.getByToolkitSlug(toolkitSlug)
+      const remote = pickRemoteAccountForConnection(existing, remoteForToolkit)
+      if (!remote) continue
+
+      if (existing) {
+        const matchedRemote = existing.composioConnectedAccountId
+          ? remoteForToolkit.find(
+              (account) => account.id === existing.composioConnectedAccountId
+            )
+          : undefined
+        const remoteToSync = matchedRemote ?? remote
+
+        if (
+          existing.composioConnectedAccountId &&
+          !matchedRemote &&
+          this.repos.toolAccessGrants.hasAnyForConnection(existing.id)
+        ) {
+          this.repos.integrationConnections.update(existing.id, {
+            status: "expired",
+            errorCode: "connection_expired",
+            errorMessage:
+              "The connected Composio account is no longer available. Reconnect from Integrations and re-grant access.",
+          })
+          continue
+        }
+
+        this.repos.integrationConnections.update(existing.id, {
+          status: remoteToSync.status,
+          composioConnectedAccountId: remoteToSync.id,
+          accountLabel: remoteToSync.accountLabel,
+          scopes: remoteToSync.scopes,
+          errorCode: remoteToSync.status === "error" ? "connection_error" : null,
+          errorMessage: null,
+        })
+        continue
+      }
+
+      this.repos.integrationConnections.create({
+        toolkitSlug,
+        status: remote.status,
+        composioConnectedAccountId: remote.id,
+        accountLabel: remote.accountLabel,
+        scopes: remote.scopes,
+      })
+    }
+
+    const remoteAccountIds = new Set(remoteAccounts.map((account) => account.id))
     const connections = this.repos.integrationConnections.listByUserId()
     for (const connection of connections) {
       if (!connection.composioConnectedAccountId) continue
+      if (
+        connection.status === "expired" ||
+        !remoteAccountIds.has(connection.composioConnectedAccountId)
+      ) {
+        continue
+      }
       try {
         const refreshed = await this.composio.refreshConnectedAccount(
           connection.composioConnectedAccountId

@@ -92,6 +92,15 @@ describe("shared schemas", () => {
     expect(parsed.agentId).toBe("agent_research")
   })
 
+  it("parses generic thread creation requests with tool grants", () => {
+    const parsed = createThreadRequestSchema.parse({
+      prompt: "List my GitHub repositories",
+      toolGrants: [{ toolkitSlug: "github" }],
+    })
+
+    expect(parsed.toolGrants).toEqual([{ toolkitSlug: "github" }])
+  })
+
   it("parses workspace payloads and workspace-backed thread metadata", () => {
     const now = new Date().toISOString()
     const workspace = workspaceSchema.parse({

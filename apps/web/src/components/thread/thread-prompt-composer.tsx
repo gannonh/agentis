@@ -80,7 +80,6 @@ type ThreadPromptComposerProps = {
   executeBehavior: ExecuteBehavior
   onExecuteBehaviorChange: (behavior: ExecuteBehavior) => void
   submitting?: boolean
-  threadId?: string
   toolGrants?: ToolAccessGrant[]
   availableToolkits?: IntegrationToolkit[]
   onGrantTool?: (toolkitSlug: string) => void | Promise<void>
@@ -115,7 +114,6 @@ export function ThreadPromptComposer({
   executeBehavior,
   onExecuteBehaviorChange,
   submitting,
-  threadId,
   toolGrants = [],
   availableToolkits = [],
   onGrantTool,
@@ -161,7 +159,7 @@ export function ThreadPromptComposer({
         </p>
       ) : null}
 
-      {threadId && onGrantTool && onRevokeTool ? (
+      {onGrantTool && onRevokeTool ? (
         <ToolAccessPicker
           grants={toolGrants}
           availableToolkits={availableToolkits}

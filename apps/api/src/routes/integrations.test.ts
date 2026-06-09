@@ -213,6 +213,179 @@ describe("integration routes", () => {
     expect(googleDrive?.connectedAccountCount).toBe(0)
   })
 
+  it("syncs remote Composio accounts on refresh without retargeting granted accounts", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "error",
+      composioConnectedAccountId: "acct-github-init",
+      errorCode: "connection_error",
+    })
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit() {
+        throw new Error("unused")
+      },
+      async refreshConnectedAccount(connectedAccountId) {
+        return {
+          id: connectedAccountId,
+          toolkitSlug: "github",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return [
+          {
+            id: "acct-github-live",
+            toolkitSlug: "github",
+            status: "connected",
+            accountLabel: "octocat",
+          },
+          {
+            id: "acct-github-init",
+            toolkitSlug: "github",
+            status: "pending",
+          },
+        ]
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const refresh = await app.request("/api/integrations/refresh", {
+      method: "POST",
+    })
+    expect(refresh.status).toBe(200)
+    const body = (await refresh.json()) as {
+      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+    }
+    const github = body.toolkits.find((toolkit) => toolkit.slug === "github")
+    const connection = ctx.repos.integrationConnections.getByToolkitSlug("github")
+    expect(connection?.composioConnectedAccountId).toBe("acct-github-init")
+    expect(github?.status).toBe("connected")
+    expect(github?.connectedAccountCount).toBe(1)
+  })
+
+  it("marks granted connections expired instead of retargeting to a different account", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const connection = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github-old",
+      accountLabel: "old-account",
+    })
+    const thread = ctx.repos.threads.create({
+      title: "Granted refresh",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    ctx.repos.toolAccessGrants.create({
+      scopeType: "thread",
+      scopeId: thread.id,
+      toolkitSlug: "github",
+      connectionId: connection.id,
+    })
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit() {
+        throw new Error("unused")
+      },
+      async refreshConnectedAccount(connectedAccountId) {
+        return {
+          id: connectedAccountId,
+          toolkitSlug: "github",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return [
+          {
+            id: "acct-github-new",
+            toolkitSlug: "github",
+            status: "connected",
+            accountLabel: "new-account",
+          },
+        ]
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const refresh = await app.request("/api/integrations/refresh", {
+      method: "POST",
+    })
+    expect(refresh.status).toBe(200)
+
+    const updated = ctx.repos.integrationConnections.getByToolkitSlug("github")
+    expect(updated?.composioConnectedAccountId).toBe("acct-github-old")
+    expect(updated?.status).toBe("expired")
+    expect(updated?.errorCode).toBe("connection_expired")
+  })
+
+  it("adopts a preferred remote account when no local connection exists", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit() {
+        throw new Error("unused")
+      },
+      async refreshConnectedAccount(connectedAccountId) {
+        return {
+          id: connectedAccountId,
+          toolkitSlug: "github",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return [
+          {
+            id: "acct-github-live",
+            toolkitSlug: "github",
+            status: "connected",
+            accountLabel: "octocat",
+          },
+        ]
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const refresh = await app.request("/api/integrations/refresh", {
+      method: "POST",
+    })
+    expect(refresh.status).toBe(200)
+    const body = (await refresh.json()) as {
+      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+    }
+    const github = body.toolkits.find((toolkit) => toolkit.slug === "github")
+    expect(github?.status).toBe("connected")
+    expect(github?.connectedAccountCount).toBe(1)
+  })
+
   it("resets a pending connection so the toolkit shows not connected", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
