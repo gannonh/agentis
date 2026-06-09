@@ -33,6 +33,22 @@ function pickPreferredRemoteAccount(
   )[0]!
 }
 
+function pickRemoteAccountForConnection(
+  existing: IntegrationConnection | null,
+  accounts: ComposioConnectedAccount[]
+): ComposioConnectedAccount | null {
+  if (accounts.length === 0) return null
+
+  if (existing?.composioConnectedAccountId) {
+    const matched = accounts.find(
+      (account) => account.id === existing.composioConnectedAccountId
+    )
+    if (matched) return matched
+  }
+
+  return pickPreferredRemoteAccount(accounts)
+}
+
 function aggregateToolkitStatus(
   connections: IntegrationConnection[]
 ): ConnectionStatus {
@@ -222,20 +238,21 @@ export class IntegrationService {
     )
 
     for (const toolkitSlug of FEATURED_TOOLKIT_SLUGS) {
-      const preferred = pickPreferredRemoteAccount(
-        remoteAccounts.filter((account) => account.toolkitSlug === toolkitSlug)
+      const remoteForToolkit = remoteAccounts.filter(
+        (account) => account.toolkitSlug === toolkitSlug
       )
-      if (!preferred) continue
-
       const existing =
         this.repos.integrationConnections.getByToolkitSlug(toolkitSlug)
+      const remote = pickRemoteAccountForConnection(existing, remoteForToolkit)
+      if (!remote) continue
+
       if (existing) {
         this.repos.integrationConnections.update(existing.id, {
-          status: preferred.status,
-          composioConnectedAccountId: preferred.id,
-          accountLabel: preferred.accountLabel,
-          scopes: preferred.scopes,
-          errorCode: preferred.status === "error" ? "connection_error" : null,
+          status: remote.status,
+          composioConnectedAccountId: remote.id,
+          accountLabel: remote.accountLabel,
+          scopes: remote.scopes,
+          errorCode: remote.status === "error" ? "connection_error" : null,
           errorMessage: null,
         })
         continue
@@ -243,10 +260,10 @@ export class IntegrationService {
 
       this.repos.integrationConnections.create({
         toolkitSlug,
-        status: preferred.status,
-        composioConnectedAccountId: preferred.id,
-        accountLabel: preferred.accountLabel,
-        scopes: preferred.scopes,
+        status: remote.status,
+        composioConnectedAccountId: remote.id,
+        accountLabel: remote.accountLabel,
+        scopes: remote.scopes,
       })
     }
 

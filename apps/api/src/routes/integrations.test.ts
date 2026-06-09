@@ -213,7 +213,7 @@ describe("integration routes", () => {
     expect(googleDrive?.connectedAccountCount).toBe(0)
   })
 
-  it("syncs remote Composio accounts on refresh", async () => {
+  it("syncs remote Composio accounts on refresh without retargeting granted accounts", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
     ctx.repos.integrationConnections.create({
@@ -245,6 +245,56 @@ describe("integration routes", () => {
             id: "acct-github-init",
             toolkitSlug: "github",
             status: "pending",
+          },
+        ]
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const refresh = await app.request("/api/integrations/refresh", {
+      method: "POST",
+    })
+    expect(refresh.status).toBe(200)
+    const body = (await refresh.json()) as {
+      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+    }
+    const github = body.toolkits.find((toolkit) => toolkit.slug === "github")
+    const connection = ctx.repos.integrationConnections.getByToolkitSlug("github")
+    expect(connection?.composioConnectedAccountId).toBe("acct-github-init")
+    expect(github?.status).toBe("connected")
+    expect(github?.connectedAccountCount).toBe(1)
+  })
+
+  it("adopts a preferred remote account when no local connection exists", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit() {
+        throw new Error("unused")
+      },
+      async refreshConnectedAccount(connectedAccountId) {
+        return {
+          id: connectedAccountId,
+          toolkitSlug: "github",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return [
+          {
+            id: "acct-github-live",
+            toolkitSlug: "github",
+            status: "connected",
+            accountLabel: "octocat",
           },
         ]
       },
