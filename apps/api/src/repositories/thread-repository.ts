@@ -98,6 +98,7 @@ function createQueuedRunRow(input: {
     errorSummary: null,
     usageJson: null,
     cost: null,
+    costBreakdownJson: null,
   }
 }
 

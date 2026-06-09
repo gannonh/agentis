@@ -4,6 +4,7 @@ import {
   createFollowUpRequestSchema,
   createThreadRequestSchema,
   resolveSelectableGatewayModel,
+  runSchema,
   threadDetailSchema,
   threadListItemSchema,
   threadSchema,
@@ -249,6 +250,14 @@ export function createRunRoutes(
   const app = new Hono()
   const documentService = new DocumentService(repos, config)
   const executor = new RunExecutor(repos, config, services, documentService)
+
+  app.get("/:id", (c) => {
+    const run = repos.runs.getById(c.req.param("id"))
+    if (!run) {
+      return c.json({ error: "Run not found", code: "run_not_found" }, 404)
+    }
+    return c.json(runSchema.parse(run))
+  })
 
   app.post("/:id/stream", async (c) => {
     try {

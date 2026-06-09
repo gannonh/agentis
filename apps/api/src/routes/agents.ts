@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import {
   agentListItemSchema,
+  agentUsageResponseSchema,
   createAgentRequestSchema,
   createAgentTestThreadRequestSchema,
   updateAgentRequestSchema,
@@ -156,6 +157,28 @@ export function createAgentRoutes(repos: Repositories, config: AppConfig) {
         500
       )
     }
+  })
+
+  app.get("/:agentId/usage", (c) => {
+    const agentId = c.req.param("agentId")
+    const agent = repos.agents.getById(agentId)
+    if (!agent) {
+      return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+    }
+
+    const periodDays = Number(c.req.query("periodDays") ?? "14")
+    if (!Number.isInteger(periodDays) || periodDays <= 0 || periodDays > 90) {
+      return c.json(
+        {
+          error: "periodDays must be an integer between 1 and 90",
+          code: "invalid_period_days",
+        },
+        400
+      )
+    }
+
+    const usage = repos.runs.getAgentUsage(agentId, periodDays)
+    return c.json(agentUsageResponseSchema.parse(usage))
   })
 
   app.get("/:agentId", (c) => {

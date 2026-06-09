@@ -198,6 +198,7 @@ export const runs = sqliteTable(
     errorSummary: text("error_summary"),
     usageJson: text("usage_json"),
     cost: real("cost"),
+    costBreakdownJson: text("cost_breakdown_json"),
   },
   (table) => [
     index("runs_thread_id_started_at_idx").on(table.threadId, table.startedAt),

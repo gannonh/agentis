@@ -75,6 +75,7 @@ import {
   toModelMessages,
   toUiMessages,
 } from "./run-message-adapters.js"
+import { RunCostLedger } from "../cost/run-cost-ledger.js"
 import { createGatewayLanguageModel } from "./gateway-model.js"
 import { createMockDocumentRunSuffix } from "./mock-document-run.js"
 import {
@@ -304,6 +305,8 @@ export class RunExecutor {
       throw new Error("Thread not found")
     }
 
+    const costLedger = new RunCostLedger(run.model, this.config.mockRuntime)
+
     const threadMessages = this.repos.messages.listByThreadId(run.threadId)
     const latestUserPrompt =
       [...threadMessages]
@@ -365,7 +368,10 @@ export class RunExecutor {
       providerAvailability: { webSearch: this.webSearchService.isAvailable() },
       latestUserPrompt,
       buildTools: {
-        webSearch: () => buildWebSearchTools(this.webSearchService),
+        webSearch: () =>
+          buildWebSearchTools(this.webSearchService, {
+            onSearchResult: (output) => costLedger.recordWebSearch(output),
+          }),
         documents: () =>
           buildDocumentTools(this.documentService, {
             runId,
@@ -956,12 +962,17 @@ export class RunExecutor {
           completionTokens: totalUsage.outputTokens,
           totalTokens: totalUsage.totalTokens,
         }
+        const costResult = hasPendingApproval
+          ? null
+          : costLedger.finalize(usage)
         this.repos.runs.updateStatus(
           runId,
           hasPendingApproval ? "tool-calling" : "completed",
           {
             finishedAt: hasPendingApproval ? undefined : nowIso(),
             usage,
+            cost: costResult?.costUsd,
+            costBreakdown: costResult?.costBreakdown,
           }
         )
         this.createTimelineDebugStep(runId, {

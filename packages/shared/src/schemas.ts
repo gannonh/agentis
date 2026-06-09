@@ -20,6 +20,7 @@ import {
   updateArtifactVisibilityResponseSchema,
 } from "./artifact-schemas.js"
 import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
+import { runCostBreakdownSchema } from "./cost-schemas.js"
 import {
   documentDetailResponseSchema,
   documentPublicSchema,
@@ -278,6 +279,8 @@ export const runSchema = z.object({
   errorSummary: z.string().nullable().optional(),
   usage: runUsageSchema.nullable().optional(),
   cost: z.number().nullable().optional(),
+  costUsd: z.number().nullable().optional(),
+  costBreakdown: runCostBreakdownSchema.nullable().optional(),
 })
 
 export const runStepSchema = z.object({
