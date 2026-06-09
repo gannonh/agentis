@@ -22,6 +22,7 @@ Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 
 - **App:** `apps/web` — Vite, React 19, React Router.
 - **API:** `apps/api` — Hono, Drizzle SQLite, Vercel AI Gateway via Vercel AI SDK for thread/run lifecycle.
+- **Run cost observability:** runs persist `costUsd` and optional `costBreakdown`; `GET /api/agents/:agentId/usage` returns period-bounded agent usage, and `GET /api/command-center/summary` returns fleet totals for Command Center.
 - **Shared types:** `packages/shared` — Zod schemas for threads, messages, runs, and API DTOs.
 - **UI package:** `packages/ui` — shadcn/ui (`base-mira`), Tailwind 4, shared primitives. See [Component management](#component-management).
 - **Thread UI:** official [AI Elements](https://elements.ai-sdk.dev) in `apps/web/src/components/ai-elements/`; thread session in `apps/web/src/hooks/use-thread-session.ts`. Transcript rendering uses `thread-message-content.tsx` with `native-tool-display.ts` for tool-result cards and `message-text.ts` (shared heuristic in `packages/shared`) to avoid raw provider JSON when tool-result parts exist.

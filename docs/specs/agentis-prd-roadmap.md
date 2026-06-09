@@ -293,7 +293,7 @@ Acceptance:
 ## Open questions
 
 - Queue and worker runtime for scheduled invocations and background jobs (API and SQLite are in place; async worker packaging is not).
-- Usage accounting and cost aggregation across AI Gateway providers.
+- Cost and score UI rollout after the run cost attribution API (#417) reaches Command Center and Agent Detail.
 - Self-host scope: Docker Compose only for MVP, with Kubernetes docs later.
 - Auth scope: single-user install first or small-team workspace first.
 - External invocation priority: Slack first, webhook first, or schedule first.

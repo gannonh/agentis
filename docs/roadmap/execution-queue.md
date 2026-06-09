@@ -25,7 +25,7 @@ Or read the table below.
 | 5 | **Shipped** | Honest UI for fixture-backed surfaces | [#414](https://github.com/gannonh/agentis/issues/414) (PR [#426](https://github.com/gannonh/agentis/pull/426)) |
 | 6 | **Shipped** | Self-host docs (Cloudflare + Tavily keyless) | [#415](https://github.com/gannonh/agentis/issues/415) (PR [#426](https://github.com/gannonh/agentis/pull/426)) — [golden path](../self-host/golden-path-research.md) |
 
-**Next recommended:** [#417](https://github.com/gannonh/agentis/issues/417) (Run cost attribution API — Wave 1).
+**Next recommended:** [#418](https://github.com/gannonh/agentis/issues/418), [#419](https://github.com/gannonh/agentis/issues/419), and [#420](https://github.com/gannonh/agentis/issues/420) can proceed in parallel.
 
 ---
 
@@ -35,9 +35,9 @@ Source: `docs/roadmap/hyperagent-gap-roadmap.md`. **Wave 0 complete** (#412–#4
 
 | # | Status | Slice | Issue | Depends on |
 |---|--------|-------|-------|------------|
-| 7 | Open | Run cost attribution API | [#417](https://github.com/gannonh/agentis/issues/417) | — |
-| 8 | Open | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) | #417 |
-| 9 | Open | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) | #417 |
+| 7 | **Shipped** | Run cost attribution API | [#417](https://github.com/gannonh/agentis/issues/417) (PR [#427](https://github.com/gannonh/agentis/pull/427)) | — |
+| 8 | Open | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) | #417 (shipped) |
+| 9 | Open | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) | #417 (shipped) |
 | 10 | Open | Learning dashboard API (read path) | [#420](https://github.com/gannonh/agentis/issues/420) | — |
 | 11 | Open | Post-run learning suggestions + accept/dismiss | [#421](https://github.com/gannonh/agentis/issues/421) | #420 |
 | 12 | Open | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) | #420 |
@@ -69,18 +69,17 @@ flowchart LR
   end
 ```
 
-**Roots (no blockers):** [#417](https://github.com/gannonh/agentis/issues/417), [#420](https://github.com/gannonh/agentis/issues/420).
+**Currently unblocked:** [#418](https://github.com/gannonh/agentis/issues/418), [#419](https://github.com/gannonh/agentis/issues/419), and [#420](https://github.com/gannonh/agentis/issues/420).
 
 | Phase | Safe in parallel | Issues |
 |-------|------------------|--------|
-| Now | 2 tracks | #417 + #420 |
-| After #417 | 3 workers | #418, #419, #420 |
+| Now | 3 workers | #418, #419, #420 |
 | After #420 | 2 workers | #421, #422 |
 | Final | 1 worker | #423 |
 
 **Soft coupling (not blockers):** #418 can ship without rubric avg scores (#422). #423 accepts partial implementation (failed runs first).
 
-**GitHub filters:** `is:blocked`, `is:blocking`, `blocked-by:#417`, `blocking:#420`.
+**GitHub filters:** `is:blocked`, `is:blocking`, `blocked-by:#420`.
 
 ---
 
@@ -163,3 +162,4 @@ Or use Kata / `gh issue view 412` if you use that workflow.
 | 2026-06-09 | PR #425 review hardening: grant-safe integration refresh, narrower GitHub preflight heuristics, human-readable grant API errors |
 | 2026-06-09 | Shipped #414–#415 in PR #426: `DemoDataNotice` on fixture-backed surfaces; self-host golden path `docs/self-host/golden-path-research.md` |
 | 2026-06-09 | Documented Wave 1 dependency graph; synced GitHub blocked-by links for #417–#423 |
+| 2026-06-09 | Shipped #417 in PR #427: run cost attribution, `GET /api/agents/:id/usage`, and `GET /api/command-center/summary` |

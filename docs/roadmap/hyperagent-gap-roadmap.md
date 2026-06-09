@@ -70,7 +70,7 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 
 | ID | Slice | Issue |
 | --- | --- | --- |
-| HA-GAP-01 | Run cost attribution API | [#417](https://github.com/gannonh/agentis/issues/417) |
+| HA-GAP-01 | Run cost attribution API | Shipped in PR [#427](https://github.com/gannonh/agentis/pull/427) ([#417](https://github.com/gannonh/agentis/issues/417)) |
 | HA-GAP-02 | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) |
 | HA-GAP-03 | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) |
 | HA-GAP-04 | Learning dashboard API (read path) | [#420](https://github.com/gannonh/agentis/issues/420) |
@@ -78,7 +78,7 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 | HA-GAP-06 | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) |
 | HA-GAP-07 | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) |
 
-**Gate:** Complete Wave 0 (#412–#415) before starting Wave 1.
+**Gate:** Wave 0 (#412–#415) and HA-GAP-01 (#417) are complete. HA-GAP-02, HA-GAP-03, and HA-GAP-04 can proceed in parallel.
 
 **Dependency graph** (also in `docs/roadmap/execution-queue.md`; mirrored as GitHub blocked-by links):
 
@@ -106,10 +106,10 @@ flowchart LR
 
 | Issue | Blocked by | Can parallel with |
 | --- | --- | --- |
-| #417 | — | #420 |
-| #418 | #417 | #419, #420 |
-| #419 | #417 | #418, #420 |
-| #420 | — | #417, #418, #419 |
+| #417 | Shipped | — |
+| #418 | #417 (shipped) | #419, #420 |
+| #419 | #417 (shipped) | #418, #420 |
+| #420 | — | #418, #419 |
 | #421 | #420 | #422 |
 | #422 | #420 | #421 |
 | #423 | #421, #422 | — |
@@ -118,17 +118,17 @@ flowchart LR
 
 **HyperAgent reference:** Agent detail → Observability → usage by model/provider (Claude, Exa, Gemini token lines); Command Center total cost; per-run cost on recent runs.
 
-**Agentis today:** Run records exist; no aggregated cost model exposed to UI.
+**Agentis today:** Shipped in PR [#427](https://github.com/gannonh/agentis/pull/427). Runs persist `costUsd` and optional `costBreakdown`; API consumers can query per-agent usage and Command Center totals.
 
 **Goal:** Persist and query per-run cost from AI Gateway usage metadata + native tool provider costs (e.g. search).
 
 **Demo:** Complete a thread run with web search → API returns `costUsd` on run + rollups by agent.
 
 **Acceptance:**
-- [ ] Each completed run stores `costUsd` (and optional breakdown JSON).
-- [ ] `GET /api/agents/:id/usage` returns daily totals and by-model breakdown.
-- [ ] `GET /api/command-center/summary` includes `totalCostUsd`, `totalRuns`, `activeRuns`.
-- [ ] Unit tests for aggregation; mock-runtime path returns deterministic costs.
+- [x] Each completed run stores `costUsd` (and optional breakdown JSON).
+- [x] `GET /api/agents/:id/usage` returns daily totals and by-model breakdown.
+- [x] `GET /api/command-center/summary` includes `totalCostUsd`, `totalRuns`, `activeRuns`.
+- [x] Unit tests for aggregation; mock-runtime path returns deterministic costs.
 
 **Depends on:** None.
 
@@ -745,13 +745,12 @@ flowchart TD
   W4 --> G19[HA-GAP-19 deep research]
 ```
 
-**Max parallelism after Wave 0:** HA-GAP-01, HA-GAP-04, HA-GAP-09, HA-GAP-10, HA-GAP-11, HA-GAP-17 can start concurrently.
+**Max parallelism after HA-GAP-01:** HA-GAP-02, HA-GAP-03, HA-GAP-04, HA-GAP-09, HA-GAP-10, HA-GAP-11, and HA-GAP-17 can start concurrently.
 
 ---
 
 ## Next steps
 
 1. Review deferrals — confirm strategy alignment (especially HA-GAP-20 browser vs defer).
-2. Create GitHub issues for Wave 1 slices (HA-GAP-01 through HA-GAP-07).
-3. Update `docs/roadmap/execution-queue.md` after Wave 0 merges.
-4. Optionally add parity matrix row to `CONTEXT.md` when first Wave 1 slice ships.
+2. Continue Wave 1 from the open issues: HA-GAP-02, HA-GAP-03, and HA-GAP-04 are currently unblocked.
+3. Keep `docs/roadmap/execution-queue.md` aligned as Wave 1 issues ship.
