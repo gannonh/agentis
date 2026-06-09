@@ -20,7 +20,9 @@ import {
 import { analyzeThreadToolUsage } from "./agent-promotion-tool-analysis.js"
 import {
   resolveRequestedAgentGrants,
+  toolkitGrantErrorMessage,
   toolkitGrantRemediation,
+  type GrantResolutionError,
 } from "./tool-grant-resolution.js"
 import { SUPPORTED_TOOLKIT_NAMES } from "../composio/tool-catalog.js"
 import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
@@ -78,11 +80,11 @@ function agentCreationFailed(): ServiceError {
   }
 }
 
-function grantResolutionFailed(error: string): ServiceError {
+function grantResolutionFailed(error: GrantResolutionError): ServiceError {
   return {
     status: 400,
     body: {
-      error,
+      error: toolkitGrantErrorMessage(error),
       code: error,
       remediation: toolkitGrantRemediation(error),
     },

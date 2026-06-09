@@ -8,10 +8,6 @@ import type {
 } from "./types.js"
 import { CURATED_COMPOSIO_TOOLS } from "./tool-catalog.js"
 
-function mapMockStatus(status: string): ConnectionStatus {
-  return mapComposioAccountStatus(status)
-}
-
 export class MockComposioClient implements ComposioClientAdapter {
   private readonly mockAccounts = new Map<string, ComposioConnectedAccount>()
 

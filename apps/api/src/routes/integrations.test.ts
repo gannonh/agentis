@@ -274,6 +274,70 @@ describe("integration routes", () => {
     expect(github?.connectedAccountCount).toBe(1)
   })
 
+  it("marks granted connections expired instead of retargeting to a different account", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.seedFeatured()
+    const connection = ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github-old",
+      accountLabel: "old-account",
+    })
+    const thread = ctx.repos.threads.create({
+      title: "Granted refresh",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    ctx.repos.toolAccessGrants.create({
+      scopeType: "thread",
+      scopeId: thread.id,
+      toolkitSlug: "github",
+      connectionId: connection.id,
+    })
+    const composio: ComposioClientAdapter = {
+      async authorizeToolkit() {
+        throw new Error("unused")
+      },
+      async refreshConnectedAccount(connectedAccountId) {
+        return {
+          id: connectedAccountId,
+          toolkitSlug: "github",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return [
+          {
+            id: "acct-github-new",
+            toolkitSlug: "github",
+            status: "connected",
+            accountLabel: "new-account",
+          },
+        ]
+      },
+      async executeTool() {
+        return { data: {}, durationMs: 0 }
+      },
+    }
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const refresh = await app.request("/api/integrations/refresh", {
+      method: "POST",
+    })
+    expect(refresh.status).toBe(200)
+
+    const updated = ctx.repos.integrationConnections.getByToolkitSlug("github")
+    expect(updated?.composioConnectedAccountId).toBe("acct-github-old")
+    expect(updated?.status).toBe("expired")
+    expect(updated?.errorCode).toBe("connection_expired")
+  })
+
   it("adopts a preferred remote account when no local connection exists", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()

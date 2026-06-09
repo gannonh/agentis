@@ -44,7 +44,7 @@ function detectExplicitToolkitIntent(
   if (
     /\b(list|show|get|top)\b/.test(normalized) &&
     /\b(repos?|repositories)\b/.test(normalized) &&
-    !/\b(workspace|local|file)\b/.test(normalized)
+    !/\b(workspace|local|files?|docker|npm|package|pypi)\b/.test(normalized)
   ) {
     return "github"
   }

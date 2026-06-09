@@ -15,6 +15,7 @@ import type { AppConfig } from "../config.js"
 import { DocumentService } from "../documents/document-service.js"
 import {
   resolveRequestedAgentGrants,
+  toolkitGrantErrorMessage,
   toolkitGrantRemediation,
 } from "../agents/tool-grant-resolution.js"
 import { summarizeTitle } from "../lib/title-summary.js"
@@ -96,7 +97,8 @@ export function createThreadRoutes(
       if ("error" in resolvedGrants) {
         return c.json(
           {
-            error: resolvedGrants.error,
+            error: toolkitGrantErrorMessage(resolvedGrants.error),
+            code: resolvedGrants.error,
             remediation: toolkitGrantRemediation(resolvedGrants.error),
           },
           400
@@ -133,7 +135,8 @@ export function createThreadRoutes(
     if ("error" in resolvedGrants) {
       return c.json(
         {
-          error: resolvedGrants.error,
+          error: toolkitGrantErrorMessage(resolvedGrants.error),
+          code: resolvedGrants.error,
           remediation: toolkitGrantRemediation(resolvedGrants.error),
         },
         400

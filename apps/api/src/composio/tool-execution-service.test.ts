@@ -144,4 +144,23 @@ describe("ToolExecutionService.checkPreflightRemediation", () => {
       )
     ).toBeNull()
   })
+
+  it("does not treat local repo file prompts as GitHub intent", () => {
+    const { service, thread } = createService()
+
+    expect(
+      service.checkPreflightRemediation("list repo files in this project", thread.id)
+    ).toBeNull()
+  })
+
+  it("does not treat non-GitHub repository prompts as GitHub intent", () => {
+    const { service, thread } = createService()
+
+    expect(
+      service.checkPreflightRemediation("list my docker repositories", thread.id)
+    ).toBeNull()
+    expect(
+      service.checkPreflightRemediation("show my npm repos", thread.id)
+    ).toBeNull()
+  })
 })
