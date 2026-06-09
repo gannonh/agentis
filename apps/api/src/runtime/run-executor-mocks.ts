@@ -4,9 +4,11 @@ import type {
   Message,
   MessagePart,
   Run,
+  RunUsage,
   SearchWebOutput,
   Thread,
 } from "@workspace/shared"
+import { buildRunCostPatch } from "../cost/complete-run-cost.js"
 import type { ComposioServices } from "../composio/index.js"
 import {
   CURATED_COMPOSIO_TOOLS,
@@ -29,6 +31,25 @@ import {
 } from "./run-tool-labels.js"
 import { inferResearchBriefTitle } from "./research-brief-finalizer.js"
 import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
+
+const MOCK_STREAM_USAGE: RunUsage = {
+  promptTokens: 1,
+  completionTokens: 10,
+  totalTokens: 11,
+}
+
+function mockRunCostPatch(
+  run: Run,
+  usage: RunUsage = MOCK_STREAM_USAGE,
+  toolOutputs?: SearchWebOutput[]
+) {
+  return buildRunCostPatch({
+    model: run.model,
+    usage,
+    toolOutputs,
+    mockRuntime: true,
+  })
+}
 
 export type RunExecutorMocksDeps = {
   repos: Repositories
@@ -341,10 +362,11 @@ export async function executeMockNativeStaticArtifactStream(
     assistantParts,
     "completed"
   )
-  const usage = { totalTokens: 0 }
+  const usage = MOCK_STREAM_USAGE
   deps.repos.runs.updateStatus(runId, "completed", {
     finishedAt: nowIso(),
     usage,
+    ...mockRunCostPatch(run, usage),
   })
   createTimelineDebugStep(deps, runId, {
     status: "completed",
@@ -536,10 +558,11 @@ export async function executeMockResearchBriefStream(
     assistantParts,
     "completed"
   )
-  const usage = { totalTokens: 0 }
+  const usage = MOCK_STREAM_USAGE
   deps.repos.runs.updateStatus(runId, "completed", {
     finishedAt: nowIso(),
     usage,
+    ...mockRunCostPatch(run, usage, [searchToolOutput]),
   })
   createTimelineDebugStep(deps, runId, {
     status: "completed",
@@ -659,10 +682,11 @@ export async function executeMockNativeWebSearchStream(
     assistantParts,
     "completed"
   )
-  const usage = { totalTokens: 0 }
+  const usage = MOCK_STREAM_USAGE
   deps.repos.runs.updateStatus(runId, "completed", {
     finishedAt: nowIso(),
     usage,
+    ...mockRunCostPatch(run, usage, [toolOutput]),
   })
   createTimelineDebugStep(deps, runId, {
     status: "completed",
@@ -782,10 +806,11 @@ export async function executeMockNativeWorkspaceStream(
     assistantParts,
     "completed"
   )
-  const usage = { totalTokens: 0 }
+  const usage = MOCK_STREAM_USAGE
   deps.repos.runs.updateStatus(runId, "completed", {
     finishedAt: nowIso(),
     usage,
+    ...mockRunCostPatch(run, usage),
   })
   createTimelineDebugStep(deps, runId, {
     status: "completed",
@@ -884,9 +909,12 @@ export async function executeMockNativeWorkspaceMutationStream(
     assistantParts,
     "completed"
   )
+  const usage = MOCK_STREAM_USAGE
+  const costPatch = mockRunCostPatch(run, usage)
   deps.repos.runs.updateStatus(runId, pending ? "tool-calling" : "completed", {
     finishedAt: pending ? undefined : nowIso(),
-    usage: { totalTokens: 0 },
+    usage,
+    ...costPatch,
   })
   createTimelineDebugStep(deps, runId, {
     status: "completed",
@@ -895,7 +923,7 @@ export async function executeMockNativeWorkspaceMutationStream(
       provider: "debug",
       kind: "model-output",
       assistantParts,
-      usage: { totalTokens: 0 },
+      usage,
     },
   })
   if (!pending) {
@@ -984,9 +1012,12 @@ export async function executeMockNativeWorkspaceExecutionStream(
     assistantParts,
     "completed"
   )
+  const usage = MOCK_STREAM_USAGE
+  const costPatch = mockRunCostPatch(run, usage)
   deps.repos.runs.updateStatus(runId, pending ? "tool-calling" : "completed", {
     finishedAt: pending ? undefined : nowIso(),
-    usage: { totalTokens: 0 },
+    usage,
+    ...costPatch,
   })
   createTimelineDebugStep(deps, runId, {
     status: "completed",
@@ -995,7 +1026,7 @@ export async function executeMockNativeWorkspaceExecutionStream(
       provider: "debug",
       kind: "model-output",
       assistantParts,
-      usage: { totalTokens: 0 },
+      usage,
     },
   })
   if (!pending) {
@@ -1122,10 +1153,11 @@ export async function executeMockComposioStream(
     assistantParts,
     "completed"
   )
-  const usage = { totalTokens: 0 }
+  const usage = MOCK_STREAM_USAGE
   deps.repos.runs.updateStatus(runId, "completed", {
     finishedAt: nowIso(),
     usage,
+    ...mockRunCostPatch(run, usage),
   })
   createTimelineDebugStep(deps, runId, {
     status: "completed",

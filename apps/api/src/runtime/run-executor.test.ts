@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createComposioServices } from "../composio/index.js"
 import { createApp } from "../app.js"
+import { MOCK_MODEL_COST_USD } from "../cost/run-cost-attribution.js"
 import { runs, threads } from "../db/schema.js"
 import { WebSearchService } from "../research/web-search-service.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
@@ -777,7 +778,9 @@ describe("run executor composio bridge", () => {
       edit!.path
     )
     await expect(stat(targetPath)).rejects.toThrow()
-    expect(context.repos.runs.getById(run.id)?.status).toBe("tool-calling")
+    const pendingRun = context.repos.runs.getById(run.id)
+    expect(pendingRun?.status).toBe("tool-calling")
+    expect(pendingRun?.costUsd).toBe(MOCK_MODEL_COST_USD)
     expect(context.repos.steps.listByRunId(run.id)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -854,7 +857,9 @@ describe("run executor composio bridge", () => {
       "utf8"
     )
     expect(file).toContain("Created by Agentis mock runtime.")
-    expect(context.repos.runs.getById(run.id)?.status).toBe("completed")
+    const completedRun = context.repos.runs.getById(run.id)
+    expect(completedRun?.status).toBe("completed")
+    expect(completedRun?.costUsd).toBe(MOCK_MODEL_COST_USD)
   }, 10_000)
 
   it("denies a pending workspace mutation without mutating the file", async () => {

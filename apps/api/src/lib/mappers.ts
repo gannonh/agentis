@@ -85,6 +85,7 @@ export function mapMessage(row: MessageRow): Message {
 }
 
 export function mapRun(row: RunRow): Run {
+  const cost = row.cost ?? undefined
   return {
     id: row.id,
     threadId: row.threadId,
@@ -96,7 +97,11 @@ export function mapRun(row: RunRow): Run {
     finishedAt: row.finishedAt ?? undefined,
     errorSummary: row.errorSummary ?? undefined,
     usage: row.usageJson ? (JSON.parse(row.usageJson) as RunUsage) : undefined,
-    cost: row.cost ?? undefined,
+    cost,
+    costUsd: cost,
+    costBreakdown: row.costBreakdownJson
+      ? (JSON.parse(row.costBreakdownJson) as Run["costBreakdown"])
+      : undefined,
   }
 }
 

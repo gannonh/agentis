@@ -43,7 +43,44 @@ Source: `docs/roadmap/hyperagent-gap-roadmap.md`. **Wave 0 complete** (#412–#4
 | 12 | Open | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) | #420 |
 | 13 | Open | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) | #421, #422 (partial OK) |
 
-**Parallel after Wave 0:** #417 and #420 can run in parallel. #418 and #419 can follow #417 in parallel.
+### Wave 1 dependency graph
+
+GitHub **blocked-by** relationships mirror this graph (see each issue's Relationships sidebar).
+
+```mermaid
+flowchart LR
+  subgraph ops [Operations track]
+    417["#417 cost API"]
+    418["#418 Command Center"]
+    419["#419 Agent detail"]
+    417 --> 418
+    417 --> 419
+  end
+
+  subgraph learn [Learning track]
+    420["#420 Learning read API"]
+    421["#421 Suggestions"]
+    422["#422 Rubrics"]
+    423["#423 Needs attention"]
+    420 --> 421
+    420 --> 422
+    421 --> 423
+    422 --> 423
+  end
+```
+
+**Roots (no blockers):** [#417](https://github.com/gannonh/agentis/issues/417), [#420](https://github.com/gannonh/agentis/issues/420).
+
+| Phase | Safe in parallel | Issues |
+|-------|------------------|--------|
+| Now | 2 tracks | #417 + #420 |
+| After #417 | 3 workers | #418, #419, #420 |
+| After #420 | 2 workers | #421, #422 |
+| Final | 1 worker | #423 |
+
+**Soft coupling (not blockers):** #418 can ship without rubric avg scores (#422). #423 accepts partial implementation (failed runs first).
+
+**GitHub filters:** `is:blocked`, `is:blocking`, `blocked-by:#417`, `blocking:#420`.
 
 ---
 
@@ -125,3 +162,4 @@ Or use Kata / `gh issue view 412` if you use that workflow.
 | 2026-06-08 | Shipped #413 (Composio GitHub golden path); UAT `docs/uat/2026-06-08-composio-github-golden-path.md` |
 | 2026-06-09 | PR #425 review hardening: grant-safe integration refresh, narrower GitHub preflight heuristics, human-readable grant API errors |
 | 2026-06-09 | Shipped #414–#415 in PR #426: `DemoDataNotice` on fixture-backed surfaces; self-host golden path `docs/self-host/golden-path-research.md` |
+| 2026-06-09 | Documented Wave 1 dependency graph; synced GitHub blocked-by links for #417–#423 |

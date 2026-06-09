@@ -80,7 +80,39 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 
 **Gate:** Complete Wave 0 (#412–#415) before starting Wave 1.
 
-**Max parallelism after Wave 0:** #417, #420 can start concurrently; #418 and #419 follow #417; #421–#423 follow #420.
+**Dependency graph** (also in `docs/roadmap/execution-queue.md`; mirrored as GitHub blocked-by links):
+
+```mermaid
+flowchart LR
+  subgraph ops [Operations]
+    417["HA-GAP-01 #417"]
+    418["HA-GAP-02 #418"]
+    419["HA-GAP-03 #419"]
+    417 --> 418
+    417 --> 419
+  end
+
+  subgraph learn [Learning]
+    420["HA-GAP-04 #420"]
+    421["HA-GAP-05 #421"]
+    422["HA-GAP-06 #422"]
+    423["HA-GAP-07 #423"]
+    420 --> 421
+    420 --> 422
+    421 --> 423
+    422 --> 423
+  end
+```
+
+| Issue | Blocked by | Can parallel with |
+| --- | --- | --- |
+| #417 | — | #420 |
+| #418 | #417 | #419, #420 |
+| #419 | #417 | #418, #420 |
+| #420 | — | #417, #418, #419 |
+| #421 | #420 | #422 |
+| #422 | #420 | #421 |
+| #423 | #421, #422 | — |
 
 #### HA-GAP-01: Run cost attribution API
 

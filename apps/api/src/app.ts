@@ -5,6 +5,7 @@ import { createComposioServices } from "./composio/index.js"
 import { isDebugSeedsEnabled, type AppConfig } from "./config.js"
 import type { Repositories } from "./repositories/index.js"
 import { createAgentRoutes } from "./routes/agents.js"
+import { createCommandCenterRoutes } from "./routes/command-center.js"
 import { createArtifactRoutes } from "./routes/artifacts.js"
 import { createDocumentRoutes } from "./routes/documents.js"
 import { createIntegrationRoutes } from "./routes/integrations.js"
@@ -55,6 +56,7 @@ export function createApp(
 
   app.route("/api/runtime", createRuntimeRoutes(config))
   app.route("/api/agents", createAgentRoutes(repos, config))
+  app.route("/api/command-center", createCommandCenterRoutes(repos))
   app.route("/api/projects", createProjectRoutes(repos, config))
   app.route("/api/memories", createMemoryRoutes(repos))
   app.route("/api/artifacts", createArtifactRoutes(repos, config))
