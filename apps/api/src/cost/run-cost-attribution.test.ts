@@ -45,6 +45,22 @@ describe("run cost attribution", () => {
     expect(item.toolName).toBe("searchWeb")
   })
 
+  it("does not invent Tavily credits for non-Tavily providers", () => {
+    const item = estimateWebSearchCostUsd({
+      output: {
+        query: "agentis",
+        provider: "vercel-gateway:perplexity",
+        results: [],
+        resultCount: 0,
+        truncated: false,
+        metadata: { gatewayTool: "perplexitySearch", requestId: "req-1" },
+      },
+    })
+
+    expect(item.costUsd).toBe(0)
+    expect(item.credits).toBeUndefined()
+  })
+
   it("builds deterministic mock run totals", () => {
     const result = buildCompletedRunCost({
       model: "openai/gpt-5.4-mini",

@@ -89,6 +89,15 @@ export function estimateWebSearchCostUsd(input: {
     }
   }
 
+  if (!input.output.provider.startsWith("tavily")) {
+    return {
+      category: "tool",
+      provider: input.output.provider,
+      toolName: "searchWeb",
+      costUsd: 0,
+    }
+  }
+
   const credits =
     typeof input.output.metadata?.credits === "number"
       ? input.output.metadata.credits
