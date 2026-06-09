@@ -412,7 +412,6 @@ export function ThreadDetailPage() {
                   executeBehavior={executeBehavior}
                   onExecuteBehaviorChange={setExecuteBehavior}
                   submitting={submitting || streaming}
-                  threadId={threadId}
                   toolGrants={toolGrants}
                   availableToolkits={availableToolkits}
                   onGrantTool={grantToolkit}
