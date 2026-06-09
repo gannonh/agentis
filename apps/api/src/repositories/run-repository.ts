@@ -231,9 +231,13 @@ export class RunRepository {
       modelStats.costUsd += costUsd
       modelStats.runCount += 1
       if (row.usageJson) {
-        const usage = JSON.parse(row.usageJson) as RunUsage
-        modelStats.promptTokens += usage.promptTokens ?? 0
-        modelStats.completionTokens += usage.completionTokens ?? 0
+        try {
+          const usage = JSON.parse(row.usageJson) as RunUsage
+          modelStats.promptTokens += usage.promptTokens ?? 0
+          modelStats.completionTokens += usage.completionTokens ?? 0
+        } catch {
+          // Skip malformed usageJson for this row.
+        }
       }
       modelMap.set(row.model, modelStats)
     }

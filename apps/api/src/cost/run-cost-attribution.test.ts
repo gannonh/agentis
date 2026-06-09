@@ -61,6 +61,22 @@ describe("run cost attribution", () => {
     expect(item.credits).toBeUndefined()
   })
 
+  it("defaults to 1 credit for Tavily searches without credit metadata", () => {
+    const item = estimateWebSearchCostUsd({
+      output: {
+        query: "agentis",
+        provider: "tavily:keyless",
+        results: [],
+        resultCount: 0,
+        truncated: false,
+        metadata: {},
+      },
+    })
+
+    expect(item.costUsd).toBe(0.01)
+    expect(item.credits).toBe(1)
+  })
+
   it("builds deterministic mock run totals", () => {
     const result = buildCompletedRunCost({
       model: "openai/gpt-5.4-mini",

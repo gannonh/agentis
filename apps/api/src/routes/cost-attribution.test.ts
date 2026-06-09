@@ -35,6 +35,7 @@ describe("cost attribution routes", () => {
         mode: "agent",
       }),
     })
+    expect(created.status).toBe(201)
     const { run } = (await created.json()) as { run: { id: string } }
 
     const stream = await app.request(`/api/runs/${run.id}/stream`, {

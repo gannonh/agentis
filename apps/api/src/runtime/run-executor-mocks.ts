@@ -30,6 +30,7 @@ import {
   formatToolStepTitle,
 } from "./run-tool-labels.js"
 import { inferResearchBriefTitle } from "./research-brief-finalizer.js"
+import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
 
 const MOCK_STREAM_USAGE: RunUsage = {
   promptTokens: 1,
@@ -49,7 +50,6 @@ function mockRunCostPatch(
     mockRuntime: true,
   })
 }
-import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
 
 export type RunExecutorMocksDeps = {
   repos: Repositories

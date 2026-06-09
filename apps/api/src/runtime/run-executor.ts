@@ -969,8 +969,8 @@ export class RunExecutor {
           {
             finishedAt: hasPendingApproval ? undefined : nowIso(),
             usage,
-            cost: costResult?.costUsd,
-            costBreakdown: costResult?.costBreakdown,
+            cost: costResult.costUsd,
+            costBreakdown: costResult.costBreakdown,
           }
         )
         this.createTimelineDebugStep(runId, {

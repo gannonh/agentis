@@ -1,4 +1,4 @@
-import type { RunCostLineItem, SearchWebOutput } from "@workspace/shared"
+import type { RunCostLineItem, RunUsage, SearchWebOutput } from "@workspace/shared"
 import {
   buildRunCostBreakdown,
   estimateModelCostUsd,
@@ -17,11 +17,7 @@ export class RunCostLedger {
     this.toolOutputs.push(output)
   }
 
-  finalize(usage: {
-    promptTokens?: number
-    completionTokens?: number
-    totalTokens?: number
-  }) {
+  finalize(usage: RunUsage) {
     const lineItems: RunCostLineItem[] = [
       estimateModelCostUsd({
         model: this.model,

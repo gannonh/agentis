@@ -19,7 +19,7 @@ export const runCostBreakdownSchema = z.object({
 })
 
 export const agentUsageDailyTotalSchema = z.object({
-  date: z.string(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   costUsd: nonNegativeNumber,
   runCount: z.number().int().nonnegative(),
 })
