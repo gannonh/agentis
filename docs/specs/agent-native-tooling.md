@@ -447,6 +447,8 @@ Useful patterns to reuse:
 - Runtime tool construction from persisted grants.
 - Run step payload normalization.
 - Explicit connection or grant errors surfaced to the user.
+- Grant API failures return human-readable `error` text with a separate machine `code` for clients that need it.
+- Integration refresh preserves granted `connectionId` rows when the bound Composio account disappears remotely (marks `expired` instead of silently adopting a different account).
 
 ## Workspace ownership model
 

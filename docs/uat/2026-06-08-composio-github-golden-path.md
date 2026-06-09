@@ -4,6 +4,8 @@
 
 **Toolkit:** GitHub (`GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER`).
 
+**PR:** [#425](https://github.com/gannonh/agentis/pull/425)
+
 **Sign-off:** Automated + partial live verification on branch `feat/issue-413-one-composio-integration`. Complete OAuth once locally to finish the live tool-execution checkpoint.
 
 ---
@@ -59,9 +61,13 @@ CI and Playwright continue to use `AGENTIS_MOCK_COMPOSIO=1` per `AGENTS.md`.
 
 Timeline preflight steps show the **human** remediation sentence (not machine codes like `toolkit_not_connected`).
 
+Thread/agent grant failures from `POST /api/threads` (and agent grant routes) return a human-readable `error` with a separate machine `code` field — the web client surfaces `error` via `ApiError`.
+
+Integration refresh (`POST /api/integrations/refresh`) syncs remote Composio accounts but **does not** overwrite a granted `connectionId` with a different Composio account. When the bound account disappears remotely, the local row is marked `expired` and grants remain pointed at the original connection.
+
 ---
 
-## Verification evidence (2026-06-08)
+## Verification evidence (2026-06-08 / 2026-06-09)
 
 ### Live API / runtime
 
@@ -83,6 +89,9 @@ Timeline preflight steps show the **human** remediation sentence (not machine co
 | API: GitHub connected + granted → Composio tool step | Pass (`run-executor.test.ts`) |
 | API: GitHub connected, not granted → `toolkit_not_granted` | Pass |
 | Unit: `checkPreflightRemediation()` matrix | Pass (`tool-execution-service.test.ts`) |
+| Unit: repo heuristic excludes workspace/local/file/docker/npm/package/pypi prompts | Pass (`tool-execution-service.test.ts`) |
+| API: refresh marks granted connection `expired` instead of retargeting account | Pass (`integrations.test.ts`) |
+| API: grant failures return human `error` + machine `code` | Pass (`agents.test.ts`) |
 
 ### Manual checkpoint (requires human OAuth)
 
@@ -107,4 +116,6 @@ If Connect is stuck on **pending** or **error**:
 
 - Curated tool: [`apps/api/src/composio/tool-catalog.ts`](../../apps/api/src/composio/tool-catalog.ts)
 - Preflight: [`apps/api/src/composio/tool-execution-service.ts`](../../apps/api/src/composio/tool-execution-service.ts)
+- Integration refresh: [`apps/api/src/composio/integration-service.ts`](../../apps/api/src/composio/integration-service.ts)
+- Grant resolution: [`apps/api/src/agents/tool-grant-resolution.ts`](../../apps/api/src/agents/tool-grant-resolution.ts)
 - E2E: [`apps/web/e2e/composio-integrations.spec.ts`](../../apps/web/e2e/composio-integrations.spec.ts)
