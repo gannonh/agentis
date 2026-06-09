@@ -6,6 +6,7 @@ import { AgentDetailPage } from "./agent-detail"
 import { ApiError } from "@/lib/api/client"
 import {
   getAgent,
+  getAgentUsage,
   startAgentTestThread,
   updateAgent,
 } from "@/lib/api/agents-client"
@@ -17,6 +18,7 @@ const AGENT_DETAIL_INTERACTION_TIMEOUT_MS = 30_000
 
 vi.mock("@/lib/api/agents-client", () => ({
   getAgent: vi.fn(),
+  getAgentUsage: vi.fn(),
   startAgentTestThread: vi.fn(),
   updateAgent: vi.fn(),
 }))
@@ -177,6 +179,15 @@ function apiAgentDetail({
 describe("AgentDetailPage", () => {
   beforeEach(() => {
     vi.mocked(getAgent).mockReset()
+    vi.mocked(getAgentUsage).mockReset()
+    vi.mocked(getAgentUsage).mockResolvedValue({
+      agentId: "agent_created",
+      periodDays: 14,
+      totalCostUsd: 0,
+      totalRuns: 0,
+      daily: [],
+      byModel: [],
+    })
     vi.mocked(startAgentTestThread).mockReset()
     vi.mocked(updateAgent).mockReset()
     vi.mocked(useIntegrations).mockReset()
@@ -278,12 +289,48 @@ describe("AgentDetailPage", () => {
     expect(
       screen.queryByRole("heading", { name: "Agent not found" })
     ).not.toBeInTheDocument()
-    expect(screen.getByText("gpt-4o-mini")).toBeInTheDocument()
+    expect(screen.getAllByText("gpt-4o-mini").length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText("google-drive").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Source thread")).toBeInTheDocument()
     expect(
       screen.getByRole("link", { name: "Investigate support backlog" })
     ).toHaveAttribute("href", "/threads/thread_source")
+  })
+
+  it("loads API-backed usage observability on the overview tab", async () => {
+    vi.mocked(getAgent).mockResolvedValueOnce(apiAgentDetail())
+    vi.mocked(getAgentUsage).mockResolvedValueOnce({
+      agentId: "agent_created",
+      periodDays: 14,
+      totalCostUsd: 2.4,
+      totalRuns: 2,
+      daily: [{ date: "2026-06-08", costUsd: 2.4, runCount: 2 }],
+      byModel: [
+        {
+          model: "gpt-4o-mini",
+          costUsd: 2.4,
+          runCount: 2,
+          promptTokens: 500,
+          completionTokens: 200,
+        },
+      ],
+    })
+
+    render(
+      <MemoryRouter initialEntries={["/agents/agent_created"]}>
+        <Routes>
+          <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await screen.findByRole("heading", { name: "Created Research Agent" })
+    const usagePanel = await screen.findByTestId("agent-usage-panel")
+    expect(usagePanel).toHaveTextContent("$2.40")
+    expect(usagePanel).toHaveTextContent(/2 completed runs/)
+    expect(getAgentUsage).toHaveBeenCalledWith("agent_created", 14)
+    expect(screen.getByTestId("version-history-item-1")).toBeInTheDocument()
+    expect(screen.getByTestId("evaluations-empty-state")).toBeInTheDocument()
   })
 
   it("renders API-backed overview and activity information", async () => {

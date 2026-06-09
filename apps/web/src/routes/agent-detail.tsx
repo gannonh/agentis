@@ -316,6 +316,8 @@ export function AgentDetailPage() {
               <AgentOverviewTab
                 recentThreads={overviewThreads}
                 toolGrants={apiAgentDetail?.toolGrants}
+                agentId={apiAgentDetail?.agent.id}
+                configurationVersions={apiAgentDetail?.configurationVersions}
               />
             </TabsContent>
             {apiAgentDetail ? (
