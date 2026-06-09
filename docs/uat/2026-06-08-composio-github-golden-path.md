@@ -37,7 +37,7 @@ CI and Playwright continue to use `AGENTIS_MOCK_COMPOSIO=1` per `AGENTS.md`.
 
 1. **Connect GitHub** — `/integrations` → **Connect** on GitHub → complete Composio/GitHub OAuth → return to `/integrations?connected=github`.
 2. **Start a generic thread** — `/threads/new` (default **Agentis** agent).
-3. **Grant GitHub** — composer **Tools** → enable GitHub → confirm `GitHub connected` chip.
+3. **Grant GitHub** — composer **Tools** → enable GitHub → confirm `GitHub enabled` chip.
 4. **Run scripted prompt:**
 
    ```text

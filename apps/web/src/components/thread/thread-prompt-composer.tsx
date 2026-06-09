@@ -161,7 +161,7 @@ export function ThreadPromptComposer({
         </p>
       ) : null}
 
-      {threadId && onGrantTool && onRevokeTool ? (
+      {onGrantTool && onRevokeTool ? (
         <ToolAccessPicker
           grants={toolGrants}
           availableToolkits={availableToolkits}

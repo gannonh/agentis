@@ -122,7 +122,7 @@ describe("run executor composio bridge", () => {
     const created = await app.request("/api/threads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: "List my GitHub repositories" }),
+      body: JSON.stringify({ prompt: "list my top 5 repos" }),
     })
     const { run } = (await created.json()) as { run: { id: string } }
 
@@ -140,6 +140,31 @@ describe("run executor composio bridge", () => {
           step.payload.error.includes("not granted")
       )
     ).toBe(true)
+  })
+
+  it("creates generic threads with requested tool grants", async () => {
+    const { app, context } = createMockRuntimeApp((testContext) => {
+      testContext.repos.integrationToolkits.seedFeatured()
+      testContext.repos.integrationConnections.create({
+        toolkitSlug: "github",
+        status: "connected",
+        composioConnectedAccountId: "acct-github",
+      })
+    })
+
+    const created = await app.request("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "List my GitHub repositories",
+        toolGrants: [{ toolkitSlug: "github" }],
+      }),
+    })
+    expect(created.status).toBe(201)
+    const { thread } = (await created.json()) as { thread: { id: string } }
+    const grants = context.repos.toolAccessGrants.listByScope("thread", thread.id)
+    expect(grants).toHaveLength(1)
+    expect(grants[0]?.toolkitSlug).toBe("github")
   })
 
   it("executes GitHub composio tool when connected and granted", async () => {

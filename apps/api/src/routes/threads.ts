@@ -125,6 +125,21 @@ export function createThreadRoutes(
       return c.json(created, 201)
     }
 
+    const requestedGrants = body.toolGrants ?? []
+    const resolvedGrants =
+      requestedGrants.length > 0
+        ? resolveRequestedAgentGrants(repos, requestedGrants)
+        : { grants: [] as { toolkitSlug: string; connectionId: string }[] }
+    if ("error" in resolvedGrants) {
+      return c.json(
+        {
+          error: resolvedGrants.error,
+          remediation: toolkitGrantRemediation(resolvedGrants.error),
+        },
+        400
+      )
+    }
+
     const created = repos.threads.createWithInitialRun({
       title: summarizeTitle(body.prompt),
       prompt: body.prompt,
@@ -135,6 +150,7 @@ export function createThreadRoutes(
       mode,
       projectId: body.projectId,
       agentId: GENERIC_AGENTIS_AGENT_ID,
+      toolGrants: resolvedGrants.grants,
     })
 
     return c.json(created, 201)

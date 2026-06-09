@@ -7,9 +7,31 @@ import type { AppConfig } from "../config.js"
 import { isComposioAvailable } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 import { FEATURED_TOOLKIT_SLUGS } from "../repositories/integration-seeds.js"
-import type { ComposioClientAdapter } from "./types.js"
+import type {
+  ComposioClientAdapter,
+  ComposioConnectedAccount,
+} from "./types.js"
 import { listAvailableToolsForToolkit } from "./tool-catalog.js"
 import { toAppToolkitSlug } from "./toolkit-slugs.js"
+
+const CONNECTION_STATUS_PRIORITY: Record<ConnectionStatus, number> = {
+  connected: 0,
+  pending: 1,
+  expired: 2,
+  error: 3,
+  not_connected: 4,
+}
+
+function pickPreferredRemoteAccount(
+  accounts: ComposioConnectedAccount[]
+): ComposioConnectedAccount | null {
+  if (accounts.length === 0) return null
+  return [...accounts].sort(
+    (left, right) =>
+      CONNECTION_STATUS_PRIORITY[left.status] -
+      CONNECTION_STATUS_PRIORITY[right.status]
+  )[0]!
+}
 
 function aggregateToolkitStatus(
   connections: IntegrationConnection[]
@@ -195,6 +217,39 @@ export class IntegrationService {
   }
 
   async refreshAllConnections() {
+    const remoteAccounts = await this.composio.listConnectedAccounts(
+      this.config.composioUserId
+    )
+
+    for (const toolkitSlug of FEATURED_TOOLKIT_SLUGS) {
+      const preferred = pickPreferredRemoteAccount(
+        remoteAccounts.filter((account) => account.toolkitSlug === toolkitSlug)
+      )
+      if (!preferred) continue
+
+      const existing =
+        this.repos.integrationConnections.getByToolkitSlug(toolkitSlug)
+      if (existing) {
+        this.repos.integrationConnections.update(existing.id, {
+          status: preferred.status,
+          composioConnectedAccountId: preferred.id,
+          accountLabel: preferred.accountLabel,
+          scopes: preferred.scopes,
+          errorCode: preferred.status === "error" ? "connection_error" : null,
+          errorMessage: null,
+        })
+        continue
+      }
+
+      this.repos.integrationConnections.create({
+        toolkitSlug,
+        status: preferred.status,
+        composioConnectedAccountId: preferred.id,
+        accountLabel: preferred.accountLabel,
+        scopes: preferred.scopes,
+      })
+    }
+
     const connections = this.repos.integrationConnections.listByUserId()
     for (const connection of connections) {
       if (!connection.composioConnectedAccountId) continue

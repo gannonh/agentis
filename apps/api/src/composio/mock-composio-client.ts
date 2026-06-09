@@ -9,10 +9,7 @@ import type {
 import { CURATED_COMPOSIO_TOOLS } from "./tool-catalog.js"
 
 function mapMockStatus(status: string): ConnectionStatus {
-  if (status === "ACTIVE") return "connected"
-  if (status === "PENDING") return "pending"
-  if (status === "EXPIRED") return "expired"
-  return "error"
+  return mapComposioAccountStatus(status)
 }
 
 export class MockComposioClient implements ComposioClientAdapter {
@@ -108,5 +105,15 @@ export class MockComposioClient implements ComposioClientAdapter {
 }
 
 export function mapComposioAccountStatus(status: string): ConnectionStatus {
-  return mapMockStatus(status)
+  const normalized = status.trim().toUpperCase()
+  if (normalized === "ACTIVE") return "connected"
+  if (
+    normalized === "PENDING" ||
+    normalized === "INITIALIZING" ||
+    normalized === "INITIATED"
+  ) {
+    return "pending"
+  }
+  if (normalized === "EXPIRED") return "expired"
+  return "error"
 }

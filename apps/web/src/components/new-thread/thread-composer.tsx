@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router"
 import {
   resolveSelectableGatewayModel,
   type AgentListItem,
   type ThreadMode,
+  type ToolAccessGrant,
 } from "@workspace/shared"
 import { DEFAULT_AGENT_PICKER_ID } from "@/components/new-thread/agent-picker-options"
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { createThread } from "@/lib/api/client"
 import { useRuntimeHealth } from "@/lib/api/use-runtime-health"
+import { useIntegrations } from "@/hooks/use-integrations"
 import { useProjects } from "@/hooks/use-projects"
 
 type ThreadComposerProps = {
@@ -25,7 +27,9 @@ export function ThreadComposer({
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { health } = useRuntimeHealth()
+  const { toolkits } = useIntegrations()
   const { projects, loading: projectsLoading } = useProjects()
+  const [selectedToolkitSlugs, setSelectedToolkitSlugs] = useState<string[]>([])
   const [mode, setMode] = useState<ThreadMode>("plan")
   const [executeBehavior, setExecuteBehavior] = useState<"auto" | "ask">("auto")
   const [projectId, setProjectId] = useState<string>("")
@@ -70,7 +74,41 @@ export function ThreadComposer({
 
   useEffect(() => {
     setModelExplicitlyChosen(false)
+    setSelectedToolkitSlugs([])
   }, [selectedAgentId])
+
+  const availableToolkits = useMemo(
+    () => toolkits.filter((toolkit) => toolkit.status === "connected"),
+    [toolkits]
+  )
+
+  const draftToolGrants = useMemo<ToolAccessGrant[]>(
+    () =>
+      selectedToolkitSlugs.map((toolkitSlug) => ({
+        id: `draft-${toolkitSlug}`,
+        scopeType: "thread",
+        scopeId: "new",
+        toolkitSlug,
+        connectionId: "draft",
+        createdAt: new Date(0).toISOString(),
+      })),
+    [selectedToolkitSlugs]
+  )
+
+  const grantToolkit = useCallback((toolkitSlug: string) => {
+    setSelectedToolkitSlugs((current) =>
+      current.includes(toolkitSlug) ? current : [...current, toolkitSlug]
+    )
+  }, [])
+
+  const revokeToolkit = useCallback((grantId: string) => {
+    const toolkitSlug = grantId.startsWith("draft-")
+      ? grantId.slice("draft-".length)
+      : grantId
+    setSelectedToolkitSlugs((current) =>
+      current.filter((slug) => slug !== toolkitSlug)
+    )
+  }, [])
 
   useEffect(() => {
     const fromQuery = searchParams.get("projectId")
@@ -93,6 +131,13 @@ export function ThreadComposer({
           : {}),
         projectId: projectId || undefined,
         agentId: selectedAgentId,
+        ...(isGenericAgent && selectedToolkitSlugs.length > 0
+          ? {
+              toolGrants: selectedToolkitSlugs.map((toolkitSlug) => ({
+                toolkitSlug,
+              })),
+            }
+          : {}),
       })
       navigate(`/threads/${thread.id}`, {
         state: { startRunId: run.id },
@@ -139,6 +184,10 @@ export function ThreadComposer({
         executeBehavior={executeBehavior}
         onExecuteBehaviorChange={setExecuteBehavior}
         submitting={submitting}
+        toolGrants={isGenericAgent ? draftToolGrants : []}
+        availableToolkits={isGenericAgent ? availableToolkits : []}
+        onGrantTool={isGenericAgent ? grantToolkit : undefined}
+        onRevokeTool={isGenericAgent ? revokeToolkit : undefined}
         selectedModel={selectedModel}
         onModelChange={(modelId) => {
           setModelExplicitlyChosen(true)

@@ -116,4 +116,32 @@ describe("ToolExecutionService.checkPreflightRemediation", () => {
       service.checkPreflightRemediation("Summarize this status update", thread.id)
     ).toBeNull()
   })
+
+  it("treats repo listing prompts as GitHub intent", () => {
+    const { service, thread } = createService()
+    ctx!.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+
+    const error = service.checkPreflightRemediation(
+      "list my top 5 repos",
+      thread.id
+    )
+
+    expect(error?.code).toBe("toolkit_not_granted")
+    expect(error?.message).toContain("not granted")
+  })
+
+  it("does not treat workspace repo prompts as GitHub intent", () => {
+    const { service, thread } = createService()
+
+    expect(
+      service.checkPreflightRemediation(
+        "list repo folders in the workspace files",
+        thread.id
+      )
+    ).toBeNull()
+  })
 })

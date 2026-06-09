@@ -59,6 +59,33 @@ vi.mock("@/hooks/use-projects", () => ({
   }),
 }))
 
+vi.mock("@/hooks/use-integrations", () => ({
+  useIntegrations: () => ({
+    toolkits: [
+      {
+        slug: "github",
+        name: "GitHub",
+        description: "Manage repos.",
+        category: "developer",
+        featured: true,
+        status: "connected",
+        connectedAccountCount: 1,
+        availableTools: [],
+      },
+    ],
+    composioConfigured: true,
+    composioMockEnabled: false,
+    loading: false,
+    error: null,
+    notice: null,
+    setNotice: vi.fn(),
+    refresh: vi.fn(),
+    connect: vi.fn(),
+    refreshStatuses: vi.fn(),
+    resetConnection: vi.fn(),
+  }),
+}))
+
 describe("NewThreadPage", () => {
   beforeEach(() => {
     navigate.mockReset()
@@ -128,6 +155,33 @@ describe("NewThreadPage", () => {
     await waitFor(() => {
       expect(createThread).toHaveBeenCalledWith(
         expect.objectContaining({ agentId: GENERIC_AGENTIS_AGENT_ID })
+      )
+    })
+  })
+
+  it("shows tools picker for the generic agent and sends selected grants", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <NewThreadPage />
+      </MemoryRouter>
+    )
+
+    await user.click(screen.getByRole("button", { name: "Tools" }))
+    await user.click(await screen.findByRole("menuitem", { name: /GitHub/i }))
+
+    expect(screen.getByText(/GitHub enabled/i)).toBeInTheDocument()
+
+    const input = screen.getByPlaceholderText("What's the task?")
+    await user.type(input, "List my GitHub repositories")
+    await user.click(screen.getByRole("button", { name: /send message/i }))
+
+    await waitFor(() => {
+      expect(createThread).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentId: GENERIC_AGENTIS_AGENT_ID,
+          toolGrants: [{ toolkitSlug: "github" }],
+        })
       )
     })
   })
