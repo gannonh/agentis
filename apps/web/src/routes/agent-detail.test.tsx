@@ -196,6 +196,11 @@ describe("AgentDetailPage", () => {
       screen.getByRole("heading", { name: "Senior Reviewer" })
     ).toBeInTheDocument()
     expect(
+      screen.getByRole("note", { name: "Demo data notice" })
+    ).toHaveTextContent(
+      "This preset agent uses seeded profile data. Created agents load editable settings from the API."
+    )
+    expect(
       screen.getByRole("navigation", { name: "Breadcrumb" })
     ).toHaveTextContent("Agents")
     expect(
@@ -267,6 +272,9 @@ describe("AgentDetailPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Created Research Agent" })
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("note", { name: "Demo data notice" })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole("heading", { name: "Agent not found" })
     ).not.toBeInTheDocument()

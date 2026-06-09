@@ -52,6 +52,11 @@ describe("CommandCenterPage", () => {
     expect(
       screen.getByRole("heading", { name: "Command Center" })
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole("note", { name: "Demo data notice" })
+    ).toHaveTextContent(
+      "Recent runs, score trends, cost breakdown, and needs-attention items use seeded workspace data. Agent roster is API-backed."
+    )
     expect(screen.getByText("Agents")).toBeInTheDocument()
     expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1)
     expect(screen.queryByText("3")).not.toBeInTheDocument()

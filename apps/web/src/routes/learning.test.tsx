@@ -301,6 +301,11 @@ describe("LearningPage", () => {
       screen.getByRole("heading", { name: "Learning" })
     ).toBeInTheDocument()
     expect(
+      screen.getByRole("note", { name: "Demo data notice" })
+    ).toHaveTextContent(
+      "Skills and fallback learning suggestions use seeded workspace data until the learning API is complete."
+    )
+    expect(
       screen.getByText("Your agents learn from conversations")
     ).toBeInTheDocument()
     expect(screen.getByText("What agents can learn")).toBeInTheDocument()

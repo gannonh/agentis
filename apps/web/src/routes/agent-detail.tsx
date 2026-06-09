@@ -34,6 +34,7 @@ import {
 import { AgentDetailHero } from "@/components/agent-detail/agent-detail-hero"
 import { AgentDetailInspector } from "@/components/agent-detail/agent-detail-inspector"
 import { AgentOverviewTab } from "@/components/agent-detail/agent-overview-tab"
+import { DemoDataNotice } from "@/components/shell/demo-data-notice"
 import { PageLayout } from "@/components/shell/page-layout"
 import { PageHeader } from "@/components/shell/page-header"
 import type { AgentDetailResponse, UpdateAgentRequest } from "@workspace/shared"
@@ -218,6 +219,13 @@ export function AgentDetailPage() {
     <PageLayout className="dark -m-6 min-h-svh bg-background p-6 text-foreground">
       <div className="mx-auto grid w-full max-w-7xl gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
         <div className="flex min-w-0 flex-col gap-6">
+          {fixtureAgent ? (
+            <DemoDataNotice>
+              This preset agent uses seeded profile data. Created agents load
+              editable settings from the API.
+            </DemoDataNotice>
+          ) : null}
+
           <AgentDetailHero
             agent={agent}
             sourceThread={apiAgentDetail?.agent.sourceThread}
