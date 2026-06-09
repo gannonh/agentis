@@ -22,16 +22,16 @@ Or read the table below.
 | 2 | **Shipped** | Research golden path (web search → Library brief) + live finalizer | PR branch `cursor/2dddaf88` |
 | 3 | **Shipped** | Thread runtime UX — tool results & document creation in chat | [#412](https://github.com/gannonh/agentis/issues/412) (PR [#424](https://github.com/gannonh/agentis/pull/424)) |
 | 4 | **Shipped** | One Composio integration golden path (generic thread) | [#413](https://github.com/gannonh/agentis/issues/413) (PR [#425](https://github.com/gannonh/agentis/pull/425)) — [UAT](../uat/2026-06-08-composio-github-golden-path.md) |
-| 5 | Open | Honest UI for fixture-backed surfaces | [#414](https://github.com/gannonh/agentis/issues/414) |
-| 6 | Open | Self-host docs (Cloudflare + Tavily keyless) | [#415](https://github.com/gannonh/agentis/issues/415) |
+| 5 | **Shipped** | Honest UI for fixture-backed surfaces | [#414](https://github.com/gannonh/agentis/issues/414) (PR [#426](https://github.com/gannonh/agentis/pull/426)) |
+| 6 | **Shipped** | Self-host docs (Cloudflare + Tavily keyless) | [#415](https://github.com/gannonh/agentis/issues/415) (PR [#426](https://github.com/gannonh/agentis/pull/426)) — [golden path](../self-host/golden-path-research.md) |
 
-**Next recommended:** [#414](https://github.com/gannonh/agentis/issues/414) (Honest UI for fixture-backed surfaces).
+**Next recommended:** [#417](https://github.com/gannonh/agentis/issues/417) (Run cost attribution API — Wave 1).
 
 ---
 
 ## Wave 1 — HyperAgent gap (honest operations)
 
-Source: `docs/roadmap/hyperagent-gap-roadmap.md`. **Start after Wave 0 gate** (#412–#415 complete).
+Source: `docs/roadmap/hyperagent-gap-roadmap.md`. **Wave 0 complete** (#412–#415 shipped); Wave 1 is now unblocked.
 
 | # | Status | Slice | Issue | Depends on |
 |---|--------|-------|-------|------------|
@@ -124,3 +124,4 @@ Or use Kata / `gh issue view 412` if you use that workflow.
 | 2026-06-08 | Shipped #412 (thread tool-result cards, document links, durable-artifact refresh) in PR #424 |
 | 2026-06-08 | Shipped #413 (Composio GitHub golden path); UAT `docs/uat/2026-06-08-composio-github-golden-path.md` |
 | 2026-06-09 | PR #425 review hardening: grant-safe integration refresh, narrower GitHub preflight heuristics, human-readable grant API errors |
+| 2026-06-09 | Shipped #414–#415 in PR #426: `DemoDataNotice` on fixture-backed surfaces; self-host golden path `docs/self-host/golden-path-research.md` |

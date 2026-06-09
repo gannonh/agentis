@@ -51,5 +51,5 @@ Follow [DESIGN.md](DESIGN.md) for visual and interaction conventions.
 
 - **Thread sessions** (`/threads/new`, `/threads/:threadId`) use the API in `apps/api` and shared schemas in `packages/shared`.
 - **Projects, Library artifacts, integrations, agents, and native workspace tools** are API-backed.
-- **Command Center, Learning, and parts of the agent roster/detail experience** still use typed fixtures in `apps/web/src/fixtures/` until later milestones.
+- **Command Center, Learning, and parts of the agent roster/detail experience** still use typed fixtures in `apps/web/src/fixtures/` until later milestones. These screens show a `DemoDataNotice` (`apps/web/src/components/shell/demo-data-notice.tsx`) — preserve or extend it when editing fixture-backed routes.
 - Update fixture seed data when demo screens should reflect new product concepts outside the thread flow.

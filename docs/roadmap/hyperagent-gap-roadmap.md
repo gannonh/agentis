@@ -50,17 +50,17 @@
 
 Slices are grouped into **waves**. Within a wave, issues are parallel-safe unless a dependency is noted.
 
-### Wave 0 — In flight (existing execution queue)
+### Wave 0 — Complete (execution queue #412–#415)
 
 | ID | Slice | Issue |
 | --- | --- | --- |
 | HA-GAP-00a | Gateway model picker + research brief golden path | Shipped on `cursor/2dddaf88` |
 | HA-GAP-00b | Thread runtime UX — tool results & document creation in chat | Shipped in PR [#424](https://github.com/gannonh/agentis/pull/424) ([#412](https://github.com/gannonh/agentis/issues/412)) |
-| HA-GAP-00c | One Composio integration golden path (generic thread) | [#413](https://github.com/gannonh/agentis/issues/413) |
-| HA-GAP-00d | Honest UI for fixture-backed surfaces | [#414](https://github.com/gannonh/agentis/issues/414) |
-| HA-GAP-00e | Self-host docs (Cloudflare gateway + Tavily keyless) | [#415](https://github.com/gannonh/agentis/issues/415) |
+| HA-GAP-00c | One Composio integration golden path (generic thread) | Shipped in PR [#425](https://github.com/gannonh/agentis/pull/425) ([#413](https://github.com/gannonh/agentis/issues/413)) |
+| HA-GAP-00d | Honest UI for fixture-backed surfaces | Shipped in PR [#426](https://github.com/gannonh/agentis/pull/426) ([#414](https://github.com/gannonh/agentis/issues/414)) |
+| HA-GAP-00e | Self-host docs (Cloudflare gateway + Tavily keyless) | Shipped in PR [#426](https://github.com/gannonh/agentis/pull/426) ([#415](https://github.com/gannonh/agentis/issues/415)) — [golden path](../self-host/golden-path-research.md) |
 
-**Gate:** Complete Wave 0 before starting Wave 1 so demos do not mix mock and live data.
+**Gate:** Wave 0 is complete. Fixture-backed surfaces now show a `DemoDataNotice`; Wave 1 (honest operations layer) is unblocked.
 
 ---
 
