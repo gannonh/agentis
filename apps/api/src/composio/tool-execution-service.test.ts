@@ -109,6 +109,23 @@ describe("ToolExecutionService.checkPreflightRemediation", () => {
     expect(error?.message).toContain("expired")
   })
 
+  it("blocks connections in error state", () => {
+    const { service, thread } = createService()
+    ctx!.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "error",
+      composioConnectedAccountId: "acct-github",
+    })
+
+    const error = service.checkPreflightRemediation(
+      "List my GitHub repositories",
+      thread.id
+    )
+
+    expect(error?.code).toBe("toolkit_not_connected")
+    expect(error?.message).toContain("error")
+  })
+
   it("ignores prompts without explicit toolkit intent", () => {
     const { service, thread } = createService()
 

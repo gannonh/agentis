@@ -17,6 +17,7 @@ import {
   resolveRequestedAgentGrants,
   toolkitGrantErrorMessage,
   toolkitGrantRemediation,
+  type ResolvedAgentToolGrant,
 } from "../agents/tool-grant-resolution.js"
 import { summarizeTitle } from "../lib/title-summary.js"
 import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
@@ -131,7 +132,7 @@ export function createThreadRoutes(
     const resolvedGrants =
       requestedGrants.length > 0
         ? resolveRequestedAgentGrants(repos, requestedGrants)
-        : { grants: [] as { toolkitSlug: string; connectionId: string }[] }
+        : { grants: [] as ResolvedAgentToolGrant[] }
     if ("error" in resolvedGrants) {
       return c.json(
         {
