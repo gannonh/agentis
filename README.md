@@ -17,8 +17,9 @@ cd agentis
 pnpm install
 cp .env.example .env
 cp apps/web/.env.example apps/web/.env
-# Set AI_GATEWAY_PROVIDER plus the selected provider credentials in the repo root .env for live model runs.
-# For no-key dev search, use AGENTIS_WEB_SEARCH_PROVIDER=tavily and AGENTIS_WEB_SEARCH_BACKEND=keyless.
+# For a no-Vercel live research setup, use Cloudflare AI Gateway plus Tavily keyless search:
+# docs/self-host/golden-path-research.md
+# Otherwise set AI_GATEWAY_PROVIDER plus the selected provider credentials in the repo root .env.
 pnpm dev
 ```
 
@@ -57,6 +58,7 @@ docs/              # Product docs, roadmap, UI comps
 - [App artifact runtime](docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md)
 - [Artifact Library primitive (ADR 0005)](docs/adr/0005-use-artifact-as-library-primitive.md)
 - [Architecture decisions](docs/adr/)
+- [Self-host research golden path](docs/self-host/golden-path-research.md)
 - [Design system](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
 

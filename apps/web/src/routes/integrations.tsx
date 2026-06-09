@@ -9,6 +9,7 @@ import { IntegrationInfoIntro } from "@/components/integrations/integration-info
 import { IntegrationNoticeBanner } from "@/components/integrations/integration-notice-banner"
 import { IntegrationsBackNav } from "@/components/integrations/integrations-back-nav"
 import { IntegrationsSearch } from "@/components/integrations/integrations-search"
+import { DemoDataNotice } from "@/components/shell/demo-data-notice"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { useIntegrations } from "@/hooks/use-integrations"
@@ -106,11 +107,21 @@ export function IntegrationsPage() {
             disabled={loading || (!composioConfigured && !composioMockEnabled)}
             onClick={() => void refreshStatuses()}
           >
-            <HugeiconsIcon icon={RefreshIcon} className="size-3.5" strokeWidth={2} aria-hidden />
+            <HugeiconsIcon
+              icon={RefreshIcon}
+              className="size-3.5"
+              strokeWidth={2}
+              aria-hidden
+            />
             Refresh
           </Button>
         }
       />
+
+      <DemoDataNotice>
+        Featured catalog metadata is seeded. Connection status and OAuth actions
+        come from the integrations API.
+      </DemoDataNotice>
 
       {notice ? <IntegrationNoticeBanner message={notice} /> : null}
       {setupNotice ? (

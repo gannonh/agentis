@@ -11,6 +11,7 @@ import { LearningBanner } from "@/components/learning/learning-banner"
 import { LearningConversationRow } from "@/components/learning/learning-conversation-row"
 import { LearningSecondaryPanel } from "@/components/learning/learning-secondary-panel"
 import { SkillsCard } from "@/components/learning/skills-card"
+import { DemoDataNotice } from "@/components/shell/demo-data-notice"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
@@ -287,6 +288,11 @@ export function LearningPage(): ReactElement {
   return (
     <PageLayout variant="fixed" className="gap-6">
       <PageHeader title="Learning" />
+
+      <DemoDataNotice>
+        Skills and fallback learning suggestions use seeded workspace data until
+        the learning API is complete.
+      </DemoDataNotice>
 
       {editingMemory ? (
         <EditMemoryDialog

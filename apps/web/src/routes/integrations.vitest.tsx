@@ -61,6 +61,11 @@ describe("IntegrationsPage", () => {
     )
 
     expect(screen.getByRole("heading", { name: "Integrations" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("note", { name: "Demo data notice" })
+    ).toHaveTextContent(
+      "Featured catalog metadata is seeded. Connection status and OAuth actions come from the integrations API."
+    )
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "GitHub" })).toBeInTheDocument()
     })

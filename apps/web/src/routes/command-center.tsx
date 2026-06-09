@@ -10,6 +10,7 @@ import {
   CostBreakdownPanel,
   ScoreTrendsPanel,
 } from "@/components/command-center/sidebar-panels"
+import { DemoDataNotice } from "@/components/shell/demo-data-notice"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { Button } from "@workspace/ui/components/button"
@@ -98,6 +99,11 @@ export function CommandCenterPage() {
         title="Command Center"
         description="Fleet overview, quality, cost, and items that need your attention."
       />
+
+      <DemoDataNotice>
+        Recent runs, score trends, cost breakdown, and needs-attention items use
+        seeded workspace data. Agent roster is API-backed.
+      </DemoDataNotice>
 
       <FleetStats metrics={metrics} />
 
