@@ -962,9 +962,7 @@ export class RunExecutor {
           completionTokens: totalUsage.outputTokens,
           totalTokens: totalUsage.totalTokens,
         }
-        const costResult = hasPendingApproval
-          ? null
-          : costLedger.finalize(usage)
+        const costResult = costLedger.finalize(usage)
         this.repos.runs.updateStatus(
           runId,
           hasPendingApproval ? "tool-calling" : "completed",

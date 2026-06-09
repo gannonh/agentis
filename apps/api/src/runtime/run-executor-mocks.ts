@@ -910,7 +910,7 @@ export async function executeMockNativeWorkspaceMutationStream(
     "completed"
   )
   const usage = MOCK_STREAM_USAGE
-  const costPatch = pending ? {} : mockRunCostPatch(run, usage)
+  const costPatch = mockRunCostPatch(run, usage)
   deps.repos.runs.updateStatus(runId, pending ? "tool-calling" : "completed", {
     finishedAt: pending ? undefined : nowIso(),
     usage,
@@ -1013,7 +1013,7 @@ export async function executeMockNativeWorkspaceExecutionStream(
     "completed"
   )
   const usage = MOCK_STREAM_USAGE
-  const costPatch = pending ? {} : mockRunCostPatch(run, usage)
+  const costPatch = mockRunCostPatch(run, usage)
   deps.repos.runs.updateStatus(runId, pending ? "tool-calling" : "completed", {
     finishedAt: pending ? undefined : nowIso(),
     usage,
