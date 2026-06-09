@@ -2,7 +2,10 @@ import {
   AgentRoster,
   type RosterAgent,
 } from "@/components/command-center/agent-roster"
-import { FleetStats } from "@/components/command-center/fleet-stats"
+import {
+  FleetStats,
+  type FleetMetrics,
+} from "@/components/command-center/fleet-stats"
 import { NeedsAttentionPanel } from "@/components/command-center/needs-attention-panel"
 import { RecentRunsPanel } from "@/components/command-center/recent-runs-panel"
 import {
@@ -16,42 +19,83 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { Button } from "@workspace/ui/components/button"
 import { getWorkspace } from "@/fixtures"
 import { useAgents } from "@/hooks/use-agents"
-import type { Workspace } from "@/fixtures/schema"
+import { useCommandCenter } from "@/hooks/use-command-center"
+import type { CommandCenterRosterAgent } from "@workspace/shared"
+import type { AgentListItem } from "@workspace/shared"
 
-function toRosterAgent(agent: ReturnType<typeof useAgents>["agents"][number]): RosterAgent {
+function rosterMetricsByAgentId(
+  roster: CommandCenterRosterAgent[]
+): Map<string, CommandCenterRosterAgent> {
+  return new Map(roster.map((entry) => [entry.agentId, entry]))
+}
+
+function toRosterAgent(
+  agent: AgentListItem,
+  metrics?: CommandCenterRosterAgent
+): RosterAgent {
+  const runCount = metrics?.runCount ?? 0
+  const totalCost = metrics?.totalCostUsd ?? 0
+  const costPerRun = runCount > 0 ? totalCost / runCount : null
+
   return {
     id: agent.id,
     name: agent.name,
     icon: "search",
-    rosterStatus: "idle",
+    rosterStatus: (metrics?.activeRunCount ?? 0) > 0 ? "active" : "idle",
     qualityTrend: "flat",
-    runCount: 0,
+    lastRunAt: metrics?.lastRunAt ?? undefined,
+    runCount,
     qualityScore: null,
-    costPerRun: null,
-    totalCost: 0,
+    costPerRun,
+    totalCost,
   }
 }
 
-function metricsFromRoster(
-  baseMetrics: Workspace["commandCenter"],
-  roster: RosterAgent[]
-): Workspace["commandCenter"] {
-  const scoredAgents = roster.filter((agent) => agent.qualityScore != null)
-  const avgScore = scoredAgents.length
-    ? Math.round(
-        scoredAgents.reduce((total, agent) => total + (agent.qualityScore ?? 0), 0) /
-          scoredAgents.length
-      )
-    : null
-
+function metricsFromSummary(
+  summary: NonNullable<ReturnType<typeof useCommandCenter>["data"]>["summary"],
+  pending: number
+): FleetMetrics {
   return {
-    ...baseMetrics,
-    agents: roster.length,
-    active: roster.filter((agent) => agent.rosterStatus === "active").length,
-    totalRuns: roster.reduce((total, agent) => total + agent.runCount, 0),
-    avgScore,
-    totalCost: roster.reduce((total, agent) => total + agent.totalCost, 0),
+    agents: summary.agentCount,
+    active: summary.activeRuns,
+    totalRuns: summary.totalRuns,
+    avgScore: null,
+    totalCost: summary.totalCostUsd,
+    pending,
   }
+}
+
+function CommandCenterStatus({
+  error,
+  loading,
+  onRetry,
+}: {
+  error: string | null
+  loading: boolean
+  onRetry: () => void
+}) {
+  if (loading) {
+    return <p className="text-muted-foreground text-sm">Loading metrics…</p>
+  }
+
+  if (error) {
+    return (
+      <section
+        className="rounded-lg border border-border bg-card p-4"
+        aria-labelledby="command-center-error-heading"
+      >
+        <h2 id="command-center-error-heading" className="text-sm font-medium">
+          Command Center metrics unavailable
+        </h2>
+        <p className="text-muted-foreground mt-1 text-sm">{error}</p>
+        <Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>
+          Retry loading metrics
+        </Button>
+      </section>
+    )
+  }
+
+  return null
 }
 
 function AgentRosterStatus({
@@ -89,9 +133,33 @@ function AgentRosterStatus({
 
 export function CommandCenterPage() {
   const workspace = getWorkspace()
-  const { agents, loading, error, refresh } = useAgents()
-  const roster = agents.map(toRosterAgent)
-  const metrics = metricsFromRoster(workspace.commandCenter, roster)
+  const {
+    agents,
+    loading: agentsLoading,
+    error: agentsError,
+    refresh: refreshAgents,
+  } = useAgents()
+  const {
+    data: commandCenterData,
+    loading: metricsLoading,
+    error: metricsError,
+    refresh: refreshMetrics,
+  } = useCommandCenter()
+
+  const rosterMetrics = rosterMetricsByAgentId(commandCenterData?.roster ?? [])
+  const roster = agents.map((agent) =>
+    toRosterAgent(agent, rosterMetrics.get(agent.id))
+  )
+  const metrics = commandCenterData
+    ? metricsFromSummary(commandCenterData.summary, workspace.commandCenter.pending)
+    : {
+        agents: agents.length,
+        active: 0,
+        totalRuns: 0,
+        avgScore: null,
+        totalCost: 0,
+        pending: workspace.commandCenter.pending,
+      }
 
   return (
     <PageLayout>
@@ -101,20 +169,35 @@ export function CommandCenterPage() {
       />
 
       <DemoDataNotice>
-        Recent runs, score trends, cost breakdown, and needs-attention items use
-        seeded workspace data. Agent roster is API-backed.
+        Score trends, cost breakdown by model, and needs-attention items use
+        seeded workspace data until live eval and queue APIs ship.
       </DemoDataNotice>
 
-      <FleetStats metrics={metrics} />
+      {metricsError ? (
+        <CommandCenterStatus
+          error={metricsError}
+          loading={metricsLoading}
+          onRetry={refreshMetrics}
+        />
+      ) : (
+        <FleetStats metrics={metrics} />
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
         <div className="flex min-w-0 flex-col gap-8">
-          {loading || error ? (
-            <AgentRosterStatus error={error} loading={loading} onRetry={refresh} />
+          {agentsLoading || agentsError ? (
+            <AgentRosterStatus
+              error={agentsError}
+              loading={agentsLoading}
+              onRetry={refreshAgents}
+            />
           ) : (
             <AgentRoster agents={roster} />
           )}
-          <RecentRunsPanel runs={workspace.runs} />
+          <RecentRunsPanel
+            runs={commandCenterData?.recentRuns ?? []}
+            loading={metricsLoading && !commandCenterData}
+          />
         </div>
 
         <aside className="flex flex-col gap-4">

@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest"
 import { eq } from "drizzle-orm"
 import { runs } from "../db/schema.js"
 import { createTestContext } from "../test/setup.js"
-import { MOCK_MODEL_COST_USD, MOCK_WEB_SEARCH_COST_USD } from "../cost/run-cost-attribution.js"
+import {
+  MOCK_MODEL_COST_USD,
+  MOCK_WEB_SEARCH_COST_USD,
+} from "../cost/run-cost-attribution.js"
 
 describe("RunRepository cost aggregation", () => {
   it("aggregates agent usage and command center summary", () => {
@@ -70,6 +73,26 @@ describe("RunRepository cost aggregation", () => {
       expect(summary.totalCostUsd).toBe(costUsd)
       expect(summary.activeRuns).toBe(0)
       expect(summary.agentCount).toBeGreaterThan(0)
+
+      const roster = ctx.repos.runs.getAgentRosterMetrics()
+      expect(roster).toEqual([
+        expect.objectContaining({
+          agentId: agent.id,
+          runCount: 1,
+          totalCostUsd: costUsd,
+          activeRunCount: 0,
+        }),
+      ])
+
+      const recentRuns = ctx.repos.runs.listRecentRuns()
+      expect(recentRuns).toEqual([
+        expect.objectContaining({
+          id: thread.run.id,
+          threadId: thread.thread.id,
+          title: "Cost test",
+          costUsd,
+        }),
+      ])
     } finally {
       ctx.cleanup()
     }

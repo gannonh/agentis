@@ -1,8 +1,16 @@
-import type { Workspace } from "@/fixtures/schema"
 import { cn } from "@workspace/ui/lib/utils"
 
+export type FleetMetrics = {
+  agents: number
+  active: number
+  totalRuns: number
+  avgScore: number | null
+  totalCost: number
+  pending: number
+}
+
 type FleetStatsProps = {
-  metrics: Workspace["commandCenter"]
+  metrics: FleetMetrics
 }
 
 type StatItem = {
