@@ -3,6 +3,8 @@ import type {
   ArtifactVersion,
   Document,
   DocumentVersion,
+  LearningRubric,
+  LearningSkill,
   Message,
   MessagePart,
   Project,
@@ -21,10 +23,12 @@ import type {
   messages,
   projectMemories,
   projects,
+  rubrics,
   savedMemories,
   savedMemoryCategories,
   runSteps,
   runs,
+  skills,
   threads,
   workspaces,
 } from "../db/schema.js"
@@ -282,6 +286,32 @@ export function mapRunStep(row: RunStepRow): RunStep {
     payload: row.payloadJson
       ? (JSON.parse(row.payloadJson) as Record<string, unknown>)
       : undefined,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+type SkillRow = typeof skills.$inferSelect
+type RubricRow = typeof rubrics.$inferSelect
+
+export function mapLearningSkill(row: SkillRow): LearningSkill {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    pinned: row.pinned,
+    agentId: row.agentId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export function mapLearningRubric(row: RubricRow): LearningRubric {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    agentId: row.agentId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

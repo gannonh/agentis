@@ -9,7 +9,11 @@ import {
   CollapsibleTrigger,
 } from "@workspace/ui/components/collapsible"
 
-export function LearningBanner() {
+export function LearningBanner({
+  pendingSuggestionsCount = 0,
+}: {
+  pendingSuggestionsCount?: number
+}) {
   return (
     <Collapsible defaultOpen className="group/banner">
       <div className="border-status-success-border bg-status-success-muted rounded-lg border">
@@ -20,7 +24,9 @@ export function LearningBanner() {
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="text-sm font-medium">Your agents learn from conversations</p>
             <p className="text-muted-foreground text-xs">
-              Review suggestions below and accept the ones worth keeping.
+              {pendingSuggestionsCount > 0
+                ? `${pendingSuggestionsCount} pending suggestion${pendingSuggestionsCount === 1 ? "" : "s"} ready for review.`
+                : "Review suggestions below and accept the ones worth keeping."}
             </p>
           </div>
           <span className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
