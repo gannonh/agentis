@@ -432,7 +432,7 @@ export function LearningPage(): ReactElement {
     setEditError(null)
 
     try {
-      const updated = await updateMemory(memoryId, input)
+      await updateMemory(memoryId, input)
       await reloadLearningData()
       setEditingMemory(null)
     } catch (updateMemoryError) {
