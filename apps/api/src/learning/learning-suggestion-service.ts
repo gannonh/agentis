@@ -18,16 +18,19 @@ export function acceptLearningSuggestion(
   if (!suggestion || suggestionNotPending(suggestion)) return null
 
   if (suggestion.suggestionType === "skill") {
+    const updated = repos.learningSuggestions.updateStatus(suggestionId, "accepted")
+    if (!updated) return null
     const skill = repos.skills.create({
       name: suggestion.title,
       description: input.content?.trim() || suggestion.content,
       pinned: input.pinnedToContext ?? false,
       agentId: suggestion.agentId ?? undefined,
     })
-    const updated = repos.learningSuggestions.updateStatus(suggestionId, "accepted")
-    if (!updated) return null
     return { suggestion: updated, skillId: skill.id }
   }
+
+  const updated = repos.learningSuggestions.updateStatus(suggestionId, "accepted")
+  if (!updated) return null
 
   const content = input.content?.trim() || suggestion.content
   const scope =
@@ -46,8 +49,6 @@ export function acceptLearningSuggestion(
     sourceThreadTitle: suggestion.sourceThreadTitle ?? "Unknown thread",
     pinnedToContext: input.pinnedToContext ?? true,
   })
-  const updated = repos.learningSuggestions.updateStatus(suggestionId, "accepted")
-  if (!updated) return null
   return { suggestion: updated, savedMemoryId: memory.id }
 }
 

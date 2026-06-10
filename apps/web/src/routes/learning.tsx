@@ -141,7 +141,7 @@ function toSuggestionCandidate(
       agentName: source.agentName,
     },
     provenance: {
-      kind: status === "suggested" ? "mocked-llm-derived" : "thread-derived",
+      kind: status === "suggested" ? "llm-derived" : "thread-derived",
       label:
         status === "suggested"
           ? "Suggested"

@@ -14,6 +14,8 @@ function hashSeed(seed: string): number {
   return hash
 }
 
+// NOTE: placeholder stub — scores are hash-derived, not quality-based.
+// Replace with real LLM evaluation before exposing to end users.
 function deterministicCriterionScore(runId: string, criterionId: string): number {
   const hash = hashSeed(`${runId}:${criterionId}`)
   return 55 + (hash % 46)
