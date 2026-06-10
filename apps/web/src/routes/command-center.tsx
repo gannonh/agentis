@@ -143,6 +143,7 @@ export function CommandCenterPage() {
     data: commandCenterData,
     loading: metricsLoading,
     error: metricsError,
+    sectionErrors,
     refresh: refreshMetrics,
   } = useCommandCenter()
 
@@ -150,16 +151,10 @@ export function CommandCenterPage() {
   const roster = agents.map((agent) =>
     toRosterAgent(agent, rosterMetrics.get(agent.id))
   )
-  const metrics = commandCenterData
-    ? metricsFromSummary(commandCenterData.summary, workspace.commandCenter.pending)
-    : {
-        agents: agents.length,
-        active: 0,
-        totalRuns: 0,
-        avgScore: null,
-        totalCost: 0,
-        pending: workspace.commandCenter.pending,
-      }
+  const summary = commandCenterData?.summary
+  const metrics = summary
+    ? metricsFromSummary(summary, workspace.commandCenter.pending)
+    : null
 
   return (
     <PageLayout>
@@ -173,15 +168,21 @@ export function CommandCenterPage() {
         seeded workspace data until live eval and queue APIs ship.
       </DemoDataNotice>
 
-      {metricsError ? (
+      {metricsLoading && !summary ? (
         <CommandCenterStatus
-          error={metricsError}
-          loading={metricsLoading}
+          error={null}
+          loading
           onRetry={refreshMetrics}
         />
-      ) : (
-        <FleetStats metrics={metrics} />
-      )}
+      ) : metricsError || sectionErrors.summary ? (
+        <CommandCenterStatus
+          error={sectionErrors.summary ?? metricsError}
+          loading={false}
+          onRetry={refreshMetrics}
+        />
+      ) : summary ? (
+        <FleetStats metrics={metrics!} />
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
         <div className="flex min-w-0 flex-col gap-8">
@@ -196,17 +197,18 @@ export function CommandCenterPage() {
           )}
           <RecentRunsPanel
             runs={commandCenterData?.recentRuns ?? []}
-            loading={metricsLoading && !commandCenterData}
+            loading={metricsLoading && commandCenterData === null}
+            error={sectionErrors.recentRuns ?? null}
           />
         </div>
 
         <aside className="flex flex-col gap-4">
           <ActiveOperationsPanel />
           <ScoreTrendsPanel />
-          <CostBreakdownPanel totalCost={metrics.totalCost} />
+          <CostBreakdownPanel totalCost={summary?.totalCostUsd ?? 0} />
           <NeedsAttentionPanel
             items={workspace.needsAttention}
-            pendingCount={metrics.pending}
+            pendingCount={workspace.commandCenter.pending}
           />
         </aside>
       </div>

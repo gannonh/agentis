@@ -77,6 +77,7 @@ describe("CommandCenterPage", () => {
       },
       loading: false,
       error: null,
+      sectionErrors: {},
       refresh: vi.fn(),
     })
   })
@@ -156,6 +157,7 @@ describe("CommandCenterPage", () => {
       },
       loading: false,
       error: null,
+      sectionErrors: {},
       refresh: vi.fn(),
     })
 
@@ -175,6 +177,7 @@ describe("CommandCenterPage", () => {
       data: null,
       loading: false,
       error: "Failed to load command center metrics",
+      sectionErrors: { summary: "Failed to load command center metrics" },
       refresh,
     })
 
@@ -188,5 +191,33 @@ describe("CommandCenterPage", () => {
     expect(screen.getByText("Failed to load command center metrics")).toBeInTheDocument()
     screen.getByRole("button", { name: "Retry loading metrics" }).click()
     expect(refresh).toHaveBeenCalled()
+  })
+
+  it("shows recent runs error while summary metrics still render", () => {
+    useCommandCenterMock.mockReturnValue({
+      data: {
+        summary: {
+          agentCount: 1,
+          activeRuns: 0,
+          totalRuns: 2,
+          totalCostUsd: 0.88,
+        },
+        roster: [],
+        recentRuns: [],
+      },
+      loading: false,
+      error: null,
+      sectionErrors: { recentRuns: "Failed to load recent runs" },
+      refresh: vi.fn(),
+    })
+
+    render(
+      <MemoryRouter>
+        <CommandCenterPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("Total runs")).toBeInTheDocument()
+    expect(screen.getByText("Failed to load recent runs")).toBeInTheDocument()
   })
 })

@@ -24,9 +24,10 @@ import type {
 import { listThreads } from "@/lib/api/client"
 import {
   getLearningSummary,
+  listLearningMemories,
   listLearningSkills,
 } from "@/lib/api/learning-client"
-import { listMemories, updateMemory } from "@/lib/api/memories-client"
+import { updateMemory } from "@/lib/api/memories-client"
 import { EditMemoryDialog } from "@/components/memories/memory-dialogs"
 
 type LearningData = {
@@ -203,18 +204,17 @@ function listConversationAgents(
 }
 
 function deriveSummaryFallback(
-  memoriesResult: PromiseSettledResult<Awaited<ReturnType<typeof listMemories>>>,
+  memoriesResult: PromiseSettledResult<
+    Awaited<ReturnType<typeof listLearningMemories>>
+  >,
   skillsResult: PromiseSettledResult<
     Awaited<ReturnType<typeof listLearningSkills>>
   >
 ): LearningSummary {
-  const skills =
-    skillsResult.status === "fulfilled" ? skillsResult.value.skills : []
-
   return {
     skillsCount:
       skillsResult.status === "fulfilled" ? skillsResult.value.totalCount : 0,
-    pinnedSkillsCount: skills.filter((skill) => skill.pinned).length,
+    pinnedSkillsCount: 0,
     memoriesCount:
       memoriesResult.status === "fulfilled"
         ? memoriesResult.value.memories.length
@@ -245,7 +245,7 @@ export function LearningPage(): ReactElement {
       const [threadsResult, memoriesResult, summaryResult, skillsResult] =
         await Promise.allSettled([
           listThreads(),
-          listMemories(),
+          listLearningMemories({ page: 1, pageSize: 100 }),
           getLearningSummary(),
           listLearningSkills({ page: 1, pageSize: 5 }),
         ])

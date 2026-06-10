@@ -75,6 +75,25 @@ describe("learning routes", () => {
     expect(listBody.skills[0].name).toBe("website-to-hyperframes")
   })
 
+  it("returns null descriptions for blank skill descriptions", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const createResponse = await app.request("/api/learning/skills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "blank-description-skill",
+        description: "   ",
+      }),
+    })
+    expect(createResponse.status).toBe(201)
+    expect(await createResponse.json()).toMatchObject({
+      name: "blank-description-skill",
+      description: null,
+    })
+  })
+
   it("returns paginated memories and rubrics lists", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)

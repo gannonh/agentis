@@ -6,9 +6,14 @@ import type { CommandCenterRecentRun } from "@workspace/shared"
 type RecentRunsPanelProps = {
   runs: CommandCenterRecentRun[]
   loading?: boolean
+  error?: string | null
 }
 
-export function RecentRunsPanel({ runs, loading = false }: RecentRunsPanelProps) {
+export function RecentRunsPanel({
+  runs,
+  loading = false,
+  error = null,
+}: RecentRunsPanelProps) {
   return (
     <section className="flex flex-col gap-3" aria-labelledby="recent-runs-heading">
       <h2 id="recent-runs-heading" className="text-sm font-medium">
@@ -16,6 +21,8 @@ export function RecentRunsPanel({ runs, loading = false }: RecentRunsPanelProps)
       </h2>
       {loading ? (
         <p className="text-muted-foreground text-sm">Loading recent runs…</p>
+      ) : error ? (
+        <p className="text-muted-foreground text-sm">{error}</p>
       ) : runs.length === 0 ? (
         <EmptyState
           title="No runs yet"

@@ -298,7 +298,7 @@ export function mapLearningSkill(row: SkillRow): LearningSkill {
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
+    description: row.description?.trim() ? row.description : null,
     pinned: row.pinned,
     agentId: row.agentId,
     createdAt: row.createdAt,

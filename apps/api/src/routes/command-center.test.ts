@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest"
+import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { MOCK_MODEL_COST_USD } from "../cost/run-cost-attribution.js"
@@ -137,5 +138,57 @@ describe("command center routes", () => {
     const recentRunsResponse = await app.request("/api/command-center/recent-runs")
     expect(recentRunsResponse.status).toBe(200)
     expect(await recentRunsResponse.json()).toEqual([])
+  })
+
+  it("excludes generic Agentis runs from roster and recent runs", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Ops Agent",
+        systemPrompt: "Track costs",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+
+    const namedThread = ctx.repos.threads.createWithInitialRun({
+      title: "Named ops run",
+      prompt: "Hello",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId:
+        ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id,
+    })
+    ctx.repos.runs.updateStatus(namedThread.run.id, "completed", {
+      finishedAt: new Date().toISOString(),
+      cost: MOCK_MODEL_COST_USD,
+    })
+
+    const genericThread = ctx.repos.threads.createWithInitialRun({
+      title: "Generic ops run",
+      prompt: "Hello",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: GENERIC_AGENTIS_AGENT_ID,
+    })
+    ctx.repos.runs.updateStatus(genericThread.run.id, "completed", {
+      finishedAt: new Date().toISOString(),
+      cost: MOCK_MODEL_COST_USD,
+    })
+
+    const rosterResponse = await app.request("/api/command-center/roster")
+    expect(rosterResponse.status).toBe(200)
+    const roster = (await rosterResponse.json()) as { agentId: string }[]
+    expect(roster).toHaveLength(1)
+    expect(roster[0]?.agentId).toBe(agent.id)
+
+    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    expect(recentRunsResponse.status).toBe(200)
+    const recentRuns = (await recentRunsResponse.json()) as { id: string }[]
+    expect(recentRuns).toHaveLength(1)
+    expect(recentRuns[0]?.id).toBe(namedThread.run.id)
   })
 })

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { AgentUsageResponse } from "@workspace/shared"
 import { getAgentUsage } from "@/lib/api/agents-client"
 
@@ -14,41 +14,52 @@ function usageErrorMessage(error: unknown) {
 
 export function useAgentUsage(agentId: string | undefined, periodDays = 14) {
   const [state, setState] = useState<AgentUsageState>({ status: "idle" })
+  const requestIdRef = useRef(0)
 
   const refresh = useCallback(async () => {
     if (!agentId) {
       return
     }
 
+    const requestId = ++requestIdRef.current
     setState({ status: "loading", agentId })
     try {
       const usage = await getAgentUsage(agentId, periodDays)
+      if (requestId !== requestIdRef.current) {
+        return
+      }
       setState({ status: "ready", agentId, usage })
     } catch (error) {
+      if (requestId !== requestIdRef.current) {
+        return
+      }
       setState({ status: "error", agentId, message: usageErrorMessage(error) })
     }
   }, [agentId, periodDays])
 
   useEffect(() => {
     if (!agentId) {
+      requestIdRef.current += 1
       return
     }
 
-    let cancelled = false
+    const requestId = ++requestIdRef.current
     getAgentUsage(agentId, periodDays)
       .then((usage) => {
-        if (!cancelled) {
-          setState({ status: "ready", agentId, usage })
+        if (requestId !== requestIdRef.current) {
+          return
         }
+        setState({ status: "ready", agentId, usage })
       })
       .catch((error: unknown) => {
-        if (!cancelled) {
-          setState({ status: "error", agentId, message: usageErrorMessage(error) })
+        if (requestId !== requestIdRef.current) {
+          return
         }
+        setState({ status: "error", agentId, message: usageErrorMessage(error) })
       })
 
     return () => {
-      cancelled = true
+      requestIdRef.current += 1
     }
   }, [agentId, periodDays])
 

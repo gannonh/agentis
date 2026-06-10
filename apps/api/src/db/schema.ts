@@ -463,7 +463,9 @@ export const skills = sqliteTable(
     name: text("name").notNull(),
     description: text("description"),
     pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
-    agentId: text("agent_id").references(() => agents.id),
+    agentId: text("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -476,7 +478,9 @@ export const rubrics = sqliteTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     description: text("description"),
-    agentId: text("agent_id").references(() => agents.id),
+    agentId: text("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -492,9 +496,13 @@ export const learningSuggestions = sqliteTable(
     title: text("title").notNull(),
     content: text("content").notNull(),
     confidence: real("confidence"),
-    sourceThreadId: text("source_thread_id").references(() => threads.id),
+    sourceThreadId: text("source_thread_id").references(() => threads.id, {
+      onDelete: "set null",
+    }),
     sourceThreadTitle: text("source_thread_title"),
-    agentId: text("agent_id").references(() => agents.id),
+    agentId: text("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },

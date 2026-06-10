@@ -180,7 +180,7 @@ flowchart LR
 
 **HyperAgent reference:** `/learning` — Skills, Memories (categorized), Rubrics, conversation-derived suggestion counts.
 
-**Agentis today:** Shipped. `/learning` reads summary, skills, memories, rubrics, and suggestion counts from `GET /api/learning/*` endpoints with fresh-install empty states.
+**Agentis today:** Shipped. `/learning` reads summary, skills, memories, rubrics, and suggestion counts from `GET /api/learning/*` endpoints. Installs without debug seeds show intentional empty states; seeded dev data may still populate memories from accepted thread-derived records.
 
 **Goal:** API-backed read models for skills, memories, rubrics, and pending suggestion counts.
 

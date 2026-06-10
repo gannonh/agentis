@@ -45,8 +45,12 @@ async function mockShellRouteData(page: Page, routeName: string) {
 
   if (routeName === "learning") {
     await page.route(/\/api\/threads$/, (route) => fulfillJson(route, []))
-    await page.route(/\/api\/memories$/, (route) =>
+    await page.route(/\/api\/learning\/memories\?/, (route) =>
       fulfillJson(route, {
+        page: 1,
+        pageSize: 100,
+        totalCount: 0,
+        totalPages: 0,
         categories: EMPTY_MEMORY_CATEGORIES,
         memories: [],
       })

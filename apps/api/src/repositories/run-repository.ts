@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm"
+import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
 import type {
   AgentUsageResponse,
   CommandCenterRecentRun,
@@ -9,6 +9,7 @@ import type {
   RunStatus,
   RunUsage,
 } from "@workspace/shared"
+import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { runs, threads } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
@@ -314,7 +315,12 @@ export class RunRepository {
           ),
       })
       .from(runs)
-      .where(sql`${runs.agentId} is not null`)
+      .where(
+        and(
+          sql`${runs.agentId} is not null`,
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
       .groupBy(runs.agentId)
       .all()
 
@@ -330,6 +336,7 @@ export class RunRepository {
   }
 
   listRecentRuns(limit = 20): CommandCenterRecentRun[] {
+    const boundedLimit = Math.min(Math.max(limit, 1), 100)
     return this.db
       .select({
         id: runs.id,
@@ -342,9 +349,14 @@ export class RunRepository {
       })
       .from(runs)
       .innerJoin(threads, eq(runs.threadId, threads.id))
-      .where(eq(runs.status, "completed"))
+      .where(
+        and(
+          eq(runs.status, "completed"),
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
       .orderBy(desc(runs.startedAt), desc(runs.id))
-      .limit(limit)
+      .limit(boundedLimit)
       .all()
       .map((row) => ({
         id: row.id,

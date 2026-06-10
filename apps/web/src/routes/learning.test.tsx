@@ -46,6 +46,28 @@ function fetchResponse(data: unknown, fallback: unknown) {
   return jsonResponse(data ?? fallback)
 }
 
+const EMPTY_LEARNING_MEMORIES = {
+  page: 1,
+  pageSize: 100,
+  totalCount: 0,
+  totalPages: 0,
+  categories: [],
+  memories: [],
+}
+
+function withLearningMemoriesResponse(memories: {
+  categories?: unknown[]
+  memories?: unknown[]
+}) {
+  const items = memories.memories ?? []
+  return {
+    ...EMPTY_LEARNING_MEMORIES,
+    ...memories,
+    totalCount: items.length,
+    totalPages: items.length > 0 ? 1 : 0,
+  }
+}
+
 function stubLearningFetch(
   handlers: {
     threads?: unknown
@@ -62,8 +84,17 @@ function stubLearningFetch(
       if (url.endsWith("/api/threads")) {
         return fetchResponse(handlers.threads, [])
       }
-      if (url.endsWith("/api/memories")) {
-        return fetchResponse(handlers.memories, { categories: [], memories: [] })
+      if (url.startsWith("/api/learning/memories")) {
+        const memories =
+          handlers.memories && typeof handlers.memories === "object"
+            ? withLearningMemoriesResponse(
+                handlers.memories as {
+                  categories?: unknown[]
+                  memories?: unknown[]
+                }
+              )
+            : EMPTY_LEARNING_MEMORIES
+        return fetchResponse(memories, EMPTY_LEARNING_MEMORIES)
       }
       if (url.endsWith("/api/learning/summary")) {
         return fetchResponse(handlers.summary, EMPTY_LEARNING_SUMMARY)
@@ -384,6 +415,40 @@ describe("LearningPage", () => {
       "Learning totals could not load"
     )
     expect(screen.queryByText("No conversations yet")).not.toBeInTheDocument()
+  })
+
+  it("derives pinned skill counts when summary fails but skills load", async () => {
+    stubLearningFetch({
+      summary: new Error("summary unavailable"),
+      skills: {
+        skills: [
+          {
+            id: "skill_pinned",
+            name: "website-to-hyperframes",
+            description: null,
+            pinned: true,
+            agentId: null,
+            createdAt: "2026-06-09T00:00:00.000Z",
+            updatedAt: "2026-06-09T00:00:00.000Z",
+          },
+        ],
+        page: 1,
+        pageSize: 5,
+        totalCount: 1,
+        totalPages: 1,
+      },
+    })
+
+    render(
+      <MemoryRouter>
+        <LearningPage />
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText("0 pinned")).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Learning totals could not load"
+    )
   })
 
   it("renders API-backed empty states on a fresh install", async () => {
