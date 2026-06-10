@@ -318,6 +318,7 @@ export function AgentDetailPage() {
                 toolGrants={apiAgentDetail?.toolGrants}
                 agentId={apiAgentDetail?.agent.id}
                 configurationVersions={apiAgentDetail?.configurationVersions}
+                evaluations={apiAgentDetail?.information.evaluations}
               />
             </TabsContent>
             {apiAgentDetail ? (

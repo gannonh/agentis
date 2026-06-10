@@ -148,10 +148,44 @@ describe("AgentOverviewTab observability", () => {
     renderOverview({ agentId: undefined })
 
     expect(screen.getByTestId("evaluations-empty-state")).toBeInTheDocument()
-    expect(screen.getByText(/Rubric-based run scoring is not available yet/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Create a rubric for this agent in Learning/)
+    ).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: "Open Learning" })
     ).toHaveAttribute("href", "/learning")
+  })
+
+  it("lists evaluated runs when provided", async () => {
+    getAgentUsage.mockResolvedValue({
+      agentId: "agent_created",
+      periodDays: 14,
+      totalCostUsd: 0,
+      totalRuns: 0,
+      daily: [],
+      byModel: [],
+    })
+    renderOverview({
+      agentId: "agent_created",
+      evaluations: [
+        {
+          runId: "run_eval_1",
+          threadId: "thread_eval_1",
+          threadTitle: "Support follow-up",
+          score: 88,
+          rubricName: "Support quality",
+          evaluatedAt: "2026-06-09T12:00:00.000Z",
+        },
+      ],
+    })
+
+    expect(await screen.findByTestId("evaluations-list")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Support follow-up" })).toHaveAttribute(
+      "href",
+      "/threads/thread_eval_1"
+    )
+    expect(screen.getByText("88%")).toBeInTheDocument()
+    expect(screen.getByText(/Support quality/)).toBeInTheDocument()
   })
 
   it("lists configuration versions when provided", () => {

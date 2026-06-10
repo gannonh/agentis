@@ -2,10 +2,12 @@ import { Hono } from "hono"
 import {
   acceptLearningSuggestionRequestSchema,
   acceptLearningSuggestionResponseSchema,
+  createLearningRubricRequestSchema,
   createLearningSkillRequestSchema,
   learningMemoriesListResponseSchema,
   learningMemoriesQuerySchema,
   learningPaginationQuerySchema,
+  learningRubricSchema,
   learningRubricsListResponseSchema,
   learningSkillSchema,
   learningSkillsListResponseSchema,
@@ -13,6 +15,7 @@ import {
   learningSuggestionsListResponseSchema,
   learningSuggestionsQuerySchema,
   learningSummarySchema,
+  updateLearningRubricRequestSchema,
 } from "@workspace/shared"
 import {
   acceptLearningSuggestion,
@@ -171,6 +174,69 @@ export function createLearningRoutes(repos: Repositories): Hono {
 
     const response = repos.rubrics.listPaginated(parsed.data)
     return c.json(learningRubricsListResponseSchema.parse(response))
+  })
+
+  app.post("/rubrics", async (c) => {
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(invalidLearningPayload(), 400)
+    }
+
+    const parsed = createLearningRubricRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      return c.json(invalidLearningPayload(parsed.error.issues), 400)
+    }
+
+    const input = parsed.data
+    if (input.agentId && !repos.agents.getById(input.agentId)) {
+      return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+    }
+
+    const rubric = repos.rubrics.create(input)
+    return c.json(learningRubricSchema.parse(rubric), 201)
+  })
+
+  app.get("/rubrics/:rubricId", (c) => {
+    const rubric = repos.rubrics.getById(c.req.param("rubricId"))
+    if (!rubric) {
+      return c.json({ error: "Rubric not found", code: "rubric_not_found" }, 404)
+    }
+    return c.json(learningRubricSchema.parse(rubric))
+  })
+
+  app.patch("/rubrics/:rubricId", async (c) => {
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(invalidLearningPayload(), 400)
+    }
+
+    const parsed = updateLearningRubricRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      return c.json(invalidLearningPayload(parsed.error.issues), 400)
+    }
+
+    const input = parsed.data
+    if (input.agentId && !repos.agents.getById(input.agentId)) {
+      return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
+    }
+
+    const rubric = repos.rubrics.update(c.req.param("rubricId"), input)
+    if (!rubric) {
+      return c.json({ error: "Rubric not found", code: "rubric_not_found" }, 404)
+    }
+    return c.json(learningRubricSchema.parse(rubric))
+  })
+
+  app.delete("/rubrics/:rubricId", (c) => {
+    const deleted = repos.rubrics.delete(c.req.param("rubricId"))
+    if (!deleted) {
+      return c.json({ error: "Rubric not found", code: "rubric_not_found" }, 404)
+    }
+    return c.body(null, 204)
   })
 
   return app

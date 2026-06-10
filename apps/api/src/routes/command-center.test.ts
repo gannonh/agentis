@@ -3,6 +3,7 @@ import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { MOCK_MODEL_COST_USD } from "../cost/run-cost-attribution.js"
+import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
@@ -88,6 +89,7 @@ describe("command center routes", () => {
       threadId: string
       title: string
       costUsd: number
+      evaluationScore: number | null
     }[]
     expect(recentRuns).toEqual([
       expect.objectContaining({
@@ -95,6 +97,70 @@ describe("command center routes", () => {
         threadId: thread.thread.id,
         title: "Ops run",
         costUsd,
+        evaluationScore: null,
+      }),
+    ])
+  })
+
+  it("returns average and per-run evaluation scores when rubrics exist", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Scored Agent",
+        systemPrompt: "Score runs",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    ctx.repos.rubrics.create({
+      name: "Quality rubric",
+      agentId: agent.id,
+      criteria: [{ name: "Accuracy", weight: 1 }],
+    })
+
+    const thread = ctx.repos.threads.createWithInitialRun({
+      title: "Scored run",
+      prompt: "Hello",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId:
+        ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id,
+    })
+    ctx.repos.runs.updateStatus(thread.run.id, "completed", {
+      finishedAt: new Date().toISOString(),
+      cost: MOCK_MODEL_COST_USD,
+    })
+    const evaluation = evaluateCompletedRun(ctx.repos, thread.run.id)
+    expect(evaluation).not.toBeNull()
+
+    const summaryResponse = await app.request("/api/command-center/summary")
+    expect(summaryResponse.status).toBe(200)
+    expect(await summaryResponse.json()).toEqual(
+      expect.objectContaining({
+        avgScore: evaluation?.score,
+        evaluatedRunCount: 1,
+      })
+    )
+
+    const rosterResponse = await app.request("/api/command-center/roster")
+    expect(rosterResponse.status).toBe(200)
+    expect(await rosterResponse.json()).toEqual([
+      expect.objectContaining({
+        agentId: agent.id,
+        avgScore: evaluation?.score,
+        evaluatedRunCount: 1,
+      }),
+    ])
+
+    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    expect(recentRunsResponse.status).toBe(200)
+    expect(await recentRunsResponse.json()).toEqual([
+      expect.objectContaining({
+        id: thread.run.id,
+        evaluationScore: evaluation?.score,
       }),
     ])
   })

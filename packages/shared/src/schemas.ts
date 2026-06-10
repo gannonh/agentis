@@ -21,6 +21,7 @@ import {
 } from "./artifact-schemas.js"
 import { LOCAL_WORKSPACE_BACKEND_TYPE } from "./constants.js"
 import { runCostBreakdownSchema } from "./cost-schemas.js"
+import { runEvaluationSchema } from "./evaluation-schemas.js"
 import {
   documentDetailResponseSchema,
   documentPublicSchema,
@@ -281,6 +282,7 @@ export const runSchema = z.object({
   cost: z.number().nullable().optional(),
   costUsd: z.number().nullable().optional(),
   costBreakdown: runCostBreakdownSchema.nullable().optional(),
+  evaluation: runEvaluationSchema.nullable().optional(),
 })
 
 export const runStepSchema = z.object({
@@ -796,10 +798,20 @@ export const agentMemorySummarySchema = z.object({
   global: z.array(savedMemorySchema),
 })
 
+export const agentRunEvaluationSummarySchema = z.object({
+  runId: z.string(),
+  threadId: z.string(),
+  threadTitle: z.string(),
+  score: z.number().min(0).max(100),
+  rubricName: z.string(),
+  evaluatedAt: z.string(),
+})
+
 export const agentDetailInformationSchema = z.object({
   recentThreads: z.array(agentRecentThreadSummarySchema),
   library: agentLibrarySummarySchema,
   memories: agentMemorySummarySchema.default({ agent: [], global: [] }),
+  evaluations: z.array(agentRunEvaluationSummarySchema).default([]),
 })
 
 export const agentDetailResponseSchema = z.object({
@@ -952,6 +964,9 @@ export type AgentRecentThreadSummary = z.infer<
 >
 export type AgentLibrarySummary = z.infer<typeof agentLibrarySummarySchema>
 export type AgentMemorySummary = z.infer<typeof agentMemorySummarySchema>
+export type AgentRunEvaluationSummary = z.infer<
+  typeof agentRunEvaluationSummarySchema
+>
 export type AgentDetailInformation = z.infer<
   typeof agentDetailInformationSchema
 >

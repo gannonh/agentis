@@ -74,6 +74,8 @@ describe("RunRepository cost aggregation", () => {
       expect(summary.totalCostUsd).toBe(costUsd)
       expect(summary.activeRuns).toBe(0)
       expect(summary.agentCount).toBeGreaterThan(0)
+      expect(summary.avgScore).toBeNull()
+      expect(summary.evaluatedRunCount).toBe(0)
 
       const roster = ctx.repos.runs.getAgentRosterMetrics()
       expect(roster).toEqual([
@@ -82,6 +84,8 @@ describe("RunRepository cost aggregation", () => {
           runCount: 1,
           totalCostUsd: costUsd,
           activeRunCount: 0,
+          avgScore: null,
+          evaluatedRunCount: 0,
         }),
       ])
 
@@ -92,6 +96,7 @@ describe("RunRepository cost aggregation", () => {
           threadId: thread.thread.id,
           title: "Cost test",
           costUsd,
+          evaluationScore: null,
         }),
       ])
     } finally {

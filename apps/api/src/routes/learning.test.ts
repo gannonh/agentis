@@ -270,6 +270,73 @@ describe("learning routes", () => {
     })
   })
 
+  it("creates, reads, updates, and deletes rubrics with weighted criteria", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Rubric Agent",
+        systemPrompt: "Score runs",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+
+    const createResponse = await app.request("/api/learning/rubrics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Support quality",
+        description: "  ",
+        agentId: agent.id,
+        criteria: [
+          { name: "Resolution", weight: 2 },
+          { name: "Tone", weight: 1 },
+        ],
+      }),
+    })
+    expect(createResponse.status).toBe(201)
+    const created = (await createResponse.json()) as {
+      id: string
+      name: string
+      description: string | null
+      criteria: Array<{ id: string; name: string; weight: number }>
+    }
+    expect(created.name).toBe("Support quality")
+    expect(created.description).toBeNull()
+    expect(created.criteria).toHaveLength(2)
+    expect(created.criteria[0]?.weight).toBe(2)
+
+    const getResponse = await app.request(`/api/learning/rubrics/${created.id}`)
+    expect(getResponse.status).toBe(200)
+    expect(await getResponse.json()).toMatchObject({ id: created.id })
+
+    const patchResponse = await app.request(`/api/learning/rubrics/${created.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        criteria: [{ name: "Resolution", weight: 1 }],
+      }),
+    })
+    expect(patchResponse.status).toBe(200)
+    const patched = (await patchResponse.json()) as {
+      criteria: Array<{ name: string }>
+    }
+    expect(patched.criteria).toHaveLength(1)
+    expect(patched.criteria[0]?.name).toBe("Resolution")
+
+    const summaryResponse = await app.request("/api/learning/summary")
+    expect(await summaryResponse.json()).toMatchObject({ rubricsCount: 1 })
+
+    const deleteResponse = await app.request(`/api/learning/rubrics/${created.id}`, {
+      method: "DELETE",
+    })
+    expect(deleteResponse.status).toBe(204)
+    expect((await app.request(`/api/learning/rubrics/${created.id}`)).status).toBe(
+      404
+    )
+  })
+
   it("includes saved memories in learning summary and paginated list", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)

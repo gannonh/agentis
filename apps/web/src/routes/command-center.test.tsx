@@ -53,6 +53,8 @@ describe("CommandCenterPage", () => {
           activeRuns: 0,
           totalRuns: 2,
           totalCostUsd: 0.88,
+          avgScore: 86,
+          evaluatedRunCount: 2,
         },
         roster: [
           {
@@ -61,6 +63,8 @@ describe("CommandCenterPage", () => {
             totalCostUsd: 0.88,
             lastRunAt: "2026-06-09T12:00:00.000Z",
             activeRunCount: 0,
+            avgScore: 86,
+            evaluatedRunCount: 2,
           },
         ],
         recentRuns: [
@@ -72,6 +76,7 @@ describe("CommandCenterPage", () => {
             status: "completed",
             costUsd: 0.44,
             startedAt: "2026-06-09T12:00:00.000Z",
+            evaluationScore: 86,
           },
         ],
       },
@@ -103,7 +108,7 @@ describe("CommandCenterPage", () => {
     expect(screen.getAllByText("2").length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText("$0.88").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Avg score")).toBeInTheDocument()
-    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("86%").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole("heading", { name: "Agent roster" })).toBeInTheDocument()
     expect(screen.getByText("1 agent")).toBeInTheDocument()
     await waitFor(() => {
@@ -151,6 +156,8 @@ describe("CommandCenterPage", () => {
           activeRuns: 0,
           totalRuns: 0,
           totalCostUsd: 0,
+          avgScore: null,
+          evaluatedRunCount: 0,
         },
         roster: [],
         recentRuns: [],
@@ -201,6 +208,8 @@ describe("CommandCenterPage", () => {
           activeRuns: 0,
           totalRuns: 2,
           totalCostUsd: 0.88,
+          avgScore: null,
+          evaluatedRunCount: 0,
         },
         roster: [],
         recentRuns: [],

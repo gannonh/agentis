@@ -225,6 +225,13 @@
       "when": 1780953600000,
       "tag": "0031_learning_fk_on_delete_set_null",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1781040000000,
+      "tag": "0032_rubric_criteria_run_evaluation",
+      "breakpoints": true
     }
   ]
 }
