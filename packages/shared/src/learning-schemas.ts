@@ -7,6 +7,7 @@ import {
 
 export const learningSummarySchema = z.object({
   skillsCount: z.number().int().nonnegative(),
+  pinnedSkillsCount: z.number().int().nonnegative(),
   memoriesCount: z.number().int().nonnegative(),
   rubricsCount: z.number().int().nonnegative(),
   pendingSuggestionsCount: z.number().int().nonnegative(),

@@ -33,6 +33,7 @@ export function createLearningRoutes(repos: Repositories): Hono {
   app.get("/summary", (c) => {
     const summary = {
       skillsCount: repos.skills.count(),
+      pinnedSkillsCount: repos.skills.countPinned(),
       memoriesCount: repos.savedMemories.count(),
       rubricsCount: repos.rubrics.count(),
       pendingSuggestionsCount: repos.learningSuggestions.countPending(),

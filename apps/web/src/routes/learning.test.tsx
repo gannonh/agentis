@@ -13,6 +13,7 @@ const LEARNING_SCOPE_INTERACTION_TIMEOUT_MS = 30_000
 
 const EMPTY_LEARNING_SUMMARY = {
   skillsCount: 0,
+  pinnedSkillsCount: 0,
   memoriesCount: 0,
   rubricsCount: 0,
   pendingSuggestionsCount: 0,
@@ -167,6 +168,7 @@ describe("LearningPage", () => {
       },
       summary: {
         skillsCount: 0,
+        pinnedSkillsCount: 0,
         memoriesCount: 1,
         rubricsCount: 0,
         pendingSuggestionsCount: 0,
@@ -286,6 +288,7 @@ describe("LearningPage", () => {
       },
       summary: {
         skillsCount: 0,
+        pinnedSkillsCount: 0,
         memoriesCount: 1,
         rubricsCount: 0,
         pendingSuggestionsCount: 0,
@@ -364,6 +367,7 @@ describe("LearningPage", () => {
     stubLearningFetch({
       summary: {
         skillsCount: 2,
+        pinnedSkillsCount: 1,
         memoriesCount: 0,
         rubricsCount: 0,
         pendingSuggestionsCount: 0,

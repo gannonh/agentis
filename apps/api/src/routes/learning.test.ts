@@ -20,6 +20,7 @@ describe("learning routes", () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
       skillsCount: 0,
+      pinnedSkillsCount: 0,
       memoriesCount: SEEDED_MEMORY_COUNT,
       rubricsCount: 0,
       pendingSuggestionsCount: 0,
@@ -57,6 +58,7 @@ describe("learning routes", () => {
     const summaryResponse = await app.request("/api/learning/summary")
     expect(await summaryResponse.json()).toMatchObject({
       skillsCount: 1,
+      pinnedSkillsCount: 1,
       memoriesCount: SEEDED_MEMORY_COUNT,
       rubricsCount: 0,
       pendingSuggestionsCount: 0,
@@ -172,6 +174,7 @@ describe("learning routes", () => {
     const summaryResponse = await app.request("/api/learning/summary")
     expect(await summaryResponse.json()).toMatchObject({
       skillsCount: 0,
+      pinnedSkillsCount: 0,
       memoriesCount: SEEDED_MEMORY_COUNT + 1,
       rubricsCount: 0,
       pendingSuggestionsCount: 0,

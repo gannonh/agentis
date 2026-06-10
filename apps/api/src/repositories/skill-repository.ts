@@ -31,6 +31,15 @@ export class SkillRepository {
     return Number(row?.value ?? 0)
   }
 
+  countPinned(): number {
+    const row = this.db
+      .select({ value: count() })
+      .from(skills)
+      .where(eq(skills.pinned, true))
+      .get()
+    return Number(row?.value ?? 0)
+  }
+
   listPaginated(input: { page: number; pageSize: number }) {
     const totalCount = this.count()
     const totalPages =

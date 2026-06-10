@@ -59,6 +59,7 @@ const EMPTY_LEARNING_DATA: LearningData = {
 
 const EMPTY_LEARNING_SUMMARY: LearningSummary = {
   skillsCount: 0,
+  pinnedSkillsCount: 0,
   memoriesCount: 0,
   rubricsCount: 0,
   pendingSuggestionsCount: 0,
@@ -207,7 +208,6 @@ export function LearningPage(): ReactElement {
   const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
   const [savingMemory, setSavingMemory] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
-  const pinnedCount = skills.filter((skill) => skill.pinned).length
 
   useEffect(() => {
     let cancelled = false
@@ -327,7 +327,7 @@ export function LearningPage(): ReactElement {
         />
       ) : null}
 
-      <LearningBanner pendingSuggestionsCount={learningSummary.pendingSuggestionsCount} />
+      <LearningBanner />
 
       <section
         className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4"
@@ -336,7 +336,7 @@ export function LearningPage(): ReactElement {
         <SkillsCard
           skills={skills}
           totalCount={learningSummary.skillsCount}
-          pinnedCount={pinnedCount}
+          pinnedCount={learningSummary.pinnedSkillsCount}
           loading={loading}
         />
         <LearningSecondaryPanel

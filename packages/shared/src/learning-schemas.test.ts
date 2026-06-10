@@ -11,11 +11,12 @@ describe("learning schemas", () => {
     expect(
       learningSummarySchema.parse({
         skillsCount: 2,
+        pinnedSkillsCount: 1,
         memoriesCount: 3,
         rubricsCount: 0,
         pendingSuggestionsCount: 0,
       })
-    ).toMatchObject({ skillsCount: 2, memoriesCount: 3 })
+    ).toMatchObject({ skillsCount: 2, pinnedSkillsCount: 1, memoriesCount: 3 })
 
     expect(
       learningSkillsListResponseSchema.parse({
