@@ -1,4 +1,4 @@
-import { and, asc, eq, or, sql } from "drizzle-orm"
+import { and, asc, count, eq, or, sql } from "drizzle-orm"
 import type {
   AgentMemorySummary,
   CreateSavedMemoryRequest,
@@ -154,6 +154,57 @@ export class SavedMemoryRepository {
       .all()
       .map(mapSavedMemory)
 
+    return {
+      ...this.buildCategorySummaries(),
+      memories,
+    }
+  }
+
+  count(category?: SavedMemoryCategoryKey): number {
+    const query = this.db.select({ value: count() }).from(savedMemories)
+    const row = (
+      category
+        ? query.where(eq(savedMemories.category, category))
+        : query
+    ).get()
+    return Number(row?.value ?? 0)
+  }
+
+  listPaginated(input: {
+    page: number
+    pageSize: number
+    category?: SavedMemoryCategoryKey
+  }) {
+    const totalCount = this.count(input.category)
+    const totalPages =
+      totalCount === 0 ? 0 : Math.ceil(totalCount / input.pageSize)
+    const offset = (input.page - 1) * input.pageSize
+    const memoriesQuery = this.db
+      .select()
+      .from(savedMemories)
+      .orderBy(asc(savedMemories.date), asc(savedMemories.id))
+      .limit(input.pageSize)
+      .offset(offset)
+
+    const memories = (
+      input.category
+        ? memoriesQuery.where(eq(savedMemories.category, input.category))
+        : memoriesQuery
+    )
+      .all()
+      .map(mapSavedMemory)
+
+    return {
+      ...this.buildCategorySummaries(),
+      memories,
+      page: input.page,
+      pageSize: input.pageSize,
+      totalCount,
+      totalPages,
+    }
+  }
+
+  private buildCategorySummaries(): Pick<MemoriesListResponse, "categories"> {
     const categoryCounts = this.db
       .select({
         category: savedMemories.category,
@@ -179,6 +230,6 @@ export class SavedMemoryRepository {
         )
       )
 
-    return { categories, memories }
+    return { categories }
   }
 }

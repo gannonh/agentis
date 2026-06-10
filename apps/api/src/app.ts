@@ -9,6 +9,7 @@ import { createCommandCenterRoutes } from "./routes/command-center.js"
 import { createArtifactRoutes } from "./routes/artifacts.js"
 import { createDocumentRoutes } from "./routes/documents.js"
 import { createIntegrationRoutes } from "./routes/integrations.js"
+import { createLearningRoutes } from "./routes/learning.js"
 import { createMemoryRoutes } from "./routes/memories.js"
 import { createDebugSeedRoutes } from "./routes/debug-seeds.js"
 import { createProjectRoutes } from "./routes/projects.js"
@@ -57,6 +58,7 @@ export function createApp(
   app.route("/api/runtime", createRuntimeRoutes(config))
   app.route("/api/agents", createAgentRoutes(repos, config))
   app.route("/api/command-center", createCommandCenterRoutes(repos))
+  app.route("/api/learning", createLearningRoutes(repos))
   app.route("/api/projects", createProjectRoutes(repos, config))
   app.route("/api/memories", createMemoryRoutes(repos))
   app.route("/api/artifacts", createArtifactRoutes(repos, config))

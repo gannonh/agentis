@@ -9,8 +9,22 @@ import type { LearningCandidate } from "@/fixtures/schema"
 import { LearningPage } from "./learning"
 import { MemoriesPage } from "./memories"
 
-// This test exercises async thread, memory, and agent scope rerenders on CI.
 const LEARNING_SCOPE_INTERACTION_TIMEOUT_MS = 30_000
+
+const EMPTY_LEARNING_SUMMARY = {
+  skillsCount: 0,
+  memoriesCount: 0,
+  rubricsCount: 0,
+  pendingSuggestionsCount: 0,
+}
+
+const EMPTY_LEARNING_SKILLS = {
+  skills: [],
+  page: 1,
+  pageSize: 5,
+  totalCount: 0,
+  totalPages: 0,
+}
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -24,35 +38,60 @@ function jsonResponse(data: unknown) {
   })
 }
 
+function stubLearningFetch(
+  handlers: {
+    threads?: unknown
+    memories?: unknown
+    summary?: unknown
+    skills?: unknown
+    agents?: unknown
+  } = {}
+) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith("/api/threads")) {
+        return jsonResponse(handlers.threads ?? [])
+      }
+      if (url.endsWith("/api/memories")) {
+        return jsonResponse(
+          handlers.memories ?? { categories: [], memories: [] }
+        )
+      }
+      if (url.endsWith("/api/learning/summary")) {
+        return jsonResponse(handlers.summary ?? EMPTY_LEARNING_SUMMARY)
+      }
+      if (url.startsWith("/api/learning/skills")) {
+        return jsonResponse(handlers.skills ?? EMPTY_LEARNING_SKILLS)
+      }
+      if (url.endsWith("/api/agents")) {
+        return jsonResponse(handlers.agents ?? [])
+      }
+      return jsonResponse({})
+    })
+  )
+}
+
 describe("LearningPage", () => {
   it("expands API-backed threads with no linked memory candidates", async () => {
     const user = userEvent.setup()
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.endsWith("/api/threads")) {
-          return jsonResponse([
-            {
-              id: "seed_thread_customer_voice",
-              title: "Customer voice synthesis",
-              status: "finished",
-              model: "gpt-4o-mini",
-              mode: "agent",
-              agentId: "seed_agent_customer_insights",
-              agentNameSnapshot: "Customer Insights Analyst",
-              createdAt: "2026-05-15T15:30:00.000Z",
-              updatedAt: "2026-05-21T15:30:00.000Z",
-              messageCount: 2,
-            },
-          ])
-        }
-        if (url.endsWith("/api/memories")) {
-          return jsonResponse({ categories: [], memories: [] })
-        }
-        return jsonResponse({})
-      })
-    )
+    stubLearningFetch({
+      threads: [
+        {
+          id: "seed_thread_customer_voice",
+          title: "Customer voice synthesis",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "seed_agent_customer_insights",
+          agentNameSnapshot: "Customer Insights Analyst",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+      ],
+    })
 
     render(
       <MemoryRouter>
@@ -75,82 +114,77 @@ describe("LearningPage", () => {
 
   it("renders API threads with accepted memory candidates from saved memory lineage", async () => {
     const user = userEvent.setup()
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.endsWith("/api/threads")) {
-          return jsonResponse([
-            {
-              id: "seed_thread_launch_plan",
-              title: "Launch readiness weekly update",
-              status: "finished",
-              model: "gpt-4o-mini",
-              mode: "agent",
-              agentId: "seed_agent_launch_pm",
-              agentNameSnapshot: "Launch PM Copilot",
-              createdAt: "2026-05-15T15:30:00.000Z",
-              updatedAt: "2026-05-22T15:30:00.000Z",
-              messageCount: 2,
-            },
-            {
-              id: "seed_thread_customer_voice",
-              title: "Customer voice synthesis",
-              status: "finished",
-              model: "gpt-4o-mini",
-              mode: "agent",
-              agentId: "seed_agent_customer_insights",
-              agentNameSnapshot: "Customer Insights Analyst",
-              createdAt: "2026-05-15T15:30:00.000Z",
-              updatedAt: "2026-05-21T15:30:00.000Z",
-              messageCount: 2,
-            },
-          ])
-        }
-        if (url.endsWith("/api/memories")) {
-          return jsonResponse({
-            categories: [],
-            memories: [
-              {
-                id: "seed_memory_project_context_launch",
-                content:
-                  "Agentis is preparing foundation work for manual testing and e2e coverage.",
-                category: "memory_category_project_context",
-                usageGuidance: "Use when answering launch-readiness prompts.",
-                tags: ["agentis", "launch"],
-                importance: "high",
-                date: "2026-05-22",
-                scope: "agent",
-                associatedAgent: "seed_agent_launch_pm",
-                source: "thread-derived",
-                sourceThreadId: "seed_thread_launch_plan",
-                sourceThreadTitle: "Launch readiness weekly update",
-                provenance: "Accepted from Launch readiness weekly update",
-                pinnedToContext: true,
-                createdAt: "2026-05-22T15:30:00.000Z",
-                updatedAt: "2026-05-22T15:30:00.000Z",
-              },
-            ],
-          })
-        }
-        if (url.endsWith("/api/agents")) {
-          return jsonResponse([
-            {
-              id: "seed_agent_launch_pm",
-              name: "Launch PM Copilot",
-              description: "Plans launch readiness.",
-              systemPrompt: "Plan launches.",
-              model: "gpt-4o-mini",
-              createdAt: "2026-05-22T15:30:00.000Z",
-              updatedAt: "2026-05-22T15:30:00.000Z",
-              toolGrantCount: 0,
-              versionCount: 1,
-            },
-          ])
-        }
-        return jsonResponse({})
-      })
-    )
+    stubLearningFetch({
+      threads: [
+        {
+          id: "seed_thread_launch_plan",
+          title: "Launch readiness weekly update",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "seed_agent_launch_pm",
+          agentNameSnapshot: "Launch PM Copilot",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-22T15:30:00.000Z",
+          messageCount: 2,
+        },
+        {
+          id: "seed_thread_customer_voice",
+          title: "Customer voice synthesis",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "seed_agent_customer_insights",
+          agentNameSnapshot: "Customer Insights Analyst",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+      ],
+      memories: {
+        categories: [],
+        memories: [
+          {
+            id: "seed_memory_project_context_launch",
+            content:
+              "Agentis is preparing foundation work for manual testing and e2e coverage.",
+            category: "memory_category_project_context",
+            usageGuidance: "Use when answering launch-readiness prompts.",
+            tags: ["agentis", "launch"],
+            importance: "high",
+            date: "2026-05-22",
+            scope: "agent",
+            associatedAgent: "seed_agent_launch_pm",
+            source: "thread-derived",
+            sourceThreadId: "seed_thread_launch_plan",
+            sourceThreadTitle: "Launch readiness weekly update",
+            provenance: "Accepted from Launch readiness weekly update",
+            pinnedToContext: true,
+            createdAt: "2026-05-22T15:30:00.000Z",
+            updatedAt: "2026-05-22T15:30:00.000Z",
+          },
+        ],
+      },
+      summary: {
+        skillsCount: 0,
+        memoriesCount: 1,
+        rubricsCount: 0,
+        pendingSuggestionsCount: 0,
+      },
+      agents: [
+        {
+          id: "seed_agent_launch_pm",
+          name: "Launch PM Copilot",
+          description: "Plans launch readiness.",
+          systemPrompt: "Plan launches.",
+          model: "gpt-4o-mini",
+          createdAt: "2026-05-22T15:30:00.000Z",
+          updatedAt: "2026-05-22T15:30:00.000Z",
+          toolGrantCount: 0,
+          versionCount: 1,
+        },
+      ],
+    })
 
     render(
       <MemoryRouter>
@@ -192,74 +226,71 @@ describe("LearningPage", () => {
 
   it("excludes unassigned conversations from memory scope options", async () => {
     const user = userEvent.setup()
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.endsWith("/api/threads")) {
-          return jsonResponse([
-            {
-              id: "thread_unassigned",
-              title: "Unassigned conversation",
-              status: "finished",
-              model: "gpt-4o-mini",
-              mode: "plan",
-              agentId: null,
-              agentNameSnapshot: null,
-              createdAt: "2026-05-15T15:30:00.000Z",
-              updatedAt: "2026-05-21T15:30:00.000Z",
-              messageCount: 2,
-            },
-            {
-              id: "thread_agent",
-              title: "Assigned conversation",
-              status: "finished",
-              model: "gpt-4o-mini",
-              mode: "agent",
-              agentId: "agent_research",
-              agentNameSnapshot: "Research Agent",
-              createdAt: "2026-05-15T15:30:00.000Z",
-              updatedAt: "2026-05-21T15:30:00.000Z",
-              messageCount: 2,
-            },
-          ])
-        }
-        if (url.endsWith("/api/memories")) {
-          return jsonResponse({
-            categories: [
-              {
-                id: "memory_category_preference",
-                name: "Preference",
-                description: "How a user wants agents to work or communicate.",
-                count: 1,
-              },
-            ],
-            memories: [
-              {
-                id: "memory_preference",
-                content: "Use concise summaries.",
-                category: "memory_category_preference",
-                usageGuidance: "Use when summarizing work.",
-                tags: [],
-                importance: "medium",
-                date: "2026-05-22",
-                scope: "global",
-                associatedAgent: null,
-                associatedAgents: [],
-                source: "thread-derived",
-                sourceThreadId: "thread_unassigned",
-                sourceThreadTitle: "Unassigned conversation",
-                provenance: "Accepted from Unassigned conversation",
-                pinnedToContext: false,
-                createdAt: "2026-05-22T15:30:00.000Z",
-                updatedAt: "2026-05-22T15:30:00.000Z",
-              },
-            ],
-          })
-        }
-        return jsonResponse({})
-      })
-    )
+    stubLearningFetch({
+      threads: [
+        {
+          id: "thread_unassigned",
+          title: "Unassigned conversation",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "plan",
+          agentId: null,
+          agentNameSnapshot: null,
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+        {
+          id: "thread_agent",
+          title: "Assigned conversation",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "agent_research",
+          agentNameSnapshot: "Research Agent",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+      ],
+      memories: {
+        categories: [
+          {
+            id: "memory_category_preference",
+            name: "Preference",
+            description: "How a user wants agents to work or communicate.",
+            count: 1,
+          },
+        ],
+        memories: [
+          {
+            id: "memory_preference",
+            content: "Use concise summaries.",
+            category: "memory_category_preference",
+            usageGuidance: "Use when summarizing work.",
+            tags: [],
+            importance: "medium",
+            date: "2026-05-22",
+            scope: "global",
+            associatedAgent: null,
+            associatedAgents: [],
+            source: "thread-derived",
+            sourceThreadId: "thread_unassigned",
+            sourceThreadTitle: "Unassigned conversation",
+            provenance: "Accepted from Unassigned conversation",
+            pinnedToContext: false,
+            createdAt: "2026-05-22T15:30:00.000Z",
+            updatedAt: "2026-05-22T15:30:00.000Z",
+          },
+        ],
+      },
+      summary: {
+        skillsCount: 0,
+        memoriesCount: 1,
+        rubricsCount: 0,
+        pendingSuggestionsCount: 0,
+      },
+    })
 
     render(
       <MemoryRouter>
@@ -286,7 +317,9 @@ describe("LearningPage", () => {
     ).not.toBeInTheDocument()
   }, LEARNING_SCOPE_INTERACTION_TIMEOUT_MS)
 
-  it("renders learning dashboard aligned with comp", () => {
+  it("renders API-backed empty states on a fresh install", async () => {
+    stubLearningFetch()
+
     const { container } = render(
       <MemoryRouter>
         <LearningPage />
@@ -301,126 +334,78 @@ describe("LearningPage", () => {
       screen.getByRole("heading", { name: "Learning" })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole("note", { name: "Demo data notice" })
-    ).toHaveTextContent(
-      "Skills and fallback learning suggestions use seeded workspace data until the learning API is complete."
-    )
+      screen.queryByRole("note", { name: "Demo data notice" })
+    ).not.toBeInTheDocument()
     expect(
-      screen.getByText("Your agents learn from conversations")
+      await screen.findByText("Your agents learn from conversations")
     ).toBeInTheDocument()
     expect(screen.getByText("What agents can learn")).toBeInTheDocument()
-    const learningPillars = screen.getByRole("region", {
-      name: "Learning pillars",
-    })
-    expect(learningPillars).toHaveClass("grid")
-    expect(learningPillars.className).toContain("repeat(auto-fit")
     expect(screen.getByText(/Skills — Reusable techniques/)).toBeInTheDocument()
     expect(
       screen.getByText(/Memories — Facts and preferences/)
     ).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Skills" })).toBeInTheDocument()
-    expect(screen.getByText("15")).toBeInTheDocument()
-    expect(screen.getByText("2 pinned")).toBeInTheDocument()
-    expect(screen.getByText("View all 15 skills →")).toBeInTheDocument()
+    expect(screen.getByText("No skills stored yet")).toBeInTheDocument()
+    expect(screen.getByText("0")).toBeInTheDocument()
+    expect(screen.getByText("0 pinned")).toBeInTheDocument()
     expect(
       screen.getByRole("heading", { name: "Memories" })
     ).toBeInTheDocument()
-    expect(screen.getByText("3 saved")).toBeInTheDocument()
-    expect(screen.getByText("User Fact: 1")).toBeInTheDocument()
-    expect(screen.getByText("Preference: 1")).toBeInTheDocument()
-    expect(screen.getByText("Active Work: 1")).toBeInTheDocument()
+    expect(screen.getByText("0 saved")).toBeInTheDocument()
+    expect(screen.getByText("No memories stored yet")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Rubrics" })).toBeInTheDocument()
+    expect(screen.getByText("No rubrics yet")).toBeInTheDocument()
     expect(
-      screen.getByRole("heading", { name: "Creating Agent" })
+      await screen.findByText("No conversations yet")
     ).toBeInTheDocument()
-    expect(
-      screen.getAllByRole("button", { name: "Dismiss" }).length
-    ).toBeGreaterThanOrEqual(1)
   })
 
-  it("renders suggestions only after expanding their source conversation", async () => {
-    const user = userEvent.setup()
+  it("renders populated skills from the learning API", async () => {
+    stubLearningFetch({
+      summary: {
+        skillsCount: 2,
+        memoriesCount: 0,
+        rubricsCount: 0,
+        pendingSuggestionsCount: 0,
+      },
+      skills: {
+        skills: [
+          {
+            id: "skill_1",
+            name: "website-to-hyperframes",
+            description: null,
+            pinned: true,
+            agentId: null,
+            createdAt: "2026-06-09T00:00:00.000Z",
+            updatedAt: "2026-06-09T00:00:00.000Z",
+          },
+          {
+            id: "skill_2",
+            name: "video-prompting",
+            description: null,
+            pinned: false,
+            agentId: null,
+            createdAt: "2026-06-09T00:00:00.000Z",
+            updatedAt: "2026-06-09T00:00:00.000Z",
+          },
+        ],
+        page: 1,
+        pageSize: 5,
+        totalCount: 2,
+        totalPages: 1,
+      },
+    })
+
     render(
       <MemoryRouter>
         <LearningPage />
       </MemoryRouter>
     )
 
-    expect(
-      screen.queryByRole("region", { name: "Learning candidates" })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole("region", { name: "Suggestions" })
-    ).not.toBeInTheDocument()
-
-    const expandButton = screen.getByRole("button", {
-      name: "Expand Creating Agent",
-    })
-    expect(expandButton).toHaveAttribute("aria-expanded", "false")
-
-    await user.click(expandButton)
-
-    expect(expandButton).toHaveAttribute("aria-expanded", "true")
-    const suggestionsSection = screen.getByRole("region", {
-      name: "Suggestions",
-    })
-    const suggestions = within(suggestionsSection)
-
-    expect(
-      suggestions.getByRole("heading", { name: "Suggestions" })
-    ).toBeInTheDocument()
-    expect(suggestionsSection.querySelector("svg")).toHaveAttribute(
-      "aria-hidden",
-      "true"
-    )
-    expect(
-      suggestions.getByText("Capture review preference")
-    ).toBeInTheDocument()
-    expect(suggestions.getByText("Mocked LLM-derived seed")).toBeInTheDocument()
-    expect(
-      suggestions.getAllByText("Creating Agent").length
-    ).toBeGreaterThanOrEqual(1)
-    expect(suggestions.getAllByText("Memory").length).toBeGreaterThanOrEqual(1)
-    expect(suggestions.getByText("82% confidence")).toBeInTheDocument()
-    expect(
-      suggestions.getByRole("heading", { name: "Pending" })
-    ).toBeInTheDocument()
-    expect(suggestions.getAllByText("Pending").length).toBeGreaterThanOrEqual(1)
-    expect(
-      suggestions.getByRole("heading", { name: "Resolved" })
-    ).toBeInTheDocument()
-    expect(
-      suggestions.getByText("Persist durable preferences")
-    ).toBeInTheDocument()
-    expect(
-      suggestions.getByText("Prefer concise direct answers")
-    ).toBeInTheDocument()
-    expect(
-      suggestions.getByText("Capture quality review habits")
-    ).toBeInTheDocument()
-
-    const sourceThread = screen.getByRole("heading", { name: "Creating Agent" })
-    const nextThread = screen.getByRole("heading", {
-      name: "Editor gate review",
-    })
-    const suggestion = suggestions.getByText("Capture review preference")
-
-    expect(sourceThread.compareDocumentPosition(suggestion)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    )
-    expect(suggestion.compareDocumentPosition(nextThread)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    )
-
-    const saveMemoryButton = suggestions.getByRole("button", {
-      name: "Save memory",
-    })
-    expect(saveMemoryButton).toBeDisabled()
-    expect(saveMemoryButton.querySelector("svg")).toHaveAttribute(
-      "aria-hidden",
-      "true"
-    )
-    expect(suggestions.getByRole("button", { name: "Dismiss" })).toBeDisabled()
+    expect(await screen.findByText("website-to-hyperframes")).toBeInTheDocument()
+    expect(screen.getByText("video-prompting")).toBeInTheDocument()
+    expect(screen.getByText("View all 2 skills →")).toBeInTheDocument()
+    expect(screen.getByText("1 pinned")).toBeInTheDocument()
   })
 
   it("groups suggestions into pending and resolved states", () => {
@@ -493,12 +478,13 @@ describe("LearningPage", () => {
   it("shows an empty-state label when no memories are saved", () => {
     render(
       <MemoryRouter>
-        <LearningSecondaryPanel memories={[]} />
+        <LearningSecondaryPanel memories={[]} rubricsCount={0} />
       </MemoryRouter>
     )
 
     expect(screen.getByText("0 saved")).toBeInTheDocument()
     expect(screen.getByText("No memories stored yet")).toBeInTheDocument()
+    expect(screen.getByText("No rubrics yet")).toBeInTheDocument()
   })
 
   it("navigates from Learning to Memories", async () => {
@@ -507,13 +493,23 @@ describe("LearningPage", () => {
       categories: [],
       memories: [],
     }
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => memoriesResponse,
-      })
-    )
+    stubLearningFetch()
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith("/api/memories")) {
+        return jsonResponse(memoriesResponse)
+      }
+      if (url.endsWith("/api/threads")) {
+        return jsonResponse([])
+      }
+      if (url.endsWith("/api/learning/summary")) {
+        return jsonResponse(EMPTY_LEARNING_SUMMARY)
+      }
+      if (url.startsWith("/api/learning/skills")) {
+        return jsonResponse(EMPTY_LEARNING_SKILLS)
+      }
+      return jsonResponse({})
+    })
 
     render(
       <MemoryRouter initialEntries={["/learning"]}>
@@ -535,6 +531,35 @@ describe("LearningPage", () => {
 
   it("filters conversations by agent", async () => {
     const user = userEvent.setup()
+    stubLearningFetch({
+      threads: [
+        {
+          id: "thread-creating-agent",
+          title: "Creating Agent",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "senior-reviewer",
+          agentNameSnapshot: "Senior Reviewer",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+        {
+          id: "thread-editor-gate",
+          title: "Editor gate review",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "editor-gate",
+          agentNameSnapshot: "Editor Gate",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+      ],
+    })
+
     render(
       <MemoryRouter>
         <LearningPage />
@@ -545,7 +570,7 @@ describe("LearningPage", () => {
       within(screen.getByRole("region", { name: "Learning conversations" }))
 
     expect(
-      conversations().getByRole("heading", { name: "Creating Agent" })
+      await conversations().findByRole("heading", { name: "Creating Agent" })
     ).toBeInTheDocument()
     expect(
       conversations().getByRole("heading", { name: "Editor gate review" })

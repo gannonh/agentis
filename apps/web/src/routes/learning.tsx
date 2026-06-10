@@ -1,6 +1,8 @@
 import type { ReactElement } from "react"
 import { useEffect, useMemo, useState } from "react"
 import type {
+  LearningSkill,
+  LearningSummary,
   SavedMemory,
   SavedMemoryCategory,
   ThreadListItem,
@@ -11,17 +13,19 @@ import { LearningBanner } from "@/components/learning/learning-banner"
 import { LearningConversationRow } from "@/components/learning/learning-conversation-row"
 import { LearningSecondaryPanel } from "@/components/learning/learning-secondary-panel"
 import { SkillsCard } from "@/components/learning/skills-card"
-import { DemoDataNotice } from "@/components/shell/demo-data-notice"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { EmptyState } from "@/components/shell/empty-state"
-import { getWorkspace } from "@/fixtures"
 import type {
   LearningCandidate,
   LearningConversation,
   Memory,
 } from "@/fixtures/schema"
 import { listThreads } from "@/lib/api/client"
+import {
+  getLearningSummary,
+  listLearningSkills,
+} from "@/lib/api/learning-client"
 import { listMemories, updateMemory } from "@/lib/api/memories-client"
 import { EditMemoryDialog } from "@/components/memories/memory-dialogs"
 
@@ -43,6 +47,21 @@ type LearningMemoryScopeOption = {
   value: string
   scope: "global" | "agent"
   associatedAgent?: string
+}
+
+const EMPTY_LEARNING_DATA: LearningData = {
+  conversations: [],
+  candidates: [],
+  memories: [],
+  savedMemories: [],
+  categories: [],
+}
+
+const EMPTY_LEARNING_SUMMARY: LearningSummary = {
+  skillsCount: 0,
+  memoriesCount: 0,
+  rubricsCount: 0,
+  pendingSuggestionsCount: 0,
 }
 
 const MEMORY_CATEGORY_NAMES: Record<
@@ -177,42 +196,44 @@ function listConversationAgents(
 }
 
 export function LearningPage(): ReactElement {
-  const workspace = getWorkspace()
   const [agentFilter, setAgentFilter] = useState("all")
-  const [apiData, setApiData] = useState<LearningData | null>(null)
+  const [learningData, setLearningData] =
+    useState<LearningData>(EMPTY_LEARNING_DATA)
+  const [learningSummary, setLearningSummary] = useState<LearningSummary>(
+    EMPTY_LEARNING_SUMMARY
+  )
+  const [skills, setSkills] = useState<LearningSkill[]>([])
+  const [loading, setLoading] = useState(true)
   const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
   const [savingMemory, setSavingMemory] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
-  const pinnedCount = workspace.skills.filter((skill) => skill.pinned).length
-
-  const fixtureData = useMemo<LearningData>(
-    () => ({
-      conversations: workspace.learningConversations,
-      candidates: workspace.learningCandidates,
-      memories: workspace.memories,
-      savedMemories: [],
-      categories: [],
-    }),
-    [
-      workspace.learningCandidates,
-      workspace.learningConversations,
-      workspace.memories,
-    ]
-  )
+  const pinnedCount = skills.filter((skill) => skill.pinned).length
 
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([listThreads(), listMemories()])
-      .then(([threads, memories]) => {
+    Promise.all([
+      listThreads(),
+      listMemories(),
+      getLearningSummary(),
+      listLearningSkills({ page: 1, pageSize: 5 }),
+    ])
+      .then(([threads, memories, summary, skillsResponse]) => {
         if (cancelled) return
-        setApiData(
+        setLearningData(
           buildApiLearningData(threads, memories.memories, memories.categories)
         )
+        setLearningSummary(summary)
+        setSkills(skillsResponse.skills)
       })
       .catch(() => {
         if (cancelled) return
-        setApiData(null)
+        setLearningData(EMPTY_LEARNING_DATA)
+        setLearningSummary(EMPTY_LEARNING_SUMMARY)
+        setSkills([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
       })
 
     return () => {
@@ -220,7 +241,6 @@ export function LearningPage(): ReactElement {
     }
   }, [])
 
-  const learningData = apiData ?? fixtureData
   const filterAgents = useMemo(
     () => listConversationAgents(learningData.conversations),
     [learningData.conversations]
@@ -251,8 +271,7 @@ export function LearningPage(): ReactElement {
 
     try {
       const updated = await updateMemory(memoryId, input)
-      setApiData((current) => {
-        if (!current) return current
+      setLearningData((current) => {
         const savedMemories = current.savedMemories.map((memory) =>
           memory.id === updated.id ? updated : memory
         )
@@ -289,11 +308,6 @@ export function LearningPage(): ReactElement {
     <PageLayout variant="fixed" className="gap-6">
       <PageHeader title="Learning" />
 
-      <DemoDataNotice>
-        Skills and fallback learning suggestions use seeded workspace data until
-        the learning API is complete.
-      </DemoDataNotice>
-
       {editingMemory ? (
         <EditMemoryDialog
           key={editingMemory.id}
@@ -313,14 +327,23 @@ export function LearningPage(): ReactElement {
         />
       ) : null}
 
-      <LearningBanner />
+      <LearningBanner pendingSuggestionsCount={learningSummary.pendingSuggestionsCount} />
 
       <section
         className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4"
         aria-label="Learning pillars"
       >
-        <SkillsCard skills={workspace.skills} pinnedCount={pinnedCount} />
-        <LearningSecondaryPanel memories={learningData.memories} />
+        <SkillsCard
+          skills={skills}
+          totalCount={learningSummary.skillsCount}
+          pinnedCount={pinnedCount}
+          loading={loading}
+        />
+        <LearningSecondaryPanel
+          memories={learningData.memories}
+          rubricsCount={learningSummary.rubricsCount}
+          loading={loading}
+        />
       </section>
 
       <AgentFilterBar
@@ -333,10 +356,15 @@ export function LearningPage(): ReactElement {
         className="flex flex-col gap-3"
         aria-label="Learning conversations"
       >
-        {conversations.length === 0 ? (
+        {loading ? (
           <EmptyState
-            title="No conversations for this agent"
-            description="Try another filter or start a thread with this agent."
+            title="Loading conversations"
+            description="Fetching learning activity from the API."
+          />
+        ) : conversations.length === 0 ? (
+          <EmptyState
+            title="No conversations yet"
+            description="Start a thread with an agent to review learning activity here."
           />
         ) : (
           conversations.map((conversation) => (
