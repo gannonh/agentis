@@ -465,6 +465,7 @@ export class TestingSeedRepository {
         }),
         cost: 0.08,
         costBreakdownJson: null,
+        evaluationJson: null,
       }))
       tx.insert(runs).values(runRows).run()
 

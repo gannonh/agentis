@@ -78,6 +78,7 @@ import {
 import { RunCostLedger } from "../cost/run-cost-ledger.js"
 import { createGatewayLanguageModel } from "./gateway-model.js"
 import { createMockDocumentRunSuffix } from "./mock-document-run.js"
+import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
 import {
   composioToolNameToToolkit,
   formatToolStepTitle,
@@ -990,6 +991,7 @@ export class RunExecutor {
             status: "completed",
             title: "Completed",
           })
+          evaluateCompletedRun(this.repos, runId)
         }
         this.repos.threads.touch(run.threadId, { status: "active" })
       },

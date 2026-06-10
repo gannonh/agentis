@@ -39,6 +39,7 @@ export function buildAgentDetail(
       recentThreads,
       library: { items: libraryItems, totalCount: libraryItems.length },
       memories,
+      evaluations: repos.runs.listEvaluationsForAgent(agentId),
     },
   })
 }

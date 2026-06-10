@@ -199,6 +199,7 @@ export const runs = sqliteTable(
     usageJson: text("usage_json"),
     cost: real("cost"),
     costBreakdownJson: text("cost_breakdown_json"),
+    evaluationJson: text("evaluation_json"),
   },
   (table) => [
     index("runs_thread_id_started_at_idx").on(table.threadId, table.startedAt),
@@ -478,6 +479,7 @@ export const rubrics = sqliteTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     description: text("description"),
+    criteriaJson: text("criteria_json").notNull().default("[]"),
     agentId: text("agent_id").references(() => agents.id, {
       onDelete: "set null",
     }),

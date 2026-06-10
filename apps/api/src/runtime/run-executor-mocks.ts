@@ -31,11 +31,21 @@ import {
 } from "./run-tool-labels.js"
 import { inferResearchBriefTitle } from "./research-brief-finalizer.js"
 import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
+import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
 
 const MOCK_STREAM_USAGE: RunUsage = {
   promptTokens: 1,
   completionTokens: 10,
   totalTokens: 11,
+}
+
+function completeRunWithEvaluation(
+  repos: Repositories,
+  runId: string,
+  patch?: Parameters<Repositories["runs"]["updateStatus"]>[2]
+) {
+  repos.runs.updateStatus(runId, "completed", patch)
+  evaluateCompletedRun(repos, runId)
 }
 
 function mockRunCostPatch(
@@ -363,7 +373,7 @@ export async function executeMockNativeStaticArtifactStream(
     "completed"
   )
   const usage = MOCK_STREAM_USAGE
-  deps.repos.runs.updateStatus(runId, "completed", {
+  completeRunWithEvaluation(deps.repos, runId, {
     finishedAt: nowIso(),
     usage,
     ...mockRunCostPatch(run, usage),
@@ -559,7 +569,7 @@ export async function executeMockResearchBriefStream(
     "completed"
   )
   const usage = MOCK_STREAM_USAGE
-  deps.repos.runs.updateStatus(runId, "completed", {
+  completeRunWithEvaluation(deps.repos, runId, {
     finishedAt: nowIso(),
     usage,
     ...mockRunCostPatch(run, usage, [searchToolOutput]),
@@ -683,7 +693,7 @@ export async function executeMockNativeWebSearchStream(
     "completed"
   )
   const usage = MOCK_STREAM_USAGE
-  deps.repos.runs.updateStatus(runId, "completed", {
+  completeRunWithEvaluation(deps.repos, runId, {
     finishedAt: nowIso(),
     usage,
     ...mockRunCostPatch(run, usage, [toolOutput]),
@@ -807,7 +817,7 @@ export async function executeMockNativeWorkspaceStream(
     "completed"
   )
   const usage = MOCK_STREAM_USAGE
-  deps.repos.runs.updateStatus(runId, "completed", {
+  completeRunWithEvaluation(deps.repos, runId, {
     finishedAt: nowIso(),
     usage,
     ...mockRunCostPatch(run, usage),
@@ -927,6 +937,7 @@ export async function executeMockNativeWorkspaceMutationStream(
     },
   })
   if (!pending) {
+    evaluateCompletedRun(deps.repos, runId)
     deps.repos.steps.create({
       runId,
       type: "completed",
@@ -1030,6 +1041,7 @@ export async function executeMockNativeWorkspaceExecutionStream(
     },
   })
   if (!pending) {
+    evaluateCompletedRun(deps.repos, runId)
     deps.repos.steps.create({
       runId,
       type: "completed",
@@ -1154,7 +1166,7 @@ export async function executeMockComposioStream(
     "completed"
   )
   const usage = MOCK_STREAM_USAGE
-  deps.repos.runs.updateStatus(runId, "completed", {
+  completeRunWithEvaluation(deps.repos, runId, {
     finishedAt: nowIso(),
     usage,
     ...mockRunCostPatch(run, usage),

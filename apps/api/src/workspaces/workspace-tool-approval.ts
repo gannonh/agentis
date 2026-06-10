@@ -3,6 +3,7 @@ import type { AppConfig } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
 import type { WorkspaceEditRecord } from "../repositories/workspace-edit-repository.js"
 import type { WorkspaceExecutionRecord } from "../repositories/workspace-execution-repository.js"
+import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
 import { nowIso } from "../lib/ids.js"
 import {
   buildAppliedMutationOutput,
@@ -126,6 +127,7 @@ export class WorkspaceToolApprovalCoordinator {
         status: "completed",
         title: "Completed",
       })
+      evaluateCompletedRun(this.repos, runId)
       this.repos.threads.touch(run.threadId, { status: "active" })
     }
 

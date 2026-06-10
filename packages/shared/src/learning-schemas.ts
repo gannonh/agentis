@@ -23,14 +23,52 @@ export const learningSkillSchema = z.object({
   updatedAt: z.string(),
 })
 
+export const rubricCriterionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  weight: z.number().positive(),
+})
+
 export const learningRubricSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
+  criteria: z.array(rubricCriterionSchema),
   agentId: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
+
+export const rubricCriterionInputSchema = z.object({
+  id: z.string().trim().min(1).optional(),
+  name: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+  weight: z.number().positive(),
+})
+
+export const createLearningRubricRequestSchema = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+  criteria: z.array(rubricCriterionInputSchema).min(1),
+  agentId: z.string().trim().min(1).optional(),
+})
+
+export const updateLearningRubricRequestSchema = z
+  .object({
+    name: z.string().trim().min(1).optional(),
+    description: z.string().trim().nullable().optional(),
+    criteria: z.array(rubricCriterionInputSchema).min(1).optional(),
+    agentId: z.string().trim().min(1).nullable().optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.description !== undefined ||
+      value.criteria !== undefined ||
+      value.agentId !== undefined,
+    { message: "At least one field is required" }
+  )
 
 export const learningPaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -72,7 +110,14 @@ export const learningMemoriesQuerySchema = learningPaginationQuerySchema.extend(
 
 export type LearningSummary = z.infer<typeof learningSummarySchema>
 export type LearningSkill = z.infer<typeof learningSkillSchema>
+export type RubricCriterion = z.infer<typeof rubricCriterionSchema>
 export type LearningRubric = z.infer<typeof learningRubricSchema>
+export type CreateLearningRubricRequest = z.infer<
+  typeof createLearningRubricRequestSchema
+>
+export type UpdateLearningRubricRequest = z.infer<
+  typeof updateLearningRubricRequestSchema
+>
 export type LearningSkillsListResponse = z.infer<
   typeof learningSkillsListResponseSchema
 >
