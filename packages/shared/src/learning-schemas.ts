@@ -63,7 +63,7 @@ export const createLearningSkillRequestSchema = z.object({
   name: z.string().trim().min(1),
   description: z.string().trim().optional(),
   pinned: z.boolean().optional(),
-  agentId: z.string().optional(),
+  agentId: z.string().trim().min(1).optional(),
 })
 
 export const learningMemoriesQuerySchema = learningPaginationQuerySchema.extend({

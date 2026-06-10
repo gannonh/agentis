@@ -57,5 +57,11 @@ describe("learning schemas", () => {
         pinned: false,
       }).name
     ).toBe("video-prompting")
+    expect(() =>
+      createLearningSkillRequestSchema.parse({
+        name: "video-prompting",
+        agentId: "",
+      })
+    ).toThrow()
   })
 })

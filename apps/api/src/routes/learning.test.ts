@@ -141,6 +141,16 @@ describe("learning routes", () => {
       code: "invalid_learning_payload",
     })
 
+    const invalidAgentId = await app.request("/api/learning/skills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Valid skill", agentId: "" }),
+    })
+    expect(invalidAgentId.status).toBe(400)
+    expect(await invalidAgentId.json()).toMatchObject({
+      code: "invalid_learning_payload",
+    })
+
     const invalidJson = await app.request("/api/learning/skills", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
