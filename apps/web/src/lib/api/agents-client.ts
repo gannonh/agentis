@@ -1,6 +1,7 @@
 import {
   agentDetailResponseSchema,
   agentListItemSchema,
+  agentUsageResponseSchema,
   createAgentFromPromotionDraftRequestSchema,
   createAgentPromotionDraftResponseSchema,
   createAgentRequestSchema,
@@ -10,6 +11,7 @@ import {
   updateAgentRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
+  type AgentUsageResponse,
   type CreateAgentFromPromotionDraftRequest,
   type CreateAgentPromotionDraftResponse,
   type CreateAgentRequest,
@@ -90,6 +92,17 @@ export async function createAgent(
 export async function getAgent(agentId: string): Promise<AgentDetailResponse> {
   const response = await fetch(agentPath(agentId))
   return parseJson(response, agentDetailResponseSchema)
+}
+
+export async function getAgentUsage(
+  agentId: string,
+  periodDays = 14
+): Promise<AgentUsageResponse> {
+  const params = new URLSearchParams({
+    periodDays: String(periodDays),
+  })
+  const response = await fetch(`${agentPath(agentId)}/usage?${params}`)
+  return parseJson(response, agentUsageResponseSchema)
 }
 
 export async function createAgentPromotionDraft(

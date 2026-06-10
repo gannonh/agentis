@@ -4,6 +4,7 @@ import {
   createAgent,
   createAgentFromPromotionDraft,
   getAgent,
+  getAgentUsage,
   startAgentTestThread,
 } from "@/lib/api/agents-client"
 
@@ -190,5 +191,35 @@ describe("agents client", () => {
       body: JSON.stringify({ prompt: "Test Research Agent" }),
     })
     expect(created.run.agentConfigurationVersionId).toBe("agent_version_1")
+  })
+
+  it("loads agent usage for a bounded period", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({
+        agentId: "agent_1",
+        periodDays: 14,
+        totalCostUsd: 1.25,
+        totalRuns: 2,
+        daily: [{ date: "2026-06-08", costUsd: 1.25, runCount: 2 }],
+        byModel: [
+          {
+            model: "gpt-4o-mini",
+            costUsd: 1.25,
+            runCount: 2,
+            promptTokens: 100,
+            completionTokens: 50,
+          },
+        ],
+      })
+    )
+    vi.stubGlobal("fetch", fetchMock)
+
+    const usage = await getAgentUsage("agent_1", 14)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/agents/agent_1/usage?periodDays=14"
+    )
+    expect(usage.totalCostUsd).toBe(1.25)
+    expect(usage.byModel[0]?.model).toBe("gpt-4o-mini")
   })
 })
