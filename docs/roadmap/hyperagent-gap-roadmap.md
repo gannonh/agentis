@@ -19,9 +19,9 @@
 | New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed threads; simpler home | Medium |
 | Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, document links in transcript, durable-artifact sidebar; inline Working Doc panel still missing | Medium–High |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
-| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents + partial fixture merge on detail | High |
-| Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | Fixture-backed metrics and queues | High |
-| Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | Fixture-backed dashboard | High |
+| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, and evaluation empty states | Medium |
+| Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, and recent runs; scores and needs-attention still pending | Medium |
+| Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed read models with empty states; suggestion review actions still pending | Medium |
 | Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed; fixture catalog UI | Medium |
 | Projects | Sidebar grouping, thread counts, per-project threads | API-backed | Low |
 | Search (⌘K) | Global search entry point | Placeholder route | Medium |
@@ -71,14 +71,14 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 | ID | Slice | Issue |
 | --- | --- | --- |
 | HA-GAP-01 | Run cost attribution API | Shipped in PR [#427](https://github.com/gannonh/agentis/pull/427) ([#417](https://github.com/gannonh/agentis/issues/417)) |
-| HA-GAP-02 | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) |
-| HA-GAP-03 | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) |
-| HA-GAP-04 | Learning dashboard API (read path) | [#420](https://github.com/gannonh/agentis/issues/420) |
+| HA-GAP-02 | Command Center live metrics wire-up | Shipped ([#418](https://github.com/gannonh/agentis/issues/418)) |
+| HA-GAP-03 | Agent detail observability panel | Shipped ([#419](https://github.com/gannonh/agentis/issues/419)) |
+| HA-GAP-04 | Learning dashboard API (read path) | Shipped ([#420](https://github.com/gannonh/agentis/issues/420)) |
 | HA-GAP-05 | Post-run learning suggestions + accept/dismiss | [#421](https://github.com/gannonh/agentis/issues/421) |
 | HA-GAP-06 | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) |
 | HA-GAP-07 | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) |
 
-**Gate:** Wave 0 (#412–#415) and HA-GAP-01 (#417) are complete. HA-GAP-02, HA-GAP-03, and HA-GAP-04 can proceed in parallel.
+**Gate:** Wave 0 (#412–#415) and HA-GAP-01 through HA-GAP-04 (#417–#420) are complete. HA-GAP-05 and HA-GAP-06 can proceed in parallel.
 
 **Dependency graph** (also in `docs/roadmap/execution-queue.md`; mirrored as GitHub blocked-by links):
 
@@ -107,9 +107,9 @@ flowchart LR
 | Issue | Blocked by | Can parallel with |
 | --- | --- | --- |
 | #417 | Shipped | — |
-| #418 | #417 (shipped) | #419, #420 |
-| #419 | #417 (shipped) | #418, #420 |
-| #420 | — | #418, #419 |
+| #418 | Shipped | — |
+| #419 | Shipped | — |
+| #420 | Shipped | — |
 | #421 | #420 | #422 |
 | #422 | #420 | #421 |
 | #423 | #421, #422 | — |
@@ -138,18 +138,18 @@ flowchart LR
 
 **HyperAgent reference:** `/command-center` — agent roster table (runs, quality, cost/run, last active), cost breakdown, recent runs, needs-attention count.
 
-**Agentis today:** `command-center.tsx` merges API agents with `getWorkspace()` fixtures.
+**Agentis today:** Shipped. `command-center.tsx` reads API summary, roster, and recent-run data; score panels remain placeholders until HA-GAP-06.
 
 **Goal:** Replace fixture metrics with HA-GAP-01 aggregates; keep existing component schema.
 
 **Demo:** Run 3 threads → Command Center shows non-zero runs, cost, and last-active without seed fixtures.
 
 **Acceptance:**
-- [ ] Summary cards use API only (agents, active, total runs, avg score placeholder, total cost).
-- [ ] Agent roster rows show real run counts, cost, last active from API.
-- [ ] Recent runs panel lists API runs with cost + deep links.
-- [ ] Empty states when no runs (no silent fixture fallback).
-- [ ] Update/remove misleading fixture fields or gate behind dev flag.
+- [x] Summary cards use API only (agents, active, total runs, avg score placeholder, total cost).
+- [x] Agent roster rows show real run counts, cost, last active from API.
+- [x] Recent runs panel lists API runs with cost + deep links.
+- [x] Empty states when no runs (no silent fixture fallback).
+- [x] Update/remove misleading fixture fields or gate behind dev flag.
 
 **Depends on:** HA-GAP-01 (cost), optionally HA-GAP-09 for avg score.
 
@@ -159,20 +159,20 @@ flowchart LR
 
 **HyperAgent reference:** Sales Prospector → Overview observability: cost chart, usage by model, evaluations section, version history.
 
-**Agentis today:** Agent detail API-backed for identity/tools; observability is fixture or empty.
+**Agentis today:** Shipped. Agent detail Overview loads usage from `GET /api/agents/:agentId/usage`, shows usage by model, and keeps explicit empty states for evaluations.
 
 **Goal:** Agent detail Overview tab shows real usage chart + cost breakdown for that agent.
 
 **Demo:** Open Sales-style agent → 14-day cost chart reflects HA-GAP-01 data.
 
 **Acceptance:**
-- [ ] Overview tab charts call agent usage API.
-- [ ] Evaluations section shows empty state with CTA until HA-GAP-09 ships.
-- [ ] Version history lists agent config versions from DB (or explicit empty if not stored yet — sub-slice OK).
+- [x] Overview tab charts call agent usage API.
+- [x] Evaluations section shows empty state with CTA until HA-GAP-06 ships.
+- [x] Version history lists agent config versions from DB (or explicit empty if not stored yet — sub-slice OK).
 
 **Depends on:** HA-GAP-01.
 
-**Parallel note:** Can proceed in parallel with HA-GAP-02 if both consume the same usage API.
+**Parallel note:** Completed with the same usage API consumed by HA-GAP-02.
 
 ---
 
@@ -180,17 +180,17 @@ flowchart LR
 
 **HyperAgent reference:** `/learning` — Skills, Memories (categorized), Rubrics, conversation-derived suggestion counts.
 
-**Agentis today:** Fixture-backed `learning.tsx`.
+**Agentis today:** Shipped. `/learning` reads summary, skills, memories, rubrics, and suggestion counts from `GET /api/learning/*` endpoints with fresh-install empty states.
 
 **Goal:** API-backed read models for skills, memories, rubrics, and pending suggestion counts.
 
 **Demo:** Learning page loads from API; shows 0/empty states on fresh install.
 
 **Acceptance:**
-- [ ] `GET /api/learning/summary` returns counts for skills, memories, rubrics, pending suggestions.
-- [ ] List endpoints for skills, memories, rubrics with pagination.
-- [ ] Learning UI uses API; fixtures removed or dev-only.
-- [ ] Fresh install shows intentional empty states.
+- [x] `GET /api/learning/summary` returns counts for skills, memories, rubrics, pending suggestions.
+- [x] List endpoints for skills, memories, rubrics with pagination.
+- [x] Learning UI uses API; fixtures removed or dev-only.
+- [x] Fresh install shows intentional empty states.
 
 **Depends on:** None (schema migration included in slice).
 
@@ -745,12 +745,12 @@ flowchart TD
   W4 --> G19[HA-GAP-19 deep research]
 ```
 
-**Max parallelism after HA-GAP-01:** HA-GAP-02, HA-GAP-03, HA-GAP-04, HA-GAP-09, HA-GAP-10, HA-GAP-11, and HA-GAP-17 can start concurrently.
+**Max parallelism after HA-GAP-04:** HA-GAP-05 and HA-GAP-06 can start concurrently; HA-GAP-07 follows once suggestions and rubrics exist.
 
 ---
 
 ## Next steps
 
-1. Review deferrals — confirm strategy alignment (especially HA-GAP-20 browser vs defer).
-2. Continue Wave 1 from the open issues: HA-GAP-02, HA-GAP-03, and HA-GAP-04 are currently unblocked.
+1. Continue Wave 1 with HA-GAP-05 (#421) and HA-GAP-06 (#422) in parallel.
+2. Follow with HA-GAP-07 (#423) once suggestions and rubrics produce live attention signals.
 3. Keep `docs/roadmap/execution-queue.md` aligned as Wave 1 issues ship.

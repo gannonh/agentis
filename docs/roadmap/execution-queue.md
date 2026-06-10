@@ -25,20 +25,20 @@ Or read the table below.
 | 5 | **Shipped** | Honest UI for fixture-backed surfaces | [#414](https://github.com/gannonh/agentis/issues/414) (PR [#426](https://github.com/gannonh/agentis/pull/426)) |
 | 6 | **Shipped** | Self-host docs (Cloudflare + Tavily keyless) | [#415](https://github.com/gannonh/agentis/issues/415) (PR [#426](https://github.com/gannonh/agentis/pull/426)) — [golden path](../self-host/golden-path-research.md) |
 
-**Next recommended:** [#418](https://github.com/gannonh/agentis/issues/418), [#419](https://github.com/gannonh/agentis/issues/419), and [#420](https://github.com/gannonh/agentis/issues/420) can proceed in parallel.
+**Next recommended:** [#421](https://github.com/gannonh/agentis/issues/421) and [#422](https://github.com/gannonh/agentis/issues/422) can proceed in parallel after #420's read path.
 
 ---
 
 ## Wave 1 — HyperAgent gap (honest operations)
 
-Source: `docs/roadmap/hyperagent-gap-roadmap.md`. **Wave 0 complete** (#412–#415 shipped); Wave 1 is now unblocked.
+Source: `docs/roadmap/hyperagent-gap-roadmap.md`. **Wave 0 complete** (#412–#415 shipped); Wave 1 operations read paths are in place through #420.
 
 | # | Status | Slice | Issue | Depends on |
 |---|--------|-------|-------|------------|
 | 7 | **Shipped** | Run cost attribution API | [#417](https://github.com/gannonh/agentis/issues/417) (PR [#427](https://github.com/gannonh/agentis/pull/427)) | — |
-| 8 | Open | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) | #417 (shipped) |
-| 9 | Open | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) | #417 (shipped) |
-| 10 | Open | Learning dashboard API (read path) | [#420](https://github.com/gannonh/agentis/issues/420) | — |
+| 8 | **Shipped** | Command Center live metrics wire-up | [#418](https://github.com/gannonh/agentis/issues/418) | #417 (shipped) |
+| 9 | **Shipped** | Agent detail observability panel | [#419](https://github.com/gannonh/agentis/issues/419) | #417 (shipped) |
+| 10 | **Shipped** | Learning dashboard API (read path) | [#420](https://github.com/gannonh/agentis/issues/420) | — |
 | 11 | Open | Post-run learning suggestions + accept/dismiss | [#421](https://github.com/gannonh/agentis/issues/421) | #420 |
 | 12 | Open | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) | #420 |
 | 13 | Open | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) | #421, #422 (partial OK) |
@@ -69,15 +69,14 @@ flowchart LR
   end
 ```
 
-**Currently unblocked:** [#418](https://github.com/gannonh/agentis/issues/418), [#419](https://github.com/gannonh/agentis/issues/419), and [#420](https://github.com/gannonh/agentis/issues/420).
+**Currently unblocked:** [#421](https://github.com/gannonh/agentis/issues/421) and [#422](https://github.com/gannonh/agentis/issues/422).
 
 | Phase | Safe in parallel | Issues |
 |-------|------------------|--------|
-| Now | 3 workers | #418, #419, #420 |
-| After #420 | 2 workers | #421, #422 |
+| Now | 2 workers | #421, #422 |
 | Final | 1 worker | #423 |
 
-**Soft coupling (not blockers):** #418 can ship without rubric avg scores (#422). #423 accepts partial implementation (failed runs first).
+**Soft coupling (not blockers):** Command Center shipped with score placeholders until rubric avg scores (#422). #423 accepts partial implementation (failed runs first).
 
 **GitHub filters:** `is:blocked`, `is:blocking`, `blocked-by:#420`.
 
@@ -163,3 +162,4 @@ Or use Kata / `gh issue view 412` if you use that workflow.
 | 2026-06-09 | Shipped #414–#415 in PR #426: `DemoDataNotice` on fixture-backed surfaces; self-host golden path `docs/self-host/golden-path-research.md` |
 | 2026-06-09 | Documented Wave 1 dependency graph; synced GitHub blocked-by links for #417–#423 |
 | 2026-06-09 | Shipped #417 in PR #427: run cost attribution, `GET /api/agents/:id/usage`, and `GET /api/command-center/summary` |
+| 2026-06-09 | Integrated Wave 1 read paths: Command Center live metrics (#418), Agent Detail usage observability (#419), and Learning API read models (#420) |

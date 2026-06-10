@@ -11,7 +11,7 @@ The MVP should let a user start work in a thread, connect tools through Composio
 
 - Frontend: Vite, TypeScript, React 19, React Router; shadcn/ui monorepo (`packages/ui`), Tailwind 4, Hugeicons, AI Elements for thread UI.
 - API: Hono, Drizzle SQLite, Vercel AI SDK with configurable AI Gateway (Vercel or Cloudflare).
-- Implemented surfaces: API-backed threads, projects, Library artifacts, document workspace, artifact workspace (static webpages, slides, Apps), native workspace tooling (V1–V3), web search (V4.1), and Composio integrations. Command Center, Agents, Integrations, and Learning still use fixtures/MSW stubs.
+- Implemented surfaces: API-backed threads, projects, Library artifacts, document workspace, artifact workspace (static webpages, slides, Apps), native workspace tooling (V1–V3), web search (V4.1), Composio integrations, Command Center live run metrics, Agent Detail usage observability, and Learning read models. Preset agent profiles and some catalog/demo surfaces still use fixtures or MSW stubs.
 
 ## Product goals
 
@@ -293,7 +293,7 @@ Acceptance:
 ## Open questions
 
 - Queue and worker runtime for scheduled invocations and background jobs (API and SQLite are in place; async worker packaging is not).
-- Cost and score UI rollout after the run cost attribution API (#417) reaches Command Center and Agent Detail.
+- Score UI rollout after rubric scoring ships; cost UI now reaches Command Center and Agent Detail through the run cost attribution API.
 - Self-host scope: Docker Compose only for MVP, with Kubernetes docs later.
 - Auth scope: single-user install first or small-team workspace first.
 - External invocation priority: Slack first, webhook first, or schedule first.
