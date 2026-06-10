@@ -2,7 +2,9 @@ import { z } from "zod"
 import {
   memoriesListResponseSchema,
   savedMemoryCategoryKeySchema,
+  savedMemoryImportanceSchema,
   savedMemorySchema,
+  savedMemoryScopeSchema,
 } from "./schemas.js"
 
 export const learningSummarySchema = z.object({
@@ -84,4 +86,69 @@ export type LearningMemoriesListResponse = z.infer<
 >
 export type CreateLearningSkillRequest = z.infer<
   typeof createLearningSkillRequestSchema
+>
+
+export const learningSuggestionStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "dismissed",
+])
+
+export const learningSuggestionTypeSchema = z.enum(["memory", "skill"])
+
+export const learningSuggestionSchema = z.object({
+  id: z.string(),
+  status: learningSuggestionStatusSchema,
+  suggestionType: learningSuggestionTypeSchema,
+  title: z.string(),
+  content: z.string(),
+  confidence: z.number().min(0).max(1).nullable().optional(),
+  sourceThreadId: z.string().nullable().optional(),
+  sourceThreadTitle: z.string().nullable().optional(),
+  agentId: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const learningSuggestionsQuerySchema =
+  learningPaginationQuerySchema.extend({
+    status: learningSuggestionStatusSchema.optional(),
+    threadId: z.string().trim().min(1).optional(),
+  })
+
+export const learningSuggestionsListResponseSchema =
+  learningPaginatedMetaSchema.extend({
+    suggestions: z.array(learningSuggestionSchema),
+  })
+
+export const acceptLearningSuggestionRequestSchema = z.object({
+  content: z.string().trim().min(1).optional(),
+  category: savedMemoryCategoryKeySchema.optional(),
+  usageGuidance: z.string().optional(),
+  importance: savedMemoryImportanceSchema.optional(),
+  scope: savedMemoryScopeSchema.optional(),
+  pinnedToContext: z.boolean().optional(),
+})
+
+export const acceptLearningSuggestionResponseSchema = z.object({
+  suggestion: learningSuggestionSchema,
+  savedMemoryId: z.string().optional(),
+  skillId: z.string().optional(),
+})
+
+export type LearningSuggestionStatus = z.infer<
+  typeof learningSuggestionStatusSchema
+>
+export type LearningSuggestionType = z.infer<
+  typeof learningSuggestionTypeSchema
+>
+export type LearningSuggestion = z.infer<typeof learningSuggestionSchema>
+export type LearningSuggestionsListResponse = z.infer<
+  typeof learningSuggestionsListResponseSchema
+>
+export type AcceptLearningSuggestionRequest = z.infer<
+  typeof acceptLearningSuggestionRequestSchema
+>
+export type AcceptLearningSuggestionResponse = z.infer<
+  typeof acceptLearningSuggestionResponseSchema
 >

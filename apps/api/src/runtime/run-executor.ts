@@ -28,6 +28,7 @@ import {
   resolveNativeRuntimeCapabilities,
 } from "../native-tools/native-tool-capability-catalog.js"
 import { finalizeResearchBriefIfNeeded } from "./research-brief-finalizer.js"
+import { maybeGenerateLearningSuggestions } from "./learning-suggestion-generator.js"
 import { buildWebSearchTools } from "../native-tools/web-search-tools.js"
 import { WebSearchError } from "../research/web-search-provider.js"
 import { WebSearchService } from "../research/web-search-service.js"
@@ -989,6 +990,14 @@ export class RunExecutor {
             type: "completed",
             status: "completed",
             title: "Completed",
+          })
+          maybeGenerateLearningSuggestions({
+            repos: this.repos,
+            mockRuntime: this.config.mockRuntime,
+            run,
+            thread,
+            latestUserPrompt,
+            assistantParts,
           })
         }
         this.repos.threads.touch(run.threadId, { status: "active" })

@@ -7,6 +7,9 @@ import type { LearningCandidate } from "@/fixtures/schema"
 type LearningCandidatesSectionProps = {
   candidates: LearningCandidate[]
   onEditMemory?: (candidate: LearningCandidate) => void
+  onAccept?: (candidate: LearningCandidate) => void
+  onDismiss?: (candidate: LearningCandidate) => void
+  actionPendingId?: string | null
 }
 
 function isPendingSuggestion(candidate: LearningCandidate): boolean {
@@ -16,6 +19,9 @@ function isPendingSuggestion(candidate: LearningCandidate): boolean {
 export function LearningCandidatesSection({
   candidates,
   onEditMemory,
+  onAccept,
+  onDismiss,
+  actionPendingId = null,
 }: LearningCandidatesSectionProps) {
   const headingId = useId()
   const pendingCandidates = candidates.filter(isPendingSuggestion)
@@ -54,6 +60,9 @@ export function LearningCandidatesSection({
               key={candidate.id}
               candidate={candidate}
               onEditMemory={onEditMemory}
+              onAccept={onAccept}
+              onDismiss={onDismiss}
+              actionPending={actionPendingId === candidate.id}
             />
           ))}
         </div>

@@ -30,6 +30,7 @@ import {
   formatToolStepTitle,
 } from "./run-tool-labels.js"
 import { inferResearchBriefTitle } from "./research-brief-finalizer.js"
+import { maybeGenerateLearningSuggestions } from "./learning-suggestion-generator.js"
 import { toModelMessages, toUiMessages } from "./run-message-adapters.js"
 
 const MOCK_STREAM_USAGE: RunUsage = {
@@ -60,6 +61,25 @@ export type RunExecutorMocksDeps = {
   webSearchService: WebSearchService
   staticArtifactService: StaticArtifactService
   documentService?: DocumentService
+}
+
+function finalizeMockLearningSuggestions(
+  deps: RunExecutorMocksDeps,
+  input: {
+    run: Run
+    thread: Thread
+    latestUserPrompt: string
+    assistantParts: MessagePart[]
+  }
+) {
+  maybeGenerateLearningSuggestions({
+    repos: deps.repos,
+    mockRuntime: true,
+    run: input.run,
+    thread: input.thread,
+    latestUserPrompt: input.latestUserPrompt,
+    assistantParts: input.assistantParts,
+  })
 }
 
 function createTimelineDebugStep(
@@ -384,6 +404,12 @@ export async function executeMockNativeStaticArtifactStream(
     status: "completed",
     title: "Completed",
   })
+  finalizeMockLearningSuggestions(deps, {
+    run,
+    thread,
+    latestUserPrompt,
+    assistantParts,
+  })
   deps.repos.threads.touch(run.threadId)
 
   const stream = streamText({
@@ -580,6 +606,12 @@ export async function executeMockResearchBriefStream(
     status: "completed",
     title: "Completed",
   })
+  finalizeMockLearningSuggestions(deps, {
+    run,
+    thread,
+    latestUserPrompt,
+    assistantParts,
+  })
   deps.repos.threads.touch(run.threadId)
 
   const result = streamText({
@@ -703,6 +735,12 @@ export async function executeMockNativeWebSearchStream(
     type: "completed",
     status: "completed",
     title: "Completed",
+  })
+  finalizeMockLearningSuggestions(deps, {
+    run,
+    thread,
+    latestUserPrompt,
+    assistantParts,
   })
   deps.repos.threads.touch(run.threadId)
 
@@ -828,6 +866,12 @@ export async function executeMockNativeWorkspaceStream(
     status: "completed",
     title: "Completed",
   })
+  finalizeMockLearningSuggestions(deps, {
+    run,
+    thread,
+    latestUserPrompt,
+    assistantParts,
+  })
   deps.repos.threads.touch(run.threadId)
 
   const result = streamText({
@@ -933,6 +977,12 @@ export async function executeMockNativeWorkspaceMutationStream(
       status: "completed",
       title: "Completed",
     })
+    finalizeMockLearningSuggestions(deps, {
+      run,
+      thread,
+      latestUserPrompt,
+      assistantParts,
+    })
   }
   deps.repos.threads.touch(run.threadId)
 
@@ -1035,6 +1085,12 @@ export async function executeMockNativeWorkspaceExecutionStream(
       type: "completed",
       status: "completed",
       title: "Completed",
+    })
+    finalizeMockLearningSuggestions(deps, {
+      run,
+      thread,
+      latestUserPrompt,
+      assistantParts,
     })
   }
   deps.repos.threads.touch(run.threadId)
@@ -1174,6 +1230,12 @@ export async function executeMockComposioStream(
     type: "completed",
     status: "completed",
     title: "Completed",
+  })
+  finalizeMockLearningSuggestions(deps, {
+    run,
+    thread,
+    latestUserPrompt,
+    assistantParts,
   })
   deps.repos.threads.touch(run.threadId)
 

@@ -27,6 +27,14 @@ const EMPTY_LEARNING_SKILLS = {
   totalPages: 0,
 }
 
+const EMPTY_LEARNING_SUGGESTIONS = {
+  suggestions: [],
+  page: 1,
+  pageSize: 100,
+  totalCount: 0,
+  totalPages: 0,
+}
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -101,6 +109,9 @@ function stubLearningFetch(
       }
       if (url.startsWith("/api/learning/skills")) {
         return fetchResponse(handlers.skills, EMPTY_LEARNING_SKILLS)
+      }
+      if (url.startsWith("/api/learning/suggestions")) {
+        return fetchResponse(handlers.suggestions, EMPTY_LEARNING_SUGGESTIONS)
       }
       if (url.endsWith("/api/agents")) {
         return fetchResponse(handlers.agents, [])
@@ -541,6 +552,126 @@ describe("LearningPage", () => {
     expect(screen.getByText("video-prompting")).toBeInTheDocument()
     expect(screen.getByText("View all 2 skills →")).toBeInTheDocument()
     expect(screen.getByText("1 pinned")).toBeInTheDocument()
+  })
+
+  it("accepts a pending suggestion from the learning API", async () => {
+    const user = userEvent.setup()
+    const pendingSuggestion = {
+      id: "learning_suggestion_pending",
+      status: "pending",
+      suggestionType: "memory",
+      title: "Capture preference",
+      content: "Prefer concise summaries.",
+      confidence: 0.82,
+      sourceThreadId: "thread-creating-agent",
+      sourceThreadTitle: "Creating Agent",
+      agentId: "senior-reviewer",
+      createdAt: "2026-06-09T00:00:00.000Z",
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    }
+    const acceptedSuggestion = {
+      ...pendingSuggestion,
+      status: "accepted",
+      updatedAt: "2026-06-09T00:00:01.000Z",
+    }
+
+    let suggestionState = pendingSuggestion
+
+    stubLearningFetch({
+      threads: [
+        {
+          id: "thread-creating-agent",
+          title: "Creating Agent",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "senior-reviewer",
+          agentNameSnapshot: "Senior Reviewer",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+      ],
+      suggestions: {
+        suggestions: [pendingSuggestion],
+        page: 1,
+        pageSize: 100,
+        totalCount: 1,
+        totalPages: 1,
+      },
+    })
+
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (
+        url.includes("/api/learning/suggestions/learning_suggestion_pending/accept") &&
+        init?.method === "POST"
+      ) {
+        suggestionState = acceptedSuggestion
+        return jsonResponse({
+          suggestion: acceptedSuggestion,
+          savedMemoryId: "memory_accepted",
+        })
+      }
+      if (url.startsWith("/api/learning/suggestions")) {
+        return jsonResponse({
+          suggestions: [suggestionState],
+          page: 1,
+          pageSize: 100,
+          totalCount: 1,
+          totalPages: 1,
+        })
+      }
+      if (url.endsWith("/api/threads")) {
+        return jsonResponse([
+          {
+            id: "thread-creating-agent",
+            title: "Creating Agent",
+            status: "finished",
+            model: "gpt-4o-mini",
+            mode: "agent",
+            agentId: "senior-reviewer",
+            agentNameSnapshot: "Senior Reviewer",
+            createdAt: "2026-05-15T15:30:00.000Z",
+            updatedAt: "2026-05-21T15:30:00.000Z",
+            messageCount: 2,
+          },
+        ])
+      }
+      if (url.startsWith("/api/learning/memories")) {
+        return jsonResponse(EMPTY_LEARNING_MEMORIES)
+      }
+      if (url.endsWith("/api/learning/summary")) {
+        return jsonResponse(EMPTY_LEARNING_SUMMARY)
+      }
+      if (url.startsWith("/api/learning/skills")) {
+        return jsonResponse(EMPTY_LEARNING_SKILLS)
+      }
+      return jsonResponse({})
+    })
+
+    render(
+      <MemoryRouter>
+        <LearningPage />
+      </MemoryRouter>
+    )
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Expand Creating Agent",
+      })
+    )
+    const suggestions = within(
+      screen.getByRole("region", { name: "Suggestions" })
+    )
+    await user.click(
+      suggestions.getByRole("button", { name: "Save memory" })
+    )
+
+    expect(
+      await screen.findByRole("heading", { name: "Resolved" })
+    ).toBeInTheDocument()
+    expect(screen.getAllByText("Resolved").length).toBeGreaterThanOrEqual(1)
   })
 
   it("groups suggestions into pending and resolved states", () => {

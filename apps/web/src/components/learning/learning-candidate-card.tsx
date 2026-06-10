@@ -12,6 +12,9 @@ const candidateActionIcons = {
 type LearningCandidateCardProps = {
   candidate: LearningCandidate
   onEditMemory?: (candidate: LearningCandidate) => void
+  onAccept?: (candidate: LearningCandidate) => void
+  onDismiss?: (candidate: LearningCandidate) => void
+  actionPending?: boolean
 }
 
 function capitalize(value: string): string {
@@ -31,6 +34,9 @@ function formatSuggestionState(status: LearningCandidate["status"]): string {
 export function LearningCandidateCard({
   candidate,
   onEditMemory,
+  onAccept,
+  onDismiss,
+  actionPending = false,
 }: LearningCandidateCardProps): ReactElement {
   const confidence = Math.round(candidate.confidence * 100)
 
@@ -83,6 +89,12 @@ export function LearningCandidateCard({
             const ActionIcon = action.icon
               ? candidateActionIcons[action.icon]
               : null
+            const onClick =
+              action.id === "save-memory"
+                ? onAccept
+                : action.id === "dismiss"
+                  ? onDismiss
+                  : undefined
 
             return (
               <Button
@@ -90,7 +102,8 @@ export function LearningCandidateCard({
                 type="button"
                 variant={action.tone === "primary" ? "default" : "outline"}
                 size="sm"
-                disabled
+                disabled={actionPending || !onClick}
+                onClick={() => onClick?.(candidate)}
               >
                 {ActionIcon ? (
                   <HugeiconsIcon

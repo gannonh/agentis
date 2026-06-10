@@ -1,15 +1,23 @@
 import {
+  acceptLearningSuggestionRequestSchema,
+  acceptLearningSuggestionResponseSchema,
   createLearningSkillRequestSchema,
   learningMemoriesListResponseSchema,
   learningRubricsListResponseSchema,
   learningSkillSchema,
   learningSkillsListResponseSchema,
+  learningSuggestionSchema,
+  learningSuggestionsListResponseSchema,
   learningSummarySchema,
+  type AcceptLearningSuggestionRequest,
+  type AcceptLearningSuggestionResponse,
   type CreateLearningSkillRequest,
   type LearningMemoriesListResponse,
   type LearningRubricsListResponse,
   type LearningSkill,
   type LearningSkillsListResponse,
+  type LearningSuggestion,
+  type LearningSuggestionsListResponse,
   type LearningSummary,
 } from "@workspace/shared"
 import { ApiError } from "./client"
@@ -100,4 +108,41 @@ export async function listLearningRubrics(input?: {
     `${API_BASE}/api/learning/rubrics${buildQuery(input ?? {})}`
   )
   return parseJson(response, learningRubricsListResponseSchema)
+}
+
+export async function listLearningSuggestions(input?: {
+  page?: number
+  pageSize?: number
+  status?: "pending" | "accepted" | "dismissed"
+  threadId?: string
+}): Promise<LearningSuggestionsListResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/learning/suggestions${buildQuery(input ?? {})}`
+  )
+  return parseJson(response, learningSuggestionsListResponseSchema)
+}
+
+export async function acceptLearningSuggestion(
+  suggestionId: string,
+  input: AcceptLearningSuggestionRequest = {}
+): Promise<AcceptLearningSuggestionResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/learning/suggestions/${suggestionId}/accept`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(acceptLearningSuggestionRequestSchema.parse(input)),
+    }
+  )
+  return parseJson(response, acceptLearningSuggestionResponseSchema)
+}
+
+export async function dismissLearningSuggestion(
+  suggestionId: string
+): Promise<LearningSuggestion> {
+  const response = await fetch(
+    `${API_BASE}/api/learning/suggestions/${suggestionId}/dismiss`,
+    { method: "POST" }
+  )
+  return parseJson(response, learningSuggestionSchema)
 }

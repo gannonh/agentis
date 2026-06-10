@@ -181,6 +181,95 @@ describe("learning routes", () => {
     })
   })
 
+  it("lists, accepts, and dismisses learning suggestions", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Research.",
+      model: "gpt-4o-mini",
+    })
+    const thread = ctx.repos.threads.create({
+      title: "Preference capture",
+      model: "gpt-4o-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+    })
+
+    const suggestion = ctx.repos.learningSuggestions.create({
+      suggestionType: "memory",
+      title: "Capture preference",
+      content: "Prefer concise summaries.",
+      confidence: 0.82,
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      agentId: agent.id,
+    })
+
+    const listResponse = await app.request("/api/learning/suggestions")
+    expect(listResponse.status).toBe(200)
+    const listBody = (await listResponse.json()) as {
+      totalCount: number
+      suggestions: Array<{ id: string; status: string }>
+    }
+    expect(listBody.totalCount).toBe(1)
+    expect(listBody.suggestions[0]).toMatchObject({
+      id: suggestion.id,
+      status: "pending",
+    })
+
+    const summaryBeforeAccept = await app.request("/api/learning/summary")
+    expect(await summaryBeforeAccept.json()).toMatchObject({
+      pendingSuggestionsCount: 1,
+    })
+
+    const acceptResponse = await app.request(
+      `/api/learning/suggestions/${suggestion.id}/accept`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinnedToContext: true }),
+      }
+    )
+    expect(acceptResponse.status).toBe(200)
+    const acceptBody = (await acceptResponse.json()) as {
+      suggestion: { status: string }
+      savedMemoryId?: string
+    }
+    expect(acceptBody.suggestion.status).toBe("accepted")
+    expect(acceptBody.savedMemoryId).toBeTruthy()
+
+    const memory = ctx.repos.savedMemories.getById(acceptBody.savedMemoryId!)
+    expect(memory).toMatchObject({
+      content: "Prefer concise summaries.",
+      pinnedToContext: true,
+      source: "thread-derived",
+      sourceThreadId: thread.id,
+    })
+
+    const dismissSuggestion = ctx.repos.learningSuggestions.create({
+      suggestionType: "memory",
+      title: "Dismiss me",
+      content: "Temporary note.",
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      agentId: agent.id,
+    })
+    const dismissResponse = await app.request(
+      `/api/learning/suggestions/${dismissSuggestion.id}/dismiss`,
+      { method: "POST" }
+    )
+    expect(dismissResponse.status).toBe(200)
+    expect(await dismissResponse.json()).toMatchObject({ status: "dismissed" })
+
+    const summaryAfter = await app.request("/api/learning/summary")
+    expect(await summaryAfter.json()).toMatchObject({
+      pendingSuggestionsCount: 0,
+      memoriesCount: SEEDED_MEMORY_COUNT + 1,
+    })
+  })
+
   it("includes saved memories in learning summary and paginated list", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)

@@ -5,6 +5,7 @@ import type {
   DocumentVersion,
   LearningRubric,
   LearningSkill,
+  LearningSuggestion,
   Message,
   MessagePart,
   Project,
@@ -20,6 +21,7 @@ import type {
 import type {
   documents,
   documentVersions,
+  learningSuggestions,
   messages,
   projectMemories,
   projects,
@@ -312,6 +314,26 @@ export function mapLearningRubric(row: RubricRow): LearningRubric {
     name: row.name,
     description: row.description,
     agentId: row.agentId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+type LearningSuggestionRow = typeof learningSuggestions.$inferSelect
+
+export function mapLearningSuggestion(
+  row: LearningSuggestionRow
+): LearningSuggestion {
+  return {
+    id: row.id,
+    status: row.status as LearningSuggestion["status"],
+    suggestionType: row.suggestionType as LearningSuggestion["suggestionType"],
+    title: row.title,
+    content: row.content,
+    confidence: row.confidence ?? undefined,
+    sourceThreadId: row.sourceThreadId ?? undefined,
+    sourceThreadTitle: row.sourceThreadTitle ?? undefined,
+    agentId: row.agentId ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }
