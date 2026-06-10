@@ -3,8 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router"
 import { CommandCenterPage } from "./command-center"
 
-const { useAgentsMock } = vi.hoisted(() => ({
+const { useAgentsMock, useCommandCenterMock } = vi.hoisted(() => ({
   useAgentsMock: vi.fn(),
+  useCommandCenterMock: vi.fn(),
 }))
 
 function apiAgent(overrides = {}) {
@@ -33,6 +34,10 @@ vi.mock("@/hooks/use-agents", () => ({
   useAgents: useAgentsMock,
 }))
 
+vi.mock("@/hooks/use-command-center", () => ({
+  useCommandCenter: useCommandCenterMock,
+}))
+
 describe("CommandCenterPage", () => {
   beforeEach(() => {
     useAgentsMock.mockReturnValue({
@@ -41,9 +46,42 @@ describe("CommandCenterPage", () => {
       error: null,
       refresh: vi.fn(),
     })
+    useCommandCenterMock.mockReturnValue({
+      data: {
+        summary: {
+          agentCount: 1,
+          activeRuns: 0,
+          totalRuns: 2,
+          totalCostUsd: 0.88,
+        },
+        roster: [
+          {
+            agentId: "agent_api_research",
+            runCount: 2,
+            totalCostUsd: 0.88,
+            lastRunAt: "2026-06-09T12:00:00.000Z",
+            activeRunCount: 0,
+          },
+        ],
+        recentRuns: [
+          {
+            id: "run_1",
+            threadId: "thread_1",
+            agentId: "agent_api_research",
+            title: "Live run",
+            status: "completed",
+            costUsd: 0.44,
+            startedAt: "2026-06-09T12:00:00.000Z",
+          },
+        ],
+      },
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+    })
   })
 
-  it("derives fleet metrics from the API-backed roster", async () => {
+  it("renders API-backed fleet metrics and roster rows", async () => {
     render(
       <MemoryRouter>
         <CommandCenterPage />
@@ -55,13 +93,15 @@ describe("CommandCenterPage", () => {
     expect(
       screen.getByRole("note", { name: "Demo data notice" })
     ).toHaveTextContent(
-      "Recent runs, score trends, cost breakdown, and needs-attention items use seeded workspace data. Agent roster is API-backed."
+      "Score trends, cost breakdown by model, and needs-attention items use seeded workspace data until live eval and queue APIs ship."
     )
     expect(screen.getByText("Agents")).toBeInTheDocument()
     expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1)
-    expect(screen.queryByText("3")).not.toBeInTheDocument()
     expect(screen.getByText("Total runs")).toBeInTheDocument()
-    expect(screen.getAllByText("$0.00").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("2").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("$0.88").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText("Avg score")).toBeInTheDocument()
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole("heading", { name: "Agent roster" })).toBeInTheDocument()
     expect(screen.getByText("1 agent")).toBeInTheDocument()
     await waitFor(() => {
@@ -70,10 +110,14 @@ describe("CommandCenterPage", () => {
     expect(
       screen.queryByRole("link", { name: "Senior Reviewer" })
     ).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Live run/ })).toHaveAttribute(
+      "href",
+      "/threads/thread_1"
+    )
     expect(screen.getByRole("heading", { name: "Needs attention" })).toBeInTheDocument()
     expect(screen.getByText("1 pending improvement")).toBeInTheDocument()
     expect(screen.getByText("New Rubric")).toBeInTheDocument()
-    expect(screen.getByText("Creating Agent")).toBeInTheDocument()
+    expect(screen.queryByText("Creating Agent")).not.toBeInTheDocument()
   })
 
   it("shows a recoverable error when agents fail to load", () => {
@@ -94,6 +138,54 @@ describe("CommandCenterPage", () => {
     expect(screen.getByText("Agent roster unavailable")).toBeInTheDocument()
     expect(screen.getByText("Failed to load agents")).toBeInTheDocument()
     screen.getByRole("button", { name: "Retry loading agents" }).click()
+    expect(refresh).toHaveBeenCalled()
+  })
+
+  it("shows an empty recent runs state when API returns no runs", () => {
+    useCommandCenterMock.mockReturnValue({
+      data: {
+        summary: {
+          agentCount: 1,
+          activeRuns: 0,
+          totalRuns: 0,
+          totalCostUsd: 0,
+        },
+        roster: [],
+        recentRuns: [],
+      },
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+    })
+
+    render(
+      <MemoryRouter>
+        <CommandCenterPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("No runs yet")).toBeInTheDocument()
+    expect(screen.queryByText("Creating Agent")).not.toBeInTheDocument()
+  })
+
+  it("shows a recoverable error when command center metrics fail to load", () => {
+    const refresh = vi.fn()
+    useCommandCenterMock.mockReturnValue({
+      data: null,
+      loading: false,
+      error: "Failed to load command center metrics",
+      refresh,
+    })
+
+    render(
+      <MemoryRouter>
+        <CommandCenterPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("Command Center metrics unavailable")).toBeInTheDocument()
+    expect(screen.getByText("Failed to load command center metrics")).toBeInTheDocument()
+    screen.getByRole("button", { name: "Retry loading metrics" }).click()
     expect(refresh).toHaveBeenCalled()
   })
 })

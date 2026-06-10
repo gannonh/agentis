@@ -48,7 +48,44 @@ export const commandCenterSummarySchema = z.object({
   agentCount: z.number().int().nonnegative(),
 })
 
+export const commandCenterRosterAgentSchema = z.object({
+  agentId: z.string(),
+  runCount: z.number().int().nonnegative(),
+  totalCostUsd: nonNegativeNumber,
+  lastRunAt: z.string().nullable(),
+  activeRunCount: z.number().int().nonnegative(),
+})
+
+export const commandCenterRosterResponseSchema = z.array(
+  commandCenterRosterAgentSchema
+)
+
+export const commandCenterRecentRunSchema = z.object({
+  id: z.string(),
+  threadId: z.string(),
+  agentId: z.string().nullable(),
+  title: z.string(),
+  status: z.enum([
+    "queued",
+    "running",
+    "tool-calling",
+    "completed",
+    "failed",
+    "aborted",
+  ]),
+  costUsd: nonNegativeNumber,
+  startedAt: z.string(),
+})
+
+export const commandCenterRecentRunsResponseSchema = z.array(
+  commandCenterRecentRunSchema
+)
+
 export type RunCostLineItem = z.infer<typeof runCostLineItemSchema>
 export type RunCostBreakdown = z.infer<typeof runCostBreakdownSchema>
 export type AgentUsageResponse = z.infer<typeof agentUsageResponseSchema>
 export type CommandCenterSummary = z.infer<typeof commandCenterSummarySchema>
+export type CommandCenterRosterAgent = z.infer<
+  typeof commandCenterRosterAgentSchema
+>
+export type CommandCenterRecentRun = z.infer<typeof commandCenterRecentRunSchema>
