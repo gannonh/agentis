@@ -20,7 +20,10 @@ import { Button } from "@workspace/ui/components/button"
 import { getWorkspace } from "@/fixtures"
 import { useAgents } from "@/hooks/use-agents"
 import { useCommandCenter } from "@/hooks/use-command-center"
-import type { CommandCenterRosterAgent } from "@workspace/shared"
+import type {
+  CommandCenterRosterAgent,
+  CommandCenterSummary,
+} from "@workspace/shared"
 import type { AgentListItem } from "@workspace/shared"
 
 function rosterMetricsByAgentId(
@@ -52,7 +55,7 @@ function toRosterAgent(
 }
 
 function metricsFromSummary(
-  summary: NonNullable<ReturnType<typeof useCommandCenter>["data"]>["summary"],
+  summary: CommandCenterSummary,
   pending: number
 ): FleetMetrics {
   return {
