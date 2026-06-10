@@ -15,6 +15,7 @@ type SkillsCardProps = {
   pinnedCount: number
   previewCount?: number
   loading?: boolean
+  error?: string | null
 }
 
 export function SkillsCard({
@@ -23,6 +24,7 @@ export function SkillsCard({
   pinnedCount,
   previewCount = 5,
   loading = false,
+  error = null,
 }: SkillsCardProps) {
   const preview = skills.slice(0, previewCount)
 
@@ -49,6 +51,8 @@ export function SkillsCard({
       <div className="flex flex-col gap-2 px-4 py-3">
         {loading ? (
           <p className="text-xs text-muted-foreground">Loading skills…</p>
+        ) : error ? (
+          <p className="text-xs text-muted-foreground">{error}</p>
         ) : preview.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {preview.map((skill) => (

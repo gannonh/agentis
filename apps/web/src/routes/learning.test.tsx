@@ -39,6 +39,13 @@ function jsonResponse(data: unknown) {
   })
 }
 
+function fetchResponse(data: unknown, fallback: unknown) {
+  if (data instanceof Error) {
+    return Promise.reject(data)
+  }
+  return jsonResponse(data ?? fallback)
+}
+
 function stubLearningFetch(
   handlers: {
     threads?: unknown
@@ -53,21 +60,19 @@ function stubLearningFetch(
     vi.fn((input: RequestInfo | URL) => {
       const url = String(input)
       if (url.endsWith("/api/threads")) {
-        return jsonResponse(handlers.threads ?? [])
+        return fetchResponse(handlers.threads, [])
       }
       if (url.endsWith("/api/memories")) {
-        return jsonResponse(
-          handlers.memories ?? { categories: [], memories: [] }
-        )
+        return fetchResponse(handlers.memories, { categories: [], memories: [] })
       }
       if (url.endsWith("/api/learning/summary")) {
-        return jsonResponse(handlers.summary ?? EMPTY_LEARNING_SUMMARY)
+        return fetchResponse(handlers.summary, EMPTY_LEARNING_SUMMARY)
       }
       if (url.startsWith("/api/learning/skills")) {
-        return jsonResponse(handlers.skills ?? EMPTY_LEARNING_SKILLS)
+        return fetchResponse(handlers.skills, EMPTY_LEARNING_SKILLS)
       }
       if (url.endsWith("/api/agents")) {
-        return jsonResponse(handlers.agents ?? [])
+        return fetchResponse(handlers.agents, [])
       }
       return jsonResponse({})
     })
@@ -319,6 +324,67 @@ describe("LearningPage", () => {
       screen.queryByRole("option", { name: "Unassigned agent" })
     ).not.toBeInTheDocument()
   }, LEARNING_SCOPE_INTERACTION_TIMEOUT_MS)
+
+  it("preserves conversations and memories when secondary learning requests fail", async () => {
+    stubLearningFetch({
+      threads: [
+        {
+          id: "thread_secondary_failure",
+          title: "Secondary request failure",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "agent_research",
+          agentNameSnapshot: "Research Agent",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+      ],
+      memories: {
+        categories: [],
+        memories: [
+          {
+            id: "memory_secondary_failure",
+            content: "Prefer source-backed answers.",
+            category: "memory_category_preference",
+            usageGuidance: "Use when researching.",
+            tags: [],
+            importance: "medium",
+            date: "2026-05-22",
+            scope: "agent",
+            associatedAgent: "agent_research",
+            associatedAgents: ["agent_research"],
+            source: "thread-derived",
+            sourceThreadId: "thread_secondary_failure",
+            sourceThreadTitle: "Secondary request failure",
+            provenance: "Accepted from Secondary request failure",
+            pinnedToContext: true,
+            createdAt: "2026-05-22T15:30:00.000Z",
+            updatedAt: "2026-05-22T15:30:00.000Z",
+          },
+        ],
+      },
+      summary: new Error("summary unavailable"),
+      skills: new Error("skills unavailable"),
+    })
+
+    render(
+      <MemoryRouter>
+        <LearningPage />
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByRole("heading", { name: "Secondary request failure" })
+    ).toBeInTheDocument()
+    expect(screen.getByText("1 saved")).toBeInTheDocument()
+    expect(screen.getByText("Skills could not load.")).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Learning totals could not load"
+    )
+    expect(screen.queryByText("No conversations yet")).not.toBeInTheDocument()
+  })
 
   it("renders API-backed empty states on a fresh install", async () => {
     stubLearningFetch()

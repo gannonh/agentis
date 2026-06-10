@@ -49,6 +49,12 @@ type LearningMemoryScopeOption = {
   associatedAgent?: string
 }
 
+type LearningLoadErrors = {
+  core?: string
+  summary?: string
+  skills?: string
+}
+
 const EMPTY_LEARNING_DATA: LearningData = {
   conversations: [],
   candidates: [],
@@ -196,6 +202,28 @@ function listConversationAgents(
   return [...agents.entries()].map(([id, name]) => ({ id, name }))
 }
 
+function deriveSummaryFallback(
+  memoriesResult: PromiseSettledResult<Awaited<ReturnType<typeof listMemories>>>,
+  skillsResult: PromiseSettledResult<
+    Awaited<ReturnType<typeof listLearningSkills>>
+  >
+): LearningSummary {
+  const skills =
+    skillsResult.status === "fulfilled" ? skillsResult.value.skills : []
+
+  return {
+    skillsCount:
+      skillsResult.status === "fulfilled" ? skillsResult.value.totalCount : 0,
+    pinnedSkillsCount: skills.filter((skill) => skill.pinned).length,
+    memoriesCount:
+      memoriesResult.status === "fulfilled"
+        ? memoriesResult.value.memories.length
+        : 0,
+    rubricsCount: 0,
+    pendingSuggestionsCount: 0,
+  }
+}
+
 export function LearningPage(): ReactElement {
   const [agentFilter, setAgentFilter] = useState("all")
   const [learningData, setLearningData] =
@@ -205,6 +233,7 @@ export function LearningPage(): ReactElement {
   )
   const [skills, setSkills] = useState<LearningSkill[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadErrors, setLoadErrors] = useState<LearningLoadErrors>({})
   const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
   const [savingMemory, setSavingMemory] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
@@ -212,29 +241,54 @@ export function LearningPage(): ReactElement {
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([
-      listThreads(),
-      listMemories(),
-      getLearningSummary(),
-      listLearningSkills({ page: 1, pageSize: 5 }),
-    ])
-      .then(([threads, memories, summary, skillsResponse]) => {
-        if (cancelled) return
+    async function loadLearningData() {
+      const [threadsResult, memoriesResult, summaryResult, skillsResult] =
+        await Promise.allSettled([
+          listThreads(),
+          listMemories(),
+          getLearningSummary(),
+          listLearningSkills({ page: 1, pageSize: 5 }),
+        ])
+
+      if (cancelled) return
+
+      const nextErrors: LearningLoadErrors = {}
+
+      if (
+        threadsResult.status === "fulfilled" &&
+        memoriesResult.status === "fulfilled"
+      ) {
         setLearningData(
-          buildApiLearningData(threads, memories.memories, memories.categories)
+          buildApiLearningData(
+            threadsResult.value,
+            memoriesResult.value.memories,
+            memoriesResult.value.categories
+          )
         )
-        setLearningSummary(summary)
-        setSkills(skillsResponse.skills)
-      })
-      .catch(() => {
-        if (cancelled) return
+      } else {
+        nextErrors.core = "Learning conversations and memories could not load."
         setLearningData(EMPTY_LEARNING_DATA)
-        setLearningSummary(EMPTY_LEARNING_SUMMARY)
+      }
+
+      if (summaryResult.status === "fulfilled") {
+        setLearningSummary(summaryResult.value)
+      } else {
+        nextErrors.summary = "Learning summary could not load."
+        setLearningSummary(deriveSummaryFallback(memoriesResult, skillsResult))
+      }
+
+      if (skillsResult.status === "fulfilled") {
+        setSkills(skillsResult.value.skills)
+      } else {
+        nextErrors.skills = "Skills could not load."
         setSkills([])
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+      }
+
+      setLoadErrors(nextErrors)
+      setLoading(false)
+    }
+
+    void loadLearningData()
 
     return () => {
       cancelled = true
@@ -338,6 +392,7 @@ export function LearningPage(): ReactElement {
           totalCount={learningSummary.skillsCount}
           pinnedCount={learningSummary.pinnedSkillsCount}
           loading={loading}
+          error={loadErrors.skills}
         />
         <LearningSecondaryPanel
           memories={learningData.memories}
@@ -345,6 +400,13 @@ export function LearningPage(): ReactElement {
           loading={loading}
         />
       </section>
+
+      {loadErrors.summary ? (
+        <p className="text-xs text-muted-foreground" role="status">
+          Learning totals could not load. Showing counts from loaded records
+          where possible.
+        </p>
+      ) : null}
 
       <AgentFilterBar
         value={agentFilter}
@@ -360,6 +422,11 @@ export function LearningPage(): ReactElement {
           <EmptyState
             title="Loading conversations"
             description="Fetching learning activity from the API."
+          />
+        ) : loadErrors.core ? (
+          <EmptyState
+            title="Learning data could not load"
+            description="Refresh the page to retry loading conversations and memories."
           />
         ) : conversations.length === 0 ? (
           <EmptyState
