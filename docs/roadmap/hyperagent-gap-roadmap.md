@@ -4,7 +4,7 @@
 
 **Source:** Live product exploration via logged-in Chrome session (2026-06-08), cross-checked against `docs/specs/agent-native-tooling.md`, `docs/specs/agentis-prd-roadmap.md`, and `STRATEGY.md`.
 
-**How to use:** Pick a slice → create a GitHub issue from the template at the bottom → add the issue to `docs/roadmap/execution-queue.md` → implement in an isolated worktree.
+**How to use:** Pick a slice → create a GitHub issue from the template at the bottom → implement in an isolated worktree.
 
 **Strategy guardrail:** Agentis is self-hosted and cost-sensitive. We pursue **bounded deliverables** (artifacts, workspace tools, Composio, evals) rather than full cloud VM/browser parity. Slices marked **Defer** are intentional non-goals unless strategy changes.
 
@@ -80,7 +80,7 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 
 **Gate:** Wave 0 (#412–#415) and HA-GAP-01 through HA-GAP-04 (#417–#420) are complete. HA-GAP-05 and HA-GAP-06 can proceed in parallel.
 
-**Dependency graph** (also in `docs/roadmap/execution-queue.md`; mirrored as GitHub blocked-by links):
+**Dependency graph** (mirrored as GitHub blocked-by links):
 
 ```mermaid
 flowchart LR
@@ -753,4 +753,4 @@ flowchart TD
 
 1. Continue Wave 1 with HA-GAP-05 (#421) and HA-GAP-06 (#422) in parallel.
 2. Follow with HA-GAP-07 (#423) once suggestions and rubrics produce live attention signals.
-3. Keep `docs/roadmap/execution-queue.md` aligned as Wave 1 issues ship.
+3. Keep this roadmap aligned as Wave 1 issues ship.
