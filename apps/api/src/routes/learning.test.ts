@@ -105,6 +105,51 @@ describe("learning routes", () => {
     })
   })
 
+  it("returns client errors for invalid learning inputs", async () => {
+    ctx = createTestContext()
+    const app = createApp(ctx.repos, ctx.config)
+
+    const invalidSkillsQuery = await app.request("/api/learning/skills?page=abc")
+    expect(invalidSkillsQuery.status).toBe(400)
+    expect(await invalidSkillsQuery.json()).toMatchObject({
+      code: "invalid_learning_query",
+    })
+
+    const invalidMemoriesQuery = await app.request(
+      "/api/learning/memories?category=not-a-category"
+    )
+    expect(invalidMemoriesQuery.status).toBe(400)
+    expect(await invalidMemoriesQuery.json()).toMatchObject({
+      code: "invalid_learning_query",
+    })
+
+    const invalidRubricsQuery = await app.request("/api/learning/rubrics?pageSize=0")
+    expect(invalidRubricsQuery.status).toBe(400)
+    expect(await invalidRubricsQuery.json()).toMatchObject({
+      code: "invalid_learning_query",
+    })
+
+    const invalidCreate = await app.request("/api/learning/skills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "" }),
+    })
+    expect(invalidCreate.status).toBe(400)
+    expect(await invalidCreate.json()).toMatchObject({
+      code: "invalid_learning_payload",
+    })
+
+    const invalidJson = await app.request("/api/learning/skills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{",
+    })
+    expect(invalidJson.status).toBe(400)
+    expect(await invalidJson.json()).toMatchObject({
+      code: "invalid_learning_payload",
+    })
+  })
+
   it("includes saved memories in learning summary and paginated list", async () => {
     ctx = createTestContext()
     const app = createApp(ctx.repos, ctx.config)

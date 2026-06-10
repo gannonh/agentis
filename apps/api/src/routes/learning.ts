@@ -11,6 +11,22 @@ import {
 } from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
 
+function invalidLearningPayload(issues: unknown[] = []) {
+  return {
+    error: "Invalid learning payload",
+    code: "invalid_learning_payload",
+    issues,
+  }
+}
+
+function invalidLearningQuery(issues: unknown[] = []) {
+  return {
+    error: "Invalid learning query",
+    code: "invalid_learning_query",
+    issues,
+  }
+}
+
 export function createLearningRoutes(repos: Repositories): Hono {
   const app = new Hono()
 
@@ -25,16 +41,32 @@ export function createLearningRoutes(repos: Repositories): Hono {
   })
 
   app.get("/skills", (c) => {
-    const query = learningPaginationQuerySchema.parse({
+    const parsed = learningPaginationQuerySchema.safeParse({
       page: c.req.query("page"),
       pageSize: c.req.query("pageSize"),
     })
-    const response = repos.skills.listPaginated(query)
+    if (!parsed.success) {
+      return c.json(invalidLearningQuery(parsed.error.issues), 400)
+    }
+
+    const response = repos.skills.listPaginated(parsed.data)
     return c.json(learningSkillsListResponseSchema.parse(response))
   })
 
   app.post("/skills", async (c) => {
-    const input = createLearningSkillRequestSchema.parse(await c.req.json())
+    let payload: unknown
+    try {
+      payload = await c.req.json()
+    } catch {
+      return c.json(invalidLearningPayload(), 400)
+    }
+
+    const parsed = createLearningSkillRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      return c.json(invalidLearningPayload(parsed.error.issues), 400)
+    }
+
+    const input = parsed.data
     if (input.agentId && !repos.agents.getById(input.agentId)) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
@@ -43,21 +75,29 @@ export function createLearningRoutes(repos: Repositories): Hono {
   })
 
   app.get("/memories", (c) => {
-    const query = learningMemoriesQuerySchema.parse({
+    const parsed = learningMemoriesQuerySchema.safeParse({
       page: c.req.query("page"),
       pageSize: c.req.query("pageSize"),
       category: c.req.query("category"),
     })
-    const response = repos.savedMemories.listPaginated(query)
+    if (!parsed.success) {
+      return c.json(invalidLearningQuery(parsed.error.issues), 400)
+    }
+
+    const response = repos.savedMemories.listPaginated(parsed.data)
     return c.json(learningMemoriesListResponseSchema.parse(response))
   })
 
   app.get("/rubrics", (c) => {
-    const query = learningPaginationQuerySchema.parse({
+    const parsed = learningPaginationQuerySchema.safeParse({
       page: c.req.query("page"),
       pageSize: c.req.query("pageSize"),
     })
-    const response = repos.rubrics.listPaginated(query)
+    if (!parsed.success) {
+      return c.json(invalidLearningQuery(parsed.error.issues), 400)
+    }
+
+    const response = repos.rubrics.listPaginated(parsed.data)
     return c.json(learningRubricsListResponseSchema.parse(response))
   })
 
