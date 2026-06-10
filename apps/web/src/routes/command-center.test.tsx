@@ -96,6 +96,7 @@ describe("CommandCenterPage", () => {
       "Score trends, cost breakdown by model, and needs-attention items use seeded workspace data until live eval and queue APIs ship."
     )
     expect(screen.getByText("Agents")).toBeInTheDocument()
+    expect(screen.getByText("Active runs")).toBeInTheDocument()
     expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Total runs")).toBeInTheDocument()
     expect(screen.getAllByText("2").length).toBeGreaterThanOrEqual(1)

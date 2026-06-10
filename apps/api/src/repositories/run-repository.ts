@@ -342,6 +342,7 @@ export class RunRepository {
       })
       .from(runs)
       .innerJoin(threads, eq(runs.threadId, threads.id))
+      .where(eq(runs.status, "completed"))
       .orderBy(desc(runs.startedAt), desc(runs.id))
       .limit(limit)
       .all()

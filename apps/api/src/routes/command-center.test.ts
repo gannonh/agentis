@@ -98,6 +98,34 @@ describe("command center routes", () => {
     ])
   })
 
+  it("excludes active runs from recent completed runs", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Active Ops Agent",
+        systemPrompt: "Track active work",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+
+    ctx.repos.threads.createWithInitialRun({
+      title: "Running ops run",
+      prompt: "Keep working",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId:
+        ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id,
+    })
+
+    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    expect(recentRunsResponse.status).toBe(200)
+    expect(await recentRunsResponse.json()).toEqual([])
+  })
+
   it("returns empty roster and recent runs when no runs exist", async () => {
     ctx = createTestContext()
     const app = createCommandCenterTestApp(ctx)
