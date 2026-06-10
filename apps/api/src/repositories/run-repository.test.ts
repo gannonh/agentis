@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest"
 import { eq } from "drizzle-orm"
+import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { runs } from "../db/schema.js"
 import { createTestContext } from "../test/setup.js"
-import { MOCK_MODEL_COST_USD, MOCK_WEB_SEARCH_COST_USD } from "../cost/run-cost-attribution.js"
+import {
+  MOCK_MODEL_COST_USD,
+  MOCK_WEB_SEARCH_COST_USD,
+} from "../cost/run-cost-attribution.js"
 
 describe("RunRepository cost aggregation", () => {
   it("aggregates agent usage and command center summary", () => {
@@ -70,6 +74,26 @@ describe("RunRepository cost aggregation", () => {
       expect(summary.totalCostUsd).toBe(costUsd)
       expect(summary.activeRuns).toBe(0)
       expect(summary.agentCount).toBeGreaterThan(0)
+
+      const roster = ctx.repos.runs.getAgentRosterMetrics()
+      expect(roster).toEqual([
+        expect.objectContaining({
+          agentId: agent.id,
+          runCount: 1,
+          totalCostUsd: costUsd,
+          activeRunCount: 0,
+        }),
+      ])
+
+      const recentRuns = ctx.repos.runs.listRecentRuns()
+      expect(recentRuns).toEqual([
+        expect.objectContaining({
+          id: thread.run.id,
+          threadId: thread.thread.id,
+          title: "Cost test",
+          costUsd,
+        }),
+      ])
     } finally {
       ctx.cleanup()
     }
@@ -132,6 +156,67 @@ describe("RunRepository cost aggregation", () => {
           completionTokens: 0,
         }),
       ])
+    } finally {
+      ctx.cleanup()
+    }
+  })
+
+  it("excludes generic Agentis runs from roster and recent runs", () => {
+    const ctx = createTestContext()
+    try {
+      const agent = ctx.repos.agents.createWithGrants(
+        {
+          name: "Named Agent",
+          systemPrompt: "Work",
+          model: "openai/gpt-5.4-mini",
+        },
+        []
+      )
+
+      const namedThread = ctx.repos.threads.createWithInitialRun({
+        title: "Named agent run",
+        prompt: "Hello",
+        model: "openai/gpt-5.4-mini",
+        mode: "agent",
+        agentId: agent.id,
+        agentNameSnapshot: agent.name,
+        agentConfigurationVersionId:
+          ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id,
+      })
+      ctx.repos.runs.updateStatus(namedThread.run.id, "completed", {
+        finishedAt: new Date().toISOString(),
+        cost: MOCK_MODEL_COST_USD,
+      })
+
+      const genericThread = ctx.repos.threads.createWithInitialRun({
+        title: "Generic agent run",
+        prompt: "Hello",
+        model: "openai/gpt-5.4-mini",
+        mode: "agent",
+        agentId: GENERIC_AGENTIS_AGENT_ID,
+      })
+      ctx.repos.runs.updateStatus(genericThread.run.id, "completed", {
+        finishedAt: new Date().toISOString(),
+        cost: MOCK_MODEL_COST_USD,
+      })
+
+      const roster = ctx.repos.runs.getAgentRosterMetrics()
+      expect(roster).toHaveLength(1)
+      expect(roster[0]?.agentId).toBe(agent.id)
+
+      const recentRuns = ctx.repos.runs.listRecentRuns()
+      expect(recentRuns).toHaveLength(1)
+      expect(recentRuns[0]?.id).toBe(namedThread.run.id)
+    } finally {
+      ctx.cleanup()
+    }
+  })
+
+  it("clamps recent run list limits to 1 through 100", () => {
+    const ctx = createTestContext()
+    try {
+      expect(ctx.repos.runs.listRecentRuns(0)).toEqual([])
+      expect(ctx.repos.runs.listRecentRuns(200)).toEqual([])
     } finally {
       ctx.cleanup()
     }

@@ -233,6 +233,16 @@ describe("debug seed routes", () => {
     await app.request("/api/debug/datasets/rich-agent-workspace", {
       method: "POST",
     })
+    const createSkill = await app.request("/api/learning/skills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Seeded agent skill",
+        agentId: "seed_agent_support_triage",
+      }),
+    })
+    expect(createSkill.status).toBe(201)
+
     const response = await app.request(
       "/api/debug/datasets/rich-agent-workspace",
       { method: "DELETE" }
@@ -290,6 +300,13 @@ describe("debug seed routes", () => {
       agentNameSnapshot: agent.name,
       agentConfigurationVersionId: agent.currentConfigurationVersion.id,
     })
+    const createSkill = await app.request("/api/learning/skills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Reset skill", agentId: agent.id }),
+    })
+    expect(createSkill.status).toBe(201)
+
     ctx.repos.savedMemories.create({
       content: "Unrelated memory",
       category: "memory_category_project_context",

@@ -1,3 +1,4 @@
+import { Link } from "react-router"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -14,9 +15,14 @@ import {
   UserIcon,
   Wrench02Icon,
 } from "@hugeicons/core-free-icons"
-import type { AgentDetailResponse } from "@workspace/shared"
+import type {
+  AgentConfigurationVersionSummary,
+  AgentDetailResponse,
+  AgentUsageResponse,
+} from "@workspace/shared"
 import { formatRelativeTime } from "@/fixtures"
 import type { Thread } from "@/fixtures/schema"
+import { useAgentUsage } from "@/hooks/use-agent-usage"
 
 type AgentOverviewThread = Pick<
   Thread,
@@ -34,6 +40,12 @@ type AgentOverviewToolGrant = Pick<
 type AgentOverviewTabProps = {
   recentThreads: AgentOverviewThread[]
   toolGrants?: AgentOverviewToolGrant[]
+  agentId?: string
+  configurationVersions?: AgentConfigurationVersionSummary[]
+}
+
+function formatUsd(amount: number): string {
+  return `$${amount.toFixed(2)}`
 }
 
 function threadStatusBadge(status: AgentOverviewThread["status"]) {
@@ -54,16 +66,33 @@ function threadStatusBadge(status: AgentOverviewThread["status"]) {
   )
 }
 
-function UsageChart() {
-  const points = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0]
-  const max = Math.max(...points)
+function buildDailyCostSeries(usage: AgentUsageResponse): number[] {
+  const dailyByDate = new Map(
+    usage.daily.map((entry) => [entry.date, entry.costUsd])
+  )
+  const end = new Date()
+  end.setUTCHours(0, 0, 0, 0)
+  const points: number[] = []
+
+  for (let offset = usage.periodDays - 1; offset >= 0; offset -= 1) {
+    const day = new Date(end)
+    day.setUTCDate(day.getUTCDate() - offset)
+    const dateKey = day.toISOString().slice(0, 10)
+    points.push(dailyByDate.get(dateKey) ?? 0)
+  }
+
+  return points
+}
+
+function UsageCostChart({ points }: { points: number[] }) {
+  const max = Math.max(...points, 0)
   const width = 600
   const height = 132
-  const step = width / (points.length - 1)
+  const step = width / Math.max(points.length - 1, 1)
   const path = points
     .map((value, index) => {
       const x = index * step
-      const y = height - (max ? value / max : 0) * 92 - 20
+      const y = height - (max > 0 ? value / max : 0) * 92 - 20
       return `${index === 0 ? "M" : "L"}${x},${y}`
     })
     .join(" ")
@@ -94,7 +123,7 @@ function UsageChart() {
       />
       {points.map((value, index) => {
         const x = index * step
-        const y = height - (max ? value / max : 0) * 92 - 20
+        const y = height - (max > 0 ? value / max : 0) * 92 - 20
         return (
           <circle
             key={index}
@@ -109,9 +138,205 @@ function UsageChart() {
   )
 }
 
+function UsageByModelPanel({ usage }: { usage: AgentUsageResponse }) {
+  if (usage.byModel.length === 0) {
+    return (
+      <p className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+        No completed runs in the last {usage.periodDays} days.
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-4 flex flex-col gap-3">
+      {usage.byModel.map((entry) => (
+        <div
+          key={entry.model}
+          className="rounded-xl bg-muted/40 p-3 text-xs"
+          data-testid={`usage-model-${entry.model}`}
+        >
+          <div className="flex items-center justify-between font-medium">
+            <span>{entry.model}</span>
+            <span>{formatUsd(entry.costUsd)}</span>
+          </div>
+          <div className="mt-2 grid gap-1 text-muted-foreground">
+            <span>
+              {entry.runCount} run{entry.runCount === 1 ? "" : "s"}
+            </span>
+            {entry.promptTokens != null ? (
+              <span>{entry.promptTokens.toLocaleString()} input tokens</span>
+            ) : null}
+            {entry.completionTokens != null ? (
+              <span>
+                {entry.completionTokens.toLocaleString()} output tokens
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function AgentUsagePanel({ agentId }: { agentId: string }) {
+  const { state, refresh } = useAgentUsage(agentId)
+
+  if (state.status === "loading" || state.status === "idle") {
+    return (
+      <p
+        className="mt-6 text-sm text-muted-foreground"
+        data-testid="agent-usage-loading"
+      >
+        Loading usage for the last 14 days…
+      </p>
+    )
+  }
+
+  if (state.status === "error") {
+    return (
+      <div
+        className="mt-6 rounded-xl border border-border bg-background/60 px-4 py-3"
+        data-testid="agent-usage-error"
+      >
+        <p className="text-sm text-muted-foreground">{state.message}</p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => void refresh()}
+        >
+          Retry usage load
+        </Button>
+      </div>
+    )
+  }
+
+  const { usage } = state
+  const chartPoints = buildDailyCostSeries(usage)
+
+  return (
+    <div className="mt-6" data-testid="agent-usage-panel">
+      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+        <span>Total cost per day</span>
+        <span>Last {usage.periodDays} days</span>
+      </div>
+      <UsageCostChart points={chartPoints} />
+      <dl className="mt-2 flex items-center justify-between border-t border-border pt-4 text-sm">
+        <dt className="text-muted-foreground">Total usage</dt>
+        <dd className="font-medium tabular-nums">
+          {formatUsd(usage.totalCostUsd)}
+        </dd>
+      </dl>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {usage.totalRuns} completed run{usage.totalRuns === 1 ? "" : "s"} in
+        this period.
+      </p>
+      <UsageByModelPanel usage={usage} />
+    </div>
+  )
+}
+
+function FixtureUsageNotice() {
+  return (
+    <p
+      className="mt-6 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground"
+      data-testid="agent-usage-fixture-notice"
+    >
+      Usage observability is available for API-created agents. This preset agent
+      uses demo profile data only.
+    </p>
+  )
+}
+
+function EvaluationsEmptyState() {
+  return (
+    <div
+      className="flex min-h-48 flex-col items-center justify-center text-center"
+      data-testid="evaluations-empty-state"
+    >
+      <HugeiconsIcon
+        icon={ChartLineData01Icon}
+        className="size-8 text-muted-foreground"
+        strokeWidth={2}
+      />
+      <p className="mt-4 text-sm font-medium">No evaluations yet</p>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+        Rubric-based run scoring is not available yet. When rubrics ship, scores
+        from completed runs will appear here.
+      </p>
+      <Button
+        render={<Link to="/learning" />}
+        nativeButton={false}
+        variant="outline"
+        size="sm"
+        className="mt-4"
+      >
+        Open Learning
+      </Button>
+    </div>
+  )
+}
+
+function VersionHistoryPanel({
+  configurationVersions,
+}: {
+  configurationVersions?: AgentConfigurationVersionSummary[]
+}) {
+  const versions = [...(configurationVersions ?? [])].sort(
+    (left, right) => right.version - left.version
+  )
+
+  return (
+    <section
+      className="rounded-xl border border-border bg-card/70 p-5"
+      aria-labelledby="version-history-heading"
+      data-testid="version-history-panel"
+    >
+      <h2
+        id="version-history-heading"
+        className="flex items-center gap-2 text-base font-medium"
+      >
+        <HugeiconsIcon
+          icon={ChartLineData01Icon}
+          className="size-5 text-muted-foreground"
+          strokeWidth={2}
+        />
+        Version history
+      </h2>
+      {versions.length > 0 ? (
+        <ol className="mt-4 flex flex-col gap-3">
+          {versions.map((version) => (
+            <li
+              key={version.id}
+              className="rounded-xl border border-border bg-background/60 px-4 py-3"
+              data-testid={`version-history-item-${version.version}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">Version {version.version}</p>
+                <Badge variant="secondary">{version.model}</Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Saved {formatRelativeTime(version.createdAt)}
+              </p>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-4 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+          No configuration versions recorded yet. Saving agent settings creates a
+          new version entry.
+        </p>
+      )}
+    </section>
+  )
+}
+
 export function AgentOverviewTab({
   recentThreads,
   toolGrants,
+  agentId,
+  configurationVersions,
 }: AgentOverviewTabProps) {
   const primaryThread = recentThreads[0]
 
@@ -265,29 +490,11 @@ export function AgentOverviewTab({
                 Optimize costs
               </Button>
             </div>
-            {/* TODO: replace static usage visualization with run cost timeseries from observability APIs. */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                <span>Total cost per day</span>
-                <span>Total</span>
-              </div>
-              <UsageChart />
-              <dl className="mt-2 flex items-center justify-between border-t border-border pt-4 text-sm">
-                <dt className="text-muted-foreground">Total usage</dt>
-                <dd className="font-medium">$5.95</dd>
-              </dl>
-              <div className="mt-4 rounded-xl bg-muted/40 p-3 text-xs">
-                <div className="flex items-center justify-between font-medium">
-                  <span>Claude</span>
-                  <span>$5.77</span>
-                </div>
-                <div className="mt-2 grid gap-1 text-muted-foreground">
-                  <span>Opus input tokens</span>
-                  <span>Opus output tokens</span>
-                  <span>Sonnet output tokens</span>
-                </div>
-              </div>
-            </div>
+            {agentId ? (
+              <AgentUsagePanel agentId={agentId} />
+            ) : (
+              <FixtureUsageNotice />
+            )}
           </section>
 
           <section
@@ -306,28 +513,11 @@ export function AgentOverviewTab({
                 />
                 Evaluations
               </h2>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                disabled
-                aria-label="Evaluation actions"
-              >
-                ⋮
-              </Button>
             </div>
-            <div className="flex min-h-48 flex-col items-center justify-center text-center">
-              <HugeiconsIcon
-                icon={ChartLineData01Icon}
-                className="size-8 text-muted-foreground"
-                strokeWidth={2}
-              />
-              <p className="mt-4 text-sm font-medium">No evaluations yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Evaluate agent responses using the eval system.
-              </p>
-            </div>
+            <EvaluationsEmptyState />
           </section>
+
+          <VersionHistoryPanel configurationVersions={configurationVersions} />
         </CollapsibleContent>
       </Collapsible>
     </div>

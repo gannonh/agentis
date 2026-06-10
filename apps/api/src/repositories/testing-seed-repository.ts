@@ -12,12 +12,15 @@ import {
   documents,
   documentVersions,
   integrationConnections,
+  learningSuggestions,
   messages,
   projectMemories,
   projects,
   runs,
   runSteps,
+  rubrics,
   savedMemories,
+  skills,
   threads,
   toolAccessGrants,
   workspaces,
@@ -114,6 +117,9 @@ export class TestingSeedRepository {
 
     this.db.transaction((tx) => {
       tx.delete(documents).run()
+      tx.delete(learningSuggestions).run()
+      tx.delete(skills).run()
+      tx.delete(rubrics).run()
       tx.delete(toolAccessGrants).run()
       tx.delete(runSteps).run()
       tx.delete(runs).run()
@@ -272,7 +278,17 @@ export class TestingSeedRepository {
       tx.delete(agentPromotionDrafts)
         .where(inArray(agentPromotionDrafts.threadId, richThreadIds))
         .run()
+      tx.delete(learningSuggestions)
+        .where(
+          or(
+            inArray(learningSuggestions.sourceThreadId, richThreadIds),
+            inArray(learningSuggestions.agentId, agentIds)
+          )
+        )
+        .run()
       tx.delete(threads).where(inArray(threads.id, richThreadIds)).run()
+      tx.delete(skills).where(inArray(skills.agentId, agentIds)).run()
+      tx.delete(rubrics).where(inArray(rubrics.agentId, agentIds)).run()
       tx.delete(agentConfigurationVersions)
         .where(
           or(

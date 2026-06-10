@@ -455,3 +455,56 @@ export const appState = sqliteTable(
   },
   (table) => [index("app_state_updated_at_idx").on(table.updatedAt)]
 )
+
+export const skills = sqliteTable(
+  "skills",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+    agentId: text("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("skills_updated_at_idx").on(table.updatedAt)]
+)
+
+export const rubrics = sqliteTable(
+  "rubrics",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    agentId: text("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("rubrics_updated_at_idx").on(table.updatedAt)]
+)
+
+export const learningSuggestions = sqliteTable(
+  "learning_suggestions",
+  {
+    id: text("id").primaryKey(),
+    status: text("status").notNull(),
+    suggestionType: text("suggestion_type").notNull(),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    confidence: real("confidence"),
+    sourceThreadId: text("source_thread_id").references(() => threads.id, {
+      onDelete: "set null",
+    }),
+    sourceThreadTitle: text("source_thread_title"),
+    agentId: text("agent_id").references(() => agents.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("learning_suggestions_status_idx").on(table.status)]
+)

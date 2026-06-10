@@ -1,14 +1,17 @@
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm"
+import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
 import type {
   AgentUsageResponse,
+  CommandCenterRecentRun,
+  CommandCenterRosterAgent,
   CommandCenterSummary,
   Run,
   RunCostBreakdown,
   RunStatus,
   RunUsage,
 } from "@workspace/shared"
+import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
-import { runs } from "../db/schema.js"
+import { runs, threads } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapRun } from "../lib/mappers.js"
 import { roundCostUsd } from "../cost/run-cost-attribution.js"
@@ -291,5 +294,78 @@ export class RunRepository {
       activeRuns,
       agentCount,
     }
+  }
+
+  getAgentRosterMetrics(): CommandCenterRosterAgent[] {
+    const rows = this.db
+      .select({
+        agentId: runs.agentId,
+        runCount:
+          sql<number>`sum(case when ${runs.status} = 'completed' then 1 else 0 end)`.mapWith(
+            Number
+          ),
+        totalCostUsd:
+          sql<number>`coalesce(sum(case when ${runs.status} = 'completed' then ${runs.cost} else 0 end), 0)`.mapWith(
+            Number
+          ),
+        lastRunAt: sql<string | null>`max(${runs.startedAt})`,
+        activeRunCount:
+          sql<number>`sum(case when ${runs.status} in ('queued', 'running', 'tool-calling') then 1 else 0 end)`.mapWith(
+            Number
+          ),
+      })
+      .from(runs)
+      .where(
+        and(
+          sql`${runs.agentId} is not null`,
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
+      .groupBy(runs.agentId)
+      .all()
+
+    return rows
+      .filter((row): row is typeof row & { agentId: string } => row.agentId != null)
+      .map((row) => ({
+        agentId: row.agentId,
+        runCount: row.runCount,
+        totalCostUsd: roundCostUsd(row.totalCostUsd),
+        lastRunAt: row.lastRunAt,
+        activeRunCount: row.activeRunCount,
+      }))
+  }
+
+  listRecentRuns(limit = 20): CommandCenterRecentRun[] {
+    const boundedLimit = Math.min(Math.max(limit, 1), 100)
+    return this.db
+      .select({
+        id: runs.id,
+        threadId: runs.threadId,
+        agentId: runs.agentId,
+        status: runs.status,
+        cost: runs.cost,
+        startedAt: runs.startedAt,
+        title: threads.title,
+      })
+      .from(runs)
+      .innerJoin(threads, eq(runs.threadId, threads.id))
+      .where(
+        and(
+          eq(runs.status, "completed"),
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
+      .orderBy(desc(runs.startedAt), desc(runs.id))
+      .limit(boundedLimit)
+      .all()
+      .map((row) => ({
+        id: row.id,
+        threadId: row.threadId,
+        agentId: row.agentId,
+        title: row.title,
+        status: row.status as RunStatus,
+        costUsd: roundCostUsd(row.cost ?? 0),
+        startedAt: row.startedAt,
+      }))
   }
 }

@@ -8,6 +8,8 @@ import type { Memory } from "@/fixtures/schema"
 
 type LearningSecondaryPanelProps = {
   memories: Memory[]
+  rubricsCount: number
+  loading?: boolean
 }
 
 type MemoryCategorySummary = {
@@ -33,6 +35,8 @@ function getCategorySummaries(memories: Memory[]): MemoryCategorySummary[] {
 
 export function LearningSecondaryPanel({
   memories,
+  rubricsCount,
+  loading = false,
 }: LearningSecondaryPanelProps): ReactElement {
   const categorySummaries = getCategorySummaries(memories)
 
@@ -63,7 +67,9 @@ export function LearningSecondaryPanel({
           work from conversations.
         </p>
         <div className="flex flex-wrap gap-2">
-          {categorySummaries.length > 0 ? (
+          {loading ? (
+            <p className="text-xs text-muted-foreground">Loading memories…</p>
+          ) : categorySummaries.length > 0 ? (
             categorySummaries.map((summary) => (
               <Badge
                 key={summary.category}
@@ -95,18 +101,33 @@ export function LearningSecondaryPanel({
         className="flex h-full flex-col gap-3 rounded-lg border border-border bg-card px-4 py-4"
         aria-labelledby="learning-rubrics-heading"
       >
-        <div className="flex items-center gap-2">
-          <HugeiconsIcon
-            icon={ClipboardIcon}
-            className="size-4 text-muted-foreground"
-            strokeWidth={2}
-            aria-hidden
-          />
-          <h2 id="learning-rubrics-heading" className="text-sm font-medium">
-            Rubrics
-          </h2>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <HugeiconsIcon
+              icon={ClipboardIcon}
+              className="size-4 text-muted-foreground"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <h2 id="learning-rubrics-heading" className="text-sm font-medium">
+              Rubrics
+            </h2>
+          </div>
+          {rubricsCount > 0 ? (
+            <Badge variant="secondary" className="text-xs tabular-nums">
+              {rubricsCount}
+            </Badge>
+          ) : null}
         </div>
-        <p className="text-sm font-medium">No rubrics yet</p>
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Loading rubrics…</p>
+        ) : rubricsCount > 0 ? (
+          <p className="text-sm font-medium">
+            {rubricsCount} rubric{rubricsCount === 1 ? "" : "s"} configured
+          </p>
+        ) : (
+          <p className="text-sm font-medium">No rubrics yet</p>
+        )}
         <p className="text-xs leading-relaxed text-muted-foreground">
           Rubrics define how agents evaluate and improve their work over time.
         </p>

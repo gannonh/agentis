@@ -13,6 +13,9 @@ import { ProjectRepository } from "./project-repository.js"
 import { RunRepository } from "./run-repository.js"
 import { RunStepRepository } from "./run-step-repository.js"
 import { SavedMemoryRepository } from "./saved-memory-repository.js"
+import { LearningSuggestionRepository } from "./learning-suggestion-repository.js"
+import { RubricRepository } from "./rubric-repository.js"
+import { SkillRepository } from "./skill-repository.js"
 import { ThreadRepository } from "./thread-repository.js"
 import { ToolAccessGrantRepository } from "./tool-access-grant-repository.js"
 import { TestingSeedRepository } from "./testing-seed-repository.js"
@@ -30,6 +33,9 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     projects: new ProjectRepository(db),
     projectMemories: new ProjectMemoryRepository(db),
     savedMemories: new SavedMemoryRepository(db),
+    skills: new SkillRepository(db),
+    rubrics: new RubricRepository(db),
+    learningSuggestions: new LearningSuggestionRepository(db),
     artifacts: new ArtifactRepository(db),
     appState: new AppStateRepository(db),
     documents: new DocumentRepository(db),

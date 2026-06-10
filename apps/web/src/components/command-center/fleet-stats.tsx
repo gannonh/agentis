@@ -1,8 +1,16 @@
-import type { Workspace } from "@/fixtures/schema"
 import { cn } from "@workspace/ui/lib/utils"
 
+export type FleetMetrics = {
+  agents: number
+  active: number
+  totalRuns: number
+  avgScore: number | null
+  totalCost: number
+  pending: number
+}
+
 type FleetStatsProps = {
-  metrics: Workspace["commandCenter"]
+  metrics: FleetMetrics
 }
 
 type StatItem = {
@@ -14,7 +22,7 @@ type StatItem = {
 export function FleetStats({ metrics }: FleetStatsProps) {
   const items: StatItem[] = [
     { label: "Agents", value: metrics.agents },
-    { label: "Active", value: metrics.active, highlight: metrics.active > 0 ? "success" : undefined },
+    { label: "Active runs", value: metrics.active, highlight: metrics.active > 0 ? "success" : undefined },
     { label: "Total runs", value: metrics.totalRuns },
     {
       label: "Avg score",

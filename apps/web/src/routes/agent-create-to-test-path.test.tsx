@@ -2,11 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
-import type { AgentDetailResponse, IntegrationToolkit } from "@workspace/shared"
+import type {
+  AgentDetailResponse,
+  AgentUsageResponse,
+  IntegrationToolkit,
+} from "@workspace/shared"
 import { AgentCreatePage } from "./agent-create"
 import { AgentDetailPage } from "./agent-detail"
 import { CommandCenterPage } from "./command-center"
-import { createAgent, getAgent, startAgentTestThread } from "@/lib/api/agents-client"
+import {
+  createAgent,
+  getAgent,
+  getAgentUsage,
+  startAgentTestThread,
+} from "@/lib/api/agents-client"
 import { useAgents } from "@/hooks/use-agents"
 
 vi.mock("@/hooks/use-integrations", () => ({
@@ -25,6 +34,7 @@ vi.mock("@/hooks/use-agents", () => ({
 vi.mock("@/lib/api/agents-client", () => ({
   createAgent: vi.fn(),
   getAgent: vi.fn(),
+  getAgentUsage: vi.fn(),
   startAgentTestThread: vi.fn(),
   updateAgent: vi.fn(),
 }))
@@ -80,6 +90,17 @@ function agentDetail(): AgentDetailResponse {
   }
 }
 
+function emptyUsage(agentId: string): AgentUsageResponse {
+  return {
+    agentId,
+    periodDays: 30,
+    totalCostUsd: 0,
+    totalRuns: 0,
+    daily: [],
+    byModel: [],
+  }
+}
+
 function visibleText(container: HTMLElement): string {
   const textNodes = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
   const chunks: string[] = []
@@ -125,6 +146,7 @@ describe("agent create-to-test acceptance path", () => {
     const detail = agentDetail()
     vi.mocked(createAgent).mockResolvedValue(detail)
     vi.mocked(getAgent).mockResolvedValue(detail)
+    vi.mocked(getAgentUsage).mockResolvedValue(emptyUsage(detail.agent.id))
     vi.mocked(startAgentTestThread).mockResolvedValue({
       thread: {
         id: "thread_acceptance",
