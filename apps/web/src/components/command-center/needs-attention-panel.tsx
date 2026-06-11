@@ -1,28 +1,32 @@
 import { Link } from "react-router"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Alert02Icon,
-  ArrowRight01Icon,
-} from "@hugeicons/core-free-icons"
+import { Alert02Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import { Badge } from "@workspace/ui/components/badge"
-import type { NeedsAttentionItem } from "@/fixtures/schema"
+import { Button } from "@workspace/ui/components/button"
+import type { CommandCenterNeedsAttentionItem } from "@workspace/shared"
 import { cn } from "@workspace/ui/lib/utils"
 
 type NeedsAttentionPanelProps = {
-  items: NeedsAttentionItem[]
+  items: CommandCenterNeedsAttentionItem[]
   pendingCount: number
+  error?: string | null
+  onDismiss?: (item: CommandCenterNeedsAttentionItem) => void
 }
 
-function attentionItemHref(item: NeedsAttentionItem): string {
-  if (item.agentId) {
-    return `/agents/${item.agentId}`
-  }
-  return "/command-center"
+function actionLabel(item: CommandCenterNeedsAttentionItem): string {
+  return item.type === "pending_learning_suggestion" ? "Review" : "Open thread"
 }
 
-export function NeedsAttentionPanel({ items, pendingCount }: NeedsAttentionPanelProps) {
+export function NeedsAttentionPanel({
+  items,
+  pendingCount,
+  error,
+  onDismiss,
+}: NeedsAttentionPanelProps) {
   const summaryLabel =
-    pendingCount === 1 ? "1 pending improvement" : `${pendingCount} pending improvements`
+    pendingCount === 1
+      ? "1 item needs review"
+      : `${pendingCount} items need review`
 
   return (
     <section
@@ -32,7 +36,7 @@ export function NeedsAttentionPanel({ items, pendingCount }: NeedsAttentionPanel
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <HugeiconsIcon
           icon={Alert02Icon}
-          className="text-status-warning-foreground size-4"
+          className="size-4 text-status-warning-foreground"
           strokeWidth={2}
           aria-hidden
         />
@@ -42,29 +46,61 @@ export function NeedsAttentionPanel({ items, pendingCount }: NeedsAttentionPanel
       </div>
 
       <div className="flex flex-col gap-3 px-4 pb-4">
-        <p className="text-muted-foreground flex items-center justify-between text-xs font-medium">
+        <p className="flex items-center justify-between text-xs font-medium text-muted-foreground">
           <span>{summaryLabel}</span>
-          <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
+          <HugeiconsIcon
+            icon={ArrowRight01Icon}
+            className="size-3.5"
+            strokeWidth={2}
+            aria-hidden
+          />
         </p>
 
-        {items.length === 0 ? (
-          <p className="text-muted-foreground text-xs">Nothing needs review right now.</p>
+        {error ? (
+          <p className="text-xs text-destructive">{error}</p>
+        ) : items.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Nothing needs review right now.
+          </p>
         ) : (
           <ul className="flex flex-col gap-2">
             {items.map((item) => (
-              <li key={item.id}>
-                <Link
-                  to={attentionItemHref(item)}
-                  className={cn(
-                    "flex flex-col gap-2 rounded-md border border-border p-3 text-sm transition-colors",
-                    "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  )}
-                >
-                  <span className="line-clamp-2 leading-snug">{item.title}</span>
+              <li
+                key={item.id}
+                className={cn(
+                  "flex flex-col gap-2 rounded-md border border-border p-3 text-sm",
+                  item.severity === "critical" && "border-destructive/40"
+                )}
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="line-clamp-2 leading-snug">
+                    {item.title}
+                  </span>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="w-fit text-xs">
                     {item.tag}
                   </Badge>
-                </Link>
+                  <Link
+                    to={item.href}
+                    className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    {actionLabel(item)}
+                  </Link>
+                  {item.dismissible ? (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-muted-foreground"
+                      onClick={() => onDismiss?.(item)}
+                    >
+                      Dismiss
+                    </Button>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

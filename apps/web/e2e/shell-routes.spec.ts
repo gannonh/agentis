@@ -33,12 +33,17 @@ async function mockShellRouteData(page: Page, routeName: string) {
         totalRuns: 0,
         activeRuns: 0,
         agentCount: 0,
+        avgScore: null,
+        evaluatedRunCount: 0,
       })
     )
     await page.route(/\/api\/command-center\/roster$/, (route) =>
       fulfillJson(route, [])
     )
     await page.route(/\/api\/command-center\/recent-runs\?limit=20$/, (route) =>
+      fulfillJson(route, [])
+    )
+    await page.route(/\/api\/command-center\/needs-attention$/, (route) =>
       fulfillJson(route, [])
     )
   }

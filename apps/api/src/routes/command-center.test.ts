@@ -82,7 +82,9 @@ describe("command center routes", () => {
     ])
     expect(roster[0]?.lastRunAt).toBeTruthy()
 
-    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    const recentRunsResponse = await app.request(
+      "/api/command-center/recent-runs"
+    )
     expect(recentRunsResponse.status).toBe(200)
     const recentRuns = (await recentRunsResponse.json()) as {
       id: string
@@ -155,12 +157,149 @@ describe("command center routes", () => {
       }),
     ])
 
-    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    const recentRunsResponse = await app.request(
+      "/api/command-center/recent-runs"
+    )
     expect(recentRunsResponse.status).toBe(200)
     expect(await recentRunsResponse.json()).toEqual([
       expect.objectContaining({
         id: thread.run.id,
         evaluationScore: evaluation?.score,
+      }),
+    ])
+  })
+
+  it("returns typed needs-attention items for failed runs, pending suggestions, and low scores", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Attention Agent",
+        systemPrompt: "Surface operational issues",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    const agentConfigurationVersionId =
+      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id
+
+    const failedThread = ctx.repos.threads.createWithInitialRun({
+      title: "Broken workflow",
+      prompt: "Fail this",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    ctx.repos.runs.updateStatus(failedThread.run.id, "failed", {
+      finishedAt: "2026-06-09T12:05:00.000Z",
+      errorSummary: "Tool call failed",
+    })
+
+    const lowScoreThread = ctx.repos.threads.createWithInitialRun({
+      title: "Weak answer",
+      prompt: "Answer poorly",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    ctx.repos.runs.updateStatus(lowScoreThread.run.id, "completed", {
+      finishedAt: "2026-06-09T12:10:00.000Z",
+      cost: MOCK_MODEL_COST_USD,
+    })
+    ctx.repos.runs.saveEvaluation(lowScoreThread.run.id, {
+      rubricId: "rubric_quality",
+      rubricName: "Quality rubric",
+      score: 45,
+      evaluatedAt: "2026-06-09T12:11:00.000Z",
+      criteria: [
+        {
+          criterionId: "criterion_accuracy",
+          criterionName: "Accuracy",
+          weight: 1,
+          score: 45,
+          feedback: "Missed the requested evidence.",
+        },
+      ],
+    })
+
+    const suggestion = ctx.repos.learningSuggestions.create({
+      suggestionType: "memory",
+      title: "Remember citation preference",
+      content: "User prefers citations.",
+      confidence: 0.8,
+      sourceThreadId: failedThread.thread.id,
+      sourceThreadTitle: failedThread.thread.title,
+      agentId: agent.id,
+    })
+
+    const response = await app.request("/api/command-center/needs-attention")
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "failed_run",
+          title: "Run failed: Broken workflow",
+          description: "Tool call failed",
+          href: `/threads/${failedThread.thread.id}`,
+          runId: failedThread.run.id,
+          dismissible: false,
+        }),
+        expect.objectContaining({
+          type: "pending_learning_suggestion",
+          title: "Remember citation preference",
+          href: `/learning?status=pending&suggestionId=${suggestion.id}`,
+          suggestionId: suggestion.id,
+          dismissible: true,
+        }),
+        expect.objectContaining({
+          type: "low_score_run",
+          title: "Low score: Weak answer",
+          description: "45% on Quality rubric",
+          href: `/threads/${lowScoreThread.thread.id}`,
+          runId: lowScoreThread.run.id,
+          score: 45,
+        }),
+      ])
+    )
+  })
+
+  it("returns failed-run needs-attention items when learning and evaluation data are absent", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Partial Queue Agent",
+        systemPrompt: "Fail loudly",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+
+    const failedThread = ctx.repos.threads.createWithInitialRun({
+      title: "Failed only",
+      prompt: "Fail this",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId:
+        ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id,
+    })
+    ctx.repos.runs.updateStatus(failedThread.run.id, "failed", {
+      finishedAt: "2026-06-09T12:05:00.000Z",
+    })
+
+    const response = await app.request("/api/command-center/needs-attention")
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual([
+      expect.objectContaining({
+        type: "failed_run",
+        title: "Run failed: Failed only",
+        href: `/threads/${failedThread.thread.id}`,
       }),
     ])
   })
@@ -188,7 +327,9 @@ describe("command center routes", () => {
         ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id,
     })
 
-    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    const recentRunsResponse = await app.request(
+      "/api/command-center/recent-runs"
+    )
     expect(recentRunsResponse.status).toBe(200)
     expect(await recentRunsResponse.json()).toEqual([])
   })
@@ -201,7 +342,9 @@ describe("command center routes", () => {
     expect(rosterResponse.status).toBe(200)
     expect(await rosterResponse.json()).toEqual([])
 
-    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    const recentRunsResponse = await app.request(
+      "/api/command-center/recent-runs"
+    )
     expect(recentRunsResponse.status).toBe(200)
     expect(await recentRunsResponse.json()).toEqual([])
   })
@@ -251,7 +394,9 @@ describe("command center routes", () => {
     expect(roster).toHaveLength(1)
     expect(roster[0]?.agentId).toBe(agent.id)
 
-    const recentRunsResponse = await app.request("/api/command-center/recent-runs")
+    const recentRunsResponse = await app.request(
+      "/api/command-center/recent-runs"
+    )
     expect(recentRunsResponse.status).toBe(200)
     const recentRuns = (await recentRunsResponse.json()) as { id: string }[]
     expect(recentRuns).toHaveLength(1)

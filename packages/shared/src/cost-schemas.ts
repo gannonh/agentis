@@ -86,6 +86,38 @@ export const commandCenterRecentRunsResponseSchema = z.array(
   commandCenterRecentRunSchema
 )
 
+export const commandCenterNeedsAttentionItemTypeSchema = z.enum([
+  "failed_run",
+  "pending_learning_suggestion",
+  "low_score_run",
+])
+
+export const commandCenterNeedsAttentionSeveritySchema = z.enum([
+  "warning",
+  "critical",
+])
+
+export const commandCenterNeedsAttentionItemSchema = z.object({
+  id: z.string(),
+  type: commandCenterNeedsAttentionItemTypeSchema,
+  title: z.string(),
+  description: z.string(),
+  tag: z.string(),
+  severity: commandCenterNeedsAttentionSeveritySchema,
+  createdAt: z.string(),
+  href: z.string(),
+  dismissible: z.boolean(),
+  agentId: z.string().nullable().optional(),
+  threadId: z.string().nullable().optional(),
+  runId: z.string().nullable().optional(),
+  suggestionId: z.string().nullable().optional(),
+  score: z.number().min(0).max(100).nullable().optional(),
+})
+
+export const commandCenterNeedsAttentionResponseSchema = z.array(
+  commandCenterNeedsAttentionItemSchema
+)
+
 export type RunCostLineItem = z.infer<typeof runCostLineItemSchema>
 export type RunCostBreakdown = z.infer<typeof runCostBreakdownSchema>
 export type AgentUsageResponse = z.infer<typeof agentUsageResponseSchema>
@@ -93,4 +125,9 @@ export type CommandCenterSummary = z.infer<typeof commandCenterSummarySchema>
 export type CommandCenterRosterAgent = z.infer<
   typeof commandCenterRosterAgentSchema
 >
-export type CommandCenterRecentRun = z.infer<typeof commandCenterRecentRunSchema>
+export type CommandCenterRecentRun = z.infer<
+  typeof commandCenterRecentRunSchema
+>
+export type CommandCenterNeedsAttentionItem = z.infer<
+  typeof commandCenterNeedsAttentionItemSchema
+>

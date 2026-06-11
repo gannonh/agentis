@@ -1,12 +1,14 @@
 import { beforeEach, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router"
 import { CommandCenterPage } from "./command-center"
 
-const { useAgentsMock, useCommandCenterMock } = vi.hoisted(() => ({
-  useAgentsMock: vi.fn(),
-  useCommandCenterMock: vi.fn(),
-}))
+const { dismissLearningSuggestionMock, useAgentsMock, useCommandCenterMock } =
+  vi.hoisted(() => ({
+    dismissLearningSuggestionMock: vi.fn(),
+    useAgentsMock: vi.fn(),
+    useCommandCenterMock: vi.fn(),
+  }))
 
 function apiAgent(overrides = {}) {
   return {
@@ -38,8 +40,13 @@ vi.mock("@/hooks/use-command-center", () => ({
   useCommandCenter: useCommandCenterMock,
 }))
 
+vi.mock("@/lib/api/learning-client", () => ({
+  dismissLearningSuggestion: dismissLearningSuggestionMock,
+}))
+
 describe("CommandCenterPage", () => {
   beforeEach(() => {
+    dismissLearningSuggestionMock.mockResolvedValue({})
     useAgentsMock.mockReturnValue({
       agents: [apiAgent()],
       loading: false,
@@ -79,6 +86,22 @@ describe("CommandCenterPage", () => {
             evaluationScore: 86,
           },
         ],
+        needsAttention: [
+          {
+            id: "attention_learning_suggestion_1",
+            type: "pending_learning_suggestion",
+            title: "Remember citation preference",
+            description: "User prefers source-backed answers.",
+            tag: "Pending memory",
+            severity: "warning",
+            createdAt: "2026-06-09T12:05:00.000Z",
+            href: "/learning?status=pending&suggestionId=suggestion_1",
+            dismissible: true,
+            agentId: "agent_api_research",
+            threadId: "thread_1",
+            suggestionId: "suggestion_1",
+          },
+        ],
       },
       loading: false,
       error: null,
@@ -99,7 +122,7 @@ describe("CommandCenterPage", () => {
     expect(
       screen.getByRole("note", { name: "Demo data notice" })
     ).toHaveTextContent(
-      "Score trends, cost breakdown by model, and needs-attention items use seeded workspace data until live eval and queue APIs ship."
+      "Score trends and cost breakdown by model use seeded workspace data until their live chart APIs ship."
     )
     expect(screen.getByText("Agents")).toBeInTheDocument()
     expect(screen.getByText("Active runs")).toBeInTheDocument()
@@ -109,10 +132,14 @@ describe("CommandCenterPage", () => {
     expect(screen.getAllByText("$0.88").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Avg score")).toBeInTheDocument()
     expect(screen.getAllByText("86%").length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByRole("heading", { name: "Agent roster" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Agent roster" })
+    ).toBeInTheDocument()
     expect(screen.getByText("1 agent")).toBeInTheDocument()
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: "API Research Agent" })).toBeInTheDocument()
+      expect(
+        screen.getByRole("link", { name: "API Research Agent" })
+      ).toBeInTheDocument()
     })
     expect(
       screen.queryByRole("link", { name: "Senior Reviewer" })
@@ -121,10 +148,65 @@ describe("CommandCenterPage", () => {
       "href",
       "/threads/thread_1"
     )
-    expect(screen.getByRole("heading", { name: "Needs attention" })).toBeInTheDocument()
-    expect(screen.getByText("1 pending improvement")).toBeInTheDocument()
-    expect(screen.getByText("New Rubric")).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Needs attention" })
+    ).toBeInTheDocument()
+    expect(screen.getByText("1 item needs review")).toBeInTheDocument()
+    expect(screen.getByText("Remember citation preference")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Review" })).toHaveAttribute(
+      "href",
+      "/learning?status=pending&suggestionId=suggestion_1"
+    )
     expect(screen.queryByText("Creating Agent")).not.toBeInTheDocument()
+    expect(screen.queryByText("New Rubric")).not.toBeInTheDocument()
+  })
+
+  it("dismisses pending learning suggestions from the needs-attention panel", async () => {
+    const refresh = vi.fn()
+    useCommandCenterMock.mockReturnValue({
+      data: {
+        summary: {
+          agentCount: 1,
+          activeRuns: 0,
+          totalRuns: 0,
+          totalCostUsd: 0,
+          avgScore: null,
+          evaluatedRunCount: 0,
+        },
+        roster: [],
+        recentRuns: [],
+        needsAttention: [
+          {
+            id: "attention_learning_suggestion_1",
+            type: "pending_learning_suggestion",
+            title: "Remember citation preference",
+            description: "User prefers source-backed answers.",
+            tag: "Pending memory",
+            severity: "warning",
+            createdAt: "2026-06-09T12:05:00.000Z",
+            href: "/learning?status=pending&suggestionId=suggestion_1",
+            dismissible: true,
+            suggestionId: "suggestion_1",
+          },
+        ],
+      },
+      loading: false,
+      error: null,
+      sectionErrors: {},
+      refresh,
+    })
+
+    render(
+      <MemoryRouter>
+        <CommandCenterPage />
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }))
+    await waitFor(() => {
+      expect(dismissLearningSuggestionMock).toHaveBeenCalledWith("suggestion_1")
+      expect(refresh).toHaveBeenCalled()
+    })
   })
 
   it("shows a recoverable error when agents fail to load", () => {
@@ -194,8 +276,12 @@ describe("CommandCenterPage", () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText("Command Center metrics unavailable")).toBeInTheDocument()
-    expect(screen.getByText("Failed to load command center metrics")).toBeInTheDocument()
+    expect(
+      screen.getByText("Command Center metrics unavailable")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Failed to load command center metrics")
+    ).toBeInTheDocument()
     screen.getByRole("button", { name: "Retry loading metrics" }).click()
     expect(refresh).toHaveBeenCalled()
   })
