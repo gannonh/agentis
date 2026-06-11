@@ -20,6 +20,8 @@ describe("command center client", () => {
           totalRuns: 4,
           activeRuns: 1,
           agentCount: 2,
+          avgScore: null,
+          evaluatedRunCount: 0,
         })
       )
     )
@@ -29,6 +31,8 @@ describe("command center client", () => {
       totalRuns: 4,
       activeRuns: 1,
       agentCount: 2,
+      avgScore: null,
+      evaluatedRunCount: 0,
     })
   })
 
@@ -45,6 +49,8 @@ describe("command center client", () => {
               totalCostUsd: 0.5,
               lastRunAt: "2026-06-09T12:00:00.000Z",
               activeRunCount: 0,
+              avgScore: 82,
+              evaluatedRunCount: 2,
             },
           ])
         )
@@ -58,6 +64,7 @@ describe("command center client", () => {
               status: "completed",
               costUsd: 0.25,
               startedAt: "2026-06-09T12:00:00.000Z",
+              evaluationScore: null,
             },
           ])
         )

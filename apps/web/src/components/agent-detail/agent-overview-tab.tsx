@@ -18,6 +18,7 @@ import {
 import type {
   AgentConfigurationVersionSummary,
   AgentDetailResponse,
+  AgentRunEvaluationSummary,
   AgentUsageResponse,
 } from "@workspace/shared"
 import { formatRelativeTime } from "@/fixtures"
@@ -42,6 +43,7 @@ type AgentOverviewTabProps = {
   toolGrants?: AgentOverviewToolGrant[]
   agentId?: string
   configurationVersions?: AgentConfigurationVersionSummary[]
+  evaluations?: AgentRunEvaluationSummary[]
 }
 
 function formatUsd(amount: number): string {
@@ -262,8 +264,8 @@ function EvaluationsEmptyState() {
       />
       <p className="mt-4 text-sm font-medium">No evaluations yet</p>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Rubric-based run scoring is not available yet. When rubrics ship, scores
-        from completed runs will appear here.
+        Create a rubric for this agent in Learning, then completed runs will be
+        scored automatically.
       </p>
       <Button
         render={<Link to="/learning" />}
@@ -275,6 +277,41 @@ function EvaluationsEmptyState() {
         Open Learning
       </Button>
     </div>
+  )
+}
+
+function EvaluationsPanel({
+  evaluations,
+}: {
+  evaluations: AgentRunEvaluationSummary[]
+}) {
+  if (evaluations.length === 0) {
+    return <EvaluationsEmptyState />
+  }
+
+  return (
+    <ol className="mt-4 flex flex-col gap-3" data-testid="evaluations-list">
+      {evaluations.map((evaluation) => (
+        <li
+          key={evaluation.runId}
+          className="rounded-xl border border-border bg-background/60 px-4 py-3"
+          data-testid={`evaluation-item-${evaluation.runId}`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link
+              to={`/threads/${evaluation.threadId}`}
+              className="text-sm font-medium hover:underline"
+            >
+              {evaluation.threadTitle}
+            </Link>
+            <Badge variant="secondary">{evaluation.score}%</Badge>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {evaluation.rubricName} · {formatRelativeTime(evaluation.evaluatedAt)}
+          </p>
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -337,6 +374,7 @@ export function AgentOverviewTab({
   toolGrants,
   agentId,
   configurationVersions,
+  evaluations = [],
 }: AgentOverviewTabProps) {
   const primaryThread = recentThreads[0]
 
@@ -514,7 +552,7 @@ export function AgentOverviewTab({
                 Evaluations
               </h2>
             </div>
-            <EvaluationsEmptyState />
+            <EvaluationsPanel evaluations={evaluations} />
           </section>
 
           <VersionHistoryPanel configurationVersions={configurationVersions} />

@@ -48,7 +48,7 @@ function toRosterAgent(
     qualityTrend: "flat",
     lastRunAt: metrics?.lastRunAt ?? undefined,
     runCount,
-    qualityScore: null,
+    qualityScore: metrics?.avgScore ?? null,
     costPerRun,
     totalCost,
   }
@@ -62,7 +62,7 @@ function metricsFromSummary(
     agents: summary.agentCount,
     active: summary.activeRuns,
     totalRuns: summary.totalRuns,
-    avgScore: null,
+    avgScore: summary.avgScore,
     totalCost: summary.totalCostUsd,
     pending,
   }

@@ -1,25 +1,29 @@
-import type {
-  Artifact,
-  ArtifactVersion,
-  Document,
-  DocumentVersion,
-  LearningRubric,
-  LearningSkill,
-  Message,
-  MessagePart,
-  Project,
-  ProjectMemory,
-  SavedMemory,
-  SavedMemoryCategory,
-  Run,
-  RunStep,
-  RunUsage,
-  Thread,
-  Workspace,
+import {
+  rubricCriterionSchema,
+  runEvaluationSchema,
+  type Artifact,
+  type ArtifactVersion,
+  type Document,
+  type DocumentVersion,
+  type LearningRubric,
+  type LearningSkill,
+  type LearningSuggestion,
+  type Message,
+  type MessagePart,
+  type Project,
+  type ProjectMemory,
+  type SavedMemory,
+  type SavedMemoryCategory,
+  type Run,
+  type RunStep,
+  type RunUsage,
+  type Thread,
+  type Workspace,
 } from "@workspace/shared"
 import type {
   documents,
   documentVersions,
+  learningSuggestions,
   messages,
   projectMemories,
   projects,
@@ -105,6 +109,9 @@ export function mapRun(row: RunRow): Run {
     costUsd: cost,
     costBreakdown: row.costBreakdownJson
       ? (JSON.parse(row.costBreakdownJson) as Run["costBreakdown"])
+      : undefined,
+    evaluation: row.evaluationJson
+      ? runEvaluationSchema.parse(JSON.parse(row.evaluationJson))
       : undefined,
   }
 }
@@ -310,8 +317,31 @@ export function mapLearningRubric(row: RubricRow): LearningRubric {
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
+    description: row.description?.trim() ? row.description : null,
+    criteria: rubricCriterionSchema
+      .array()
+      .parse(JSON.parse(row.criteriaJson || "[]")),
     agentId: row.agentId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+type LearningSuggestionRow = typeof learningSuggestions.$inferSelect
+
+export function mapLearningSuggestion(
+  row: LearningSuggestionRow
+): LearningSuggestion {
+  return {
+    id: row.id,
+    status: row.status as LearningSuggestion["status"],
+    suggestionType: row.suggestionType as LearningSuggestion["suggestionType"],
+    title: row.title,
+    content: row.content,
+    confidence: row.confidence ?? undefined,
+    sourceThreadId: row.sourceThreadId ?? undefined,
+    sourceThreadTitle: row.sourceThreadTitle ?? undefined,
+    agentId: row.agentId ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

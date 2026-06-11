@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { useEffect, useMemo, useState } from "react"
 import type {
   LearningSkill,
+  LearningSuggestion,
   LearningSummary,
   SavedMemory,
   SavedMemoryCategory,
@@ -23,9 +24,12 @@ import type {
 } from "@/fixtures/schema"
 import { listThreads } from "@/lib/api/client"
 import {
+  acceptLearningSuggestion,
+  dismissLearningSuggestion,
   getLearningSummary,
   listLearningMemories,
   listLearningSkills,
+  listLearningSuggestions,
 } from "@/lib/api/learning-client"
 import { updateMemory } from "@/lib/api/memories-client"
 import { EditMemoryDialog } from "@/components/memories/memory-dialogs"
@@ -111,6 +115,57 @@ function toLearningMemory(memory: SavedMemory): Memory {
   }
 }
 
+function toSuggestionCandidate(
+  suggestion: LearningSuggestion,
+  source: LearningConversation,
+  savedMemoryId?: string
+): LearningCandidate {
+  const status =
+    suggestion.status === "pending"
+      ? "suggested"
+      : suggestion.status === "accepted"
+        ? "accepted"
+        : "dismissed"
+
+  return {
+    id: suggestion.id,
+    title: suggestion.title,
+    content: suggestion.content,
+    suggestionType: suggestion.suggestionType,
+    status,
+    confidence: suggestion.confidence ?? 0.75,
+    source: {
+      threadId: source.id,
+      threadTitle: source.title,
+      agentId: source.agentId,
+      agentName: source.agentName,
+    },
+    provenance: {
+      kind: status === "suggested" ? "llm-derived" : "thread-derived",
+      label:
+        status === "suggested"
+          ? "Suggested"
+          : status === "accepted"
+            ? "Accepted"
+            : "Dismissed",
+    },
+    createdBy: "system",
+    savedMemoryId,
+    actions:
+      status === "suggested"
+        ? [
+            {
+              id: "save-memory",
+              label: "Save memory",
+              tone: "primary",
+              icon: "sparkles",
+            },
+            { id: "dismiss", label: "Dismiss", tone: "secondary" },
+          ]
+        : [],
+  }
+}
+
 function toAcceptedMemoryCandidate(
   memory: SavedMemory,
   source: LearningConversation
@@ -138,23 +193,63 @@ function toAcceptedMemoryCandidate(
   }
 }
 
+function resolveConversationSource(
+  conversationsById: Map<string, LearningConversation>,
+  suggestion: LearningSuggestion
+): LearningConversation | null {
+  if (!suggestion.sourceThreadId) return null
+  const existing = conversationsById.get(suggestion.sourceThreadId)
+  if (existing) return existing
+  return {
+    id: suggestion.sourceThreadId,
+    title: suggestion.sourceThreadTitle ?? "Unknown thread",
+    agentId: suggestion.agentId ?? "unassigned",
+    agentName: "Unknown agent",
+    messageCount: 0,
+    updatedAt: suggestion.updatedAt,
+  }
+}
+
 function buildLearningData(
   conversations: LearningConversation[],
   savedMemories: SavedMemory[],
-  categories: SavedMemoryCategory[]
+  categories: SavedMemoryCategory[],
+  suggestions: LearningSuggestion[] = []
 ): LearningData {
   const conversationsById = new Map(
     conversations.map((conversation) => [conversation.id, conversation])
   )
-  const candidates = savedMemories.flatMap((memory) => {
+  const suggestionCandidates = suggestions.flatMap((suggestion) => {
+    const source = resolveConversationSource(conversationsById, suggestion)
+    if (!source) return []
+    const savedMemory = savedMemories.find(
+      (memory) =>
+        memory.sourceThreadId === suggestion.sourceThreadId &&
+        memory.content === suggestion.content
+    )
+    return [toSuggestionCandidate(suggestion, source, savedMemory?.id)]
+  })
+  const coveredMemoryIds = new Set(
+    suggestionCandidates
+      .map((candidate) => candidate.savedMemoryId)
+      .filter((memoryId): memoryId is string => Boolean(memoryId))
+  )
+  const legacyMemoryCandidates = savedMemories.flatMap((memory) => {
     if (memory.source !== "thread-derived" || !memory.sourceThreadId) return []
+    if (coveredMemoryIds.has(memory.id)) return []
+    const hasSuggestion = suggestions.some(
+      (suggestion) =>
+        suggestion.sourceThreadId === memory.sourceThreadId &&
+        suggestion.content === memory.content
+    )
+    if (hasSuggestion) return []
     const source = conversationsById.get(memory.sourceThreadId)
     return source ? [toAcceptedMemoryCandidate(memory, source)] : []
   })
 
   return {
     conversations,
-    candidates,
+    candidates: [...suggestionCandidates, ...legacyMemoryCandidates],
     memories: savedMemories.map(toLearningMemory),
     savedMemories,
     categories,
@@ -164,12 +259,14 @@ function buildLearningData(
 function buildApiLearningData(
   threads: ThreadListItem[],
   savedMemories: SavedMemory[],
-  categories: SavedMemoryCategory[]
+  categories: SavedMemoryCategory[],
+  suggestions: LearningSuggestion[] = []
 ): LearningData {
   return buildLearningData(
     threads.map(toLearningConversation),
     savedMemories,
-    categories
+    categories,
+    suggestions
   )
 }
 
@@ -237,55 +334,66 @@ export function LearningPage(): ReactElement {
   const [editingMemory, setEditingMemory] = useState<SavedMemory | null>(null)
   const [savingMemory, setSavingMemory] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  const [actionPendingId, setActionPendingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  async function reloadLearningData() {
+    const [threadsResult, memoriesResult, summaryResult, skillsResult, suggestionsResult] =
+      await Promise.allSettled([
+        listThreads(),
+        listLearningMemories({ page: 1, pageSize: 100 }),
+        getLearningSummary(),
+        listLearningSkills({ page: 1, pageSize: 5 }),
+        listLearningSuggestions({ page: 1, pageSize: 100 }),
+      ])
+
+    const nextErrors: LearningLoadErrors = {}
+
+    if (
+      threadsResult.status === "fulfilled" &&
+      memoriesResult.status === "fulfilled"
+    ) {
+      const suggestions =
+        suggestionsResult.status === "fulfilled"
+          ? suggestionsResult.value.suggestions
+          : []
+      setLearningData(
+        buildApiLearningData(
+          threadsResult.value,
+          memoriesResult.value.memories,
+          memoriesResult.value.categories,
+          suggestions
+        )
+      )
+    } else {
+      nextErrors.core = "Learning conversations and memories could not load."
+      setLearningData(EMPTY_LEARNING_DATA)
+    }
+
+    if (summaryResult.status === "fulfilled") {
+      setLearningSummary(summaryResult.value)
+    } else {
+      nextErrors.summary = "Learning summary could not load."
+      setLearningSummary(deriveSummaryFallback(memoriesResult, skillsResult))
+    }
+
+    if (skillsResult.status === "fulfilled") {
+      setSkills(skillsResult.value.skills)
+    } else {
+      nextErrors.skills = "Skills could not load."
+      setSkills([])
+    }
+
+    setLoadErrors(nextErrors)
+    setLoading(false)
+  }
 
   useEffect(() => {
     let cancelled = false
 
     async function loadLearningData() {
-      const [threadsResult, memoriesResult, summaryResult, skillsResult] =
-        await Promise.allSettled([
-          listThreads(),
-          listLearningMemories({ page: 1, pageSize: 100 }),
-          getLearningSummary(),
-          listLearningSkills({ page: 1, pageSize: 5 }),
-        ])
-
       if (cancelled) return
-
-      const nextErrors: LearningLoadErrors = {}
-
-      if (
-        threadsResult.status === "fulfilled" &&
-        memoriesResult.status === "fulfilled"
-      ) {
-        setLearningData(
-          buildApiLearningData(
-            threadsResult.value,
-            memoriesResult.value.memories,
-            memoriesResult.value.categories
-          )
-        )
-      } else {
-        nextErrors.core = "Learning conversations and memories could not load."
-        setLearningData(EMPTY_LEARNING_DATA)
-      }
-
-      if (summaryResult.status === "fulfilled") {
-        setLearningSummary(summaryResult.value)
-      } else {
-        nextErrors.summary = "Learning summary could not load."
-        setLearningSummary(deriveSummaryFallback(memoriesResult, skillsResult))
-      }
-
-      if (skillsResult.status === "fulfilled") {
-        setSkills(skillsResult.value.skills)
-      } else {
-        nextErrors.skills = "Skills could not load."
-        setSkills([])
-      }
-
-      setLoadErrors(nextErrors)
-      setLoading(false)
+      await reloadLearningData()
     }
 
     void loadLearningData()
@@ -324,17 +432,8 @@ export function LearningPage(): ReactElement {
     setEditError(null)
 
     try {
-      const updated = await updateMemory(memoryId, input)
-      setLearningData((current) => {
-        const savedMemories = current.savedMemories.map((memory) =>
-          memory.id === updated.id ? updated : memory
-        )
-        return buildLearningData(
-          current.conversations,
-          savedMemories,
-          current.categories
-        )
-      })
+      await updateMemory(memoryId, input)
+      await reloadLearningData()
       setEditingMemory(null)
     } catch (updateMemoryError) {
       setEditError(
@@ -344,6 +443,42 @@ export function LearningPage(): ReactElement {
       )
     } finally {
       setSavingMemory(false)
+    }
+  }
+
+  async function handleAcceptCandidate(candidate: LearningCandidate): Promise<void> {
+    setActionPendingId(candidate.id)
+    setActionError(null)
+    try {
+      await acceptLearningSuggestion(candidate.id)
+      await reloadLearningData()
+    } catch (acceptError) {
+      setActionError(
+        acceptError instanceof Error
+          ? acceptError.message
+          : "Failed to accept suggestion"
+      )
+    } finally {
+      setActionPendingId(null)
+    }
+  }
+
+  async function handleDismissCandidate(
+    candidate: LearningCandidate
+  ): Promise<void> {
+    setActionPendingId(candidate.id)
+    setActionError(null)
+    try {
+      await dismissLearningSuggestion(candidate.id)
+      await reloadLearningData()
+    } catch (dismissError) {
+      setActionError(
+        dismissError instanceof Error
+          ? dismissError.message
+          : "Failed to dismiss suggestion"
+      )
+    } finally {
+      setActionPendingId(null)
     }
   }
 
@@ -408,6 +543,12 @@ export function LearningPage(): ReactElement {
         </p>
       ) : null}
 
+      {actionError ? (
+        <p className="text-xs text-destructive" role="alert">
+          {actionError}
+        </p>
+      ) : null}
+
       <AgentFilterBar
         value={agentFilter}
         agents={filterAgents}
@@ -439,6 +580,13 @@ export function LearningPage(): ReactElement {
               key={conversation.id}
               conversation={conversation}
               candidates={candidatesByThreadId[conversation.id]}
+              actionPendingId={actionPendingId}
+              onAccept={(candidate) => {
+                void handleAcceptCandidate(candidate)
+              }}
+              onDismiss={(candidate) => {
+                void handleDismissCandidate(candidate)
+              }}
               onEditMemory={(candidate) => {
                 const memory = candidate.savedMemoryId
                   ? memoriesById.get(candidate.savedMemoryId)

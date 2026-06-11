@@ -33,6 +33,44 @@ function getAssociatedAgents(input: {
 export class SavedMemoryRepository {
   constructor(private readonly db: AppDatabase) {}
 
+  createFromThread(input: {
+    content: string
+    category: SavedMemoryCategoryKey
+    importance: SavedMemory["importance"]
+    usageGuidance: string
+    tags: string[]
+    scope: "global" | "agent"
+    associatedAgent?: string
+    sourceThreadId: string
+    sourceThreadTitle: string
+    pinnedToContext: boolean
+  }): SavedMemory {
+    const now = nowIso()
+    const associatedAgents = getAssociatedAgents(input)
+    const row = {
+      id: createId("memory"),
+      content: input.content,
+      category: input.category,
+      usageGuidance: input.usageGuidance,
+      tagsJson: JSON.stringify(input.tags),
+      importance: input.importance,
+      date: now.slice(0, 10),
+      scope: input.scope,
+      associatedAgent: associatedAgents[0] ?? null,
+      associatedAgentsJson: JSON.stringify(associatedAgents),
+      source: "thread-derived",
+      sourceThreadId: input.sourceThreadId,
+      sourceThreadTitle: input.sourceThreadTitle,
+      provenance: `Accepted from ${input.sourceThreadTitle}`,
+      pinnedToContext: input.pinnedToContext,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    this.db.insert(savedMemories).values(row).run()
+    return mapSavedMemory(row)
+  }
+
   create(input: CreateSavedMemoryRequest): SavedMemory {
     const now = nowIso()
     const associatedAgents = getAssociatedAgents(input)

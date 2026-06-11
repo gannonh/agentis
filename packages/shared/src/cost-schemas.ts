@@ -46,6 +46,8 @@ export const commandCenterSummarySchema = z.object({
   totalRuns: z.number().int().nonnegative(),
   activeRuns: z.number().int().nonnegative(),
   agentCount: z.number().int().nonnegative(),
+  avgScore: z.number().min(0).max(100).nullable(),
+  evaluatedRunCount: z.number().int().nonnegative(),
 })
 
 export const commandCenterRosterAgentSchema = z.object({
@@ -54,6 +56,8 @@ export const commandCenterRosterAgentSchema = z.object({
   totalCostUsd: nonNegativeNumber,
   lastRunAt: z.string().nullable(),
   activeRunCount: z.number().int().nonnegative(),
+  avgScore: z.number().min(0).max(100).nullable(),
+  evaluatedRunCount: z.number().int().nonnegative(),
 })
 
 export const commandCenterRosterResponseSchema = z.array(
@@ -75,6 +79,7 @@ export const commandCenterRecentRunSchema = z.object({
   ]),
   costUsd: nonNegativeNumber,
   startedAt: z.string(),
+  evaluationScore: z.number().min(0).max(100).nullable(),
 })
 
 export const commandCenterRecentRunsResponseSchema = z.array(

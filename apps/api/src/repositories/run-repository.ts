@@ -1,13 +1,16 @@
 import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
-import type {
-  AgentUsageResponse,
-  CommandCenterRecentRun,
-  CommandCenterRosterAgent,
-  CommandCenterSummary,
-  Run,
-  RunCostBreakdown,
-  RunStatus,
-  RunUsage,
+import {
+  runEvaluationSchema,
+  type AgentRunEvaluationSummary,
+  type AgentUsageResponse,
+  type CommandCenterRecentRun,
+  type CommandCenterRosterAgent,
+  type CommandCenterSummary,
+  type Run,
+  type RunCostBreakdown,
+  type RunEvaluation,
+  type RunStatus,
+  type RunUsage,
 } from "@workspace/shared"
 import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
@@ -65,6 +68,7 @@ export class RunRepository {
       usageJson: null,
       cost: null,
       costBreakdownJson: null,
+      evaluationJson: null,
     }
     this.db.insert(runs).values(row).run()
     return mapRun(row)
@@ -112,6 +116,7 @@ export class RunRepository {
         usageJson: runs.usageJson,
         cost: runs.cost,
         costBreakdownJson: runs.costBreakdownJson,
+        evaluationJson: runs.evaluationJson,
         rank: sql<number>`row_number() over (partition by ${runs.threadId} order by ${runs.startedAt} desc, ${runs.id} desc)`.as(
           "rank"
         ),
@@ -134,6 +139,7 @@ export class RunRepository {
         usageJson: rankedRuns.usageJson,
         cost: rankedRuns.cost,
         costBreakdownJson: rankedRuns.costBreakdownJson,
+        evaluationJson: rankedRuns.evaluationJson,
       })
       .from(rankedRuns)
       .where(eq(rankedRuns.rank, 1))
@@ -181,6 +187,59 @@ export class RunRepository {
       .run()
 
     return this.getById(id)
+  }
+
+  saveEvaluation(runId: string, evaluation: RunEvaluation): Run | null {
+    const existing = this.getById(runId)
+    if (!existing) return null
+
+    const serialized = JSON.stringify(runEvaluationSchema.parse(evaluation))
+    this.db
+      .update(runs)
+      .set({ evaluationJson: serialized })
+      .where(eq(runs.id, runId))
+      .run()
+
+    return this.getById(runId)
+  }
+
+  listEvaluationsForAgent(
+    agentId: string,
+    limit = 10
+  ): AgentRunEvaluationSummary[] {
+    const boundedLimit = Math.min(Math.max(limit, 1), 50)
+    return this.db
+      .select({
+        runId: runs.id,
+        threadId: runs.threadId,
+        threadTitle: threads.title,
+        evaluationJson: runs.evaluationJson,
+      })
+      .from(runs)
+      .innerJoin(threads, eq(runs.threadId, threads.id))
+      .where(
+        and(
+          eq(runs.agentId, agentId),
+          eq(runs.status, "completed"),
+          sql`${runs.evaluationJson} is not null`
+        )
+      )
+      .orderBy(desc(runs.startedAt), desc(runs.id))
+      .limit(boundedLimit)
+      .all()
+      .map((row) => {
+        const evaluation = runEvaluationSchema.parse(
+          JSON.parse(row.evaluationJson!)
+        )
+        return {
+          runId: row.runId,
+          threadId: row.threadId,
+          threadTitle: row.threadTitle,
+          score: evaluation.score,
+          rubricName: evaluation.rubricName,
+          evaluatedAt: evaluation.evaluatedAt,
+        }
+      })
   }
 
   getAgentUsage(agentId: string, periodDays = 14): AgentUsageResponse {
@@ -273,6 +332,7 @@ export class RunRepository {
     const completedRows = this.db
       .select({
         cost: runs.cost,
+        evaluationJson: runs.evaluationJson,
       })
       .from(runs)
       .where(eq(runs.status, "completed"))
@@ -287,12 +347,28 @@ export class RunRepository {
     const totalCostUsd = roundCostUsd(
       completedRows.reduce((total, row) => total + (row.cost ?? 0), 0)
     )
+    const evaluatedRuns = completedRows
+      .map((row) =>
+        row.evaluationJson
+          ? runEvaluationSchema.parse(JSON.parse(row.evaluationJson))
+          : null
+      )
+      .filter((evaluation): evaluation is RunEvaluation => evaluation !== null)
+    const avgScore =
+      evaluatedRuns.length === 0
+        ? null
+        : Math.round(
+            evaluatedRuns.reduce((total, evaluation) => total + evaluation.score, 0) /
+              evaluatedRuns.length
+          )
 
     return {
       totalCostUsd,
       totalRuns: completedRows.length,
       activeRuns,
       agentCount,
+      avgScore,
+      evaluatedRunCount: evaluatedRuns.length,
     }
   }
 
@@ -311,6 +387,14 @@ export class RunRepository {
         lastRunAt: sql<string | null>`max(${runs.startedAt})`,
         activeRunCount:
           sql<number>`sum(case when ${runs.status} in ('queued', 'running', 'tool-calling') then 1 else 0 end)`.mapWith(
+            Number
+          ),
+        evaluatedRunCount:
+          sql<number>`sum(case when ${runs.status} = 'completed' and ${runs.evaluationJson} is not null then 1 else 0 end)`.mapWith(
+            Number
+          ),
+        avgScore:
+          sql<number | null>`avg(case when ${runs.status} = 'completed' and ${runs.evaluationJson} is not null then json_extract(${runs.evaluationJson}, '$.score') end)`.mapWith(
             Number
           ),
       })
@@ -332,6 +416,11 @@ export class RunRepository {
         totalCostUsd: roundCostUsd(row.totalCostUsd),
         lastRunAt: row.lastRunAt,
         activeRunCount: row.activeRunCount,
+        evaluatedRunCount: row.evaluatedRunCount,
+        avgScore:
+          row.evaluatedRunCount > 0 && row.avgScore != null
+            ? Math.round(row.avgScore)
+            : null,
       }))
   }
 
@@ -346,6 +435,7 @@ export class RunRepository {
         cost: runs.cost,
         startedAt: runs.startedAt,
         title: threads.title,
+        evaluationJson: runs.evaluationJson,
       })
       .from(runs)
       .innerJoin(threads, eq(runs.threadId, threads.id))
@@ -358,14 +448,20 @@ export class RunRepository {
       .orderBy(desc(runs.startedAt), desc(runs.id))
       .limit(boundedLimit)
       .all()
-      .map((row) => ({
-        id: row.id,
-        threadId: row.threadId,
-        agentId: row.agentId,
-        title: row.title,
-        status: row.status as RunStatus,
-        costUsd: roundCostUsd(row.cost ?? 0),
-        startedAt: row.startedAt,
-      }))
+      .map((row) => {
+        const evaluation = row.evaluationJson
+          ? runEvaluationSchema.parse(JSON.parse(row.evaluationJson))
+          : null
+        return {
+          id: row.id,
+          threadId: row.threadId,
+          agentId: row.agentId,
+          title: row.title,
+          status: row.status as RunStatus,
+          costUsd: roundCostUsd(row.cost ?? 0),
+          startedAt: row.startedAt,
+          evaluationScore: evaluation?.score ?? null,
+        }
+      })
   }
 }

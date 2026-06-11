@@ -28,12 +28,18 @@ type LearningConversationRowProps = {
   conversation: LearningConversation
   candidates?: LearningCandidate[]
   onEditMemory?: (candidate: LearningCandidate) => void
+  onAccept?: (candidate: LearningCandidate) => void
+  onDismiss?: (candidate: LearningCandidate) => void
+  actionPendingId?: string | null
 }
 
 export function LearningConversationRow({
   conversation,
   candidates = [],
   onEditMemory,
+  onAccept,
+  onDismiss,
+  actionPendingId = null,
 }: LearningConversationRowProps): ReactElement {
   const [expanded, setExpanded] = useState(false)
   const hasSuggestions = candidates.length > 0
@@ -112,6 +118,9 @@ export function LearningConversationRow({
             <LearningCandidatesSection
               candidates={candidates}
               onEditMemory={onEditMemory}
+              onAccept={onAccept}
+              onDismiss={onDismiss}
+              actionPendingId={actionPendingId}
             />
           ) : (
             <p className="text-xs text-muted-foreground">

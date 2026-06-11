@@ -2,7 +2,9 @@ import { z } from "zod"
 import {
   memoriesListResponseSchema,
   savedMemoryCategoryKeySchema,
+  savedMemoryImportanceSchema,
   savedMemorySchema,
+  savedMemoryScopeSchema,
 } from "./schemas.js"
 
 export const learningSummarySchema = z.object({
@@ -23,14 +25,52 @@ export const learningSkillSchema = z.object({
   updatedAt: z.string(),
 })
 
+export const rubricCriterionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  weight: z.number().positive(),
+})
+
 export const learningRubricSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
+  criteria: z.array(rubricCriterionSchema),
   agentId: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
+
+export const rubricCriterionInputSchema = z.object({
+  id: z.string().trim().min(1).optional(),
+  name: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+  weight: z.number().positive(),
+})
+
+export const createLearningRubricRequestSchema = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+  criteria: z.array(rubricCriterionInputSchema).min(1),
+  agentId: z.string().trim().min(1).optional(),
+})
+
+export const updateLearningRubricRequestSchema = z
+  .object({
+    name: z.string().trim().min(1).optional(),
+    description: z.string().trim().nullable().optional(),
+    criteria: z.array(rubricCriterionInputSchema).min(1).optional(),
+    agentId: z.string().trim().min(1).nullable().optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.description !== undefined ||
+      value.criteria !== undefined ||
+      value.agentId !== undefined,
+    { message: "At least one field is required" }
+  )
 
 export const learningPaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -72,7 +112,14 @@ export const learningMemoriesQuerySchema = learningPaginationQuerySchema.extend(
 
 export type LearningSummary = z.infer<typeof learningSummarySchema>
 export type LearningSkill = z.infer<typeof learningSkillSchema>
+export type RubricCriterion = z.infer<typeof rubricCriterionSchema>
 export type LearningRubric = z.infer<typeof learningRubricSchema>
+export type CreateLearningRubricRequest = z.infer<
+  typeof createLearningRubricRequestSchema
+>
+export type UpdateLearningRubricRequest = z.infer<
+  typeof updateLearningRubricRequestSchema
+>
 export type LearningSkillsListResponse = z.infer<
   typeof learningSkillsListResponseSchema
 >
@@ -84,4 +131,69 @@ export type LearningMemoriesListResponse = z.infer<
 >
 export type CreateLearningSkillRequest = z.infer<
   typeof createLearningSkillRequestSchema
+>
+
+export const learningSuggestionStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "dismissed",
+])
+
+export const learningSuggestionTypeSchema = z.enum(["memory", "skill"])
+
+export const learningSuggestionSchema = z.object({
+  id: z.string(),
+  status: learningSuggestionStatusSchema,
+  suggestionType: learningSuggestionTypeSchema,
+  title: z.string(),
+  content: z.string(),
+  confidence: z.number().min(0).max(1).nullable().optional(),
+  sourceThreadId: z.string().nullable().optional(),
+  sourceThreadTitle: z.string().nullable().optional(),
+  agentId: z.string().nullable().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export const learningSuggestionsQuerySchema =
+  learningPaginationQuerySchema.extend({
+    status: learningSuggestionStatusSchema.optional(),
+    threadId: z.string().trim().min(1).optional(),
+  })
+
+export const learningSuggestionsListResponseSchema =
+  learningPaginatedMetaSchema.extend({
+    suggestions: z.array(learningSuggestionSchema),
+  })
+
+export const acceptLearningSuggestionRequestSchema = z.object({
+  content: z.string().trim().min(1).optional(),
+  category: savedMemoryCategoryKeySchema.optional(),
+  usageGuidance: z.string().optional(),
+  importance: savedMemoryImportanceSchema.optional(),
+  scope: savedMemoryScopeSchema.optional(),
+  pinnedToContext: z.boolean().optional(),
+})
+
+export const acceptLearningSuggestionResponseSchema = z.object({
+  suggestion: learningSuggestionSchema,
+  savedMemoryId: z.string().optional(),
+  skillId: z.string().optional(),
+})
+
+export type LearningSuggestionStatus = z.infer<
+  typeof learningSuggestionStatusSchema
+>
+export type LearningSuggestionType = z.infer<
+  typeof learningSuggestionTypeSchema
+>
+export type LearningSuggestion = z.infer<typeof learningSuggestionSchema>
+export type LearningSuggestionsListResponse = z.infer<
+  typeof learningSuggestionsListResponseSchema
+>
+export type AcceptLearningSuggestionRequest = z.infer<
+  typeof acceptLearningSuggestionRequestSchema
+>
+export type AcceptLearningSuggestionResponse = z.infer<
+  typeof acceptLearningSuggestionResponseSchema
 >

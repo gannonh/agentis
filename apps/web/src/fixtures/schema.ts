@@ -122,6 +122,7 @@ export const rubricSchema = z.object({
 })
 
 export const memoryProvenanceKindSchema = z.enum([
+  "llm-derived",
   "mocked-llm-derived",
   "mocked-saved-memory",
   "thread-derived",

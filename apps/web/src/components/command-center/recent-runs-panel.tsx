@@ -39,6 +39,9 @@ export function RecentRunsPanel({
                 >
                   <span className="font-medium">{run.title}</span>
                   <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                    {run.evaluationScore != null
+                      ? `${run.evaluationScore}% · `
+                      : ""}
                     ${run.costUsd.toFixed(2)} · {formatRelativeTime(run.startedAt)}
                   </span>
                 </Link>

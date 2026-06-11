@@ -28,6 +28,7 @@ import {
   resolveNativeRuntimeCapabilities,
 } from "../native-tools/native-tool-capability-catalog.js"
 import { finalizeResearchBriefIfNeeded } from "./research-brief-finalizer.js"
+import { maybeGenerateLearningSuggestions } from "./learning-suggestion-generator.js"
 import { buildWebSearchTools } from "../native-tools/web-search-tools.js"
 import { WebSearchError } from "../research/web-search-provider.js"
 import { WebSearchService } from "../research/web-search-service.js"
@@ -78,6 +79,7 @@ import {
 import { RunCostLedger } from "../cost/run-cost-ledger.js"
 import { createGatewayLanguageModel } from "./gateway-model.js"
 import { createMockDocumentRunSuffix } from "./mock-document-run.js"
+import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
 import {
   composioToolNameToToolkit,
   formatToolStepTitle,
@@ -990,6 +992,15 @@ export class RunExecutor {
             status: "completed",
             title: "Completed",
           })
+          maybeGenerateLearningSuggestions({
+            repos: this.repos,
+            mockRuntime: this.config.mockRuntime,
+            run,
+            thread,
+            latestUserPrompt,
+            assistantParts,
+          })
+          evaluateCompletedRun(this.repos, runId)
         }
         this.repos.threads.touch(run.threadId, { status: "active" })
       },

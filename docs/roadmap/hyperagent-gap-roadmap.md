@@ -19,9 +19,9 @@
 | New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed threads; simpler home | Medium |
 | Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, document links in transcript, durable-artifact sidebar; inline Working Doc panel still missing | Medium–High |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
-| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, and evaluation empty states | Medium |
-| Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, and recent runs; scores and needs-attention still pending | Medium |
-| Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed read models with empty states; suggestion review actions still pending | Medium |
+| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, and run evaluation scores on Overview when rubrics exist | Medium |
+| Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, recent runs, and avg score from evaluations; needs-attention queue still pending (HA-GAP-07) | Medium |
+| Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed skills, memories, rubrics, post-run suggestions with accept/dismiss, and accepted-memory context injection | Low–Medium |
 | Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed; fixture catalog UI | Medium |
 | Projects | Sidebar grouping, thread counts, per-project threads | API-backed | Low |
 | Search (⌘K) | Global search entry point | Placeholder route | Medium |
@@ -74,11 +74,11 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 | HA-GAP-02 | Command Center live metrics wire-up | Shipped ([#418](https://github.com/gannonh/agentis/issues/418)) |
 | HA-GAP-03 | Agent detail observability panel | Shipped ([#419](https://github.com/gannonh/agentis/issues/419)) |
 | HA-GAP-04 | Learning dashboard API (read path) | Shipped ([#420](https://github.com/gannonh/agentis/issues/420)) |
-| HA-GAP-05 | Post-run learning suggestions + accept/dismiss | [#421](https://github.com/gannonh/agentis/issues/421) |
-| HA-GAP-06 | Rubrics and run evaluation scoring | [#422](https://github.com/gannonh/agentis/issues/422) |
+| HA-GAP-05 | Post-run learning suggestions + accept/dismiss | Shipped on `feat/wave1-421-422-integration` ([#421](https://github.com/gannonh/agentis/issues/421)) |
+| HA-GAP-06 | Rubrics and run evaluation scoring | Shipped on `feat/wave1-421-422-integration` ([#422](https://github.com/gannonh/agentis/issues/422)) |
 | HA-GAP-07 | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) |
 
-**Gate:** Wave 0 (#412–#415) and HA-GAP-01 through HA-GAP-04 (#417–#420) are complete. HA-GAP-05 and HA-GAP-06 can proceed in parallel.
+**Gate:** Wave 0 (#412–#415) and HA-GAP-01 through HA-GAP-06 (#417–#422) are complete on `feat/wave1-421-422-integration`. HA-GAP-07 (#423) is unblocked.
 
 **Dependency graph** (mirrored as GitHub blocked-by links):
 
@@ -110,8 +110,8 @@ flowchart LR
 | #418 | Shipped | — |
 | #419 | Shipped | — |
 | #420 | Shipped | — |
-| #421 | #420 | #422 |
-| #422 | #420 | #421 |
+| #421 | Shipped | — |
+| #422 | Shipped | — |
 | #423 | #421, #422 | — |
 
 #### HA-GAP-01: Run cost attribution API
@@ -138,14 +138,14 @@ flowchart LR
 
 **HyperAgent reference:** `/command-center` — agent roster table (runs, quality, cost/run, last active), cost breakdown, recent runs, needs-attention count.
 
-**Agentis today:** Shipped. `command-center.tsx` reads API summary, roster, and recent-run data; score panels remain placeholders until HA-GAP-06.
+**Agentis today:** Shipped. `command-center.tsx` reads API summary, roster, and recent-run data including `avgScore` from run evaluations (HA-GAP-06). Needs-attention queue remains pending until HA-GAP-07.
 
 **Goal:** Replace fixture metrics with HA-GAP-01 aggregates; keep existing component schema.
 
 **Demo:** Run 3 threads → Command Center shows non-zero runs, cost, and last-active without seed fixtures.
 
 **Acceptance:**
-- [x] Summary cards use API only (agents, active, total runs, avg score placeholder, total cost).
+- [x] Summary cards use API only (agents, active, total runs, avg score, total cost).
 - [x] Agent roster rows show real run counts, cost, last active from API.
 - [x] Recent runs panel lists API runs with cost + deep links.
 - [x] Empty states when no runs (no silent fixture fallback).
@@ -159,7 +159,7 @@ flowchart LR
 
 **HyperAgent reference:** Sales Prospector → Overview observability: cost chart, usage by model, evaluations section, version history.
 
-**Agentis today:** Shipped. Agent detail Overview loads usage from `GET /api/agents/:agentId/usage`, shows usage by model, and keeps explicit empty states for evaluations.
+**Agentis today:** Shipped. Agent detail Overview loads usage from `GET /api/agents/:agentId/usage`, shows usage by model, and displays evaluation scores when rubric-scored runs exist (HA-GAP-06).
 
 **Goal:** Agent detail Overview tab shows real usage chart + cost breakdown for that agent.
 
@@ -167,7 +167,7 @@ flowchart LR
 
 **Acceptance:**
 - [x] Overview tab charts call agent usage API.
-- [x] Evaluations section shows empty state with CTA until HA-GAP-06 ships.
+- [x] Evaluations section shows scores when rubric evaluations exist; empty state otherwise.
 - [x] Version history lists agent config versions from DB (or explicit empty if not stored yet — sub-slice OK).
 
 **Depends on:** HA-GAP-01.
@@ -200,18 +200,18 @@ flowchart LR
 
 **HyperAgent reference:** Learning → pending suggestions from threads; Command Center → "17 pending improvements" (memory + rubric proposals).
 
-**Agentis today:** No suggestion pipeline.
+**Agentis today:** Shipped on `feat/wave1-421-422-integration`. Post-run heuristics create pending suggestions; Learning UI supports accept, edit, and dismiss; accepted memories inject into run context.
 
 **Goal:** After run completion, create reviewable memory/skill suggestions; user accepts or dismisses in Learning.
 
 **Demo:** Finish a thread where user states a preference → Learning shows 1 pending memory → Accept → memory appears in agent context on next run.
 
 **Acceptance:**
-- [ ] Suggestion records with `pending | accepted | dismissed`, source run/thread, type.
-- [ ] Post-run job (sync OK for MVP) creates suggestions from heuristics or model summary.
-- [ ] Learning UI: accept, edit, dismiss actions persist.
-- [ ] Accepted memories inject into run context assembly.
-- [ ] Dismissed suggestions stay dismissed.
+- [x] Suggestion records with `pending | accepted | dismissed`, source run/thread, type.
+- [x] Post-run job (sync OK for MVP) creates suggestions from heuristics or model summary.
+- [x] Learning UI: accept, edit, dismiss actions persist.
+- [x] Accepted memories inject into run context assembly.
+- [x] Dismissed suggestions stay dismissed.
 
 **Depends on:** HA-GAP-04.
 
@@ -221,16 +221,16 @@ flowchart LR
 
 **HyperAgent reference:** Agent eval section; Command Center avg score + score trends; Learning rubrics browser.
 
-**Agentis today:** Rubric fixtures only.
+**Agentis today:** Shipped on `feat/wave1-421-422-integration`. Rubric CRUD with weighted criteria, post-run evaluator persists `run.evaluation`, and Command Center/agent detail show scores.
 
 **Goal:** CRUD rubrics per agent; score completed runs; surface scores in Command Center.
 
 **Demo:** Create rubric on agent → run thread → evaluation score appears on run + Command Center avg score updates.
 
 **Acceptance:**
-- [ ] Rubric CRUD API with weighted criteria.
-- [ ] Post-run evaluator produces score + criterion feedback (mock-runtime deterministic).
-- [ ] Run detail and Command Center display scores.
+- [x] Rubric CRUD API with weighted criteria.
+- [x] Post-run evaluator produces score + criterion feedback (mock-runtime deterministic).
+- [x] Run detail and Command Center display scores.
 - [ ] Low-score runs can appear in needs-attention (HA-GAP-07).
 
 **Depends on:** HA-GAP-04; pairs with HA-GAP-01 for cost-aware quality metrics later.
@@ -751,6 +751,6 @@ flowchart TD
 
 ## Next steps
 
-1. Continue Wave 1 with HA-GAP-05 (#421) and HA-GAP-06 (#422) in parallel.
-2. Follow with HA-GAP-07 (#423) once suggestions and rubrics produce live attention signals.
-3. Keep this roadmap aligned as Wave 1 issues ship.
+1. Ship HA-GAP-07 (#423) — needs-attention queue combining pending suggestions, failed runs, and low evaluation scores.
+2. Open Wave 2 with HA-GAP-08 (thread artifact panel) and HA-GAP-09 (global search) in parallel where possible.
+3. Keep this roadmap aligned as Wave 1 closes and integration branch merges to `main`.
