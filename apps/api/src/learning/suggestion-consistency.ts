@@ -72,6 +72,17 @@ export function healStalePendingSuggestion(
   return healed
 }
 
+export function filterVisiblePendingSuggestions(
+  repos: Repositories,
+  suggestions: LearningSuggestion[]
+): LearningSuggestion[] {
+  return suggestions.filter(
+    (suggestion) =>
+      suggestion.status === "pending" &&
+      !isSuggestionSupersededByMemory(repos, suggestion)
+  )
+}
+
 export function healStalePendingSuggestions(
   repos: Repositories,
   suggestions: LearningSuggestion[]

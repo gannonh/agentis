@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router"
 import type {
   CommandCenterCostBreakdownResponse,
@@ -140,6 +140,7 @@ export function useCommandCenter() {
   const [sectionErrors, setSectionErrors] =
     useState<CommandCenterSectionErrors>({})
   const loading = loadedKey !== location.key
+  const latestRequestIdRef = useRef(0)
 
   const applyLoadResult = useCallback((result: CommandCenterLoadResult) => {
     setData(result.data)
@@ -148,23 +149,25 @@ export function useCommandCenter() {
   }, [])
 
   const refresh = useCallback(async () => {
+    const requestId = ++latestRequestIdRef.current
     setLoadedKey(null)
     setError(null)
     setSectionErrors({})
     const result = await fetchCommandCenterData()
+    if (requestId !== latestRequestIdRef.current) return
     applyLoadResult(result)
     setLoadedKey(location.key)
   }, [applyLoadResult, location.key])
 
   useEffect(() => {
-    let active = true
+    const requestId = ++latestRequestIdRef.current
     void fetchCommandCenterData().then((result) => {
-      if (!active) return
+      if (requestId !== latestRequestIdRef.current) return
       applyLoadResult(result)
       setLoadedKey(location.key)
     })
     return () => {
-      active = false
+      latestRequestIdRef.current += 1
     }
   }, [applyLoadResult, location.key])
 

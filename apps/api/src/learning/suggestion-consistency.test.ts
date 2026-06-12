@@ -3,6 +3,7 @@ import { acceptLearningSuggestion } from "./learning-suggestion-service.js"
 import {
   syncPendingLearningSuggestions,
   isSuggestionSupersededByMemory,
+  filterVisiblePendingSuggestions,
 } from "./suggestion-consistency.js"
 import { maybeGenerateLearningSuggestions } from "../runtime/learning-suggestion-generator.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
@@ -100,6 +101,52 @@ describe("suggestion consistency", () => {
       "accepted"
     )
     expect(ctx.repos.learningSuggestions.countPending()).toBe(0)
+  })
+
+  it("filters superseded pending suggestions without mutating status", () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Research Agent",
+      systemPrompt: "Research.",
+      model: "gpt-4o-mini",
+    })
+    const thread = ctx.repos.threads.create({
+      title: "UAT eval run 1",
+      model: "gpt-4o-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+    })
+    const content =
+      "Conversation takeaway: Workspace has 1 thread active and 3 items need attention."
+
+    ctx.repos.savedMemories.createFromThread({
+      content,
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use when working on follow-up tasks from the source thread.",
+      tags: [],
+      scope: "agent",
+      associatedAgent: agent.id,
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      pinnedToContext: true,
+    })
+
+    const suggestion = ctx.repos.learningSuggestions.create({
+      suggestionType: "memory",
+      title: "Review conversation insight",
+      content,
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      agentId: agent.id,
+    })
+
+    const visible = filterVisiblePendingSuggestions(ctx.repos, [suggestion])
+    expect(visible).toEqual([])
+    expect(ctx.repos.learningSuggestions.getById(suggestion.id)?.status).toBe(
+      "pending"
+    )
   })
 
   it("sync dismisses duplicate pending suggestions when healing stale rows", () => {

@@ -9,7 +9,7 @@ import {
   type CommandCenterNeedsAttentionItem,
   type LearningSuggestion,
 } from "@workspace/shared"
-import { healStalePendingSuggestions } from "../learning/suggestion-consistency.js"
+import { filterVisiblePendingSuggestions } from "../learning/suggestion-consistency.js"
 import type { Repositories } from "../repositories/index.js"
 
 const NEEDS_ATTENTION_LIMIT = 20
@@ -121,14 +121,14 @@ export function createCommandCenterRoutes(repos: Repositories) {
       pageSize: NEEDS_ATTENTION_LIMIT,
       status: "pending",
     })
-    const healedSuggestions = healStalePendingSuggestions(
+    const visibleSuggestions = filterVisiblePendingSuggestions(
       repos,
       pendingSuggestionsPage.suggestions
     )
     const failedRuns = repos.runs.listFailedRunsForAttention(
       NEEDS_ATTENTION_LIMIT
     )
-    const suggestionItems = healedSuggestions.map(learningSuggestionToAttentionItem)
+    const suggestionItems = visibleSuggestions.map(learningSuggestionToAttentionItem)
     const lowScoreRuns = repos.runs.listLowScoreRunsForAttention(
       LOW_SCORE_THRESHOLD,
       NEEDS_ATTENTION_LIMIT

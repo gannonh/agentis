@@ -278,6 +278,59 @@ describe("command center routes", () => {
     )
   })
 
+  it("omits superseded pending suggestions from needs-attention without mutating them", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Attention Agent",
+        systemPrompt: "Surface operational issues",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    const thread = ctx.repos.threads.create({
+      title: "Already saved memory",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+    })
+    const content = "User prefers citations."
+
+    ctx.repos.savedMemories.createFromThread({
+      content,
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use when working on follow-up tasks from the source thread.",
+      tags: [],
+      scope: "agent",
+      associatedAgent: agent.id,
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      pinnedToContext: true,
+    })
+
+    const staleSuggestion = ctx.repos.learningSuggestions.create({
+      suggestionType: "memory",
+      title: "Remember citation preference",
+      content,
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      agentId: agent.id,
+    })
+
+    const response = await app.request("/api/command-center/needs-attention")
+    expect(response.status).toBe(200)
+    const body = commandCenterNeedsAttentionResponseSchema.parse(
+      await response.json()
+    )
+    expect(body.items).toEqual([])
+    expect(ctx.repos.learningSuggestions.getById(staleSuggestion.id)?.status).toBe(
+      "pending"
+    )
+  })
+
   it("ignores corrupt low-score evaluation rows instead of failing the queue", async () => {
     ctx = createTestContext()
     const app = createCommandCenterTestApp(ctx)
