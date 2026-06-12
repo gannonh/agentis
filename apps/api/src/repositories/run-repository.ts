@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
+import { and, count, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
 import {
   runEvaluationSchema,
   type AgentRunEvaluationSummary,
@@ -426,6 +426,21 @@ export class RunRepository {
       }))
   }
 
+  countFailedRunsForAttention(): number {
+    const row = this.db
+      .select({ value: count() })
+      .from(runs)
+      .where(
+        and(
+          eq(runs.status, "failed"),
+          sql`${runs.agentId} is not null`,
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
+      .get()
+    return Number(row?.value ?? 0)
+  }
+
   listFailedRunsForAttention(limit = 20): CommandCenterNeedsAttentionItem[] {
     const boundedLimit = Math.min(Math.max(limit, 1), 100)
     return this.db
@@ -464,6 +479,23 @@ export class RunRepository {
         threadId: row.threadId,
         runId: row.id,
       }))
+  }
+
+  countLowScoreRunsForAttention(scoreThreshold = 70): number {
+    const row = this.db
+      .select({ value: count() })
+      .from(runs)
+      .where(
+        and(
+          eq(runs.status, "completed"),
+          sql`${runs.evaluationJson} is not null`,
+          sql`json_extract(${runs.evaluationJson}, '$.score') <= ${scoreThreshold}`,
+          sql`${runs.agentId} is not null`,
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
+      .get()
+    return Number(row?.value ?? 0)
   }
 
   listLowScoreRunsForAttention(

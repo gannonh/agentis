@@ -86,22 +86,25 @@ describe("CommandCenterPage", () => {
             evaluationScore: 86,
           },
         ],
-        needsAttention: [
-          {
-            id: "attention_learning_suggestion_1",
-            type: "pending_learning_suggestion",
-            title: "Remember citation preference",
-            description: "User prefers source-backed answers.",
-            tag: "Pending memory",
-            severity: "warning",
-            createdAt: "2026-06-09T12:05:00.000Z",
-            href: "/learning?status=pending&suggestionId=suggestion_1",
-            dismissible: true,
-            agentId: "agent_api_research",
-            threadId: "thread_1",
-            suggestionId: "suggestion_1",
-          },
-        ],
+        needsAttention: {
+          totalCount: 1,
+          items: [
+            {
+              id: "attention_learning_suggestion_1",
+              type: "pending_learning_suggestion",
+              title: "Remember citation preference",
+              description: "User prefers source-backed answers.",
+              tag: "Pending memory",
+              severity: "warning",
+              createdAt: "2026-06-09T12:05:00.000Z",
+              href: "/learning?status=pending&suggestionId=suggestion_1",
+              dismissible: true,
+              agentId: "agent_api_research",
+              threadId: "thread_1",
+              suggestionId: "suggestion_1",
+            },
+          ],
+        },
       },
       loading: false,
       error: null,
@@ -161,6 +164,61 @@ describe("CommandCenterPage", () => {
     expect(screen.queryByText("New Rubric")).not.toBeInTheDocument()
   })
 
+  it("shows dismiss errors without clearing the needs-attention panel", async () => {
+    dismissLearningSuggestionMock.mockRejectedValueOnce(
+      new Error("Suggestion already resolved")
+    )
+    const refresh = vi.fn()
+    useCommandCenterMock.mockReturnValue({
+      data: {
+        summary: {
+          agentCount: 1,
+          activeRuns: 0,
+          totalRuns: 0,
+          totalCostUsd: 0,
+          avgScore: null,
+          evaluatedRunCount: 0,
+        },
+        roster: [],
+        recentRuns: [],
+        needsAttention: {
+          totalCount: 1,
+          items: [
+            {
+              id: "attention_learning_suggestion_1",
+              type: "pending_learning_suggestion",
+              title: "Remember citation preference",
+              description: "User prefers source-backed answers.",
+              tag: "Pending memory",
+              severity: "warning",
+              createdAt: "2026-06-09T12:05:00.000Z",
+              href: "/learning?status=pending&suggestionId=suggestion_1",
+              dismissible: true,
+              suggestionId: "suggestion_1",
+            },
+          ],
+        },
+      },
+      loading: false,
+      error: null,
+      sectionErrors: {},
+      refresh,
+    })
+
+    render(
+      <MemoryRouter>
+        <CommandCenterPage />
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }))
+    await waitFor(() => {
+      expect(screen.getByText("Suggestion already resolved")).toBeInTheDocument()
+      expect(screen.getByText("Remember citation preference")).toBeInTheDocument()
+      expect(refresh).not.toHaveBeenCalled()
+    })
+  })
+
   it("dismisses pending learning suggestions from the needs-attention panel", async () => {
     const refresh = vi.fn()
     useCommandCenterMock.mockReturnValue({
@@ -175,20 +233,23 @@ describe("CommandCenterPage", () => {
         },
         roster: [],
         recentRuns: [],
-        needsAttention: [
-          {
-            id: "attention_learning_suggestion_1",
-            type: "pending_learning_suggestion",
-            title: "Remember citation preference",
-            description: "User prefers source-backed answers.",
-            tag: "Pending memory",
-            severity: "warning",
-            createdAt: "2026-06-09T12:05:00.000Z",
-            href: "/learning?status=pending&suggestionId=suggestion_1",
-            dismissible: true,
-            suggestionId: "suggestion_1",
-          },
-        ],
+        needsAttention: {
+          totalCount: 1,
+          items: [
+            {
+              id: "attention_learning_suggestion_1",
+              type: "pending_learning_suggestion",
+              title: "Remember citation preference",
+              description: "User prefers source-backed answers.",
+              tag: "Pending memory",
+              severity: "warning",
+              createdAt: "2026-06-09T12:05:00.000Z",
+              href: "/learning?status=pending&suggestionId=suggestion_1",
+              dismissible: true,
+              suggestionId: "suggestion_1",
+            },
+          ],
+        },
       },
       loading: false,
       error: null,
@@ -284,6 +345,41 @@ describe("CommandCenterPage", () => {
     ).toBeInTheDocument()
     screen.getByRole("button", { name: "Retry loading metrics" }).click()
     expect(refresh).toHaveBeenCalled()
+  })
+
+  it("shows needs-attention load errors without a zero-item summary", () => {
+    useCommandCenterMock.mockReturnValue({
+      data: {
+        summary: {
+          agentCount: 1,
+          activeRuns: 0,
+          totalRuns: 2,
+          totalCostUsd: 0.88,
+          avgScore: null,
+          evaluatedRunCount: 0,
+        },
+        roster: [],
+        recentRuns: [],
+        needsAttention: { items: [], totalCount: 0 },
+      },
+      loading: false,
+      error: null,
+      sectionErrors: {
+        needsAttention: "Failed to load needs-attention items",
+      },
+      refresh: vi.fn(),
+    })
+
+    render(
+      <MemoryRouter>
+        <CommandCenterPage />
+      </MemoryRouter>
+    )
+
+    expect(
+      screen.getByText("Failed to load needs-attention items")
+    ).toBeInTheDocument()
+    expect(screen.queryByText("0 items need review")).not.toBeInTheDocument()
   })
 
   it("shows recent runs error while summary metrics still render", () => {

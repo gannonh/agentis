@@ -19,6 +19,7 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { Button } from "@workspace/ui/components/button"
 import { useAgents } from "@/hooks/use-agents"
 import { useCommandCenter } from "@/hooks/use-command-center"
+import { useState } from "react"
 import type {
   CommandCenterNeedsAttentionItem,
   CommandCenterRosterAgent,
@@ -155,17 +156,27 @@ export function CommandCenterPage() {
     toRosterAgent(agent, rosterMetrics.get(agent.id))
   )
   const summary = commandCenterData?.summary
-  const needsAttention = commandCenterData?.needsAttention ?? []
+  const needsAttentionItems = commandCenterData?.needsAttention?.items ?? []
+  const needsAttentionTotalCount =
+    commandCenterData?.needsAttention?.totalCount ?? 0
   const metrics = summary
-    ? metricsFromSummary(summary, needsAttention.length)
+    ? metricsFromSummary(summary, needsAttentionTotalCount)
     : null
+  const [dismissError, setDismissError] = useState<string | null>(null)
 
   const handleDismissAttention = async (
     item: CommandCenterNeedsAttentionItem
   ) => {
     if (!item.suggestionId) return
-    await dismissLearningSuggestion(item.suggestionId)
-    await refreshMetrics()
+    setDismissError(null)
+    try {
+      await dismissLearningSuggestion(item.suggestionId)
+      await refreshMetrics()
+    } catch (error) {
+      setDismissError(
+        error instanceof Error ? error.message : "Failed to dismiss suggestion"
+      )
+    }
   }
 
   return (
@@ -215,9 +226,10 @@ export function CommandCenterPage() {
           <ScoreTrendsPanel />
           <CostBreakdownPanel totalCost={summary?.totalCostUsd ?? 0} />
           <NeedsAttentionPanel
-            items={needsAttention}
-            pendingCount={needsAttention.length}
+            items={needsAttentionItems}
+            pendingCount={needsAttentionTotalCount}
             error={sectionErrors.needsAttention ?? null}
+            actionError={dismissError}
             onDismiss={handleDismissAttention}
           />
         </aside>

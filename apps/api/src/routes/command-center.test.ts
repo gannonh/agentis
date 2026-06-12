@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest"
-import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
+import {
+  commandCenterNeedsAttentionResponseSchema,
+  GENERIC_AGENTIS_AGENT_ID,
+} from "@workspace/shared"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { MOCK_MODEL_COST_USD } from "../cost/run-cost-attribution.js"
@@ -238,7 +241,11 @@ describe("command center routes", () => {
 
     const response = await app.request("/api/command-center/needs-attention")
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual(
+    const body = commandCenterNeedsAttentionResponseSchema.parse(
+      await response.json()
+    )
+    expect(body.totalCount).toBe(3)
+    expect(body.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: "failed_run",
@@ -295,13 +302,105 @@ describe("command center routes", () => {
 
     const response = await app.request("/api/command-center/needs-attention")
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual([
-      expect.objectContaining({
-        type: "failed_run",
-        title: "Run failed: Failed only",
-        href: `/threads/${failedThread.thread.id}`,
-      }),
-    ])
+    expect(await response.json()).toEqual({
+      totalCount: 1,
+      items: [
+        expect.objectContaining({
+          type: "failed_run",
+          title: "Run failed: Failed only",
+          href: `/threads/${failedThread.thread.id}`,
+        }),
+      ],
+    })
+  })
+
+  it("keeps each attention type visible when recent failures dominate the queue", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Queue Balance Agent",
+        systemPrompt: "Surface mixed issues",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    const agentConfigurationVersionId =
+      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id
+
+    for (let index = 0; index < 25; index += 1) {
+      const failedThread = ctx.repos.threads.createWithInitialRun({
+        title: `Failure ${index}`,
+        prompt: "Fail this",
+        model: "openai/gpt-5.4-mini",
+        mode: "agent",
+        agentId: agent.id,
+        agentNameSnapshot: agent.name,
+        agentConfigurationVersionId,
+      })
+      ctx.repos.runs.updateStatus(failedThread.run.id, "failed", {
+        finishedAt: `2026-06-09T12:${String(index).padStart(2, "0")}:00.000Z`,
+      })
+    }
+
+    const lowScoreThread = ctx.repos.threads.createWithInitialRun({
+      title: "Older weak answer",
+      prompt: "Answer poorly",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    ctx.repos.runs.updateStatus(lowScoreThread.run.id, "completed", {
+      finishedAt: "2026-06-08T12:00:00.000Z",
+      cost: MOCK_MODEL_COST_USD,
+    })
+    ctx.repos.runs.saveEvaluation(lowScoreThread.run.id, {
+      rubricId: "rubric_quality",
+      rubricName: "Quality rubric",
+      score: 45,
+      evaluatedAt: "2026-06-08T12:01:00.000Z",
+      criteria: [
+        {
+          criterionId: "criterion_accuracy",
+          criterionName: "Accuracy",
+          weight: 1,
+          score: 45,
+          feedback: "Missed the requested evidence.",
+        },
+      ],
+    })
+
+    const suggestion = ctx.repos.learningSuggestions.create({
+      suggestionType: "memory",
+      title: "Older pending memory",
+      content: "User prefers citations.",
+      confidence: 0.8,
+      sourceThreadId: lowScoreThread.thread.id,
+      sourceThreadTitle: lowScoreThread.thread.title,
+      agentId: agent.id,
+    })
+
+    const response = await app.request("/api/command-center/needs-attention")
+    expect(response.status).toBe(200)
+    const body = commandCenterNeedsAttentionResponseSchema.parse(
+      await response.json()
+    )
+    expect(body.totalCount).toBe(27)
+    expect(body.items).toHaveLength(20)
+    expect(body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "pending_learning_suggestion",
+          suggestionId: suggestion.id,
+        }),
+        expect.objectContaining({
+          type: "low_score_run",
+          runId: lowScoreThread.run.id,
+        }),
+      ])
+    )
   })
 
   it("excludes active runs from recent completed runs", async () => {

@@ -70,22 +70,25 @@ describe("command center client", () => {
           ])
         )
         .mockResolvedValueOnce(
-          Response.json([
-            {
-              id: "attention_failed_run_1",
-              type: "failed_run",
-              title: "Run failed: Ops run",
-              description: "Tool failed",
-              tag: "Failed run",
-              severity: "critical",
-              createdAt: "2026-06-09T12:00:00.000Z",
-              href: "/threads/thread_1",
-              dismissible: false,
-              agentId: "agent_1",
-              threadId: "thread_1",
-              runId: "run_1",
-            },
-          ])
+          Response.json({
+            totalCount: 1,
+            items: [
+              {
+                id: "attention_failed_run_1",
+                type: "failed_run",
+                title: "Run failed: Ops run",
+                description: "Tool failed",
+                tag: "Failed run",
+                severity: "critical",
+                createdAt: "2026-06-09T12:00:00.000Z",
+                href: "/threads/thread_1",
+                dismissible: false,
+                agentId: "agent_1",
+                threadId: "thread_1",
+                runId: "run_1",
+              },
+            ],
+          })
         )
     )
 
@@ -95,12 +98,15 @@ describe("command center client", () => {
     await expect(fetchCommandCenterRecentRuns()).resolves.toEqual([
       expect.objectContaining({ id: "run_1", title: "Ops run" }),
     ])
-    await expect(fetchCommandCenterNeedsAttention()).resolves.toEqual([
-      expect.objectContaining({
-        id: "attention_failed_run_1",
-        type: "failed_run",
-      }),
-    ])
+    await expect(fetchCommandCenterNeedsAttention()).resolves.toEqual({
+      totalCount: 1,
+      items: [
+        expect.objectContaining({
+          id: "attention_failed_run_1",
+          type: "failed_run",
+        }),
+      ],
+    })
   })
 
   it("normalizes non-JSON error responses", async () => {

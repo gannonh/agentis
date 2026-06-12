@@ -3,7 +3,7 @@ import {
   commandCenterRecentRunsResponseSchema,
   commandCenterRosterResponseSchema,
   commandCenterSummarySchema,
-  type CommandCenterNeedsAttentionItem,
+  type CommandCenterNeedsAttentionResponse,
   type CommandCenterRecentRun,
   type CommandCenterRosterAgent,
   type CommandCenterSummary,
@@ -47,9 +47,7 @@ export async function fetchCommandCenterRoster(): Promise<
   return parseJson(response, commandCenterRosterResponseSchema)
 }
 
-export async function fetchCommandCenterNeedsAttention(): Promise<
-  CommandCenterNeedsAttentionItem[]
-> {
+export async function fetchCommandCenterNeedsAttention(): Promise<CommandCenterNeedsAttentionResponse> {
   const response = await fetch(`${API_BASE}/api/command-center/needs-attention`)
   return parseJson(response, commandCenterNeedsAttentionResponseSchema)
 }

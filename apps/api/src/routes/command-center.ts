@@ -10,6 +10,56 @@ import {
 import type { Repositories } from "../repositories/index.js"
 
 const NEEDS_ATTENTION_LIMIT = 20
+const LOW_SCORE_THRESHOLD = 70
+
+function mergeNeedsAttentionItems(
+  buckets: CommandCenterNeedsAttentionItem[][],
+  limit: number
+): CommandCenterNeedsAttentionItem[] {
+  const nonEmptyBuckets = buckets.filter((bucket) => bucket.length > 0)
+  if (nonEmptyBuckets.length === 0) {
+    return []
+  }
+
+  const selectedIds = new Set<string>()
+  const merged: CommandCenterNeedsAttentionItem[] = []
+  const baseQuota = Math.floor(limit / nonEmptyBuckets.length)
+  let remainder = limit % nonEmptyBuckets.length
+
+  for (const bucket of nonEmptyBuckets) {
+    const quota = baseQuota + (remainder > 0 ? 1 : 0)
+    if (remainder > 0) {
+      remainder -= 1
+    }
+
+    for (const item of bucket.slice(0, quota)) {
+      if (selectedIds.has(item.id)) {
+        continue
+      }
+      selectedIds.add(item.id)
+      merged.push(item)
+    }
+  }
+
+  if (merged.length < limit) {
+    const remaining = buckets
+      .flat()
+      .filter((item) => !selectedIds.has(item.id))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+
+    for (const item of remaining) {
+      if (merged.length >= limit) {
+        break
+      }
+      selectedIds.add(item.id)
+      merged.push(item)
+    }
+  }
+
+  return merged.sort((left, right) =>
+    right.createdAt.localeCompare(left.createdAt)
+  )
+}
 
 function learningSuggestionToAttentionItem(
   suggestion: LearningSuggestion
@@ -57,15 +107,29 @@ export function createCommandCenterRoutes(repos: Repositories) {
       status: "pending",
     }).suggestions
 
-    const items = [
-      ...repos.runs.listFailedRunsForAttention(NEEDS_ATTENTION_LIMIT),
-      ...pendingSuggestions.map(learningSuggestionToAttentionItem),
-      ...repos.runs.listLowScoreRunsForAttention(70, NEEDS_ATTENTION_LIMIT),
-    ]
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-      .slice(0, NEEDS_ATTENTION_LIMIT)
+    const failedRuns = repos.runs.listFailedRunsForAttention(
+      NEEDS_ATTENTION_LIMIT
+    )
+    const suggestionItems = pendingSuggestions.map(
+      learningSuggestionToAttentionItem
+    )
+    const lowScoreRuns = repos.runs.listLowScoreRunsForAttention(
+      LOW_SCORE_THRESHOLD,
+      NEEDS_ATTENTION_LIMIT
+    )
 
-    return c.json(commandCenterNeedsAttentionResponseSchema.parse(items))
+    const items = mergeNeedsAttentionItems(
+      [failedRuns, suggestionItems, lowScoreRuns],
+      NEEDS_ATTENTION_LIMIT
+    )
+    const totalCount =
+      repos.runs.countFailedRunsForAttention() +
+      repos.learningSuggestions.countPending() +
+      repos.runs.countLowScoreRunsForAttention(LOW_SCORE_THRESHOLD)
+
+    return c.json(
+      commandCenterNeedsAttentionResponseSchema.parse({ items, totalCount })
+    )
   })
 
   app.get("/recent-runs", (c) => {

@@ -114,9 +114,10 @@ export const commandCenterNeedsAttentionItemSchema = z.object({
   score: z.number().min(0).max(100).nullable().optional(),
 })
 
-export const commandCenterNeedsAttentionResponseSchema = z.array(
-  commandCenterNeedsAttentionItemSchema
-)
+export const commandCenterNeedsAttentionResponseSchema = z.object({
+  items: z.array(commandCenterNeedsAttentionItemSchema),
+  totalCount: z.number().int().nonnegative(),
+})
 
 export type RunCostLineItem = z.infer<typeof runCostLineItemSchema>
 export type RunCostBreakdown = z.infer<typeof runCostBreakdownSchema>
@@ -130,4 +131,7 @@ export type CommandCenterRecentRun = z.infer<
 >
 export type CommandCenterNeedsAttentionItem = z.infer<
   typeof commandCenterNeedsAttentionItemSchema
+>
+export type CommandCenterNeedsAttentionResponse = z.infer<
+  typeof commandCenterNeedsAttentionResponseSchema
 >

@@ -44,7 +44,7 @@ async function mockShellRouteData(page: Page, routeName: string) {
       fulfillJson(route, [])
     )
     await page.route(/\/api\/command-center\/needs-attention$/, (route) =>
-      fulfillJson(route, [])
+      fulfillJson(route, { items: [], totalCount: 0 })
     )
   }
 

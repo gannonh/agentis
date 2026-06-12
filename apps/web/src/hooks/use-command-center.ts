@@ -12,11 +12,16 @@ import {
   fetchCommandCenterSummary,
 } from "@/lib/api/command-center-client"
 
+export type CommandCenterNeedsAttentionData = {
+  items: CommandCenterNeedsAttentionItem[]
+  totalCount: number
+}
+
 export type CommandCenterData = {
   summary: CommandCenterSummary | null
   roster: CommandCenterRosterAgent[]
   recentRuns: CommandCenterRecentRun[]
-  needsAttention: CommandCenterNeedsAttentionItem[]
+  needsAttention: CommandCenterNeedsAttentionData
 }
 
 export type CommandCenterSectionErrors = {
@@ -53,7 +58,7 @@ async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
     needsAttention:
       needsAttentionResult.status === "fulfilled"
         ? needsAttentionResult.value
-        : [],
+        : { items: [], totalCount: 0 },
   }
   const sectionErrors: CommandCenterSectionErrors = {}
 
