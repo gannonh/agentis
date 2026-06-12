@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowRight01Icon,
@@ -45,14 +45,9 @@ export function LearningConversationRow({
   onDismiss,
   actionPendingId = null,
 }: LearningConversationRowProps): ReactElement {
-  const [expanded, setExpanded] = useState(defaultExpanded)
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null)
+  const expanded = userExpanded ?? defaultExpanded
   const hasSuggestions = candidates.length > 0
-
-  useEffect(() => {
-    if (defaultExpanded) {
-      setExpanded(true)
-    }
-  }, [defaultExpanded])
 
   return (
     <article className="rounded-lg border border-border bg-card px-4 py-3">
@@ -64,7 +59,7 @@ export function LearningConversationRow({
             size="icon-sm"
             aria-label={`${expanded ? "Collapse" : "Expand"} ${conversation.title}`}
             aria-expanded={expanded}
-            onClick={() => setExpanded((current) => !current)}
+            onClick={() => setUserExpanded((current) => !(current ?? defaultExpanded))}
             className="mt-0.5"
           >
             <HugeiconsIcon

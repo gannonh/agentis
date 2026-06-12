@@ -135,10 +135,11 @@ async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
 export function useCommandCenter() {
   const location = useLocation()
   const [data, setData] = useState<CommandCenterData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sectionErrors, setSectionErrors] =
     useState<CommandCenterSectionErrors>({})
+  const loading = loadedKey !== location.key
 
   const applyLoadResult = useCallback((result: CommandCenterLoadResult) => {
     setData(result.data)
@@ -146,28 +147,26 @@ export function useCommandCenter() {
     setError(result.error)
   }, [])
 
-  const load = useCallback(
-    async (isActive: () => boolean = () => true) => {
-      setLoading(true)
-      setError(null)
-      setSectionErrors({})
-      const result = await fetchCommandCenterData()
-      if (!isActive()) return
-      applyLoadResult(result)
-      setLoading(false)
-    },
-    [applyLoadResult]
-  )
-
-  const refresh = useCallback(() => load(), [load])
+  const refresh = useCallback(async () => {
+    setLoadedKey(null)
+    setError(null)
+    setSectionErrors({})
+    const result = await fetchCommandCenterData()
+    applyLoadResult(result)
+    setLoadedKey(location.key)
+  }, [applyLoadResult, location.key])
 
   useEffect(() => {
     let active = true
-    void load(() => active)
+    void fetchCommandCenterData().then((result) => {
+      if (!active) return
+      applyLoadResult(result)
+      setLoadedKey(location.key)
+    })
     return () => {
       active = false
     }
-  }, [load, location.key])
+  }, [applyLoadResult, location.key])
 
   return { data, loading, error, sectionErrors, refresh }
 }
