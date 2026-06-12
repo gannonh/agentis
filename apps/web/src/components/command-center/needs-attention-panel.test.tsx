@@ -1,10 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import {
-  NeedsAttentionPanel,
-  resetDismissingSuggestionIdsForTests,
-} from "./needs-attention-panel"
+import { resetNeedsAttentionDismissLocksForTests } from "./needs-attention-dismiss-lock"
+import { NeedsAttentionPanel } from "./needs-attention-panel"
 
 const pendingSuggestion = {
   id: "attention_learning_suggestion_1",
@@ -21,7 +19,7 @@ const pendingSuggestion = {
 
 describe("NeedsAttentionPanel", () => {
   beforeEach(() => {
-    resetDismissingSuggestionIdsForTests()
+    resetNeedsAttentionDismissLocksForTests()
   })
 
   it("ignores duplicate dismiss clicks while a suggestion is dismissing", () => {

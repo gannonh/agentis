@@ -19,7 +19,7 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { Button } from "@workspace/ui/components/button"
 import { useAgents } from "@/hooks/use-agents"
 import { useCommandCenter } from "@/hooks/use-command-center"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import type {
   CommandCenterNeedsAttentionItem,
   CommandCenterRosterAgent,
@@ -168,10 +168,6 @@ export function CommandCenterPage() {
     setDismissError(null)
     await refreshMetrics()
   }, [refreshMetrics])
-
-  useEffect(() => {
-    setDismissError(null)
-  }, [commandCenterData?.needsAttention])
 
   const handleDismissAttention = async (
     item: CommandCenterNeedsAttentionItem

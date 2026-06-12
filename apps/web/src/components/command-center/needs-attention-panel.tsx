@@ -5,6 +5,10 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import type { CommandCenterNeedsAttentionItem } from "@workspace/shared"
 import { cn } from "@workspace/ui/lib/utils"
+import {
+  acquireNeedsAttentionDismissLock,
+  releaseNeedsAttentionDismissLock,
+} from "./needs-attention-dismiss-lock"
 
 type NeedsAttentionPanelProps = {
   items: CommandCenterNeedsAttentionItem[]
@@ -12,12 +16,6 @@ type NeedsAttentionPanelProps = {
   error?: string | null
   actionError?: string | null
   onDismiss?: (item: CommandCenterNeedsAttentionItem) => void
-}
-
-const dismissingSuggestionIds = new Set<string>()
-
-export function resetDismissingSuggestionIdsForTests() {
-  dismissingSuggestionIds.clear()
 }
 
 function actionLabel(item: CommandCenterNeedsAttentionItem): string {
@@ -105,22 +103,19 @@ export function NeedsAttentionPanel({
                           variant="link"
                           size="sm"
                           className="h-auto p-0 text-muted-foreground"
-                          disabled={
-                            item.suggestionId
-                              ? dismissingSuggestionIds.has(item.suggestionId)
-                              : false
-                          }
                           onClick={() => {
                             void (async () => {
                               if (!item.suggestionId) return
-                              if (!dismissingSuggestionIds.add(item.suggestionId)) {
+                              if (
+                                !acquireNeedsAttentionDismissLock(item.suggestionId)
+                              ) {
                                 return
                               }
 
                               try {
                                 await onDismiss?.(item)
                               } finally {
-                                dismissingSuggestionIds.delete(item.suggestionId)
+                                releaseNeedsAttentionDismissLock(item.suggestionId)
                               }
                             })()
                           }}
