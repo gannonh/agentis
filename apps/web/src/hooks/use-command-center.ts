@@ -146,29 +146,28 @@ export function useCommandCenter() {
     setError(result.error)
   }, [])
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    setSectionErrors({})
-    const result = await fetchCommandCenterData()
-    applyLoadResult(result)
-    setLoading(false)
-  }, [applyLoadResult])
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-
-    void fetchCommandCenterData().then((result) => {
-      if (cancelled) return
+  const load = useCallback(
+    async (isActive: () => boolean = () => true) => {
+      setLoading(true)
+      setError(null)
+      setSectionErrors({})
+      const result = await fetchCommandCenterData()
+      if (!isActive()) return
       applyLoadResult(result)
       setLoading(false)
-    })
+    },
+    [applyLoadResult]
+  )
 
+  const refresh = useCallback(() => load(), [load])
+
+  useEffect(() => {
+    let active = true
+    void load(() => active)
     return () => {
-      cancelled = true
+      active = false
     }
-  }, [applyLoadResult, location.key])
+  }, [load, location.key])
 
   return { data, loading, error, sectionErrors, refresh }
 }
