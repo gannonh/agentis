@@ -19,14 +19,51 @@ export function healStalePendingSuggestion(
   repos: Repositories,
   suggestion: LearningSuggestion
 ): LearningSuggestion {
-  if (!isSuggestionSupersededByMemory(repos, suggestion)) {
-    return suggestion
+  const current = repos.learningSuggestions.getById(suggestion.id) ?? suggestion
+  if (current.status !== "pending") {
+    return current
   }
 
-  return (
-    repos.learningSuggestions.updateStatus(suggestion.id, "accepted") ??
-    suggestion
-  )
+  if (!isSuggestionSupersededByMemory(repos, current)) {
+    return current
+  }
+
+  if (current.sourceThreadId) {
+    if (
+      repos.learningSuggestions.hasAcceptedSuggestionForThreadContent(
+        current.sourceThreadId,
+        current.content,
+        current.id
+      )
+    ) {
+      return (
+        repos.learningSuggestions.updateStatus(current.id, "dismissed") ??
+        current
+      )
+    }
+
+    const otherPending =
+      repos.learningSuggestions.listOtherPendingWithSameThreadContent(
+        current.sourceThreadId,
+        current.content,
+        current.id
+      )
+    if (otherPending.some((peer) => peer.id < current.id)) {
+      return (
+        repos.learningSuggestions.updateStatus(current.id, "dismissed") ??
+        current
+      )
+    }
+  }
+
+  const healed =
+    repos.learningSuggestions.updateStatus(current.id, "accepted") ?? current
+
+  if (current.status === "pending" && healed.status === "accepted") {
+    dismissDuplicatePendingSuggestions(repos, healed)
+  }
+
+  return healed
 }
 
 export function healStalePendingSuggestions(
@@ -69,11 +106,18 @@ export function syncPendingLearningSuggestions(repos: Repositories): number {
       break
     }
 
+    let healedOnPage = 0
     for (const suggestion of batch.suggestions) {
+      const before = repos.learningSuggestions.getById(suggestion.id)
       const healed = healStalePendingSuggestion(repos, suggestion)
-      if (healed.status !== suggestion.status) {
+      if (before?.status === "pending" && healed.status !== "pending") {
         healedCount += 1
+        healedOnPage += 1
       }
+    }
+
+    if (healedOnPage > 0) {
+      continue
     }
 
     if (page >= batch.totalPages) {

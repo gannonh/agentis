@@ -200,4 +200,47 @@ describe("RunRepository fleet observability", () => {
       ])
     )
   })
+
+  it("falls back to model-derived provider when cost breakdown line items are empty", () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Ops Agent",
+        systemPrompt: "Track costs",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    const agentConfigurationVersionId =
+      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id
+
+    const thread = ctx.repos.threads.createWithInitialRun({
+      title: "Empty breakdown",
+      prompt: "Hello",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    const modelCost = MOCK_MODEL_COST_USD
+    ctx.repos.runs.updateStatus(thread.run.id, "completed", {
+      finishedAt: new Date().toISOString(),
+      cost: modelCost,
+      costBreakdown: {
+        totalUsd: modelCost,
+        lineItems: [],
+      },
+    })
+
+    const breakdown = ctx.repos.runs.getFleetCostBreakdown(30)
+    expect(breakdown.totalRuns).toBe(1)
+    expect(breakdown.byProvider).toEqual([
+      expect.objectContaining({
+        provider: "openai",
+        costUsd: modelCost,
+        runCount: 1,
+      }),
+    ])
+  })
 })

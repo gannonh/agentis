@@ -80,6 +80,26 @@ export class LearningSuggestionRepository {
     return Number(row?.value ?? 0) > 0
   }
 
+  hasAcceptedSuggestionForThreadContent(
+    sourceThreadId: string,
+    content: string,
+    excludeId: string
+  ): boolean {
+    const row = this.db
+      .select({ value: count() })
+      .from(learningSuggestions)
+      .where(
+        and(
+          eq(learningSuggestions.sourceThreadId, sourceThreadId),
+          eq(learningSuggestions.content, content),
+          eq(learningSuggestions.status, "accepted"),
+          ne(learningSuggestions.id, excludeId)
+        )
+      )
+      .get()
+    return Number(row?.value ?? 0) > 0
+  }
+
   listOtherPendingWithSameThreadContent(
     sourceThreadId: string,
     content: string,

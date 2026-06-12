@@ -531,16 +531,18 @@ export class RunRepository {
           const breakdown = runCostBreakdownSchema.parse(
             JSON.parse(row.costBreakdownJson)
           )
-          for (const lineItem of breakdown.lineItems) {
-            const providerStats = providerMap.get(lineItem.provider) ?? {
-              costUsd: 0,
-              runIds: new Set<string>(),
+          if (breakdown.lineItems.length > 0) {
+            for (const lineItem of breakdown.lineItems) {
+              const providerStats = providerMap.get(lineItem.provider) ?? {
+                costUsd: 0,
+                runIds: new Set<string>(),
+              }
+              providerStats.costUsd += lineItem.costUsd
+              providerStats.runIds.add(row.id)
+              providerMap.set(lineItem.provider, providerStats)
             }
-            providerStats.costUsd += lineItem.costUsd
-            providerStats.runIds.add(row.id)
-            providerMap.set(lineItem.provider, providerStats)
+            continue
           }
-          continue
         } catch {
           // Fall through to model-derived provider allocation.
         }

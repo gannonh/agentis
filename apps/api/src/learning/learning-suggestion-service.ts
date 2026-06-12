@@ -36,7 +36,7 @@ export function acceptLearningSuggestion(
   const existingMemory = suggestion.sourceThreadId
     ? repos.savedMemories.findThreadDerivedMemory(
         suggestion.sourceThreadId,
-        suggestion.content
+        content
       )
     : null
 
